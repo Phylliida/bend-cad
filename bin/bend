@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Runs the local Bend checkout (../bend by default) under bun, with Bend's
+# daily version-check request turned off.
+set -euo pipefail
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+src="${BEND_SRC:-$here/../../bend}"
+bun="${BUN:-}"
+if [ -z "$bun" ] && command -v bun >/dev/null 2>&1; then
+  bun="$(command -v bun)"
+fi
+if [ -z "$bun" ]; then
+  # newest bun already in the nix store, by version
+  best=""; bestv=""
+  for b in /nix/store/*-bun-[0-9]*/bin/bun; do
+    [ -x "$b" ] || continue
+    v="$(basename "$(dirname "$(dirname "$b")")" | sed 's/^[^-]*-bun-//')"
+    if [ -z "$bestv" ] || [ "$(printf '%s\n%s\n' "$bestv" "$v" | sort -V | tail -1)" = "$v" ]; then
+      best="$b"; bestv="$v"
+    fi
+  done
+  bun="$best"
+fi
+if [ -z "$bun" ]; then
+  exec nix shell nixpkgs#bun -c env BEND_NO_TELEMETRY=1 bun "$src/bend2/main.ts" "$@"
+fi
+export BEND_NO_TELEMETRY=1
+exec "$bun" "$src/bend2/main.ts" "$@"
