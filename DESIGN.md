@@ -1,4 +1,4 @@
-# bend-cad — Design v0.3 (draft; exact by default)
+# bend-cad — Design v0.4 (draft; exact by default; Danielle's answers recorded)
 
 A formally verified 2D sketch constraint solver in Bend 2, aiming at Onshape /
 FreeCAD sketcher parity, feeding an implicit-function (SDF) modeling pipeline.
@@ -6,7 +6,8 @@ FreeCAD sketcher parity, feeding an implicit-function (SDF) modeling pipeline.
 This document is self-contained. It does not build on any existing project in
 the workspace; external solvers and papers are cited as references only.
 History: v0.1 was audited ([AUDIT-v0.1.md](AUDIT-v0.1.md)); v0.2 folded the
-audit in; v0.3 makes exactness the default (§17 changelog).
+audit in; v0.3 makes exactness the default; v0.4 records Danielle's answers
+to the open questions (§19 changelog).
 
 ---
 
@@ -49,8 +50,11 @@ designed for and built late (§7.4).
 | D7 | **One acceptance theorem over arbitrary proposals.** The proposer is outside the trust story. |
 | D8 | **Block-decomposed parametric certificates** keep exact certification near-linear in sketch size (§8). |
 | D9 | **Dimension constants are exact**: rationals, certified algebraic roots, or constructive reals defined over ℚ (§7). Any measured quantity can be shown with guaranteed digits, more on demand (§9). |
-| D10 | **Positional tolerance checks** are for drag previews and an explicit, user-acknowledged fallback; never the silent default (§6). |
+| D10 | **Uncertifiable constraints are flagged red**, individually; the rest of the sketch stays exactly certified. Positional tolerance checks are used for drag previews and to report how far a flagged constraint is from holding (§6). |
 | D11 | **Lipschitz bounds replace interval arithmetic** everywhere. |
+| D12 | **Everything is written in Bend**, including the proposer and the prototype. |
+| D13 | **"Change as little as possible" means least ink displacement**: the integral of squared displacement along every drawn curve (§10). |
+| D14 | **Every bounded face of the arrangement of non-construction curves is a region** (Onshape-style); no fill rule (§12). |
 
 ---
 
@@ -88,10 +92,9 @@ by structure rather than by numerics. Differences:
 - We borrow two of its ideas directly: constants as rational × known constant
   (§7) and guaranteed-digit display (§9).
 
-**Positional tolerance is not the default** (D10), but it stays useful: it is
-cheap, needs no certificate, and gives drag previews and a fallback for sketches
-that cannot be certified exact (accidental singularities, coincidental
-redundancy).
+**Positional tolerance is not a mode** (D10). It is cheap and needs no
+certificate, so it gives drag previews and tells the user how far a red-flagged
+constraint is from holding (accidental singularities, coincidental redundancy).
 
 ---
 
@@ -112,8 +115,8 @@ lane); limb-bound laws make the cap unreachable. Not `U32` limbs (`U32` is a
 32-bit `Word` bit list in the theory; no `U64`).
 
 **Scales.** Displayed variables are integers at a per-kind scale.
-- Coordinates and lengths: 1 nm or 1 pm (Q3). nm makes inch fractions exact to
-  1/64"; pm to 1/512" (25.4 mm = 2^9 · 127 · 5^8 pm).
+- Coordinates and lengths: **1 nm** (decided). Inch fractions are exact down to
+  1/64" (25.4 mm = 2^6 · 127 · 5^5 nm).
 - Curve parameters (t, bulge b): dyadic at scale 2^−s (shallow arcs need large
   s; §5.3).
 - Certificates work at a per-block precision p (dyadic) chosen by the proposer;
@@ -138,8 +141,8 @@ lane); limb-bound laws make the cap unreachable. Not `U32` limbs (`U32` is a
   or expressions over named sketch variables.
 - **Evaluation** is a straight-line program over an environment (shared
   subterms computed once; Bend has no CSE). No expanded sparse polynomials.
-- **Acceptance mode** per committed state: `Exact` (default) or
-  `ToleranceOnly` (explicit fallback, visible in the UI).
+- **Certification status** per constraint: `Exact` (default) or `Flagged`
+  (shown red, with the reason and its positional deviation).
 
 ---
 
@@ -200,6 +203,13 @@ The circle–circle form is regular: its Jacobian in (s, D) has determinant
   sweep is exact without any transcendental function of a variable.
 - Quantization: the displayed b at scale 2^−s; the certificate works at higher
   precision regardless.
+- **Creation tools** map to bulge arcs plus constraints:
+  - *3-point arc:* the middle point is a creation hint (as in Onshape) that
+    sets the initial b. An exact arc through three grid points generally has
+    an irrational bulge; b is then a variable certified like any other.
+  - *Center-point arc:* bulge arc plus a "center of this arc = point C"
+    constraint (two equations on the derived center).
+  - *Tangent arc:* bulge arc plus a G1 join at its start.
 
 ### 5.4 Curves
 
@@ -209,7 +219,7 @@ The circle–circle form is regular: its Jacobian in (s, D) has determinant
 | point on NURBS span j | param t | w(t)·P − N(t) = 0 | span range; weights > 0 |
 | curve–spline tangent | contact params | contact equations; cross(C′(t), other tangent) = 0 | \|C′(t)\| > 0 |
 | offset point at distance d > 0 | param t | dot(P − C(t), C′(t)) = 0; \|P − C(t)\|² − d² = 0 | \|C′(t)\| > 0; side as drawn |
-| G2 join | — | **open (Q6)** | — |
+| G2 join | aux lengths ℓᵢ, ℓᵢ² = \|Cᵢ′\|² | curvature equality written with the aux lengths (no squaring of the whole relation), exact form fixed in sk-15 | ℓᵢ > 0 |
 | conic arcs | — | rational quadratic Bézier through end control points | weights > 0 |
 | trim / extend / split / fillet | new point variables | point-on equations on both curves | ranges |
 
@@ -227,8 +237,8 @@ side). Exact forms make these much shorter than the tolerance versions.
 ## 6. Tolerance checks (previews and explicit fallback)
 
 Positional checks on the displayed integer geometry, decided exactly. Used for
-drag previews and for states the user explicitly accepts as `ToleranceOnly`
-(e.g. coincidental redundancy, accidental singularities).
+drag previews and to report, for each red-flagged constraint, how far it is
+from holding (e.g. coincidental redundancy, accidental singularities).
 
 **Meaning template:** the constraint can be made exactly true by moving one
 designated point by at most cε. Direction checks measure the deviation as a
@@ -360,15 +370,16 @@ the balls), checked by the reflective normalizer.
   with b ≠ 0).
 - An offline Gröbner search (untrusted) finds rarer ones.
 - Coincidental redundancy (two dimensions that merely agree) has no such
-  identity. It is reported; the user deletes one, marks it driven, or accepts
-  `ToleranceOnly`.
+  identity. The constraint is dropped from the exact system and **flagged red**;
+  the user deletes it, marks it driven, or fixes the sketch.
 
 ### 8.8 Singular configurations
 
 Regular encodings and rewrite rules (§5) handle drawn configurations.
 Near-singular blocks need more precision (radius shrinks) but still certify.
-Exactly singular configurations cannot be certified; the failing block and the
-reason are reported.
+Exactly singular configurations cannot be certified. The proposer finds the
+smallest dependent set of constraints in the failing block (rank analysis); those
+are **flagged red** with the reason, and the rest of the sketch is certified.
 
 ### 8.9 Incrementality
 
@@ -399,13 +410,27 @@ that might change; truncation is exact.
 
 ## 10. Proposer (untrusted)
 
-- **Objective:** nearest solution, Σ wᵢ(xᵢ − x₀ᵢ)² subject to the exact
-  equations and side conditions; KKT with an active set and LM damping.
-  Generically nonsingular; known singular cases (drag target at a circle's
-  center; rank lost exactly at the solution) are handled by damping.
-- **Weights:** user geometry weighted; contact points, parameters, aux get a
-  tiny positive weight (e.g. 2^−20 relative). Drag: cursor target with a large
-  weight, or a hard equality (option).
+- **Objective: least ink displacement (D13).** Each drawn curve, construction
+  geometry included, is treated as ink; the cost is ∫ \|γ_new − γ_old\|² over
+  the old curve's arc length, with points matched by their natural parameter.
+  Closed forms:
+  - segment: L·(\|ΔP\|² + ΔP·ΔQ + \|ΔQ\|²)/3, L the old length;
+  - circle: 2πr·(\|ΔC\|² + Δr²);
+  - B-spline: a quadratic form in the control-point moves (mass matrix
+    ∫BᵢBⱼ), weighted by the old curve's speed at fixed quadrature nodes;
+  - bulge arc: fixed quadrature along the arc;
+  - standalone point: \|ΔP\|² times a nominal length (default 1 mm).
+
+  The total is a convex quadratic in the displacements, so W becomes a
+  block-sparse positive definite matrix instead of a diagonal. Consequences:
+  long things cost more to move; sliding a curve along itself still costs
+  (points are matched by parameter; a shape-only metric would be nonconvex).
+- **KKT** with an active set and LM damping. Generically nonsingular; known
+  singular cases (drag target at a circle's center; rank lost exactly at the
+  solution) are handled by damping.
+- **Aux variables** (contact points, parameters, aux lengths) carry no ink; they
+  get a tiny positive weight (e.g. 2^−20 relative) for nonsingularity. Drag:
+  cursor target with a large weight, or a hard equality (option).
 - **Outputs:** displayed grid geometry, pins, block order, per-block (ỹ, Y, r),
   redundancy certificates, partition and anchors.
 - **Precision:** Bend has only F32. F32 linear solves with residuals computed
@@ -414,7 +439,7 @@ that might change; truncation is exact.
   κ ≈ 10^5–10^7; beyond that, exact/dyadic elimination (Wan 2006;
   Saunders–Wood–Youse 2011). Certificate refinement uses dyadic Newton steps.
 - **Projected continuation** for large edits; flips detected by anchor signs.
-- **Location:** anywhere (D7): Bend, or an external JS f64 proposer.
+- **Location:** Bend (D12). D7 still keeps it out of the trust story.
 - **Reference (not a dependency):** neoscad/sketch-solver.
 
 ---
@@ -433,10 +458,10 @@ law accept_sound:
     & FlipsReported(s, p.anchors, r, r.flips)
 ```
 
-- **Certified:** in `Exact` mode, the §8.4 statements hold for the edited
-  sketch with r.geometry within grid/2 of the certified centers; side
-  conditions (§8.6) hold over the balls. In `ToleranceOnly` mode (explicit,
-  recorded in the IR), every §6 check holds on r.geometry.
+- **Certified:** the §8.4 statements hold for the edited sketch minus the
+  constraints listed in r.flagged, with r.geometry within grid/2 of the
+  certified centers; side conditions (§8.6) hold over the balls. Every
+  flagged constraint is reported with its §6 positional deviation.
 - **Untouched:** the proposal's partition is closed (each constraint's
   variables lie in one part), edited entities lie in touched parts, and every
   untouched variable is bit-identical (persistent IDs). Untouched blocks keep
@@ -451,13 +476,19 @@ law accept_sound:
 
 ## 12. Profiles and the SDF bridge
 
-- **Exact closure (D4)**; winding number well defined everywhere off the curves.
-- **Arrangements:** line–line intersections rational; line–arc and arc–arc need
-  one square root each, compared exactly in ℚ(√D). Spline intersections need
-  real-root isolation (later).
-- **Inside tests** at rational points: orientation signs; bulge arcs via scaled
-  \|p − C\|² vs r² plus angular range; splines via root counting along a ray
-  (Sturm, or Descartes/Bernstein). Fill rule: Q5.
+- **Regions (D14):** every bounded face of the arrangement of all
+  non-construction curves is a selectable region, as in Onshape. No fill rule.
+- **Arrangement (core):** line–line intersections are rational; line–arc and
+  arc–arc need one square root each, compared exactly in ℚ(√D). Spline
+  intersections need exact real-root isolation, so this is core work, not an
+  extra. Face boundaries run between exact intersection points, so faces close
+  exactly on the displayed geometry.
+- **Certified topology:** each "cross / touch / miss" decision is a side
+  condition certified over the balls (§8.6), so the exact solution has the same
+  regions as the displayed one. A near-touch too close to decide is flagged red.
+- **Point location** at rational points: orientation signs; bulge arcs via
+  scaled \|p − C\|² vs r² plus angular range; splines via root counting along
+  a ray (Sturm, or Descartes/Bernstein).
 - **SDF generation** from the displayed parameters, converted to F32; shader
   numerics are not verified (F32 is axiomatic in Bend). With an
   L-Lipschitz-in-parameters SDF, the displayed shape is within
@@ -510,7 +541,7 @@ random sketches.
 | ID | Milestone | Depends on | Exit criterion |
 |---|---|---|---|
 | sk-00 | Scaffold: LAWS / PROOF / ROADMAP; gate rules | — | gate green on empty law set |
-| sk-P1 | **Prototype spike (untrusted):** proposer, pinning, block decomposition, certification cost and precision on the depth-30 chain (well- and ill-conditioned) and on one large cyclic block; grid experiments | — | report feeding Q3 and Q12; go/no-go on §8.5 |
+| sk-P1 | **Prototype spike in Bend (untrusted):** ink-metric proposer with F32 + exact refinement, pinning, block decomposition, certification cost and precision on the depth-30 chain (well- and ill-conditioned) and on one large cyclic block | — | report feeding Q12; go/no-go on §8.5 and on F32 refinement |
 | sk-01 | Spec numbers (binary N, Int, rationals, dyadics), reflective normalizer | sk-00 | soundness law closed |
 | sk-02 | Limb bigints refining the spec | sk-01 | refinement laws; 256-bit mul benchmark |
 | sk-03 | Typed IR, exact equation forms, meaning-lemma statements; LAWS review | sk-01, sk-P1 | LAWS reviewed by Danielle |
@@ -526,10 +557,10 @@ random sketches.
 | sk-13 | Redundancy certificates: library + verified check (§8.7) | sk-07 | laws closed |
 | sk-14 | Proposer v2: drag previews (§6 checks), continuation, incremental re-certification | sk-09 | interactive drag; commit within target |
 | sk-15 | Splines, NURBS, conic arcs, offsets, G2 (Q6) | sk-07 | laws closed |
-| sk-16 | Profiles: arrangements, inside tests, fill rule | sk-10, sk-15 | inside-test law closed |
+| sk-16 | Regions: arrangement with exact intersections (incl. spline root isolation), certified topology, point location | sk-10, sk-15 | region laws closed |
 | sk-17 | SDF bridge and renderer | sk-16 | render demo |
 | sk-18 | Arc length (atan library; spline length via verified quadrature) | sk-11 | design + law |
-| sk-19 | Tolerance fallback mode + rounding lemmas (§6) | sk-07 | laws closed |
+| sk-19 | Positional deviation reports for flagged constraints + rounding lemmas (§6) | sk-07 | laws closed |
 | sk-20 | Optional nearest-ness certificate (§8.10); certified continuation (Duff–Lee 2024, Lee 2025) | sk-08 | design + prototype |
 | sk-21 | Integration: UI, persistence, host (#813) | sk-14, sk-17 | end-to-end sketch → solid demo |
 
@@ -537,23 +568,30 @@ sk-02 and sk-03 can run in parallel after sk-01.
 
 ---
 
-## 16. Open questions (for Danielle)
+## 16. Decisions and remaining questions
 
-- **Q1.** *Resolved:* exact by default.
-- **Q2.** Nearest-solution metric: per-entity weights, rigid-motion term?
-- **Q3.** Grid (nm vs pm), ℓ_min, preview tolerance ε, parameter scales
-  (sk-P1 informs this).
-- **Q4.** *Resolved by D7:* the proposer may live anywhere. Preference?
-- **Q5.** Fill rule: nonzero or even-odd.
-- **Q6.** G2 equation form.
-- **Q7.** Default anchor-triple policy for flip reporting.
-- **Q8.** Spec numbers in binary (recommended).
-- **Q9.** Bulge arcs (recommended) vs rational-quadratic-Bézier arcs.
-- **Q10.** Accept "no external references" for v1?
-- **Q11.** Should `ToleranceOnly` acceptance be allowed at all, or should
-  uncertifiable sketches always be rejected?
-- **Q12.** Mean-value method: polynomial slopes with Taylor bounds, or
-  selective quadratization (decided in sk-05 from sk-P1 data).
+**Decided (Danielle, 2026-10-13):**
+- **Q1** Exact by default.
+- **Q2** "Change as little as possible" = least ink displacement (D13, §10).
+- **Q3** Grid 1 nm. ℓ_min, preview ε and parameter scales from sk-P1.
+- **Q4** Everything in Bend, prototype included (D12).
+- **Q5** Every enclosed face is a region; no fill rule (D14).
+- **Q6** G2 with auxiliary lengths (well-behaved form).
+- **Q8** Binary spec numbers.
+- **Q9** Bulge arcs, with 3-point, center-point and tangent arc creation tools.
+- **Q10** No external references in v1 (likely feasible later).
+- **Q11** Uncertifiable constraints are flagged red individually (D10).
+
+**Assumed defaults (object if wrong):**
+- **Q7** Flip detection is automatic: each step's certified side condition,
+  plus any user-marked triples.
+- Construction geometry does not bound regions, but counts as ink in the
+  displacement metric.
+- Standalone points count as 1 mm of ink.
+
+**Mine to decide:**
+- **Q12** Mean-value method (polynomial slopes vs selective quadratization),
+  from sk-P1 data.
 
 ---
 
@@ -607,6 +645,15 @@ sk-02 and sk-03 can run in parallel after sk-01.
 ---
 
 ## 19. Changelog
+
+**v0.3 → v0.4 (Danielle's answers):**
+- D10: per-constraint red flags replace the `ToleranceOnly` mode.
+- D12: everything in Bend, including the prototype.
+- D13: least-ink-displacement metric with closed forms (§10).
+- D14: every enclosed face is a region; arrangement and certified topology are
+  core (§12, sk-16).
+- 1 nm grid; G2 via aux lengths; arc creation tools mapped to bulge arcs.
+- §16 now records decisions and assumed defaults.
 
 **v0.2 → v0.3 (exact by default):**
 - D1: exactness is the default guarantee; tolerance checks become previews and
