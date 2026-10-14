@@ -28,3 +28,12 @@ integer term of `e`. Then `tools/expand.py` turns the shorthand `@A(`,
 
 `tools/axcheck.py` (run from `bend-cad/`) compares the Lean transcription
 `lean/BendCad/Axioms.lean` with `spec/field.bend` and `spec/real.bend`.
+
+# Gate helpers
+
+- `tools/lawsync.py`: every ROADMAP.bend draft that some `tests/*.bend`
+  restates (with its proof) must say exactly what the restatement says.
+- `tools/stmtcheck.py`: every other (open) ROADMAP.bend law must
+  type-check; each is filled by an extra False == True hypothesis in
+  `proto/_stmtcheck.bend` (generated, ignored), so only the statement is
+  checked.

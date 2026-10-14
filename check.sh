@@ -32,4 +32,9 @@ if ! python3 tools/lawsync.py >/dev/null; then
   python3 tools/lawsync.py
   echo "GATE: FAIL (a ROADMAP.bend draft and its restatement in tests/ differ)"; exit 1
 fi
+# open law statements in ROADMAP.bend must type-check
+if ! python3 tools/stmtcheck.py >/dev/null; then
+  python3 tools/stmtcheck.py
+  echo "GATE: FAIL (an open statement in ROADMAP.bend does not type-check)"; exit 1
+fi
 echo "GATE: PASS"

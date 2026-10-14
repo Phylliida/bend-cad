@@ -27,7 +27,11 @@
 import Base
 import ./num.bend as S
 import ./ring.bend as E
+import ./field.bend as O
+import ./mat.bend as M
+import ./knum.bend as N
 import ./sketch.bend as SK
+import ./box.bend as BX
 
 # Lists of numbers
 # ----------------
@@ -274,3 +278,115 @@ def held(pins: List<&2, Nat>, +g0: List<&2, S.D>, +gc: List<&2, S.D>, +gr: List<
       True{}
     case Con{+v, t}:
       band(deq(dnth(gr, v), dzero()), band(deq(dnth(gc, v), dnth(g0, v)), held(t, g0, gc, gr)))
+
+# For completeness (solve_complete)
+# ---------------------------------
+
+def free.go(b: Bool, k: Nat, rest: List<&2, Nat>) -> List<&2, Nat>:
+  match b:
+    case True{}:
+      rest
+    case False{}:
+      Con{k, rest}
+
+# the variables 0 .. n - 1 that are not pins, in order (from k)
+def free(n: Nat, +k: Nat, +pins: List<&2, Nat>) -> List<&2, Nat>:
+  match n:
+    case 0n:
+      Nil{}
+    case 1n+m:
+      free.go(mem(k, pins), k, free(m, 1n+k, pins))
+
+# a positive is a power of two
+def pow2(p: S.Pos) -> Bool:
+  match p:
+    case S.XH{}:
+      True{}
+    case S.XO{q}:
+      pow2(q)
+    case S.XI{q}:
+      False{}
+
+# every constant of e is written over a power of two (so the dyadics, the
+# solver's numbers, hold it exactly)
+def dyconst(e: E.QExpr) -> Bool:
+  match e:
+    case E.QVar{v}:
+      True{}
+    case E.QCst{S.Q{n, d}}:
+      pow2(d)
+    case E.QAdd{a, b}:
+      band(dyconst(a), dyconst(b))
+    case E.QSub{a, b}:
+      band(dyconst(a), dyconst(b))
+    case E.QMul{a, b}:
+      band(dyconst(a), dyconst(b))
+    case E.QNeg{a}:
+      dyconst(a)
+
+def dyeqs(es: List<&2, E.QExpr>) -> Bool:
+  match es:
+    case Nil{}:
+      True{}
+    case Con{e, t}:
+      band(dyconst(e), dyeqs(t))
+
+def dysides(ss: List<&2, SK.Side>) -> Bool:
+  match ss:
+    case Nil{}:
+      True{}
+    case Con{SK.Gt0{e}, t}:
+      band(dyconst(e), dysides(t))
+    case Con{SK.Ge0{e}, t}:
+      band(dyconst(e), dysides(t))
+
+# every constant of the sketch's equations and side conditions is dyadic
+def dyadic(+sk: SK.Sketch) -> Bool:
+  band(dyeqs(SK.Sketch.eqs(sk)), dysides(SK.Sketch.sides(sk)))
+
+# x is the drawing g0 at every pin (g0 read in F through H)
+def PinnedAt(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +x: M.Vec(~F), pins: List<&2, Nat>, +g0: N.KVec(~K)) -> Data:
+  match pins:
+    case Nil{}:
+      Unit
+    case Con{+v, t}:
+      M.Both({O.lookup(~F, x, v) == O.lookup(~F, N.ofkv(~K, ~F, ~H, g0), v) : O.C(F)}, PinnedAt(~K, ~F, ~H, x, t, g0))
+
+# |a - b| < d
+def Close(~F: O.OField, +a: O.C(F), +b: O.C(F), +d: O.C(F)) -> Data:
+  M.Both(O.lt(F, O.sub(~F, a, b), d), O.lt(F, O.sub(~F, b, a), d))
+
+def Near.go(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, pin: Bool, +g: N.KVec(~K), +x: M.Vec(~F), +d: O.C(F), +g0: N.KVec(~K), +v: Nat) -> Data:
+  match pin:
+    case True{}:
+      {O.lookup(~F, N.ofkv(~K, ~F, ~H, g), v) == O.lookup(~F, N.ofkv(~K, ~F, ~H, g0), v) : O.C(F)}
+    case False{}:
+      Close(~F, O.lookup(~F, N.ofkv(~K, ~F, ~H, g), v), O.lookup(~F, x, v), d)
+
+# the drawing g is within d of x at every variable 0 .. n - 1 (from v)
+# that is not a pin, and agrees with the drawing g0 at the pins
+def Near(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, n: Nat, +v: Nat, +g: N.KVec(~K), +x: M.Vec(~F), +d: O.C(F), +pins: List<&2, Nat>, +g0: N.KVec(~K)) -> Data:
+  match n:
+    case 0n:
+      Unit
+    case 1n+m:
+      M.Both(Near.go(~K, ~F, ~H, mem(v, pins), g, x, d, g0, v), Near(~K, ~F, ~H, m, 1n+v, g, x, d, pins, g0))
+
+# a side condition holds strictly at x: e > 0; a variable-free e >= 0 may
+# also hold with equality (balls cannot certify a variable expression at
+# exactly 0)
+def Strict.ge(~F: O.OField, b: Bool, +x: M.Vec(~F), +e: E.QExpr) -> Data:
+  match b:
+    case True{}:
+      O.le(~F, O.zero(F), O.eval(~F, x, e))
+    case False{}:
+      O.lt(F, O.zero(F), O.eval(~F, x, e))
+
+def Strict(~F: O.OField, +x: M.Vec(~F), ss: List<&2, SK.Side>) -> Data:
+  match ss:
+    case Nil{}:
+      Unit
+    case Con{SK.Gt0{+e}, t}:
+      M.Both(O.lt(F, O.zero(F), O.eval(~F, x, e)), Strict(~F, x, t))
+    case Con{SK.Ge0{+e}, t}:
+      M.Both(Strict.ge(~F, BX.QExpr.within(e, 0n), x, e), Strict(~F, x, t))

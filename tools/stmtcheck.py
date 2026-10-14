@@ -1,44 +1,53 @@
 #!/usr/bin/env python3
-"""Type-check the open cert_* law statements in ROADMAP.bend.
+"""Type-check the open law statements in ROADMAP.bend.
 
 `bend ROADMAP.bend` stops at the count of open laws before type-checking,
-so this fills each cert_* law against the reject-everything stub checker
-(the `check == True` hypothesis is absurd) in a throwaway file and checks
-that. It proves nothing about a real checker. Prints Bend's verdict; open
-laws imported from LAWS.bend still count as TODOs. Run from bend-cad/.
+so an open law's statement would otherwise go unchecked. This turns each
+law of ROADMAP.bend that no tests/*.bend restates (those are checked by
+the gate through their restatements and tools/lawsync.py) into a def that
+takes one more hypothesis, False == True, and is filled by it: so only the
+statement is checked, nothing is proven. Run from bend-cad/; exit 1 if
+Bend rejects any statement.
 """
-import re, subprocess, os, sys
-src = open('ROADMAP.bend').read()
-sec = src[src.index('law cert_'):]
-laws = re.findall(r'law (cert_\w+):\n((?:  .*\n?)+)', sec)
-out = ['''import Base
-import ../ROADMAP.bend as Laws
-import ../spec/field.bend as O
-import ../spec/mat.bend as M
-import ../spec/knum.bend as N
-import ../lib/certdef.bend as C
+import glob, re, subprocess, sys
 
-def pick(b: Bool, P: Type) -> Type:
+road = open('ROADMAP.bend').read()
+tests = ''.join(open(p).read() for p in glob.glob('tests/*.bend'))
+imports = '\n'.join(l.replace('import ./', 'import ../') for l in road.splitlines()
+                    if l.startswith('import ') and 'LAWS.bend' not in l)
+out = [imports, '''
+def stmt_pick(b: Bool, P: Type) -> Type:
   match b:
     case False{}:
       Unit
     case True{}:
       P
 
-def absurd(P: Type, e: {False{} == True{} : Bool}) -> P:
-  %e : pick(_, P)
+def stmt_absurd(P: Type, e: {False{} == True{} : Bool}) -> P:
+  %e : stmt_pick(_, P)
   Unit{}
 ''']
-for name, body in laws:
-    lines = [l.strip() for l in body.strip('\n').split('\n')]
-    params = [re.match(r'for\s+([~+]?)(\w+):', l).group(2) for l in lines if l.startswith('for')]
-    concl = [l for l in lines if not l.startswith('for')][0]
-    out.append('def Laws.' + name + '(' + ', '.join(params) + '):\n  absurd(' + concl + ', ok)\n')
+names = []
+for m in re.finditer(r'^law (\w+):\n((?:  .*\n?)+)', road, re.M):
+    name = m.group(1)
+    if re.search(r'^def ' + name + r'\(', tests, re.M):
+        continue
+    lines = [l.strip() for l in m.group(2).splitlines() if l.strip()]
+    params = [l[4:].strip() for l in lines if l.startswith('for ')]
+    concl = [l for l in lines if not l.startswith('for ')]
+    if len(concl) != 1:
+        print('CANNOT READ', name); sys.exit(1)
+    names.append(name)
+    out.append('def stmt_' + name + '(' + ', '.join(params + ['stmt_bot: {False{} == True{} : Bool}'])
+               + ') -> ' + concl[0] + ':\n  stmt_absurd(' + concl[0] + ', stmt_bot)\n')
+if not names:
+    print('no open statements'); sys.exit(0)
 path = 'proto/_stmtcheck.bend'
 open(path, 'w').write('\n'.join(out))
-try:
-    r = subprocess.run(['bin/bend', path, '--check-only'], capture_output=True, text=True)
-    print((r.stdout + r.stderr).strip()[-2000:])
-    print('filled:', ', '.join(n for n, _ in laws))
-finally:
-    os.remove(path)
+r = subprocess.run(['bin/bend', path, '--check-only'], capture_output=True, text=True)
+text = r.stdout + r.stderr
+ok = r.returncode == 0 and 'All terms check.' in text
+print(('STATEMENTS CHECK: ' if ok else 'STATEMENTS REJECTED: ') + ', '.join(names))
+if not ok:
+    print(text[-3000:])
+sys.exit(0 if ok else 1)

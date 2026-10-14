@@ -140,33 +140,80 @@ def whys(rs: List<&2, ST.Red>) -> List<&2, SV.Why>:
     case Con{ST.Red{j, s, w}, t}:
       Con{SV.Why{j, s, w}, whys(t)}
 
-# the first precision that gives a plan (a block that will not settle
-# stops the search: more precision will not help it)
+# the first precision that gives a plan. Every failure moves on to the
+# next precision, a block whose Newton did not settle included: at a low
+# precision an ill-conditioned block can fail to settle or lose a pivot
+# that a higher one keeps (solve_complete needs this)
 def ploop(ps: List<&2, Nat>, cur: NU.PR, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel, +g0: List<&2, S.D>) -> NU.PR:
   match ps cur:
     case Nil{} cur:
       cur
     case Con{p, t} NU.POk{x}:
       NU.POk{x}
-    case Con{p, t} NU.PStop{}:
-      NU.PStop{}
+    case Con{+p, t} NU.PStop{}:
+      ploop(t, NU.plan(es, nv, skel, g0, p), es, nv, skel, g0)
     case Con{+p, t} NU.PRetry{}:
       ploop(t, NU.plan(es, nv, skel, g0, p), es, nv, skel, g0)
 
-def precisions() -> List<&2, Nat>:
-  [64n, 96n, 128n, 192n, 256n, 384n, 512n]
+# the first b precisions of 64, 96, 128, 192, 256, ... (doubling every
+# two steps)
+def precs(b: Nat, +p: Nat, +q: Nat) -> List<&2, Nat>:
+  match b:
+    case 0n:
+      Nil{}
+    case 1n+c:
+      Con{p, precs(c, q, Nat.add(p, p))}
+
+def precisions(b: Nat) -> List<&2, Nat>:
+  precs(b, 64n, 96n)
+
+# the default budget: 64 .. 512 bits
+def budget() -> Nat:
+  7n
 
 def noplan() -> PL.Plan<KI.dnum()>:
   PL.Plan{Nil{}, Nil{}, 0n, Nil{}}
 
-def found(+red: List<&2, Nat>, +why: List<&2, SV.Why>, +pins: List<&2, Nat>, m: NU.PR) -> Out:
+def pr.ok(m: NU.PR) -> Bool:
   match m:
+    case NU.POk{x}:
+      True{}
     case NU.PRetry{}:
-      Out{False{}, red, why, pins, Nil{}, Nil{}, noplan()}
+      False{}
     case NU.PStop{}:
-      Out{False{}, red, why, pins, Nil{}, Nil{}, noplan()}
+      False{}
+
+def pr.gc(m: NU.PR) -> List<&2, S.D>:
+  match m:
     case NU.POk{NU.NP{plan, gc, gr}}:
-      Out{True{}, red, why, pins, gc, gr, plan}
+      gc
+    case NU.PRetry{}:
+      Nil{}
+    case NU.PStop{}:
+      Nil{}
+
+def pr.gr(m: NU.PR) -> List<&2, S.D>:
+  match m:
+    case NU.POk{NU.NP{plan, gc, gr}}:
+      gr
+    case NU.PRetry{}:
+      Nil{}
+    case NU.PStop{}:
+      Nil{}
+
+def pr.plan(m: NU.PR) -> PL.Plan<KI.dnum()>:
+  match m:
+    case NU.POk{NU.NP{plan, gc, gr}}:
+      plan
+    case NU.PRetry{}:
+      noplan()
+    case NU.PStop{}:
+      noplan()
+
+# the answer is built through projections, so that its red constraints
+# and pins are visibly red_of(sk) and pins_of(sk) whatever the numbers do
+def found(+red: List<&2, Nat>, +why: List<&2, SV.Why>, +pins: List<&2, Nat>, +m: NU.PR) -> Out:
+  Out{pr.ok(m), red, why, pins, pr.gc(m), pr.gr(m), pr.plan(m)}
 
 def ntake(n: Nat, xs: List<&2, Nat>) -> List<&2, Nat>:
   match n xs:
@@ -183,20 +230,34 @@ def skel.pins(s: ST.Skel) -> List<&2, Nat>:
     case ST.Skel{vp, ep, np, bs, red}:
       ntake(np, vp)
 
-def search.sk(+red: List<&2, Nat>, +why: List<&2, SV.Why>, +es: List<&2, E.QExpr>, +nv: Nat, +g0: List<&2, S.D>, +skel: ST.Skel) -> Out:
-  found(red, why, skel.pins(skel), ploop(precisions(), NU.PRetry{}, es, nv, skel, g0))
+# The structure depends on the sketch alone
+# -----------------------------------------
+# Red constraints first (constraints matched as units, in order: each red
+# one's witness uses only kept constraints and itself), then the sketch
+# less them: its pins and blocks.
 
-def search.es(+red: List<&2, Nat>, +why: List<&2, SV.Why>, +es: List<&2, E.QExpr>, +nv: Nat, +g0: List<&2, S.D>) -> Out:
-  search.sk(red, why, es, nv, g0, ST.structure(es, nv))
+def rs_of(+sk: SK.Sketch) -> List<&2, ST.Red>:
+  ST.reds(SK.Sketch.eqs(sk), nvars(sk), groups(ncons(sk), SV.owners(sk), 0n))
 
-def search.go(+sk: SK.Sketch, +g0: List<&2, S.D>, +nv: Nat, +rs: List<&2, ST.Red>) -> Out:
-  search.es(reds(SV.owners(sk), rs), whys(rs), SK.Sketch.eqs(SV.mark(reds(SV.owners(sk), rs), sk)), nv, g0)
+def red_of(+sk: SK.Sketch) -> List<&2, Nat>:
+  reds(SV.owners(sk), rs_of(sk))
 
-# red constraints first (constraints matched as units, in order: each
-# red one's witness uses only kept constraints and itself), then the
-# sketch less them
-def search(+sk: SK.Sketch, +g0: List<&2, S.D>) -> Out:
-  search.go(sk, g0, nvars(sk), ST.reds(SK.Sketch.eqs(sk), nvars(sk), groups(ncons(sk), SV.owners(sk), 0n)))
+def why_of(+sk: SK.Sketch) -> List<&2, SV.Why>:
+  whys(rs_of(sk))
+
+# the sketch's exact system less its red constraints
+def kept(+sk: SK.Sketch) -> List<&2, E.QExpr>:
+  SK.Sketch.eqs(SV.mark(red_of(sk), sk))
+
+def skel_of(+sk: SK.Sketch) -> ST.Skel:
+  ST.structure(kept(sk), nvars(sk))
+
+def pins_of(+sk: SK.Sketch) -> List<&2, Nat>:
+  skel.pins(skel_of(sk))
+
+# The search, with a budget of b precisions
+def search_b(+sk: SK.Sketch, +g0: List<&2, S.D>, +b: Nat) -> Out:
+  found(red_of(sk), why_of(sk), pins_of(sk), ploop(precisions(b), NU.PRetry{}, kept(sk), nvars(sk), skel_of(sk), g0))
 
 # For the UI: equation j is the k-th equation of its constraint (a red
 # constraint shows all red; expanded, it names the equation of its Why)
@@ -235,6 +296,9 @@ def final(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: Out) -> Bool:
 def seal(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: Out) -> Out:
   Out{final(sk, g0, x), Out.red(x), Out.why(x), Out.pins(x), Out.gc(x), Out.gr(x), Out.plan(x)}
 
-# The solver
+# The solver, with a budget of b precisions, and with the default budget
+def solve_b(+sk: SK.Sketch, +g0: List<&2, S.D>, +b: Nat) -> Out:
+  seal(sk, g0, search_b(sk, g0, b))
+
 def solve(+sk: SK.Sketch, +g0: List<&2, S.D>) -> Out:
-  seal(sk, g0, search(sk, g0))
+  solve_b(sk, g0, budget())

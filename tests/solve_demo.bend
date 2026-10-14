@@ -11,7 +11,8 @@
 #   distance (the fifth constraint, position 4) is red, explained by 5
 #   equations over 4 variables; the rest is certified.
 # - The circle demo with |PB| = 10, more than |AB| + r = 7: no geometry
-#   exists, and the solver refuses.
+#   exists, and the solver refuses (natively at the full budget too:
+#   proto/solve_run.bend).
 # - (From the audit) a midpoint whose y equation is redundant beside
 #   x_q = 1: only the midpoint is red (its witness: its y equation and the
 #   three y fixes, 4 equations over 3 variables); x_q = 1 stays.
@@ -55,7 +56,9 @@ def over_ok() -> {SO.Out.ok(SO.solve(SR.over(), zeros4())) == True{} : Bool}:
 def over_red() -> {SO.Out.red(SO.solve(SR.over(), zeros4())) == [4n] : List<&2, Nat>}:
   {==}
 
-def far_refused() -> {SO.Out.ok(SO.solve(far(), R.circle_g0())) == False{} : Bool}:
+# refused at a budget of two precisions (64 and 96 bits): every
+# precision fails the same way, and the full budget costs minutes here
+def far_refused() -> {SO.Out.ok(SO.solve_b(far(), R.circle_g0(), 2n)) == False{} : Bool}:
   {==}
 
 def mid_ok() -> {SO.Out.ok(SO.solve(R.mid(), R.mid_g0())) == True{} : Bool}:

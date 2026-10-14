@@ -9,10 +9,11 @@
 # iterate rounded to P fractional bits), from the drawing's values, with
 # the parameters at their centers; the Jacobian is the checker's own slope
 # enclosure at a box of radius 0 (so exactly the derivative), inverted by
-# dyadic Gauss-Jordan at 64 significant bits. Newton must settle (a step
-# that changes nothing) within 40 steps, else the block stops the search:
-# more precision will not make it converge. Y is the inverse at the final
-# center, rounded to 32 significant bits; the radius is the first of
+# dyadic Gauss-Jordan at P + 32 significant bits. Newton must settle (no
+# entry moving more than 4 units in the last place) within 40 steps, else
+# the block fails at this precision (as does one whose elimination meets
+# an all-zero column); lib/solve.bend then tries the next precision.
+# Y is the inverse at the final center, rounded to P/2 significant bits; the radius is the first of
 # R0 (17/16)^k (k < 64) the block checker accepts, R0 the largest entry
 # of the self-map bound at radius 0 times 65/64; if none passes, the plan
 # is retried at the next precision (lib/solve.bend).
@@ -446,17 +447,15 @@ def dnz(x: S.D) -> Bool:
     case S.D{S.Zneg{p}, e}:
       True{}
 
-def bits() -> Nat:
-  64n
+# arithmetic at w significant bits
+def dsadd(+w: Nat, +a: S.D, +b: S.D) -> S.D:
+  dsig(S.D.add(a, b), w)
 
-def dsadd(+a: S.D, +b: S.D) -> S.D:
-  dsig(S.D.add(a, b), bits())
+def dsmul(+w: Nat, +a: S.D, +b: S.D) -> S.D:
+  dsig(S.D.mul(a, b), w)
 
-def dsmul(+a: S.D, +b: S.D) -> S.D:
-  dsig(S.D.mul(a, b), bits())
-
-def dsdiv(+a: S.D, +b: S.D) -> S.D:
-  qsig(S.Q.div(S.D.toq(a), S.D.toq(b)), bits())
+def dsdiv(+w: Nat, +a: S.D, +b: S.D) -> S.D:
+  qsig(S.Q.div(S.D.toq(a), S.D.toq(b)), w)
 
 def dget(xs: List<&2, S.D>, k: Nat) -> S.D:
   match xs k:
@@ -485,22 +484,22 @@ def dset(xs: List<&2, List<&2, S.D>>, k: Nat, +r: List<&2, S.D>) -> List<&2, Lis
     case Con{h, t} 1n+j:
       Con{h, dset(t, j, r)}
 
-def dscale(+c: S.D, xs: List<&2, S.D>) -> List<&2, S.D>:
+def dscale(+w: Nat, +c: S.D, xs: List<&2, S.D>) -> List<&2, S.D>:
   match xs:
     case Nil{}:
       Nil{}
     case Con{+x, t}:
-      Con{dsmul(c, x), dscale(c, t)}
+      Con{dsmul(w, c, x), dscale(w, c, t)}
 
 # xs - c ys
-def daxpy(xs: List<&2, S.D>, +c: S.D, ys: List<&2, S.D>) -> List<&2, S.D>:
+def daxpy(+w: Nat, xs: List<&2, S.D>, +c: S.D, ys: List<&2, S.D>) -> List<&2, S.D>:
   match xs ys:
     case Nil{} ys:
       Nil{}
     case Con{x, t} Nil{}:
       Con{x, t}
     case Con{+x, t} Con{+y, u}:
-      Con{dsadd(x, S.D.neg(dsmul(c, y))), daxpy(t, c, u)}
+      Con{dsadd(w, x, S.D.neg(dsmul(w, c, y))), daxpy(w, t, c, u)}
 
 def dzeros(n: Nat) -> List<&2, S.D>:
   match n:
@@ -574,35 +573,35 @@ def dpivot(rows: List<&2, List<&2, S.D>>, +c: Nat, +k: Nat, +i: Nat, best: Maybe
 def dswap(+rows: List<&2, List<&2, S.D>>, +a: Nat, +b: Nat) -> List<&2, List<&2, S.D>>:
   dset(dset(rows, a, drow(rows, b)), b, drow(rows, a))
 
-def dclear.ax(+r: List<&2, S.D>, +p: List<&2, S.D>, +c: Nat) -> List<&2, S.D>:
-  daxpy(r, dget(r, c), p)
+def dclear.ax(+w: Nat, +r: List<&2, S.D>, +p: List<&2, S.D>, +c: Nat) -> List<&2, S.D>:
+  daxpy(w, r, dget(r, c), p)
 
-def dclear.go(b: Bool, +r: List<&2, S.D>, +p: List<&2, S.D>, +c: Nat) -> List<&2, S.D>:
+def dclear.go(b: Bool, +w: Nat, +r: List<&2, S.D>, +p: List<&2, S.D>, +c: Nat) -> List<&2, S.D>:
   match b:
     case True{}:
       p
     case False{}:
-      dclear.ax(r, p, c)
+      dclear.ax(w, r, p, c)
 
-def dclear(rows: List<&2, List<&2, S.D>>, +p: List<&2, S.D>, +c: Nat, +i: Nat) -> List<&2, List<&2, S.D>>:
+def dclear(rows: List<&2, List<&2, S.D>>, +w: Nat, +p: List<&2, S.D>, +c: Nat, +i: Nat) -> List<&2, List<&2, S.D>>:
   match rows:
     case Nil{}:
       Nil{}
     case Con{r, t}:
-      Con{dclear.go(KA.nateq(i, c), r, p, c), dclear(t, p, c, 1n+i)}
+      Con{dclear.go(KA.nateq(i, c), w, r, p, c), dclear(t, w, p, c, 1n+i)}
 
-def delim(+rows: List<&2, List<&2, S.D>>, +c: Nat) -> List<&2, List<&2, S.D>>:
-  dclear(rows, dscale(dsdiv(done(), dget(drow(rows, c), c)), drow(rows, c)), c, 0n)
+def delim(+w: Nat, +rows: List<&2, List<&2, S.D>>, +c: Nat) -> List<&2, List<&2, S.D>>:
+  dclear(rows, w, dscale(w, dsdiv(w, done(), dget(drow(rows, c), c)), drow(rows, c)), c, 0n)
 
-def dgj(k: Nat, +c: Nat, piv: Maybe<&2, Nat>, +rows: List<&2, List<&2, S.D>>) -> Maybe<&2, List<&2, List<&2, S.D>>>:
+def dgj(k: Nat, +w: Nat, +c: Nat, piv: Maybe<&2, Nat>, +rows: List<&2, List<&2, S.D>>) -> Maybe<&2, List<&2, List<&2, S.D>>>:
   match k piv:
     case 0n piv:
       Some{rows}
     case 1n+m None{}:
       None{}
     case 1n+m Some{r}:
-      +rows2 = delim(dswap(rows, c, r), c)
-      dgj(m, 1n+c, dpivot(rows2, 1n+c, 1n+c, 0n, None{}, dzero()), rows2)
+      +rows2 = delim(w, dswap(rows, c, r), c)
+      dgj(m, w, 1n+c, dpivot(rows2, 1n+c, 1n+c, 0n, None{}, dzero()), rows2)
 
 def drights(+n: Nat, rows: List<&2, List<&2, S.D>>) -> List<&2, List<&2, S.D>>:
   match rows:
@@ -618,12 +617,18 @@ def dinv.of(+n: Nat, m: Maybe<&2, List<&2, List<&2, S.D>>>) -> Maybe<&2, List<&2
     case Some{rows}:
       Some{drights(n, rows)}
 
-def dgj0(+n: Nat, +rows: List<&2, List<&2, S.D>>) -> Maybe<&2, List<&2, List<&2, S.D>>>:
-  dgj(n, 0n, dpivot(rows, 0n, 0n, 0n, None{}, dzero()), rows)
+def dgj0(+n: Nat, +w: Nat, +rows: List<&2, List<&2, S.D>>) -> Maybe<&2, List<&2, List<&2, S.D>>>:
+  dgj(n, w, 0n, dpivot(rows, 0n, 0n, 0n, None{}, dzero()), rows)
 
 # an approximate J^-1 (None when elimination meets an all-zero column)
-def dinverse(+n: Nat, a: List<&2, List<&2, S.D>>) -> Maybe<&2, List<&2, List<&2, S.D>>>:
-  dinv.of(n, dgj0(n, daugment(a, n, 0n)))
+def dinverse(+n: Nat, +w: Nat, a: List<&2, List<&2, S.D>>) -> Maybe<&2, List<&2, List<&2, S.D>>>:
+  dinv.of(n, dgj0(n, w, daugment(a, n, 0n)))
+
+# the elimination's precision at working precision p: p + 32 bits, so
+# that it grows with p (a regular block of any condition number is
+# inverted well enough at a high enough p)
+def wbits(+p: Nat) -> Nat:
+  Nat.add(p, 32n)
 
 def ddot(xs: List<&2, S.D>, ys: List<&2, S.D>) -> S.D:
   match xs ys:
@@ -675,7 +680,7 @@ def nstep.of(+ys: List<&2, S.D>, m: Maybe<&2, List<&2, List<&2, S.D>>>, +f: List
 
 # one Newton step (None: elimination met an all-zero column)
 def nstep(+eqs: List<&2, E.QExpr>, +n: Nat, +pc: List<&2, S.D>, +p: Nat, +ys: List<&2, S.D>) -> Maybe<&2, List<&2, S.D>>:
-  nstep.of(ys, dinverse(n, jac(eqs, n, dapp(ys, pc))), vals(eqs, dapp(ys, pc)), p)
+  nstep.of(ys, dinverse(n, wbits(p), jac(eqs, n, dapp(ys, pc))), vals(eqs, dapp(ys, pc)), p)
 
 # a Newton step's outcome: moved, settled (the step changed nothing), or
 # singular
@@ -691,12 +696,40 @@ def classify.go(same: Bool, y2: List<&2, S.D>) -> NS:
     case False{}:
       NMore{y2}
 
-def classify(+ys: List<&2, S.D>, m: Maybe<&2, List<&2, S.D>>) -> NS:
+# every entry of xs and ys differs by at most t
+def dclose(xs: List<&2, S.D>, ys: List<&2, S.D>, +t: S.D) -> Bool:
+  match xs ys:
+    case Nil{} Nil{}:
+      True{}
+    case Nil{} Con{y, yt}:
+      False{}
+    case Con{x, xt} Nil{}:
+      False{}
+    case Con{+x, xt} Con{+y, yt}:
+      KA.band(KA.kle(~KI.dnum(), dabs(S.D.sub(x, y)), t), dclose(xt, yt, t))
+
+# 2^40 (nm): no step from near a regular solution is this long
+def far() -> S.D:
+  S.D{S.Zpos{S.Pos.pow2(40n)}, 0n}
+
+def classify.far(near: Bool, +ys: List<&2, S.D>, +p: Nat, +y2: List<&2, S.D>) -> NS:
+  match near:
+    case False{}:
+      NSing{}
+    case True{}:
+      classify.go(dclose(ys, y2, S.D{S.Zpos{S.XH{}}, Nat.sub(p, 2n)}), y2)
+
+# settled: no entry moved by more than 4 units of the last place (an
+# exact fixed point could be missed forever by a solution near a
+# rounding midpoint); a step longer than 2^40 fails the block at this
+# precision (diverging: from close enough to a regular solution every
+# step is tiny, so this costs completeness nothing)
+def classify(+ys: List<&2, S.D>, +p: Nat, m: Maybe<&2, List<&2, S.D>>) -> NS:
   match m:
     case None{}:
       NSing{}
     case Some{+y2}:
-      classify.go(dveq(ys, y2), y2)
+      classify.far(dclose(ys, y2, far()), ys, p, y2)
 
 # at most k steps
 def newton(k: Nat, +eqs: List<&2, E.QExpr>, +n: Nat, +pc: List<&2, S.D>, +p: Nat, st: NS) -> Maybe<&2, List<&2, S.D>>:
@@ -708,22 +741,23 @@ def newton(k: Nat, +eqs: List<&2, E.QExpr>, +n: Nat, +pc: List<&2, S.D>, +p: Nat
     case 0n NMore{y}:
       None{}
     case 1n+j NMore{+y}:
-      newton(j, eqs, n, pc, p, classify(y, nstep(eqs, n, pc, p, y)))
+      newton(j, eqs, n, pc, p, classify(y, p, nstep(eqs, n, pc, p, y)))
 
-# Y: J^-1 at the center, 32 significant bits
-def ysigv(xs: List<&2, S.D>) -> List<&2, S.D>:
+# Y: J^-1 at the center, p/2 significant bits (p >= 64), so its
+# accuracy also grows with p
+def ysigv(+b: Nat, xs: List<&2, S.D>) -> List<&2, S.D>:
   match xs:
     case Nil{}:
       Nil{}
     case Con{+x, t}:
-      Con{dsig(x, 32n), ysigv(t)}
+      Con{dsig(x, b), ysigv(b, t)}
 
-def ysig(a: List<&2, List<&2, S.D>>) -> List<&2, List<&2, S.D>>:
+def ysig(+b: Nat, a: List<&2, List<&2, S.D>>) -> List<&2, List<&2, S.D>>:
   match a:
     case Nil{}:
       Nil{}
     case Con{r, t}:
-      Con{ysigv(r), ysig(t)}
+      Con{ysigv(b, r), ysig(b, t)}
 
 def dsigv(xs: List<&2, S.Q>) -> List<&2, S.D>:
   match xs:
@@ -767,9 +801,9 @@ def rsearch(k: Nat, ok: Bool, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.
 def r0(+eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.D>, +ym: List<&2, List<&2, S.D>>, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> S.D:
   dsigup(S.D.mul(dvmax(CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr)), S.D{S.Zpos{S.XI{S.XO{S.XO{S.XO{S.XO{S.XO{S.XH{}}}}}}}}, 6n}), 8n)
 
-# a block's outcome: a certificate; no radius found (a higher precision
-# may help); or Newton did not settle, or the Jacobian looked singular
-# (stop: more precision will not help)
+# a block's outcome: a certificate; no radius found; or Newton did not
+# settle, or the Jacobian looked singular (kept apart for diagnostics;
+# the search tries the next precision after either)
 type BR is Data:
   BOk{c: C.Cert<KI.dnum()>}
   BRetry{}
@@ -785,23 +819,23 @@ def block.r(m: Maybe<&2, S.D>, +n: Nat, +yc: List<&2, S.D>, +ym: List<&2, List<&
 def block.ym(+ym: List<&2, List<&2, S.D>>, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> BR:
   block.r(rsearch(64n, okr(eqs, n, yc, r0(eqs, n, yc, ym, pc, pr), ym, pc, pr), eqs, n, yc, r0(eqs, n, yc, ym, pc, pr), ym, pc, pr), n, yc, ym, pc, pr)
 
-def block.y2(m: Maybe<&2, List<&2, List<&2, S.D>>>, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> BR:
+def block.y2(m: Maybe<&2, List<&2, List<&2, S.D>>>, +p: Nat, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> BR:
   match m:
     case None{}:
       BStop{}
     case Some{inv}:
-      block.ym(ysig(inv), eqs, n, yc, pc, pr)
+      block.ym(ysig(Nat.div(p, 2n), inv), eqs, n, yc, pc, pr)
 
-def block.y(m: Maybe<&2, List<&2, S.D>>, +eqs: List<&2, E.QExpr>, +n: Nat, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> BR:
+def block.y(m: Maybe<&2, List<&2, S.D>>, +p: Nat, +eqs: List<&2, E.QExpr>, +n: Nat, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> BR:
   match m:
     case None{}:
       BStop{}
     case Some{+yc}:
-      block.y2(dinverse(n, jac(eqs, n, dapp(yc, pc))), eqs, n, yc, pc, pr)
+      block.y2(dinverse(n, wbits(p), jac(eqs, n, dapp(yc, pc))), p, eqs, n, yc, pc, pr)
 
 # a block's certificate at precision p, from the drawing's values y0
 def block(+eqs: List<&2, E.QExpr>, +n: Nat, +pc: List<&2, S.D>, +pr: List<&2, S.D>, y0: List<&2, S.D>, +p: Nat) -> BR:
-  block.y(newton(40n, eqs, n, pc, p, NMore{y0}), eqs, n, pc, pr)
+  block.y(newton(40n, eqs, n, pc, p, NMore{y0}), p, eqs, n, pc, pr)
 
 # A plan at precision P
 # ---------------------
