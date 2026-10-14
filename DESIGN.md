@@ -867,8 +867,23 @@ in a shorter list; `explained`; `held`).
   shows `Regular` holds (in ℚ, at a 3-4-5 point): the first draft compared
   matrices as lists, and `M.ident` omits trailing zeros, which made the
   law vacuous; caught before review.
-- To make `solve_complete` true the solver changed: a budget (`solve_b`;
-  `solve` is budget 7, up to 512 bits); Newton settles within 4 ulps (an
+- The completeness audit (fresh agent, 2026-10-14) found the first draft
+  false, with two counterexamples run natively: side conditions were
+  checked only after the precision loop (a circle of radius 2⁻⁷⁰ rounded
+  to 0 at 64 bits and was never retried), and every budget began at 64
+  bits, where rounding lost the drawing's detail and certified a
+  neighbouring root 2⁻⁶⁵ away. Fixed: the loop takes the first precision
+  whose answer passes the whole verdict, and a *level* replaces the
+  budget (`solve_l(sk, g, l)`: seven precisions from the l-th; `solve` is
+  level 0, 64 .. 512 bits; a higher level is "try harder" and never tries
+  the coarse ones). Both counterexamples now behave (the root at level ≥
+  3, the radius at level 0). solve_total: nothing found. Its note, now in
+  the law's comment: regularity is in the free variables the solver
+  chose structurally (a point on a vertical line whose only unknown is
+  the line's far end is singular there though the sketch is fine); pins
+  chosen numerically would close that.
+- To make `solve_complete` true the solver also changed: a level (as
+  above); Newton settles within 4 ulps (an
   exact fixed point can be missed forever near a rounding midpoint) and
   fails a precision on a step longer than 2⁴⁰ nm; elimination at P + 32
   bits and Y at P/2 bits, so both grow with P; every failure moves to the

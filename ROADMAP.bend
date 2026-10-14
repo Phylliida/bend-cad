@@ -98,14 +98,16 @@ law solve_pins:
 # yet), with spec/deriv.bend and the "for completeness" part of
 # spec/solve.bend.
 # --------------------------------------------------------------------
-# solve_b(sk, g, b) is the solver with a budget of b precisions (64, 96,
-# 128, 192, ..., doubling every two); solve is solve_b with b = 7 (up to
-# 512 bits). red_of(sk), why_of(sk) and pins_of(sk) are its red
-# constraints, their reasons and its pins, computed from the sketch alone
-# (lib/solve.bend).
+# solve_l(sk, g, l) is the solver at level l: it tries seven precisions
+# of 64, 96, 128, 192, ... (doubling every two), starting at the l-th, and
+# takes the first whose answer passes the whole verdict; solve is level 0
+# (64 .. 512 bits), and a higher level is "try harder" (it never tries the
+# coarse precisions, which can lose a drawing's detail). red_of(sk),
+# why_of(sk) and pins_of(sk) are its red constraints, their reasons and
+# its pins, computed from the sketch alone (lib/solve.bend).
 
 # LAW (open): the structure stage never fails. For a well-formed sketch
-# whose variables cover it, whatever the drawing and the budget: the red
+# whose variables cover it, whatever the drawing and the level: the red
 # constraints, reasons and pins solve reports are those of the sketch
 # alone; every red constraint is explained; the sketch less them passes
 # the solver's well-formedness check; the pins are distinct variables;
@@ -116,8 +118,8 @@ law solve_total:
   for  w: SK.Sketch.wf(sk)
   for  cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}
   for +g0: List<&2, S.D>
-  for +b: Nat
-  M.Both({SO.Out.red(SO.solve_b(sk, g0, b)) == SO.red_of(sk) : List<&2, Nat>}, M.Both({SO.Out.why(SO.solve_b(sk, g0, b)) == SO.why_of(sk) : List<&2, SV.Why>}, M.Both({SO.Out.pins(SO.solve_b(sk, g0, b)) == SO.pins_of(sk) : List<&2, Nat>}, M.Both({SV.explained(sk, SO.red_of(sk), SO.why_of(sk)) == True{} : Bool}, M.Both({WF.wf_dec(SV.mark(SO.red_of(sk), sk)) == True{} : Bool}, M.Both({SV.distinct(SO.pins_of(sk)) == True{} : Bool}, M.Both({SV.below(SO.pins_of(sk), SO.nvars(sk)) == True{} : Bool}, {Nat.add(SV.neqs(SK.Sketch.eqs(SV.mark(SO.red_of(sk), sk))), SV.len(SO.pins_of(sk))) == SO.nvars(sk) : Nat})))))))
+  for +l: Nat
+  M.Both({SO.Out.red(SO.solve_l(sk, g0, l)) == SO.red_of(sk) : List<&2, Nat>}, M.Both({SO.Out.why(SO.solve_l(sk, g0, l)) == SO.why_of(sk) : List<&2, SV.Why>}, M.Both({SO.Out.pins(SO.solve_l(sk, g0, l)) == SO.pins_of(sk) : List<&2, Nat>}, M.Both({SV.explained(sk, SO.red_of(sk), SO.why_of(sk)) == True{} : Bool}, M.Both({WF.wf_dec(SV.mark(SO.red_of(sk), sk)) == True{} : Bool}, M.Both({SV.distinct(SO.pins_of(sk)) == True{} : Bool}, M.Both({SV.below(SO.pins_of(sk), SO.nvars(sk)) == True{} : Bool}, {Nat.add(SV.neqs(SK.Sketch.eqs(SV.mark(SO.red_of(sk), sk))), SV.len(SO.pins_of(sk))) == SO.nvars(sk) : Nat})))))))
 
 # LAW (open, the hard one): a regular solution near the drawing is
 # certified. In a complete ordered field F, take a well-formed sketch
@@ -125,11 +127,19 @@ law solve_total:
 # and a point x with one entry per variable that equals g0 at the pins,
 # solves the sketch less its red constraints, meets its side conditions
 # strictly (spec/solve.bend: Strict), and is a regular point of that
-# system in the free variables (spec/deriv.bend: the Jacobian has an
-# inverse). Then there are d > 0 and a budget b such that from every
-# drawing within d of x (at every free variable) that agrees with g0 at
-# the pins, solve_b certifies, and x is in its box (so, by solve_unique,
-# x is the geometry it certifies).
+# system in the free variables the solver chose (spec/deriv.bend: the
+# Jacobian has an inverse; the free variables are chosen structurally,
+# from the order of the variables, so a solution that is regular only in
+# other free variables is not covered: e.g. a point on a vertical line
+# whose only unknown is the line's far end). Then there are d > 0 and a
+# level l such that from every drawing within d of x (at every free
+# variable) that agrees with g0 at the pins, solve_l certifies, and x is
+# in its box (so, by solve_unique, x is the geometry it certifies).
+# (Audited 2026-10-14: the first draft was false for two reasons, both
+# fixed in the solver: side conditions were checked only after the
+# precision loop, so a box too wide for one was never retried; and every
+# budget began at 64 bits, where rounding can lose the drawing's detail and
+# certify a neighbouring solution, which levels now skip.)
 law solve_complete:
   for ~F: O.OField
   for ~R: CR.Complete<F>
@@ -145,4 +155,4 @@ law solve_complete:
   for  hz: SK.Zeros(~F, x, SK.Sketch.eqs(SV.mark(SO.red_of(sk), sk)))
   for  hs: SV.Strict(~F, x, SK.Sketch.sides(SV.mark(SO.red_of(sk), sk)))
   for  hr: DV.Regular(~F, x, SK.Sketch.eqs(SV.mark(SO.red_of(sk), sk)), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)))
-  (&d: O.C(F) -> (O.lt(F, O.zero(F), d) & (&b: Nat -> (@g: List<&2, S.D> -> SV.Near(~KI.dnum(), ~F, ~H, SO.nvars(sk), 0n, g, x, d, SO.pins_of(sk), g0) -> ({SO.Out.ok(SO.solve_b(sk, g, b)) == True{} : Bool} & BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_b(sk, g, b)), SO.Out.gr(SO.solve_b(sk, g, b)), x))))))
+  (&d: O.C(F) -> (O.lt(F, O.zero(F), d) & (&l: Nat -> (@g: List<&2, S.D> -> SV.Near(~KI.dnum(), ~F, ~H, SO.nvars(sk), 0n, g, x, d, SO.pins_of(sk), g0) -> ({SO.Out.ok(SO.solve_l(sk, g, l)) == True{} : Bool} & BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g, l)), SO.Out.gr(SO.solve_l(sk, g, l)), x))))))

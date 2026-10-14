@@ -90,13 +90,13 @@ def red_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0,
 # --------
 
 def solve_exists(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +ok: {SO.Out.ok(SO.solve(sk, g0)) == True{} : Bool}) -> &x: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve(sk, g0)), SO.Out.gr(SO.solve(sk, g0)), x) & SK.Sketch.means(~F, x, SV.mark(SO.Out.red(SO.solve(sk, g0)), sk))):
-  exists_of(~F, ~R, ~H, sk, g0, SO.search_b(sk, g0, SO.budget()), ok)
+  exists_of(~F, ~R, ~H, sk, g0, SO.search_lw(sk, g0, 0n, 7n), ok)
 
 def solve_unique(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +ok: {SO.Out.ok(SO.solve(sk, g0)) == True{} : Bool}, +x1: M.Vec(~F), h1: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve(sk, g0)), SO.Out.gr(SO.solve(sk, g0)), x1), m1: SK.Sketch.means(~F, x1, SV.mark(SO.Out.red(SO.solve(sk, g0)), sk)), +x2: M.Vec(~F), h2: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve(sk, g0)), SO.Out.gr(SO.solve(sk, g0)), x2), m2: SK.Sketch.means(~F, x2, SV.mark(SO.Out.red(SO.solve(sk, g0)), sk))) -> {x1 == x2 : M.Vec(~F)}:
-  unique_of(~F, ~H, sk, g0, SO.search_b(sk, g0, SO.budget()), ok, x1, h1, m1, x2, h2, m2)
+  unique_of(~F, ~H, sk, g0, SO.search_lw(sk, g0, 0n, 7n), ok, x1, h1, m1, x2, h2, m2)
 
 def solve_red(+sk: SK.Sketch, +g0: List<&2, S.D>, +ok: {SO.Out.ok(SO.solve(sk, g0)) == True{} : Bool}) -> {SV.explained(sk, SO.Out.red(SO.solve(sk, g0)), SO.Out.why(SO.solve(sk, g0))) == True{} : Bool}:
-  red_of(sk, g0, SO.search_b(sk, g0, SO.budget()), ok)
+  red_of(sk, g0, SO.search_lw(sk, g0, 0n, 7n), ok)
 
 def solve_pins(+sk: SK.Sketch, +g0: List<&2, S.D>, +ok: {SO.Out.ok(SO.solve(sk, g0)) == True{} : Bool}) -> {SV.held(SO.Out.pins(SO.solve(sk, g0)), g0, SO.Out.gc(SO.solve(sk, g0)), SO.Out.gr(SO.solve(sk, g0))) == True{} : Bool}:
-  pins_of(sk, g0, SO.search_b(sk, g0, SO.budget()), ok)
+  pins_of(sk, g0, SO.search_lw(sk, g0, 0n, 7n), ok)

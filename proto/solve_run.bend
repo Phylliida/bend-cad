@@ -80,6 +80,13 @@ def mid() -> SK.Sketch:
 def mid_g0() -> List<&2, S.D>:
   [d(0n), d(0n), dn(1n), d(0n), d(3n), d(0n)]
 
+# (from the completeness audit) a point, a circle on it with radius
+# variable 2, Radius = 2^-70: 64 bits rounds the radius to 0 and the box
+# fails r > 0; the loop retries and 96 bits certifies
+def tiny() -> SK.Sketch:
+  SK.Sketch{[SK.Coord{}, SK.Coord{}, SK.Length{}], [SK.Ent{0n, False{}, SK.GPoint{0n, 1n}}, SK.Ent{1n, False{}, SK.GCirc{0n, 2n}}],
+    [SK.Rec{0n, False{}, SK.Radius{1n, E.QCst{S.Q{S.Zpos{S.XH{}}, S.Pos.pow2(70n)}}}}]}
+
 def main() -> IO(Unit):
   do IO<Unit>:
     IO.print("circle: " ++ show(SR.circle(), SO.solve(SR.circle(), circle_g0())))
@@ -87,3 +94,4 @@ def main() -> IO(Unit):
     IO.print("free:   " ++ show(free(), SO.solve(free(), ds([5n, 7n]))))
     IO.print("far:    " ++ show(far(), SO.solve(far(), circle_g0())))
     IO.print("mid:    " ++ show(mid(), SO.solve(mid(), mid_g0())))
+    IO.print("tiny:   " ++ show(tiny(), SO.solve(tiny(), ds([0n, 0n, 0n]))))

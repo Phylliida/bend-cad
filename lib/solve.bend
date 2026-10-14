@@ -140,36 +140,28 @@ def whys(rs: List<&2, ST.Red>) -> List<&2, SV.Why>:
     case Con{ST.Red{j, s, w}, t}:
       Con{SV.Why{j, s, w}, whys(t)}
 
-# the first precision that gives a plan. Every failure moves on to the
-# next precision, a block whose Newton did not settle included: at a low
-# precision an ill-conditioned block can fail to settle or lose a pivot
-# that a higher one keeps (solve_complete needs this)
-def ploop(ps: List<&2, Nat>, cur: NU.PR, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel, +g0: List<&2, S.D>) -> NU.PR:
-  match ps cur:
-    case Nil{} cur:
-      cur
-    case Con{p, t} NU.POk{x}:
-      NU.POk{x}
-    case Con{+p, t} NU.PStop{}:
-      ploop(t, NU.plan(es, nv, skel, g0, p), es, nv, skel, g0)
-    case Con{+p, t} NU.PRetry{}:
-      ploop(t, NU.plan(es, nv, skel, g0, p), es, nv, skel, g0)
-
-# the first b precisions of 64, 96, 128, 192, 256, ... (doubling every
-# two steps)
-def precs(b: Nat, +p: Nat, +q: Nat) -> List<&2, Nat>:
-  match b:
+# the precisions of level l: of 64, 96, 128, 192, 256, ... (doubling
+# every two steps), seven from the l-th. Level 0 is 64 .. 512 bits; a higher
+# level starts higher and never tries the coarse ones (solve_complete
+# needs that: a coarse precision can lose the drawing's detail and
+# certify a neighbouring solution)
+def precs(n: Nat, +p: Nat, +q: Nat) -> List<&2, Nat>:
+  match n:
     case 0n:
       Nil{}
     case 1n+c:
       Con{p, precs(c, q, Nat.add(p, p))}
 
-def precisions(b: Nat) -> List<&2, Nat>:
-  precs(b, 64n, 96n)
+def precs.from(l: Nat, +w: Nat, +p: Nat, +q: Nat) -> List<&2, Nat>:
+  match l:
+    case 0n:
+      precs(w, p, q)
+    case 1n+m:
+      precs.from(m, w, q, Nat.add(p, p))
 
-# the default budget: 64 .. 512 bits
-def budget() -> Nat:
-  7n
+# w precisions from the l-th
+def precisions(+l: Nat, +w: Nat) -> List<&2, Nat>:
+  precs.from(l, w, 64n, 96n)
 
 def noplan() -> PL.Plan<KI.dnum()>:
   PL.Plan{Nil{}, Nil{}, 0n, Nil{}}
@@ -230,6 +222,48 @@ def skel.pins(s: ST.Skel) -> List<&2, Nat>:
     case ST.Skel{vp, ep, np, bs, red}:
       ntake(np, vp)
 
+# The verdict
+# -----------
+
+# what the laws need, read off the answer alone
+def final(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: Out) -> Bool:
+  KA.band(SV.held(Out.pins(x), g0, Out.gc(x), Out.gr(x)),
+  KA.band(SV.explained(sk, Out.red(x), Out.why(x)),
+  KA.band(WF.wf_dec(SV.mark(Out.red(x), sk)),
+  KA.band(BX.Sketch.within(SV.mark(Out.red(x), sk), List.length(&2, N.NC(KI.dnum()), Out.gc(x))),
+  KA.band(PL.check(~KI.dnum(), SK.Sketch.eqs(SV.mark(Out.red(x), sk)), Out.gc(x), Out.gr(x), Out.plan(x)),
+  PL.check_sides(~KI.dnum(), SK.Sketch.sides(SV.mark(Out.red(x), sk)), Out.gc(x), Out.gr(x)))))))
+
+# The precision loop
+# ------------------
+
+# the answer at one precision passes the whole verdict (matching on the
+# plan first keeps the verdict folded while the plan is unknown, as it is
+# wherever a law mentions solve symbolically)
+def accept(m: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, +pins: List<&2, Nat>) -> Bool:
+  match m:
+    case NU.POk{+x}:
+      final(sk, g0, found(red, why, pins, NU.POk{x}))
+    case NU.PRetry{}:
+      False{}
+    case NU.PStop{}:
+      False{}
+
+# the first precision whose answer passes the whole verdict (side
+# conditions included: a box too wide for one is retried higher). Every
+# failure moves on to the next precision, a block whose Newton did not
+# settle included: at a low precision an ill-conditioned block can fail
+# to settle or lose a pivot that a higher one keeps
+def ploop(ps: List<&2, Nat>, ok: Bool, cur: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> NU.PR:
+  match ps ok:
+    case Nil{} ok:
+      cur
+    case Con{p, t} True{}:
+      cur
+    case Con{+p, t} False{}:
+      +nx = NU.plan(es, nv, skel, g0, p)
+      ploop(t, accept(nx, sk, g0, red, why, pins), nx, sk, g0, red, why, pins, es, nv, skel)
+
 # The structure depends on the sketch alone
 # -----------------------------------------
 # Red constraints first (constraints matched as units, in order: each red
@@ -255,9 +289,20 @@ def skel_of(+sk: SK.Sketch) -> ST.Skel:
 def pins_of(+sk: SK.Sketch) -> List<&2, Nat>:
   skel.pins(skel_of(sk))
 
-# The search, with a budget of b precisions
-def search_b(+sk: SK.Sketch, +g0: List<&2, S.D>, +b: Nat) -> Out:
-  found(red_of(sk), why_of(sk), pins_of(sk), ploop(precisions(b), NU.PRetry{}, kept(sk), nvars(sk), skel_of(sk), g0))
+# the loop from its first precision's answer (starting it with a literal
+# "not yet" would let the checker unfold the whole verdict symbolically
+# wherever a law mentions solve, ~40 s per file)
+def ploop.start(ps: List<&2, Nat>, +sk: SK.Sketch, +g0: List<&2, S.D>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> NU.PR:
+  match ps:
+    case Nil{}:
+      NU.PRetry{}
+    case Con{+p, t}:
+      +nx = NU.plan(es, nv, skel, g0, p)
+      ploop(t, accept(nx, sk, g0, red, why, pins), nx, sk, g0, red, why, pins, es, nv, skel)
+
+# The search over w precisions from level l
+def search_lw(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat) -> Out:
+  found(red_of(sk), why_of(sk), pins_of(sk), ploop.start(precisions(l, w), sk, g0, red_of(sk), why_of(sk), pins_of(sk), kept(sk), nvars(sk), skel_of(sk)))
 
 # For the UI: equation j is the k-th equation of its constraint (a red
 # constraint shows all red; expanded, it names the equation of its Why)
@@ -281,24 +326,16 @@ def eqk(own: List<&2, Nat>, +c: Nat, j: Nat) -> Nat:
 def eqlabel(+sk: SK.Sketch, +j: Nat) -> Nat:
   eqk(SV.owners(sk), SV.nth(SV.owners(sk), j), j)
 
-# The verdict
-# -----------
-
-# what the laws need, read off the answer alone
-def final(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: Out) -> Bool:
-  KA.band(SV.held(Out.pins(x), g0, Out.gc(x), Out.gr(x)),
-  KA.band(SV.explained(sk, Out.red(x), Out.why(x)),
-  KA.band(WF.wf_dec(SV.mark(Out.red(x), sk)),
-  KA.band(BX.Sketch.within(SV.mark(Out.red(x), sk), List.length(&2, N.NC(KI.dnum()), Out.gc(x))),
-  KA.band(PL.check(~KI.dnum(), SK.Sketch.eqs(SV.mark(Out.red(x), sk)), Out.gc(x), Out.gr(x), Out.plan(x)),
-  PL.check_sides(~KI.dnum(), SK.Sketch.sides(SV.mark(Out.red(x), sk)), Out.gc(x), Out.gr(x)))))))
-
 def seal(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: Out) -> Out:
   Out{final(sk, g0, x), Out.red(x), Out.why(x), Out.pins(x), Out.gc(x), Out.gr(x), Out.plan(x)}
 
-# The solver, with a budget of b precisions, and with the default budget
-def solve_b(+sk: SK.Sketch, +g0: List<&2, S.D>, +b: Nat) -> Out:
-  seal(sk, g0, search_b(sk, g0, b))
+# The solver over w precisions from level l; at level l (seven precisions
+# from the l-th: "try harder"); and at level 0 (64 .. 512 bits)
+def solve_lw(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat) -> Out:
+  seal(sk, g0, search_lw(sk, g0, l, w))
+
+def solve_l(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat) -> Out:
+  solve_lw(sk, g0, l, 7n)
 
 def solve(+sk: SK.Sketch, +g0: List<&2, S.D>) -> Out:
-  solve_b(sk, g0, budget())
+  solve_l(sk, g0, 0n)

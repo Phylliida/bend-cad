@@ -18,6 +18,7 @@
 #   three y fixes, 4 equations over 3 variables); x_q = 1 stays.
 # - The circle demo pins A and B (variables 0..3), held at the drawing.
 
+
 import Base
 import ../spec/num.bend as S
 import ../spec/ring.bend as E
@@ -56,9 +57,9 @@ def over_ok() -> {SO.Out.ok(SO.solve(SR.over(), zeros4())) == True{} : Bool}:
 def over_red() -> {SO.Out.red(SO.solve(SR.over(), zeros4())) == [4n] : List<&2, Nat>}:
   {==}
 
-# refused at a budget of two precisions (64 and 96 bits): every
-# precision fails the same way, and the full budget costs minutes here
-def far_refused() -> {SO.Out.ok(SO.solve_b(far(), R.circle_g0(), 2n)) == False{} : Bool}:
+# refused over two precisions (64 and 96 bits): every precision fails the
+# same way, and all seven of level 0 cost minutes inside the checker
+def far_refused() -> {SO.Out.ok(SO.solve_lw(far(), R.circle_g0(), 0n, 2n)) == False{} : Bool}:
   {==}
 
 def mid_ok() -> {SO.Out.ok(SO.solve(R.mid(), R.mid_g0())) == True{} : Bool}:
