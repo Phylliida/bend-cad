@@ -1,4 +1,4 @@
-# HANDOFF — bend-cad (2026-10-14, sk-05 done)
+# HANDOFF — bend-cad (2026-10-14, sk-05b done)
 
 Read first: `DESIGN.md` (v0.9: the plan, Danielle's decisions, §3 spec
 numbers, §4–§5 typed IR, forms and meanings as built), `proto/RESULTS.md`
@@ -215,13 +215,36 @@ condition, or the whole checker with "accept", breaks the proofs.
 - Bend rewrite rule: `%E : P` with E : {L == R} needs the goal to be P[R]
   and continues with P[L].
 
-Next: **sk-05b** (complete ordered fields + Banach, axioms cross-checked
-against mathlib's ℝ in Lean; Q18) and **sk-06** (composition: blocks in
-order, parameter balls contain earlier boxes, local-to-sketch substitution
-law; side conditions §8.6). Still open for Danielle at sk-06: the
-trusted-base option (only the composed theorem trusted). Runtime bigint
-instance of K (needs Big.wf: ok-predicate or carrier) when the checker
-runs on runtime numbers.
+**sk-05b DONE (2026-10-14): 99 laws, gate green (~15 s).**
+- `spec/real.bend` (trusted): `Complete<F>`, Archimedean + Cauchy with a
+  modulus, in Skolem form (`arch/arch_ok`, `lim/lim_ok`, as OField does
+  `inv`). `lib/real.bend`: Bernoulli, `small` (q^m c ≤ 1/(k+1) at an explicit
+  m), `close` (closed bounds pass to limits), `pw_zero`, `bnd0_eq`.
+  `lib/banach.bend`: iterates, contraction over k steps, coordinate
+  sequences and their Cauchy proof, the limit point, `cert_exists` (LAWS),
+  `box_pos` (signs from the box).
+- Lean guard: `lean/check.sh` (~15 s warm): ℝ satisfies every transcribed
+  axiom, ℚ is not complete, `tools/axcheck.py` compares the transcription
+  with the Bend spec mechanically. Toolchain: elan's v4.25.0 *bin dir*
+  (no `~/.elan/bin` here; Nix lake would rebuild mathlib).
+- `tests/sqrt5_demo.bend` (gated): every complete ordered field has b > 0
+  with b² = 5, from the circle-circle certificate.
+- Sabotage: weakening either completeness axiom breaks the proof; the
+  demo refuses the off-center certificate and a wrong parameter.
+- Bend lessons: function-valued template params (`~f: @i -> P(i)`) are
+  reusable and may capture locals, but must lead the binder list and
+  cannot be matched (recurse on a plain counter instead); match
+  scrutinees in declaration order; a destructure after another
+  destructure of a different param can fail ("consumed binder"): use
+  projection helpers; signatures whose types mention a concrete K
+  instance cost ~10 s each to check, so keep demos generic in K/H and
+  instantiate once where the result type has no K.
+
+Next: **sk-06** (composition: blocks in order, parameter balls contain
+earlier boxes, local-to-sketch substitution law; side conditions §8.6).
+Open for Danielle at sk-06: the trusted-base option (only the composed
+theorem trusted). Runtime bigint instance of K (needs Big.wf: ok-predicate
+or carrier) when the checker runs on runtime numbers.
 
 sk-07's remaining items: line–line / point–circle / circle–circle distances
 (new kinds: spec arms, rerun `tools/mforms.py`, add per-kind lemmas), §8.6
