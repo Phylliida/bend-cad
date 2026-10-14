@@ -641,3 +641,11 @@ def self3(~F: O.OField, d: M.Vec(~F), ym: M.Mat(~F), +f: M.Vec(~F), +ft: M.Vec(~
             rbnd_tail(~F, O.sub(~F, x, M.dot(~F, w, a)), C.vsub(~F, xs, M.matvec(~F, ws, a)), r1, ha),
             rbnd_tail(~F, M.dot(~F, w, ft), M.matvec(~F, ws, ft), r3, hb),
             rbnd_tail(~F, M.dot(~F, w, t), M.matvec(~F, ws, t), r4, hc))))
+
+def len_matvec(~F: O.OField, a: M.Mat(~F), +v: M.Vec(~F)) -> {M.len(~F, M.matvec(~F, a, v)) == rows(~F, a) : Nat}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{r, rs}:
+      %Equal.sym(Nat, M.len(~F, M.matvec(~F, rs, v)), rows(~F, rs), len_matvec(~F, rs, v)) : {1n+_ == 1n+rows(~F, rs) : Nat}
+      {==}
