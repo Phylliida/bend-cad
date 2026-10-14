@@ -22,6 +22,7 @@ import ./spec/sketch.bend as K
 import ./spec/mat.bend as M
 import ./spec/knum.bend as N
 import ./spec/cert.bend as C
+import ./spec/real.bend as CR
 import ./lib/cert.bend as CK
 
 # Positives
@@ -868,3 +869,27 @@ law cert_unique:
   for  h2: C.ball(~K, ~F, ~H, c, y2)
   for  z2: M.vbnd(~F, C.bfun(~F, b, y2, z), O.zero(F))
   M.vbnd(~F, C.vsub(~F, y1, y2), O.zero(F))
+
+# Existence (sk-05b, DESIGN §8.4, Q18)
+# ------------------------------------
+# In a complete ordered field (spec/real.bend: Archimedean, Cauchy
+# sequences with a modulus converge; checked against mathlib's ℝ in
+# lean/), the Newton map of a checked certificate has a fixed point in its
+# box (Banach): iterate from the center, take the limit coordinate by
+# coordinate. By cert_fix that point is a zero of the block, and by
+# cert_unique it is the only one: exactly one zero per block and choice of
+# parameters.
+
+# LAW: in a complete ordered field the box holds a zero of the block, for
+# every choice of the parameters in their box
+law cert_exists:
+  for ~K: N.Num
+  for ~F: O.OField
+  for ~R: CR.Complete<F>
+  for ~H: N.Emb<K, F>
+  for +b: C.Block
+  for +c: C.Cert<K>
+  for  ok: {CK.check(~K, b, c) == True{} : Bool}
+  for +z: M.Vec(~F)
+  for  hz: C.pinned(~K, ~F, ~H, c, z)
+  Sigma<&2, &2, M.Vec(~F), y => M.Both(C.ball(~K, ~F, ~H, c, y), M.vbnd(~F, C.bfun(~F, b, y, z), O.zero(F)))>

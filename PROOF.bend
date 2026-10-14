@@ -23,6 +23,7 @@ import ./lib/dyadic.bend as LD
 import ./lib/big.bend as LB
 import ./lib/meaning.bend as MN
 import ./lib/certpf.bend as CP
+import ./lib/banach.bend as BA
 
 # Positives
 # ---------
@@ -356,3 +357,9 @@ def Laws.cert_fix(K, F, H, b, c, ok, z, y, hy, hf):
 
 def Laws.cert_unique(K, F, H, b, c, ok, z, hz, y1, h1, z1, y2, h2, z2):
   CP.cert_unique(~K, ~F, ~H, b, c, ok, z, hz, y1, h1, z1, y2, h2, z2)
+
+# Existence (sk-05b)
+# ------------------
+
+def Laws.cert_exists(K, F, R, H, b, c, ok, z, hz):
+  BA.cert_exists(~K, ~F, ~R, ~H, b, c, ok, z, hz)
