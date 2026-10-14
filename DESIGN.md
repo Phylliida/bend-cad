@@ -475,22 +475,28 @@ triangular structure. A depth-30 circle chain becomes 30 blocks of 2 unknowns.
 
 *Draft for review (sk-05), revised after an independent audit
 (2026-10-13).* Stated in `spec/cert.bend` (trusted) and `ROADMAP.bend`
-(seven `cert_*` laws); `lib/cert.bend` has the checker's final signature
+(six `cert_*` laws); `lib/cert.bend` has the checker's final signature
 and a stub body that rejects everything. Against the stub every law is
 trivially provable (its `check == True` hypothesis is absurd), so the laws
 stay in ROADMAP until the real checker lands, and moving them needs a gated
 positive test (`check == True` on a real block). The statements are
-type-checked by proving them against the stub in a throwaway file: checking
-`ROADMAP.bend` itself stops at the count of open laws before type-checking.
+type-checked by proving them against the stub in a throwaway file
+(`tools/stmtcheck.py`): checking `ROADMAP.bend` itself stops at the count
+of open laws before type-checking.
 
-**The block.** Equations `eqs` that must vanish (`QExpr`, as the sketch
-produces them) and unknowns `ys` (variable indices, as many as equations).
-Write f(y; x) for the equations at a full assignment x with the unknowns set
-to y.
+**The block.** Equations `eqs` that must vanish (`QExpr`) and the number n
+of unknowns (as many as equations). A block numbers its own variables:
+0..n−1 are the unknowns and n, n+1, ... the parameters, so f(y; z) is the
+equations evaluated at y (fitted to n entries) followed by z. Composition
+(§8.4) maps a block's numbering to the sketch's with one substitution law
+(replacing each local variable by its sketch variable gives the same value
+at the gathered assignment). This replaced global indices in the reviewed
+draft (2026-10-14): same meaning, a smaller trusted spec, no `setv`, no
+index-overlap checks, and `cert_local` holds by construction.
 
 **The certificate,** in the checker's numbers K (Q17): a center ỹᵢ and a
 radius rᵢ for each unknown, a factor q, Y ≈ J_y⁻¹ (a row per unknown), and
-the parameters as (index, center, radius) triples. Per-unknown radii make B
+a center and radius for each parameter. Per-unknown radii make B
 a box, as in interval Newton methods, so blocks that mix scales still
 certify. A radius past the end of the list is 0, so B fixes every
 coordinate past the last unknown at 0 and has exactly the block's
@@ -499,8 +505,8 @@ showed `cert_contract` was then false: a coordinate past the unknowns
 passes through N unchanged and never contracts.)
 
 **The laws.** For every ordered field F and every map H : K → F (a ring map
-with sound comparisons), if `check(b, c)` passes, then for every x whose
-parameters lie in their balls (`pinned`), with N(y) = y − Y·f(y; x) and
+with sound comparisons), if `check(b, c)` passes, then for every z in the
+parameters' box (`pinned`), with N(y) = y − Y·f(y; z) and
 B = {|yᵢ − ỹᵢ| ≤ rᵢ} (all certificate numbers sent through H):
 - `cert_factor`: 0 ≤ q < 1;
 - `cert_center`: ỹ ∈ B (B is not empty);
@@ -509,9 +515,7 @@ B = {|yᵢ − ỹᵢ| ≤ rᵢ} (all certificate numbers sent through H):
   |N(y₁)ᵢ − N(y₂)ᵢ| ≤ q·s·rᵢ for all i (contraction in the r-weighted
   infinity norm, stated without division);
 - `cert_fix`: a fixed point of N is a zero of f;
-- `cert_unique`: B holds at most one zero of f;
-- `cert_local`: f reads only the unknowns and the parameters (assignments
-  that agree on the parameters give the same f), which composition needs.
+- `cert_unique`: B holds at most one zero of f.
 
 In a complete ordered field these give exactly one zero of the block in B
 for each choice of the parameters: Banach's theorem, proven in Bend (Q18,
@@ -523,8 +527,7 @@ for each choice of the parameters: Banach's theorem, proven in Bend (Q18,
    - n = len(`ys`) = len(`eqs`); Y has n rows of at most n entries; every
      identity matrix has size n, never len(Y);
    - len(ỹ) ≤ n, len(r) ≤ n, every rᵢ ≥ 0, every parameter radius ≥ 0;
-   - `ys` distinct and disjoint from the parameter indices;
-   - the equations mention only `ys` and the parameter indices;
+   - len(pc) = len(pr);
    - every constant is held by K (`ofq` returns `Some`, Q19); never
      rounded. K = ℚ holds all of them; K = D holds those with a
      power-of-two denominator.
