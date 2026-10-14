@@ -23,7 +23,9 @@ import ./lib/plan.bend as PL
 # the claim. The claim: the box holds exactly one solution of the system,
 # and every point of the box meets the side conditions.
 
-# LAW: in a complete ordered field, the box holds a solution of the system
+# LAW: in a complete ordered field, the box holds a solution of the system.
+# Proven (lib/planpf.bend: the blocks in order, each extended by its Banach
+# point); moves to LAWS.bend once the statement is reviewed.
 law plan_exists:
   for ~K: N.Num
   for ~F: O.OField
