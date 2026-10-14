@@ -212,9 +212,14 @@ against which every law is trivially provable), seven draft laws in
   type-check statements, prove them against the stub in a throwaway file
   (fill each with `absurd(<goal>, ok)`, goal written out) and plant an
   error to confirm the fills are checked. Done for all seven; file deleted.
-- Open for Danielle: Q19 (integer constants vs a partial `ofq` in `Num`;
-  recommendation: partial `ofq`), and later the trusted-base option (only
-  the composed theorem trusted).
+- Q19 decided (2026-10-14): `Num.ofq : Q -> Maybe<&2, C>` + `Emb.e_ofq`.
+  Instances in `lib/kinst.bend` (`qnum`/`qemb`, `dnum`/`demb`; three
+  planted bugs each refused), gated by `tests/kinst_demo.bend`. Still open
+  for Danielle, at sk-06: the trusted-base option (only the composed
+  theorem trusted).
+- Irrationals (DESIGN §16): √2 exactly needs named constants in QExpr +
+  K = Q(sqrt d) (later milestone), or a parameter ball (works now); π only
+  as a parameter ball with a proven radius, π defined in the Q18 template.
 - Next after approval: generic K matrix library (dmat as D instance),
   slopes, ball arithmetic, the real checker (a conjunction of small Bool
   tests with soundness lemmas), proofs; then sk-05b (complete ordered

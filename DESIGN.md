@@ -525,8 +525,9 @@ for each choice of the parameters: Banach's theorem, proven in Bend (Q18,
    - len(ỹ) ≤ n, len(r) ≤ n, every rᵢ ≥ 0, every parameter radius ≥ 0;
    - `ys` distinct and disjoint from the parameter indices;
    - the equations mention only `ys` and the parameter indices;
-   - constants are integers: denominator exactly 1 (`XH`), never rounded,
-     since a dyadic K cannot hold 1/10 (but see Q19).
+   - every constant is held by K (`ofq` returns `Some`, Q19); never
+     rounded. K = ℚ holds all of them; K = D holds those with a
+     power-of-two denominator.
 2. *Slopes (Q12, proposed):* for each equation, a telescoping slope s with
    f(X₁) − f(X₂) = s·(X₁ − X₂), built over the expression tree by
    ab − a′b′ = a(b − b′) + b′(a − a′). It is exact for any polynomial and
@@ -807,7 +808,7 @@ random sketches.
 | sk-04 | Rational, dyadic and matrix library (∞-norms, products); Q order laws; canonical ℚ as an ordered-field instance (optional) | sk-02 | laws closed — **done** (2026-10-13; 37 laws: ℚ order, ℚ in every ordered field, gcd reduction, canonical ℚ, vectors and matrices; runtime bigint dyadics deferred to sk-05, §16) |
 | sk-05 | Parametric block certificate (§8.3), mean-value method (Q12): generic K matrix library (dmat as the D instance), slopes, ball arithmetic, checker, the seven `cert_*` laws | sk-04 | laws closed (draft reviewed by audit; awaiting Danielle) |
 | sk-05b | Complete ordered fields (Q18): template (Archimedean + Cauchy with a modulus), axioms cross-checked against mathlib's ℝ in Lean, Banach's theorem; exactly one zero per block | sk-05 | laws closed |
-| sk-06 | Composition theorem (§8.4, exactly one solution in a complete ordered field), side conditions (§8.6), clearing or embedding constants (Q19) | sk-05, sk-05b | laws closed |
+| sk-06 | Composition theorem (§8.4, exactly one solution in a complete ordered field), side conditions (§8.6), optional denominator clearing for D (Q19) | sk-05, sk-05b | laws closed |
 | sk-07 | Core vocabulary §5.1 + meaning lemmas | sk-03, sk-06 | laws closed — **meaning lemmas proven** in every ordered field (2026-10-13); remaining: §8.6 side-condition certification for the vocabulary (with sk-06), line–line / point–circle / circle–circle distances |
 | sk-08 | `accept_sound`: certified, untouched, flips, diagnostics | sk-07 | law closed |
 | sk-09 | Proposer v1: pinning, decomposition, KKT/LM, refinement, certificate emission | sk-P1, sk-07 | fixture sketches certified; certify-on-commit time target set from sk-P1 |
@@ -916,16 +917,26 @@ sk-02 and sk-03 can run in parallel after sk-01.
   parameters as one list of triples, componentwise conditions), and the
   checker's shape requirements listed in §8.3.
 
+- **Q19** (Danielle, 2026-10-14, Claude's recommendation) Constants in the
+  checker: `Num` has a partial `ofq : ℚ → Maybe K` (which rationals K holds
+  exactly) and `Emb` one law, `e_ofq`: when `ofq(q) = Some k`, H(k) is q in
+  F. K = ℚ and ℚ(√d) hold every rational; K = D holds those with a
+  power-of-two denominator (`lib/kinst.bend`: `qnum`/`qemb`,
+  `dnum`/`demb`, each with all eight map laws checked by Bend;
+  `tests/kinst_demo.bend` gates them). A block with a constant K does not
+  hold fails on that K; clearing denominators is an optional speedup for D,
+  no longer required.
+- **Irrational and transcendental values** (Danielle asked, 2026-10-14):
+  `ofq` covers exact rationals only. Algebraic constants (√2) go either
+  exactly, with K = ℚ(√d) plus named constants in the expression language
+  (a constant symbol, a partial map from symbols into K, and one `Emb` law
+  that the symbol lands on F's value, the field being one with a positive
+  √d), or as parameters in a ball, which the `cert_*` laws already cover.
+  π and cos θ go as parameters in balls whose radius the constants library
+  proves (§7.3); π itself is defined in the complete-field template (Q18),
+  so the final theorem speaks about the true π.
+
 **Open for Danielle:**
-- **Q19** Constants in the checker. Draft: integers only, rational
-  constants cleared when blocks are built (sk-06). The audit notes clearing
-  is more than multiplying an equation by m (each factor of a product needs
-  its own multiplier; doable through the ℚ normalizer). Alternative: a
-  partial `ofq : ℚ → Maybe K` in `Num` with one `Emb` law (H(k) = ofq(q)
-  when defined). Then K = ℚ and ℚ(√d) take every constant directly and
-  K = D takes dyadic ones; clearing becomes an optional speedup for D.
-  Claude's recommendation: the partial `ofq`, decided before more is built
-  on `Num`.
 - **Trusted base:** the audit suggests the `cert_*` laws could become
   untrusted library lemmas, with only the composed theorem trusted (then
   `newton`, Y, q and `setv` need not be trusted). Natural to decide at sk-06,
