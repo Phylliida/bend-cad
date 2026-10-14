@@ -526,23 +526,27 @@ def Ent.wf_refs(+es: List<&2, Ent>, e: Ent) -> Type:
 # Holding
 # -------
 
+# A and B (a pair of reusable facts)
+def Both(-A: Data, -B: Data) -> Data:
+  Sigma<&2, &2, A, _ => B>
+
 # every expression in xs is 0 in F
-def Zeros(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, E.QExpr>) -> Type:
+def Zeros(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, E.QExpr>) -> Data:
   match xs:
     case Nil{}:
       Unit
     case Con{h, t}:
-      {O.eval(~F, env, h) == O.zero(F) : O.C(F)} & Zeros(~F, env, t)
+      Both({O.eval(~F, env, h) == O.zero(F) : O.C(F)}, Zeros(~F, env, t))
 
 # every side condition in xs holds in F
-def Sides(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, Side>) -> Type:
+def Sides(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, Side>) -> Data:
   match xs:
     case Nil{}:
       Unit
     case Con{Gt0{e}, t}:
-      O.lt(F, O.zero(F), O.eval(~F, env, e)) & Sides(~F, env, t)
+      Both(O.lt(F, O.zero(F), O.eval(~F, env, e)), Sides(~F, env, t))
     case Con{Ge0{e}, t}:
-      O.le(~F, O.zero(F), O.eval(~F, env, e)) & Sides(~F, env, t)
+      Both(O.le(~F, O.zero(F), O.eval(~F, env, e)), Sides(~F, env, t))
 
 def Constraint.holds(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, Ent>, +k: Constraint) -> Type:
   Zeros(~F, env, Constraint.eqs(es, k)) & Sides(~F, env, Constraint.sides(es, k))

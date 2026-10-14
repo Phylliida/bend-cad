@@ -258,3 +258,17 @@ def sq_eq(~F: O.OField, +x: O.C(F), +y: O.C(F), hx: O.le(~F, O.zero(F), x), +hy:
     case Inr{+e}:
       %e : {_ == y : O.C(F)}
       Equal.sym(O.C(F), y, O.zero(F), sq_zero(~F, y, sq_eq.yy(~F, x, y, e, h)))
+
+def cert4(~F: O.OField, +x: O.C(F), +c1: O.C(F), +r1: O.C(F), +c2: O.C(F), +r2: O.C(F), +c3: O.C(F), +r3: O.C(F), +c4: O.C(F), +r4: O.C(F), hid: {x == O.add(F, O.add(F, O.add(F, O.mul(F, c1, r1), O.mul(F, c2, r2)), O.mul(F, c3, r3)), O.mul(F, c4, r4)) : O.C(F)}, h1: {r1 == O.zero(F) : O.C(F)}, h2: {r2 == O.zero(F) : O.C(F)}, h3: {r3 == O.zero(F) : O.C(F)}, h4: {r4 == O.zero(F) : O.C(F)}) -> {x == O.zero(F) : O.C(F)}:
+  %Equal.sym(O.C(F), x, O.add(F, O.add(F, O.add(F, O.mul(F, c1, r1), O.mul(F, c2, r2)), O.mul(F, c3, r3)), O.mul(F, c4, r4)), hid) : {_ == O.zero(F) : O.C(F)}
+  %Equal.sym(O.C(F), r1, O.zero(F), h1) : {O.add(F, O.add(F, O.add(F, O.mul(F, c1, _), O.mul(F, c2, r2)), O.mul(F, c3, r3)), O.mul(F, c4, r4)) == O.zero(F) : O.C(F)}
+  %Equal.sym(O.C(F), r2, O.zero(F), h2) : {O.add(F, O.add(F, O.add(F, O.mul(F, c1, O.zero(F)), O.mul(F, c2, _)), O.mul(F, c3, r3)), O.mul(F, c4, r4)) == O.zero(F) : O.C(F)}
+  %Equal.sym(O.C(F), r3, O.zero(F), h3) : {O.add(F, O.add(F, O.add(F, O.mul(F, c1, O.zero(F)), O.mul(F, c2, O.zero(F))), O.mul(F, c3, _)), O.mul(F, c4, r4)) == O.zero(F) : O.C(F)}
+  %Equal.sym(O.C(F), r4, O.zero(F), h4) : {O.add(F, O.add(F, O.add(F, O.mul(F, c1, O.zero(F)), O.mul(F, c2, O.zero(F))), O.mul(F, c3, O.zero(F))), O.mul(F, c4, _)) == O.zero(F) : O.C(F)}
+  %FL.mul_zero(~F, c1) : {O.add(F, O.add(F, O.add(F, _, O.mul(F, c2, O.zero(F))), O.mul(F, c3, O.zero(F))), O.mul(F, c4, O.zero(F))) == O.zero(F) : O.C(F)}
+  %FL.mul_zero(~F, c2) : {O.add(F, O.add(F, O.add(F, O.zero(F), _), O.mul(F, c3, O.zero(F))), O.mul(F, c4, O.zero(F))) == O.zero(F) : O.C(F)}
+  %FL.mul_zero(~F, c3) : {O.add(F, O.add(F, O.add(F, O.zero(F), O.zero(F)), _), O.mul(F, c4, O.zero(F))) == O.zero(F) : O.C(F)}
+  %FL.mul_zero(~F, c4) : {O.add(F, O.add(F, O.add(F, O.zero(F), O.zero(F)), O.zero(F)), _) == O.zero(F) : O.C(F)}
+  %FL.add_zero(~F, O.zero(F)) : {O.add(F, O.add(F, _, O.zero(F)), O.zero(F)) == O.zero(F) : O.C(F)}
+  %FL.add_zero(~F, O.zero(F)) : {O.add(F, _, O.zero(F)) == O.zero(F) : O.C(F)}
+  O.add_zero(F)(O.zero(F))
