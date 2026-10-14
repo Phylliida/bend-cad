@@ -583,3 +583,68 @@ def kapp_ofk(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: N.KVec(~K), +w: N.KVec
     case Con{+a, +us}:
       %Equal.sym(M.Vec(~F), N.ofkv(~K, ~F, ~H, KA.kapp(~K, us, w)), C.app(~F, N.ofkv(~K, ~F, ~H, us), N.ofkv(~K, ~F, ~H, w)), kapp_ofk(~K, ~F, ~H, us, w)) : {Con{N.emap(K, F, H, a), _} == Con{N.emap(K, F, H, a), C.app(~F, N.ofkv(~K, ~F, ~H, us), N.ofkv(~K, ~F, ~H, w))} : M.Vec(~F)}
       {==}
+
+# The self-map
+# ------------
+
+# e(u1 ++ z1) - e(u2 ++ z2) = sy . (u1 - u2) + sz . (z1 - z2), the
+# parameter slopes taken from variable n
+def eq_slope_n(~F: O.OField, +u1: M.Vec(~F), +u2: M.Vec(~F), +z1: M.Vec(~F), +z2: M.Vec(~F), +e: E.QExpr, +n: Nat, +p: Nat, hb: {SL.below(Nat.add(n, p), e) == True{} : Bool}, +h1: {M.len(~F, u1) == n : Nat}, +h2: {M.len(~F, u2) == n : Nat}) -> {O.sub(~F, O.eval(~F, C.app(~F, u1, z1), e), O.eval(~F, C.app(~F, u2, z2), e)) == O.add(F, M.dot(~F, SL.srange(~F, C.app(~F, u1, z1), C.app(~F, u2, z2), e, n, 0n), C.vsub(~F, u1, u2)), M.dot(~F, SL.srange(~F, C.app(~F, u1, z1), C.app(~F, u2, z2), e, p, n), C.vsub(~F, z1, z2))) : O.C(F)}:
+  %Equal.sym(Nat, n, Nat.add(n, 0n), LN.add_zero(n)) : {O.sub(~F, O.eval(~F, C.app(~F, u1, z1), e), O.eval(~F, C.app(~F, u2, z2), e)) == O.add(F, M.dot(~F, SL.srange(~F, C.app(~F, u1, z1), C.app(~F, u2, z2), e, n, 0n), C.vsub(~F, u1, u2)), M.dot(~F, SL.srange(~F, C.app(~F, u1, z1), C.app(~F, u2, z2), e, p, _), C.vsub(~F, z1, z2))) : O.C(F)}
+  eq_slope(~F, u1, u2, z1, z2, e, n, p, hb, h1, h2)
+
+# f(u1; z1) - f(u2; z2) = Sy (u1 - u2) + Sz (z1 - z2)
+def fvecs_self(~F: O.OField, +u1: M.Vec(~F), +u2: M.Vec(~F), +z1: M.Vec(~F), +z2: M.Vec(~F), eqs: List<&2, E.QExpr>, +n: Nat, +p: Nat, +hb: {CK.allbelow(Nat.add(n, p), eqs) == True{} : Bool}, +h1: {M.len(~F, u1) == n : Nat}, +h2: {M.len(~F, u2) == n : Nat}) -> {C.vsub(~F, C.fvals(~F, eqs, C.app(~F, u1, z1)), C.fvals(~F, eqs, C.app(~F, u2, z2))) == M.vadd(~F, M.matvec(~F, smat(~F, C.app(~F, u1, z1), C.app(~F, u2, z2), eqs, n, 0n), C.vsub(~F, u1, u2)), M.matvec(~F, smat(~F, C.app(~F, u1, z1), C.app(~F, u2, z2), eqs, p, n), C.vsub(~F, z1, z2))) : M.Vec(~F)}:
+  match eqs:
+    case Nil{}:
+      {==}
+    case Con{+e, +es}:
+      +x1 = C.app(~F, u1, z1)
+      +x2 = C.app(~F, u2, z2)
+      %eq_slope_n(~F, u1, u2, z1, z2, e, n, p, KA.band_l(SL.below(Nat.add(n, p), e), CK.allbelow(Nat.add(n, p), es), hb), h1, h2) : {Con{O.sub(~F, O.eval(~F, x1, e), O.eval(~F, x2, e)), C.vsub(~F, C.fvals(~F, es, x1), C.fvals(~F, es, x2))} == Con{_, M.vadd(~F, M.matvec(~F, smat(~F, x1, x2, es, n, 0n), C.vsub(~F, u1, u2)), M.matvec(~F, smat(~F, x1, x2, es, p, n), C.vsub(~F, z1, z2)))} : M.Vec(~F)}
+      %fvecs_self(~F, u1, u2, z1, z2, es, n, p, KA.band_r(SL.below(Nat.add(n, p), e), CK.allbelow(Nat.add(n, p), es), hb), h1, h2) : {Con{O.sub(~F, O.eval(~F, x1, e), O.eval(~F, x2, e)), C.vsub(~F, C.fvals(~F, es, x1), C.fvals(~F, es, x2))} == Con{O.sub(~F, O.eval(~F, x1, e), O.eval(~F, x2, e)), _} : M.Vec(~F)}
+      {==}
+
+# |x| <= |c| + r, for x in the ball (c, r)
+def abs_plus(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +x: O.C(F), b: KB.KB<K>, h: KB.bin(~K, ~F, ~H, x, b)) -> M.bnd(~F, x, N.emap(K, F, H, N.nadd(K, KA.kabs(~K, KB.KB.c(K, b)), KB.KB.r(K, b)))):
+  match b:
+    case KB.KB{+c, +r}:
+      %KA.ea(~K, ~F, ~H, KA.kabs(~K, c), r) : M.bnd(~F, x, _)
+      KB.bnd_val(~F, O.add(F, N.emap(K, F, H, c), O.sub(~F, x, N.emap(K, F, H, c))), x, O.add(F, N.emap(K, F, H, KA.kabs(~K, c)), N.emap(K, F, H, r)), FR.fring_eq(~F, [x, N.emap(K, F, H, c)], E.ZAdd{E.ZVar{1n}, E.ZSub{E.ZVar{0n}, E.ZVar{1n}}}, E.ZVar{0n}, {==}), FM.bnd_add(~F, N.emap(K, F, H, c), N.emap(K, F, H, KA.kabs(~K, c)), O.sub(~F, x, N.emap(K, F, H, c)), N.emap(K, F, H, r), KA.kabs_bnd(~K, ~F, ~H, c), h))
+
+def abs_plus_nn(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +x: O.C(F), b: KB.KB<K>, h: KB.bin(~K, ~F, ~H, x, b)) -> O.le(~F, O.zero(F), N.emap(K, F, H, N.nadd(K, KA.kabs(~K, KB.KB.c(K, b)), KB.KB.r(K, b)))):
+  match b:
+    case KB.KB{+c, +r}:
+      %KA.ea(~K, ~F, ~H, KA.kabs(~K, c), r) : O.le(~F, O.zero(F), _)
+      FO.nonneg_add(~F, N.emap(K, F, H, KA.kabs(~K, c)), N.emap(K, F, H, r), KA.kabs_nonneg(~K, ~F, ~H, c), FM.bnd_nonneg(~F, O.sub(~F, x, N.emap(K, F, H, c)), N.emap(K, F, H, r), h))
+
+# |S| <= |J| + D along one row
+def row_bndz(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +x1: M.Vec(~F), +x2: M.Vec(~F), +box: List<&2, KB.KB<K>>, +e: E.QExpr, cnt: Nat, +lo: Nat, h: KB.inbox(~K, ~F, ~H, SL.srange(~F, x1, x2, e, cnt, lo), KB.krange(~K, box, e, cnt, lo))) -> C.rbnd(~F, SL.srange(~F, x1, x2, e, cnt, lo), N.ofkv(~K, ~F, ~H, KA.kvadd(~K, KA.kvabs(~K, KB.bcenters(~K, KB.krange(~K, box, e, cnt, lo))), KB.bradii(~K, KB.krange(~K, box, e, cnt, lo))))):
+  match cnt:
+    case 0n:
+      Unit{}
+    case 1n+k:
+      (h0, hs) = h
+      (abs_plus(~K, ~F, ~H, SL.sl(~F, lo, x1, x2, e), KB.ksl(~K, lo, box, e), h0), row_bndz(~K, ~F, ~H, x1, x2, box, e, k, 1n+lo, hs))
+
+def row_nnz(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +x1: M.Vec(~F), +x2: M.Vec(~F), +box: List<&2, KB.KB<K>>, +e: E.QExpr, cnt: Nat, +lo: Nat, h: KB.inbox(~K, ~F, ~H, SL.srange(~F, x1, x2, e, cnt, lo), KB.krange(~K, box, e, cnt, lo))) -> FV.rnn(~F, N.ofkv(~K, ~F, ~H, KA.kvadd(~K, KA.kvabs(~K, KB.bcenters(~K, KB.krange(~K, box, e, cnt, lo))), KB.bradii(~K, KB.krange(~K, box, e, cnt, lo))))):
+  match cnt:
+    case 0n:
+      Unit{}
+    case 1n+k:
+      (h0, hs) = h
+      (abs_plus_nn(~K, ~F, ~H, SL.sl(~F, lo, x1, x2, e), KB.ksl(~K, lo, box, e), h0), row_nnz(~K, ~F, ~H, x1, x2, box, e, k, 1n+lo, hs))
+
+def mat_bndz(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +x1: M.Vec(~F), +x2: M.Vec(~F), +box: List<&2, KB.KB<K>>, eqs: List<&2, E.QExpr>, +cnt: Nat, +lo: Nat, +hh: {CK.allheld(~K, eqs) == True{} : Bool}, +h1: KB.inbox(~K, ~F, ~H, x1, box), +h2: KB.inbox(~K, ~F, ~H, x2, box)) -> FV.mbnd(~F, smat(~F, x1, x2, eqs, cnt, lo), N.ofkm(~K, ~F, ~H, KA.kmadd(~K, KA.kmabs(~K, CK.mcenters(~K, CK.srows(~K, box, cnt, lo, eqs))), CK.mradii(~K, CK.srows(~K, box, cnt, lo, eqs))))):
+  match eqs:
+    case Nil{}:
+      Unit{}
+    case Con{+e, +es}:
+      (row_bndz(~K, ~F, ~H, x1, x2, box, e, cnt, lo, KB.range_ok(~K, ~F, ~H, x1, x2, box, e, KA.band_l(KB.held(~K, e), CK.allheld(~K, es), hh), h1, h2, cnt, lo)), mat_bndz(~K, ~F, ~H, x1, x2, box, es, cnt, lo, KA.band_r(KB.held(~K, e), CK.allheld(~K, es), hh), h1, h2))
+
+def mat_nnz(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +x1: M.Vec(~F), +x2: M.Vec(~F), +box: List<&2, KB.KB<K>>, eqs: List<&2, E.QExpr>, +cnt: Nat, +lo: Nat, +hh: {CK.allheld(~K, eqs) == True{} : Bool}, +h1: KB.inbox(~K, ~F, ~H, x1, box), +h2: KB.inbox(~K, ~F, ~H, x2, box)) -> FV.mnn(~F, N.ofkm(~K, ~F, ~H, KA.kmadd(~K, KA.kmabs(~K, CK.mcenters(~K, CK.srows(~K, box, cnt, lo, eqs))), CK.mradii(~K, CK.srows(~K, box, cnt, lo, eqs))))):
+  match eqs:
+    case Nil{}:
+      Unit{}
+    case Con{+e, +es}:
+      (row_nnz(~K, ~F, ~H, x1, x2, box, e, cnt, lo, KB.range_ok(~K, ~F, ~H, x1, x2, box, e, KA.band_l(KB.held(~K, e), CK.allheld(~K, es), hh), h1, h2, cnt, lo)), mat_nnz(~K, ~F, ~H, x1, x2, box, es, cnt, lo, KA.band_r(KB.held(~K, e), CK.allheld(~K, es), hh), h1, h2))
