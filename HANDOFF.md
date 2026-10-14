@@ -1,4 +1,4 @@
-# HANDOFF — bend-cad (2026-10-13, end of sk-01)
+# HANDOFF — bend-cad (2026-10-13, end of sk-02)
 
 Read first: `DESIGN.md` (v0.5: the plan, Danielle's decisions, §3 spec
 numbers as built), `proto/RESULTS.md` (sk-P1 spike results). Bend gotchas are
@@ -12,7 +12,11 @@ in memory (`reference_bend2_idioms`).
 - **sk-P1 done** (untrusted prototype in `proto/`), results in
   `proto/RESULTS.md`; ink-metric proposer, pinning, decomposition and F32
   Gauss–Jordan in Bend are deferred to sk-09.
-- **sk-01 done:** 40 laws in `LAWS.bend`, all proven, gate green (~2.6 s).
+- **sk-01 done:** spec numbers + normalizers (40 laws). Danielle approved
+  unreduced ℚ (watch growth, DESIGN R10).
+- **sk-02 done:** runtime big integers refine spec `Z` (9 more laws: add, sub,
+  neg, mul, cmp and well-formedness), base-parametric; 256-bit product ≈ 12 µs
+  native. **49 laws, all proven, gate green (~6 s).**
   **`LAWS.bend` is a draft awaiting Danielle's review** (it is human-owned by
   convention; Claude wrote this draft).
 
@@ -35,7 +39,27 @@ laws):
   `lib/q.bend` Q.eq equivalence/congruence/inverse; `lib/dyadic.bend`.
 - `tests/` demos (gated): Nat/Z/Q identities, 2^128 constants, dyadics.
 
-### Idioms learned (sk-01)
+### sk-02 layout
+
+- `spec/big.bend` (trusted): `Le(a, b)` (gap witness, a `Data` Sigma so bounds
+  can be reused with `+`), `Mag.val`/`Mag.wf`, `Big` (BPos/BNeg), `Big.val`,
+  `Big.wf`.
+- `rt/mag.bend`, `rt/big.bend`: the runtime code (base parameter `bp`).
+- `lib/natord.bend`: Euclid's division for Base's `Nat.divmod`, order algebra
+  (`le_trans`, monotonicity, `le_mul_cancel`, `div_le`, `Nat.cmp` ↔ `Le`,
+  `sub_add`). `lib/mag.bend`: magnitude values/wf/cmp/sub. `lib/big.bend`:
+  refinement. `proto/bench_mag*.bend`: the benchmark.
+
+### Idioms learned (sk-01, sk-02)
+
+- **Never let a large `Nat` literal reach the checker**: `Nat.add(65536n, x)`
+  overflows its stack (unary). Parametrize by the base; instantiate at the top.
+- A def used above its definition is treated as an unfilled law ("live code
+  cannot use it"): helpers first.
+- `&k: A -> B` pairs are affine `Type`; write `Sigma<&2, &2, A, k => B>` for a
+  reusable `Data` proof object. Destructure with `(+k, e) = h`.
+- Python `%` formatting collides with Bend's `%e :` rewrites in generator
+  scripts: use `@@name@@` placeholders or concatenation.
 
 - `%e : P` replaces the *right* side of `e` at the `_` holes with its left
   side, so lemmas are stated `{target == source}`. When the wrong side is in
@@ -53,9 +77,10 @@ laws):
 
 ## Next
 
-DESIGN §15: **sk-02** (limb bigints refining spec `Z`; 256-bit mul
-benchmark) and **sk-03** (typed IR, exact equation forms, meaning-lemma
-statements; LAWS reviewed by Danielle) can run in parallel. Waiting on
-Danielle: review of `LAWS.bend` (sk-01 draft) and of the unreduced-ℚ
-decision (DESIGN §3/§16). Deferred from sk-01: binary `N` (no consumer yet),
-gcd reduction of `Q` (sk-04), `Q` order laws (sk-04), division in `QExpr`.
+DESIGN §15: **sk-03** (typed IR, exact equation forms, meaning-lemma
+statements; needs Danielle's LAWS review) and **sk-04** (rational, dyadic and
+matrix library: ∞-norms, products; Q order laws; gcd reduction proven to keep
+Q.eq) are both unblocked. Waiting on Danielle: review of `LAWS.bend`.
+Deferred: binary `N` (no consumer yet), division in `QExpr`, Big shifts /
+dyadic rounding (sk-04), a verified single-divmod carry (only if the
+benchmark ever demands it).

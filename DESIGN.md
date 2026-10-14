@@ -130,9 +130,18 @@ Peano `Nat`.
   bootstrapped from a unary Nat normalizer and a ℤ-via-pairs tactic, so no
   binary carry reasoning is ever done by hand.
 
-**Runtime numbers.** Limb bigints refining the spec. Limbs are runtime `Nat`
-values < 2^16 (runtime `Nat` is native but capped at 2^48 − 1, fail-stop on every
-lane); limb-bound laws make the cap unreachable. Not `U32` limbs (`U32` is a
+**Runtime numbers (built in sk-02; `rt/`, `spec/big.bend`).** Big integers are
+signed lists of limbs in base B = 1 + bp, least significant first; limbs are
+runtime `Nat` (native, capped at 2^48 − 1, fail-stop). The base is a
+**parameter** of every operation and law: the checker unfolds a literal such as
+`65536n` to unary (a stack overflow), so proofs are generic in B and the
+runtime passes bp = 65535 at the top (instantiation checks; `tests/big_demo`).
+Meaning `Big.val` into spec `Z`; well-formedness `Big.wf` = every limb ≤ bp.
+Carries use `Nat.mod`/`Nat.div` (two native divisions per limb); subtraction
+borrows by one comparison per limb so every limb is an exact `Nat.sub`. With
+well-formed inputs every intermediate stays below B·B + B ≪ 2^48. Measured:
+16-limb (256-bit) schoolbook product ≈ 12 µs native single-thread
+(20000 in 0.25 s; the sk-P1 prototype took 0.35 s). Not `U32` limbs (`U32` is a
 32-bit `Word` bit list in the theory; no `U64`).
 
 **Scales.** Displayed variables are integers at a per-kind scale.
@@ -564,7 +573,7 @@ random sketches.
 | sk-00 | Scaffold: LAWS / PROOF / ROADMAP; gate rules | — | gate green on empty law set |
 | sk-P1 | **Prototype spike in Bend (untrusted):** ink-metric proposer with F32 + exact refinement, pinning, block decomposition, certification cost and precision on the depth-30 chain (well- and ill-conditioned) and on one large cyclic block | — | report feeding Q12; go/no-go on §8.5 and on F32 refinement |
 | sk-01 | Spec numbers (binary N, Int, rationals, dyadics), reflective normalizer | sk-00 | soundness law closed — **done** (2026-10-13; N deferred, §3) |
-| sk-02 | Limb bigints refining the spec | sk-01 | refinement laws; 256-bit mul benchmark |
+| sk-02 | Limb bigints refining the spec | sk-01 | refinement laws; 256-bit mul benchmark — **done** (2026-10-13; §3) |
 | sk-03 | Typed IR, exact equation forms, meaning-lemma statements; LAWS review | sk-01, sk-P1 | LAWS reviewed by Danielle |
 | sk-04 | Rational, dyadic and matrix library (∞-norms, products) | sk-02 | laws closed |
 | sk-05 | Parametric block certificate (§8.3), mean-value method (Q12) | sk-04 | law closed |
@@ -675,6 +684,9 @@ sk-02 and sk-03 can run in parallel after sk-01.
 ---
 
 ## 19. Changelog
+
+**v0.5, sk-02 done:** §3 runtime numbers as built (base-parametric limbs,
+compare-based borrow, ≈ 12 µs per 256-bit product).
 
 **v0.4 → v0.5 (sk-01 done):**
 - §3: spec numbers as built: binary Pos/Z (Coq shape), unreduced ℚ with
