@@ -473,63 +473,91 @@ triangular structure. A depth-30 circle chain becomes 30 blocks of 2 unknowns.
 
 ### 8.3 Parametric block certificate
 
-*Draft for review (sk-05).* Stated in `spec/cert.bend` (trusted) and
-`ROADMAP.bend` (`cert_factor`, `cert_self`, `cert_contract`, `cert_fix`);
-`lib/cert.bend` has the checker's final signature and a stub body that
-rejects everything.
+*Draft for review (sk-05), revised after an independent audit
+(2026-10-13).* Stated in `spec/cert.bend` (trusted) and `ROADMAP.bend`
+(seven `cert_*` laws); `lib/cert.bend` has the checker's final signature
+and a stub body that rejects everything. Against the stub every law is
+trivially provable (its `check == True` hypothesis is absurd), so the laws
+stay in ROADMAP until the real checker lands, and moving them needs a gated
+positive test (`check == True` on a real block). The statements are
+type-checked by proving them against the stub in a throwaway file: checking
+`ROADMAP.bend` itself stops at the count of open laws before type-checking.
 
 **The block.** Equations `eqs` that must vanish (`QExpr`, as the sketch
-produces them), unknowns `ys` (variable indices, as many as equations),
-parameters `ps` (earlier blocks' variables, pinned values, constants).
+produces them) and unknowns `ys` (variable indices, as many as equations).
 Write f(y; x) for the equations at a full assignment x with the unknowns set
 to y.
 
-**The certificate,** in the checker's numbers K (Q17): a center ỹ and
-radius r for the unknowns, a factor q, Y ≈ J_y⁻¹ (a row per unknown), and a
-center and radius for each parameter.
+**The certificate,** in the checker's numbers K (Q17): a center ỹᵢ and a
+radius rᵢ for each unknown, a factor q, Y ≈ J_y⁻¹ (a row per unknown), and
+the parameters as (index, center, radius) triples. Per-unknown radii make B
+a box, as in interval Newton methods, so blocks that mix scales still
+certify. A radius past the end of the list is 0, so B fixes every
+coordinate past the last unknown at 0 and has exactly the block's
+dimension. (The first draft used one radius and plain list norms; the audit
+showed `cert_contract` was then false: a coordinate past the unknowns
+passes through N unchanged and never contracts.)
 
 **The laws.** For every ordered field F and every map H : K → F (a ring map
 with sound comparisons), if `check(b, c)` passes, then for every x whose
-parameters lie in their balls, with N(y) = y − Y·f(y; x) and B the ball
-‖y − ỹ‖∞ ≤ r (all certificate numbers sent through H):
+parameters lie in their balls (`pinned`), with N(y) = y − Y·f(y; x) and
+B = {|yᵢ − ỹᵢ| ≤ rᵢ} (all certificate numbers sent through H):
 - `cert_factor`: 0 ≤ q < 1;
+- `cert_center`: ỹ ∈ B (B is not empty);
 - `cert_self`: N maps B into itself;
-- `cert_contract`: N contracts B by q (‖y₁ − y₂‖ ≤ s gives
-  ‖N(y₁) − N(y₂)‖ ≤ q·s);
-- `cert_fix`: a fixed point of N is a zero of f.
+- `cert_contract`: if |y₁ᵢ − y₂ᵢ| ≤ s·rᵢ for all i, then
+  |N(y₁)ᵢ − N(y₂)ᵢ| ≤ q·s·rᵢ for all i (contraction in the r-weighted
+  infinity norm, stated without division);
+- `cert_fix`: a fixed point of N is a zero of f;
+- `cert_unique`: B holds at most one zero of f;
+- `cert_local`: f reads only the unknowns and the parameters (assignments
+  that agree on the parameters give the same f), which composition needs.
 
-In ℝ, Banach's theorem then gives exactly one zero of the block in B for
-each choice of the parameters. sk-06 composes the blocks (§8.4) and matches
-each block's parameter balls to the earlier blocks' certified balls.
+In a complete ordered field these give exactly one zero of the block in B
+for each choice of the parameters: Banach's theorem, proven in Bend (Q18,
+§8.4).
 
 **The checker (proposed; it is not part of the statement).**
-1. *Shape:* as many unknowns as equations; Y square of that size; `ys`
-   distinct and disjoint from `ps`; the equations mention only `ys` and
-   `ps`; lists aligned. Constants must be integers: a dyadic K cannot hold
-   1/10, so rational constants are cleared when blocks are built (sk-06; a
-   multiple m·f with m ≠ 0 has the same zeros).
+1. *Shape (each line is a way a naive checker would accept a bad
+   certificate; the audit has the counterexamples):*
+   - n = len(`ys`) = len(`eqs`); Y has n rows of at most n entries; every
+     identity matrix has size n, never len(Y);
+   - len(ỹ) ≤ n, len(r) ≤ n, every rᵢ ≥ 0, every parameter radius ≥ 0;
+   - `ys` distinct and disjoint from the parameter indices;
+   - the equations mention only `ys` and the parameter indices;
+   - constants are integers: denominator exactly 1 (`XH`), never rounded,
+     since a dyadic K cannot hold 1/10 (but see Q19).
 2. *Slopes (Q12, proposed):* for each equation, a telescoping slope s with
    f(X₁) − f(X₂) = s·(X₁ − X₂), built over the expression tree by
    ab − a′b′ = a(b − b′) + b′(a − a′). It is exact for any polynomial and
    any degree, and needs no change to the IR. At X₁ = X₂ = X̃ it is the
    Jacobian J₀.
 3. *Ball arithmetic in K:* each slope entry is evaluated with both arguments
-   ranging over the box (unknowns within r, parameters within their radii),
+   ranging over the box (unknowns within rᵢ, parameters within their radii),
    as a center and a radius: (a, ρ) + (b, σ) = (a + b, ρ + σ),
    (a, ρ)·(b, σ) = (ab, |a|σ + |b|ρ + ρσ). This is exact in K (no rounding)
    and gives J₀ and Δ with |S − J₀| ≤ Δ entrywise over the box.
-4. *Conditions,* exact in K:
-   - ‖I − Y·J₀,y‖ + ‖|Y|·Δ_y‖ ≤ q < 1;
-   - ‖Y·f(X̃)‖ + ‖|Y|·(|J₀,z| + Δ_z)·ρ‖ + q·r ≤ r, in the sensitivity form
-     the spike found tighter than ‖Y‖·L_z·ρ (1–1.5 bits per step);
-   - ‖I − J₀,y·Y‖ < 1, so Y is injective (for `cert_fix`).
+4. *Conditions,* exact in K, componentwise (entries combined before any
+   maximum is taken, which is never looser than a sum of norms and saves
+   bits, §8.5). With G = |I − Y·J₀,y| + |Y|·Δ_y:
+   - (G·r)ᵢ ≤ q·rᵢ for every i, and q < 1;
+   - |Y·f(X̃)|ᵢ + (|Y|·(|J₀,z| + Δ_z)·ρ)ᵢ + (G·r)ᵢ ≤ rᵢ for every i, the
+     sensitivity form the spike found tighter than ‖Y‖·L_z·ρ (1–1.5 bits
+     per step);
+   - ‖I − J₀,y·Y‖ < 1 with I of size n, so Y is injective (for `cert_fix`).
+   The checker is a conjunction of small Bool tests, each with its own
+   soundness lemma in the `dcmp_sound.go` pattern, so a proof is not stuck
+   on comparisons in an opaque K.
 
 Slopes rather than selective quadratization, because they are as tight on
 quadratics (the slope of x² is x₁ + x₂, the Jacobian at the midpoint), need
 no aux variables for the cubic mirror form, and each proof is a short
 induction over expressions: the slope identity (ring algebra in F) and
 ball soundness (order algebra in F). The certificate carries q rather than
-the checker computing it, so the laws can name it.
+the checker computing it, so the laws can name it. Proof notes from the
+audit: injectivity of Y and `cert_unique` need a lemma that a finite vector
+in F has a largest weighted entry (built with `lt_total`); the qᵏ argument
+would need an Archimedean F.
 
 *Linear algebra as built (sk-04, `spec/mat.bend`):* vectors are lists read
 with trailing zeros and matrices lists of rows, so (AB)v = A(Bv), (A + B)v,
@@ -543,17 +571,27 @@ entries are at most |B|'s. The product law: ‖Mv‖ ≤ ‖B‖·s for M majori
 B and ‖v‖ ≤ s, so a field matrix bounded entrywise by a dyadic one (the
 Taylor bounds of J over the ball) is handled like a dyadic one.
 
-### 8.4 Composition theorem (in every ordered field, Q16)
+### 8.4 Composition theorem (Q16, Q18)
 
-By induction over blocks:
-- **Approximate solvability:** ∀k. ∃ rational x in the product of the
-  certified balls, with pinned values exact, such that ‖F(x)‖∞ ≤ 2^−k (and
-  every constant within its own approximation).
-- **Approximate uniqueness:** any two points in the product of balls with small
-  residuals are close, with an explicit bound.
+Everything is proven in Bend (Q18). In every ordered field, by induction
+over the blocks in order: each block's parameter balls contain the earlier
+blocks' certified boxes (a comparison in K) and the pinned values, so the
+`cert_*` laws apply to every assignment the earlier blocks allow, and
+`cert_local` makes a block see only those values. In a *complete* ordered
+field (an ordered field that is Archimedean and in which every Cauchy
+sequence with a modulus converges; up to isomorphism only ℝ), Banach's
+theorem, proven in Bend, gives each block exactly one zero in its box for
+each choice of its parameters, and the induction gives exactly one exact
+solution of the whole system in the product of the boxes. Cauchy
+completeness alone is not enough: some non-Archimedean fields have it, and
+there qⁿ never drops below an infinitesimal.
 
-Meta-level (documented, not formalized): these imply exactly one real solution
-in the product of balls (compactness plus continuity).
+No complete ordered field can be built in Bend (ℝ has no decidable order),
+so a mis-stated completeness axiom could make the theorem vacuous. Guard:
+state the axioms in textbook form and check them against mathlib's ℝ in
+Lean. (The first plan here, approximate solvability in every F with the
+step to ℝ on paper, is replaced; it would need two more laws: a
+quantitative `cert_fix` and a bound on how N moves with the parameters.)
 
 ### 8.5 Precision and its cost
 
@@ -767,8 +805,9 @@ random sketches.
 | sk-02 | Limb bigints refining the spec | sk-01 | refinement laws; 256-bit mul benchmark — **done** (2026-10-13; §3) |
 | sk-03 | Typed IR, exact equation forms, meaning-lemma statements; LAWS review | sk-01, sk-P1 | LAWS reviewed by Danielle — **done** (2026-10-13; Q13–Q15 and follow-ups folded in) |
 | sk-04 | Rational, dyadic and matrix library (∞-norms, products); Q order laws; canonical ℚ as an ordered-field instance (optional) | sk-02 | laws closed — **done** (2026-10-13; 37 laws: ℚ order, ℚ in every ordered field, gcd reduction, canonical ℚ, vectors and matrices; runtime bigint dyadics deferred to sk-05, §16) |
-| sk-05 | Parametric block certificate (§8.3), mean-value method (Q12) | sk-04 | law closed |
-| sk-06 | Composition theorem (§8.4), side conditions (§8.6) | sk-05 | laws closed |
+| sk-05 | Parametric block certificate (§8.3), mean-value method (Q12): generic K matrix library (dmat as the D instance), slopes, ball arithmetic, checker, the seven `cert_*` laws | sk-04 | laws closed (draft reviewed by audit; awaiting Danielle) |
+| sk-05b | Complete ordered fields (Q18): template (Archimedean + Cauchy with a modulus), axioms cross-checked against mathlib's ℝ in Lean, Banach's theorem; exactly one zero per block | sk-05 | laws closed |
+| sk-06 | Composition theorem (§8.4, exactly one solution in a complete ordered field), side conditions (§8.6), clearing or embedding constants (Q19) | sk-05, sk-05b | laws closed |
 | sk-07 | Core vocabulary §5.1 + meaning lemmas | sk-03, sk-06 | laws closed — **meaning lemmas proven** in every ordered field (2026-10-13); remaining: §8.6 side-condition certification for the vocabulary (with sk-06), line–line / point–circle / circle–circle distances |
 | sk-08 | `accept_sound`: certified, untouched, flips, diagnostics | sk-07 | law closed |
 | sk-09 | Proposer v1: pinning, decomposition, KKT/LM, refinement, certificate emission | sk-P1, sk-07 | fixture sketches certified; certify-on-commit time target set from sk-P1 |
@@ -866,6 +905,31 @@ sk-02 and sk-03 can run in parallel after sk-01.
   matrix code rather than a parallel copy.
   Order of work: the generic shape with the D instance in sk-05; ℚ next
   (`ofq` exists); ℚ(√d) later, as its own milestone.
+- **Q18** (Danielle, 2026-10-13) Existence is proven in Bend, not argued on
+  paper: a complete-ordered-field template (Archimedean + Cauchy with a
+  modulus) and Banach's theorem, with the axioms cross-checked against
+  mathlib's ℝ in Lean (§8.4). The sk-05 laws stay over every ordered field.
+- **sk-05 draft audit** (independent agent, 2026-10-13): one blocker
+  (`cert_contract` false for vectors longer than the block; fixed by
+  per-unknown radii that are 0 past the last unknown), should-fixes applied
+  (`cert_center`, `cert_local`, `cert_unique`, the stub's comment, §8.4,
+  parameters as one list of triples, componentwise conditions), and the
+  checker's shape requirements listed in §8.3.
+
+**Open for Danielle:**
+- **Q19** Constants in the checker. Draft: integers only, rational
+  constants cleared when blocks are built (sk-06). The audit notes clearing
+  is more than multiplying an equation by m (each factor of a product needs
+  its own multiplier; doable through the ℚ normalizer). Alternative: a
+  partial `ofq : ℚ → Maybe K` in `Num` with one `Emb` law (H(k) = ofq(q)
+  when defined). Then K = ℚ and ℚ(√d) take every constant directly and
+  K = D takes dyadic ones; clearing becomes an optional speedup for D.
+  Claude's recommendation: the partial `ofq`, decided before more is built
+  on `Num`.
+- **Trusted base:** the audit suggests the `cert_*` laws could become
+  untrusted library lemmas, with only the composed theorem trusted (then
+  `newton`, Y, q and `setv` need not be trusted). Natural to decide at sk-06,
+  when the composed theorem exists.
 
 ---
 

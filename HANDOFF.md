@@ -198,34 +198,27 @@ wrong; she restated it after the roll.)
   nice part is that the runtime refinement then becomes just another
   `Emb`, with no separate checker-refinement proof.
 
-**sk-05 draft written, awaiting Danielle's review** (DESIGN §8.3):
-`spec/knum.bend` (Num, Emb, ofkv/ofkm; trusted), `spec/cert.bend` (Block,
-Cert, the block in F, `pinned`, `ball`, `newton`; trusted), `lib/cert.bend`
-(the checker's signature; stub body rejecting everything), and four draft
-laws in `ROADMAP.bend`: `cert_factor` (0 <= q < 1), `cert_self` (Newton map
-sends the ball into itself), `cert_contract` (contracts by q), `cert_fix`
-(fixed points are zeros). ROADMAP checks (96 TODOs = 92 imported + 4).
-Questions in the draft: the law shape; Q12 = telescoping slopes in ball
-arithmetic; integer constants (rational ones cleared at block building,
-sk-06); per-parameter balls carried in the certificate; q carried, not
-computed. After approval: generic K matrix library (dmat as D instance),
-slopes, ball arithmetic, the real checker, then the proofs.
-
-**Decided (Danielle, 2026-10-13), to add to DESIGN §16 as Q18 after the
-audit:** prove existence in Bend, not on paper. The sk-05 laws stay as they
-are (every ordered field); a new template, a *complete* ordered field
-(OField + Archimedean + every Cauchy sequence with a modulus converges; only
-ℝ, up to isomorphism), gets Banach's theorem proven in Bend, giving exactly
-one zero per block in the ball, and §8.4's composition becomes a formal
-theorem in that template. Cauchy completeness alone is not enough (some
-non-Archimedean fields have it, and q^n never drops below an
-infinitesimal). Guard against a mis-stated axiom making the theorem
-vacuous: no constructive instance exists in Bend (ℝ has no decidable
-order), so cross-check the axioms against mathlib's ℝ in Lean.
-Also from the "what's untraditional" review, to apply with the audit fixes:
-per-unknown radii instead of one r (laws state the contraction without
-division: |y1_i - y2_i| <= s r_i for all i gives |N(y1)_i - N(y2)_i| <=
-q s r_i), and length conditions on every quantified vector.
+**sk-05 draft revised after an independent audit, awaiting Danielle's
+review** (DESIGN §8.3, §8.4, §16 Q18/Q19): `spec/knum.bend`,
+`spec/cert.bend` (per-unknown radii, 0 past the last unknown; parameters as
+`Par` triples in the certificate; `rbnd`, `ball`, `near`, `pinned`,
+`agree`, `newton`), `lib/cert.bend` (signature; stub rejecting everything,
+against which every law is trivially provable), seven draft laws in
+`ROADMAP.bend`: `cert_factor`, `cert_center`, `cert_self`,
+`cert_contract`, `cert_fix`, `cert_unique`, `cert_local`.
+- The audit's blocker (checker-verified): the first `cert_contract` was
+  false for vectors longer than the block. Fixed by the radii.
+- `bend ROADMAP.bend` stops at the TODO count before type-checking. To
+  type-check statements, prove them against the stub in a throwaway file
+  (fill each with `absurd(<goal>, ok)`, goal written out) and plant an
+  error to confirm the fills are checked. Done for all seven; file deleted.
+- Open for Danielle: Q19 (integer constants vs a partial `ofq` in `Num`;
+  recommendation: partial `ofq`), and later the trusted-base option (only
+  the composed theorem trusted).
+- Next after approval: generic K matrix library (dmat as D instance),
+  slopes, ball arithmetic, the real checker (a conjunction of small Bool
+  tests with soundness lemmas), proofs; then sk-05b (complete ordered
+  fields, Banach, Lean cross-check).
 
 sk-07's remaining items: line–line / point–circle / circle–circle distances
 (new kinds: spec arms, rerun `tools/mforms.py`, add per-kind lemmas), §8.6

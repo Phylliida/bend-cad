@@ -10,15 +10,24 @@ import ./spec/knum.bend as N
 import ./spec/cert.bend as C
 import ./lib/cert.bend as CK
 
-# Block certificates (sk-05, DESIGN §8.3; draft for Danielle's review)
+# Block certificates (sk-05, DESIGN §8.3; draft for Danielle's review,
+# revised after the independent audit)
 # ------------------------------------------------------------------
 # A certificate is checked in the computing numbers K and its claim holds in
 # every ordered field F that K maps into (H: a ring map with sound
 # comparisons). For every x whose parameters lie in their balls, write
-# N(y) = y - Y f(y; x) for the certificate's Newton map and B for the ball
-# ||y - ỹ|| <= r. Then 0 <= q < 1, N maps B into itself, N contracts B by
-# q, and a fixed point of N is a zero of f. In ℝ these give exactly one
-# zero of the block in B for each such x (Banach; DESIGN §8.4).
+# N(y) = y - Y f(y; x) for the certificate's Newton map and B for the box
+# |y_i - ỹ_i| <= r_i (r_i = 0 past the last unknown, so B has the block's
+# dimension). Then 0 <= q < 1, B contains its center, N maps B into itself
+# and contracts it by q (in the r-weighted infinity norm), a fixed point of
+# N is a zero of f, B holds at most one zero, and f reads only the
+# unknowns and the parameters. In a complete ordered field these give
+# exactly one zero of the block in B (Banach, proven in Bend; Q18).
+#
+# The checker in lib/cert.bend is a stub that rejects everything, so each
+# law below is trivially provable against it (ok is absurd). They stay
+# here until the real checker lands, and moving them to LAWS.bend needs a
+# gated positive test (check == True on a real block).
 
 # LAW: the contraction factor is in [0, 1)
 law cert_factor:
@@ -30,7 +39,17 @@ law cert_factor:
   for  ok: {CK.check(~K, b, c) == True{} : Bool}
   M.Both(O.le(~F, O.zero(F), C.factor(~K, ~F, ~H, c)), O.lt(F, C.factor(~K, ~F, ~H, c), O.one(F)))
 
-# LAW: the Newton map sends the ball into itself
+# LAW: the box contains its center (so it is not empty)
+law cert_center:
+  for ~K: N.Num
+  for ~F: O.OField
+  for ~H: N.Emb<K, F>
+  for +b: C.Block
+  for +c: C.Cert<K>
+  for  ok: {CK.check(~K, b, c) == True{} : Bool}
+  C.ball(~K, ~F, ~H, c, C.center(~K, ~F, ~H, c))
+
+# LAW: the Newton map sends the box into itself
 law cert_self:
   for ~K: N.Num
   for ~F: O.OField
@@ -39,12 +58,13 @@ law cert_self:
   for +c: C.Cert<K>
   for  ok: {CK.check(~K, b, c) == True{} : Bool}
   for +x: M.Vec(~F)
-  for  hx: C.pinned(~K, ~F, ~H, b, c, x)
+  for  hx: C.pinned(~K, ~F, ~H, c, x)
   for +y: M.Vec(~F)
   for  hy: C.ball(~K, ~F, ~H, c, y)
   C.ball(~K, ~F, ~H, c, C.newton(~K, ~F, ~H, b, c, x, y))
 
-# LAW: the Newton map contracts the ball by q
+# LAW: the Newton map contracts the box by q: points within s radii of
+# each other go to points within q s radii
 law cert_contract:
   for ~K: N.Num
   for ~F: O.OField
@@ -53,14 +73,14 @@ law cert_contract:
   for +c: C.Cert<K>
   for  ok: {CK.check(~K, b, c) == True{} : Bool}
   for +x: M.Vec(~F)
-  for  hx: C.pinned(~K, ~F, ~H, b, c, x)
+  for  hx: C.pinned(~K, ~F, ~H, c, x)
   for +y1: M.Vec(~F)
   for  h1: C.ball(~K, ~F, ~H, c, y1)
   for +y2: M.Vec(~F)
   for  h2: C.ball(~K, ~F, ~H, c, y2)
   for +s: O.C(F)
-  for  hs: M.vbnd(~F, C.vsub(~F, y1, y2), s)
-  M.vbnd(~F, C.vsub(~F, C.newton(~K, ~F, ~H, b, c, x, y1), C.newton(~K, ~F, ~H, b, c, x, y2)), O.mul(F, C.factor(~K, ~F, ~H, c), s))
+  for  hs: C.near(~K, ~F, ~H, c, s, y1, y2)
+  C.near(~K, ~F, ~H, c, O.mul(F, C.factor(~K, ~F, ~H, c), s), C.newton(~K, ~F, ~H, b, c, x, y1), C.newton(~K, ~F, ~H, b, c, x, y2))
 
 # LAW: a fixed point of the Newton map is a zero of the block
 law cert_fix:
@@ -74,3 +94,35 @@ law cert_fix:
   for +y: M.Vec(~F)
   for  hf: M.vbnd(~F, C.vsub(~F, C.newton(~K, ~F, ~H, b, c, x, y), y), O.zero(F))
   M.vbnd(~F, C.bfun(~F, b, x, y), O.zero(F))
+
+# LAW: the box holds at most one zero of the block
+law cert_unique:
+  for ~K: N.Num
+  for ~F: O.OField
+  for ~H: N.Emb<K, F>
+  for +b: C.Block
+  for +c: C.Cert<K>
+  for  ok: {CK.check(~K, b, c) == True{} : Bool}
+  for +x: M.Vec(~F)
+  for  hx: C.pinned(~K, ~F, ~H, c, x)
+  for +y1: M.Vec(~F)
+  for  h1: C.ball(~K, ~F, ~H, c, y1)
+  for  z1: M.vbnd(~F, C.bfun(~F, b, x, y1), O.zero(F))
+  for +y2: M.Vec(~F)
+  for  h2: C.ball(~K, ~F, ~H, c, y2)
+  for  z2: M.vbnd(~F, C.bfun(~F, b, x, y2), O.zero(F))
+  M.vbnd(~F, C.vsub(~F, y1, y2), O.zero(F))
+
+# LAW: the block reads only its unknowns and its parameters
+law cert_local:
+  for ~K: N.Num
+  for ~F: O.OField
+  for ~H: N.Emb<K, F>
+  for +b: C.Block
+  for +c: C.Cert<K>
+  for  ok: {CK.check(~K, b, c) == True{} : Bool}
+  for +x: M.Vec(~F)
+  for +x2: M.Vec(~F)
+  for  ha: C.agree(~K, ~F, c, x, x2)
+  for +y: M.Vec(~F)
+  {C.bfun(~F, b, x, y) == C.bfun(~F, b, x2, y) : M.Vec(~F)}

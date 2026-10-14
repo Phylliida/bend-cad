@@ -3,14 +3,18 @@
 # A block is a square system of polynomial equations f(y; z) = 0 in its
 # unknowns y, with parameters z (earlier blocks' variables, pinned values,
 # constants) known only to lie in balls. A certificate, written in the
-# checker's numbers K (spec/knum.bend), names a center ỹ and radius r for
-# the unknowns, a factor q, an approximate inverse Y of the Jacobian, and
-# each parameter's center and radius. What it claims holds in every ordered
-# field F that K maps into: for every choice of the parameters in their
-# balls, the Newton map y ↦ y − Y·f(y; z) sends the ball B(ỹ, r) into
-# itself and contracts it by q < 1, and its fixed points are zeros of f.
-# (In ℝ, Banach's theorem then gives exactly one zero in the ball, DESIGN
-# §8.4.) Norms are infinity norms; F has no norms, only bounds (spec/mat).
+# checker's numbers K (spec/knum.bend), names a center ỹ and a radius r_i
+# for each unknown, a factor q, an approximate inverse Y of the Jacobian,
+# and each parameter's index, center and radius. What it claims holds in
+# every ordered field F that K maps into: for every choice of the
+# parameters in their balls, the Newton map y ↦ y − Y·f(y; z) sends the box
+# B = {|y_i − ỹ_i| ≤ r_i} into itself and contracts it by q < 1, and its
+# fixed points are zeros of f. (In a complete ordered field, Banach's
+# theorem then gives exactly one zero in B; DESIGN §8.4, Q18.)
+#
+# Vectors are lists read with trailing zeros (spec/mat.bend). A radius past
+# the end of the radius list is 0, so B fixes every coordinate past the
+# last unknown at 0: B has exactly the block's dimension.
 
 import Base
 import ./ring.bend as E
@@ -22,59 +26,53 @@ import ./knum.bend as N
 # -----------------------
 
 # eqs must vanish; ys are the unknowns (variable indices, as many as
-# equations); ps are the parameters
+# equations)
 type Block is Data:
-  Block{eqs: List<&2, E.QExpr>, ys: List<&2, Nat>, ps: List<&2, Nat>}
+  Block{eqs: List<&2, E.QExpr>, ys: List<&2, Nat>}
 
 def Block.eqs(b: Block) -> List<&2, E.QExpr>:
   match b:
-    case Block{eqs, ys, ps}:
+    case Block{eqs, ys}:
       eqs
 
 def Block.ys(b: Block) -> List<&2, Nat>:
   match b:
-    case Block{eqs, ys, ps}:
+    case Block{eqs, ys}:
       ys
 
-def Block.ps(b: Block) -> List<&2, Nat>:
-  match b:
-    case Block{eqs, ys, ps}:
-      ps
+# a parameter: variable i lies within r of c
+type Par<-K: N.Num> is Data:
+  Par{i: Nat, c: N.NC(K), r: N.NC(K)}
 
-# yc, r: the unknowns' ball; q: the contraction factor; ym: Y (a row per
-# unknown); pc, pr: each parameter's center and radius, in ps's order
+# yc, yr: each unknown's center and radius; q: the contraction factor;
+# ym: Y (a row per unknown); ps: the parameters
 type Cert<-K: N.Num> is Data:
-  Cert{yc: List<&2, N.NC(K)>, r: N.NC(K), q: N.NC(K), ym: List<&2, List<&2, N.NC(K)>>, pc: List<&2, N.NC(K)>, pr: List<&2, N.NC(K)>}
+  Cert{yc: List<&2, N.NC(K)>, yr: List<&2, N.NC(K)>, q: N.NC(K), ym: List<&2, List<&2, N.NC(K)>>, ps: List<&2, Par<K>>}
 
 def Cert.yc(-K: N.Num, c: Cert<K>) -> List<&2, N.NC(K)>:
   match c:
-    case Cert{yc, r, q, ym, pc, pr}:
+    case Cert{yc, yr, q, ym, ps}:
       yc
 
-def Cert.r(-K: N.Num, c: Cert<K>) -> N.NC(K):
+def Cert.yr(-K: N.Num, c: Cert<K>) -> List<&2, N.NC(K)>:
   match c:
-    case Cert{yc, r, q, ym, pc, pr}:
-      r
+    case Cert{yc, yr, q, ym, ps}:
+      yr
 
 def Cert.q(-K: N.Num, c: Cert<K>) -> N.NC(K):
   match c:
-    case Cert{yc, r, q, ym, pc, pr}:
+    case Cert{yc, yr, q, ym, ps}:
       q
 
 def Cert.ym(-K: N.Num, c: Cert<K>) -> List<&2, List<&2, N.NC(K)>>:
   match c:
-    case Cert{yc, r, q, ym, pc, pr}:
+    case Cert{yc, yr, q, ym, ps}:
       ym
 
-def Cert.pc(-K: N.Num, c: Cert<K>) -> List<&2, N.NC(K)>:
+def Cert.ps(-K: N.Num, c: Cert<K>) -> List<&2, Par<K>>:
   match c:
-    case Cert{yc, r, q, ym, pc, pr}:
-      pc
-
-def Cert.pr(-K: N.Num, c: Cert<K>) -> List<&2, N.NC(K)>:
-  match c:
-    case Cert{yc, r, q, ym, pc, pr}:
-      pr
+    case Cert{yc, yr, q, ym, ps}:
+      ps
 
 # The certificate's numbers in F
 # ------------------------------
@@ -82,8 +80,8 @@ def Cert.pr(-K: N.Num, c: Cert<K>) -> List<&2, N.NC(K)>:
 def center(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, c: Cert<K>) -> M.Vec(~F):
   N.ofkv(~K, ~F, ~H, Cert.yc(K, c))
 
-def radius(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, c: Cert<K>) -> O.C(F):
-  N.emap(K, F, H, Cert.r(K, c))
+def radii(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, c: Cert<K>) -> M.Vec(~F):
+  N.ofkv(~K, ~F, ~H, Cert.yr(K, c))
 
 def factor(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, c: Cert<K>) -> O.C(F):
   N.emap(K, F, H, Cert.q(K, c))
@@ -134,24 +132,57 @@ def bfun(~F: O.OField, +b: Block, x: M.Vec(~F), y: M.Vec(~F)) -> M.Vec(~F):
 # What the certificate says
 # -------------------------
 
-# each parameter x_i lies within its radius of its center
-def pin.go(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +x: M.Vec(~F), ps: List<&2, Nat>, pc: List<&2, N.NC(K)>, pr: List<&2, N.NC(K)>) -> Data:
-  match ps pc pr:
-    case Nil{} pc pr:
+# |d_i| <= r_i for every i, with r_i = 0 past r's end
+def rbnd(~F: O.OField, d: M.Vec(~F), r: M.Vec(~F)) -> Data:
+  match d r:
+    case Nil{} r:
       Unit
-    case Con{i, ks} Nil{} pr:
-      Unit
-    case Con{i, ks} Con{a, cs} Nil{}:
-      Unit
-    case Con{i, ks} Con{a, cs} Con{s, ss}:
-      M.Both(M.bnd(~F, O.sub(~F, O.lookup(~F, x, i), N.emap(K, F, H, a)), N.emap(K, F, H, s)), pin.go(~K, ~F, ~H, x, ks, cs, ss))
+    case Con{a, ds} Nil{}:
+      M.Both(M.bnd(~F, a, O.zero(F)), rbnd(~F, ds, Nil{}))
+    case Con{a, ds} Con{s, rs}:
+      M.Both(M.bnd(~F, a, s), rbnd(~F, ds, rs))
 
-def pinned(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, b: Block, +c: Cert<K>, x: M.Vec(~F)) -> Data:
-  pin.go(~K, ~F, ~H, x, Block.ps(b), Cert.pc(K, c), Cert.pr(K, c))
-
-# ||y - ỹ|| <= r
+# y lies in the box B: |y_i - ỹ_i| <= r_i
 def ball(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +c: Cert<K>, y: M.Vec(~F)) -> Data:
-  M.vbnd(~F, vsub(~F, y, center(~K, ~F, ~H, c)), radius(~K, ~F, ~H, c))
+  rbnd(~F, vsub(~F, y, center(~K, ~F, ~H, c)), radii(~K, ~F, ~H, c))
+
+# u and v are within s radii of each other: |u_i - v_i| <= s r_i
+def near(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, c: Cert<K>, +s: O.C(F), u: M.Vec(~F), v: M.Vec(~F)) -> Data:
+  rbnd(~F, vsub(~F, u, v), M.vscale(~F, s, radii(~K, ~F, ~H, c)))
+
+# parameter p holds at x: |x_i - c| <= r
+def pin1(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +x: M.Vec(~F), p: Par<K>) -> Data:
+  match p:
+    case Par{i, a, s}:
+      M.bnd(~F, O.sub(~F, O.lookup(~F, x, i), N.emap(K, F, H, a)), N.emap(K, F, H, s))
+
+def pin.go(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +x: M.Vec(~F), ps: List<&2, Par<K>>) -> Data:
+  match ps:
+    case Nil{}:
+      Unit
+    case Con{p, rest}:
+      M.Both(pin1(~K, ~F, ~H, x, p), pin.go(~K, ~F, ~H, x, rest))
+
+# every parameter lies in its ball
+def pinned(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, c: Cert<K>, x: M.Vec(~F)) -> Data:
+  pin.go(~K, ~F, ~H, x, Cert.ps(K, c))
+
+# x and x2 agree on parameter p
+def agree1(~K: N.Num, ~F: O.OField, +x: M.Vec(~F), +x2: M.Vec(~F), p: Par<K>) -> Data:
+  match p:
+    case Par{i, a, s}:
+      {O.lookup(~F, x, i) == O.lookup(~F, x2, i) : O.C(F)}
+
+def agree.go(~K: N.Num, ~F: O.OField, +x: M.Vec(~F), +x2: M.Vec(~F), ps: List<&2, Par<K>>) -> Data:
+  match ps:
+    case Nil{}:
+      Unit
+    case Con{p, rest}:
+      M.Both(agree1(~K, ~F, x, x2, p), agree.go(~K, ~F, x, x2, rest))
+
+# x and x2 agree on every parameter
+def agree(~K: N.Num, ~F: O.OField, c: Cert<K>, x: M.Vec(~F), x2: M.Vec(~F)) -> Data:
+  agree.go(~K, ~F, x, x2, Cert.ps(K, c))
 
 # the Newton map y - Y f(y; z)
 def newton(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, b: Block, c: Cert<K>, x: M.Vec(~F), +y: M.Vec(~F)) -> M.Vec(~F):

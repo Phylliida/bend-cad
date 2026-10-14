@@ -3,8 +3,10 @@
 # means.
 #
 # Draft for review: the signature is final, the body is a stub that rejects
-# everything (so nothing may be proven against it; the laws stay in
-# ROADMAP.bend until the real checker lands).
+# everything. Against this stub every cert_* law is trivially provable (the
+# hypothesis check == True is absurd), which proves nothing; the laws stay
+# in ROADMAP.bend until the real checker lands, and moving them needs a
+# gated positive test (check == True on a real block).
 
 import Base
 import ../spec/knum.bend as N
