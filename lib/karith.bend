@@ -377,3 +377,108 @@ def kident_ofk(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, n: Nat) -> {M.ident(~F,
       %kident_ofk(~K, ~F, ~H, k) : {Con{[O.one(F)], M.shift(~F, M.ident(~F, k))} == Con{[O.one(F)], M.shift(~F, _)} : M.Mat(~F)}
       {==}
 
+
+# More vector helpers for the checker
+# -----------------------------------
+
+def kvabs(~K: N.Num, u: N.KVec(~K)) -> N.KVec(~K):
+  match u:
+    case Nil{}:
+      Nil{}
+    case Con{a, us}:
+      Con{kabs(~K, a), kvabs(~K, us)}
+
+def kmabs(~K: N.Num, a: N.KMat(~K)) -> N.KMat(~K):
+  match a:
+    case Nil{}:
+      Nil{}
+    case Con{r, rs}:
+      Con{kvabs(~K, r), kmabs(~K, rs)}
+
+# u's first n entries (zeros past its end)
+def kfit(~K: N.Num, n: Nat, u: N.KVec(~K)) -> N.KVec(~K):
+  match n u:
+    case 0n u:
+      Nil{}
+    case 1n+k Nil{}:
+      Con{N.nzero(K), kfit(~K, k, Nil{})}
+    case 1n+k Con{a, rest}:
+      Con{a, kfit(~K, k, rest)}
+
+# u without its first n entries
+def kdrop(~K: N.Num, n: Nat, u: N.KVec(~K)) -> N.KVec(~K):
+  match n u:
+    case 0n u:
+      u
+    case 1n+k Nil{}:
+      Nil{}
+    case 1n+k Con{a, rest}:
+      kdrop(~K, k, rest)
+
+def kapp(~K: N.Num, u: N.KVec(~K), w: N.KVec(~K)) -> N.KVec(~K):
+  match u:
+    case Nil{}:
+      w
+    case Con{a, us}:
+      Con{a, kapp(~K, us, w)}
+
+def kones(~K: N.Num, n: Nat) -> N.KVec(~K):
+  match n:
+    case 0n:
+      Nil{}
+    case 1n+k:
+      Con{N.none(K), kones(~K, k)}
+
+# u_i <= w_i for every i (zeros past each end)
+def kvle(~K: N.Num, u: N.KVec(~K), w: N.KVec(~K)) -> Bool:
+  match u w:
+    case Nil{} Nil{}:
+      True{}
+    case Nil{} Con{b, ws}:
+      band(kle(~K, N.nzero(K), b), kvle(~K, Nil{}, ws))
+    case Con{a, us} Nil{}:
+      band(kle(~K, a, N.nzero(K)), kvle(~K, us, Nil{}))
+    case Con{a, us} Con{b, ws}:
+      band(kle(~K, a, b), kvle(~K, us, ws))
+
+# u_i < w_i for every i of w (u read with zeros past its end)
+def kvlt(~K: N.Num, u: N.KVec(~K), w: N.KVec(~K)) -> Bool:
+  match u w:
+    case Nil{} Nil{}:
+      True{}
+    case Nil{} Con{b, ws}:
+      band(klt(~K, N.nzero(K), b), kvlt(~K, Nil{}, ws))
+    case Con{a, us} Nil{}:
+      True{}
+    case Con{a, us} Con{b, ws}:
+      band(klt(~K, a, b), kvlt(~K, us, ws))
+
+# Lengths
+# -------
+
+def klen(~K: N.Num, u: N.KVec(~K)) -> Nat:
+  match u:
+    case Nil{}:
+      0n
+    case Con{a, us}:
+      1n+klen(~K, us)
+
+def nateq(a: Nat, b: Nat) -> Bool:
+  match a b:
+    case 0n 0n:
+      True{}
+    case 0n 1n+j:
+      False{}
+    case 1n+i 0n:
+      False{}
+    case 1n+i 1n+j:
+      nateq(i, j)
+
+def natle(a: Nat, b: Nat) -> Bool:
+  match a b:
+    case 0n b:
+      True{}
+    case 1n+i 0n:
+      False{}
+    case 1n+i 1n+j:
+      natle(i, j)

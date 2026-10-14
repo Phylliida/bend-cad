@@ -24,9 +24,9 @@ import ./lib/cert.bend as CK
 # field these give exactly one zero of the block in B (Banach, proven in
 # Bend; Q18).
 #
-# The checker in lib/cert.bend is a stub that rejects everything, so each
-# law below is trivially provable against it (ok is absurd). They stay
-# here until the real checker lands, and moving them to LAWS.bend needs a
+# The checker is lib/cert.bend (computational part written; it accepts a
+# real circle-circle certificate over the dyadics and rejects six bad ones,
+# proto/cc_run.bend). The laws move to LAWS.bend with their proofs and a
 # gated positive test (check == True on a real block).
 
 # LAW: the contraction factor is in [0, 1)
