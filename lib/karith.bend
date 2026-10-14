@@ -174,3 +174,206 @@ def klt_ok.go(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, c: Cmp, +a: N.NC(K), +b:
 # K says a < b, so H a < H b
 def klt_ok(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.NC(K), +b: N.NC(K), h: {klt(~K, a, b) == True{} : Bool}) -> O.lt(F, N.emap(K, F, H, a), N.emap(K, F, H, b)):
   klt_ok.go(~K, ~F, ~H, N.ncmp(K, a, b), a, b, {==}, h)
+
+# Vectors and matrices over K (the generic copy of spec/mat.bend's dyadic
+# operations)
+# ------------------------------------------------------------------------
+
+def kvadd(~K: N.Num, u: N.KVec(~K), w: N.KVec(~K)) -> N.KVec(~K):
+  match u w:
+    case Nil{} w:
+      w
+    case Con{a, us} Nil{}:
+      Con{a, us}
+    case Con{a, us} Con{b, ws}:
+      Con{N.nadd(K, a, b), kvadd(~K, us, ws)}
+
+def kvneg(~K: N.Num, u: N.KVec(~K)) -> N.KVec(~K):
+  match u:
+    case Nil{}:
+      Nil{}
+    case Con{a, us}:
+      Con{N.nneg(K, a), kvneg(~K, us)}
+
+def kvscale(~K: N.Num, +c: N.NC(K), u: N.KVec(~K)) -> N.KVec(~K):
+  match u:
+    case Nil{}:
+      Nil{}
+    case Con{a, us}:
+      Con{N.nmul(K, c, a), kvscale(~K, c, us)}
+
+def kdot(~K: N.Num, a: N.KVec(~K), v: N.KVec(~K)) -> N.NC(K):
+  match a v:
+    case Nil{} v:
+      N.nzero(K)
+    case Con{x, xs} Nil{}:
+      N.nzero(K)
+    case Con{x, xs} Con{y, ys}:
+      N.nadd(K, N.nmul(K, x, y), kdot(~K, xs, ys))
+
+def kmatvec(~K: N.Num, a: N.KMat(~K), +v: N.KVec(~K)) -> N.KVec(~K):
+  match a:
+    case Nil{}:
+      Nil{}
+    case Con{r, rs}:
+      Con{kdot(~K, r, v), kmatvec(~K, rs, v)}
+
+def kvecmat(~K: N.Num, a: N.KVec(~K), b: N.KMat(~K)) -> N.KVec(~K):
+  match a b:
+    case Nil{} b:
+      Nil{}
+    case Con{x, xs} Nil{}:
+      Nil{}
+    case Con{x, xs} Con{r, rs}:
+      kvadd(~K, kvscale(~K, x, r), kvecmat(~K, xs, rs))
+
+def kmatmul(~K: N.Num, a: N.KMat(~K), +b: N.KMat(~K)) -> N.KMat(~K):
+  match a:
+    case Nil{}:
+      Nil{}
+    case Con{r, rs}:
+      Con{kvecmat(~K, r, b), kmatmul(~K, rs, b)}
+
+def kmadd(~K: N.Num, a: N.KMat(~K), b: N.KMat(~K)) -> N.KMat(~K):
+  match a b:
+    case Nil{} b:
+      b
+    case Con{r, rs} Nil{}:
+      Con{r, rs}
+    case Con{r, rs} Con{t, ts}:
+      Con{kvadd(~K, r, t), kmadd(~K, rs, ts)}
+
+def kmneg(~K: N.Num, a: N.KMat(~K)) -> N.KMat(~K):
+  match a:
+    case Nil{}:
+      Nil{}
+    case Con{r, rs}:
+      Con{kvneg(~K, r), kmneg(~K, rs)}
+
+def kshift(~K: N.Num, a: N.KMat(~K)) -> N.KMat(~K):
+  match a:
+    case Nil{}:
+      Nil{}
+    case Con{r, rs}:
+      Con{Con{N.nzero(K), r}, kshift(~K, rs)}
+
+def kident(~K: N.Num, n: Nat) -> N.KMat(~K):
+  match n:
+    case 0n:
+      Nil{}
+    case 1n+k:
+      Con{[N.none(K)], kshift(~K, kident(~K, k))}
+
+# Vector and matrix operations of K are F's
+# ------------------------------------------
+
+def kvadd_ofk(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: N.KVec(~K), w: N.KVec(~K)) -> {M.vadd(~F, N.ofkv(~K, ~F, ~H, u), N.ofkv(~K, ~F, ~H, w)) == N.ofkv(~K, ~F, ~H, kvadd(~K, u, w)) : M.Vec(~F)}:
+  match u w:
+    case Nil{} w:
+      {==}
+    case Con{+a, +us} Nil{}:
+      {==}
+    case Con{+a, +us} Con{+b, +ws}:
+      %ea(~K, ~F, ~H, a, b) : {Con{O.add(F, N.emap(K, F, H, a), N.emap(K, F, H, b)), M.vadd(~F, N.ofkv(~K, ~F, ~H, us), N.ofkv(~K, ~F, ~H, ws))} == Con{_, N.ofkv(~K, ~F, ~H, kvadd(~K, us, ws))} : M.Vec(~F)}
+      %kvadd_ofk(~K, ~F, ~H, us, ws) : {Con{O.add(F, N.emap(K, F, H, a), N.emap(K, F, H, b)), M.vadd(~F, N.ofkv(~K, ~F, ~H, us), N.ofkv(~K, ~F, ~H, ws))} == Con{O.add(F, N.emap(K, F, H, a), N.emap(K, F, H, b)), _} : M.Vec(~F)}
+      {==}
+
+def kvneg_ofk(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: N.KVec(~K)) -> {M.vneg(~F, N.ofkv(~K, ~F, ~H, u)) == N.ofkv(~K, ~F, ~H, kvneg(~K, u)) : M.Vec(~F)}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{+a, +us}:
+      %en(~K, ~F, ~H, a) : {Con{O.neg(F, N.emap(K, F, H, a)), M.vneg(~F, N.ofkv(~K, ~F, ~H, us))} == Con{_, N.ofkv(~K, ~F, ~H, kvneg(~K, us))} : M.Vec(~F)}
+      %kvneg_ofk(~K, ~F, ~H, us) : {Con{O.neg(F, N.emap(K, F, H, a)), M.vneg(~F, N.ofkv(~K, ~F, ~H, us))} == Con{O.neg(F, N.emap(K, F, H, a)), _} : M.Vec(~F)}
+      {==}
+
+def kvscale_ofk(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +c: N.NC(K), u: N.KVec(~K)) -> {M.vscale(~F, N.emap(K, F, H, c), N.ofkv(~K, ~F, ~H, u)) == N.ofkv(~K, ~F, ~H, kvscale(~K, c, u)) : M.Vec(~F)}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{+a, +us}:
+      %em(~K, ~F, ~H, c, a) : {Con{O.mul(F, N.emap(K, F, H, c), N.emap(K, F, H, a)), M.vscale(~F, N.emap(K, F, H, c), N.ofkv(~K, ~F, ~H, us))} == Con{_, N.ofkv(~K, ~F, ~H, kvscale(~K, c, us))} : M.Vec(~F)}
+      %kvscale_ofk(~K, ~F, ~H, c, us) : {Con{O.mul(F, N.emap(K, F, H, c), N.emap(K, F, H, a)), M.vscale(~F, N.emap(K, F, H, c), N.ofkv(~K, ~F, ~H, us))} == Con{O.mul(F, N.emap(K, F, H, c), N.emap(K, F, H, a)), _} : M.Vec(~F)}
+      {==}
+
+def kdot_ofk(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, a: N.KVec(~K), v: N.KVec(~K)) -> {M.dot(~F, N.ofkv(~K, ~F, ~H, a), N.ofkv(~K, ~F, ~H, v)) == N.emap(K, F, H, kdot(~K, a, v)) : O.C(F)}:
+  match a v:
+    case Nil{} v:
+      ez(~K, ~F, ~H)
+    case Con{+x, +xs} Nil{}:
+      ez(~K, ~F, ~H)
+    case Con{+x, +xs} Con{+y, +ys}:
+      %ea(~K, ~F, ~H, N.nmul(K, x, y), kdot(~K, xs, ys)) : {O.add(F, O.mul(F, N.emap(K, F, H, x), N.emap(K, F, H, y)), M.dot(~F, N.ofkv(~K, ~F, ~H, xs), N.ofkv(~K, ~F, ~H, ys))) == _ : O.C(F)}
+      %em(~K, ~F, ~H, x, y) : {O.add(F, O.mul(F, N.emap(K, F, H, x), N.emap(K, F, H, y)), M.dot(~F, N.ofkv(~K, ~F, ~H, xs), N.ofkv(~K, ~F, ~H, ys))) == O.add(F, _, N.emap(K, F, H, kdot(~K, xs, ys))) : O.C(F)}
+      %kdot_ofk(~K, ~F, ~H, xs, ys) : {O.add(F, O.mul(F, N.emap(K, F, H, x), N.emap(K, F, H, y)), M.dot(~F, N.ofkv(~K, ~F, ~H, xs), N.ofkv(~K, ~F, ~H, ys))) == O.add(F, O.mul(F, N.emap(K, F, H, x), N.emap(K, F, H, y)), _) : O.C(F)}
+      {==}
+
+def kmatvec_ofk(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, a: N.KMat(~K), +v: N.KVec(~K)) -> {M.matvec(~F, N.ofkm(~K, ~F, ~H, a), N.ofkv(~K, ~F, ~H, v)) == N.ofkv(~K, ~F, ~H, kmatvec(~K, a, v)) : M.Vec(~F)}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +rs}:
+      %kdot_ofk(~K, ~F, ~H, r, v) : {Con{M.dot(~F, N.ofkv(~K, ~F, ~H, r), N.ofkv(~K, ~F, ~H, v)), M.matvec(~F, N.ofkm(~K, ~F, ~H, rs), N.ofkv(~K, ~F, ~H, v))} == Con{_, N.ofkv(~K, ~F, ~H, kmatvec(~K, rs, v))} : M.Vec(~F)}
+      %kmatvec_ofk(~K, ~F, ~H, rs, v) : {Con{M.dot(~F, N.ofkv(~K, ~F, ~H, r), N.ofkv(~K, ~F, ~H, v)), M.matvec(~F, N.ofkm(~K, ~F, ~H, rs), N.ofkv(~K, ~F, ~H, v))} == Con{M.dot(~F, N.ofkv(~K, ~F, ~H, r), N.ofkv(~K, ~F, ~H, v)), _} : M.Vec(~F)}
+      {==}
+
+def kvecmat_ofk(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, a: N.KVec(~K), b: N.KMat(~K)) -> {M.vecmat(~F, N.ofkv(~K, ~F, ~H, a), N.ofkm(~K, ~F, ~H, b)) == N.ofkv(~K, ~F, ~H, kvecmat(~K, a, b)) : M.Vec(~F)}:
+  match a b:
+    case Nil{} b:
+      {==}
+    case Con{+x, +xs} Nil{}:
+      {==}
+    case Con{+x, +xs} Con{+r, +rs}:
+      %kvadd_ofk(~K, ~F, ~H, kvscale(~K, x, r), kvecmat(~K, xs, rs)) : {M.vadd(~F, M.vscale(~F, N.emap(K, F, H, x), N.ofkv(~K, ~F, ~H, r)), M.vecmat(~F, N.ofkv(~K, ~F, ~H, xs), N.ofkm(~K, ~F, ~H, rs))) == _ : M.Vec(~F)}
+      %kvscale_ofk(~K, ~F, ~H, x, r) : {M.vadd(~F, M.vscale(~F, N.emap(K, F, H, x), N.ofkv(~K, ~F, ~H, r)), M.vecmat(~F, N.ofkv(~K, ~F, ~H, xs), N.ofkm(~K, ~F, ~H, rs))) == M.vadd(~F, _, N.ofkv(~K, ~F, ~H, kvecmat(~K, xs, rs))) : M.Vec(~F)}
+      %kvecmat_ofk(~K, ~F, ~H, xs, rs) : {M.vadd(~F, M.vscale(~F, N.emap(K, F, H, x), N.ofkv(~K, ~F, ~H, r)), M.vecmat(~F, N.ofkv(~K, ~F, ~H, xs), N.ofkm(~K, ~F, ~H, rs))) == M.vadd(~F, M.vscale(~F, N.emap(K, F, H, x), N.ofkv(~K, ~F, ~H, r)), _) : M.Vec(~F)}
+      {==}
+
+def kmatmul_ofk(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, a: N.KMat(~K), +b: N.KMat(~K)) -> {M.matmul(~F, N.ofkm(~K, ~F, ~H, a), N.ofkm(~K, ~F, ~H, b)) == N.ofkm(~K, ~F, ~H, kmatmul(~K, a, b)) : M.Mat(~F)}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +rs}:
+      %kvecmat_ofk(~K, ~F, ~H, r, b) : {Con{M.vecmat(~F, N.ofkv(~K, ~F, ~H, r), N.ofkm(~K, ~F, ~H, b)), M.matmul(~F, N.ofkm(~K, ~F, ~H, rs), N.ofkm(~K, ~F, ~H, b))} == Con{_, N.ofkm(~K, ~F, ~H, kmatmul(~K, rs, b))} : M.Mat(~F)}
+      %kmatmul_ofk(~K, ~F, ~H, rs, b) : {Con{M.vecmat(~F, N.ofkv(~K, ~F, ~H, r), N.ofkm(~K, ~F, ~H, b)), M.matmul(~F, N.ofkm(~K, ~F, ~H, rs), N.ofkm(~K, ~F, ~H, b))} == Con{M.vecmat(~F, N.ofkv(~K, ~F, ~H, r), N.ofkm(~K, ~F, ~H, b)), _} : M.Mat(~F)}
+      {==}
+
+def kmadd_ofk(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, a: N.KMat(~K), b: N.KMat(~K)) -> {M.madd(~F, N.ofkm(~K, ~F, ~H, a), N.ofkm(~K, ~F, ~H, b)) == N.ofkm(~K, ~F, ~H, kmadd(~K, a, b)) : M.Mat(~F)}:
+  match a b:
+    case Nil{} b:
+      {==}
+    case Con{+r, +rs} Nil{}:
+      {==}
+    case Con{+r, +rs} Con{+t, +ts}:
+      %kvadd_ofk(~K, ~F, ~H, r, t) : {Con{M.vadd(~F, N.ofkv(~K, ~F, ~H, r), N.ofkv(~K, ~F, ~H, t)), M.madd(~F, N.ofkm(~K, ~F, ~H, rs), N.ofkm(~K, ~F, ~H, ts))} == Con{_, N.ofkm(~K, ~F, ~H, kmadd(~K, rs, ts))} : M.Mat(~F)}
+      %kmadd_ofk(~K, ~F, ~H, rs, ts) : {Con{M.vadd(~F, N.ofkv(~K, ~F, ~H, r), N.ofkv(~K, ~F, ~H, t)), M.madd(~F, N.ofkm(~K, ~F, ~H, rs), N.ofkm(~K, ~F, ~H, ts))} == Con{M.vadd(~F, N.ofkv(~K, ~F, ~H, r), N.ofkv(~K, ~F, ~H, t)), _} : M.Mat(~F)}
+      {==}
+
+def kmneg_ofk(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, a: N.KMat(~K)) -> {M.mneg(~F, N.ofkm(~K, ~F, ~H, a)) == N.ofkm(~K, ~F, ~H, kmneg(~K, a)) : M.Mat(~F)}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +rs}:
+      %kvneg_ofk(~K, ~F, ~H, r) : {Con{M.vneg(~F, N.ofkv(~K, ~F, ~H, r)), M.mneg(~F, N.ofkm(~K, ~F, ~H, rs))} == Con{_, N.ofkm(~K, ~F, ~H, kmneg(~K, rs))} : M.Mat(~F)}
+      %kmneg_ofk(~K, ~F, ~H, rs) : {Con{M.vneg(~F, N.ofkv(~K, ~F, ~H, r)), M.mneg(~F, N.ofkm(~K, ~F, ~H, rs))} == Con{M.vneg(~F, N.ofkv(~K, ~F, ~H, r)), _} : M.Mat(~F)}
+      {==}
+
+def kshift_ofk(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, a: N.KMat(~K)) -> {M.shift(~F, N.ofkm(~K, ~F, ~H, a)) == N.ofkm(~K, ~F, ~H, kshift(~K, a)) : M.Mat(~F)}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +rs}:
+      %ez(~K, ~F, ~H) : {Con{Con{O.zero(F), N.ofkv(~K, ~F, ~H, r)}, M.shift(~F, N.ofkm(~K, ~F, ~H, rs))} == Con{Con{_, N.ofkv(~K, ~F, ~H, r)}, N.ofkm(~K, ~F, ~H, kshift(~K, rs))} : M.Mat(~F)}
+      %kshift_ofk(~K, ~F, ~H, rs) : {Con{Con{O.zero(F), N.ofkv(~K, ~F, ~H, r)}, M.shift(~F, N.ofkm(~K, ~F, ~H, rs))} == Con{Con{O.zero(F), N.ofkv(~K, ~F, ~H, r)}, _} : M.Mat(~F)}
+      {==}
+
+def kident_ofk(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, n: Nat) -> {M.ident(~F, n) == N.ofkm(~K, ~F, ~H, kident(~K, n)) : M.Mat(~F)}:
+  match n:
+    case 0n:
+      {==}
+    case 1n++k:
+      %eo(~K, ~F, ~H) : {Con{[O.one(F)], M.shift(~F, M.ident(~F, k))} == Con{[_], N.ofkm(~K, ~F, ~H, kshift(~K, kident(~K, k)))} : M.Mat(~F)}
+      %kshift_ofk(~K, ~F, ~H, kident(~K, k)) : {Con{[O.one(F)], M.shift(~F, M.ident(~F, k))} == Con{[O.one(F)], _} : M.Mat(~F)}
+      %kident_ofk(~K, ~F, ~H, k) : {Con{[O.one(F)], M.shift(~F, M.ident(~F, k))} == Con{[O.one(F)], M.shift(~F, _)} : M.Mat(~F)}
+      {==}
+
