@@ -1534,3 +1534,36 @@ def zeros_of_holds(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, h: SK.Sketch.hol
 # LAW sketch_unique: at most one geometry in the box means the sketch
 def sketch_unique(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +sk: SK.Sketch, +gc: N.KVec(~K), +gr: N.KVec(~K), p: PL.Plan<K>, ok: {PL.check(~K, SK.Sketch.eqs(sk), gc, gr, p) == True{} : Bool}, +x1: M.Vec(~F), h1: BX.inbox(~K, ~F, ~H, gc, gr, x1), m1: SK.Sketch.means(~F, x1, sk), +x2: M.Vec(~F), h2: BX.inbox(~K, ~F, ~H, gc, gr, x2), m2: SK.Sketch.means(~F, x2, sk)) -> {x1 == x2 : M.Vec(~F)}:
   plan_unique(~K, ~F, ~H, SK.Sketch.eqs(sk), gc, gr, p, ok, x1, h1, zeros_of_holds(~F, x1, sk, MN.sketch_complete(~F, x1, sk, m1)), x2, h2, zeros_of_holds(~F, x2, sk, MN.sketch_complete(~F, x2, sk, m2)))
+
+# Pins
+# ----
+
+def box_pin.len(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +gc: N.KVec(~K), +i: Nat, hi: {KA.natle(1n+i, KA.klen(~K, gc)) == True{} : Bool}) -> {KA.natle(1n+i, M.len(~F, N.ofkv(~K, ~F, ~H, gc))) == True{} : Bool}:
+  %Equal.sym(Nat, M.len(~F, N.ofkv(~K, ~F, ~H, gc)), KA.klen(~K, gc), CP.len_ofkv(~K, ~F, ~H, gc)) : {KA.natle(1n+i, _) == True{} : Bool}
+  hi
+
+def box_pin.ez(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +k: N.NC(K), hk: {k == N.nzero(K) : N.NC(K)}) -> {N.emap(K, F, H, k) == O.zero(F) : O.C(F)}:
+  %Equal.sym(N.NC(K), k, N.nzero(K), hk) : {N.emap(K, F, H, _) == O.zero(F) : O.C(F)}
+  N.e_zero(K, F, H)
+
+def box_pin.r0(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +gr: N.KVec(~K), +i: Nat, hr: {KB.klook(~K, gr, i) == N.nzero(K) : N.NC(K)}) -> {O.lookup(~F, N.ofkv(~K, ~F, ~H, gr), i) == O.zero(F) : O.C(F)}:
+  Equal.trans(O.C(F), O.lookup(~F, N.ofkv(~K, ~F, ~H, gr), i), N.emap(K, F, H, KB.klook(~K, gr, i)), O.zero(F), Equal.sym(O.C(F), N.emap(K, F, H, KB.klook(~K, gr, i)), O.lookup(~F, N.ofkv(~K, ~F, ~H, gr), i), CP.klook_ofk(~K, ~F, ~H, gr, i)), box_pin.ez(~K, ~F, ~H, KB.klook(~K, gr, i), hr))
+
+def box_pin.eq2(~F: O.OField, +a: O.C(F), +b: O.C(F), z: {O.sub(~F, a, b) == O.zero(F) : O.C(F)}) -> {O.add(F, O.sub(~F, a, b), b) == b : O.C(F)}:
+  %Equal.sym(O.C(F), O.sub(~F, a, b), O.zero(F), z) : {O.add(F, _, b) == b : O.C(F)}
+  FR.fring_eq(~F, [a, b], E.ZAdd{E.ZCst{S.Z0{}}, E.ZVar{1n}}, E.ZVar{1n}, {==})
+
+def box_pin.eq(~F: O.OField, +a: O.C(F), +b: O.C(F), z: {O.sub(~F, a, b) == O.zero(F) : O.C(F)}) -> {a == b : O.C(F)}:
+  Equal.trans(O.C(F), a, O.add(F, O.sub(~F, a, b), b), b, FR.fring_eq(~F, [a, b], E.ZVar{0n}, E.ZAdd{E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{1n}}, {==}), box_pin.eq2(~F, a, b, z))
+
+# a coordinate the box gives radius 0 is its center, at every point of the box
+def box_pin(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +gc: N.KVec(~K), +gr: N.KVec(~K), +x: M.Vec(~F), h: BX.inbox(~K, ~F, ~H, gc, gr, x), +i: Nat, hi: {KA.natle(1n+i, KA.klen(~K, gc)) == True{} : Bool}, hr: {KB.klook(~K, gr, i) == N.nzero(K) : N.NC(K)}) -> {O.lookup(~F, x, i) == N.emap(K, F, H, KB.klook(~K, gc, i)) : O.C(F)}:
+  (+hl, +hb) = h
+  +c0 = N.ofkv(~K, ~F, ~H, gc)
+  +r0 = N.ofkv(~K, ~F, ~H, gr)
+  +a = O.lookup(~F, x, i)
+  +b = O.lookup(~F, c0, i)
+  +hb2 = BA.rbnd_look(~F, C.vsub(~F, x, c0), r0, hb, M.len(~F, c0), CP.len_vsub(~F, x, c0, M.len(~F, c0), hl, {==}), i, box_pin.len(~K, ~F, ~H, gc, i, hi))
+  +hb3 = FV.bval(~F, O.lookup(~F, C.vsub(~F, x, c0), i), O.sub(~F, a, b), O.lookup(~F, r0, i), Equal.sym(O.C(F), O.sub(~F, a, b), O.lookup(~F, C.vsub(~F, x, c0), i), SL.lookup_vsub(~F, x, c0, i)), hb2)
+  +hb4 = BA.bnd_rw_s(~F, O.sub(~F, a, b), O.lookup(~F, r0, i), O.zero(F), box_pin.r0(~K, ~F, ~H, gr, i, hr), hb3)
+  Equal.trans(O.C(F), a, b, N.emap(K, F, H, KB.klook(~K, gc, i)), box_pin.eq(~F, a, b, RL.bnd0_eq(~F, O.sub(~F, a, b), hb4)), Equal.sym(O.C(F), N.emap(K, F, H, KB.klook(~K, gc, i)), b, CP.klook_ofk(~K, ~F, ~H, gc, i)))
