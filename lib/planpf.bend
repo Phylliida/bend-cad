@@ -1524,7 +1524,7 @@ def sketch_exists.go(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +sk: SK.Sketch, w
 
 # LAW sketch_exists: in a complete ordered field the box holds a geometry
 # meaning the sketch
-def sketch_exists(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +gc: N.KVec(~K), +gr: N.KVec(~K), p: PL.Plan<K>, ok: {PL.check(~K, SK.Sketch.eqs(sk), gc, gr, p) == True{} : Bool}, os: {PL.check_sides(~K, SK.Sketch.sides(sk), gc, gr) == True{} : Bool}) -> &x: M.Vec(~F) -> (BX.inbox(~K, ~F, ~H, gc, gr, x) & SK.Sketch.means(~F, x, sk)):
+def sketch_exists(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +gc: N.KVec(~K), +gr: N.KVec(~K), cov: {BX.Sketch.within(sk, List.length(&2, N.NC(K), gc)) == True{} : Bool}, p: PL.Plan<K>, ok: {PL.check(~K, SK.Sketch.eqs(sk), gc, gr, p) == True{} : Bool}, os: {PL.check_sides(~K, SK.Sketch.sides(sk), gc, gr) == True{} : Bool}) -> &x: M.Vec(~F) -> (BX.inbox(~K, ~F, ~H, gc, gr, x) & SK.Sketch.means(~F, x, sk)):
   sketch_exists.go(~K, ~F, ~H, sk, w, gc, gr, os, plan_exists(~K, ~F, ~R, ~H, SK.Sketch.eqs(sk), gc, gr, p, ok))
 
 def zeros_of_holds(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, h: SK.Sketch.holds(~F, x, sk)) -> SK.Zeros(~F, x, SK.Sketch.eqs(sk)):
@@ -1532,7 +1532,7 @@ def zeros_of_holds(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, h: SK.Sketch.hol
   a
 
 # LAW sketch_unique: at most one geometry in the box means the sketch
-def sketch_unique(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +sk: SK.Sketch, +gc: N.KVec(~K), +gr: N.KVec(~K), p: PL.Plan<K>, ok: {PL.check(~K, SK.Sketch.eqs(sk), gc, gr, p) == True{} : Bool}, +x1: M.Vec(~F), h1: BX.inbox(~K, ~F, ~H, gc, gr, x1), m1: SK.Sketch.means(~F, x1, sk), +x2: M.Vec(~F), h2: BX.inbox(~K, ~F, ~H, gc, gr, x2), m2: SK.Sketch.means(~F, x2, sk)) -> {x1 == x2 : M.Vec(~F)}:
+def sketch_unique(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +sk: SK.Sketch, +gc: N.KVec(~K), +gr: N.KVec(~K), cov: {BX.Sketch.within(sk, List.length(&2, N.NC(K), gc)) == True{} : Bool}, p: PL.Plan<K>, ok: {PL.check(~K, SK.Sketch.eqs(sk), gc, gr, p) == True{} : Bool}, +x1: M.Vec(~F), h1: BX.inbox(~K, ~F, ~H, gc, gr, x1), m1: SK.Sketch.means(~F, x1, sk), +x2: M.Vec(~F), h2: BX.inbox(~K, ~F, ~H, gc, gr, x2), m2: SK.Sketch.means(~F, x2, sk)) -> {x1 == x2 : M.Vec(~F)}:
   plan_unique(~K, ~F, ~H, SK.Sketch.eqs(sk), gc, gr, p, ok, x1, h1, zeros_of_holds(~F, x1, sk, MN.sketch_complete(~F, x1, sk, m1)), x2, h2, zeros_of_holds(~F, x2, sk, MN.sketch_complete(~F, x2, sk, m2)))
 
 # Pins

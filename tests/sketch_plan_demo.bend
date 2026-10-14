@@ -42,6 +42,18 @@ def sk() -> SK.Sketch:
 def wf() -> SK.Sketch.wf(sk()):
   ((Unit{}, (Unit{}, (Unit{}, (Unit{}, Unit{})))), (({==}, {==}), (Unit{}, (({==}, {==}), (Unit{}, (({==}, {==}), (Unit{}, (({==}, {==}), (Unit{}, Unit{})))))))))
 
+# the box (8 centers) covers the sketch's variables 0..7
+def covered() -> {BX.Sketch.within(sk(), List.length(&2, N.NC(KI.dnum()), D.ch_gc())) == True{} : Bool}:
+  {==}
+
+# a box over fewer variables would not: the audit's empty box, and one
+# that stops before Q's y
+def uncovered() -> {BX.Sketch.within(sk(), 0n) == False{} : Bool}:
+  {==}
+
+def short() -> {BX.Sketch.within(sk(), 7n) == False{} : Bool}:
+  {==}
+
 def plan_ok() -> {PL.check(~KI.dnum(), SK.Sketch.eqs(sk()), D.ch_gc(), D.ch_gr(), D.ch_plan()) == True{} : Bool}:
   {==}
 
@@ -103,8 +115,8 @@ def exists.go(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +gc: N.KVec(~K), +gr: N.
   (+h, m) = hm
   (x, (m, pins(~K, ~F, ~H, gc, gr, x, h, hp)))
 
-def exists.k(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +gc: N.KVec(~K), +gr: N.KVec(~K), p: PL.Plan<K>, ok: {PL.check(~K, SK.Sketch.eqs(sk()), gc, gr, p) == True{} : Bool}, os: {PL.check_sides(~K, SK.Sketch.sides(sk()), gc, gr) == True{} : Bool}, hp: PinsAt(~K, gc, gr)) -> &x: M.Vec(~F) -> (SK.Sketch.means(~F, x, sk()) & Pins(~F, x)):
-  exists.go(~K, ~F, ~H, gc, gr, hp, PP.sketch_exists(~K, ~F, ~R, ~H, sk(), wf(), gc, gr, p, ok, os))
+def exists.k(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +gc: N.KVec(~K), +gr: N.KVec(~K), cov: {BX.Sketch.within(sk(), List.length(&2, N.NC(K), gc)) == True{} : Bool}, p: PL.Plan<K>, ok: {PL.check(~K, SK.Sketch.eqs(sk()), gc, gr, p) == True{} : Bool}, os: {PL.check_sides(~K, SK.Sketch.sides(sk()), gc, gr) == True{} : Bool}, hp: PinsAt(~K, gc, gr)) -> &x: M.Vec(~F) -> (SK.Sketch.means(~F, x, sk()) & Pins(~F, x)):
+  exists.go(~K, ~F, ~H, gc, gr, hp, PP.sketch_exists(~K, ~F, ~R, ~H, sk(), wf(), gc, gr, cov, p, ok, os))
 
 def pins_ok() -> PinsAt(~KI.dnum(), D.ch_gc(), D.ch_gr()):
   (({==}, ({==}, {==})), (({==}, ({==}, {==})), (({==}, ({==}, {==})), ({==}, ({==}, {==})))))
@@ -112,4 +124,4 @@ def pins_ok() -> PinsAt(~KI.dnum(), D.ch_gc(), D.ch_gr()):
 # In every complete ordered field there is a geometry meaning the sketch
 # with A = (0, 0) and B = (4, 0). (Over ℚ there is none: P = (2, ±√5).)
 def exists(~F: O.OField, ~R: CR.Complete<F>) -> &x: M.Vec(~F) -> (SK.Sketch.means(~F, x, sk()) & Pins(~F, x)):
-  exists.k(~KI.dnum(), ~F, ~R, ~KI.demb(~F), D.ch_gc(), D.ch_gr(), D.ch_plan(), plan_ok(), sides_ok(), pins_ok())
+  exists.k(~KI.dnum(), ~F, ~R, ~KI.demb(~F), D.ch_gc(), D.ch_gr(), covered(), D.ch_plan(), plan_ok(), sides_ok(), pins_ok())

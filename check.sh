@@ -27,4 +27,9 @@ for t in tests/*.bend; do
     echo "GATE: FAIL ($t relies on unsafe or foreign code)"; exit 1
   fi
 done
+# the sk-06 statements in ROADMAP.bend must match what tests/plan_laws.bend proves
+if ! python3 tools/lawsync.py >/dev/null; then
+  python3 tools/lawsync.py
+  echo "GATE: FAIL (ROADMAP.bend and tests/plan_laws.bend differ)"; exit 1
+fi
 echo "GATE: PASS"

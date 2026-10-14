@@ -676,9 +676,16 @@ whose `Sketch.sides` are checked over the box,
   `Sketch.means(x, sk)` (circles and arcs proper, each driving constraint
   meaning what it says, sk-07);
 - `sketch_unique`: in every ordered field at most one x in the box does.
-Both are a few lines from the plan laws with `sketch_sound` and
-`sketch_complete` (`lib/meaning.bend`). These are the statements the
-end-to-end claim (§9's accept_sound) will cite.
+Both also require the box to cover every variable the sketch names
+(`spec/box.bend`: `Sketch.within`), since a lookup past the end of x reads
+0: without it an empty box "certified" a sketch of two free points, both
+put at the origin (found by an independent audit, 2026-10-14). Both are a
+few lines from the plan laws with `sketch_sound` and `sketch_complete`
+(`lib/meaning.bend`). "Exactly one" is given the radius-0 coordinates
+(pins may be free degrees of freedom, §8.1); accept_sound (§11) reports
+pins separately. These are the statements the end-to-end claim will
+cite. `tools/lawsync.py` (in the gate) checks that ROADMAP's statements
+match their gated restatements in `tests/plan_laws.bend`.
 
 ### 8.5 Precision and its cost
 
@@ -701,9 +708,10 @@ a speedup, not a blocker.
 
 ### 8.6 Side conditions over balls
 
-*As built (sk-03):* a side condition is e > 0 or e ≥ 0. A nonnegative one is
-decided exactly when e has no variables (a dimension constant), and
-otherwise certified as e > 0 over the balls.
+*As built (sk-03, sk-06):* a side condition is e > 0 or e ≥ 0. The checker
+(`check_sides`) encloses e over the box in a ball and compares its lower
+end with 0 in K: > 0 for e > 0, ≥ 0 for e ≥ 0 (exact when e has no
+variables, e.g. a dimension constant).
 
 Signs, ranges and nondegeneracy (branch side, external/internal tangency, span
 ranges, anchor orientations) are certified over the balls with exact Lipschitz

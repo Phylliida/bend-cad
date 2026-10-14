@@ -13,8 +13,10 @@ import ./spec/sketch.bend as SK
 import ./spec/box.bend as BX
 import ./lib/plan.bend as PL
 
-# Composition (sk-06, DESIGN §8.4). DRAFT FOR REVIEW; all three proven in
-# lib/planpf.bend, and tests/plan_laws.bend keeps the proofs in the gate.
+# Composition (sk-06, DESIGN §8.4). DRAFT FOR REVIEW. All five sk-06 laws
+# (these three and the two sketch laws below) are proven in
+# lib/planpf.bend; tests/plan_laws.bend restates them with their proofs, and
+# the gate checks the restatements match these statements (tools/lawsync.py).
 # --------------------------------------------------
 # A system is a list of equations over variables 0, 1, ... (the sketch's
 # equations, pins made into radius-0 variables). A box gives each variable
@@ -22,7 +24,13 @@ import ./lib/plan.bend as PL
 # blocks in order, each with its unknowns, parameters, equations and a
 # certificate) is checked by lib/plan.bend's checker; it never appears in
 # the claim. The claim: the box holds exactly one solution of the system,
-# and every point of the box meets the side conditions.
+# and every point of the box meets the side conditions. "Exactly one" is
+# given the radius-0 coordinates: the proposer may pin free degrees of
+# freedom (§8.1), and the statement cannot tell them from fixed ones. A
+# variable past the box's end would read 0 in Zeros; these laws are about
+# systems over the box's variables, which the checker enforces (it rejects
+# an equation naming a later variable), and the sketch laws below state
+# their coverage as a hypothesis.
 
 # LAW: in a complete ordered field, the box holds a solution of the system.
 # Proven (lib/planpf.bend: the blocks in order, each extended by its Banach
@@ -79,12 +87,17 @@ law box_sides:
 
 # Sketches (sk-06 capstone). DRAFT FOR REVIEW.
 # --------------------------------------------
-# For a well-formed sketch whose exact system (Sketch.eqs) has a checked
-# plan and whose side conditions (Sketch.sides) are checked over the box:
-# in every complete ordered field there is a geometry in the box where
-# every circle and arc is proper and every driving constraint means what it
-# says (sk-07's meaning laws), and only one geometry in the box does. Both
-# follow from the laws above with sketch_sound and sketch_complete.
+# For a sketch whose exact system (Sketch.eqs) has a checked plan, with a
+# box that covers every variable the sketch names (spec/box.bend:
+# Sketch.within; a shorter box would silently read the rest as 0): in every
+# complete ordered field, if the sketch is well formed and its side
+# conditions (Sketch.sides) are checked over the box, there is a geometry
+# in the box where every circle and arc is proper and every driving
+# constraint means what it says (sk-07's meaning laws); and in every ordered
+# field only one geometry in the box does (given the radius-0
+# coordinates). Both follow from the laws above with sketch_sound and
+# sketch_complete. Degenerate geometry is allowed (sk-03): a segment may
+# collapse, and then parallel, perpendicular and on-line hold of it.
 
 # LAW: in a complete ordered field the box holds a geometry meaning the sketch
 law sketch_exists:
@@ -96,6 +109,7 @@ law sketch_exists:
   for  w: SK.Sketch.wf(sk)
   for +gc: N.KVec(~K)
   for +gr: N.KVec(~K)
+  for  cov: {BX.Sketch.within(sk, List.length(&2, N.NC(K), gc)) == True{} : Bool}
   for +p: PL.Plan<K>
   for  ok: {PL.check(~K, SK.Sketch.eqs(sk), gc, gr, p) == True{} : Bool}
   for  os: {PL.check_sides(~K, SK.Sketch.sides(sk), gc, gr) == True{} : Bool}
@@ -109,6 +123,7 @@ law sketch_unique:
   for +sk: SK.Sketch
   for +gc: N.KVec(~K)
   for +gr: N.KVec(~K)
+  for  cov: {BX.Sketch.within(sk, List.length(&2, N.NC(K), gc)) == True{} : Bool}
   for +p: PL.Plan<K>
   for  ok: {PL.check(~K, SK.Sketch.eqs(sk), gc, gr, p) == True{} : Bool}
   for +x1: M.Vec(~F)

@@ -266,6 +266,18 @@ step that needs it.
 - Benchmark (`tools/gen_plan_chain.py`, `proto/plan_chain_run.bend`,
   results in `proto/RESULTS.md`): the verified checker on the spike's
   depth-30 chains as sketches, 0.24-0.70 s native; depth 300 in 14 s.
+- Independent audit of the five statements (2026-10-14, fresh agent):
+  no soundness defect; one real gap, fixed: the sketch laws did not
+  require the box to cover the sketch's variables, so an empty box
+  "certified" two free points at the origin (lookup past the end reads 0).
+  Now both sketch laws take `cov: Sketch.within(sk, len gc)`
+  (`spec/box.bend`); `sketch_plan_demo` refuses the empty box and a box
+  one variable short. By design, noted in comments: uniqueness is given
+  the radius-0 coordinates; degenerate geometry (collapsed segments) is
+  allowed (sk-03). `tools/lawsync.py` (in the gate) keeps ROADMAP's
+  statements identical to their gated restatements. Open from the audit:
+  no gated test has a plan box with variable sides (circle r > 0) checked
+  jointly; `plan_unique`/`sketch_unique` have no concrete instance.
 - For Danielle: review the five statements; decide the trusted-base
   option (recommended: cert_* and cert_exists become lib lemmas, rbnd and
   vsub move to spec/box.bend).
