@@ -2,7 +2,7 @@ import Base
 import ../spec/cert.bend as C
 import ../lib/kinst.bend as KI
 import ../lib/cert.bend as CK
-import ./cc_data.bend as D
+import ../tests/cc_data.bend as D
 
 def main() -> Bool:
   CK.check(~KI.dnum(), D.cc_block(), D.cc_cert())

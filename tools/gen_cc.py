@@ -19,6 +19,7 @@ e1 = sub(add(sq(sub(v(0), v(2))), sq(sub(v(1), v(3)))), nine)
 e2 = sub(add(sq(sub(v(0), v(4))), sq(sub(v(1), v(5)))), nine)
 s5 = math.sqrt(5)
 yc = [d(2, 0), d(s5, 40)]
+yc_bad = [d(2, 0), d(2.3, 40)]
 yr = [d(2**-30, 30), d(2**-30, 30)]
 Y = [[d(1/8, 30), d(-1/8, 30)], [d(1/(4*s5), 30), d(1/(4*s5), 30)]]
 pc = [d(0, 0), d(0, 0), d(4, 0), d(0, 0)]
@@ -41,5 +42,9 @@ def cc_block() -> C.Block:
 
 def cc_cert() -> C.Cert<KI.dnum()>:
   C.Cert{{{L(yc)}, {L(yr)}, {q}, {L([L(r) for r in Y])}, {L(pc)}, {L(pr)}}}
+
+# the same with the center moved off the solution (y = 2.3)
+def cc_bad_cert() -> C.Cert<KI.dnum()>:
+  C.Cert{{{L(yc_bad)}, {L(yr)}, {q}, {L([L(r) for r in Y])}, {L(pc)}, {L(pr)}}}
 '''
 sys.stdout.write(out)
