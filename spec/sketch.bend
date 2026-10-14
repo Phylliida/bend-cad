@@ -3,24 +3,33 @@
 # the forms are produced here, inside the checker, so an untrusted front end
 # cannot change what a constraint means.
 #
-# A sketch's unknowns are variables, named by index into an environment of
-# rationals (unused indices read as 0). Geometry refers to variables
-# directly: a point is the pair of its coordinate variables, so merged
-# points (D3) are points with the same indices. Each constraint has
-#   eqs:   polynomials that must vanish (the exact equation form, §5),
+# A sketch's unknowns are variables, named by index into an environment
+# (unused indices read as 0). Entities are the drawn geometry, with
+# persistent IDs: a point names its two coordinate variables, a segment its
+# two endpoint points, a circle its center point and radius variable.
+# Merged points (D3) share their variables. Constraints reference existing
+# entities by ID; the spec resolves each reference (wf_refs checks that it
+# names an entity of the right kind). Each constraint has
+#   eqs:   polynomials over the variables that must vanish (§5),
 #   sides: polynomials that must be positive (side conditions, §8.6),
-#   wf:    for merge kinds, the index sharing that realizes it,
-#   means: its geometric meaning (spec/geom.bend).
+#   wf:    for merge kinds, the variable sharing that realizes it,
+#   means: its geometric meaning in any ordered field (spec/geom.bend).
 # The meaning lemmas (ROADMAP.bend, DESIGN §5.5) say that, for a well-formed
 # constraint, eqs = 0 and sides > 0 hold exactly when the meaning holds.
 #
+# Geometry may degenerate (a segment may collapse to a point); only
+# dimensions and the choices a user made (a side, a quadrant, strictly
+# inside) are side conditions. Circles keep a positive radius and arcs a
+# positive bulge.
+#
 # Scope: the core vocabulary of DESIGN §5.1. Tangency and joins (§5.2) and
-# arcs (§5.3) get their forms in sk-10, curves (§5.4) in sk-15; their
-# entities are declared below so the IR's shape is fixed now.
+# arcs (§5.3) get their forms in sk-10, curves (§5.4) in sk-15; arcs are
+# declared below so the IR's shape is fixed now.
 
 import Base
 import ./num.bend as S
 import ./ring.bend as E
+import ./field.bend as O
 import ./geom.bend as G
 
 # Variables
@@ -34,24 +43,85 @@ type VKind is Data:
   Param{}
   Aux{}
 
-# Geometry
+# Entities
 # --------
+# Conic arcs, splines and offsets join in sk-15.
 
-# a point: the indices of its coordinate variables
+type Geo is Data:
+  # x, y: coordinate variables
+  GPoint{x: Nat, y: Nat}
+  # p, q: endpoint point IDs; the segment is directed p → q
+  GSeg{p: Nat, q: Nat}
+  # c: center point ID; r: radius variable
+  GCirc{c: Nat, r: Nat}
+  # s, e: endpoint point IDs; b: bulge variable, tan(sweep / 4) > 0,
+  # counterclockwise from s to e
+  GArc{s: Nat, e: Nat, b: Nat}
+
+type Ent is Data:
+  Ent{id: Nat, construction: Bool, g: Geo}
+
+# Constraints
+# -----------
+# Point, segment and circle arguments are entity IDs. Dimension values d,
+# and the rotation (c, s) of an angle, are rational expressions over the
+# variables: rational constants, named variables, or variables pinned to
+# exact constants elsewhere (§7).
+
+type Constraint is Data:
+  # merges (D3): realized by shared variables, no equations
+  Coincident{a: Nat, b: Nat}
+  Horizontal{a: Nat, b: Nat}
+  Vertical{a: Nat, b: Nat}
+  Concentric{a: Nat, b: Nat}
+  EqualRadius{a: Nat, b: Nat}
+  # variable v is the constant k (fix, block, pins)
+  Fix{v: Nat, k: S.Q}
+  # dimensions; for HDistance, q is right of p, for VDistance above it
+  Distance{p: Nat, q: Nat, d: E.QExpr}
+  HDistance{p: Nat, q: Nat, d: E.QExpr}
+  VDistance{p: Nat, q: Nat, d: E.QExpr}
+  Radius{c: Nat, d: E.QExpr}
+  Diameter{c: Nat, d: E.QExpr}
+  # p is left of segment a's line, taken in reverse when rev; l is an aux
+  # length variable, the segment's length
+  LineDistance{p: Nat, a: Nat, rev: Bool, d: E.QExpr, l: Nat}
+  # from segment a (reversed when ra) to segment b (reversed when rb)
+  Angle{a: Nat, ra: Bool, b: Nat, rb: Bool, c: E.QExpr, s: E.QExpr}
+  # relations
+  EqualLength{a: Nat, b: Nat}
+  Perpendicular{a: Nat, b: Nat}
+  Parallel{a: Nat, b: Nat}
+  OnLine{p: Nat, a: Nat}
+  OnSegment{p: Nat, a: Nat}
+  OnCircle{p: Nat, c: Nat}
+  # m is the midpoint of segment a
+  Midpoint{m: Nat, a: Nat}
+  # q is the mirror image of p in segment a's line
+  Symmetric{p: Nat, q: Nat, a: Nat}
+
+# a constraint as stored: persistent id; driven (reference) dimensions are
+# measured, not imposed, and contribute no equations
+type Rec is Data:
+  Rec{id: Nat, driven: Bool, k: Constraint}
+
+type Sketch is Data:
+  Sketch{vars: List<&2, VKind>, ents: List<&2, Ent>, cons: List<&2, Rec>}
+
+# Resolving references
+# --------------------
+# Resolved geometry names variables directly. A reference that does not
+# name an entity of the right kind resolves to geometry at variable 0;
+# wf_refs rules that out.
+
 type Pt is Data:
   Pt{x: Nat, y: Nat}
 
-# a segment from p to q, also naming the line through them, directed p → q
 type Seg is Data:
   Seg{p: Pt, q: Pt}
 
-# a full circle: its center and the index of its radius variable
 type Circ is Data:
   Circ{c: Pt, r: Nat}
-
-# a bulge arc counterclockwise from s to e; b (an index) = tan(sweep / 4) > 0
-type Arc is Data:
-  Arc{s: Pt, e: Pt, b: Nat}
 
 def Pt.x(p: Pt) -> Nat:
   match p:
@@ -83,73 +153,89 @@ def Circ.r(c: Circ) -> Nat:
     case Circ{c, r}:
       r
 
-def Arc.s(a: Arc) -> Pt:
-  match a:
-    case Arc{s, e, b}:
-      s
+def find.pick(b: Bool, g: Geo, rest: Maybe<&2, Geo>) -> Maybe<&2, Geo>:
+  match b:
+    case True{}:
+      Some{g}
+    case False{}:
+      rest
 
-def Arc.e(a: Arc) -> Pt:
-  match a:
-    case Arc{s, e, b}:
-      e
+# the entity with this id (the first, should ids repeat)
+def find(+id: Nat, es: List<&2, Ent>) -> Maybe<&2, Geo>:
+  match es:
+    case Nil{}:
+      None{}
+    case Con{Ent{eid, cst, g}, t}:
+      find.pick(Nat.is_eq(eid, id), g, find(id, t))
 
-def Arc.b(a: Arc) -> Nat:
-  match a:
-    case Arc{s, e, b}:
-      b
+def pt.of(m: Maybe<&2, Geo>) -> Pt:
+  match m:
+    case Some{GPoint{x, y}}:
+      Pt{x, y}
+    case _:
+      Pt{0n, 0n}
 
-# Entities: what is drawn. Conic arcs, splines and offsets join in sk-15.
-type Geo is Data:
-  GPoint{p: Pt}
-  GSeg{s: Seg}
-  GCirc{c: Circ}
-  GArc{a: Arc}
+def pt(+es: List<&2, Ent>, id: Nat) -> Pt:
+  pt.of(find(id, es))
 
-type Ent is Data:
-  Ent{id: Nat, construction: Bool, g: Geo}
+def seg.of(+es: List<&2, Ent>, m: Maybe<&2, Geo>) -> Seg:
+  match m:
+    case Some{GSeg{p, q}}:
+      Seg{pt(es, p), pt(es, q)}
+    case _:
+      Seg{Pt{0n, 0n}, Pt{0n, 0n}}
 
-# Constraints
-# -----------
-# Dimension values d, and the rotation (c, s) of an angle, are rational
-# expressions over the variables: rational constants, named variables, or
-# variables pinned to exact constants elsewhere (§7). A segment argument is
-# directed; the front end orients it to pick a side or an angle's quadrant.
+def seg(+es: List<&2, Ent>, id: Nat) -> Seg:
+  seg.of(es, find(id, es))
 
-type Constraint is Data:
-  # merges (D3): realized by shared variable indices, no equations
-  Coincident{a: Pt, b: Pt}
-  Horizontal{a: Pt, b: Pt}
-  Vertical{a: Pt, b: Pt}
-  Concentric{a: Circ, b: Circ}
-  EqualRadius{a: Circ, b: Circ}
-  # variable v is the constant k (fix, block, pins)
-  Fix{v: Nat, k: S.Q}
-  # dimensions
-  Distance{p: Pt, q: Pt, d: E.QExpr}
-  HDistance{p: Pt, q: Pt, d: E.QExpr}
-  VDistance{p: Pt, q: Pt, d: E.QExpr}
-  Radius{c: Circ, d: E.QExpr}
-  Diameter{c: Circ, d: E.QExpr}
-  # l is the index of an aux length variable, the length of the line
-  LineDistance{p: Pt, a: Seg, d: E.QExpr, l: Nat}
-  Angle{a: Seg, b: Seg, c: E.QExpr, s: E.QExpr}
-  # relations
-  EqualLength{a: Seg, b: Seg}
-  Perpendicular{a: Seg, b: Seg}
-  Parallel{a: Seg, b: Seg}
-  OnLine{p: Pt, a: Seg}
-  OnSegment{p: Pt, a: Seg}
-  OnCircle{p: Pt, c: Circ}
-  Midpoint{m: Pt, p: Pt, q: Pt}
-  Symmetric{p: Pt, q: Pt, a: Seg}
+# segment id, reversed when rev
+def dseg(+es: List<&2, Ent>, +id: Nat, rev: Bool) -> Seg:
+  match rev:
+    case False{}:
+      seg(es, id)
+    case True{}:
+      Seg{Seg.q(seg(es, id)), Seg.p(seg(es, id))}
 
-# a constraint as stored: persistent id; driven (reference) dimensions are
-# measured, not imposed, and contribute no equations
-type Rec is Data:
-  Rec{id: Nat, driven: Bool, k: Constraint}
+def circ.of(+es: List<&2, Ent>, m: Maybe<&2, Geo>) -> Circ:
+  match m:
+    case Some{GCirc{c, r}}:
+      Circ{pt(es, c), r}
+    case _:
+      Circ{Pt{0n, 0n}, 0n}
 
-type Sketch is Data:
-  Sketch{vars: List<&2, VKind>, ents: List<&2, Ent>, cons: List<&2, Rec>}
+def circ(+es: List<&2, Ent>, id: Nat) -> Circ:
+  circ.of(es, find(id, es))
+
+def is_pt(m: Maybe<&2, Geo>) -> Bool:
+  match m:
+    case Some{GPoint{x, y}}:
+      True{}
+    case _:
+      False{}
+
+def is_seg(m: Maybe<&2, Geo>) -> Bool:
+  match m:
+    case Some{GSeg{p, q}}:
+      True{}
+    case _:
+      False{}
+
+def is_circ(m: Maybe<&2, Geo>) -> Bool:
+  match m:
+    case Some{GCirc{c, r}}:
+      True{}
+    case _:
+      False{}
+
+# id names a point (segment, circle) entity
+def IsPt(+es: List<&2, Ent>, +id: Nat) -> Type:
+  {is_pt(find(id, es)) == True{} : Bool}
+
+def IsSeg(+es: List<&2, Ent>, +id: Nat) -> Type:
+  {is_seg(find(id, es)) == True{} : Bool}
+
+def IsCirc(+es: List<&2, Ent>, +id: Nat) -> Type:
+  {is_circ(find(id, es)) == True{} : Bool}
 
 # Expressions
 # -----------
@@ -213,7 +299,7 @@ def sym.eqs(+p: VE, +q: VE, +a: VE, +b: VE) -> List<&2, E.QExpr>:
 # Exact equation forms (§5.1)
 # ---------------------------
 
-def Constraint.eqs(+k: Constraint) -> List<&2, E.QExpr>:
+def Constraint.eqs(+es: List<&2, Ent>, +k: Constraint) -> List<&2, E.QExpr>:
   match k:
     case Coincident{a, b}:
       []
@@ -228,56 +314,44 @@ def Constraint.eqs(+k: Constraint) -> List<&2, E.QExpr>:
     case Fix{v, c}:
       [E.QSub{var(v), E.QCst{c}}]
     case Distance{p, q, d}:
-      [E.QSub{VE.norm2(VE.sub(Pt.ve(q), Pt.ve(p))), E.QMul{d, d}}]
+      [E.QSub{VE.norm2(VE.sub(Pt.ve(pt(es, q)), Pt.ve(pt(es, p)))), E.QMul{d, d}}]
     case HDistance{p, q, d}:
-      [E.QSub{E.QSub{var(Pt.x(q)), var(Pt.x(p))}, d}]
+      [E.QSub{E.QSub{var(Pt.x(pt(es, q))), var(Pt.x(pt(es, p)))}, d}]
     case VDistance{p, q, d}:
-      [E.QSub{E.QSub{var(Pt.y(q)), var(Pt.y(p))}, d}]
+      [E.QSub{E.QSub{var(Pt.y(pt(es, q))), var(Pt.y(pt(es, p)))}, d}]
     case Radius{c, d}:
-      [E.QSub{var(Circ.r(c)), d}]
+      [E.QSub{var(Circ.r(circ(es, c))), d}]
     case Diameter{c, d}:
-      [E.QSub{E.QAdd{var(Circ.r(c)), var(Circ.r(c))}, d}]
-    case LineDistance{p, a, d, l}:
-      [E.QSub{VE.cross(Seg.dir(a), VE.sub(Pt.ve(p), Pt.ve(Seg.p(a)))), E.QMul{d, var(l)}},
-       E.QSub{E.QMul{var(l), var(l)}, VE.norm2(Seg.dir(a))}]
-    case Angle{a, b, c, s}:
-      [VE.cross(VE.rot(c, s, Seg.dir(a)), Seg.dir(b))]
+      [E.QSub{E.QAdd{var(Circ.r(circ(es, c))), var(Circ.r(circ(es, c)))}, d}]
+    case LineDistance{p, a, rev, d, l}:
+      [E.QSub{VE.cross(Seg.dir(dseg(es, a, rev)), VE.sub(Pt.ve(pt(es, p)), Pt.ve(Seg.p(dseg(es, a, rev))))), E.QMul{d, var(l)}},
+       E.QSub{E.QMul{var(l), var(l)}, VE.norm2(Seg.dir(seg(es, a)))}]
+    case Angle{a, ra, b, rb, c, s}:
+      [VE.cross(VE.rot(c, s, Seg.dir(dseg(es, a, ra))), Seg.dir(dseg(es, b, rb)))]
     case EqualLength{a, b}:
-      [E.QSub{VE.norm2(Seg.dir(a)), VE.norm2(Seg.dir(b))}]
+      [E.QSub{VE.norm2(Seg.dir(seg(es, a))), VE.norm2(Seg.dir(seg(es, b)))}]
     case Perpendicular{a, b}:
-      [VE.dot(Seg.dir(a), Seg.dir(b))]
+      [VE.dot(Seg.dir(seg(es, a)), Seg.dir(seg(es, b)))]
     case Parallel{a, b}:
-      [VE.cross(Seg.dir(a), Seg.dir(b))]
+      [VE.cross(Seg.dir(seg(es, a)), Seg.dir(seg(es, b)))]
     case OnLine{p, a}:
-      [VE.cross(Seg.dir(a), VE.sub(Pt.ve(p), Pt.ve(Seg.p(a))))]
+      [VE.cross(Seg.dir(seg(es, a)), VE.sub(Pt.ve(pt(es, p)), Pt.ve(Seg.p(seg(es, a)))))]
     case OnSegment{p, a}:
-      [VE.cross(Seg.dir(a), VE.sub(Pt.ve(p), Pt.ve(Seg.p(a))))]
+      [VE.cross(Seg.dir(seg(es, a)), VE.sub(Pt.ve(pt(es, p)), Pt.ve(Seg.p(seg(es, a)))))]
     case OnCircle{p, c}:
-      [E.QSub{VE.norm2(VE.sub(Pt.ve(p), Pt.ve(Circ.c(c)))), E.QMul{var(Circ.r(c)), var(Circ.r(c))}}]
-    case Midpoint{m, p, q}:
-      [E.QSub{E.QAdd{var(Pt.x(m)), var(Pt.x(m))}, E.QAdd{var(Pt.x(p)), var(Pt.x(q))}},
-       E.QSub{E.QAdd{var(Pt.y(m)), var(Pt.y(m))}, E.QAdd{var(Pt.y(p)), var(Pt.y(q))}}]
+      [E.QSub{VE.norm2(VE.sub(Pt.ve(pt(es, p)), Pt.ve(Circ.c(circ(es, c))))), E.QMul{var(Circ.r(circ(es, c))), var(Circ.r(circ(es, c)))}}]
+    case Midpoint{m, a}:
+      [E.QSub{E.QAdd{var(Pt.x(pt(es, m))), var(Pt.x(pt(es, m)))}, E.QAdd{var(Pt.x(Seg.p(seg(es, a)))), var(Pt.x(Seg.q(seg(es, a))))}},
+       E.QSub{E.QAdd{var(Pt.y(pt(es, m))), var(Pt.y(pt(es, m)))}, E.QAdd{var(Pt.y(Seg.p(seg(es, a)))), var(Pt.y(Seg.q(seg(es, a))))}}]
     case Symmetric{p, q, a}:
-      sym.eqs(Pt.ve(p), Pt.ve(q), Pt.ve(Seg.p(a)), Pt.ve(Seg.q(a)))
+      sym.eqs(Pt.ve(pt(es, p)), Pt.ve(pt(es, q)), Pt.ve(Seg.p(seg(es, a))), Pt.ve(Seg.q(seg(es, a))))
 
-# Side conditions: each must be positive. Nondegeneracy that another side
-# condition already implies is not repeated (an angle's dot > 0 implies both
-# directions are nonzero; a point strictly inside a segment implies the
-# segment is proper).
-def Constraint.sides(+k: Constraint) -> List<&2, E.QExpr>:
+# Side conditions: each must be positive. Only dimensions and choices are
+# here: geometry may degenerate. (An angle's dot > 0 also makes both
+# directions and (c, s) nonzero; a point strictly inside a segment makes
+# the segment proper.)
+def Constraint.sides(+es: List<&2, Ent>, +k: Constraint) -> List<&2, E.QExpr>:
   match k:
-    case Coincident{a, b}:
-      []
-    case Horizontal{a, b}:
-      []
-    case Vertical{a, b}:
-      []
-    case Concentric{a, b}:
-      []
-    case EqualRadius{a, b}:
-      []
-    case Fix{v, c}:
-      []
     case Distance{p, q, d}:
       [d]
     case HDistance{p, q, d}:
@@ -288,147 +362,200 @@ def Constraint.sides(+k: Constraint) -> List<&2, E.QExpr>:
       [d]
     case Diameter{c, d}:
       [d]
-    case LineDistance{p, a, d, l}:
+    case LineDistance{p, a, rev, d, l}:
       [var(l), d]
-    case Angle{a, b, c, s}:
-      [VE.dot(VE.rot(c, s, Seg.dir(a)), Seg.dir(b))]
-    case EqualLength{a, b}:
-      [VE.norm2(Seg.dir(a)), VE.norm2(Seg.dir(b))]
-    case Perpendicular{a, b}:
-      [VE.norm2(Seg.dir(a)), VE.norm2(Seg.dir(b))]
-    case Parallel{a, b}:
-      [VE.norm2(Seg.dir(a)), VE.norm2(Seg.dir(b))]
-    case OnLine{p, a}:
-      [VE.norm2(Seg.dir(a))]
+    case Angle{a, ra, b, rb, c, s}:
+      [VE.dot(VE.rot(c, s, Seg.dir(dseg(es, a, ra))), Seg.dir(dseg(es, b, rb)))]
     case OnSegment{p, a}:
-      [VE.dot(VE.sub(Pt.ve(p), Pt.ve(Seg.p(a))), Seg.dir(a)),
-       E.QSub{VE.norm2(Seg.dir(a)), VE.dot(VE.sub(Pt.ve(p), Pt.ve(Seg.p(a))), Seg.dir(a))}]
-    case OnCircle{p, c}:
-      [var(Circ.r(c))]
-    case Midpoint{m, p, q}:
+      [VE.dot(VE.sub(Pt.ve(pt(es, p)), Pt.ve(Seg.p(seg(es, a)))), Seg.dir(seg(es, a))),
+       E.QSub{VE.norm2(Seg.dir(seg(es, a))), VE.dot(VE.sub(Pt.ve(pt(es, p)), Pt.ve(Seg.p(seg(es, a)))), Seg.dir(seg(es, a)))}]
+    case _:
       []
-    case Symmetric{p, q, a}:
-      [VE.norm2(Seg.dir(a))]
 
-# Merge kinds are realized by shared variable indices (D3)
-def Constraint.wf(+k: Constraint) -> Type:
+# Merge kinds are realized by shared variables (D3)
+def Constraint.wf(+es: List<&2, Ent>, +k: Constraint) -> Type:
   match k:
     case Coincident{a, b}:
-      {a == b : Pt}
+      {pt(es, a) == pt(es, b) : Pt}
     case Horizontal{a, b}:
-      {Pt.y(a) == Pt.y(b) : Nat}
+      {Pt.y(pt(es, a)) == Pt.y(pt(es, b)) : Nat}
     case Vertical{a, b}:
-      {Pt.x(a) == Pt.x(b) : Nat}
+      {Pt.x(pt(es, a)) == Pt.x(pt(es, b)) : Nat}
     case Concentric{a, b}:
-      {Circ.c(a) == Circ.c(b) : Pt}
+      {Circ.c(circ(es, a)) == Circ.c(circ(es, b)) : Pt}
     case EqualRadius{a, b}:
-      {Circ.r(a) == Circ.r(b) : Nat}
+      {Circ.r(circ(es, a)) == Circ.r(circ(es, b)) : Nat}
     case _:
       Unit
+
+# every reference names an entity of the right kind
+def Constraint.wf_refs(+es: List<&2, Ent>, +k: Constraint) -> Type:
+  match k:
+    case Coincident{a, b}:
+      IsPt(es, a) & IsPt(es, b)
+    case Horizontal{a, b}:
+      IsPt(es, a) & IsPt(es, b)
+    case Vertical{a, b}:
+      IsPt(es, a) & IsPt(es, b)
+    case Concentric{a, b}:
+      IsCirc(es, a) & IsCirc(es, b)
+    case EqualRadius{a, b}:
+      IsCirc(es, a) & IsCirc(es, b)
+    case Fix{v, c}:
+      Unit
+    case Distance{p, q, d}:
+      IsPt(es, p) & IsPt(es, q)
+    case HDistance{p, q, d}:
+      IsPt(es, p) & IsPt(es, q)
+    case VDistance{p, q, d}:
+      IsPt(es, p) & IsPt(es, q)
+    case Radius{c, d}:
+      IsCirc(es, c)
+    case Diameter{c, d}:
+      IsCirc(es, c)
+    case LineDistance{p, a, rev, d, l}:
+      IsPt(es, p) & IsSeg(es, a)
+    case Angle{a, ra, b, rb, c, s}:
+      IsSeg(es, a) & IsSeg(es, b)
+    case EqualLength{a, b}:
+      IsSeg(es, a) & IsSeg(es, b)
+    case Perpendicular{a, b}:
+      IsSeg(es, a) & IsSeg(es, b)
+    case Parallel{a, b}:
+      IsSeg(es, a) & IsSeg(es, b)
+    case OnLine{p, a}:
+      IsPt(es, p) & IsSeg(es, a)
+    case OnSegment{p, a}:
+      IsPt(es, p) & IsSeg(es, a)
+    case OnCircle{p, c}:
+      IsPt(es, p) & IsCirc(es, c)
+    case Midpoint{m, a}:
+      IsPt(es, m) & IsSeg(es, a)
+    case Symmetric{p, q, a}:
+      IsPt(es, p) & (IsPt(es, q) & IsSeg(es, a))
 
 # Meanings
 # --------
 
-def Pt.at(+env: List<&2, S.Q>, p: Pt) -> G.V2:
+# a resolved point's value under env
+def at(~F: O.OField, +env: List<&2, O.C(F)>, p: Pt) -> G.Vec(~F):
   match p:
     case Pt{x, y}:
-      G.V2{E.qlookup(env, x), E.qlookup(env, y)}
+      G.V2{O.lookup(~F, env, x), O.lookup(~F, env, y)}
 
-def Constraint.means(+env: List<&2, S.Q>, +k: Constraint) -> Type:
+# a resolved segment's direction q - p under env
+def dirv(~F: O.OField, +env: List<&2, O.C(F)>, +a: Seg) -> G.Vec(~F):
+  G.sub(~F, at(~F, env, Seg.q(a)), at(~F, env, Seg.p(a)))
+
+def Constraint.means(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, Ent>, +k: Constraint) -> Type:
   match k:
     case Coincident{a, b}:
-      G.V2.eq(Pt.at(env, a), Pt.at(env, b))
+      {at(~F, env, pt(es, a)) == at(~F, env, pt(es, b)) : G.Vec(~F)}
     case Horizontal{a, b}:
-      S.Q.eq(E.qlookup(env, Pt.y(a)), E.qlookup(env, Pt.y(b)))
+      {G.y(~F, at(~F, env, pt(es, a))) == G.y(~F, at(~F, env, pt(es, b))) : O.C(F)}
     case Vertical{a, b}:
-      S.Q.eq(E.qlookup(env, Pt.x(a)), E.qlookup(env, Pt.x(b)))
+      {G.x(~F, at(~F, env, pt(es, a))) == G.x(~F, at(~F, env, pt(es, b))) : O.C(F)}
     case Concentric{a, b}:
-      G.V2.eq(Pt.at(env, Circ.c(a)), Pt.at(env, Circ.c(b)))
+      {at(~F, env, Circ.c(circ(es, a))) == at(~F, env, Circ.c(circ(es, b))) : G.Vec(~F)}
     case EqualRadius{a, b}:
-      S.Q.eq(E.qlookup(env, Circ.r(a)), E.qlookup(env, Circ.r(b)))
+      {O.lookup(~F, env, Circ.r(circ(es, a))) == O.lookup(~F, env, Circ.r(circ(es, b))) : O.C(F)}
     case Fix{v, c}:
-      S.Q.eq(E.qlookup(env, v), c)
+      {O.lookup(~F, env, v) == O.ofq(~F, c) : O.C(F)}
     case Distance{p, q, d}:
-      G.dist(Pt.at(env, p), Pt.at(env, q), E.qeval(env, d))
+      G.dist(~F, at(~F, env, pt(es, p)), at(~F, env, pt(es, q)), O.eval(~F, env, d))
     case HDistance{p, q, d}:
-      G.hdist(Pt.at(env, p), Pt.at(env, q), E.qeval(env, d))
+      G.hdist(~F, at(~F, env, pt(es, p)), at(~F, env, pt(es, q)), O.eval(~F, env, d))
     case VDistance{p, q, d}:
-      G.vdist(Pt.at(env, p), Pt.at(env, q), E.qeval(env, d))
+      G.vdist(~F, at(~F, env, pt(es, p)), at(~F, env, pt(es, q)), O.eval(~F, env, d))
     case Radius{c, d}:
-      S.Q.lt(G.Q.zero(), E.qeval(env, d)) & S.Q.eq(E.qlookup(env, Circ.r(c)), E.qeval(env, d))
+      O.lt(F, O.zero(F), O.eval(~F, env, d)) & {O.lookup(~F, env, Circ.r(circ(es, c))) == O.eval(~F, env, d) : O.C(F)}
     case Diameter{c, d}:
-      S.Q.lt(G.Q.zero(), E.qeval(env, d)) & S.Q.eq(S.Q.add(E.qlookup(env, Circ.r(c)), E.qlookup(env, Circ.r(c))), E.qeval(env, d))
-    case LineDistance{p, a, d, l}:
-      G.dist(Pt.at(env, Seg.p(a)), Pt.at(env, Seg.q(a)), E.qlookup(env, l)) & G.line_dist(Pt.at(env, p), Pt.at(env, Seg.p(a)), Pt.at(env, Seg.q(a)), E.qeval(env, d))
-    case Angle{a, b, c, s}:
-      G.angle(G.V2.sub(Pt.at(env, Seg.q(a)), Pt.at(env, Seg.p(a))), G.V2.sub(Pt.at(env, Seg.q(b)), Pt.at(env, Seg.p(b))), E.qeval(env, c), E.qeval(env, s))
+      O.lt(F, O.zero(F), O.eval(~F, env, d)) & {O.add(F, O.lookup(~F, env, Circ.r(circ(es, c))), O.lookup(~F, env, Circ.r(circ(es, c)))) == O.eval(~F, env, d) : O.C(F)}
+    case LineDistance{p, a, rev, d, l}:
+      G.dist(~F, at(~F, env, Seg.p(seg(es, a))), at(~F, env, Seg.q(seg(es, a))), O.lookup(~F, env, l)) & G.line_dist(~F, at(~F, env, pt(es, p)), at(~F, env, Seg.p(dseg(es, a, rev))), at(~F, env, Seg.q(dseg(es, a, rev))), O.eval(~F, env, d))
+    case Angle{a, ra, b, rb, c, s}:
+      G.angle(~F, dirv(~F, env, dseg(es, a, ra)), dirv(~F, env, dseg(es, b, rb)), O.eval(~F, env, c), O.eval(~F, env, s))
     case EqualLength{a, b}:
-      G.equal_length(Pt.at(env, Seg.p(a)), Pt.at(env, Seg.q(a)), Pt.at(env, Seg.p(b)), Pt.at(env, Seg.q(b)))
+      G.equal_length(~F, at(~F, env, Seg.p(seg(es, a))), at(~F, env, Seg.q(seg(es, a))), at(~F, env, Seg.p(seg(es, b))), at(~F, env, Seg.q(seg(es, b))))
     case Perpendicular{a, b}:
-      G.perpendicular(G.V2.sub(Pt.at(env, Seg.q(a)), Pt.at(env, Seg.p(a))), G.V2.sub(Pt.at(env, Seg.q(b)), Pt.at(env, Seg.p(b))))
+      G.perpendicular(~F, dirv(~F, env, seg(es, a)), dirv(~F, env, seg(es, b)))
     case Parallel{a, b}:
-      G.parallel(G.V2.sub(Pt.at(env, Seg.q(a)), Pt.at(env, Seg.p(a))), G.V2.sub(Pt.at(env, Seg.q(b)), Pt.at(env, Seg.p(b))))
+      G.parallel(~F, dirv(~F, env, seg(es, a)), dirv(~F, env, seg(es, b)))
     case OnLine{p, a}:
-      G.on_line(Pt.at(env, p), Pt.at(env, Seg.p(a)), Pt.at(env, Seg.q(a)))
+      G.on_line(~F, at(~F, env, pt(es, p)), at(~F, env, Seg.p(seg(es, a))), at(~F, env, Seg.q(seg(es, a))))
     case OnSegment{p, a}:
-      G.on_segment(Pt.at(env, p), Pt.at(env, Seg.p(a)), Pt.at(env, Seg.q(a)))
+      G.on_segment(~F, at(~F, env, pt(es, p)), at(~F, env, Seg.p(seg(es, a))), at(~F, env, Seg.q(seg(es, a))))
     case OnCircle{p, c}:
-      G.dist(Pt.at(env, Circ.c(c)), Pt.at(env, p), E.qlookup(env, Circ.r(c)))
-    case Midpoint{m, p, q}:
-      G.V2.eq(Pt.at(env, m), G.V2.mid(Pt.at(env, p), Pt.at(env, q)))
+      G.on_circle(~F, at(~F, env, pt(es, p)), at(~F, env, Circ.c(circ(es, c))), O.lookup(~F, env, Circ.r(circ(es, c))))
+    case Midpoint{m, a}:
+      {at(~F, env, pt(es, m)) == G.mid(~F, at(~F, env, Seg.p(seg(es, a))), at(~F, env, Seg.q(seg(es, a)))) : G.Vec(~F)}
     case Symmetric{p, q, a}:
-      G.mirror(Pt.at(env, p), Pt.at(env, q), Pt.at(env, Seg.p(a)), Pt.at(env, Seg.q(a)))
+      G.mirror(~F, at(~F, env, pt(es, p)), at(~F, env, pt(es, q)), at(~F, env, Seg.p(seg(es, a))), at(~F, env, Seg.q(seg(es, a))))
 
-# Entities: their side conditions keep every drawn curve proper
-def Ent.sides(+e: Ent) -> List<&2, E.QExpr>:
+# Entities
+# --------
+# Points and segments carry no conditions; circles keep a positive radius,
+# arcs a positive bulge.
+
+def Ent.sides(e: Ent) -> List<&2, E.QExpr>:
   match e:
-    case Ent{id, cst, GPoint{p}}:
+    case Ent{id, cst, GCirc{c, r}}:
+      [var(r)]
+    case Ent{id, cst, GArc{s, f, b}}:
+      [var(b)]
+    case _:
       []
-    case Ent{id, cst, GSeg{s}}:
-      [VE.norm2(Seg.dir(s))]
-    case Ent{id, cst, GCirc{c}}:
-      [var(Circ.r(c))]
-    case Ent{id, cst, GArc{a}}:
-      [var(Arc.b(a)), VE.norm2(VE.sub(Pt.ve(Arc.e(a)), Pt.ve(Arc.s(a))))]
 
-def Ent.means(+env: List<&2, S.Q>, +e: Ent) -> Type:
+def Ent.means(~F: O.OField, +env: List<&2, O.C(F)>, e: Ent) -> Type:
   match e:
-    case Ent{id, cst, GPoint{p}}:
+    case Ent{id, cst, GCirc{c, r}}:
+      O.lt(F, O.zero(F), O.lookup(~F, env, r))
+    case Ent{id, cst, GArc{s, f, b}}:
+      O.lt(F, O.zero(F), O.lookup(~F, env, b))
+    case _:
       Unit
-    case Ent{id, cst, GSeg{s}}:
-      G.V2.ne(Pt.at(env, Seg.p(s)), Pt.at(env, Seg.q(s)))
-    case Ent{id, cst, GCirc{c}}:
-      S.Q.lt(G.Q.zero(), E.qlookup(env, Circ.r(c)))
-    case Ent{id, cst, GArc{a}}:
-      S.Q.lt(G.Q.zero(), E.qlookup(env, Arc.b(a))) & G.V2.ne(Pt.at(env, Arc.s(a)), Pt.at(env, Arc.e(a)))
+
+# a segment's ends, a circle's center and an arc's ends are point entities
+def Ent.wf_refs(+es: List<&2, Ent>, e: Ent) -> Type:
+  match e:
+    case Ent{id, cst, GSeg{p, q}}:
+      IsPt(es, p) & IsPt(es, q)
+    case Ent{id, cst, GCirc{c, r}}:
+      IsPt(es, c)
+    case Ent{id, cst, GArc{s, f, b}}:
+      IsPt(es, s) & IsPt(es, f)
+    case _:
+      Unit
 
 # Holding
 # -------
 
-# every expression in es is 0
-def Zeros(+env: List<&2, S.Q>, es: List<&2, E.QExpr>) -> Type:
-  match es:
+# every expression in xs is 0 in F
+def Zeros(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, E.QExpr>) -> Type:
+  match xs:
     case Nil{}:
       Unit
     case Con{h, t}:
-      S.Q.eq(E.qeval(env, h), G.Q.zero()) & Zeros(env, t)
+      {O.eval(~F, env, h) == O.zero(F) : O.C(F)} & Zeros(~F, env, t)
 
-# every expression in es is positive
-def Poss(+env: List<&2, S.Q>, es: List<&2, E.QExpr>) -> Type:
-  match es:
+# every expression in xs is positive in F
+def Poss(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, E.QExpr>) -> Type:
+  match xs:
     case Nil{}:
       Unit
     case Con{h, t}:
-      S.Q.lt(G.Q.zero(), E.qeval(env, h)) & Poss(env, t)
+      O.lt(F, O.zero(F), O.eval(~F, env, h)) & Poss(~F, env, t)
 
-def Constraint.holds(+env: List<&2, S.Q>, +k: Constraint) -> Type:
-  Zeros(env, Constraint.eqs(k)) & Poss(env, Constraint.sides(k))
+def Constraint.holds(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, Ent>, +k: Constraint) -> Type:
+  Zeros(~F, env, Constraint.eqs(es, k)) & Poss(~F, env, Constraint.sides(es, k))
 
-def Ent.holds(+env: List<&2, S.Q>, +e: Ent) -> Type:
-  Poss(env, Ent.sides(e))
+def Ent.holds(~F: O.OField, +env: List<&2, O.C(F)>, e: Ent) -> Type:
+  Poss(~F, env, Ent.sides(e))
 
 # The sketch's exact system
 # -------------------------
+# Sketch.eqs is F in DESIGN §8 and Sketch.sides its side conditions; the
+# certificates evaluate them over the rationals (E.qeval).
 
 def cat(xs: List<&2, E.QExpr>, ys: List<&2, E.QExpr>) -> List<&2, E.QExpr>:
   match xs:
@@ -437,15 +564,15 @@ def cat(xs: List<&2, E.QExpr>, ys: List<&2, E.QExpr>) -> List<&2, E.QExpr>:
     case Con{h, t}:
       Con{h, cat(t, ys)}
 
-# F: the equations of every driving constraint
-def Sketch.eqs.go(cs: List<&2, Rec>) -> List<&2, E.QExpr>:
+# the equations of every driving constraint
+def Sketch.eqs.go(+es: List<&2, Ent>, cs: List<&2, Rec>) -> List<&2, E.QExpr>:
   match cs:
     case Nil{}:
       []
     case Con{Rec{id, True{}, k}, t}:
-      Sketch.eqs.go(t)
+      Sketch.eqs.go(es, t)
     case Con{Rec{id, False{}, k}, t}:
-      cat(Constraint.eqs(k), Sketch.eqs.go(t))
+      cat(Constraint.eqs(es, k), Sketch.eqs.go(es, t))
 
 def Sketch.sides.ents(es: List<&2, Ent>) -> List<&2, E.QExpr>:
   match es:
@@ -454,59 +581,68 @@ def Sketch.sides.ents(es: List<&2, Ent>) -> List<&2, E.QExpr>:
     case Con{e, t}:
       cat(Ent.sides(e), Sketch.sides.ents(t))
 
-def Sketch.sides.cons(cs: List<&2, Rec>) -> List<&2, E.QExpr>:
+def Sketch.sides.cons(+es: List<&2, Ent>, cs: List<&2, Rec>) -> List<&2, E.QExpr>:
   match cs:
     case Nil{}:
       []
     case Con{Rec{id, True{}, k}, t}:
-      Sketch.sides.cons(t)
+      Sketch.sides.cons(es, t)
     case Con{Rec{id, False{}, k}, t}:
-      cat(Constraint.sides(k), Sketch.sides.cons(t))
+      cat(Constraint.sides(es, k), Sketch.sides.cons(es, t))
 
 def Sketch.eqs(sk: Sketch) -> List<&2, E.QExpr>:
   match sk:
     case Sketch{vs, es, cs}:
-      Sketch.eqs.go(cs)
+      Sketch.eqs.go(es, cs)
 
 # the side conditions: every entity's, then every driving constraint's
 def Sketch.sides(sk: Sketch) -> List<&2, E.QExpr>:
   match sk:
-    case Sketch{vs, es, +cs}:
-      cat(Sketch.sides.ents(es), Sketch.sides.cons(cs))
+    case Sketch{vs, +es, cs}:
+      cat(Sketch.sides.ents(es), Sketch.sides.cons(es, cs))
 
-def Sketch.wf.go(cs: List<&2, Rec>) -> Type:
+def Sketch.wf.ents(+es: List<&2, Ent>, xs: List<&2, Ent>) -> Type:
+  match xs:
+    case Nil{}:
+      Unit
+    case Con{e, t}:
+      Ent.wf_refs(es, e) & Sketch.wf.ents(es, t)
+
+def Sketch.wf.cons(+es: List<&2, Ent>, cs: List<&2, Rec>) -> Type:
   match cs:
     case Nil{}:
       Unit
-    case Con{Rec{id, dr, k}, t}:
-      Constraint.wf(k) & Sketch.wf.go(t)
+    case Con{Rec{id, dr, +k}, t}:
+      Constraint.wf_refs(es, k) & (Constraint.wf(es, k) & Sketch.wf.cons(es, t))
 
+# every reference resolves and every merge is realized
 def Sketch.wf(sk: Sketch) -> Type:
   match sk:
-    case Sketch{vs, es, cs}:
-      Sketch.wf.go(cs)
+    case Sketch{vs, +es, cs}:
+      Sketch.wf.ents(es, es) & Sketch.wf.cons(es, cs)
 
-def Sketch.holds(+env: List<&2, S.Q>, +sk: Sketch) -> Type:
-  Zeros(env, Sketch.eqs(sk)) & Poss(env, Sketch.sides(sk))
+def Sketch.holds(~F: O.OField, +env: List<&2, O.C(F)>, +sk: Sketch) -> Type:
+  Zeros(~F, env, Sketch.eqs(sk)) & Poss(~F, env, Sketch.sides(sk))
 
-def Sketch.means.ents(+env: List<&2, S.Q>, es: List<&2, Ent>) -> Type:
+def Sketch.means.ents(~F: O.OField, +env: List<&2, O.C(F)>, es: List<&2, Ent>) -> Type:
   match es:
     case Nil{}:
       Unit
     case Con{e, t}:
-      Ent.means(env, e) & Sketch.means.ents(env, t)
+      Ent.means(~F, env, e) & Sketch.means.ents(~F, env, t)
 
-def Sketch.means.cons(+env: List<&2, S.Q>, cs: List<&2, Rec>) -> Type:
+def Sketch.means.cons(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, Ent>, cs: List<&2, Rec>) -> Type:
   match cs:
     case Nil{}:
       Unit
     case Con{Rec{id, True{}, k}, t}:
-      Sketch.means.cons(env, t)
+      Sketch.means.cons(~F, env, es, t)
     case Con{Rec{id, False{}, k}, t}:
-      Constraint.means(env, k) & Sketch.means.cons(env, t)
+      Constraint.means(~F, env, es, k) & Sketch.means.cons(~F, env, es, t)
 
-# every drawn curve is proper and every driving constraint means what it says
-def Sketch.means(+env: List<&2, S.Q>, sk: Sketch) -> Type:
+# every circle and arc is proper and every driving constraint means what it
+# says
+def Sketch.means(~F: O.OField, +env: List<&2, O.C(F)>, sk: Sketch) -> Type:
   match sk:
-    case Sketch{vs, es, cs}:
-      Sketch.means.ents(env, es) & Sketch.means.cons(env, cs)
+    case Sketch{vs, +es, cs}:
+      Sketch.means.ents(~F, env, es) & Sketch.means.cons(~F, env, es, cs)

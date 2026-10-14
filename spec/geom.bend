@@ -1,145 +1,135 @@
-# bend-cad spec: plane geometry over the rationals, the vocabulary in which
-# every constraint's meaning is stated (spec/sketch.bend, Constraint.means).
-# Trusted. The definitions are the textbook ones, written without the
-# equation forms' tricks: a point on a line is a + t(b - a) for some t,
-# parallel vectors are multiples of each other, a mirror image has its
-# midpoint on the mirror and its offset perpendicular to it.
+# bend-cad spec: plane geometry over an ordered field F, the vocabulary in
+# which every constraint's meaning is stated (spec/sketch.bend,
+# Constraint.means). Trusted. The definitions are the textbook ones, written
+# without the equation forms' tricks: parallel directions are multiples of
+# each other, a point on a segment is a + t(b - a) with 0 < t < 1, a mirror
+# image has its midpoint on the mirror and its offset perpendicular to it.
 #
-# Equality is S.Q.eq (unreduced rationals) and order is S.Q.lt; the y axis
-# points up, so positive orientation is counterclockwise. The exact solution
-# of a sketch is real, not rational: see DESIGN §5.5 for how the meanings,
-# stated here over Q, reach it.
+# Geometry may degenerate: a segment can collapse to a point. A relation
+# that needs a direction then holds vacuously (a zero vector is parallel to
+# every vector), exactly as its equation does. The y axis points up, so
+# positive orientation is counterclockwise.
 
 import Base
 import ./num.bend as S
+import ./field.bend as O
 
-# Rational constants
-# ------------------
+type V2<-A: Data> is Data:
+  V2{x: A, y: A}
 
-def Q.zero() -> S.Q:
-  S.Q{S.Z0{}, S.XH{}}
+# a vector, or a point, with coordinates in F
+def Vec(~F: O.OField) -> Data:
+  V2<O.C(F)>
 
-def Q.one() -> S.Q:
-  S.Q{S.Zpos{S.XH{}}, S.XH{}}
-
-def Q.half() -> S.Q:
-  S.Q{S.Zpos{S.XH{}}, S.XO{S.XH{}}}
-
-# Vectors and points
-# ------------------
-
-type V2 is Data:
-  V2{x: S.Q, y: S.Q}
-
-def V2.x(v: V2) -> S.Q:
+def x(~F: O.OField, v: Vec(~F)) -> O.C(F):
   match v:
     case V2{x, y}:
       x
 
-def V2.y(v: V2) -> S.Q:
+def y(~F: O.OField, v: Vec(~F)) -> O.C(F):
   match v:
     case V2{x, y}:
       y
 
-def V2.zero() -> V2:
-  V2{Q.zero(), Q.zero()}
-
-# a = b
-def V2.eq(+a: V2, +b: V2) -> Type:
-  S.Q.eq(V2.x(a), V2.x(b)) & S.Q.eq(V2.y(a), V2.y(b))
+def vzero(~F: O.OField) -> Vec(~F):
+  V2{O.zero(F), O.zero(F)}
 
 # a ≠ b
-def V2.ne(+a: V2, +b: V2) -> Type:
-  V2.eq(a, b) -> Empty
+def ne(~F: O.OField, +a: Vec(~F), +b: Vec(~F)) -> Type:
+  {a == b : Vec(~F)} -> Empty
 
-def V2.add(+a: V2, +b: V2) -> V2:
-  V2{S.Q.add(V2.x(a), V2.x(b)), S.Q.add(V2.y(a), V2.y(b))}
+def add(~F: O.OField, +a: Vec(~F), +b: Vec(~F)) -> Vec(~F):
+  V2{O.add(F, x(~F, a), x(~F, b)), O.add(F, y(~F, a), y(~F, b))}
 
-def V2.sub(+a: V2, +b: V2) -> V2:
-  V2{S.Q.sub(V2.x(a), V2.x(b)), S.Q.sub(V2.y(a), V2.y(b))}
+def sub(~F: O.OField, +a: Vec(~F), +b: Vec(~F)) -> Vec(~F):
+  V2{O.sub(~F, x(~F, a), x(~F, b)), O.sub(~F, y(~F, a), y(~F, b))}
 
 # t a
-def V2.scale(+t: S.Q, +a: V2) -> V2:
-  V2{S.Q.mul(t, V2.x(a)), S.Q.mul(t, V2.y(a))}
+def scale(~F: O.OField, +t: O.C(F), +a: Vec(~F)) -> Vec(~F):
+  V2{O.mul(F, t, x(~F, a)), O.mul(F, t, y(~F, a))}
 
-def V2.dot(+a: V2, +b: V2) -> S.Q:
-  S.Q.add(S.Q.mul(V2.x(a), V2.x(b)), S.Q.mul(V2.y(a), V2.y(b)))
+def dot(~F: O.OField, +a: Vec(~F), +b: Vec(~F)) -> O.C(F):
+  O.add(F, O.mul(F, x(~F, a), x(~F, b)), O.mul(F, y(~F, a), y(~F, b)))
 
 # the z part of the 3D cross product
-def V2.cross(+a: V2, +b: V2) -> S.Q:
-  S.Q.sub(S.Q.mul(V2.x(a), V2.y(b)), S.Q.mul(V2.y(a), V2.x(b)))
+def cross(~F: O.OField, +a: Vec(~F), +b: Vec(~F)) -> O.C(F):
+  O.sub(~F, O.mul(F, x(~F, a), y(~F, b)), O.mul(F, y(~F, a), x(~F, b)))
 
 # |a|²
-def V2.norm2(+a: V2) -> S.Q:
-  V2.dot(a, a)
+def norm2(~F: O.OField, +a: Vec(~F)) -> O.C(F):
+  dot(~F, a, a)
 
 # a turned a quarter turn counterclockwise
-def V2.perp(+a: V2) -> V2:
-  V2{S.Q.neg(V2.y(a)), V2.x(a)}
+def perp(~F: O.OField, +a: Vec(~F)) -> Vec(~F):
+  V2{O.neg(F, y(~F, a)), x(~F, a)}
 
 # a turned by the rotation-and-scaling with matrix [[c, -s], [s, c]]
-def V2.rot(+c: S.Q, +s: S.Q, +a: V2) -> V2:
-  V2{S.Q.sub(S.Q.mul(c, V2.x(a)), S.Q.mul(s, V2.y(a))), S.Q.add(S.Q.mul(s, V2.x(a)), S.Q.mul(c, V2.y(a)))}
+def rot(~F: O.OField, +c: O.C(F), +s: O.C(F), +a: Vec(~F)) -> Vec(~F):
+  V2{O.sub(~F, O.mul(F, c, x(~F, a)), O.mul(F, s, y(~F, a))), O.add(F, O.mul(F, s, x(~F, a)), O.mul(F, c, y(~F, a)))}
 
 # the point a + t(b - a)
-def V2.lerp(+a: V2, +b: V2, +t: S.Q) -> V2:
-  V2.add(a, V2.scale(t, V2.sub(b, a)))
+def lerp(~F: O.OField, +a: Vec(~F), +b: Vec(~F), +t: O.C(F)) -> Vec(~F):
+  add(~F, a, scale(~F, t, sub(~F, b, a)))
 
 # the point midway between a and b
-def V2.mid(+a: V2, +b: V2) -> V2:
-  V2.scale(Q.half(), V2.add(a, b))
+def mid(~F: O.OField, +a: Vec(~F), +b: Vec(~F)) -> Vec(~F):
+  scale(~F, O.half(~F), add(~F, a, b))
 
 # twice the signed area of the triangle a, b, c: positive when c is left of
 # the directed line a → b
-def V2.orient(+a: V2, +b: V2, +c: V2) -> S.Q:
-  V2.cross(V2.sub(b, a), V2.sub(c, a))
+def orient(~F: O.OField, +a: Vec(~F), +b: Vec(~F), +c: Vec(~F)) -> O.C(F):
+  cross(~F, sub(~F, b, a), sub(~F, c, a))
 
 # Relations
 # ---------
 
 # the distance from p to q is d
-def dist(+p: V2, +q: V2, +d: S.Q) -> Type:
-  S.Q.lt(Q.zero(), d) & S.Q.eq(V2.norm2(V2.sub(q, p)), S.Q.mul(d, d))
+def dist(~F: O.OField, +p: Vec(~F), +q: Vec(~F), +d: O.C(F)) -> Type:
+  O.lt(F, O.zero(F), d) & {norm2(~F, sub(~F, q, p)) == O.mul(F, d, d) : O.C(F)}
 
 # q is d to the right of p
-def hdist(+p: V2, +q: V2, +d: S.Q) -> Type:
-  S.Q.lt(Q.zero(), d) & S.Q.eq(S.Q.sub(V2.x(q), V2.x(p)), d)
+def hdist(~F: O.OField, +p: Vec(~F), +q: Vec(~F), +d: O.C(F)) -> Type:
+  O.lt(F, O.zero(F), d) & {O.sub(~F, x(~F, q), x(~F, p)) == d : O.C(F)}
 
 # q is d above p
-def vdist(+p: V2, +q: V2, +d: S.Q) -> Type:
-  S.Q.lt(Q.zero(), d) & S.Q.eq(S.Q.sub(V2.y(q), V2.y(p)), d)
+def vdist(~F: O.OField, +p: Vec(~F), +q: Vec(~F), +d: O.C(F)) -> Type:
+  O.lt(F, O.zero(F), d) & {O.sub(~F, y(~F, q), y(~F, p)) == d : O.C(F)}
 
-# segments a0 a1 and b0 b1 are proper and equally long
-def equal_length(+a0: V2, +a1: V2, +b0: V2, +b1: V2) -> Type:
-  V2.ne(a0, a1) & (V2.ne(b0, b1) & S.Q.eq(V2.norm2(V2.sub(a1, a0)), V2.norm2(V2.sub(b1, b0))))
+# segments a0 a1 and b0 b1 are equally long
+def equal_length(~F: O.OField, +a0: Vec(~F), +a1: Vec(~F), +b0: Vec(~F), +b1: Vec(~F)) -> Type:
+  {norm2(~F, sub(~F, a1, a0)) == norm2(~F, sub(~F, b1, b0)) : O.C(F)}
 
-# u and v are nonzero and v is a multiple of u
-def parallel(+u: V2, +v: V2) -> Type:
-  V2.ne(u, V2.zero()) & (V2.ne(v, V2.zero()) & Exists(S.Q, l => V2.eq(v, V2.scale(l, u))))
+# one of u, v is a multiple of the other
+def parallel(~F: O.OField, +u: Vec(~F), +v: Vec(~F)) -> Type:
+  Or(Exists(O.C(F), l => {v == scale(~F, l, u) : Vec(~F)}), Exists(O.C(F), l => {u == scale(~F, l, v) : Vec(~F)}))
 
 # v is parallel to u turned a quarter turn
-def perpendicular(+u: V2, +v: V2) -> Type:
-  parallel(V2.perp(u), v)
+def perpendicular(~F: O.OField, +u: Vec(~F), +v: Vec(~F)) -> Type:
+  parallel(~F, perp(~F, u), v)
 
-# p lies on the line through a and b
-def on_line(+p: V2, +a: V2, +b: V2) -> Type:
-  V2.ne(a, b) & Exists(S.Q, t => V2.eq(p, V2.lerp(a, b, t)))
+# p lies on the line through a and b (any p does when a = b)
+def on_line(~F: O.OField, +p: Vec(~F), +a: Vec(~F), +b: Vec(~F)) -> Type:
+  parallel(~F, sub(~F, b, a), sub(~F, p, a))
 
 # p lies strictly between a and b
-def on_segment(+p: V2, +a: V2, +b: V2) -> Type:
-  V2.ne(a, b) & Exists(S.Q, t => S.Q.lt(Q.zero(), t) & (S.Q.lt(t, Q.one()) & V2.eq(p, V2.lerp(a, b, t))))
+def on_segment(~F: O.OField, +p: Vec(~F), +a: Vec(~F), +b: Vec(~F)) -> Type:
+  ne(~F, a, b) & Exists(O.C(F), t => O.lt(F, O.zero(F), t) & (O.lt(F, t, O.one(F)) & {p == lerp(~F, a, b, t) : Vec(~F)}))
 
 # p is at distance d from the line through a and b, on its left: the foot f
 # of the perpendicular from p is at distance d from p
-def line_dist(+p: V2, +a: V2, +b: V2, +d: S.Q) -> Type:
-  S.Q.lt(Q.zero(), V2.orient(a, b, p)) & Exists(V2, f => on_line(f, a, b) & (S.Q.eq(V2.dot(V2.sub(p, f), V2.sub(b, a)), Q.zero()) & dist(f, p, d)))
+def line_dist(~F: O.OField, +p: Vec(~F), +a: Vec(~F), +b: Vec(~F), +d: O.C(F)) -> Type:
+  O.lt(F, O.zero(F), orient(~F, a, b, p)) & Exists(Vec(~F), f => on_line(~F, f, a, b) & ({dot(~F, sub(~F, p, f), sub(~F, b, a)) == O.zero(F) : O.C(F)} & dist(~F, f, p, d)))
 
 # q is the mirror image of p in the line through a and b: their midpoint is
-# on the line and q - p is perpendicular to it (q = p when p is on the line)
-def mirror(+p: V2, +q: V2, +a: V2, +b: V2) -> Type:
-  on_line(V2.mid(p, q), a, b) & S.Q.eq(V2.dot(V2.sub(q, p), V2.sub(b, a)), Q.zero())
+# on the line and q - p is perpendicular to it (any p, q when a = b)
+def mirror(~F: O.OField, +p: Vec(~F), +q: Vec(~F), +a: Vec(~F), +b: Vec(~F)) -> Type:
+  on_line(~F, mid(~F, p, q), a, b) & {dot(~F, sub(~F, q, p), sub(~F, b, a)) == O.zero(F) : O.C(F)}
 
 # v points along u turned by the rotation (c, s): with (c, s) = (cos θ,
 # sin θ), θ is the counterclockwise angle from u to v
-def angle(+u: V2, +v: V2, +c: S.Q, +s: S.Q) -> Type:
-  V2.ne(u, V2.zero()) & (V2.ne(V2{c, s}, V2.zero()) & Exists(S.Q, l => S.Q.lt(Q.zero(), l) & V2.eq(v, V2.scale(l, V2.rot(c, s, u)))))
+def angle(~F: O.OField, +u: Vec(~F), +v: Vec(~F), +c: O.C(F), +s: O.C(F)) -> Type:
+  ne(~F, u, vzero(~F)) & (ne(~F, V2{c, s}, vzero(~F)) & Exists(O.C(F), l => O.lt(F, O.zero(F), l) & {v == scale(~F, l, rot(~F, c, s, u)) : Vec(~F)}))
+
+# p is on the circle about c of radius r
+def on_circle(~F: O.OField, +p: Vec(~F), +c: Vec(~F), +r: O.C(F)) -> Type:
+  {norm2(~F, sub(~F, p, c)) == O.mul(F, r, r) : O.C(F)}

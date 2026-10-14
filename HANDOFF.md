@@ -1,6 +1,6 @@
-# HANDOFF — bend-cad (2026-10-13, sk-03 drafted, awaiting review)
+# HANDOFF — bend-cad (2026-10-13, sk-03 revised after review)
 
-Read first: `DESIGN.md` (v0.6: the plan, Danielle's decisions, §3 spec
+Read first: `DESIGN.md` (v0.7: the plan, Danielle's decisions, §3 spec
 numbers, §4–§5 typed IR and forms as built), `proto/RESULTS.md` (sk-P1 spike
 results). Bend gotchas are
 in memory (`reference_bend2_idioms`).
@@ -21,18 +21,20 @@ in memory (`reference_bend2_idioms`).
   **`LAWS.bend` is a draft awaiting Danielle's review** (it is human-owned by
   convention; Claude wrote this draft).
 
-- **sk-03 drafted, awaiting Danielle's review** (its exit criterion):
-  `spec/geom.bend` (trusted: V2 over ℚ, textbook relations: dist, parallel,
-  perpendicular, on_line, on_segment, line_dist via the foot, mirror, angle)
-  and `spec/sketch.bend` (trusted: the typed IR — variables by index, geometry
-  by value `Pt`/`Seg`/`Circ`/`Arc`, `Constraint` with the 21 §5.1 kinds,
-  `Ent`, `Rec`, `Sketch`; per kind `eqs`/`sides`/`wf`/`means`; sketch-level
-  `eqs`/`sides`/`holds`/`means`). `spec/num.bend` gained `Q.lt`. Six meaning
-  laws are stated, open, in `ROADMAP.bend` (means/ent/sketch × sound/
-  complete). `tests/sketch_demo.bend` evaluates every form on a rectangle
-  with a known rational solution (and three failing cases) and proves four
-  nontrivial meanings there from witnesses. Review questions Q13–Q15 are in
-  DESIGN §16.
+- **sk-03 revised after Danielle's answers (Q13–Q15), awaiting a final
+  look**: `spec/field.bend` (trusted: `OField`, an ordered field as one
+  record — carrier, ops, 15 textbook axioms — with accessors, `ofq`, `eval`);
+  `spec/geom.bend` (trusted: vectors `V2<C>` and textbook relations over any
+  ordered field, collapse-tolerant: parallel = one is a multiple of the
+  other); `spec/sketch.bend` (trusted: entities with IDs — points name
+  variables, segments name endpoint points, circles a center point;
+  constraints reference entity IDs, resolved by `pt`/`seg`/`circ` with kind
+  checks `wf_refs`; the 21 §5.1 kinds with `eqs`/`sides`/`wf`/`means`;
+  sketch-level `eqs`/`sides`/`wf`/`holds`/`means`). Six meaning laws
+  `for ~F: O.OField`, open, in `ROADMAP.bend`. `tests/sketch_demo.bend` checks
+  every form over ℚ on a rectangle (+ failing cases, collapsed segment,
+  reference resolution); `tests/field_demo.bend` proves the Fix case of
+  means_sound in every ordered field from the axioms.
 
 ### sk-01 layout
 
@@ -90,10 +92,15 @@ laws):
 
 ### sk-03 lessons
 
-- Bend cannot state "for every ordered field" usably: proofs are runtime terms
-  and a law passed as a function value is affine (one use), erased (`-`)
-  values cannot appear in the proof term. Hence meanings over ℚ plus the
-  ordered-field-interface discipline (DESIGN §5.5, Q13).
+- **Generic proofs use template parameters.** A law `for ~F: OField` (a
+  record of carrier, ops and axioms) is checked with F opaque (`law~F` in
+  errors), and its axioms may be used any number of times. Plain or erased
+  function-valued parameters do not work: plain ones are affine (one use),
+  erased ones cannot appear in a proof term, not even inside a `%` rewrite.
+  Accessors: `O.add(F, a, b)`, laws `O.add_comm(F)(a, b)`; derived defs take
+  `~F` (`O.sub(~F, a, b)`). Filling a template law: `def name(F, x, ..)`.
+- Multi-line constructor fields and parametric data (`type V2<-A: Data>`) work;
+  `def Vec(~F) -> Data: V2<O.C(F)>` works as a type alias.
 - A let-bound constructor needs an annotation: `+x = {E.QMul{..} : E.QExpr}`.
 - `is` is a keyword. Refuting `{Zpos.. == Z0}` vs `{Z0 == Zpos..}` needs the
   motive matching the *right* side's constructor (`nz`/`zn` in the demo).
@@ -102,16 +109,18 @@ laws):
 
 ## Next
 
-**Waiting on Danielle:** review of `LAWS.bend` (sk-01/02 laws) and of the
-sk-03 draft: `spec/geom.bend`, `spec/sketch.bend`, the six meaning laws in
-`ROADMAP.bend`, and Q13–Q15 (DESIGN §16). Fold her answers into the spec,
-then mark sk-03 done.
+**Waiting on Danielle:** review of `LAWS.bend` (sk-01/02 laws) and a final
+look at the revised sk-03 spec (`spec/field.bend`, `spec/geom.bend`,
+`spec/sketch.bend`, the six laws in `ROADMAP.bend`; my calls listed under Q15
+in DESIGN §16). Then mark sk-03 done.
 
 Unblocked meanwhile: **sk-04** (rational, dyadic and matrix library: ∞-norms,
-products; **Q order laws**, which sk-07's meaning proofs need, stated as
-ordered-field facts; gcd reduction proven to keep Q.eq). sk-07 (prove the
-meaning laws) needs sk-04 and sk-06; when it starts, add the gate rule that
-its meaning-proof modules never mention Q's representation (§5.5).
+products; Q order laws for the certificate layer; gcd reduction proven to
+keep Q.eq; optionally canonical gcd-reduced ℚ as an `OField` instance, which
+shows the axioms consistent and allows concrete meaning checks). The meaning
+proofs themselves (sk-07's half) now need only `spec/field.bend`: they are
+generic in `~F`, from the axioms, like `tests/field_demo.bend`, so they can
+start as soon as sk-03 is signed off, without waiting for sk-04/06.
 Deferred: binary `N` (no consumer yet), division in `QExpr`, Big shifts /
 dyadic rounding (sk-04), a verified single-divmod carry (only if the
 benchmark ever demands it).

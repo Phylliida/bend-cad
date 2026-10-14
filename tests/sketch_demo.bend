@@ -2,13 +2,12 @@
 # rational solution. A 4 × 3 rectangle ABDC with A fixed at the origin, the
 # midpoint M of AB (B lies on the line A → M), a fixed point P and its mirror
 # Q in AC, a circle about A through E = (3, 4), D at distance 3 left of the
-# line A → B, and the angle from AB to AE. The checker computes everything
-# below ({==}).
+# line A → B, the angle from AB to AE, and a segment Z collapsed onto A.
+# The checker computes everything below ({==}).
 
 import Base
 import ../spec/num.bend as S
 import ../spec/ring.bend as E
-import ../spec/geom.bend as G
 import ../spec/sketch.bend as K
 
 # n / d for small n, d
@@ -21,59 +20,36 @@ def qneg(n: Nat) -> S.Q:
 def c(n: Nat) -> E.QExpr:
   E.QCst{q(n, 1n)}
 
-# variables: 0 Ax = Cx, 1 Ay = By = My, 2 Bx = Dx, 3 Cy = Dy, 4 Mx, 5 Px,
-# 6 Py = Qy, 7 Qx, 8 Ex, 9 Ey, 10 the radius, 11 the aux length of AB
-def A() -> K.Pt:
-  K.Pt{0n, 1n}
+def pt(id: Nat, x: Nat, y: Nat) -> K.Ent:
+  K.Ent{id, False{}, K.GPoint{x, y}}
 
-def B() -> K.Pt:
-  K.Pt{2n, 1n}
+def sg(id: Nat, p: Nat, q: Nat) -> K.Ent:
+  K.Ent{id, False{}, K.GSeg{p, q}}
 
-def C() -> K.Pt:
-  K.Pt{0n, 3n}
-
-def D() -> K.Pt:
-  K.Pt{2n, 3n}
-
-def M() -> K.Pt:
-  K.Pt{4n, 1n}
-
-def P() -> K.Pt:
-  K.Pt{5n, 6n}
-
-def Qp() -> K.Pt:
-  K.Pt{7n, 6n}
-
-def Ep() -> K.Pt:
-  K.Pt{8n, 9n}
-
-def AB() -> K.Seg:
-  K.Seg{A(), B()}
-
-def CD() -> K.Seg:
-  K.Seg{C(), D()}
-
-def AC() -> K.Seg:
-  K.Seg{A(), C()}
-
-def AE() -> K.Seg:
-  K.Seg{A(), Ep()}
-
-def circ() -> K.Circ:
-  K.Circ{A(), 10n}
+# Variables: 0 Ax = Cx, 1 Ay = By = My, 2 Bx = Dx, 3 Cy = Dy, 4 Mx, 5 Px,
+# 6 Py = Qy, 7 Qx, 8 Ex, 9 Ey, 10 the radius, 11 the aux length of AB.
+# Points 0 A, 1 B, 2 C, 3 D, 4 M, 5 P, 6 Q, 7 E; segments 10 AB, 11 CD,
+# 12 AC, 13 AE, 14 AM, 15 Z = AA; circle 20 about A.
+def ents() -> List<&2, K.Ent>:
+  [pt(0n, 0n, 1n), pt(1n, 2n, 1n), pt(2n, 0n, 3n), pt(3n, 2n, 3n),
+   pt(4n, 4n, 1n), pt(5n, 5n, 6n), pt(6n, 7n, 6n), pt(7n, 8n, 9n),
+   sg(10n, 0n, 1n), sg(11n, 2n, 3n), sg(12n, 0n, 2n), sg(13n, 0n, 7n),
+   sg(14n, 0n, 4n), sg(15n, 0n, 0n),
+   K.Ent{20n, False{}, K.GCirc{0n, 10n}}]
 
 def cons() -> List<&2, K.Constraint>:
   [K.Fix{0n, q(0n, 1n)}, K.Fix{1n, q(0n, 1n)},
-   K.Horizontal{A(), B()}, K.Vertical{A(), C()}, K.Vertical{B(), D()},
-   K.Horizontal{C(), D()}, K.Horizontal{A(), M()}, K.Horizontal{P(), Qp()},
-   K.HDistance{A(), B(), c(4n)}, K.VDistance{A(), C(), c(3n)},
-   K.Perpendicular{AB(), AC()}, K.Parallel{AB(), CD()}, K.EqualLength{AB(), CD()},
-   K.Midpoint{M(), A(), B()}, K.OnSegment{M(), AB()}, K.OnLine{B(), K.Seg{A(), M()}},
-   K.Fix{5n, q(1n, 1n)}, K.Fix{6n, q(1n, 1n)}, K.Symmetric{P(), Qp(), AC()},
-   K.Radius{circ(), c(5n)}, K.Diameter{circ(), c(10n)}, K.OnCircle{Ep(), circ()},
-   K.Distance{A(), Ep(), c(5n)},
-   K.LineDistance{D(), AB(), c(3n), 11n},
-   K.Angle{AB(), AE(), E.QCst{q(3n, 5n)}, E.QCst{q(4n, 5n)}}]
+   K.Horizontal{0n, 1n}, K.Vertical{0n, 2n}, K.Vertical{1n, 3n},
+   K.Horizontal{2n, 3n}, K.Horizontal{0n, 4n}, K.Horizontal{5n, 6n},
+   K.HDistance{0n, 1n, c(4n)}, K.VDistance{0n, 2n, c(3n)},
+   K.Perpendicular{10n, 12n}, K.Parallel{10n, 11n}, K.EqualLength{10n, 11n},
+   K.Midpoint{4n, 10n}, K.OnSegment{4n, 10n}, K.OnLine{1n, 14n},
+   K.Fix{5n, q(1n, 1n)}, K.Fix{6n, q(1n, 1n)}, K.Symmetric{5n, 6n, 12n},
+   K.Radius{20n, c(5n)}, K.Diameter{20n, c(10n)}, K.OnCircle{7n, 20n},
+   K.Distance{0n, 7n, c(5n)},
+   K.LineDistance{3n, 10n, False{}, c(3n), 11n},
+   K.Angle{10n, False{}, 13n, False{}, E.QCst{q(3n, 5n)}, E.QCst{q(4n, 5n)}},
+   K.Parallel{10n, 15n}, K.Perpendicular{15n, 12n}, K.OnLine{5n, 15n}]
 
 def good() -> List<&2, S.Q>:
   [q(0n, 1n), q(0n, 1n), q(4n, 1n), q(3n, 1n), q(2n, 1n), q(1n, 1n),
@@ -85,7 +61,7 @@ def bad() -> List<&2, S.Q>:
    q(1n, 1n), qneg(1n), q(4n, 1n), q(3n, 1n), q(5n, 1n), q(4n, 1n)]
 
 # A decision procedure for the demo (untrusted): every equation is 0 and
-# every side condition positive.
+# every side condition positive, over the rationals.
 def same(o: Cmp, want: Cmp) -> Bool:
   match o want:
     case LT{} LT{}:
@@ -97,19 +73,19 @@ def same(o: Cmp, want: Cmp) -> Bool:
     case _ _:
       False{}
 
-def all(+env: List<&2, S.Q>, +want: Cmp, es: List<&2, E.QExpr>) -> Bool:
-  match es:
+def all(+env: List<&2, S.Q>, +want: Cmp, xs: List<&2, E.QExpr>) -> Bool:
+  match xs:
     case Nil{}:
       True{}
     case Con{h, t}:
-      Bool.and(same(S.Q.cmp(E.qeval(env, h), G.Q.zero()), want), all(env, want, t))
+      Bool.and(same(S.Q.cmp(E.qeval(env, h), S.Q{S.Z0{}, S.XH{}}), want), all(env, want, t))
 
 def ok(+env: List<&2, S.Q>, ks: List<&2, K.Constraint>) -> Bool:
   match ks:
     case Nil{}:
       True{}
     case Con{+k, t}:
-      Bool.and(Bool.and(all(env, EQ{}, K.Constraint.eqs(k)), all(env, GT{}, K.Constraint.sides(k))), ok(env, t))
+      Bool.and(Bool.and(all(env, EQ{}, K.Constraint.eqs(ents(), k)), all(env, GT{}, K.Constraint.sides(ents(), k))), ok(env, t))
 
 def good_ok() -> {ok(good(), cons()) == True{} : Bool}:
   {==}
@@ -118,75 +94,28 @@ def bad_fails() -> {ok(bad(), cons()) == False{} : Bool}:
   {==}
 
 # D is left of A → B, so it is not at distance 3 on the left of B → A
-def wrong_side() -> {ok(good(), [K.LineDistance{D(), K.Seg{B(), A()}, c(3n), 11n}]) == False{} : Bool}:
+def wrong_side() -> {ok(good(), [K.LineDistance{3n, 10n, True{}, c(3n), 11n}]) == False{} : Bool}:
   {==}
 
 # B is on the line through A and M, past M, so not on the segment AM
-def past_end() -> {ok(good(), [K.OnSegment{B(), K.Seg{A(), M()}}]) == False{} : Bool}:
+def past_end() -> {ok(good(), [K.OnSegment{1n, 14n}]) == False{} : Bool}:
   {==}
 
-# Meanings at the solution, with their witnesses
-# ----------------------------------------------
+# no point is strictly inside the collapsed segment Z
+def inside_collapsed() -> {ok(good(), [K.OnSegment{0n, 15n}]) == False{} : Bool}:
+  {==}
 
-# a rewrite motive refuting Z0 == nonzero
-def nz(z: S.Z) -> Type:
-  match z:
-    case S.Z0{}:
-      Unit
-    case S.Zpos{p}:
-      Empty
-    case S.Zneg{p}:
-      Empty
+# References resolve to the entities they name
+def refs_ok() -> K.Constraint.wf_refs(ents(), K.Symmetric{5n, 6n, 12n}):
+  ({==}, ({==}, {==}))
 
-# and nonzero == Z0
-def zn(z: S.Z) -> Type:
-  match z:
-    case S.Z0{}:
-      Empty
-    case S.Zpos{p}:
-      Unit
-    case S.Zneg{p}:
-      Unit
+def merge_ok() -> K.Constraint.wf(ents(), K.Horizontal{0n, 1n}):
+  {==}
 
-def env() -> List<&2, S.Q>:
-  good()
+# a segment id is not a point
+def wrong_kind() -> {K.is_pt(K.find(10n, ents())) == False{} : Bool}:
+  {==}
 
-def at(p: K.Pt) -> G.V2:
-  K.Pt.at(env(), p)
-
-# A ≠ B: their x coordinates are 0 and 4
-def ab_ne(h: G.V2.eq(at(A()), at(B()))) -> Empty:
-  (hx, hy) = h
-  %hx : nz(_)
-  Unit{}
-
-# M is strictly inside AB, at t = 1/2
-def m_onseg() -> K.Constraint.means(env(), K.OnSegment{M(), AB()}):
-  (h => ab_ne(h), (q(1n, 2n), ({==}, ({==}, ({==}, {==})))))
-
-# Q mirrors P in AC: the midpoint (0, 1) is on AC at t = 1/3
-def ac_ne(h: G.V2.eq(at(A()), at(C()))) -> Empty:
-  (hx, hy) = h
-  %hy : nz(_)
-  Unit{}
-
-def q_mirror() -> K.Constraint.means(env(), K.Symmetric{P(), Qp(), AC()}):
-  ((h => ac_ne(h), (q(1n, 3n), ({==}, {==}))), {==})
-
-# D is 3 left of A → B (length 4): the foot of its perpendicular is (4, 0)
-def d_linedist() -> K.Constraint.means(env(), K.LineDistance{D(), AB(), c(3n), 11n}):
-  (({==}, {==}), ({==}, (G.V2{q(4n, 1n), q(0n, 1n)}, ((h => ab_ne(h), (q(1n, 1n), ({==}, {==}))), ({==}, ({==}, {==}))))))
-
-# AE is AB turned by (3/5, 4/5), scaled by 5/4
-def u_ne(h: G.V2.eq(G.V2.sub(at(B()), at(A())), G.V2.zero())) -> Empty:
-  (hx, hy) = h
-  %hx : zn(_)
-  Unit{}
-
-def cs_ne(h: G.V2.eq(G.V2{q(3n, 5n), q(4n, 5n)}, G.V2.zero())) -> Empty:
-  (hx, hy) = h
-  %hx : zn(_)
-  Unit{}
-
-def e_angle() -> K.Constraint.means(env(), K.Angle{AB(), AE(), E.QCst{q(3n, 5n)}, E.QCst{q(4n, 5n)}}):
-  (h => u_ne(h), (h => cs_ne(h), (q(5n, 4n), ({==}, ({==}, {==})))))
+# a dangling id names nothing
+def dangling() -> {K.is_seg(K.find(99n, ents())) == False{} : Bool}:
+  {==}
