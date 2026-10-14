@@ -1,7 +1,8 @@
-# HANDOFF — bend-cad (2026-10-13, end of sk-02)
+# HANDOFF — bend-cad (2026-10-13, sk-03 drafted, awaiting review)
 
-Read first: `DESIGN.md` (v0.5: the plan, Danielle's decisions, §3 spec
-numbers as built), `proto/RESULTS.md` (sk-P1 spike results). Bend gotchas are
+Read first: `DESIGN.md` (v0.6: the plan, Danielle's decisions, §3 spec
+numbers, §4–§5 typed IR and forms as built), `proto/RESULTS.md` (sk-P1 spike
+results). Bend gotchas are
 in memory (`reference_bend2_idioms`).
 
 ## State
@@ -19,6 +20,19 @@ in memory (`reference_bend2_idioms`).
   native. **49 laws, all proven, gate green (~6 s).**
   **`LAWS.bend` is a draft awaiting Danielle's review** (it is human-owned by
   convention; Claude wrote this draft).
+
+- **sk-03 drafted, awaiting Danielle's review** (its exit criterion):
+  `spec/geom.bend` (trusted: V2 over ℚ, textbook relations: dist, parallel,
+  perpendicular, on_line, on_segment, line_dist via the foot, mirror, angle)
+  and `spec/sketch.bend` (trusted: the typed IR — variables by index, geometry
+  by value `Pt`/`Seg`/`Circ`/`Arc`, `Constraint` with the 21 §5.1 kinds,
+  `Ent`, `Rec`, `Sketch`; per kind `eqs`/`sides`/`wf`/`means`; sketch-level
+  `eqs`/`sides`/`holds`/`means`). `spec/num.bend` gained `Q.lt`. Six meaning
+  laws are stated, open, in `ROADMAP.bend` (means/ent/sketch × sound/
+  complete). `tests/sketch_demo.bend` evaluates every form on a rectangle
+  with a known rational solution (and three failing cases) and proves four
+  nontrivial meanings there from witnesses. Review questions Q13–Q15 are in
+  DESIGN §16.
 
 ### sk-01 layout
 
@@ -74,17 +88,30 @@ laws):
   the output. Put helpers above callers; write `1n++k` when a predecessor is
   reused.
 
+### sk-03 lessons
+
+- Bend cannot state "for every ordered field" usably: proofs are runtime terms
+  and a law passed as a function value is affine (one use), erased (`-`)
+  values cannot appear in the proof term. Hence meanings over ℚ plus the
+  ordered-field-interface discipline (DESIGN §5.5, Q13).
+- A let-bound constructor needs an annotation: `+x = {E.QMul{..} : E.QExpr}`.
+- `is` is a keyword. Refuting `{Zpos.. == Z0}` vs `{Z0 == Zpos..}` needs the
+  motive matching the *right* side's constructor (`nz`/`zn` in the demo).
+- A wrong demo constraint is found fast by running a per-constraint `List<Bool>`
+  as `main` (`bin/bend f.bend`, no `--check-only`).
+
 ## Next
 
-**Danielle chose sk-03 next (2026-10-13)**, after a context roll. Start by
-re-reading DESIGN §4–§5 (typed IR, exact equation forms) and §11 (acceptance),
-then draft the IR and meaning-lemma *statements* for Danielle's review; the
-LAWS review is sk-03's exit criterion.
+**Waiting on Danielle:** review of `LAWS.bend` (sk-01/02 laws) and of the
+sk-03 draft: `spec/geom.bend`, `spec/sketch.bend`, the six meaning laws in
+`ROADMAP.bend`, and Q13–Q15 (DESIGN §16). Fold her answers into the spec,
+then mark sk-03 done.
 
-DESIGN §15: **sk-03** (typed IR, exact equation forms, meaning-lemma
-statements; needs Danielle's LAWS review) and **sk-04** (rational, dyadic and
-matrix library: ∞-norms, products; Q order laws; gcd reduction proven to keep
-Q.eq) are both unblocked. Waiting on Danielle: review of `LAWS.bend`.
+Unblocked meanwhile: **sk-04** (rational, dyadic and matrix library: ∞-norms,
+products; **Q order laws**, which sk-07's meaning proofs need, stated as
+ordered-field facts; gcd reduction proven to keep Q.eq). sk-07 (prove the
+meaning laws) needs sk-04 and sk-06; when it starts, add the gate rule that
+its meaning-proof modules never mention Q's representation (§5.5).
 Deferred: binary `N` (no consumer yet), division in `QExpr`, Big shifts /
 dyadic rounding (sk-04), a verified single-divmod carry (only if the
 benchmark ever demands it).

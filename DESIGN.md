@@ -1,4 +1,4 @@
-# bend-cad — Design v0.5 (draft; exact by default; sk-01 number decisions recorded)
+# bend-cad — Design v0.6 (draft; exact by default; sk-03 IR awaiting review)
 
 A formally verified 2D sketch constraint solver in Bend 2, aiming at Onshape /
 FreeCAD sketcher parity, feeding an implicit-function (SDF) modeling pipeline.
@@ -8,7 +8,8 @@ the workspace; external solvers and papers are cited as references only.
 History: v0.1 was audited ([AUDIT-v0.1.md](AUDIT-v0.1.md)); v0.2 folded the
 audit in; v0.3 makes exactness the default; v0.4 records Danielle's answers
 to the open questions; v0.5 records the spec-number choices made in sk-01
-(§3, §19 changelog).
+(§3); v0.6 records the typed IR, equation forms and meaning statements of
+sk-03 (§4, §5, §19 changelog).
 
 ---
 
@@ -156,6 +157,30 @@ well-formed inputs every intermediate stays below B·B + B ≪ 2^48. Measured:
 
 ## 4. Typed IR (the spec input)
 
+As built in sk-03: `spec/sketch.bend` (trusted). The rest of this section is
+the plan; the bullets marked *as built* record what sk-03 fixed.
+
+- *As built:* a sketch is `Sketch{vars, ents, cons}`. Unknowns are
+  **variables named by index** into an environment of rationals. Geometry
+  refers to variables directly: a point is `Pt{x, y}` (its two coordinate
+  indices), a segment `Seg{p, q}` (directed p → q, also naming its line), a
+  circle `Circ{c, r}`, a bulge arc `Arc{s, e, b}`. **Constraints take this
+  geometry by value**, not entity IDs: a constraint's meaning depends only on
+  its own fields, and merged points (D3) are visibly the same indices. The
+  front end orients a segment argument to choose a side or an angle's
+  quadrant, and orders a horizontal/vertical distance's points.
+- *As built:* each constraint kind has `eqs` (polynomials that must vanish),
+  `sides` (polynomials that must be positive), `wf` (for merge kinds, the
+  index sharing that realizes them) and `means` (its geometric meaning in
+  `spec/geom.bend`). Equations and dimensions are `QExpr` over the variables,
+  so a dimension may be a rational, a named variable, or an expression.
+- *As built:* `Sketch.eqs` (the system F: every driving constraint's
+  equations), `Sketch.sides` (every entity's side conditions, then every
+  driving constraint's), `Sketch.holds`, `Sketch.means`. Entities carry side
+  conditions that keep every drawn curve proper (segment ends distinct, r > 0,
+  arc b > 0 and ends distinct). Driven constraints contribute nothing.
+- *As built:* persistent IDs on entities and constraints (`Ent.id`, `Rec.id`);
+  a variable's ID is its index. Deletion and renumbering policy: sk-21.
 - **Persistent IDs** for every entity, variable and constraint. The typed IR is
   saved, loaded, and re-certified on load.
 - **Variable kinds:** `coord`, `length`, `param`, `aux`.
@@ -167,6 +192,10 @@ well-formed inputs every intermediate stays below B·B + B ≪ 2^48. Measured:
   untrusted front end cannot change what a constraint means.
 - **Merging (D3)** is recorded as shared variable IDs. Merge conflicts are
   errors (two different constants; horizontal and vertical on one segment).
+  *As built:* coincident, horizontal, vertical, and concentric / equal radius
+  of full circles stay in the IR as records of intent; `wf` requires their
+  indices to be shared. `Fix{v, k}` is an equation v − k = 0 in the spec;
+  treating v as a constant is the certificate layer's optimization (§8).
 - **Dimensions** are driving or driven. Driving values are exact constants (§7)
   or expressions over named sketch variables.
 - **Evaluation** is a straight-line program over an environment (shared
@@ -193,21 +222,32 @@ conditions (signs, ranges, nondegeneracy) certified over the ball (§8.6).
 
 | Constraint | Exact equations | Side conditions |
 |---|---|---|
-| coincident, horizontal, vertical, fix; concentric / equal radius of full circles | merge / constant | — |
-| distance(P, Q) = d > 0 | \|Q − P\|² − d² = 0 | — |
-| horizontal / vertical distance | Δx − d = 0 (resp. Δy) | sign as drawn |
-| radius r = d | r − d = 0 | — |
-| equal length | \|u\|² − \|v\|² = 0 | lengths ≥ ℓ_min |
-| perpendicular / normal | dot(u, v) = 0 | lengths ≥ ℓ_min |
-| parallel | cross(u, v) = 0 | lengths ≥ ℓ_min; optionally dot > 0 |
-| point on line AB | cross(P − A, B − A) = 0 | \|B − A\| ≥ ℓ_min |
-| point on segment | cross(P − A, B − A) = 0 | 0 < dot(P − A, B − A) < \|B − A\|² |
-| point–line distance d > 0 | cross(P − A, B − A) − d·ℓ = 0, ℓ² = \|B − A\|² | ℓ > 0; side as drawn |
+| coincident, horizontal, vertical; concentric / equal radius of full circles | merge (shared variable indices) | — |
+| fix / block: variable v = k | v − k = 0 | — |
+| distance(P, Q) = d | \|Q − P\|² − d² = 0 | d > 0 |
+| horizontal / vertical distance | (Qx − Px) − d = 0 (resp. y); Q right of / above P | d > 0 |
+| radius r = d; diameter | r − d = 0; 2r − d = 0 | d > 0 |
+| equal length | \|u\|² − \|v\|² = 0 | \|u\|², \|v\|² > 0 |
+| perpendicular / normal | dot(u, v) = 0 | \|u\|², \|v\|² > 0 |
+| parallel | cross(u, v) = 0 | \|u\|², \|v\|² > 0 |
+| point on line AB | cross(B − A, P − A) = 0 | \|B − A\|² > 0 |
+| point on segment | cross(B − A, P − A) = 0 | 0 < dot(P − A, B − A) < \|B − A\|² |
+| point–line distance d, P left of A → B | cross(B − A, P − A) − d·ℓ = 0, ℓ² − \|B − A\|² = 0 | ℓ > 0; d > 0 |
 | point on circle | \|P − C\|² − r² = 0 | r > 0 |
 | midpoint M of PQ | 2M − P − Q = 0 | — |
-| symmetric P, Q about AB | \|w\|²(Q − A) − R̂(P − A) = 0, w = B − A, R̂ = [[wx²−wy², 2wxwy], [2wxwy, wy²−wx²]] | \|w\| ≥ ℓ_min |
-| angle θ between u, v | cross(R(θ)u, v) = 0 with c = cos θ, s = sin θ exact constants (§7) | dot(R(θ)u, v) > 0 |
-| block | constants | — |
+| symmetric P, Q about AB | \|w\|²(Q − A) − R̂(P − A) = 0, w = B − A, R̂ = [[wx²−wy², 2wxwy], [2wxwy, wy²−wx²]] | \|w\|² > 0 |
+| angle from u to v given by rotation (c, s) | cross(R u, v) = 0, R = [[c, −s], [s, c]]; c = cos θ, s = sin θ exact constants (§7) | dot(R u, v) > 0 |
+
+*As built (sk-03):* side conditions are the nondegeneracy the meaning needs
+(> 0), not ℓ_min bounds: a minimum length is a quality policy for the
+proposer and the tolerance checks (§6), not part of what a constraint means
+(review question Q15). A side condition implied by another is dropped (an
+angle's dot > 0 implies both directions and (c, s) are nonzero). The angle
+needs no c² + s² = 1: any positive multiple of (cos θ, sin θ) names the same
+rotation direction. Point–line distance puts P on the left (counterclockwise,
+y up), matching the usual orientation sign; the front end orients the line.
+Line–line, point–circle and circle–circle distances (§0) are not in the
+table yet; they are added with sk-07.
 
 ### 5.2 Tangency and joins
 
@@ -222,7 +262,8 @@ The circle–circle form is regular: its Jacobian in (s, D) has determinant
 
 ### 5.3 Arcs (D4)
 
-`Arc(S, E, b)`: S, E point variables, b = tan(sweep/4) ≠ 0.
+`Arc(S, E, b)`: S, E point variables, b = tan(sweep/4) > 0, counterclockwise
+from S to E (a clockwise arc is stored with its ends swapped).
 - Derived center C = (S+E)/2 + perp(E − S)·(1 − b²)/(4b); derived
   r² = \|E − S\|²(1 + b²)²/(16b²); both rational in the variables; equations
   clear the denominators.
@@ -261,6 +302,38 @@ Mandatory, one per kind, connecting the equation to its geometric meaning
 (e.g. \|Q − P\|² = d² with d > 0 ⇔ the distance is d; the symmetric equation ⇔
 Q = mirror(P); the tangency equations ⇔ the curves touch at T with the stated
 side). Exact forms make these much shorter than the tolerance versions.
+
+*As stated in sk-03* (`ROADMAP.bend`, proven in sk-07): the meanings are
+`Constraint.means`, one case per kind, in the textbook vocabulary of
+`spec/geom.bend`. For example: a point on a segment is A + t(B − A) for some
+0 < t < 1; parallel vectors are nonzero multiples of each other;
+perpendicular is parallel to a quarter turn; a mirror image has its midpoint
+on the line and its offset perpendicular to it; the point–line distance is
+the distance to the foot of the perpendicular. Two laws cover every kind:
+`means_sound` (wf, eqs = 0 and sides > 0 ⇒ means) and `means_complete` (the
+converse: the form asks for nothing more). `ent_sound`/`ent_complete` do the
+same for entities, and `sketch_sound`/`sketch_complete` lift both to a whole
+sketch: a solution of F = 0 with every side condition positive is exactly a
+sketch where every drawn curve is proper and every driving constraint holds.
+`tests/sketch_demo.bend` checks every form on a rectangle with a known
+rational solution and proves four nontrivial meanings there from explicit
+witnesses.
+
+**Rationals and the real solution (review question Q13).** The meanings are
+stated over ℚ, like the rest of the spec (D1), but the exact solution of a
+sketch is real and usually irrational. A statement proven for all rational
+points need not hold at real ones in general (x² = 2y² ⇒ x = 0 is true over
+ℚ only). The meaning lemmas reach the real solution by a meta-level step,
+alongside §8.4's: their proofs use only facts true in every ordered field.
+Stating them over an abstract ordered field instead is not workable in Bend
+today: proofs are runtime terms, and a law passed as a function value is
+affine, so a generic proof could use each field axiom once (tried in sk-03).
+So the plan makes the step auditable instead: sk-07's meaning proofs live in
+their own modules, which may use only an ordered-field interface (the ℚ
+field and congruence laws, `qring_eq`, whose hypothesis is an identity of
+formal polynomials over ℤ, and sk-04's order laws), and the gate rejects any
+mention of the representation (`Q.num`, `Q.den`, `S.Z`, `S.Pos`, the
+constructors) in them.
 
 ---
 
@@ -556,7 +629,9 @@ live/dead wall); comp.ts emitters and runtimes, including native mappings of
 Base operations (README: "99% AI-written and has not been fully audited");
 clang or the JS engine; base.bend; LAWS.bend (spec numbers, typed IR, exact
 equation forms, constant definitions, tolerance checks, meaning-lemma
-statements, `accept_sound`); optionally Euclidean-field axioms for SDF laws.
+statements, `accept_sound`) and the spec files it rests on (`spec/num.bend`,
+`spec/ring.bend`, `spec/big.bend`, `spec/geom.bend`, `spec/sketch.bend`);
+optionally Euclidean-field axioms for SDF laws.
 
 **Not trusted:** the proposer; the UI; F32 rendering.
 
@@ -574,7 +649,7 @@ random sketches.
 | sk-P1 | **Prototype spike in Bend (untrusted):** ink-metric proposer with F32 + exact refinement, pinning, block decomposition, certification cost and precision on the depth-30 chain (well- and ill-conditioned) and on one large cyclic block | — | report feeding Q12; go/no-go on §8.5 and on F32 refinement |
 | sk-01 | Spec numbers (binary N, Int, rationals, dyadics), reflective normalizer | sk-00 | soundness law closed — **done** (2026-10-13; N deferred, §3) |
 | sk-02 | Limb bigints refining the spec | sk-01 | refinement laws; 256-bit mul benchmark — **done** (2026-10-13; §3) |
-| sk-03 | Typed IR, exact equation forms, meaning-lemma statements; LAWS review | sk-01, sk-P1 | LAWS reviewed by Danielle |
+| sk-03 | Typed IR, exact equation forms, meaning-lemma statements; LAWS review | sk-01, sk-P1 | LAWS reviewed by Danielle — **drafted** (2026-10-13; §4, §5.1, §5.5); awaiting review |
 | sk-04 | Rational, dyadic and matrix library (∞-norms, products) | sk-02 | laws closed |
 | sk-05 | Parametric block certificate (§8.3), mean-value method (Q12) | sk-04 | law closed |
 | sk-06 | Composition theorem (§8.4), side conditions (§8.6) | sk-05 | laws closed |
@@ -623,6 +698,19 @@ sk-02 and sk-03 can run in parallel after sk-01.
 - Spec rationals are unreduced, with `Q.eq` as their equality (§3). DESIGN
   v0.4 said "normalized integer pairs"; reduction moves to the runtime layer,
   proven to preserve `Q.eq`, and is used only where sizes would grow (R10).
+
+**Awaiting Danielle (sk-03 review):**
+- **Q13** Meaning lemmas over ℚ, reaching the real solution by a meta-level
+  step whose soundness rests on the proofs using only ordered-field facts,
+  enforced by a gate rule on the meaning-proof modules (§5.5). Recommended;
+  the generic alternative is not expressible usably in Bend today.
+- **Q14** Constraints take geometry by value (variable indices) rather than
+  by entity ID (§4). Recommended: a constraint's meaning then depends only on
+  its own fields.
+- **Q15** Side conditions are nondegeneracy (> 0), not ℓ_min bounds (§5.1).
+  Recommended: ℓ_min is a quality policy, not meaning.
+- Also for review: the vocabulary and every meaning in `spec/geom.bend` and
+  `Constraint.means`; the equation forms in `Constraint.eqs`/`sides`.
 
 **Mine to decide:**
 - **Q12** Mean-value method (polynomial slopes vs selective quadratization),
@@ -684,6 +772,18 @@ sk-02 and sk-03 can run in parallel after sk-01.
 ---
 
 ## 19. Changelog
+
+**v0.5 → v0.6 (sk-03 drafted):**
+- §4: typed IR as built: variables by index, geometry by value, merge kinds as
+  index sharing (`wf`), `Fix` as an equation, entity side conditions, driven
+  flag.
+- §5.1: the table as built: > 0 nondegeneracy side conditions (Q15), point–line
+  distance on the left, angle by any nonzero (c, s), fix as an equation;
+  §5.3: b > 0 (counterclockwise).
+- §5.5: meaning statements (sound/complete per constraint, entity and sketch)
+  and the ℚ-to-real question (Q13).
+- §14: the spec files are listed in the trusted base. §16: Q13–Q15 await
+  review.
 
 **v0.5, sk-02 done:** §3 runtime numbers as built (base-parametric limbs,
 compare-based borrow, ≈ 12 µs per 256-bit product).

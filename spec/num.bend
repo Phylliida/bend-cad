@@ -363,6 +363,10 @@ def Q.div(+x: Q, +y: Q) -> Q:
 def Q.cmp(+x: Q, +y: Q) -> Cmp:
   Z.cmp(Z.mul(Q.num(x), Zpos{Q.den(y)}), Z.mul(Q.num(y), Zpos{Q.den(x)}))
 
+# x < y
+def Q.lt(+x: Q, +y: Q) -> Type:
+  {Q.cmp(x, y) == LT{} : Cmp}
+
 # Dyadics
 # -------
 # A dyadic m/2^e, the certificates' working numbers. Its meaning is the
