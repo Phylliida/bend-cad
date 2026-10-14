@@ -937,3 +937,11 @@ def fix_rows(~F: O.OField, f: M.Vec(~F), jm: M.Mat(~F), +g: M.Vec(~F), +b: M.Mat
           bval(~F, O.add(F, O.sub(~F, x, M.dot(~F, w, g)), M.dot(~F, w, g)), x, O.add(F, vhd(~F, r), O.zero(F)), FR.fring_eq(~F, [x, M.dot(~F, w, g)], E.ZAdd{E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{1n}}, E.ZVar{0n}, {==}),
             FM.bnd_add(~F, O.sub(~F, x, M.dot(~F, w, g)), vhd(~F, r), M.dot(~F, w, g), O.zero(F), rbnd_head(~F, O.sub(~F, x, M.dot(~F, w, g)), C.vsub(~F, xs, M.matvec(~F, ws, g)), r, h), hd0))),
         fix_rows(~F, xs, ws, g, mtl(~F, b), vtl(~F, r), succ_inj(M.len(~F, xs), rows(~F, ws), hl), rbnd_tail(~F, O.sub(~F, x, M.dot(~F, w, g)), C.vsub(~F, xs, M.matvec(~F, ws, g)), r, h), hg, mbnd_tail(~F, w, ws, b, hb), mnn_tail(~F, b, hbn)))
+
+def rbnd_rw2(~F: O.OField, +d: M.Vec(~F), +r: M.Vec(~F), +r2: M.Vec(~F), e: {r == r2 : M.Vec(~F)}, h: C.rbnd(~F, d, r)) -> C.rbnd(~F, d, r2):
+  %e : C.rbnd(~F, d, _)
+  h
+
+def rnn_rw(~F: O.OField, +r: M.Vec(~F), +r2: M.Vec(~F), e: {r == r2 : M.Vec(~F)}, h: rnn(~F, r)) -> rnn(~F, r2):
+  %e : rnn(~F, _)
+  h

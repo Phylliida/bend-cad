@@ -757,3 +757,100 @@ def cert_self(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, b: C.Block, c: C.Cert<K>
   match b:
     case C.Block{+eqs, +n}:
       cert_self.c(~K, ~F, ~H, eqs, n, c, ok, z, hz, y, hy)
+
+# The fixed point
+# ---------------
+
+def len_fvals(~F: O.OField, eqs: List<&2, E.QExpr>, +x: M.Vec(~F)) -> {M.len(~F, C.fvals(~F, eqs, x)) == CK.eqlen(eqs) : Nat}:
+  match eqs:
+    case Nil{}:
+      {==}
+    case Con{e, es}:
+      %Equal.sym(Nat, M.len(~F, C.fvals(~F, es, x)), CK.eqlen(es), len_fvals(~F, es, x)) : {1n+_ == 1n+CK.eqlen(es) : Nat}
+      {==}
+
+def rows_mc(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +box: List<&2, KB.KB<K>>, +cnt: Nat, +lo: Nat, eqs: List<&2, E.QExpr>) -> {FV.rows(~F, N.ofkm(~K, ~F, ~H, CK.mcenters(~K, CK.srows(~K, box, cnt, lo, eqs)))) == CK.eqlen(eqs) : Nat}:
+  match eqs:
+    case Nil{}:
+      {==}
+    case Con{e, es}:
+      %Equal.sym(Nat, FV.rows(~F, N.ofkm(~K, ~F, ~H, CK.mcenters(~K, CK.srows(~K, box, cnt, lo, es)))), CK.eqlen(es), rows_mc(~K, ~F, ~H, box, cnt, lo, es)) : {1n+_ == 1n+CK.eqlen(es) : Nat}
+      {==}
+
+def one_nn(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>) -> O.le(~F, O.zero(F), N.emap(K, F, H, N.none(K))):
+  %KA.eo(~K, ~F, ~H) : O.le(~F, O.zero(F), _)
+  Inl{O.zero_lt_one(F)}
+
+def ones_nn(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, n: Nat) -> FV.rnn(~F, N.ofkv(~K, ~F, ~H, KA.kones(~K, n))):
+  match n:
+    case 0n:
+      Unit{}
+    case 1n+k:
+      (one_nn(~K, ~F, ~H), ones_nn(~K, ~F, ~H, k))
+
+def bnd_m1(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: O.C(F), +m: O.C(F), h: M.bnd(~F, a, m)) -> M.bnd(~F, a, O.mul(F, m, N.emap(K, F, H, N.none(K)))):
+  %KA.eo(~K, ~F, ~H) : M.bnd(~F, a, O.mul(F, m, _))
+  %Equal.sym(O.C(F), O.mul(F, m, O.one(F)), m, O.mul_one(F)(m)) : M.bnd(~F, a, _)
+  h
+
+# |f_i| <= m for all i gives |f| <= m 1, for f of length n
+def vall_ones(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, f: M.Vec(~F), +m: O.C(F), n: Nat, h: M.vbnd.all(~F, f, m), hl: {M.len(~F, f) == n : Nat}) -> C.rbnd(~F, f, M.vscale(~F, m, N.ofkv(~K, ~F, ~H, KA.kones(~K, n)))):
+  match f n:
+    case Nil{} n:
+      Unit{}
+    case Con{+a, +as} 0n:
+      FO.absurd(C.rbnd(~F, Con{a, as}, Nil{}), FV.succ_ne(M.len(~F, as), hl))
+    case Con{+a, +as} 1n++k:
+      (ha, has) = h
+      (bnd_m1(~K, ~F, ~H, a, m, ha), vall_ones(~K, ~F, ~H, as, m, k, has, FV.succ_inj(M.len(~F, as), k, hl)))
+
+def scale_cong(~F: O.OField, +m: O.C(F), +u: M.Vec(~F), +u2: M.Vec(~F), e: {u == u2 : M.Vec(~F)}) -> {M.vscale(~F, m, u) == M.vscale(~F, m, u2) : M.Vec(~F)}:
+  %e : {M.vscale(~F, m, u) == M.vscale(~F, m, _) : M.Vec(~F)}
+  {==}
+
+# a fixed point of the Newton map in the box is a zero of the block
+def fix.go(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +q: N.NC(K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K), +ok: {CK.check.go(~K, eqs, n, yc, yr, q, ym, pc, pr) == True{} : Bool}, +z: M.Vec(~F), +y: M.Vec(~F), +hl: {M.len(~F, y) == M.len(~F, N.ofkv(~K, ~F, ~H, yc)) : Nat}, hf: M.vbnd(~F, C.vsub(~F, C.vsub(~F, y, M.matvec(~F, N.ofkm(~K, ~F, ~H, ym), C.fvals(~F, eqs, C.app(~F, C.fit(~F, n, y), z)))), y), O.zero(F))) -> M.vbnd(~F, C.fvals(~F, eqs, C.app(~F, C.fit(~F, n, y), z)), O.zero(F)):
+  (hf0, hfa) = hf
+  +box = CK.box(~K, n, yc, yr, pc, pr)
+  +yF = N.ofkm(~K, ~F, ~H, ym)
+  +jK = CK.mcenters(~K, CK.srows(~K, box, n, 0n, eqs))
+  +jF = N.ofkm(~K, ~F, ~H, jK)
+  +aK = CK.imm(~K, n, jK, ym)
+  +aaF = N.ofkm(~K, ~F, ~H, KA.kmabs(~K, aK))
+  +ones = N.ofkv(~K, ~F, ~H, KA.kones(~K, n))
+  +f = C.fvals(~F, eqs, C.app(~F, C.fit(~F, n, y), z))
+  +m = FV.vmaxabs(~F, f)
+  +th = N.ofkv(~K, ~F, ~H, KA.kmatvec(~K, KA.kmabs(~K, aK), KA.kones(~K, n)))
+  +ts = FV.vmaxabs(~F, th)
+  +hyc = nateq_ok(KA.klen(~K, yc), n, x_len_yc(~K, eqs, n, yc, yr, q, ym, pc, pr, ok))
+  +hly = Equal.trans(Nat, M.len(~F, y), M.len(~F, N.ofkv(~K, ~F, ~H, yc)), n, hl, Equal.trans(Nat, M.len(~F, N.ofkv(~K, ~F, ~H, yc)), KA.klen(~K, yc), n, len_ofkv(~K, ~F, ~H, yc), hyc))
+  +hry = Equal.trans(Nat, FV.rows(~F, yF), CK.mlen(~K, ym), n, rows_ofkm(~K, ~F, ~H, ym), nateq_ok(CK.mlen(~K, ym), n, x_len_ym(~K, eqs, n, yc, yr, q, ym, pc, pr, ok)))
+  +hen = nateq_ok(CK.eqlen(eqs), n, x_len_eqs(~K, eqs, n, yc, yr, q, ym, pc, pr, ok))
+  +hlf = Equal.trans(Nat, M.len(~F, f), CK.eqlen(eqs), n, len_fvals(~F, eqs, C.app(~F, C.fit(~F, n, y), z)), hen)
+  +hrj = Equal.trans(Nat, FV.rows(~F, jF), CK.eqlen(eqs), n, rows_mc(~K, ~F, ~H, box, n, 0n, eqs), hen)
+  +hyf = FV.fix_yf(~F, y, yF, f, Equal.trans(Nat, M.len(~F, y), n, FV.rows(~F, yF), hly, Equal.sym(Nat, FV.rows(~F, yF), n, hry)), hfa)
+  +hm = FV.vmax_nn(~F, f)
+  +hall = FV.vmax_all(~F, f)
+  +hon = ones_nn(~K, ~F, ~H, n)
+  +p1 = FV.mbnd_matvec(~F, N.ofkm(~K, ~F, ~H, aK), aaF, f, M.vscale(~F, m, ones), KA.kmabs_bnd(~K, ~F, ~H, aK), vall_ones(~K, ~F, ~H, f, m, n, hall, hlf), KA.kmabs_nn(~K, ~F, ~H, aK), FV.rnn_scale(~F, m, hm, ones, hon))
+  +p2 = FV.rbnd_rw(~F, M.matvec(~F, N.ofkm(~K, ~F, ~H, aK), f), C.vsub(~F, f, M.matvec(~F, jF, M.matvec(~F, yF, f))), M.matvec(~F, aaF, M.vscale(~F, m, ones)), imm_ok(~K, ~F, ~H, n, jK, ym, f, hlf), p1)
+  +p3 = FV.fix_rows(~F, f, jF, M.matvec(~F, yF, f), N.ofkm(~K, ~F, ~H, KA.kmabs(~K, jK)), M.matvec(~F, aaF, M.vscale(~F, m, ones)), Equal.trans(Nat, M.len(~F, f), n, FV.rows(~F, jF), hlf, Equal.sym(Nat, FV.rows(~F, jF), n, hrj)), p2, FV.vall0_rbnd(~F, M.matvec(~F, yF, f), hyf), KA.kmabs_bnd(~K, ~F, ~H, jK), KA.kmabs_nn(~K, ~F, ~H, jK))
+  +eth = Equal.trans(M.Vec(~F), M.matvec(~F, aaF, M.vscale(~F, m, ones)), M.vscale(~F, m, M.matvec(~F, aaF, ones)), M.vscale(~F, m, th), Equal.sym(M.Vec(~F), M.vscale(~F, m, M.matvec(~F, aaF, ones)), M.matvec(~F, aaF, M.vscale(~F, m, ones)), FV.matvec_vscale(~F, aaF, m, ones)), scale_cong(~F, m, M.matvec(~F, aaF, ones), th, KA.kmatvec_ofk(~K, ~F, ~H, KA.kmabs(~K, aK), KA.kones(~K, n))))
+  +p4 = FV.rbnd_to_vall(~F, f, m, th, ts, FV.rbnd_rw2(~F, f, M.matvec(~F, aaF, M.vscale(~F, m, ones)), M.vscale(~F, m, th), eth, p3), FV.vmax_all(~F, th), hm, FO.mul_nonneg(~F, m, ts, hm, FV.vmax_nn(~F, th)))
+  +p5 = FV.vmax_lub(~F, f, O.mul(F, m, ts), p4, FO.mul_nonneg(~F, m, ts, hm, FV.vmax_nn(~F, th)))
+  +hthn = FV.rnn_rw(~F, M.matvec(~F, aaF, ones), th, KA.kmatvec_ofk(~K, ~F, ~H, KA.kmabs(~K, aK), KA.kones(~K, n)), FV.matvec_nonneg(~F, aaF, ones, KA.kmabs_nn(~K, ~F, ~H, aK), hon))
+  +p6 = FV.vmax_lt(~F, th, O.one(F), KA.kvlt_ones_ok(~K, ~F, ~H, KA.kmatvec(~K, KA.kmabs(~K, aK), KA.kones(~K, n)), n, x_inj(~K, eqs, n, yc, yr, q, ym, pc, pr, ok)), hthn, O.zero_lt_one(F))
+  +p7 = FV.zero_of_le_mul(~F, m, ts, p5, p6)
+  (FO.le_refl(~F, O.zero(F)), FM.vall_mono(~F, f, m, O.zero(F), hall, FM.sub_nonneg(~F, m, O.zero(F), p7)))
+
+def cert_fix.c(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +n: Nat, c: C.Cert<K>, ok: {CK.check.c(~K, eqs, n, c) == True{} : Bool}, +z: M.Vec(~F), +y: M.Vec(~F), hy: C.ball(~K, ~F, ~H, c, y), hf: M.vbnd(~F, C.vsub(~F, C.newton(~K, ~F, ~H, C.Block{eqs, n}, c, z, y), y), O.zero(F))) -> M.vbnd(~F, C.bfun(~F, C.Block{eqs, n}, y, z), O.zero(F)):
+  match c:
+    case C.Cert{+yc, +yr, +q, +ym, +pc, +pr}:
+      (hl, hb) = hy
+      fix.go(~K, ~F, ~H, eqs, n, yc, yr, q, ym, pc, pr, ok, z, y, hl, hf)
+
+# LAW cert_fix: a fixed point of the Newton map in the box is a zero of the block
+def cert_fix(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, b: C.Block, c: C.Cert<K>, ok: {CK.check(~K, b, c) == True{} : Bool}, +z: M.Vec(~F), +y: M.Vec(~F), hy: C.ball(~K, ~F, ~H, c, y), hf: M.vbnd(~F, C.vsub(~F, C.newton(~K, ~F, ~H, b, c, z, y), y), O.zero(F))) -> M.vbnd(~F, C.bfun(~F, b, y, z), O.zero(F)):
+  match b:
+    case C.Block{+eqs, +n}:
+      cert_fix.c(~K, ~F, ~H, eqs, n, c, ok, z, y, hy, hf)
