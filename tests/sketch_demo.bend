@@ -2,7 +2,8 @@
 # rational solution. A 4 × 3 rectangle ABDC with A fixed at the origin, the
 # midpoint M of AB (B lies on the line A → M), a fixed point P and its mirror
 # Q in AC, a circle about A through E = (3, 4), D at distance 3 left of the
-# line A → B, the angle from AB to AE, and a segment Z collapsed onto A.
+# line A → B, the angle from AB to AE, a segment Z collapsed onto A, and
+# zero distances (A to itself, A to C horizontally, B to the line AB).
 # The checker computes everything below ({==}).
 
 import Base
@@ -43,13 +44,15 @@ def cons() -> List<&2, K.Constraint>:
    K.Horizontal{2n, 3n}, K.Horizontal{0n, 4n}, K.Horizontal{5n, 6n},
    K.HDistance{0n, 1n, c(4n)}, K.VDistance{0n, 2n, c(3n)},
    K.Perpendicular{10n, 12n}, K.Parallel{10n, 11n}, K.EqualLength{10n, 11n},
-   K.Midpoint{4n, 10n}, K.OnSegment{4n, 10n}, K.OnLine{1n, 14n},
+   K.Midpoint{4n, 10n}, K.OnLine{4n, 10n}, K.OnLine{1n, 14n},
    K.Fix{5n, q(1n, 1n)}, K.Fix{6n, q(1n, 1n)}, K.Symmetric{5n, 6n, 12n},
    K.Radius{20n, c(5n)}, K.Diameter{20n, c(10n)}, K.OnCircle{7n, 20n},
    K.Distance{0n, 7n, c(5n)},
    K.LineDistance{3n, 10n, False{}, c(3n), 11n},
    K.Angle{10n, False{}, 13n, False{}, E.QCst{q(3n, 5n)}, E.QCst{q(4n, 5n)}},
-   K.Parallel{10n, 15n}, K.Perpendicular{15n, 12n}, K.OnLine{5n, 15n}]
+   K.Parallel{10n, 15n}, K.Perpendicular{15n, 12n}, K.OnLine{5n, 15n},
+   K.Distance{0n, 0n, c(0n)}, K.HDistance{0n, 2n, c(0n)},
+   K.LineDistance{1n, 10n, False{}, c(0n), 11n}]
 
 def good() -> List<&2, S.Q>:
   [q(0n, 1n), q(0n, 1n), q(4n, 1n), q(3n, 1n), q(2n, 1n), q(1n, 1n),
@@ -80,12 +83,21 @@ def all(+env: List<&2, S.Q>, +want: Cmp, xs: List<&2, E.QExpr>) -> Bool:
     case Con{h, t}:
       Bool.and(same(S.Q.cmp(E.qeval(env, h), S.Q{S.Z0{}, S.XH{}}), want), all(env, want, t))
 
+def sides(+env: List<&2, S.Q>, xs: List<&2, K.Side>) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case Con{K.Gt0{e}, t}:
+      Bool.and(same(S.Q.cmp(E.qeval(env, e), S.Q{S.Z0{}, S.XH{}}), GT{}), sides(env, t))
+    case Con{K.Ge0{+e}, t}:
+      Bool.and(Bool.or(same(S.Q.cmp(E.qeval(env, e), S.Q{S.Z0{}, S.XH{}}), GT{}), same(S.Q.cmp(E.qeval(env, e), S.Q{S.Z0{}, S.XH{}}), EQ{})), sides(env, t))
+
 def ok(+env: List<&2, S.Q>, ks: List<&2, K.Constraint>) -> Bool:
   match ks:
     case Nil{}:
       True{}
     case Con{+k, t}:
-      Bool.and(Bool.and(all(env, EQ{}, K.Constraint.eqs(ents(), k)), all(env, GT{}, K.Constraint.sides(ents(), k))), ok(env, t))
+      Bool.and(Bool.and(all(env, EQ{}, K.Constraint.eqs(ents(), k)), sides(env, K.Constraint.sides(ents(), k))), ok(env, t))
 
 def good_ok() -> {ok(good(), cons()) == True{} : Bool}:
   {==}
@@ -97,12 +109,12 @@ def bad_fails() -> {ok(bad(), cons()) == False{} : Bool}:
 def wrong_side() -> {ok(good(), [K.LineDistance{3n, 10n, True{}, c(3n), 11n}]) == False{} : Bool}:
   {==}
 
-# B is on the line through A and M, past M, so not on the segment AM
-def past_end() -> {ok(good(), [K.OnSegment{1n, 14n}]) == False{} : Bool}:
+# |AE| = 5, but a distance is never negative
+def negative() -> {ok(good(), [K.Distance{0n, 7n, E.QCst{qneg(5n)}}]) == False{} : Bool}:
   {==}
 
-# no point is strictly inside the collapsed segment Z
-def inside_collapsed() -> {ok(good(), [K.OnSegment{0n, 15n}]) == False{} : Bool}:
+# B is 4 right of A, not A 4 right of B
+def reversed() -> {ok(good(), [K.HDistance{1n, 0n, c(4n)}]) == False{} : Bool}:
   {==}
 
 # References resolve to the entities they name

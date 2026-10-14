@@ -11,15 +11,16 @@
 # entities by ID; the spec resolves each reference (wf_refs checks that it
 # names an entity of the right kind). Each constraint has
 #   eqs:   polynomials over the variables that must vanish (§5),
-#   sides: polynomials that must be positive (side conditions, §8.6),
+#   sides: polynomials that must be positive, or nonnegative (side
+#          conditions, §8.6),
 #   wf:    for merge kinds, the variable sharing that realizes it,
 #   means: its geometric meaning in any ordered field (spec/geom.bend).
 # The meaning lemmas (ROADMAP.bend, DESIGN §5.5) say that, for a well-formed
 # constraint, eqs = 0 and sides > 0 hold exactly when the meaning holds.
 #
-# Geometry may degenerate (a segment may collapse to a point); only
-# dimensions and the choices a user made (a side, a quadrant, strictly
-# inside) are side conditions. Circles keep a positive radius and arcs a
+# Geometry may degenerate (a segment may collapse to a point, a distance
+# may be 0); only dimensions (≥ 0) and the choices a user made (a side, a
+# quadrant) are side conditions. Circles keep a positive radius and arcs a
 # positive bulge.
 #
 # Scope: the core vocabulary of DESIGN §5.1. Tangency and joins (§5.2) and
@@ -77,14 +78,14 @@ type Constraint is Data:
   EqualRadius{a: Nat, b: Nat}
   # variable v is the constant k (fix, block, pins)
   Fix{v: Nat, k: S.Q}
-  # dimensions; for HDistance, q is right of p, for VDistance above it
+  # dimensions (d ≥ 0); for HDistance, q is right of p, for VDistance above it
   Distance{p: Nat, q: Nat, d: E.QExpr}
   HDistance{p: Nat, q: Nat, d: E.QExpr}
   VDistance{p: Nat, q: Nat, d: E.QExpr}
   Radius{c: Nat, d: E.QExpr}
   Diameter{c: Nat, d: E.QExpr}
-  # p is left of segment a's line, taken in reverse when rev; l is an aux
-  # length variable, the segment's length
+  # p is left of segment a's line or on it, the line taken in reverse when
+  # rev; l is an aux length variable, the segment's length
   LineDistance{p: Nat, a: Nat, rev: Bool, d: E.QExpr, l: Nat}
   # from segment a (reversed when ra) to segment b (reversed when rb)
   Angle{a: Nat, ra: Bool, b: Nat, rb: Bool, c: E.QExpr, s: E.QExpr}
@@ -92,8 +93,8 @@ type Constraint is Data:
   EqualLength{a: Nat, b: Nat}
   Perpendicular{a: Nat, b: Nat}
   Parallel{a: Nat, b: Nat}
+  # p is on the line through segment a (anywhere on it)
   OnLine{p: Nat, a: Nat}
-  OnSegment{p: Nat, a: Nat}
   OnCircle{p: Nat, c: Nat}
   # m is the midpoint of segment a
   Midpoint{m: Nat, a: Nat}
@@ -296,6 +297,11 @@ def sym.eqs(+p: VE, +q: VE, +a: VE, +b: VE) -> List<&2, E.QExpr>:
   [E.QSub{E.QMul{n, VE.x(v)}, E.QAdd{E.QMul{E.QSub{xx, yy}, VE.x(u)}, E.QMul{E.QAdd{xy, xy}, VE.y(u)}}},
    E.QSub{E.QMul{n, VE.y(v)}, E.QAdd{E.QMul{E.QAdd{xy, xy}, VE.x(u)}, E.QMul{E.QSub{yy, xx}, VE.y(u)}}}]
 
+# a side condition: e > 0, or e ≥ 0
+type Side is Data:
+  Gt0{e: E.QExpr}
+  Ge0{e: E.QExpr}
+
 # Exact equation forms (§5.1)
 # ---------------------------
 
@@ -336,8 +342,6 @@ def Constraint.eqs(+es: List<&2, Ent>, +k: Constraint) -> List<&2, E.QExpr>:
       [VE.cross(Seg.dir(seg(es, a)), Seg.dir(seg(es, b)))]
     case OnLine{p, a}:
       [VE.cross(Seg.dir(seg(es, a)), VE.sub(Pt.ve(pt(es, p)), Pt.ve(Seg.p(seg(es, a)))))]
-    case OnSegment{p, a}:
-      [VE.cross(Seg.dir(seg(es, a)), VE.sub(Pt.ve(pt(es, p)), Pt.ve(Seg.p(seg(es, a)))))]
     case OnCircle{p, c}:
       [E.QSub{VE.norm2(VE.sub(Pt.ve(pt(es, p)), Pt.ve(Circ.c(circ(es, c))))), E.QMul{var(Circ.r(circ(es, c))), var(Circ.r(circ(es, c)))}}]
     case Midpoint{m, a}:
@@ -346,29 +350,21 @@ def Constraint.eqs(+es: List<&2, Ent>, +k: Constraint) -> List<&2, E.QExpr>:
     case Symmetric{p, q, a}:
       sym.eqs(Pt.ve(pt(es, p)), Pt.ve(pt(es, q)), Pt.ve(Seg.p(seg(es, a))), Pt.ve(Seg.q(seg(es, a))))
 
-# Side conditions: each must be positive. Only dimensions and choices are
-# here: geometry may degenerate. (An angle's dot > 0 also makes both
-# directions and (c, s) nonzero; a point strictly inside a segment makes
-# the segment proper.)
-def Constraint.sides(+es: List<&2, Ent>, +k: Constraint) -> List<&2, E.QExpr>:
+# Side conditions. Only dimensions and choices are here: geometry may
+# degenerate. (An angle's dot > 0 also makes both directions and (c, s)
+# nonzero. A radius needs none: its circle keeps r > 0.)
+def Constraint.sides(+es: List<&2, Ent>, +k: Constraint) -> List<&2, Side>:
   match k:
     case Distance{p, q, d}:
-      [d]
+      [Ge0{d}]
     case HDistance{p, q, d}:
-      [d]
+      [Ge0{d}]
     case VDistance{p, q, d}:
-      [d]
-    case Radius{c, d}:
-      [d]
-    case Diameter{c, d}:
-      [d]
+      [Ge0{d}]
     case LineDistance{p, a, rev, d, l}:
-      [var(l), d]
+      [Gt0{var(l)}, Ge0{d}]
     case Angle{a, ra, b, rb, c, s}:
-      [VE.dot(VE.rot(c, s, Seg.dir(dseg(es, a, ra))), Seg.dir(dseg(es, b, rb)))]
-    case OnSegment{p, a}:
-      [VE.dot(VE.sub(Pt.ve(pt(es, p)), Pt.ve(Seg.p(seg(es, a)))), Seg.dir(seg(es, a))),
-       E.QSub{VE.norm2(Seg.dir(seg(es, a))), VE.dot(VE.sub(Pt.ve(pt(es, p)), Pt.ve(Seg.p(seg(es, a)))), Seg.dir(seg(es, a)))}]
+      [Gt0{VE.dot(VE.rot(c, s, Seg.dir(dseg(es, a, ra))), Seg.dir(dseg(es, b, rb)))}]
     case _:
       []
 
@@ -425,8 +421,6 @@ def Constraint.wf_refs(+es: List<&2, Ent>, +k: Constraint) -> Type:
       IsSeg(es, a) & IsSeg(es, b)
     case OnLine{p, a}:
       IsPt(es, p) & IsSeg(es, a)
-    case OnSegment{p, a}:
-      IsPt(es, p) & IsSeg(es, a)
     case OnCircle{p, c}:
       IsPt(es, p) & IsCirc(es, c)
     case Midpoint{m, a}:
@@ -468,11 +462,11 @@ def Constraint.means(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, Ent>, +
     case VDistance{p, q, d}:
       G.vdist(~F, at(~F, env, pt(es, p)), at(~F, env, pt(es, q)), O.eval(~F, env, d))
     case Radius{c, d}:
-      O.lt(F, O.zero(F), O.eval(~F, env, d)) & {O.lookup(~F, env, Circ.r(circ(es, c))) == O.eval(~F, env, d) : O.C(F)}
+      {O.lookup(~F, env, Circ.r(circ(es, c))) == O.eval(~F, env, d) : O.C(F)}
     case Diameter{c, d}:
-      O.lt(F, O.zero(F), O.eval(~F, env, d)) & {O.add(F, O.lookup(~F, env, Circ.r(circ(es, c))), O.lookup(~F, env, Circ.r(circ(es, c)))) == O.eval(~F, env, d) : O.C(F)}
+      {O.add(F, O.lookup(~F, env, Circ.r(circ(es, c))), O.lookup(~F, env, Circ.r(circ(es, c)))) == O.eval(~F, env, d) : O.C(F)}
     case LineDistance{p, a, rev, d, l}:
-      G.dist(~F, at(~F, env, Seg.p(seg(es, a))), at(~F, env, Seg.q(seg(es, a))), O.lookup(~F, env, l)) & G.line_dist(~F, at(~F, env, pt(es, p)), at(~F, env, Seg.p(dseg(es, a, rev))), at(~F, env, Seg.q(dseg(es, a, rev))), O.eval(~F, env, d))
+      O.lt(F, O.zero(F), O.lookup(~F, env, l)) & G.dist(~F, at(~F, env, Seg.p(seg(es, a))), at(~F, env, Seg.q(seg(es, a))), O.lookup(~F, env, l)) & G.line_dist(~F, at(~F, env, pt(es, p)), at(~F, env, Seg.p(dseg(es, a, rev))), at(~F, env, Seg.q(dseg(es, a, rev))), O.eval(~F, env, d))
     case Angle{a, ra, b, rb, c, s}:
       G.angle(~F, dirv(~F, env, dseg(es, a, ra)), dirv(~F, env, dseg(es, b, rb)), O.eval(~F, env, c), O.eval(~F, env, s))
     case EqualLength{a, b}:
@@ -483,8 +477,6 @@ def Constraint.means(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, Ent>, +
       G.parallel(~F, dirv(~F, env, seg(es, a)), dirv(~F, env, seg(es, b)))
     case OnLine{p, a}:
       G.on_line(~F, at(~F, env, pt(es, p)), at(~F, env, Seg.p(seg(es, a))), at(~F, env, Seg.q(seg(es, a))))
-    case OnSegment{p, a}:
-      G.on_segment(~F, at(~F, env, pt(es, p)), at(~F, env, Seg.p(seg(es, a))), at(~F, env, Seg.q(seg(es, a))))
     case OnCircle{p, c}:
       G.on_circle(~F, at(~F, env, pt(es, p)), at(~F, env, Circ.c(circ(es, c))), O.lookup(~F, env, Circ.r(circ(es, c))))
     case Midpoint{m, a}:
@@ -497,12 +489,12 @@ def Constraint.means(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, Ent>, +
 # Points and segments carry no conditions; circles keep a positive radius,
 # arcs a positive bulge.
 
-def Ent.sides(e: Ent) -> List<&2, E.QExpr>:
+def Ent.sides(e: Ent) -> List<&2, Side>:
   match e:
     case Ent{id, cst, GCirc{c, r}}:
-      [var(r)]
+      [Gt0{var(r)}]
     case Ent{id, cst, GArc{s, f, b}}:
-      [var(b)]
+      [Gt0{var(b)}]
     case _:
       []
 
@@ -538,19 +530,21 @@ def Zeros(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, E.QExpr>) -> Type:
     case Con{h, t}:
       {O.eval(~F, env, h) == O.zero(F) : O.C(F)} & Zeros(~F, env, t)
 
-# every expression in xs is positive in F
-def Poss(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, E.QExpr>) -> Type:
+# every side condition in xs holds in F
+def Sides(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, Side>) -> Type:
   match xs:
     case Nil{}:
       Unit
-    case Con{h, t}:
-      O.lt(F, O.zero(F), O.eval(~F, env, h)) & Poss(~F, env, t)
+    case Con{Gt0{e}, t}:
+      O.lt(F, O.zero(F), O.eval(~F, env, e)) & Sides(~F, env, t)
+    case Con{Ge0{e}, t}:
+      O.le(~F, O.zero(F), O.eval(~F, env, e)) & Sides(~F, env, t)
 
 def Constraint.holds(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, Ent>, +k: Constraint) -> Type:
-  Zeros(~F, env, Constraint.eqs(es, k)) & Poss(~F, env, Constraint.sides(es, k))
+  Zeros(~F, env, Constraint.eqs(es, k)) & Sides(~F, env, Constraint.sides(es, k))
 
 def Ent.holds(~F: O.OField, +env: List<&2, O.C(F)>, e: Ent) -> Type:
-  Poss(~F, env, Ent.sides(e))
+  Sides(~F, env, Ent.sides(e))
 
 # The sketch's exact system
 # -------------------------
@@ -564,6 +558,13 @@ def cat(xs: List<&2, E.QExpr>, ys: List<&2, E.QExpr>) -> List<&2, E.QExpr>:
     case Con{h, t}:
       Con{h, cat(t, ys)}
 
+def cats(xs: List<&2, Side>, ys: List<&2, Side>) -> List<&2, Side>:
+  match xs:
+    case Nil{}:
+      ys
+    case Con{h, t}:
+      Con{h, cats(t, ys)}
+
 # the equations of every driving constraint
 def Sketch.eqs.go(+es: List<&2, Ent>, cs: List<&2, Rec>) -> List<&2, E.QExpr>:
   match cs:
@@ -574,21 +575,21 @@ def Sketch.eqs.go(+es: List<&2, Ent>, cs: List<&2, Rec>) -> List<&2, E.QExpr>:
     case Con{Rec{id, False{}, k}, t}:
       cat(Constraint.eqs(es, k), Sketch.eqs.go(es, t))
 
-def Sketch.sides.ents(es: List<&2, Ent>) -> List<&2, E.QExpr>:
+def Sketch.sides.ents(es: List<&2, Ent>) -> List<&2, Side>:
   match es:
     case Nil{}:
       []
     case Con{e, t}:
-      cat(Ent.sides(e), Sketch.sides.ents(t))
+      cats(Ent.sides(e), Sketch.sides.ents(t))
 
-def Sketch.sides.cons(+es: List<&2, Ent>, cs: List<&2, Rec>) -> List<&2, E.QExpr>:
+def Sketch.sides.cons(+es: List<&2, Ent>, cs: List<&2, Rec>) -> List<&2, Side>:
   match cs:
     case Nil{}:
       []
     case Con{Rec{id, True{}, k}, t}:
       Sketch.sides.cons(es, t)
     case Con{Rec{id, False{}, k}, t}:
-      cat(Constraint.sides(es, k), Sketch.sides.cons(es, t))
+      cats(Constraint.sides(es, k), Sketch.sides.cons(es, t))
 
 def Sketch.eqs(sk: Sketch) -> List<&2, E.QExpr>:
   match sk:
@@ -596,10 +597,10 @@ def Sketch.eqs(sk: Sketch) -> List<&2, E.QExpr>:
       Sketch.eqs.go(es, cs)
 
 # the side conditions: every entity's, then every driving constraint's
-def Sketch.sides(sk: Sketch) -> List<&2, E.QExpr>:
+def Sketch.sides(sk: Sketch) -> List<&2, Side>:
   match sk:
     case Sketch{vs, +es, cs}:
-      cat(Sketch.sides.ents(es), Sketch.sides.cons(es, cs))
+      cats(Sketch.sides.ents(es), Sketch.sides.cons(es, cs))
 
 def Sketch.wf.ents(+es: List<&2, Ent>, xs: List<&2, Ent>) -> Type:
   match xs:
@@ -622,7 +623,7 @@ def Sketch.wf(sk: Sketch) -> Type:
       Sketch.wf.ents(es, es) & Sketch.wf.cons(es, cs)
 
 def Sketch.holds(~F: O.OField, +env: List<&2, O.C(F)>, +sk: Sketch) -> Type:
-  Zeros(~F, env, Sketch.eqs(sk)) & Poss(~F, env, Sketch.sides(sk))
+  Zeros(~F, env, Sketch.eqs(sk)) & Sides(~F, env, Sketch.sides(sk))
 
 def Sketch.means.ents(~F: O.OField, +env: List<&2, O.C(F)>, es: List<&2, Ent>) -> Type:
   match es:

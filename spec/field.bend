@@ -169,6 +169,10 @@ def sub(~F: OField, a: C(F), b: C(F)) -> C(F):
 def ne(~F: OField, +a: C(F), +b: C(F)) -> Type:
   {a == b : C(F)} -> Empty
 
+# a ≤ b
+def le(~F: OField, +a: C(F), +b: C(F)) -> Type:
+  Or(lt(F, a, b), {a == b : C(F)})
+
 def two(~F: OField) -> C(F):
   add(F, one(F), one(F))
 

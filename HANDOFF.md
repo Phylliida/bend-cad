@@ -29,11 +29,11 @@ in memory (`reference_bend2_idioms`).
   other); `spec/sketch.bend` (trusted: entities with IDs — points name
   variables, segments name endpoint points, circles a center point;
   constraints reference entity IDs, resolved by `pt`/`seg`/`circ` with kind
-  checks `wf_refs`; the 21 §5.1 kinds with `eqs`/`sides`/`wf`/`means`;
+  checks `wf_refs`; the 20 §5.1 kinds with `eqs`/`sides` (`Gt0`/`Ge0`)/`wf`/`means`;
   sketch-level `eqs`/`sides`/`wf`/`holds`/`means`). Six meaning laws
   `for ~F: O.OField`, open, in `ROADMAP.bend`. `tests/sketch_demo.bend` checks
   every form over ℚ on a rectangle (+ failing cases, collapsed segment,
-  reference resolution); `tests/field_demo.bend` proves the Fix case of
+  zero distances, reference resolution); `tests/field_demo.bend` proves the Fix case of
   means_sound in every ordered field from the axioms.
 
 ### sk-01 layout
@@ -111,8 +111,9 @@ laws):
 
 **Waiting on Danielle:** review of `LAWS.bend` (sk-01/02 laws) and a final
 look at the revised sk-03 spec (`spec/field.bend`, `spec/geom.bend`,
-`spec/sketch.bend`, the six laws in `ROADMAP.bend`; my calls listed under Q15
-in DESIGN §16). Then mark sk-03 done.
+`spec/sketch.bend`, the six laws in `ROADMAP.bend`). Her Q15 follow-ups
+(zero distances allowed, no bounded point-on-segment) are folded in. Then
+mark sk-03 done.
 
 Unblocked meanwhile: **sk-04** (rational, dyadic and matrix library: ∞-norms,
 products; Q order laws for the certificate layer; gcd reduction proven to

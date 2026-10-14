@@ -220,6 +220,11 @@ conditions (signs, ranges, nondegeneracy) certified over the ball (§8.6).
 **Regularity rules (D5):**
 - Never use a squared form whose target is zero (a double root makes the
   Jacobian singular): zero distance is a merge, zero offset is point-on-curve.
+  *As built:* the spec allows a zero distance (its meaning is p = q); the
+  front end merges the two points, after which the equation vanishes
+  identically and is discharged as redundant (§8.7). Left unmerged, it is
+  singular and flagged (§8.8). Zero horizontal, vertical and point–line
+  distances are linear and certify as they are.
 - Signed forms with an aux length ℓ (ℓ² = \|w\|², ℓ > 0) where a square root
   would otherwise appear.
 - Known singular patterns are rewritten by the compiler, e.g. a point placed on
@@ -231,25 +236,26 @@ conditions (signs, ranges, nondegeneracy) certified over the ball (§8.6).
 |---|---|---|
 | coincident, horizontal, vertical; concentric / equal radius of full circles | merge (shared variable indices) | — |
 | fix / block: variable v = k | v − k = 0 | — |
-| distance(P, Q) = d | \|Q − P\|² − d² = 0 | d > 0 |
-| horizontal / vertical distance | (Qx − Px) − d = 0 (resp. y); Q right of / above P | d > 0 |
-| radius r = d; diameter | r − d = 0; 2r − d = 0 | d > 0 |
+| distance(P, Q) = d | \|Q − P\|² − d² = 0 | d ≥ 0 |
+| horizontal / vertical distance | (Qx − Px) − d = 0 (resp. y); Q right of / above P | d ≥ 0 |
+| radius r = d; diameter | r − d = 0; 2r − d = 0 | — (the circle keeps r > 0) |
 | equal length | \|u\|² − \|v\|² = 0 | — |
 | perpendicular / normal | dot(u, v) = 0 | — |
 | parallel | cross(u, v) = 0 | — |
-| point on line AB | cross(B − A, P − A) = 0 | — |
-| point on segment | cross(B − A, P − A) = 0 | 0 < dot(P − A, B − A) < \|B − A\|² |
-| point–line distance d, P left of A → B | cross(B − A, P − A) − d·ℓ = 0, ℓ² − \|B − A\|² = 0 | ℓ > 0; d > 0 |
+| point on line AB (anywhere on the line through the segment) | cross(B − A, P − A) = 0 | — |
+| point–line distance d, P left of A → B or on it | cross(B − A, P − A) − d·ℓ = 0, ℓ² − \|B − A\|² = 0 | ℓ > 0; d ≥ 0 |
 | point on circle | \|P − C\|² − r² = 0 | — (the circle keeps r > 0) |
 | midpoint M of segment PQ | 2M − P − Q = 0 | — |
 | symmetric P, Q about AB | \|w\|²(Q − A) − R̂(P − A) = 0, w = B − A, R̂ = [[wx²−wy², 2wxwy], [2wxwy, wy²−wx²]] | — |
 | angle from u to v given by rotation (c, s) | cross(R u, v) = 0, R = [[c, −s], [s, c]]; c = cos θ, s = sin θ exact constants (§7) | dot(R u, v) > 0 |
 
 *As built (sk-03):* geometry may degenerate (Q15), so there are no ℓ_min
-bounds and no nondegeneracy conditions on segments. Side conditions are only
-dimensions (d > 0; a zero distance is a merge, D5) and choices the user made:
-the side of a line, an angle's quadrant (dot > 0, which also makes both
-directions and (c, s) nonzero), strictly inside a segment. A relation on a
+bounds and no nondegeneracy conditions on segments, and distances may be 0.
+Side conditions are only dimensions (d ≥ 0) and choices the user made: the
+side of a line, an angle's quadrant (dot > 0, which also makes both
+directions and (c, s) nonzero). There is no bounded point-on-segment
+constraint: a point on a segment's line may sit past its ends, as in other
+sketchers; a bounded variant can be added if a use appears. A relation on a
 collapsed segment holds vacuously, exactly as its equation does: a zero
 vector is parallel and perpendicular to everything, any point is on a
 collapsed line, and any pair mirrors in it (such a configuration is then
@@ -317,8 +323,8 @@ side). Exact forms make these much shorter than the tolerance versions.
 
 *As stated in sk-03* (`ROADMAP.bend`, proven in sk-07): the meanings are
 `Constraint.means`, one case per kind, in the textbook vocabulary of
-`spec/geom.bend`. For example: a point on a segment is A + t(B − A) for some
-0 < t < 1; parallel means one direction is a multiple of the other;
+`spec/geom.bend`. For example: parallel means one direction is a multiple
+of the other;
 perpendicular is parallel to a quarter turn; a point on line AB makes B − A
 and P − A parallel; a mirror image has its midpoint on the line and its
 offset perpendicular to it; the point–line distance is the distance to the
@@ -344,8 +350,9 @@ with `%` as usual. Equation constants enter F through `ofq` (n/d built from
 1, +, −, inverse), and expressions are evaluated by `eval`.
 
 `tests/sketch_demo.bend` checks every form over ℚ on a rectangle with a
-known rational solution (and four failing cases, including the collapsed
-segment), and that references resolve. `tests/field_demo.bend` proves the
+known rational solution, including a collapsed segment and zero distances,
+plus failing cases (a wrong angle, the wrong side of a line, a negative and
+a reversed distance), and that references resolve. `tests/field_demo.bend` proves the
 Fix case of `means_sound` in every ordered field from the axioms. Concrete
 checks of the meanings at the rectangle need an ordered-field instance:
 canonical (gcd-reduced) ℚ would be one, and building it would also show the
@@ -472,6 +479,10 @@ cost is near-linear in sketch size for typical sketches; the worst case is one
 large cyclic block (O(k³) on k unknowns).
 
 ### 8.6 Side conditions over balls
+
+*As built (sk-03):* a side condition is e > 0 or e ≥ 0. A nonnegative one is
+decided exactly when e has no variables (a dimension constant), and
+otherwise certified as e > 0 over the balls.
 
 Signs, ranges and nondegeneracy (branch side, external/internal tangency, span
 ranges, anchor orientations) are certified over the balls with exact Lipschitz
@@ -721,9 +732,10 @@ sk-02 and sk-03 can run in parallel after sk-01.
   parameter (§5.5), not over ℚ with a meta-level step.
 - **Q14** Constraints reference existing entities by ID (§4).
 - **Q15** Geometry may collapse to zero length: no ℓ_min, no nondegeneracy
-  conditions on segments (§5.1). Kept (mine, object if wrong): circles r > 0,
-  arcs b > 0, dimensions d > 0, a point–line distance needs its line, a
-  point on a segment is strictly inside.
+  conditions on segments (§5.1). Circles keep r > 0 and arcs b > 0;
+  distance dimensions may be 0 (d ≥ 0); a point–line distance needs its line
+  (ℓ > 0); no bounded point-on-segment constraint (point on line covers the
+  common case).
 
 **Mine to decide:**
 - **Q12** Mean-value method (polynomial slopes vs selective quadratization),
@@ -793,7 +805,8 @@ sk-02 and sk-03 can run in parallel after sk-01.
   explicit orientation flags (Q14); segments name their endpoint points.
 - §4, §5.1: geometry may degenerate (Q15): segment conditions dropped;
   parallel, perpendicular, on-line and mirror hold vacuously on collapsed
-  segments.
+  segments; distances may be 0 (side conditions are > 0 or ≥ 0, §8.6);
+  radius needs no side condition; point-on-segment removed.
 
 **v0.5 → v0.6 (sk-03 drafted):**
 - §4: typed IR as built: variables by index, geometry by value, merge kinds as
