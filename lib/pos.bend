@@ -212,3 +212,111 @@ def pd_os(j: Nat) -> {S.Pos.pred_double(S.Pos.of_succ(j)) == S.Pos.of_succ(Nat.d
 
 def form_nat(+p: S.Pos) -> {1n+pm1(p) == S.Pos.nat(p) : Nat}:
   Equal.sym(Nat, S.Pos.nat(p), 1n+pm1(p), nat_form(p))
+
+# Comparison
+# ----------
+
+# o, unless it is EQ{}, in which case r
+def cthen(o: Cmp, r: Cmp) -> Cmp:
+  match o:
+    case LT{}:
+      LT{}
+    case EQ{}:
+      r
+    case GT{}:
+      GT{}
+
+def cthen_eq(o: Cmp) -> {cthen(o, EQ{}) == o : Cmp}:
+  match o:
+    case LT{}:
+      {==}
+    case EQ{}:
+      {==}
+    case GT{}:
+      {==}
+
+def cthen_gt(o: Cmp, -r: Cmp) -> {cthen(o, GT{}) == cthen(cthen(o, GT{}), r) : Cmp}:
+  match o:
+    case LT{}:
+      {==}
+    case EQ{}:
+      {==}
+    case GT{}:
+      {==}
+
+def cthen_lt(o: Cmp, -r: Cmp) -> {cthen(o, LT{}) == cthen(cthen(o, LT{}), r) : Cmp}:
+  match o:
+    case LT{}:
+      {==}
+    case EQ{}:
+      {==}
+    case GT{}:
+      {==}
+
+def cmp_dd(x: Nat, y: Nat) -> {Nat.cmp(x, y) == Nat.cmp(Nat.double(x), Nat.double(y)) : Cmp}:
+  match x y:
+    case 0n 0n:
+      {==}
+    case 0n 1n+j:
+      {==}
+    case 1n+i 0n:
+      {==}
+    case 1n+i 1n+j:
+      cmp_dd(i, j)
+
+def cmp_sd(x: Nat, y: Nat) -> {cthen(Nat.cmp(x, y), GT{}) == Nat.cmp(1n+Nat.double(x), Nat.double(y)) : Cmp}:
+  match x y:
+    case 0n 0n:
+      {==}
+    case 0n 1n+j:
+      {==}
+    case 1n+i 0n:
+      {==}
+    case 1n+i 1n+j:
+      cmp_sd(i, j)
+
+def cmp_ds(x: Nat, y: Nat) -> {cthen(Nat.cmp(x, y), LT{}) == Nat.cmp(Nat.double(x), 1n+Nat.double(y)) : Cmp}:
+  match x y:
+    case 0n 0n:
+      {==}
+    case 0n 1n+j:
+      {==}
+    case 1n+i 0n:
+      {==}
+    case 1n+i 1n+j:
+      cmp_ds(i, j)
+
+def cmpc_nat(a: S.Pos, b: S.Pos, +r: Cmp) -> {S.Pos.cmpc(a, b, r) == cthen(Nat.cmp(S.Pos.nat(a), S.Pos.nat(b)), r) : Cmp}:
+  match a b:
+    case S.XI{+p} S.XI{+q}:
+      %cmp_dd(S.Pos.nat(p), S.Pos.nat(q)) : {S.Pos.cmpc(p, q, r) == cthen(_, r) : Cmp}
+      cmpc_nat(p, q, r)
+    case S.XI{+p} S.XO{+q}:
+      %cmp_sd(S.Pos.nat(p), S.Pos.nat(q)) : {S.Pos.cmpc(p, q, GT{}) == cthen(_, r) : Cmp}
+      %cthen_gt(Nat.cmp(S.Pos.nat(p), S.Pos.nat(q)), r) : {S.Pos.cmpc(p, q, GT{}) == _ : Cmp}
+      cmpc_nat(p, q, GT{})
+    case S.XI{+p} S.XH{}:
+      %form_nat(p) : {GT{} == cthen(Nat.cmp(Nat.double(_), 0n), r) : Cmp}
+      {==}
+    case S.XO{+p} S.XI{+q}:
+      %cmp_ds(S.Pos.nat(p), S.Pos.nat(q)) : {S.Pos.cmpc(p, q, LT{}) == cthen(_, r) : Cmp}
+      %cthen_lt(Nat.cmp(S.Pos.nat(p), S.Pos.nat(q)), r) : {S.Pos.cmpc(p, q, LT{}) == _ : Cmp}
+      cmpc_nat(p, q, LT{})
+    case S.XO{+p} S.XO{+q}:
+      %cmp_dd(S.Pos.nat(p), S.Pos.nat(q)) : {S.Pos.cmpc(p, q, r) == cthen(_, r) : Cmp}
+      cmpc_nat(p, q, r)
+    case S.XO{+p} S.XH{}:
+      %form_nat(p) : {GT{} == cthen(Nat.cmp(Nat.double(_), 1n), r) : Cmp}
+      {==}
+    case S.XH{} S.XI{+q}:
+      %form_nat(q) : {LT{} == cthen(Nat.cmp(1n, 1n+Nat.double(_)), r) : Cmp}
+      {==}
+    case S.XH{} S.XO{+q}:
+      %form_nat(q) : {LT{} == cthen(Nat.cmp(1n, Nat.double(_)), r) : Cmp}
+      {==}
+    case S.XH{} S.XH{}:
+      {==}
+
+def cmp_nat(+a: S.Pos, +b: S.Pos) -> {S.Pos.cmp(a, b) == Nat.cmp(S.Pos.nat(a), S.Pos.nat(b)) : Cmp}:
+  %cthen_eq(Nat.cmp(S.Pos.nat(a), S.Pos.nat(b))) : {S.Pos.cmp(a, b) == _ : Cmp}
+  cmpc_nat(a, b, EQ{})

@@ -294,3 +294,44 @@ def mul_hom(+a: Nat, +b: Nat, +c: Nat, +d: Nat) -> {S.Z.of_diff(Nat.add(Nat.mul(
     NR.NAdd{NR.NMul{NR.NVar{2n}, NR.NVar{1n}}, NR.NMul{NR.NVar{3n}, NR.NVar{0n}}},
     {==}) : {S.Z.of_diff(Nat.add(Nat.mul(a, c), Nat.mul(b, d)), Nat.add(Nat.mul(a, d), Nat.mul(b, c))) == S.Z.of_diff(Nat.add(Nat.mul(a, c), Nat.mul(b, d)), _) : S.Z}
   {==}
+
+# Comparison
+# ----------
+
+# x vs y is pnat x + nnat y vs pnat y + nnat x
+def cmp_nat(x: S.Z, y: S.Z) -> {S.Z.cmp(x, y) == Nat.cmp(Nat.add(S.Z.pnat(x), S.Z.nnat(y)), Nat.add(S.Z.pnat(y), S.Z.nnat(x))) : Cmp}:
+  match x:
+    case S.Z0{}:
+      match y:
+        case S.Z0{}:
+          {==}
+        case S.Zpos{+q}:
+          %N.add_zero(S.Pos.nat(q)) : {LT{} == Nat.cmp(0n, _) : Cmp}
+          %P.form_nat(q) : {LT{} == Nat.cmp(0n, _) : Cmp}
+          {==}
+        case S.Zneg{+q}:
+          %P.form_nat(q) : {GT{} == Nat.cmp(_, 0n) : Cmp}
+          {==}
+    case S.Zpos{+p}:
+      match y:
+        case S.Z0{}:
+          %N.add_zero(S.Pos.nat(p)) : {GT{} == Nat.cmp(_, 0n) : Cmp}
+          %P.form_nat(p) : {GT{} == Nat.cmp(_, 0n) : Cmp}
+          {==}
+        case S.Zpos{+q}:
+          %N.add_zero(S.Pos.nat(p)) : {S.Pos.cmp(p, q) == Nat.cmp(_, Nat.add(S.Pos.nat(q), 0n)) : Cmp}
+          %N.add_zero(S.Pos.nat(q)) : {S.Pos.cmp(p, q) == Nat.cmp(S.Pos.nat(p), _) : Cmp}
+          P.cmp_nat(p, q)
+        case S.Zneg{+q}:
+          %P.form_nat(p) : {GT{} == Nat.cmp(Nat.add(_, S.Pos.nat(q)), 0n) : Cmp}
+          {==}
+    case S.Zneg{+p}:
+      match y:
+        case S.Z0{}:
+          %P.form_nat(p) : {LT{} == Nat.cmp(0n, _) : Cmp}
+          {==}
+        case S.Zpos{+q}:
+          %P.form_nat(q) : {LT{} == Nat.cmp(0n, Nat.add(_, S.Pos.nat(p))) : Cmp}
+          {==}
+        case S.Zneg{+q}:
+          P.cmp_nat(q, p)

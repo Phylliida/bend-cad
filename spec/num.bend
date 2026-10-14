@@ -88,6 +88,31 @@ def Pos.pred_double(p: Pos) -> Pos:
     case XI{q}:
       XI{XO{q}}
 
+# compares a with b; r is the verdict should they agree
+def Pos.cmpc(a: Pos, b: Pos, r: Cmp) -> Cmp:
+  match a b:
+    case XI{p} XI{q}:
+      Pos.cmpc(p, q, r)
+    case XI{p} XO{q}:
+      Pos.cmpc(p, q, GT{})
+    case XI{p} XH{}:
+      GT{}
+    case XO{p} XI{q}:
+      Pos.cmpc(p, q, LT{})
+    case XO{p} XO{q}:
+      Pos.cmpc(p, q, r)
+    case XO{p} XH{}:
+      GT{}
+    case XH{} XI{q}:
+      LT{}
+    case XH{} XO{q}:
+      LT{}
+    case XH{} XH{}:
+      r
+
+def Pos.cmp(a: Pos, b: Pos) -> Cmp:
+  Pos.cmpc(a, b, EQ{})
+
 # the meaning of a positive
 def Pos.nat(p: Pos) -> Nat:
   match p:
@@ -220,6 +245,33 @@ def Z.mul(x: Z, y: Z) -> Z:
         case Zneg{q}:
           Zpos{Pos.mul(p, q)}
 
+def Z.cmp(x: Z, y: Z) -> Cmp:
+  match x:
+    case Z0{}:
+      match y:
+        case Z0{}:
+          EQ{}
+        case Zpos{q}:
+          LT{}
+        case Zneg{q}:
+          GT{}
+    case Zpos{p}:
+      match y:
+        case Z0{}:
+          GT{}
+        case Zpos{q}:
+          Pos.cmp(p, q)
+        case Zneg{q}:
+          GT{}
+    case Zneg{p}:
+      match y:
+        case Z0{}:
+          LT{}
+        case Zpos{q}:
+          LT{}
+        case Zneg{q}:
+          Pos.cmp(q, p)
+
 # The meaning of an integer: the pair (pnat, nnat) of unary naturals whose
 # difference it is, one of them zero; and back, the integer a - b.
 
@@ -251,3 +303,62 @@ def Z.of_diff(a: Nat, b: Nat) -> Z:
       Zneg{Pos.of_succ(k)}
     case 1n+i 1n+j:
       Z.of_diff(i, j)
+
+# Rationals
+# ---------
+# A rational is an integer over a positive. The spec does not reduce
+# fractions: equal rationals may be different terms, and Q.eq (cross-
+# multiplication) is their equality. Reducing by gcd is a runtime choice,
+# proven to keep Q.eq. The operations are written with the projections
+# Q.num and Q.den, so they compute on unknown arguments too.
+
+type Q is Data:
+  Q{n: Z, d: Pos}
+
+def Q.num(x: Q) -> Z:
+  match x:
+    case Q{n, d}:
+      n
+
+def Q.den(x: Q) -> Pos:
+  match x:
+    case Q{n, d}:
+      d
+
+# x and y are the same rational
+def Q.eq(+x: Q, +y: Q) -> Type:
+  {Z.mul(Q.num(x), Zpos{Q.den(y)}) == Z.mul(Q.num(y), Zpos{Q.den(x)}) : Z}
+
+def Q.of_z(z: Z) -> Q:
+  Q{z, XH{}}
+
+def Q.add(+x: Q, +y: Q) -> Q:
+  Q{Z.add(Z.mul(Q.num(x), Zpos{Q.den(y)}), Z.mul(Q.num(y), Zpos{Q.den(x)})), Pos.mul(Q.den(x), Q.den(y))}
+
+def Q.neg(+x: Q) -> Q:
+  Q{Z.neg(Q.num(x)), Q.den(x)}
+
+def Q.sub(+x: Q, +y: Q) -> Q:
+  Q.add(x, Q.neg(y))
+
+def Q.mul(+x: Q, +y: Q) -> Q:
+  Q{Z.mul(Q.num(x), Q.num(y)), Pos.mul(Q.den(x), Q.den(y))}
+
+# 1/x, and 0 for x = 0
+def Q.inv.go(n: Z, d: Pos) -> Q:
+  match n:
+    case Z0{}:
+      Q{Z0{}, XH{}}
+    case Zpos{p}:
+      Q{Zpos{d}, p}
+    case Zneg{p}:
+      Q{Zneg{d}, p}
+
+def Q.inv(+x: Q) -> Q:
+  Q.inv.go(Q.num(x), Q.den(x))
+
+def Q.div(+x: Q, +y: Q) -> Q:
+  Q.mul(x, Q.inv(y))
+
+def Q.cmp(+x: Q, +y: Q) -> Cmp:
+  Z.cmp(Z.mul(Q.num(x), Zpos{Q.den(y)}), Z.mul(Q.num(y), Zpos{Q.den(x)}))
