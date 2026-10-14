@@ -4,6 +4,8 @@
 #   @FT[set | expr]                the field term of expr
 #   @CERT[set | x | c1 ; r1 | ... || hyps]     FO.certN call proving {x == 0}
 #   @CERTEQ[set | X | Y | c1 ; r1 | ... || hyps]  FO.eq_of_sub(...) proving {X == Y}
+#   @RING[set | target | source]   R.ring_eq call proving {target == source} in Z
+#   @ZT[set | expr]                the integer term of expr
 # "set" is a name defined by @ATOMS, or an inline atom list. Atoms are
 # "name=term" (or a bare name, its own term); "m:=expr" is a textual macro.
 import re
@@ -65,6 +67,14 @@ def f(ast, names, terms):
     a, b = f(ast[1], names, terms), f(ast[2], names, terms)
     return {'+': "O.add(F, %s, %s)", '-': "O.sub(~F, %s, %s)", '*': "O.mul(F, %s, %s)"}[k] % (a, b)
 
+def zt(ast, names, terms):
+    k = ast[0]
+    if k == 'var': return terms[names.index(ast[1])]
+    if k == 'num': return "S.Z0{}" if ast[1] == 0 else "S.Zpos{" + pos(ast[1]) + "}"
+    if k == 'neg': return "S.Z.neg(" + zt(ast[1], names, terms) + ")"
+    a, b = zt(ast[1], names, terms), zt(ast[2], names, terms)
+    return {'+': "S.Z.add(%s, %s)", '-': "S.Z.sub(%s, %s)", '*': "S.Z.mul(%s, %s)"}[k] % (a, b)
+
 SETS = {}
 def atomset(spec):
     spec = spec.strip()
@@ -116,7 +126,7 @@ def expand(src):
             SETS[m.group(1)] = atomset(m.group(2)); continue
         lines.append(line)
     src = "".join(lines)
-    for tag in ["@CERTEQ[", "@CERT[", "@ZEQ[", "@FT["]:
+    for tag in ["@CERTEQ[", "@CERT[", "@ZEQ[", "@FT[", "@RING[", "@ZT["]:
         while True:
             k = src.find(tag)
             if k < 0: break
@@ -129,6 +139,10 @@ def expand(src):
             names, terms, _ = st
             if tag == "@ZEQ[":
                 out = "FR.fring_eq(~F, [" + ", ".join(terms) + "], " + z(P(parts[1], st), names) + ", " + z(P(parts[2], st), names) + ", {==})"
+            elif tag == "@RING[":
+                out = "R.ring_eq([" + ", ".join(terms) + "], " + z(P(parts[1], st), names) + ", " + z(P(parts[2], st), names) + ", {==})"
+            elif tag == "@ZT[":
+                out = zt(P(parts[1], st), names, terms)
             elif tag == "@FT[":
                 out = f(P(parts[1], st), names, terms)
             elif tag == "@CERT[":

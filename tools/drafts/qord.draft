@@ -1,0 +1,104 @@
+# The order of the spec rationals: Q.lt is a strict total order up to Q.eq,
+# respected by Q.eq, by adding a rational and by positive products. Through
+# signs (lib/zord.bend): x < y exactly when the cross difference
+# ny dx - nx dy is positive, so each law is one normalizer identity and a
+# sign computation.
+
+import Base
+import ./zring.bend as R
+import ./zord.bend as ZO
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+
+@ATOMS X1 = nx=S.Q.num(x),, dx=S.Zpos{S.Q.den(x)}
+@ATOMS X2 = nx=S.Q.num(x),, dx=S.Zpos{S.Q.den(x)},, ny=S.Q.num(y),, dy=S.Zpos{S.Q.den(y)}
+@ATOMS X3 = nx=S.Q.num(x),, dx=S.Zpos{S.Q.den(x)},, ny=S.Q.num(y),, dy=S.Zpos{S.Q.den(y)},, nz=S.Q.num(z),, dz=S.Zpos{S.Q.den(z)}
+@ATOMS CL = nx=S.Q.num(x),, dx=S.Zpos{S.Q.den(x)},, nx2=S.Q.num(x2),, dx2=S.Zpos{S.Q.den(x2)},, ny=S.Q.num(y),, dy=S.Zpos{S.Q.den(y)}
+@ATOMS CR = nx=S.Q.num(x),, dx=S.Zpos{S.Q.den(x)},, ny=S.Q.num(y),, dy=S.Zpos{S.Q.den(y)},, ny2=S.Q.num(y2),, dy2=S.Zpos{S.Q.den(y2)}
+
+# the cross difference of x and y, (y - x) dx dy
+def dif(+x: S.Q, +y: S.Q) -> S.Z:
+  S.Z.sub(S.Z.mul(S.Q.num(y), S.Zpos{S.Q.den(x)}), S.Z.mul(S.Q.num(x), S.Zpos{S.Q.den(y)}))
+
+# x < y exactly when the cross difference is positive
+def lt_dif(+x: S.Q, +y: S.Q, h: S.Q.lt(x, y)) -> ZO.pos(dif(x, y)):
+  ZO.lt_pos(@ZT[X2 | nx*dy], @ZT[X2 | ny*dx], h)
+
+def dif_lt(+x: S.Q, +y: S.Q, h: ZO.pos(dif(x, y))) -> S.Q.lt(x, y):
+  ZO.pos_lt(@ZT[X2 | nx*dy], @ZT[X2 | ny*dx], h)
+
+# Strict order
+# ------------
+
+def q_lt_irrefl(+x: S.Q, h: S.Q.lt(x, x)) -> Empty:
+  ZO.pos_zero(dif(x, x), @RING[X1 | nx*dx - nx*dx | 0], lt_dif(x, x, h))
+
+# dy (z - x) = dz (y - x) + dx (z - y), as cross differences
+def q_lt_trans(+x: S.Q, +y: S.Q, +z: S.Q, h1: S.Q.lt(x, y), h2: S.Q.lt(y, z)) -> S.Q.lt(x, z):
+  dif_lt(x, z, ZO.pos_cancel(S.Q.den(y), dif(x, z),
+    ZO.pos_eq(@ZT[X3 | dy*(nz*dx - nx*dz)], @ZT[X3 | dz*(ny*dx - nx*dy) + dx*(nz*dy - ny*dz)],
+      @RING[X3 | dy*(nz*dx - nx*dz) | dz*(ny*dx - nx*dy) + dx*(nz*dy - ny*dz)],
+      ZO.pos_add(@ZT[X3 | dz*(ny*dx - nx*dy)], @ZT[X3 | dx*(nz*dy - ny*dz)],
+        ZO.pos_mul(@ZT[X3 | dz], dif(x, y), Unit{}, lt_dif(x, y, h1)),
+        ZO.pos_mul(@ZT[X3 | dx], dif(y, z), Unit{}, lt_dif(y, z, h2))))))
+
+# by the comparison's verdict c
+def q_lt_total.go(+x: S.Q, +y: S.Q, c: Cmp, e: {S.Q.cmp(x, y) == c : Cmp}) -> Or(S.Q.lt(x, y), Or(S.Q.eq(x, y), S.Q.lt(y, x))):
+  match c:
+    case LT{}:
+      Inl{e}
+    case EQ{}:
+      Inr{Inl{ZO.sub_eq(@ZT[X2 | nx*dy], @ZT[X2 | ny*dx], ZO.eq_zero(@ZT[X2 | nx*dy], @ZT[X2 | ny*dx], e))}}
+    case GT{}:
+      Inr{Inr{dif_lt(y, x, ZO.pos_eq(dif(y, x), @ZT[X2 | -(ny*dx - nx*dy)], @RING[X2 | nx*dy - ny*dx | -(ny*dx - nx*dy)], ZO.gt_pos(@ZT[X2 | nx*dy], @ZT[X2 | ny*dx], e)))}}
+
+def q_lt_total(+x: S.Q, +y: S.Q) -> Or(S.Q.lt(x, y), Or(S.Q.eq(x, y), S.Q.lt(y, x))):
+  q_lt_total.go(x, y, S.Q.cmp(x, y), {==})
+
+# Q.eq respects the order
+# -----------------------
+
+# dx (y - x2) = dx2 (y - x), using nx dx2 = nx2 dx
+def q_lt_cong_l.eq(+x: S.Q, +x2: S.Q, +y: S.Q, h: S.Q.eq(x, x2)) -> {@ZT[CL | dx*(ny*dx2 - nx2*dy)] == @ZT[CL | dx2*(ny*dx - nx*dy)] : S.Z}:
+  %@RING[CL | ny*dx*dx2 - nx2*dx*dy | dx*(ny*dx2 - nx2*dy)] : {_ == @ZT[CL | dx2*(ny*dx - nx*dy)] : S.Z}
+  %@RING[CL | ny*dx*dx2 - nx*dx2*dy | dx2*(ny*dx - nx*dy)] : {@ZT[CL | ny*dx*dx2 - nx2*dx*dy] == _ : S.Z}
+  %h : {S.Z.sub(@ZT[CL | ny*dx*dx2], S.Z.mul(_, @ZT[CL | dy])) == @ZT[CL | ny*dx*dx2 - nx*dx2*dy] : S.Z}
+  {==}
+
+def q_lt_cong_l(+x: S.Q, +x2: S.Q, +y: S.Q, h: S.Q.eq(x, x2), l: S.Q.lt(x, y)) -> S.Q.lt(x2, y):
+  dif_lt(x2, y, ZO.pos_cancel(S.Q.den(x), dif(x2, y),
+    ZO.pos_eq(@ZT[CL | dx*(ny*dx2 - nx2*dy)], @ZT[CL | dx2*(ny*dx - nx*dy)], q_lt_cong_l.eq(x, x2, y, h),
+      ZO.pos_mul(@ZT[CL | dx2], dif(x, y), Unit{}, lt_dif(x, y, l)))))
+
+# dy (y2 - x) = dy2 (y - x), using ny dy2 = ny2 dy
+def q_lt_cong_r.eq(+x: S.Q, +y: S.Q, +y2: S.Q, h: S.Q.eq(y, y2)) -> {@ZT[CR | dy*(ny2*dx - nx*dy2)] == @ZT[CR | dy2*(ny*dx - nx*dy)] : S.Z}:
+  %@RING[CR | ny2*dy*dx - nx*dy2*dy | dy*(ny2*dx - nx*dy2)] : {_ == @ZT[CR | dy2*(ny*dx - nx*dy)] : S.Z}
+  %@RING[CR | ny*dy2*dx - nx*dy2*dy | dy2*(ny*dx - nx*dy)] : {@ZT[CR | ny2*dy*dx - nx*dy2*dy] == _ : S.Z}
+  %h : {S.Z.sub(S.Z.mul(_, @ZT[CR | dx]), @ZT[CR | nx*dy2*dy]) == @ZT[CR | ny*dy2*dx - nx*dy2*dy] : S.Z}
+  {==}
+
+def q_lt_cong_r(+x: S.Q, +y: S.Q, +y2: S.Q, h: S.Q.eq(y, y2), l: S.Q.lt(x, y)) -> S.Q.lt(x, y2):
+  dif_lt(x, y2, ZO.pos_cancel(S.Q.den(y), dif(x, y2),
+    ZO.pos_eq(@ZT[CR | dy*(ny2*dx - nx*dy2)], @ZT[CR | dy2*(ny*dx - nx*dy)], q_lt_cong_r.eq(x, y, y2, h),
+      ZO.pos_mul(@ZT[CR | dy2], dif(x, y), Unit{}, lt_dif(x, y, l)))))
+
+def q_lt_cong(+x: S.Q, +x2: S.Q, +y: S.Q, +y2: S.Q, h1: S.Q.eq(x, x2), h2: S.Q.eq(y, y2), l: S.Q.lt(x, y)) -> S.Q.lt(x2, y2):
+  q_lt_cong_r(x2, y, y2, h2, q_lt_cong_l(x, x2, y, h1, l))
+
+# The order and the operations
+# ----------------------------
+
+# (y + z) - (x + z), as a cross difference, is dz dz (y - x)
+def q_lt_add(+x: S.Q, +y: S.Q, +z: S.Q, h: S.Q.lt(x, y)) -> S.Q.lt(S.Q.add(x, z), S.Q.add(y, z)):
+  dif_lt(S.Q.add(x, z), S.Q.add(y, z),
+    ZO.pos_eq(dif(S.Q.add(x, z), S.Q.add(y, z)), @ZT[X3 | dz*(dz*(ny*dx - nx*dy))],
+      @RING[X3 | (ny*dz + nz*dy)*(dx*dz) - (nx*dz + nz*dx)*(dy*dz) | dz*(dz*(ny*dx - nx*dy))],
+      ZO.pos_mul(@ZT[X3 | dz], @ZT[X3 | dz*(ny*dx - nx*dy)], Unit{},
+        ZO.pos_mul(@ZT[X3 | dz], dif(x, y), Unit{}, lt_dif(x, y, h)))))
+
+# 0 < x y: its cross difference with 0 is the product of theirs
+def q_lt_mul(+x: S.Q, +y: S.Q, hx: S.Q.lt(S.Q{S.Z0{}, S.XH{}}, x), hy: S.Q.lt(S.Q{S.Z0{}, S.XH{}}, y)) -> S.Q.lt(S.Q{S.Z0{}, S.XH{}}, S.Q.mul(x, y)):
+  dif_lt(S.Q{S.Z0{}, S.XH{}}, S.Q.mul(x, y),
+    ZO.pos_eq(dif(S.Q{S.Z0{}, S.XH{}}, S.Q.mul(x, y)), @ZT[X2 | (nx*1 - 0*dx)*(ny*1 - 0*dy)],
+      @RING[X2 | (nx*ny)*1 - 0*(dx*dy) | (nx*1 - 0*dx)*(ny*1 - 0*dy)],
+      ZO.pos_mul(@ZT[X2 | nx*1 - 0*dx], @ZT[X2 | ny*1 - 0*dy], lt_dif(S.Q{S.Z0{}, S.XH{}}, x, hx), lt_dif(S.Q{S.Z0{}, S.XH{}}, y, hy))))

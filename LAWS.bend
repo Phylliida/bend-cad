@@ -280,6 +280,60 @@ law q_mul_inv:
   for h: S.Q.eq(x, S.Q{S.Z0{}, S.XH{}}) -> Empty
   S.Q.eq(S.Q.mul(x, S.Q.inv(x)), S.Q{S.Zpos{S.XH{}}, S.XH{}})
 
+# The order of the rationals
+# --------------------------
+# Q.lt (Q.cmp says LT) is a strict total order up to Q.eq; Q.eq respects
+# it, and so do adding a rational and multiplying positives. With the field
+# laws above: the rationals are an ordered field under Q.eq.
+
+# LAW: x < x never holds
+law q_lt_irrefl:
+  for +x: S.Q
+  for  h: S.Q.lt(x, x)
+  Empty
+
+# LAW: x < y and y < z give x < z
+law q_lt_trans:
+  for +x: S.Q
+  for +y: S.Q
+  for +z: S.Q
+  for  h1: S.Q.lt(x, y)
+  for  h2: S.Q.lt(y, z)
+  S.Q.lt(x, z)
+
+# LAW: x < y, x = y or y < x
+law q_lt_total:
+  for +x: S.Q
+  for +y: S.Q
+  Or(S.Q.lt(x, y), Or(S.Q.eq(x, y), S.Q.lt(y, x)))
+
+# LAW: the order respects Q.eq
+law q_lt_cong:
+  for +x: S.Q
+  for +x2: S.Q
+  for +y: S.Q
+  for +y2: S.Q
+  for  h1: S.Q.eq(x, x2)
+  for  h2: S.Q.eq(y, y2)
+  for  h: S.Q.lt(x, y)
+  S.Q.lt(x2, y2)
+
+# LAW: x < y gives x + z < y + z
+law q_lt_add:
+  for +x: S.Q
+  for +y: S.Q
+  for +z: S.Q
+  for  h: S.Q.lt(x, y)
+  S.Q.lt(S.Q.add(x, z), S.Q.add(y, z))
+
+# LAW: 0 < x and 0 < y give 0 < x * y
+law q_lt_mul:
+  for +x: S.Q
+  for +y: S.Q
+  for  hx: S.Q.lt(S.Q{S.Z0{}, S.XH{}}, x)
+  for  hy: S.Q.lt(S.Q{S.Z0{}, S.XH{}}, y)
+  S.Q.lt(S.Q{S.Z0{}, S.XH{}}, S.Q.mul(x, y))
+
 # LAW: the rational normalizer is sound: two rational expressions whose
 # cross-multiplied integer forms normalize alike are the same rational under
 # every environment. QR.trn and QR.trd (numerator and denominator) are

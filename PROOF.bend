@@ -11,6 +11,7 @@ import ./lib/z.bend as LZ
 import ./lib/zring.bend as R
 import ./lib/qring.bend as QR
 import ./lib/q.bend as LQ
+import ./lib/qord.bend as LQO
 import ./lib/dyadic.bend as LD
 import ./lib/big.bend as LB
 import ./lib/meaning.bend as MN
@@ -109,6 +110,26 @@ def Laws.q_mul_cong(x, x2, y, y2, h1, h2):
 
 def Laws.q_neg_cong(x, x2, h):
   LQ.q_neg_cong(x, x2, h)
+
+# The order
+
+def Laws.q_lt_irrefl(x, h):
+  LQO.q_lt_irrefl(x, h)
+
+def Laws.q_lt_trans(x, y, z, h1, h2):
+  LQO.q_lt_trans(x, y, z, h1, h2)
+
+def Laws.q_lt_total(x, y):
+  LQO.q_lt_total(x, y)
+
+def Laws.q_lt_cong(x, x2, y, y2, h1, h2, h):
+  LQO.q_lt_cong(x, x2, y, y2, h1, h2, h)
+
+def Laws.q_lt_add(x, y, z, h):
+  LQO.q_lt_add(x, y, z, h)
+
+def Laws.q_lt_mul(x, y, hx, hy):
+  LQO.q_lt_mul(x, y, hx, hy)
 
 def Laws.qring_eq(env, e1, e2, h):
   QR.qring_eq(env, e1, e2, h)
