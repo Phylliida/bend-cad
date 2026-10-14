@@ -330,3 +330,29 @@ def eq_slope(~F: O.OField, +u1: M.Vec(~F), +u2: M.Vec(~F), +z1: M.Vec(~F), +z2: 
   %FV.vsub_app(~F, u1, u2, z1, z2, Equal.trans(Nat, M.len(~F, u1), n, M.len(~F, u2), h1, Equal.sym(Nat, M.len(~F, u2), n, h2))) : {O.sub(~F, O.eval(~F, x1, e), O.eval(~F, x2, e)) == M.dot(~F, C.app(~F, SL.srange(~F, x1, x2, e, n, 0n), SL.srange(~F, x1, x2, e, p, Nat.add(n, 0n))), _) : O.C(F)}
   %srange_app(~F, x1, x2, e, n, p, 0n) : {O.sub(~F, O.eval(~F, x1, e), O.eval(~F, x2, e)) == M.dot(~F, _, C.vsub(~F, x1, x2)) : O.C(F)}
   SL.slope_ok(~F, x1, x2, e, Nat.add(n, p), hb)
+
+# a + b = a, for 0 = b
+def zero_tail(~F: O.OField, +a: O.C(F), +b: O.C(F), h: {O.zero(F) == b : O.C(F)}) -> {O.add(F, a, b) == a : O.C(F)}:
+  %h : {O.add(F, a, _) == a : O.C(F)}
+  O.add_zero(F)(a)
+
+# with the same parameters, e(u1 ++ z) - e(u2 ++ z) = sy . (u1 - u2)
+def eq_slope_con(~F: O.OField, +u1: M.Vec(~F), +u2: M.Vec(~F), +z: M.Vec(~F), +e: E.QExpr, +n: Nat, +p: Nat, hb: {SL.below(Nat.add(n, p), e) == True{} : Bool}, +h1: {M.len(~F, u1) == n : Nat}, +h2: {M.len(~F, u2) == n : Nat}) -> {O.sub(~F, O.eval(~F, C.app(~F, u1, z), e), O.eval(~F, C.app(~F, u2, z), e)) == M.dot(~F, SL.srange(~F, C.app(~F, u1, z), C.app(~F, u2, z), e, n, 0n), C.vsub(~F, u1, u2)) : O.C(F)}:
+  +x1 = C.app(~F, u1, z)
+  +x2 = C.app(~F, u2, z)
+  +sy = M.dot(~F, SL.srange(~F, x1, x2, e, n, 0n), C.vsub(~F, u1, u2))
+  Equal.trans(O.C(F), O.sub(~F, O.eval(~F, x1, e), O.eval(~F, x2, e)), O.add(F, sy, M.dot(~F, SL.srange(~F, x1, x2, e, p, Nat.add(n, 0n)), C.vsub(~F, z, z))), sy,
+    eq_slope(~F, u1, u2, z, z, e, n, p, hb, h1, h2),
+    zero_tail(~F, sy, M.dot(~F, SL.srange(~F, x1, x2, e, p, Nat.add(n, 0n)), C.vsub(~F, z, z)), FV.dot_self0(~F, SL.srange(~F, x1, x2, e, p, Nat.add(n, 0n)), z)))
+
+# the block's differences, row by row: f(u1; z) - f(u2; z) = S (u1 - u2)
+def fvecs_con(~F: O.OField, +u1: M.Vec(~F), +u2: M.Vec(~F), +z: M.Vec(~F), eqs: List<&2, E.QExpr>, +n: Nat, +p: Nat, +hb: {CK.allbelow(Nat.add(n, p), eqs) == True{} : Bool}, +h1: {M.len(~F, u1) == n : Nat}, +h2: {M.len(~F, u2) == n : Nat}) -> {C.vsub(~F, C.fvals(~F, eqs, C.app(~F, u1, z)), C.fvals(~F, eqs, C.app(~F, u2, z))) == M.matvec(~F, smat(~F, C.app(~F, u1, z), C.app(~F, u2, z), eqs, n, 0n), C.vsub(~F, u1, u2)) : M.Vec(~F)}:
+  match eqs:
+    case Nil{}:
+      {==}
+    case Con{+e, +es}:
+      +x1 = C.app(~F, u1, z)
+      +x2 = C.app(~F, u2, z)
+      %eq_slope_con(~F, u1, u2, z, e, n, p, KA.band_l(SL.below(Nat.add(n, p), e), CK.allbelow(Nat.add(n, p), es), hb), h1, h2) : {Con{O.sub(~F, O.eval(~F, x1, e), O.eval(~F, x2, e)), C.vsub(~F, C.fvals(~F, es, x1), C.fvals(~F, es, x2))} == Con{_, M.matvec(~F, smat(~F, x1, x2, es, n, 0n), C.vsub(~F, u1, u2))} : M.Vec(~F)}
+      %fvecs_con(~F, u1, u2, z, es, n, p, KA.band_r(SL.below(Nat.add(n, p), e), CK.allbelow(Nat.add(n, p), es), hb), h1, h2) : {Con{O.sub(~F, O.eval(~F, x1, e), O.eval(~F, x2, e)), C.vsub(~F, C.fvals(~F, es, x1), C.fvals(~F, es, x2))} == Con{O.sub(~F, O.eval(~F, x1, e), O.eval(~F, x2, e)), _} : M.Vec(~F)}
+      {==}
