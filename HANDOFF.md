@@ -339,8 +339,16 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
   11 s natively for the 3-point impossible sketch at budget 7).
 - Danielle (2026-10-14): red constraints shown whole; expanding names the
   equation (lib/solve.bend eqlabel).
-- Next: audit of the completeness drafts (agent), Danielle's review of
-  all six; then prove solve_total (Kuhn/König, constraint-atomic
+- Completeness audit (2026-10-14): solve_complete was false (sides checked
+  after the loop; coarse first precision certified a neighbouring root);
+  fixed with a verdict-gated loop and levels (solve_l: seven precisions
+  from the l-th; solve = level 0; solve_lw for a narrower window).
+  solve_total: nothing found. Native regression: tools/regress.sh with
+  proto/solve_run.expected. Bend lesson: a stuck call's arguments are
+  still normalized, so a big body passed as an argument (the verdict, in
+  the loop) blows up every law that mentions solve; guard such bodies
+  behind a match on the stuck value (accept matches the plan first).
+- Next: Danielle's review of all six; then prove solve_total (Kuhn/König, constraint-atomic
   rollback, fuel bounds, wf_dec completeness), then solve_complete
   (Kantorovich with rounding); pin witnesses; ink-metric KKT (§10.3);
   speed.
