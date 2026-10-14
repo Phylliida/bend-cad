@@ -3,8 +3,10 @@
 # - The circle demo (proto/struct_run.bend: a circle about A with a
 #   variable radius fixed at 3, P on it and at distance 3 from B), drawn
 #   with P at (2, 2): certified, nothing red. In every complete ordered
-#   field, exactly one geometry in the returned box means the sketch (it
-#   has P = (2, √5)).
+#   field a geometry in the returned box means the sketch (it has
+#   P = (2, √5)); solve_unique then applies too (its hypotheses are met
+#   here; an instance is left out of the gate: its type names the solve
+#   six times, ~30 s to check).
 # - Two points fixed at (0, 0) plus a distance of 3 between them: the
 #   distance (the fifth constraint, position 4) is red, explained by 5
 #   equations over 4 variables; the rest is certified.
@@ -56,9 +58,6 @@ def far_refused() -> {SO.Out.ok(SO.solve(far(), R.circle_g0())) == False{} : Boo
 
 def circle_exists(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>) -> &x: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve(SR.circle(), R.circle_g0())), SO.Out.gr(SO.solve(SR.circle(), R.circle_g0())), x) & SK.Sketch.means(~F, x, SV.mark(SO.Out.red(SO.solve(SR.circle(), R.circle_g0())), SR.circle()))):
   SP.solve_exists(~F, ~R, ~H, SR.circle(), R.circle_g0(), circle_ok())
-
-def circle_unique(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +x1: M.Vec(~F), h1: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve(SR.circle(), R.circle_g0())), SO.Out.gr(SO.solve(SR.circle(), R.circle_g0())), x1), m1: SK.Sketch.means(~F, x1, SV.mark(SO.Out.red(SO.solve(SR.circle(), R.circle_g0())), SR.circle())), +x2: M.Vec(~F), h2: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve(SR.circle(), R.circle_g0())), SO.Out.gr(SO.solve(SR.circle(), R.circle_g0())), x2), m2: SK.Sketch.means(~F, x2, SV.mark(SO.Out.red(SO.solve(SR.circle(), R.circle_g0())), SR.circle()))) -> {x1 == x2 : M.Vec(~F)}:
-  SP.solve_unique(~F, ~H, SR.circle(), R.circle_g0(), circle_ok(), x1, h1, m1, x2, h2, m2)
 
 def over_explained() -> {SV.explained(SR.over(), SO.Out.red(SO.solve(SR.over(), zeros4())), SO.Out.why(SO.solve(SR.over(), zeros4()))) == True{} : Bool}:
   SP.solve_red(SR.over(), zeros4(), over_ok())

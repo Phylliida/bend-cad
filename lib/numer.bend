@@ -8,12 +8,14 @@
 # Per block, in block order: Newton at a working precision P (every
 # iterate rounded to P fractional bits), from the drawing's values, with
 # the parameters at their centers; the Jacobian is the checker's own slope
-# enclosure at a box of radius 0 (so exactly the derivative), inverted
-# exactly over ℚ by Gauss-Jordan; Y is that inverse at the final center,
-# rounded to 32 significant bits; the radius is the first of
+# enclosure at a box of radius 0 (so exactly the derivative), inverted by
+# dyadic Gauss-Jordan at 64 significant bits. Newton must settle (a step
+# that changes nothing) within 40 steps, else the block stops the search:
+# more precision will not make it converge. Y is the inverse at the final
+# center, rounded to 32 significant bits; the radius is the first of
 # R0 (17/16)^k (k < 64) the block checker accepts, R0 the largest entry
-# of the self-map bound at radius 0 times 65/64. A block that fails sinks the
-# plan at this precision; lib/solve.bend retries at 2P.
+# of the self-map bound at radius 0 times 65/64; if none passes, the plan
+# is retried at the next precision (lib/solve.bend).
 
 import Base
 import ../spec/num.bend as S
@@ -799,7 +801,7 @@ def block.y(m: Maybe<&2, List<&2, S.D>>, +eqs: List<&2, E.QExpr>, +n: Nat, +pc: 
 
 # a block's certificate at precision p, from the drawing's values y0
 def block(+eqs: List<&2, E.QExpr>, +n: Nat, +pc: List<&2, S.D>, +pr: List<&2, S.D>, y0: List<&2, S.D>, +p: Nat) -> BR:
-  block.y(newton(Nat.add(p, 8n), eqs, n, pc, p, NMore{y0}), eqs, n, pc, pr)
+  block.y(newton(40n, eqs, n, pc, p, NMore{y0}), eqs, n, pc, pr)
 
 # A plan at precision P
 # ---------------------
