@@ -76,3 +76,45 @@ law box_sides:
   for +x: M.Vec(~F)
   for  h: BX.inbox(~K, ~F, ~H, gc, gr, x)
   SK.Sides(~F, x, sides)
+
+# Sketches (sk-06 capstone). DRAFT FOR REVIEW.
+# --------------------------------------------
+# For a well-formed sketch whose exact system (Sketch.eqs) has a checked
+# plan and whose side conditions (Sketch.sides) are checked over the box:
+# in every complete ordered field there is a geometry in the box where
+# every circle and arc is proper and every driving constraint means what it
+# says (sk-07's meaning laws), and only one geometry in the box does. Both
+# follow from the laws above with sketch_sound and sketch_complete.
+
+# LAW: in a complete ordered field the box holds a geometry meaning the sketch
+law sketch_exists:
+  for ~K: N.Num
+  for ~F: O.OField
+  for ~R: CR.Complete<F>
+  for ~H: N.Emb<K, F>
+  for +sk: SK.Sketch
+  for  w: SK.Sketch.wf(sk)
+  for +gc: N.KVec(~K)
+  for +gr: N.KVec(~K)
+  for +p: PL.Plan<K>
+  for  ok: {PL.check(~K, SK.Sketch.eqs(sk), gc, gr, p) == True{} : Bool}
+  for  os: {PL.check_sides(~K, SK.Sketch.sides(sk), gc, gr) == True{} : Bool}
+  (&x: M.Vec(~F) -> (BX.inbox(~K, ~F, ~H, gc, gr, x) & SK.Sketch.means(~F, x, sk)))
+
+# LAW: in every ordered field, at most one geometry in the box means the sketch
+law sketch_unique:
+  for ~K: N.Num
+  for ~F: O.OField
+  for ~H: N.Emb<K, F>
+  for +sk: SK.Sketch
+  for +gc: N.KVec(~K)
+  for +gr: N.KVec(~K)
+  for +p: PL.Plan<K>
+  for  ok: {PL.check(~K, SK.Sketch.eqs(sk), gc, gr, p) == True{} : Bool}
+  for +x1: M.Vec(~F)
+  for  h1: BX.inbox(~K, ~F, ~H, gc, gr, x1)
+  for  m1: SK.Sketch.means(~F, x1, sk)
+  for +x2: M.Vec(~F)
+  for  h2: BX.inbox(~K, ~F, ~H, gc, gr, x2)
+  for  m2: SK.Sketch.means(~F, x2, sk)
+  {x1 == x2 : M.Vec(~F)}
