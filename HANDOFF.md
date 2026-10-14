@@ -211,6 +211,22 @@ sk-06); per-parameter balls carried in the certificate; q carried, not
 computed. After approval: generic K matrix library (dmat as D instance),
 slopes, ball arithmetic, the real checker, then the proofs.
 
+**Decided (Danielle, 2026-10-13), to add to DESIGN §16 as Q18 after the
+audit:** prove existence in Bend, not on paper. The sk-05 laws stay as they
+are (every ordered field); a new template, a *complete* ordered field
+(OField + Archimedean + every Cauchy sequence with a modulus converges; only
+ℝ, up to isomorphism), gets Banach's theorem proven in Bend, giving exactly
+one zero per block in the ball, and §8.4's composition becomes a formal
+theorem in that template. Cauchy completeness alone is not enough (some
+non-Archimedean fields have it, and q^n never drops below an
+infinitesimal). Guard against a mis-stated axiom making the theorem
+vacuous: no constructive instance exists in Bend (ℝ has no decidable
+order), so cross-check the axioms against mathlib's ℝ in Lean.
+Also from the "what's untraditional" review, to apply with the audit fixes:
+per-unknown radii instead of one r (laws state the contraction without
+division: |y1_i - y2_i| <= s r_i for all i gives |N(y1)_i - N(y2)_i| <=
+q s r_i), and length conditions on every quantified vector.
+
 sk-07's remaining items: line–line / point–circle / circle–circle distances
 (new kinds: spec arms, rerun `tools/mforms.py`, add per-kind lemmas), §8.6
 for the vocabulary.
