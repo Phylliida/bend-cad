@@ -854,3 +854,52 @@ def cert_fix(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, b: C.Block, c: C.Cert<K>,
   match b:
     case C.Block{+eqs, +n}:
       cert_fix.c(~K, ~F, ~H, eqs, n, c, ok, z, y, hy, hf)
+
+# Uniqueness
+# ----------
+
+# two zeros of the block in the box are equal
+def unique.go(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +q: N.NC(K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K), +ok: {CK.check.go(~K, eqs, n, yc, yr, q, ym, pc, pr) == True{} : Bool}, +z: M.Vec(~F), +hz: C.rbnd(~F, C.vsub(~F, z, N.ofkv(~K, ~F, ~H, pc)), N.ofkv(~K, ~F, ~H, pr)), +y1: M.Vec(~F), +hl1: {M.len(~F, y1) == M.len(~F, N.ofkv(~K, ~F, ~H, yc)) : Nat}, +hb1: C.rbnd(~F, C.vsub(~F, y1, N.ofkv(~K, ~F, ~H, yc)), N.ofkv(~K, ~F, ~H, yr)), z1: M.vbnd(~F, C.fvals(~F, eqs, C.app(~F, C.fit(~F, n, y1), z)), O.zero(F)), +y2: M.Vec(~F), +hl2: {M.len(~F, y2) == M.len(~F, N.ofkv(~K, ~F, ~H, yc)) : Nat}, +hb2: C.rbnd(~F, C.vsub(~F, y2, N.ofkv(~K, ~F, ~H, yc)), N.ofkv(~K, ~F, ~H, yr)), z2: M.vbnd(~F, C.fvals(~F, eqs, C.app(~F, C.fit(~F, n, y2), z)), O.zero(F))) -> M.vbnd(~F, C.vsub(~F, y1, y2), O.zero(F)):
+  (z10, z1a) = z1
+  (z20, z2a) = z2
+  +yF = N.ofkm(~K, ~F, ~H, ym)
+  +rF = N.ofkv(~K, ~F, ~H, yr)
+  +cF = N.ofkv(~K, ~F, ~H, yc)
+  +ayF = N.ofkm(~K, ~F, ~H, KA.kmabs(~K, ym))
+  +qF = N.emap(K, F, H, q)
+  +f1 = C.fvals(~F, eqs, C.app(~F, C.fit(~F, n, y1), z))
+  +f2 = C.fvals(~F, eqs, C.app(~F, C.fit(~F, n, y2), z))
+  +d = C.vsub(~F, y1, y2)
+  +w = FV.wr(~F, d, rF)
+  +ss = FV.vmaxabs(~F, w)
+  +hf = x_factor(~K, eqs, n, yc, yr, q, ym, pc, pr, ok)
+  +hq0 = KA.kle0_ok(~K, ~F, ~H, q, KA.band_l(KA.kle(~K, N.nzero(K), q), KA.klt(~K, q, N.none(K)), hf))
+  +hq1 = klt1_ok(~K, ~F, ~H, q, KA.band_r(KA.kle(~K, N.nzero(K), q), KA.klt(~K, q, N.none(K)), hf))
+  +hyc = nateq_ok(KA.klen(~K, yc), n, x_len_yc(~K, eqs, n, yc, yr, q, ym, pc, pr, ok))
+  +hlc = Equal.trans(Nat, M.len(~F, cF), KA.klen(~K, yc), n, len_ofkv(~K, ~F, ~H, yc), hyc)
+  +hry = Equal.trans(Nat, FV.rows(~F, yF), CK.mlen(~K, ym), n, rows_ofkm(~K, ~F, ~H, ym), nateq_ok(CK.mlen(~K, ym), n, x_len_ym(~K, eqs, n, yc, yr, q, ym, pc, pr, ok)))
+  +hnr = KA.kvle_ok(~K, ~F, ~H, Nil{}, yr, x_nn_yr(~K, eqs, n, yc, yr, q, ym, pc, pr, ok))
+  +hyf1 = FV.mv_zero(~F, yF, f1, ayF, FV.vall0_rbnd(~F, f1, z1a), KA.kmabs_bnd(~K, ~F, ~H, ym), KA.kmabs_nn(~K, ~F, ~H, ym))
+  +hyf2 = FV.mv_zero(~F, yF, f2, ayF, FV.vall0_rbnd(~F, f2, z2a), KA.kmabs_bnd(~K, ~F, ~H, ym), KA.kmabs_nn(~K, ~F, ~H, ym))
+  +h2b = FV.two_ball(~F, y1, y2, cF, rF, hl1, hl2, hb1, hb2)
+  +hsn = FV.vmax_nn(~F, w)
+  +hn1 = FV.wr_near(~F, d, rF, ss, h2b, FV.vmax_all(~F, w), hnr)
+  +hc = contract.go(~K, ~F, ~H, eqs, n, yc, yr, q, ym, pc, pr, ok, z, hz, y1, hl1, hb1, y2, hl2, hb2, ss, hsn, hn1)
+  +hn2 = FV.unfix2(~F, y1, y2, yF, f1, f2, M.vscale(~F, O.mul(F, qF, ss), rF), Equal.trans(Nat, M.len(~F, y1), M.len(~F, cF), M.len(~F, y2), hl1, Equal.sym(Nat, M.len(~F, y2), M.len(~F, cF), hl2)), Equal.trans(Nat, M.len(~F, y2), n, FV.rows(~F, yF), Equal.trans(Nat, M.len(~F, y2), M.len(~F, cF), n, hl2, hlc), Equal.sym(Nat, FV.rows(~F, yF), n, hry)), hc, hyf1, hyf2)
+  +hqs = FO.mul_nonneg(~F, qF, ss, hq0, hsn)
+  +hle = FV.vmax_lub(~F, w, O.mul(F, qF, ss), FV.wr_bound(~F, d, rF, O.mul(F, qF, ss), hn2, hqs, hnr), hqs)
+  +hs0 = FV.zero_of_le_mul(~F, ss, qF, FV.le_rw_r(~F, ss, O.mul(F, qF, ss), O.mul(F, ss, qF), FR.fring_eq(~F, [qF, ss], E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZMul{E.ZVar{1n}, E.ZVar{0n}}, {==}), hle), hq1)
+  (FO.le_refl(~F, O.zero(F)), FV.vall_zero(~F, d, ss, rF, hn1, hs0, hnr))
+
+def cert_unique.c(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +n: Nat, c: C.Cert<K>, ok: {CK.check.c(~K, eqs, n, c) == True{} : Bool}, +z: M.Vec(~F), hz: C.pinned(~K, ~F, ~H, c, z), +y1: M.Vec(~F), h1: C.ball(~K, ~F, ~H, c, y1), z1: M.vbnd(~F, C.bfun(~F, C.Block{eqs, n}, y1, z), O.zero(F)), +y2: M.Vec(~F), h2: C.ball(~K, ~F, ~H, c, y2), z2: M.vbnd(~F, C.bfun(~F, C.Block{eqs, n}, y2, z), O.zero(F))) -> M.vbnd(~F, C.vsub(~F, y1, y2), O.zero(F)):
+  match c:
+    case C.Cert{+yc, +yr, +q, +ym, +pc, +pr}:
+      (hl1, hb1) = h1
+      (hl2, hb2) = h2
+      unique.go(~K, ~F, ~H, eqs, n, yc, yr, q, ym, pc, pr, ok, z, hz, y1, hl1, hb1, z1, y2, hl2, hb2, z2)
+
+# LAW cert_unique: the box holds at most one zero of the block
+def cert_unique(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, b: C.Block, c: C.Cert<K>, ok: {CK.check(~K, b, c) == True{} : Bool}, +z: M.Vec(~F), hz: C.pinned(~K, ~F, ~H, c, z), +y1: M.Vec(~F), h1: C.ball(~K, ~F, ~H, c, y1), z1: M.vbnd(~F, C.bfun(~F, b, y1, z), O.zero(F)), +y2: M.Vec(~F), h2: C.ball(~K, ~F, ~H, c, y2), z2: M.vbnd(~F, C.bfun(~F, b, y2, z), O.zero(F))) -> M.vbnd(~F, C.vsub(~F, y1, y2), O.zero(F)):
+  match b:
+    case C.Block{+eqs, +n}:
+      cert_unique.c(~K, ~F, ~H, eqs, n, c, ok, z, hz, y1, h1, z1, y2, h2, z2)

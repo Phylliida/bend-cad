@@ -1,4 +1,4 @@
-# HANDOFF — bend-cad (2026-10-13, sk-04 library done)
+# HANDOFF — bend-cad (2026-10-14, sk-05 done)
 
 Read first: `DESIGN.md` (v0.9: the plan, Danielle's decisions, §3 spec
 numbers, §4–§5 typed IR, forms and meanings as built), `proto/RESULTS.md`
@@ -198,28 +198,30 @@ wrong; she restated it after the roll.)
   nice part is that the runtime refinement then becomes just another
   `Emb`, with no separate checker-refinement proof.
 
-**sk-05 in progress (2026-10-14): 4 of 6 laws proven** (`lib/certpf.bend`:
-`cert_factor`, `cert_center`, `cert_contract`, `cert_self`; each fills its
-ROADMAP statement exactly, checked by a throwaway fill file). Left:
-`cert_fix` (needs a max-of-|f_i| argument in F: fabs/fmax via lt_total,
-then injectivity from the checker's row sums of |I - J0y Y| < 1) and
-`cert_unique` (weighted max of |d_i|/r_i, contraction gives s* <= q s*).
-Then move the six laws to LAWS.bend/PROOF.bend (gated test
-tests/cert_demo.bend already runs the checker on a real block).
-- Since the draft: blocks number their own variables (unknowns, then
-  parameters); box points have the center's length; cert_contract needs
-  s >= 0 (it was false for s < 0); Q19 partial ofq in Num (built).
-- Libraries: `lib/karith.bend` (K arithmetic + laws in F), `lib/fvec.bend`
-  (entrywise bounds; newton_diff, split_bnd, self3, shift),
-  `lib/kball.bend` (ball arithmetic + soundness), `lib/slope.bend`
-  (telescoping slopes per variable, slope_ok), `lib/cert.bend` (the
-  checker; named conjuncts), `lib/certpf.bend` (block lemmas + laws),
-  `lib/kinst.bend` (D and Q instances).
-- Checker: native run proto/cc_run.bend (tests/cc_data.bend from
-  tools/gen_cc.py) accepts the circle-circle certificate and rejects 7 bad
-  ones; `tools/stmtcheck.py` type-checks open statements.
-- Bend rewrite rule (I kept tripping): `%E : P` with E : {L == R} needs the
-  goal to be P[R] and continues with P[L].
+**sk-05 DONE (2026-10-14): 98 laws, gate green (~15 s).** The six
+`cert_*` laws are in LAWS.bend, proven in PROOF.bend via
+`lib/certpf.bend`; the checker `lib/cert.bend` runs inside the gate on a
+real block (`tests/cert_demo.bend`). Sabotage checks: replacing any checker
+condition, or the whole checker with "accept", breaks the proofs.
+- Libraries: `lib/karith.bend` (K arithmetic + laws in F),
+  `lib/fvec.bend` (entrywise bounds, Newton-difference/split/self3/shift
+  row lemmas, fabs/fmax/vmaxabs, weighted ratios), `lib/kball.bend` (ball
+  arithmetic + soundness), `lib/slope.bend` (telescoping slopes per
+  variable, slope_ok), `lib/cert.bend` (checker, named conjuncts),
+  `lib/certpf.bend` (block lemmas + the six laws), `lib/kinst.bend`
+  (D and Q instances).
+- Native: proto/cc_run.bend with tests/cc_data.bend (tools/gen_cc.py)
+  accepts the circle-circle certificate and rejects 7 bad ones.
+- Bend rewrite rule: `%E : P` with E : {L == R} needs the goal to be P[R]
+  and continues with P[L].
+
+Next: **sk-05b** (complete ordered fields + Banach, axioms cross-checked
+against mathlib's ℝ in Lean; Q18) and **sk-06** (composition: blocks in
+order, parameter balls contain earlier boxes, local-to-sketch substitution
+law; side conditions §8.6). Still open for Danielle at sk-06: the
+trusted-base option (only the composed theorem trusted). Runtime bigint
+instance of K (needs Big.wf: ok-predicate or carrier) when the checker
+runs on runtime numbers.
 
 sk-07's remaining items: line–line / point–circle / circle–circle distances
 (new kinds: spec arms, rerun `tools/mforms.py`, add per-kind lemmas), §8.6

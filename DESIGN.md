@@ -473,16 +473,18 @@ triangular structure. A depth-30 circle chain becomes 30 blocks of 2 unknowns.
 
 ### 8.3 Parametric block certificate
 
-*Draft for review (sk-05), revised after an independent audit
-(2026-10-13).* Stated in `spec/cert.bend` (trusted) and `ROADMAP.bend`
-(six `cert_*` laws); `lib/cert.bend` has the checker's final signature
-and a stub body that rejects everything. Against the stub every law is
-trivially provable (its `check == True` hypothesis is absurd), so the laws
-stay in ROADMAP until the real checker lands, and moving them needs a gated
-positive test (`check == True` on a real block). The statements are
-type-checked by proving them against the stub in a throwaway file
-(`tools/stmtcheck.py`): checking `ROADMAP.bend` itself stops at the count
-of open laws before type-checking.
+*Done (sk-05, 2026-10-14).* Stated in `spec/cert.bend` (trusted) and
+`LAWS.bend` (six `cert_*` laws), proven in `PROOF.bend` through
+`lib/certpf.bend`; the checker is `lib/cert.bend`. `tests/cert_demo.bend`
+(gated) runs the checker inside Bend's own checker on a real circle-circle
+block over the dyadics: it accepts the certificate and rejects an
+off-center one. Natively it also rejects six other bad certificates
+(q = 1, Y = I, a center too coarse for its radius, a negative radius, one
+equation for two unknowns, a stray variable). Replacing any of the
+checker's conditions by an unrelated one, or the whole checker by "accept",
+makes the proofs fail. (While the laws were open, `tools/stmtcheck.py`
+type-checked their statements: checking a file with open laws stops at the
+count of open laws before type-checking.)
 
 **The block.** Equations `eqs` that must vanish (`QExpr`) and the number n
 of unknowns (as many as equations). A block numbers its own variables:
@@ -812,7 +814,7 @@ random sketches.
 | sk-02 | Limb bigints refining the spec | sk-01 | refinement laws; 256-bit mul benchmark — **done** (2026-10-13; §3) |
 | sk-03 | Typed IR, exact equation forms, meaning-lemma statements; LAWS review | sk-01, sk-P1 | LAWS reviewed by Danielle — **done** (2026-10-13; Q13–Q15 and follow-ups folded in) |
 | sk-04 | Rational, dyadic and matrix library (∞-norms, products); Q order laws; canonical ℚ as an ordered-field instance (optional) | sk-02 | laws closed — **done** (2026-10-13; 37 laws: ℚ order, ℚ in every ordered field, gcd reduction, canonical ℚ, vectors and matrices; runtime bigint dyadics deferred to sk-05, §16) |
-| sk-05 | Parametric block certificate (§8.3), mean-value method (Q12): generic K matrix library (dmat as the D instance), slopes, ball arithmetic, checker, the seven `cert_*` laws | sk-04 | laws closed (draft reviewed by audit; awaiting Danielle) |
+| sk-05 | Parametric block certificate (§8.3), mean-value method (Q12): generic K matrix library, slopes, ball arithmetic, checker, the six `cert_*` laws | sk-04 | **done (2026-10-14): 98 laws, gate green (~15 s)** |
 | sk-05b | Complete ordered fields (Q18): template (Archimedean + Cauchy with a modulus), axioms cross-checked against mathlib's ℝ in Lean, Banach's theorem; exactly one zero per block | sk-05 | laws closed |
 | sk-06 | Composition theorem (§8.4, exactly one solution in a complete ordered field), side conditions (§8.6), optional denominator clearing for D (Q19) | sk-05, sk-05b | laws closed |
 | sk-07 | Core vocabulary §5.1 + meaning lemmas | sk-03, sk-06 | laws closed — **meaning lemmas proven** in every ordered field (2026-10-13); remaining: §8.6 side-condition certification for the vocabulary (with sk-06), line–line / point–circle / circle–circle distances |
@@ -872,9 +874,8 @@ sk-02 and sk-03 can run in parallel after sk-01.
   common case).
 
 **Mine to decide:**
-- **Q12** Mean-value method (polynomial slopes vs selective quadratization),
-  from sk-P1 data. Proposed in the sk-05 draft: telescoping slopes
-  evaluated in ball arithmetic (§8.3).
+- **Q12** Mean-value method: telescoping slopes per variable, evaluated in
+  ball arithmetic (§8.3); built and proven in sk-05.
 
 **Decided after sk-04 (Danielle, 2026-10-13):**
 - **Q16** The block certificate (§8.3) and composition (§8.4) are stated
@@ -1004,6 +1005,16 @@ sk-02 and sk-03 can run in parallel after sk-01.
 ---
 
 ## 19. Changelog
+
+**v0.9 → v0.10 (sk-05 done):**
+- §8.3: the parametric block certificate as built and proven: the checker
+  generic over computing numbers K with maps into every ordered field
+  (Q17, `spec/knum.bend`, `lib/kinst.bend` for D and Q), blocks numbering
+  their own variables, per-unknown radii, ball arithmetic and telescoping
+  slopes per variable, six laws (`cert_factor`, `cert_center`,
+  `cert_self`, `cert_contract` with s >= 0, `cert_fix`, `cert_unique`).
+  §8.4: the Banach route (Q18). §16: Q16-Q19 decided; independent audit
+  recorded. §15: sk-05 done, sk-05b added.
 
 **v0.8 → v0.9 (sk-04 library):**
 - §3: rational order (`q_lt_*`), ℚ in every ordered field (`ofq_*`), checked
