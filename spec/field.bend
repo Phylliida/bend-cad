@@ -6,7 +6,8 @@
 # Laws take the field as a template parameter (`for ~F: OField`): Bend
 # checks them with its operations opaque, and a template's axioms may be
 # used any number of times (an ordinary function-valued argument could be
-# used only once). Equality is Bend's own {==}.
+# used only once). Equality is Bend's own {==}; order facts are Data, so a
+# proof of a < b can be reused.
 
 import Base
 import ./num.bend as S
@@ -20,7 +21,7 @@ type OField is Type:
     mul: C -> C -> C,
     neg: C -> C,
     inv: C -> C,
-    lt: C -> C -> Type,
+    lt: C -> C -> Data,
     add_assoc: @a: C -> @b: C -> @c: C -> {add(add(a, b), c) == add(a, add(b, c)) : C},
     add_comm: @a: C -> @b: C -> {add(a, b) == add(b, a) : C},
     add_zero: @a: C -> {add(a, zero) == a : C},
@@ -79,7 +80,7 @@ def inv(F: OField) -> C(F) -> C(F):
       inv
 
 # a < b
-def lt(F: OField) -> C(F) -> C(F) -> Type:
+def lt(F: OField) -> C(F) -> C(F) -> Data:
   match F:
     case OField{C, zero, one, add, mul, neg, inv, lt, add_assoc, add_comm, add_zero, add_neg, mul_assoc, mul_comm, mul_one, mul_add, mul_inv, lt_irrefl, lt_trans, lt_total, lt_add, lt_mul, zero_lt_one}:
       lt
@@ -170,8 +171,8 @@ def ne(~F: OField, +a: C(F), +b: C(F)) -> Type:
   {a == b : C(F)} -> Empty
 
 # a ≤ b
-def le(~F: OField, +a: C(F), +b: C(F)) -> Type:
-  Or(lt(F, a, b), {a == b : C(F)})
+def le(~F: OField, +a: C(F), +b: C(F)) -> Data:
+  Either<&2, &2, lt(F, a, b), {a == b : C(F)}>
 
 def two(~F: OField) -> C(F):
   add(F, one(F), one(F))

@@ -189,13 +189,17 @@ def seg.of(+es: List<&2, Ent>, m: Maybe<&2, Geo>) -> Seg:
 def seg(+es: List<&2, Ent>, id: Nat) -> Seg:
   seg.of(es, find(id, es))
 
-# segment id, reversed when rev
-def dseg(+es: List<&2, Ent>, +id: Nat, rev: Bool) -> Seg:
+# s, reversed when rev
+def Seg.rev_if(+s: Seg, rev: Bool) -> Seg:
   match rev:
     case False{}:
-      seg(es, id)
+      s
     case True{}:
-      Seg{Seg.q(seg(es, id)), Seg.p(seg(es, id))}
+      Seg{Seg.q(s), Seg.p(s)}
+
+# segment id, reversed when rev
+def dseg(+es: List<&2, Ent>, id: Nat, rev: Bool) -> Seg:
+  Seg.rev_if(seg(es, id), rev)
 
 def circ.of(+es: List<&2, Ent>, m: Maybe<&2, Geo>) -> Circ:
   match m:
