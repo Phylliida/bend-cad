@@ -14,6 +14,7 @@ import ./spec/num.bend as S
 import ./spec/ring.bend as E
 import ./lib/zring.bend as R
 import ./lib/qring.bend as QR
+import ./lib/qreduce.bend as QRD
 import ./spec/big.bend as SB
 import ./rt/big.bend as RB
 import ./spec/field.bend as O
@@ -280,6 +281,13 @@ law q_mul_inv:
   for x: S.Q
   for h: S.Q.eq(x, S.Q{S.Z0{}, S.XH{}}) -> Empty
   S.Q.eq(S.Q.mul(x, S.Q.inv(x)), S.Q{S.Zpos{S.XH{}}, S.XH{}})
+
+# LAW: reducing by the gcd keeps the rational. QRD.reduce (lib/qreduce.bend)
+# is untrusted code, like R.norm: its gcd and division are unproven, and it
+# checks its answer by multiplying back.
+law q_reduce:
+  for +x: S.Q
+  S.Q.eq(QRD.reduce(x), x)
 
 # The order of the rationals
 # --------------------------

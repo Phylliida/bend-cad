@@ -13,6 +13,7 @@ import ./lib/qring.bend as QR
 import ./lib/q.bend as LQ
 import ./lib/qord.bend as LQO
 import ./lib/qemb.bend as QE
+import ./lib/qreduce.bend as QRD
 import ./lib/fmat.bend as FM
 import ./lib/dmat.bend as DM
 import ./spec/mat.bend as M
@@ -115,6 +116,9 @@ def Laws.q_mul_cong(x, x2, y, y2, h1, h2):
 
 def Laws.q_neg_cong(x, x2, h):
   LQ.q_neg_cong(x, x2, h)
+
+def Laws.q_reduce(x):
+  QRD.reduce_ok(x)
 
 # The order
 
