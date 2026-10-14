@@ -7,7 +7,7 @@ import ../tests/chain_data.bend as D
 
 def blocks(p: PL.Plan<KI.dnum()>) -> List<&2, PL.PBlock<KI.dnum()>>:
   match p:
-    case PL.Plan{np, bs}:
+    case PL.Plan{vp, ep, np, bs}:
       bs
 
 def nth(bs: List<&2, PL.PBlock<KI.dnum()>>, i: Nat) -> PL.PBlock<KI.dnum()>:
@@ -35,9 +35,13 @@ def chk(p: PL.Plan<KI.dnum()>) -> Bool:
 
 def main() -> List<Bool>:
   [chk(D.ch_plan()),
-   chk(PL.Plan{4n, [b0()]}),
-   chk(PL.Plan{4n, [b1(), b0()]}),
-   chk(PL.Plan{3n, [b0(), b1()]}),
-   chk(PL.Plan{4n, [b0(), PL.PBlock{2n, [0n, 1n], cert(b1())}]}),
-   chk(PL.Plan{4n, [b0(), PL.PBlock{2n, [0n, 1n, 2n, 3n], cert(b1())}]}),
-   chk(PL.Plan{4n, [b0(), PL.PBlock{2n, [0n, 1n, 4n, 6n], cert(b1())}]})]
+   chk(PL.Plan{[0n, 1n, 2n, 3n, 4n, 5n, 6n, 7n], [0n, 1n, 2n, 3n], 4n, [b0()]}),
+   chk(PL.Plan{[0n, 1n, 2n, 3n, 4n, 5n, 6n, 7n], [0n, 1n, 2n, 3n], 4n, [b1(), b0()]}),
+   chk(PL.Plan{[0n, 1n, 2n, 3n, 4n, 5n, 6n, 7n], [0n, 1n, 2n, 3n], 3n, [b0(), b1()]}),
+   chk(PL.Plan{[0n, 1n, 2n, 3n, 4n, 5n, 6n, 7n], [0n, 1n, 2n, 3n], 4n, [b0(), PL.PBlock{2n, [0n, 1n], cert(b1())}]}),
+   chk(PL.Plan{[0n, 1n, 2n, 3n, 4n, 5n, 6n, 7n], [0n, 1n, 2n, 3n], 4n, [b0(), PL.PBlock{2n, [0n, 1n, 2n, 3n], cert(b1())}]}),
+   chk(PL.Plan{[0n, 1n, 2n, 3n, 4n, 5n, 6n, 7n], [0n, 1n, 2n, 3n], 4n, [b0(), PL.PBlock{2n, [0n, 1n, 4n, 6n], cert(b1())}]}),
+   PL.check(~KI.dnum(), D.ch2_eqs(), D.ch2_gc(), D.ch2_gr(), D.ch2_plan()),
+   PL.check(~KI.dnum(), D.ch2_eqs(), D.ch2_gc(), D.ch2_gr(), D.ch_plan()),
+   chk(PL.Plan{[0n, 1n, 2n, 3n, 4n, 5n, 6n], [0n, 1n, 2n, 3n], 4n, [b0(), b1()]}),
+   chk(PL.Plan{[0n, 1n, 2n, 3n, 4n, 5n, 6n, 7n], [0n, 1n, 3n], 4n, [b0(), b1()]})]

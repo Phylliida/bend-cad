@@ -12,10 +12,14 @@
 # box is the plan's box on the block's unknowns, each parameter's ball
 # contains the plan's box on that variable, the pinned variables have
 # radius 0, and blocks and equations run out together at the last
-# variable. (A system in another order is renumbered first; that layer is
-# separate.)
+# variable. A system in another order is read through two lists: vp names
+# the system's variables in block order (position i holds variable vp_i)
+# and ep its equations. Every variable and equation must appear in its
+# list, every listed one must exist, and every equation must use only the
+# box's variables; the lists need not be permutations.
 
 import Base
+import ../spec/num.bend as S
 import ../spec/ring.bend as E
 import ../spec/knum.bend as N
 import ../spec/cert.bend as C
@@ -28,8 +32,9 @@ import ./slope.bend as SL
 type PBlock<-K: N.Num> is Data:
   PBlock{n: Nat, pars: List<&2, Nat>, cert: C.Cert<K>}
 
+# vp lists the system's variables in block order, ep its equations
 type Plan<-K: N.Num> is Data:
-  Plan{np: Nat, blocks: List<&2, PBlock<K>>}
+  Plan{vp: List<&2, Nat>, ep: List<&2, Nat>, np: Nat, blocks: List<&2, PBlock<K>>}
 
 # Local numbering
 # ---------------
@@ -63,6 +68,25 @@ def pos(+v: Nat, pars: List<&2, Nat>) -> Nat:
       0n
     case Con{h, t}:
       pos.go(KA.nateq(v, h), pos(v, t))
+
+# Lists of numbers
+# ----------------
+
+def nlen(xs: List<&2, Nat>) -> Nat:
+  match xs:
+    case Nil{}:
+      0n
+    case Con{h, t}:
+      1n+nlen(t)
+
+def nthn(xs: List<&2, Nat>, k: Nat) -> Nat:
+  match xs k:
+    case Nil{} k:
+      0n
+    case Con{h, t} 0n:
+      h
+    case Con{h, t} 1n+j:
+      nthn(t, j)
 
 # variable v's local number in a block with offset o, n unknowns and
 # parameters pars: v - o for an unknown, n + its position for a parameter
@@ -227,7 +251,7 @@ def walk(~K: N.Num, +gc: N.KVec(~K), +gr: N.KVec(~K), bs: List<&2, PBlock<K>>, +
     case Con{PBlock{+n, +pars, +c}, t}:
       KA.band(block_ok(~K, gc, gr, es, o, n, pars, c), walk(~K, gc, gr, t, dropq(n, es), Nat.add(o, n)))
 
-# the plan checks against the system and the box
+# the plan checks against a system in block order
 def check.p(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +np: Nat, bs: List<&2, PBlock<K>>) -> Bool:
   KA.band(KA.nateq(KA.klen(~K, gr), KA.klen(~K, gc)),
   KA.band(KA.kvle(~K, Nil{}, gr),
@@ -235,10 +259,72 @@ def check.p(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K)
   KA.band(pinz(~K, np, gr),
   walk(~K, gc, gr, bs, eqs, np)))))
 
+# Reading a system in block order
+# -------------------------------
+
+# variable v renumbered to its position in vp
+def rnv(+vp: List<&2, Nat>, e: E.QExpr) -> E.QExpr:
+  match e:
+    case E.QVar{v}:
+      E.QVar{pos(v, vp)}
+    case E.QCst{q}:
+      E.QCst{q}
+    case E.QAdd{a, b}:
+      E.QAdd{rnv(vp, a), rnv(vp, b)}
+    case E.QSub{a, b}:
+      E.QSub{rnv(vp, a), rnv(vp, b)}
+    case E.QMul{a, b}:
+      E.QMul{rnv(vp, a), rnv(vp, b)}
+    case E.QNeg{a}:
+      E.QNeg{rnv(vp, a)}
+
+# equation j (0 past the end)
+def eqget(es: List<&2, E.QExpr>, j: Nat) -> E.QExpr:
+  match es j:
+    case Nil{} j:
+      E.QCst{S.Q{S.Z0{}, S.XH{}}}
+    case Con{e, t} 0n:
+      e
+    case Con{e, t} 1n+k:
+      eqget(t, k)
+
+# the system in block order: equation ep_k, renumbered, at position k
+def reorder(+vp: List<&2, Nat>, +es: List<&2, E.QExpr>, ep: List<&2, Nat>) -> List<&2, E.QExpr>:
+  match ep:
+    case Nil{}:
+      Nil{}
+    case Con{j, t}:
+      Con{rnv(vp, eqget(es, j)), reorder(vp, es, t)}
+
+# the box in block order
+def kperm(~K: N.Num, +u: N.KVec(~K), vp: List<&2, Nat>) -> N.KVec(~K):
+  match vp:
+    case Nil{}:
+      Nil{}
+    case Con{v, t}:
+      Con{KB.klook(~K, u, v), kperm(~K, u, t)}
+
+# each of the cnt numbers from i0 appears in xs
+def present(+xs: List<&2, Nat>, cnt: Nat, +i0: Nat) -> Bool:
+  match cnt:
+    case 0n:
+      True{}
+    case 1n+c:
+      KA.band(KA.natle(1n+pos(i0, xs), nlen(xs)), present(xs, c, 1n+i0))
+
+def check.r(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, bs: List<&2, PBlock<K>>) -> Bool:
+  KA.band(present(vp, KA.klen(~K, gc), 0n),
+  KA.band(pars_ok(KA.klen(~K, gc), vp),
+  KA.band(present(ep, CK.eqlen(eqs), 0n),
+  KA.band(pars_ok(CK.eqlen(eqs), ep),
+  KA.band(eqs_below(KA.klen(~K, gc), eqs),
+  check.p(~K, reorder(vp, eqs, ep), kperm(~K, gc, vp), kperm(~K, gr, vp), np, bs))))))
+
+# the plan checks against the system and the box
 def check(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), p: Plan<K>) -> Bool:
   match p:
-    case Plan{+np, bs}:
-      check.p(~K, eqs, gc, gr, np, bs)
+    case Plan{+vp, +ep, +np, bs}:
+      check.r(~K, eqs, gc, gr, vp, ep, np, bs)
 
 # Side conditions over the box
 # -----------------------------
@@ -261,22 +347,3 @@ def sides_ok(~K: N.Num, +box: List<&2, KB.KB<K>>, ss: List<&2, SK.Side>) -> Bool
 # every side condition holds over the box (radii not negative)
 def check_sides(~K: N.Num, +sides: List<&2, SK.Side>, +gc: N.KVec(~K), +gr: N.KVec(~K)) -> Bool:
   KA.band(KA.kvle(~K, Nil{}, gr), sides_ok(~K, CK.zipb(~K, gc, gr), sides))
-
-# Lists of numbers
-# ----------------
-
-def nlen(xs: List<&2, Nat>) -> Nat:
-  match xs:
-    case Nil{}:
-      0n
-    case Con{h, t}:
-      1n+nlen(t)
-
-def nthn(xs: List<&2, Nat>, k: Nat) -> Nat:
-  match xs k:
-    case Nil{} k:
-      0n
-    case Con{h, t} 0n:
-      h
-    case Con{h, t} 1n+j:
-      nthn(t, j)

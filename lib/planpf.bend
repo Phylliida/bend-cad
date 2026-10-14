@@ -844,12 +844,6 @@ def plan_exists.fin(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.Q
 def plan_exists.p(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +np: Nat, +bs: List<&2, PL.PBlock<K>>, +ok: {PL.check.p(~K, eqs, gc, gr, np, bs) == True{} : Bool}) -> Sigma<&2, &2, M.Vec(~F), x => M.Both(BX.inbox(~K, ~F, ~H, gc, gr, x), SK.Zeros(~F, x, eqs))>:
   plan_exists.fin(~K, ~F, ~H, eqs, gc, gr, p0(~K, ~F, ~H, gc, np), walk_ex(~K, ~F, ~R, ~H, gc, gr, bs, eqs, np, p0(~K, ~F, ~H, gc, np), cp_walk(~K, eqs, gc, gr, np, bs, ok), pbox0(~K, ~F, ~H, eqs, gc, gr, np, bs, ok), cp_len(~K, eqs, gc, gr, np, bs, ok)))
 
-# LAW plan_exists: in a complete ordered field, the box holds a solution
-def plan_exists(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), p: PL.Plan<K>, ok: {PL.check(~K, eqs, gc, gr, p) == True{} : Bool}) -> Sigma<&2, &2, M.Vec(~F), x => M.Both(BX.inbox(~K, ~F, ~H, gc, gr, x), SK.Zeros(~F, x, eqs))>:
-  match p:
-    case PL.Plan{+np, +bs}:
-      plan_exists.p(~K, ~F, ~R, ~H, eqs, gc, gr, np, bs, ok)
-
 # Uniqueness
 # ----------
 
@@ -1173,8 +1167,348 @@ def plan_unique.p(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QEx
   %ed : {C.app(~F, pz, d1) == C.app(~F, pz, _) : M.Vec(~F)}
   {==}
 
+# Systems in another order
+# ------------------------
+
+def cr_r0(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +h: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}) -> {KA.band(PL.present(vp, KA.klen(~K, gc), 0n), KA.band(PL.pars_ok(KA.klen(~K, gc), vp), KA.band(PL.present(ep, CK.eqlen(eqs), 0n), KA.band(PL.pars_ok(CK.eqlen(eqs), ep), KA.band(PL.eqs_below(KA.klen(~K, gc), eqs), PL.check.p(~K, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs)))))) == True{} : Bool}:
+  h
+
+def cr_r1(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +h: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}) -> {KA.band(PL.pars_ok(KA.klen(~K, gc), vp), KA.band(PL.present(ep, CK.eqlen(eqs), 0n), KA.band(PL.pars_ok(CK.eqlen(eqs), ep), KA.band(PL.eqs_below(KA.klen(~K, gc), eqs), PL.check.p(~K, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs))))) == True{} : Bool}:
+  KA.band_r(PL.present(vp, KA.klen(~K, gc), 0n), KA.band(PL.pars_ok(KA.klen(~K, gc), vp), KA.band(PL.present(ep, CK.eqlen(eqs), 0n), KA.band(PL.pars_ok(CK.eqlen(eqs), ep), KA.band(PL.eqs_below(KA.klen(~K, gc), eqs), PL.check.p(~K, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs))))), cr_r0(~K, eqs, gc, gr, vp, ep, np, bs, h))
+
+def cr_r2(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +h: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}) -> {KA.band(PL.present(ep, CK.eqlen(eqs), 0n), KA.band(PL.pars_ok(CK.eqlen(eqs), ep), KA.band(PL.eqs_below(KA.klen(~K, gc), eqs), PL.check.p(~K, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs)))) == True{} : Bool}:
+  KA.band_r(PL.pars_ok(KA.klen(~K, gc), vp), KA.band(PL.present(ep, CK.eqlen(eqs), 0n), KA.band(PL.pars_ok(CK.eqlen(eqs), ep), KA.band(PL.eqs_below(KA.klen(~K, gc), eqs), PL.check.p(~K, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs)))), cr_r1(~K, eqs, gc, gr, vp, ep, np, bs, h))
+
+def cr_r3(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +h: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}) -> {KA.band(PL.pars_ok(CK.eqlen(eqs), ep), KA.band(PL.eqs_below(KA.klen(~K, gc), eqs), PL.check.p(~K, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs))) == True{} : Bool}:
+  KA.band_r(PL.present(ep, CK.eqlen(eqs), 0n), KA.band(PL.pars_ok(CK.eqlen(eqs), ep), KA.band(PL.eqs_below(KA.klen(~K, gc), eqs), PL.check.p(~K, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs))), cr_r2(~K, eqs, gc, gr, vp, ep, np, bs, h))
+
+def cr_r4(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +h: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}) -> {KA.band(PL.eqs_below(KA.klen(~K, gc), eqs), PL.check.p(~K, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs)) == True{} : Bool}:
+  KA.band_r(PL.pars_ok(CK.eqlen(eqs), ep), KA.band(PL.eqs_below(KA.klen(~K, gc), eqs), PL.check.p(~K, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs)), cr_r3(~K, eqs, gc, gr, vp, ep, np, bs, h))
+
+def cr_r5(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +h: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}) -> {PL.check.p(~K, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs) == True{} : Bool}:
+  KA.band_r(PL.eqs_below(KA.klen(~K, gc), eqs), PL.check.p(~K, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs), cr_r4(~K, eqs, gc, gr, vp, ep, np, bs, h))
+
+def cr_vp_has(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +h: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}) -> {PL.present(vp, KA.klen(~K, gc), 0n) == True{} : Bool}:
+  KA.band_l(PL.present(vp, KA.klen(~K, gc), 0n), KA.band(PL.pars_ok(KA.klen(~K, gc), vp), KA.band(PL.present(ep, CK.eqlen(eqs), 0n), KA.band(PL.pars_ok(CK.eqlen(eqs), ep), KA.band(PL.eqs_below(KA.klen(~K, gc), eqs), PL.check.p(~K, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs))))), cr_r0(~K, eqs, gc, gr, vp, ep, np, bs, h))
+
+def cr_vp_lt(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +h: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}) -> {PL.pars_ok(KA.klen(~K, gc), vp) == True{} : Bool}:
+  KA.band_l(PL.pars_ok(KA.klen(~K, gc), vp), KA.band(PL.present(ep, CK.eqlen(eqs), 0n), KA.band(PL.pars_ok(CK.eqlen(eqs), ep), KA.band(PL.eqs_below(KA.klen(~K, gc), eqs), PL.check.p(~K, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs)))), cr_r1(~K, eqs, gc, gr, vp, ep, np, bs, h))
+
+def cr_ep_has(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +h: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}) -> {PL.present(ep, CK.eqlen(eqs), 0n) == True{} : Bool}:
+  KA.band_l(PL.present(ep, CK.eqlen(eqs), 0n), KA.band(PL.pars_ok(CK.eqlen(eqs), ep), KA.band(PL.eqs_below(KA.klen(~K, gc), eqs), PL.check.p(~K, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs))), cr_r2(~K, eqs, gc, gr, vp, ep, np, bs, h))
+
+def cr_ep_lt(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +h: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}) -> {PL.pars_ok(CK.eqlen(eqs), ep) == True{} : Bool}:
+  KA.band_l(PL.pars_ok(CK.eqlen(eqs), ep), KA.band(PL.eqs_below(KA.klen(~K, gc), eqs), PL.check.p(~K, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs)), cr_r3(~K, eqs, gc, gr, vp, ep, np, bs, h))
+
+def cr_below(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +h: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}) -> {PL.eqs_below(KA.klen(~K, gc), eqs) == True{} : Bool}:
+  KA.band_l(PL.eqs_below(KA.klen(~K, gc), eqs), PL.check.p(~K, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs), cr_r4(~K, eqs, gc, gr, vp, ep, np, bs, h))
+
+def cr_inner(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +h: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}) -> {PL.check.p(~K, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs) == True{} : Bool}:
+  cr_r5(~K, eqs, gc, gr, vp, ep, np, bs, h)
+
+def present_at(+xs: List<&2, Nat>, cnt: Nat, +i0: Nat, k: Nat, h: {PL.present(xs, cnt, i0) == True{} : Bool}, hk: {KA.natle(1n+k, cnt) == True{} : Bool}) -> {KA.natle(1n+PL.pos(Nat.add(k, i0), xs), PL.nlen(xs)) == True{} : Bool}:
+  match cnt k:
+    case 0n k:
+      FO.absurd({KA.natle(1n+PL.pos(Nat.add(k, i0), xs), PL.nlen(xs)) == True{} : Bool}, KA.ft(hk))
+    case 1n++c 0n:
+      KA.band_l(KA.natle(1n+PL.pos(i0, xs), PL.nlen(xs)), PL.present(xs, c, 1n+i0), h)
+    case 1n++c 1n++j:
+      %Equal.sym(Nat, 1n+Nat.add(j, i0), Nat.add(j, 1n+i0), LN.add_succ(j, i0)) : {KA.natle(1n+PL.pos(_, xs), PL.nlen(xs)) == True{} : Bool}
+      present_at(xs, c, 1n+i0, j, KA.band_r(KA.natle(1n+PL.pos(i0, xs), PL.nlen(xs)), PL.present(xs, c, 1n+i0), h), hk)
+
+# every v below cnt appears in xs
+def present0(+xs: List<&2, Nat>, +cnt: Nat, +v: Nat, h: {PL.present(xs, cnt, 0n) == True{} : Bool}, hv: {KA.natle(1n+v, cnt) == True{} : Bool}) -> {KA.natle(1n+PL.pos(v, xs), PL.nlen(xs)) == True{} : Bool}:
+  %Equal.sym(Nat, v, Nat.add(v, 0n), LN.add_zero(v)) : {KA.natle(1n+PL.pos(_, xs), PL.nlen(xs)) == True{} : Bool}
+  present_at(xs, cnt, 0n, v, h, hv)
+
+# every listed number is below o
+def pars_at(+o: Nat, xs: List<&2, Nat>, k: Nat, h: {PL.pars_ok(o, xs) == True{} : Bool}, hk: {KA.natle(1n+k, PL.nlen(xs)) == True{} : Bool}) -> {KA.natle(1n+PL.nthn(xs, k), o) == True{} : Bool}:
+  match xs k:
+    case Nil{} k:
+      FO.absurd({KA.natle(1n+PL.nthn(Nil{}, k), o) == True{} : Bool}, KA.ft(hk))
+    case Con{+v, +t} 0n:
+      KA.band_l(KA.natle(1n+v, o), PL.pars_ok(o, t), h)
+    case Con{+v, +t} 1n+j:
+      pars_at(o, t, j, KA.band_r(KA.natle(1n+v, o), PL.pars_ok(o, t), h), hk)
+
+def below_at(+m: Nat, es: List<&2, E.QExpr>, j: Nat, h: {PL.eqs_below(m, es) == True{} : Bool}, hj: {KA.natle(1n+j, CK.eqlen(es)) == True{} : Bool}) -> {SL.below(m, PL.eqget(es, j)) == True{} : Bool}:
+  match es j:
+    case Nil{} j:
+      FO.absurd({SL.below(m, PL.eqget(Nil{}, j)) == True{} : Bool}, KA.ft(hj))
+    case Con{+e, +t} 0n:
+      KA.band_l(SL.below(m, e), PL.eqs_below(m, t), h)
+    case Con{+e, +t} 1n+k:
+      below_at(m, t, k, KA.band_r(SL.below(m, e), PL.eqs_below(m, t), h), hj)
+
+def eqget_reorder(+vp: List<&2, Nat>, +es: List<&2, E.QExpr>, ep: List<&2, Nat>, k: Nat, hk: {KA.natle(1n+k, PL.nlen(ep)) == True{} : Bool}) -> {PL.eqget(PL.reorder(vp, es, ep), k) == PL.rnv(vp, PL.eqget(es, PL.nthn(ep, k))) : E.QExpr}:
+  match ep k:
+    case Nil{} k:
+      FO.absurd({PL.eqget(Nil{}, k) == PL.rnv(vp, PL.eqget(es, PL.nthn(Nil{}, k))) : E.QExpr}, KA.ft(hk))
+    case Con{j, t} 0n:
+      {==}
+    case Con{j, t} 1n+i:
+      eqget_reorder(vp, es, t, i, hk)
+
+def len_reorder(+vp: List<&2, Nat>, +es: List<&2, E.QExpr>, ep: List<&2, Nat>) -> {CK.eqlen(PL.reorder(vp, es, ep)) == PL.nlen(ep) : Nat}:
+  match ep:
+    case Nil{}:
+      {==}
+    case Con{j, t}:
+      %Equal.sym(Nat, CK.eqlen(PL.reorder(vp, es, t)), PL.nlen(t), len_reorder(vp, es, t)) : {1n+_ == 1n+PL.nlen(t) : Nat}
+      {==}
+
+def klook_kperm(~K: N.Num, +u: N.KVec(~K), vp: List<&2, Nat>, k: Nat, hk: {KA.natle(1n+k, PL.nlen(vp)) == True{} : Bool}) -> {KB.klook(~K, PL.kperm(~K, u, vp), k) == KB.klook(~K, u, PL.nthn(vp, k)) : N.NC(K)}:
+  match vp k:
+    case Nil{} k:
+      FO.absurd({KB.klook(~K, Nil{}, k) == KB.klook(~K, u, PL.nthn(Nil{}, k)) : N.NC(K)}, KA.ft(hk))
+    case Con{v, t} 0n:
+      {==}
+    case Con{v, t} 1n+i:
+      klook_kperm(~K, u, t, i, hk)
+
+def klen_kperm(~K: N.Num, +u: N.KVec(~K), vp: List<&2, Nat>) -> {KA.klen(~K, PL.kperm(~K, u, vp)) == PL.nlen(vp) : Nat}:
+  match vp:
+    case Nil{}:
+      {==}
+    case Con{v, t}:
+      %Equal.sym(Nat, KA.klen(~K, PL.kperm(~K, u, t)), PL.nlen(t), klen_kperm(~K, u, t)) : {1n+_ == 1n+PL.nlen(t) : Nat}
+      {==}
+
+# renaming by positions in vp preserves evaluation, when x2 at v's position
+# is x at v for every v below m
+def ren_eval(~F: O.OField, ~x: M.Vec(~F), ~x2: M.Vec(~F), ~vp: List<&2, Nat>, ~m: Nat, ~f: @v: Nat -> {KA.natle(1n+v, m) == True{} : Bool} -> {O.lookup(~F, x2, PL.pos(v, vp)) == O.lookup(~F, x, v) : O.C(F)}, e: E.QExpr, +hb: {SL.below(m, e) == True{} : Bool}) -> {O.eval(~F, x2, PL.rnv(vp, e)) == O.eval(~F, x, e) : O.C(F)}:
+  match e:
+    case E.QVar{+v}:
+      f(v, hb)
+    case E.QCst{q}:
+      {==}
+    case E.QAdd{+a, +b}:
+      cadd(~F, O.eval(~F, x2, PL.rnv(vp, a)), O.eval(~F, x, a), O.eval(~F, x2, PL.rnv(vp, b)), O.eval(~F, x, b), ren_eval(~F, ~x, ~x2, ~vp, ~m, ~f, a, KA.band_l(SL.below(m, a), SL.below(m, b), hb)), ren_eval(~F, ~x, ~x2, ~vp, ~m, ~f, b, KA.band_r(SL.below(m, a), SL.below(m, b), hb)))
+    case E.QSub{+a, +b}:
+      csub(~F, O.eval(~F, x2, PL.rnv(vp, a)), O.eval(~F, x, a), O.eval(~F, x2, PL.rnv(vp, b)), O.eval(~F, x, b), ren_eval(~F, ~x, ~x2, ~vp, ~m, ~f, a, KA.band_l(SL.below(m, a), SL.below(m, b), hb)), ren_eval(~F, ~x, ~x2, ~vp, ~m, ~f, b, KA.band_r(SL.below(m, a), SL.below(m, b), hb)))
+    case E.QMul{+a, +b}:
+      cmul(~F, O.eval(~F, x2, PL.rnv(vp, a)), O.eval(~F, x, a), O.eval(~F, x2, PL.rnv(vp, b)), O.eval(~F, x, b), ren_eval(~F, ~x, ~x2, ~vp, ~m, ~f, a, KA.band_l(SL.below(m, a), SL.below(m, b), hb)), ren_eval(~F, ~x, ~x2, ~vp, ~m, ~f, b, KA.band_r(SL.below(m, a), SL.below(m, b), hb)))
+    case E.QNeg{+a}:
+      cneg(~F, O.eval(~F, x2, PL.rnv(vp, a)), O.eval(~F, x, a), ren_eval(~F, ~x, ~x2, ~vp, ~m, ~f, a, hb))
+
+# Zeros by index
+# --------------
+
+def zeros_at(~F: O.OField, +x: M.Vec(~F), es: List<&2, E.QExpr>, j: Nat, h: SK.Zeros(~F, x, es), hj: {KA.natle(1n+j, CK.eqlen(es)) == True{} : Bool}) -> {O.eval(~F, x, PL.eqget(es, j)) == O.zero(F) : O.C(F)}:
+  match es j:
+    case Nil{} j:
+      FO.absurd({O.eval(~F, x, PL.eqget(Nil{}, j)) == O.zero(F) : O.C(F)}, KA.ft(hj))
+    case Con{+e, +t} 0n:
+      (h0, ht) = h
+      h0
+    case Con{+e, +t} 1n+k:
+      (h0, ht) = h
+      zeros_at(~F, x, t, k, ht, hj)
+
+# equations cnt from i0 vanish
+def zall(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, cnt: Nat, +i0: Nat) -> Data:
+  match cnt:
+    case 0n:
+      Unit
+    case 1n+c:
+      M.Both({O.eval(~F, x, PL.eqget(es, i0)) == O.zero(F) : O.C(F)}, zall(~F, x, es, c, 1n+i0))
+
+def zeros_build(~F: O.OField, ~x: M.Vec(~F), ~es: List<&2, E.QExpr>, ~f: @j: Nat -> {KA.natle(1n+j, CK.eqlen(es)) == True{} : Bool} -> {O.eval(~F, x, PL.eqget(es, j)) == O.zero(F) : O.C(F)}, cnt: Nat, +i0: Nat, +e: {Nat.add(cnt, i0) == CK.eqlen(es) : Nat}) -> zall(~F, x, es, cnt, i0):
+  match cnt:
+    case 0n:
+      Unit{}
+    case 1n++c:
+      (f(i0, BA.natle_of(c, i0, CK.eqlen(es), e)), zeros_build(~F, ~x, ~es, ~f, c, 1n+i0, BA.lk_next(c, i0, CK.eqlen(es), e)))
+
+def zall_shift(~F: O.OField, +x: M.Vec(~F), +e: E.QExpr, +t: List<&2, E.QExpr>, cnt: Nat, +i0: Nat, h: zall(~F, x, Con{e, t}, cnt, 1n+i0)) -> zall(~F, x, t, cnt, i0):
+  match cnt:
+    case 0n:
+      Unit{}
+    case 1n+c:
+      (h0, hs) = h
+      (h0, zall_shift(~F, x, e, t, c, 1n+i0, hs))
+
+def zeros_of_zall(~F: O.OField, +x: M.Vec(~F), es: List<&2, E.QExpr>, h: zall(~F, x, es, CK.eqlen(es), 0n)) -> SK.Zeros(~F, x, es):
+  match es:
+    case Nil{}:
+      Unit{}
+    case Con{+e, +t}:
+      (h0, hs) = h
+      (h0, zeros_of_zall(~F, x, t, zall_shift(~F, x, e, t, CK.eqlen(t), 0n, hs)))
+
+# The assignment in the original order
+# ------------------------------------
+
+# x2 read back: variable v of the system is x2 at v's position in vp
+def upm(~F: O.OField, +x2: M.Vec(~F), +vp: List<&2, Nat>, cnt: Nat, +i0: Nat) -> M.Vec(~F):
+  match cnt:
+    case 0n:
+      Nil{}
+    case 1n+c:
+      Con{O.lookup(~F, x2, PL.pos(i0, vp)), upm(~F, x2, vp, c, 1n+i0)}
+
+def len_upm(~F: O.OField, +x2: M.Vec(~F), +vp: List<&2, Nat>, cnt: Nat, +i0: Nat) -> {M.len(~F, upm(~F, x2, vp, cnt, i0)) == cnt : Nat}:
+  match cnt:
+    case 0n:
+      {==}
+    case 1n++c:
+      %Equal.sym(Nat, M.len(~F, upm(~F, x2, vp, c, 1n+i0)), c, len_upm(~F, x2, vp, c, 1n+i0)) : {1n+_ == 1n+c : Nat}
+      {==}
+
+def look_upm(~F: O.OField, +x2: M.Vec(~F), +vp: List<&2, Nat>, cnt: Nat, +i0: Nat, k: Nat, hk: {KA.natle(1n+k, cnt) == True{} : Bool}) -> {O.lookup(~F, upm(~F, x2, vp, cnt, i0), k) == O.lookup(~F, x2, PL.pos(Nat.add(k, i0), vp)) : O.C(F)}:
+  match cnt k:
+    case 0n k:
+      FO.absurd({O.zero(F) == O.lookup(~F, x2, PL.pos(Nat.add(k, i0), vp)) : O.C(F)}, KA.ft(hk))
+    case 1n+c 0n:
+      {==}
+    case 1n+c 1n++j:
+      %Equal.sym(Nat, 1n+Nat.add(j, i0), Nat.add(j, 1n+i0), LN.add_succ(j, i0)) : {O.lookup(~F, upm(~F, x2, vp, c, 1n+i0), j) == O.lookup(~F, x2, PL.pos(_, vp)) : O.C(F)}
+      look_upm(~F, x2, vp, c, 1n+i0, j, hk)
+
+def look_upm0(~F: O.OField, +x2: M.Vec(~F), +vp: List<&2, Nat>, +cnt: Nat, +v: Nat, hv: {KA.natle(1n+v, cnt) == True{} : Bool}) -> {O.lookup(~F, x2, PL.pos(v, vp)) == O.lookup(~F, upm(~F, x2, vp, cnt, 0n), v) : O.C(F)}:
+  %Equal.sym(Nat, v, Nat.add(v, 0n), LN.add_zero(v)) : {O.lookup(~F, x2, PL.pos(_, vp)) == O.lookup(~F, upm(~F, x2, vp, cnt, 0n), v) : O.C(F)}
+  Equal.sym(O.C(F), O.lookup(~F, upm(~F, x2, vp, cnt, 0n), v), O.lookup(~F, x2, PL.pos(Nat.add(v, 0n), vp)), look_upm(~F, x2, vp, cnt, 0n, v, hv))
+
+def klook_rw(~K: N.Num, +u: N.KVec(~K), +i: Nat, +j: Nat, e: {i == j : Nat}) -> {KB.klook(~K, u, i) == KB.klook(~K, u, j) : N.NC(K)}:
+  %e : {KB.klook(~K, u, i) == KB.klook(~K, u, _) : N.NC(K)}
+  {==}
+
+def eval_rw(~F: O.OField, +x: M.Vec(~F), +a: E.QExpr, +b: E.QExpr, e: {a == b : E.QExpr}) -> {O.eval(~F, x, a) == O.eval(~F, x, b) : O.C(F)}:
+  %e : {O.eval(~F, x, a) == O.eval(~F, x, _) : O.C(F)}
+  {==}
+
+def rnv_rw(+vp: List<&2, Nat>, +es: List<&2, E.QExpr>, +i: Nat, +j: Nat, e: {i == j : Nat}) -> {PL.rnv(vp, PL.eqget(es, i)) == PL.rnv(vp, PL.eqget(es, j)) : E.QExpr}:
+  %e : {PL.rnv(vp, PL.eqget(es, i)) == PL.rnv(vp, PL.eqget(es, _)) : E.QExpr}
+  {==}
+
+# the reordered box at position k is the box at variable vp_k
+def kperm_at(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +u: N.KVec(~K), +vp: List<&2, Nat>, +k: Nat, hk: {KA.natle(1n+k, PL.nlen(vp)) == True{} : Bool}) -> {O.lookup(~F, N.ofkv(~K, ~F, ~H, PL.kperm(~K, u, vp)), k) == O.lookup(~F, N.ofkv(~K, ~F, ~H, u), PL.nthn(vp, k)) : O.C(F)}:
+  Equal.trans(O.C(F), O.lookup(~F, N.ofkv(~K, ~F, ~H, PL.kperm(~K, u, vp)), k), N.emap(K, F, H, KB.klook(~K, PL.kperm(~K, u, vp), k)), O.lookup(~F, N.ofkv(~K, ~F, ~H, u), PL.nthn(vp, k)), Equal.sym(O.C(F), N.emap(K, F, H, KB.klook(~K, PL.kperm(~K, u, vp), k)), O.lookup(~F, N.ofkv(~K, ~F, ~H, PL.kperm(~K, u, vp)), k), CP.klook_ofk(~K, ~F, ~H, PL.kperm(~K, u, vp), k)),
+    Equal.trans(O.C(F), N.emap(K, F, H, KB.klook(~K, PL.kperm(~K, u, vp), k)), N.emap(K, F, H, KB.klook(~K, u, PL.nthn(vp, k))), O.lookup(~F, N.ofkv(~K, ~F, ~H, u), PL.nthn(vp, k)), emap_rw(~K, ~F, ~H, KB.klook(~K, PL.kperm(~K, u, vp), k), KB.klook(~K, u, PL.nthn(vp, k)), klook_kperm(~K, u, vp, k, hk)), CP.klook_ofk(~K, ~F, ~H, u, PL.nthn(vp, k))))
+
+def look_vec_rw(~F: O.OField, +x: M.Vec(~F), +i: Nat, +j: Nat, e: {i == j : Nat}) -> {O.lookup(~F, x, i) == O.lookup(~F, x, j) : O.C(F)}:
+  %e : {O.lookup(~F, x, i) == O.lookup(~F, x, _) : O.C(F)}
+  {==}
+
+# |a - c| <= r carried along equalities of a, c and r
+def btr(~F: O.OField, +a: O.C(F), +a2: O.C(F), +c: O.C(F), +c2: O.C(F), +r: O.C(F), +r2: O.C(F), ea: {a == a2 : O.C(F)}, ec: {c == c2 : O.C(F)}, er: {r == r2 : O.C(F)}, h: M.bnd(~F, O.sub(~F, a, c), r)) -> M.bnd(~F, O.sub(~F, a2, c2), r2):
+  BA.bnd_rw_s(~F, O.sub(~F, a2, c2), r, r2, er, FV.bval(~F, O.sub(~F, a, c), O.sub(~F, a2, c2), r, csub(~F, a, a2, c, c2, ea, ec), h))
+
+# the entry of a box bound, as |x_i - c_i| <= r_i
+def ent(~F: O.OField, +x: M.Vec(~F), +c: M.Vec(~F), +r: M.Vec(~F), +i: Nat, +n: Nat, h: C.rbnd(~F, C.vsub(~F, x, c), r), hl: {M.len(~F, C.vsub(~F, x, c)) == n : Nat}, hi: {KA.natle(1n+i, n) == True{} : Bool}) -> M.bnd(~F, O.sub(~F, O.lookup(~F, x, i), O.lookup(~F, c, i)), O.lookup(~F, r, i)):
+  FV.bval(~F, O.lookup(~F, C.vsub(~F, x, c), i), O.sub(~F, O.lookup(~F, x, i), O.lookup(~F, c, i)), O.lookup(~F, r, i), Equal.sym(O.C(F), O.sub(~F, O.lookup(~F, x, i), O.lookup(~F, c, i)), O.lookup(~F, C.vsub(~F, x, c), i), SL.lookup_vsub(~F, x, c, i)), BA.rbnd_look(~F, C.vsub(~F, x, c), r, h, n, hl, i, hi))
+
+# and back
+def unent(~F: O.OField, +x: M.Vec(~F), +c: M.Vec(~F), +r: M.Vec(~F), +i: Nat, h: M.bnd(~F, O.sub(~F, O.lookup(~F, x, i), O.lookup(~F, c, i)), O.lookup(~F, r, i))) -> M.bnd(~F, O.lookup(~F, C.vsub(~F, x, c), i), O.lookup(~F, r, i)):
+  FV.bval(~F, O.sub(~F, O.lookup(~F, x, i), O.lookup(~F, c, i)), O.lookup(~F, C.vsub(~F, x, c), i), O.lookup(~F, r, i), SL.lookup_vsub(~F, x, c, i), h)
+
+def inbox_lr(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +gc: N.KVec(~K), +gr: N.KVec(~K), +x: M.Vec(~F), +h: BX.inbox(~K, ~F, ~H, gc, gr, x)) -> {M.len(~F, C.vsub(~F, x, N.ofkv(~K, ~F, ~H, gc))) == KA.klen(~K, gc) : Nat}:
+  +lg = CP.len_ofkv(~K, ~F, ~H, gc)
+  CP.len_vsub(~F, x, N.ofkv(~K, ~F, ~H, gc), KA.klen(~K, gc), Equal.trans(Nat, M.len(~F, x), M.len(~F, N.ofkv(~K, ~F, ~H, gc)), KA.klen(~K, gc), inbox_len(~K, ~F, ~H, gc, gr, x, h), lg), lg)
+
+# equation j of the system vanishes at the read-back assignment
+def ex_zero(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +ok: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}, +x2: M.Vec(~F), +hz: SK.Zeros(~F, x2, PL.reorder(vp, eqs, ep)), +j: Nat, +hj: {KA.natle(1n+j, CK.eqlen(eqs)) == True{} : Bool}) -> {O.eval(~F, upm(~F, x2, vp, KA.klen(~K, gc), 0n), PL.eqget(eqs, j)) == O.zero(F) : O.C(F)}:
+  +nv = KA.klen(~K, gc)
+  +x = upm(~F, x2, vp, nv, 0n)
+  +e2 = PL.reorder(vp, eqs, ep)
+  +k = PL.pos(j, ep)
+  +hk = present0(ep, CK.eqlen(eqs), j, cr_ep_has(~K, eqs, gc, gr, vp, ep, np, bs, ok), hj)
+  +eq1 = Equal.trans(E.QExpr, PL.eqget(e2, k), PL.rnv(vp, PL.eqget(eqs, PL.nthn(ep, k))), PL.rnv(vp, PL.eqget(eqs, j)), eqget_reorder(vp, eqs, ep, k, hk), rnv_rw(vp, eqs, PL.nthn(ep, k), j, pos_nth(j, ep, hk)))
+  +z0 = zeros_at(~F, x2, e2, k, hz, natle_rw(1n+k, PL.nlen(ep), CK.eqlen(e2), Equal.sym(Nat, CK.eqlen(e2), PL.nlen(ep), len_reorder(vp, eqs, ep)), hk))
+  +ren = ren_eval(~F, ~x, ~x2, ~vp, ~nv, ~(v => hv => look_upm0(~F, x2, vp, nv, v, hv)), PL.eqget(eqs, j), below_at(nv, eqs, j, cr_below(~K, eqs, gc, gr, vp, ep, np, bs, ok), hj))
+  Equal.trans(O.C(F), O.eval(~F, x, PL.eqget(eqs, j)), O.eval(~F, x2, PL.eqget(e2, k)), O.zero(F), Equal.trans(O.C(F), O.eval(~F, x, PL.eqget(eqs, j)), O.eval(~F, x2, PL.rnv(vp, PL.eqget(eqs, j))), O.eval(~F, x2, PL.eqget(e2, k)), Equal.sym(O.C(F), O.eval(~F, x2, PL.rnv(vp, PL.eqget(eqs, j))), O.eval(~F, x, PL.eqget(eqs, j)), ren), Equal.sym(O.C(F), O.eval(~F, x2, PL.eqget(e2, k)), O.eval(~F, x2, PL.rnv(vp, PL.eqget(eqs, j))), eval_rw(~F, x2, PL.eqget(e2, k), PL.rnv(vp, PL.eqget(eqs, j)), eq1))), z0)
+
+# coordinate v of the read-back assignment lies in the box
+def ex_box(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +ok: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}, +x2: M.Vec(~F), +hb: BX.inbox(~K, ~F, ~H, PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), x2), +v: Nat, +hv: {KA.natle(1n+v, KA.klen(~K, gc)) == True{} : Bool}) -> M.bnd(~F, O.lookup(~F, C.vsub(~F, upm(~F, x2, vp, KA.klen(~K, gc), 0n), N.ofkv(~K, ~F, ~H, gc)), v), O.lookup(~F, N.ofkv(~K, ~F, ~H, gr), v)):
+  +nv = KA.klen(~K, gc)
+  +x = upm(~F, x2, vp, nv, 0n)
+  +k = PL.pos(v, vp)
+  +hk = present0(vp, nv, v, cr_vp_has(~K, eqs, gc, gr, vp, ep, np, bs, ok), hv)
+  +gc2 = PL.kperm(~K, gc, vp)
+  +gr2 = PL.kperm(~K, gr, vp)
+  +hl2 = Equal.trans(Nat, M.len(~F, C.vsub(~F, x2, N.ofkv(~K, ~F, ~H, gc2))), KA.klen(~K, gc2), PL.nlen(vp), inbox_lr(~K, ~F, ~H, gc2, gr2, x2, hb), klen_kperm(~K, gc, vp))
+  +b0 = ent(~F, x2, N.ofkv(~K, ~F, ~H, gc2), N.ofkv(~K, ~F, ~H, gr2), k, PL.nlen(vp), inbox_rb(~K, ~F, ~H, gc2, gr2, x2, hb), hl2, hk)
+  +eg = Equal.trans(O.C(F), O.lookup(~F, N.ofkv(~K, ~F, ~H, gc2), k), O.lookup(~F, N.ofkv(~K, ~F, ~H, gc), PL.nthn(vp, k)), O.lookup(~F, N.ofkv(~K, ~F, ~H, gc), v), kperm_at(~K, ~F, ~H, gc, vp, k, hk), look_vec_rw(~F, N.ofkv(~K, ~F, ~H, gc), PL.nthn(vp, k), v, pos_nth(v, vp, hk)))
+  +er = Equal.trans(O.C(F), O.lookup(~F, N.ofkv(~K, ~F, ~H, gr2), k), O.lookup(~F, N.ofkv(~K, ~F, ~H, gr), PL.nthn(vp, k)), O.lookup(~F, N.ofkv(~K, ~F, ~H, gr), v), kperm_at(~K, ~F, ~H, gr, vp, k, hk), look_vec_rw(~F, N.ofkv(~K, ~F, ~H, gr), PL.nthn(vp, k), v, pos_nth(v, vp, hk)))
+  unent(~F, x, N.ofkv(~K, ~F, ~H, gc), N.ofkv(~K, ~F, ~H, gr), v, btr(~F, O.lookup(~F, x2, k), O.lookup(~F, x, v), O.lookup(~F, N.ofkv(~K, ~F, ~H, gc2), k), O.lookup(~F, N.ofkv(~K, ~F, ~H, gc), v), O.lookup(~F, N.ofkv(~K, ~F, ~H, gr2), k), O.lookup(~F, N.ofkv(~K, ~F, ~H, gr), v), look_upm0(~F, x2, vp, nv, v, hv), eg, er, b0))
+
+def plan_exists.r2(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +ok: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}, s: Sigma<&2, &2, M.Vec(~F), x => M.Both(BX.inbox(~K, ~F, ~H, PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), x), SK.Zeros(~F, x, PL.reorder(vp, eqs, ep)))>) -> Sigma<&2, &2, M.Vec(~F), x => M.Both(BX.inbox(~K, ~F, ~H, gc, gr, x), SK.Zeros(~F, x, eqs))>:
+  (+x2, h) = s
+  (+hb, hz) = h
+  +nv = KA.klen(~K, gc)
+  +x = upm(~F, x2, vp, nv, 0n)
+  +d = C.vsub(~F, x, N.ofkv(~K, ~F, ~H, gc))
+  +hlx = Equal.trans(Nat, M.len(~F, x), nv, M.len(~F, N.ofkv(~K, ~F, ~H, gc)), len_upm(~F, x2, vp, nv, 0n), Equal.sym(Nat, M.len(~F, N.ofkv(~K, ~F, ~H, gc)), nv, CP.len_ofkv(~K, ~F, ~H, gc)))
+  +hld = CP.len_vsub(~F, x, N.ofkv(~K, ~F, ~H, gc), nv, len_upm(~F, x2, vp, nv, 0n), CP.len_ofkv(~K, ~F, ~H, gc))
+  (x, ((hlx, BA.rbnd_of_lk(~F, d, nv, N.ofkv(~K, ~F, ~H, gr), hld, BA.lk_build(~F, ~d, ~N.ofkv(~K, ~F, ~H, gr), ~nv, ~(v => hv => ex_box(~K, ~F, ~H, eqs, gc, gr, vp, ep, np, bs, ok, x2, hb, v, hv)), nv, 0n, BA.lk_end(nv)))),
+       zeros_of_zall(~F, x, eqs, zeros_build(~F, ~x, ~eqs, ~(j => hj => ex_zero(~K, ~F, ~H, eqs, gc, gr, vp, ep, np, bs, ok, x2, hz, j, hj)), CK.eqlen(eqs), 0n, BA.lk_end(CK.eqlen(eqs))))))
+
+def plan_exists.r(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +ok: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}) -> Sigma<&2, &2, M.Vec(~F), x => M.Both(BX.inbox(~K, ~F, ~H, gc, gr, x), SK.Zeros(~F, x, eqs))>:
+  plan_exists.r2(~K, ~F, ~H, eqs, gc, gr, vp, ep, np, bs, ok, plan_exists.p(~K, ~F, ~R, ~H, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs, cr_inner(~K, eqs, gc, gr, vp, ep, np, bs, ok)))
+
+# the reordered assignment's coordinate k lies in the reordered box
+def un_box(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +ok: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}, +x: M.Vec(~F), +hb: BX.inbox(~K, ~F, ~H, gc, gr, x), +k: Nat, +hk: {KA.natle(1n+k, PL.nlen(vp)) == True{} : Bool}) -> M.bnd(~F, O.lookup(~F, C.vsub(~F, zmap(~F, x, vp), N.ofkv(~K, ~F, ~H, PL.kperm(~K, gc, vp))), k), O.lookup(~F, N.ofkv(~K, ~F, ~H, PL.kperm(~K, gr, vp)), k)):
+  +v = PL.nthn(vp, k)
+  +hv = pars_at(KA.klen(~K, gc), vp, k, cr_vp_lt(~K, eqs, gc, gr, vp, ep, np, bs, ok), hk)
+  +b0 = ent(~F, x, N.ofkv(~K, ~F, ~H, gc), N.ofkv(~K, ~F, ~H, gr), v, KA.klen(~K, gc), inbox_rb(~K, ~F, ~H, gc, gr, x, hb), inbox_lr(~K, ~F, ~H, gc, gr, x, hb), hv)
+  unent(~F, zmap(~F, x, vp), N.ofkv(~K, ~F, ~H, PL.kperm(~K, gc, vp)), N.ofkv(~K, ~F, ~H, PL.kperm(~K, gr, vp)), k, btr(~F, O.lookup(~F, x, v), O.lookup(~F, zmap(~F, x, vp), k), O.lookup(~F, N.ofkv(~K, ~F, ~H, gc), v), O.lookup(~F, N.ofkv(~K, ~F, ~H, PL.kperm(~K, gc, vp)), k), O.lookup(~F, N.ofkv(~K, ~F, ~H, gr), v), O.lookup(~F, N.ofkv(~K, ~F, ~H, PL.kperm(~K, gr, vp)), k), Equal.sym(O.C(F), O.lookup(~F, zmap(~F, x, vp), k), O.lookup(~F, x, v), look_zmap(~F, x, vp, k, hk)), Equal.sym(O.C(F), O.lookup(~F, N.ofkv(~K, ~F, ~H, PL.kperm(~K, gc, vp)), k), O.lookup(~F, N.ofkv(~K, ~F, ~H, gc), v), kperm_at(~K, ~F, ~H, gc, vp, k, hk)), Equal.sym(O.C(F), O.lookup(~F, N.ofkv(~K, ~F, ~H, PL.kperm(~K, gr, vp)), k), O.lookup(~F, N.ofkv(~K, ~F, ~H, gr), v), kperm_at(~K, ~F, ~H, gr, vp, k, hk)), b0))
+
+# the reordered assignment, at v's position, is v's value
+def zm_pos(~K: N.Num, ~F: O.OField, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +ok: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}, +x: M.Vec(~F), +v: Nat, +hv: {KA.natle(1n+v, KA.klen(~K, gc)) == True{} : Bool}) -> {O.lookup(~F, zmap(~F, x, vp), PL.pos(v, vp)) == O.lookup(~F, x, v) : O.C(F)}:
+  +hk = present0(vp, KA.klen(~K, gc), v, cr_vp_has(~K, eqs, gc, gr, vp, ep, np, bs, ok), hv)
+  Equal.trans(O.C(F), O.lookup(~F, zmap(~F, x, vp), PL.pos(v, vp)), O.lookup(~F, x, PL.nthn(vp, PL.pos(v, vp))), O.lookup(~F, x, v), look_zmap(~F, x, vp, PL.pos(v, vp), hk), look_vec_rw(~F, x, PL.nthn(vp, PL.pos(v, vp)), v, pos_nth(v, vp, hk)))
+
+# equation k of the reordered system vanishes at the reordered assignment
+def un_zero(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +ok: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}, +x: M.Vec(~F), +hz: SK.Zeros(~F, x, eqs), +k: Nat, +hk: {KA.natle(1n+k, CK.eqlen(PL.reorder(vp, eqs, ep))) == True{} : Bool}) -> {O.eval(~F, zmap(~F, x, vp), PL.eqget(PL.reorder(vp, eqs, ep), k)) == O.zero(F) : O.C(F)}:
+  +nv = KA.klen(~K, gc)
+  +x2 = zmap(~F, x, vp)
+  +hk2 = natle_rw(1n+k, CK.eqlen(PL.reorder(vp, eqs, ep)), PL.nlen(ep), len_reorder(vp, eqs, ep), hk)
+  +j = PL.nthn(ep, k)
+  +hj = pars_at(CK.eqlen(eqs), ep, k, cr_ep_lt(~K, eqs, gc, gr, vp, ep, np, bs, ok), hk2)
+  +ren = ren_eval(~F, ~x, ~x2, ~vp, ~nv, ~(v => hv => zm_pos(~K, ~F, eqs, gc, gr, vp, ep, np, bs, ok, x, v, hv)), PL.eqget(eqs, j), below_at(nv, eqs, j, cr_below(~K, eqs, gc, gr, vp, ep, np, bs, ok), hj))
+  Equal.trans(O.C(F), O.eval(~F, x2, PL.eqget(PL.reorder(vp, eqs, ep), k)), O.eval(~F, x2, PL.rnv(vp, PL.eqget(eqs, j))), O.zero(F), eval_rw(~F, x2, PL.eqget(PL.reorder(vp, eqs, ep), k), PL.rnv(vp, PL.eqget(eqs, j)), eqget_reorder(vp, eqs, ep, k, hk2)), Equal.trans(O.C(F), O.eval(~F, x2, PL.rnv(vp, PL.eqget(eqs, j))), O.eval(~F, x, PL.eqget(eqs, j)), O.zero(F), ren, zeros_at(~F, x, eqs, j, hz, hj)))
+
+def un_in(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +ok: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}, +x: M.Vec(~F), +hb: BX.inbox(~K, ~F, ~H, gc, gr, x)) -> BX.inbox(~K, ~F, ~H, PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), zmap(~F, x, vp)):
+  +x2 = zmap(~F, x, vp)
+  +gc2 = N.ofkv(~K, ~F, ~H, PL.kperm(~K, gc, vp))
+  +lg2 = Equal.trans(Nat, M.len(~F, gc2), KA.klen(~K, PL.kperm(~K, gc, vp)), PL.nlen(vp), CP.len_ofkv(~K, ~F, ~H, PL.kperm(~K, gc, vp)), klen_kperm(~K, gc, vp))
+  +d = C.vsub(~F, x2, gc2)
+  (Equal.trans(Nat, M.len(~F, x2), PL.nlen(vp), M.len(~F, gc2), len_zmap(~F, x, vp), Equal.sym(Nat, M.len(~F, gc2), PL.nlen(vp), lg2)),
+   BA.rbnd_of_lk(~F, d, PL.nlen(vp), N.ofkv(~K, ~F, ~H, PL.kperm(~K, gr, vp)), CP.len_vsub(~F, x2, gc2, PL.nlen(vp), len_zmap(~F, x, vp), lg2), BA.lk_build(~F, ~d, ~N.ofkv(~K, ~F, ~H, PL.kperm(~K, gr, vp)), ~PL.nlen(vp), ~(k => hk => un_box(~K, ~F, ~H, eqs, gc, gr, vp, ep, np, bs, ok, x, hb, k, hk)), PL.nlen(vp), 0n, BA.lk_end(PL.nlen(vp)))))
+
+def un_zs(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +ok: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}, +x: M.Vec(~F), +hz: SK.Zeros(~F, x, eqs)) -> SK.Zeros(~F, zmap(~F, x, vp), PL.reorder(vp, eqs, ep)):
+  +x2 = zmap(~F, x, vp)
+  +e2 = PL.reorder(vp, eqs, ep)
+  zeros_of_zall(~F, x2, e2, zeros_build(~F, ~x2, ~e2, ~(k => hk => un_zero(~K, ~F, ~H, eqs, gc, gr, vp, ep, np, bs, ok, x, hz, k, hk)), CK.eqlen(e2), 0n, BA.lk_end(CK.eqlen(e2))))
+
+def lookv_rw(~F: O.OField, +x: M.Vec(~F), +y: M.Vec(~F), +i: Nat, e: {x == y : M.Vec(~F)}) -> {O.lookup(~F, x, i) == O.lookup(~F, y, i) : O.C(F)}:
+  %e : {O.lookup(~F, x, i) == O.lookup(~F, _, i) : O.C(F)}
+  {==}
+
+# coordinate v agrees, from equal reordered assignments
+def un_eq(~K: N.Num, ~F: O.OField, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +ok: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}, +x1: M.Vec(~F), +x2: M.Vec(~F), +e: {zmap(~F, x1, vp) == zmap(~F, x2, vp) : M.Vec(~F)}, +v: Nat, +hv: {KA.natle(1n+v, KA.klen(~K, gc)) == True{} : Bool}) -> M.bnd(~F, O.lookup(~F, C.vsub(~F, x1, x2), v), O.lookup(~F, Nil{}, v)):
+  +a1 = O.lookup(~F, x1, v)
+  +a2 = O.lookup(~F, x2, v)
+  +eq = Equal.trans(O.C(F), a1, O.lookup(~F, zmap(~F, x1, vp), PL.pos(v, vp)), a2, Equal.sym(O.C(F), O.lookup(~F, zmap(~F, x1, vp), PL.pos(v, vp)), a1, zm_pos(~K, ~F, eqs, gc, gr, vp, ep, np, bs, ok, x1, v, hv)), Equal.trans(O.C(F), O.lookup(~F, zmap(~F, x1, vp), PL.pos(v, vp)), O.lookup(~F, zmap(~F, x2, vp), PL.pos(v, vp)), a2, lookv_rw(~F, zmap(~F, x1, vp), zmap(~F, x2, vp), PL.pos(v, vp), e), zm_pos(~K, ~F, eqs, gc, gr, vp, ep, np, bs, ok, x2, v, hv)))
+  FV.bval(~F, O.sub(~F, a1, a2), O.lookup(~F, C.vsub(~F, x1, x2), v), O.zero(F), SL.lookup_vsub(~F, x1, x2, v), bnd_of_zero(~F, O.sub(~F, a1, a2), FO.sub_of_eq(~F, a1, a2, eq)))
+
+def plan_unique.r(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +ok: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}, +x1: M.Vec(~F), +h1: BX.inbox(~K, ~F, ~H, gc, gr, x1), +z1: SK.Zeros(~F, x1, eqs), +x2: M.Vec(~F), +h2: BX.inbox(~K, ~F, ~H, gc, gr, x2), +z2: SK.Zeros(~F, x2, eqs)) -> {x1 == x2 : M.Vec(~F)}:
+  +nv = KA.klen(~K, gc)
+  +e = plan_unique.p(~K, ~F, ~H, PL.reorder(vp, eqs, ep), PL.kperm(~K, gc, vp), PL.kperm(~K, gr, vp), np, bs, cr_inner(~K, eqs, gc, gr, vp, ep, np, bs, ok), zmap(~F, x1, vp), un_in(~K, ~F, ~H, eqs, gc, gr, vp, ep, np, bs, ok, x1, h1), un_zs(~K, ~F, ~H, eqs, gc, gr, vp, ep, np, bs, ok, x1, z1), zmap(~F, x2, vp), un_in(~K, ~F, ~H, eqs, gc, gr, vp, ep, np, bs, ok, x2, h2), un_zs(~K, ~F, ~H, eqs, gc, gr, vp, ep, np, bs, ok, x2, z2))
+  +l1 = Equal.trans(Nat, M.len(~F, x1), M.len(~F, N.ofkv(~K, ~F, ~H, gc)), nv, inbox_len(~K, ~F, ~H, gc, gr, x1, h1), CP.len_ofkv(~K, ~F, ~H, gc))
+  +l2 = Equal.trans(Nat, M.len(~F, x2), M.len(~F, N.ofkv(~K, ~F, ~H, gc)), nv, inbox_len(~K, ~F, ~H, gc, gr, x2, h2), CP.len_ofkv(~K, ~F, ~H, gc))
+  +d = C.vsub(~F, x1, x2)
+  eq_of_vall(~F, x1, x2, BA.vall_of_rbnd(~F, d, BA.rbnd_of_lk(~F, d, nv, Nil{}, CP.len_vsub(~F, x1, x2, nv, l1, l2), BA.lk_build(~F, ~d, ~{Nil{} : M.Vec(~F)}, ~nv, ~(v => hv => un_eq(~K, ~F, eqs, gc, gr, vp, ep, np, bs, ok, x1, x2, e, v, hv)), nv, 0n, BA.lk_end(nv)))), Equal.trans(Nat, M.len(~F, x1), nv, M.len(~F, x2), l1, Equal.sym(Nat, M.len(~F, x2), nv, l2)))
+
+# LAW plan_exists: in a complete ordered field, the box holds a solution
+def plan_exists(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), p: PL.Plan<K>, ok: {PL.check(~K, eqs, gc, gr, p) == True{} : Bool}) -> Sigma<&2, &2, M.Vec(~F), x => M.Both(BX.inbox(~K, ~F, ~H, gc, gr, x), SK.Zeros(~F, x, eqs))>:
+  match p:
+    case PL.Plan{+vp, +ep, +np, +bs}:
+      plan_exists.r(~K, ~F, ~R, ~H, eqs, gc, gr, vp, ep, np, bs, ok)
+
 # LAW plan_unique: in every ordered field, the box holds at most one solution
 def plan_unique(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), p: PL.Plan<K>, ok: {PL.check(~K, eqs, gc, gr, p) == True{} : Bool}, +x1: M.Vec(~F), h1: BX.inbox(~K, ~F, ~H, gc, gr, x1), z1: SK.Zeros(~F, x1, eqs), +x2: M.Vec(~F), h2: BX.inbox(~K, ~F, ~H, gc, gr, x2), z2: SK.Zeros(~F, x2, eqs)) -> {x1 == x2 : M.Vec(~F)}:
   match p:
-    case PL.Plan{+np, +bs}:
-      plan_unique.p(~K, ~F, ~H, eqs, gc, gr, np, bs, ok, x1, h1, z1, x2, h2, z2)
+    case PL.Plan{+vp, +ep, +np, +bs}:
+      plan_unique.r(~K, ~F, ~H, eqs, gc, gr, vp, ep, np, bs, ok, x1, h1, z1, x2, h2, z2)
+

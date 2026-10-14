@@ -243,7 +243,8 @@ condition, or the whole checker with "accept", breaks the proofs.
 **sk-06 PROVEN, AWAITING REVIEW (2026-10-14).** Statements in
 ROADMAP.bend (`plan_exists`, `plan_unique`, `box_sides`; `spec/box.bend`
 `inbox`), proofs in `lib/planpf.bend`, gated via `tests/plan_laws.bend`;
-checker `lib/plan.bend` (block-ordered systems), two-block chain test
+checker `lib/plan.bend` (any variable/equation order, via the plan's vp
+and ep lists), two-block chain test
 `tests/plan_demo.bend` (+ `tools/gen_chain.py`, `proto/chain_run.bend`:
 six malformed plans rejected). Sabotage: weakening the center match, the
 pins' radius 0, or the parameter containment each breaks the proof at the
@@ -251,9 +252,8 @@ step that needs it.
 - For Danielle: review the three statements; decide the trusted-base
   option (recommended: cert_* and cert_exists become lib lemmas, rbnd and
   vsub move to spec/box.bend).
-- Next work: renumbering layer (a permutation in the plan, so systems in
-  any order check; statement unchanged); sketch-level link (Sketch.eqs /
-  Sketch.sides with pins, accept_sound); runtime bigint K.
+- Next work: sketch-level link (Sketch.eqs / Sketch.sides with pins,
+  accept_sound); runtime bigint K; denominator clearing (Q19).
 
 sk-07's remaining items: line–line / point–circle / circle–circle distances
 (new kinds: spec arms, rerun `tools/mforms.py`, add per-kind lemmas), §8.6

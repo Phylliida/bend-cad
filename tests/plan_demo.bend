@@ -16,3 +16,11 @@ def accepts() -> {PL.check(~KI.dnum(), D.ch_eqs(), D.ch_gc(), D.ch_gr(), D.ch_pl
 
 def rejects_off_center() -> {PL.check(~KI.dnum(), D.ch_eqs(), D.ch_gc_bad(), D.ch_gr(), D.ch_plan_bad()) == False{} : Bool}:
   {==}
+
+# the same system numbered otherwise (Q, A, P, B; equations shuffled), read
+# in block order through the plan's lists
+def accepts_reordered() -> {PL.check(~KI.dnum(), D.ch2_eqs(), D.ch2_gc(), D.ch2_gr(), D.ch2_plan()) == True{} : Bool}:
+  {==}
+
+def rejects_wrong_order() -> {PL.check(~KI.dnum(), D.ch2_eqs(), D.ch2_gc(), D.ch2_gr(), D.ch_plan()) == False{} : Bool}:
+  {==}

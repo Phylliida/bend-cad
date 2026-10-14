@@ -660,8 +660,14 @@ equations and variables run out together. Proofs: a substitution law
 (later blocks leave earlier equations' values), and induction over the
 blocks with cert_exists / cert_unique. Tested on a two-block chain
 (`tests/plan_demo.bend`, gated; six malformed plans rejected natively).
-A system in another variable or equation order needs a renumbering layer
-first (a permutation in the plan; same statement), not built yet.
+A system in any other order is read through two lists in the plan: vp
+names its variables in block order and ep its equations. The checker
+requires every variable and equation to appear in its list, every listed
+one to exist, and every equation to use only the box's variables; the
+lists need not be permutations. Existence reads the block-ordered solution
+back (variable v is the solution at v's position in vp); uniqueness maps
+both solutions into block order. Tested on the chain renumbered (Q, A, P,
+B; equations shuffled): accepted, and rejected with identity lists.
 
 ### 8.5 Precision and its cost
 
@@ -877,7 +883,7 @@ random sketches.
 | sk-04 | Rational, dyadic and matrix library (∞-norms, products); Q order laws; canonical ℚ as an ordered-field instance (optional) | sk-02 | laws closed — **done** (2026-10-13; 37 laws: ℚ order, ℚ in every ordered field, gcd reduction, canonical ℚ, vectors and matrices; runtime bigint dyadics deferred to sk-05, §16) |
 | sk-05 | Parametric block certificate (§8.3), mean-value method (Q12): generic K matrix library, slopes, ball arithmetic, checker, the six `cert_*` laws | sk-04 | **done (2026-10-14): 98 laws, gate green (~15 s)** |
 | sk-05b | Complete ordered fields (Q18): template (Archimedean + Cauchy with a modulus), axioms cross-checked against mathlib's ℝ in Lean, Banach's theorem; exactly one zero per block | sk-05 | **done (2026-10-14): `cert_exists`, 99 laws; Lean cross-check passes** |
-| sk-06 | Composition theorem (§8.4, exactly one solution in a complete ordered field), side conditions (§8.6), optional denominator clearing for D (Q19) | sk-05, sk-05b | **proven, awaiting review (2026-10-14)**: plan_exists, plan_unique, box_sides in ROADMAP; renumbering layer and denominator clearing open |
+| sk-06 | Composition theorem (§8.4, exactly one solution in a complete ordered field), side conditions (§8.6), optional denominator clearing for D (Q19) | sk-05, sk-05b | **proven, awaiting review (2026-10-14)**: plan_exists, plan_unique, box_sides in ROADMAP (systems in any order); denominator clearing open |
 | sk-07 | Core vocabulary §5.1 + meaning lemmas | sk-03, sk-06 | laws closed — **meaning lemmas proven** in every ordered field (2026-10-13); remaining: §8.6 side-condition certification for the vocabulary (with sk-06), line–line / point–circle / circle–circle distances |
 | sk-08 | `accept_sound`: certified, untouched, flips, diagnostics | sk-07 | law closed |
 | sk-09 | Proposer v1: pinning, decomposition, KKT/LM, refinement, certificate emission | sk-P1, sk-07 | fixture sketches certified; certify-on-commit time target set from sk-P1 |
