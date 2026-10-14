@@ -446,3 +446,84 @@ def fit_rbnd(~F: O.OField, +n: Nat, +y1: M.Vec(~F), +y2: M.Vec(~F), +r: M.Vec(~F
   %Equal.sym(M.Vec(~F), C.fit(~F, n, y1), y1, FV.fit_len(~F, n, y1, h1)) : C.rbnd(~F, C.vsub(~F, _, C.fit(~F, n, y2)), r)
   %Equal.sym(M.Vec(~F), C.fit(~F, n, y2), y2, FV.fit_len(~F, n, y2, h2)) : C.rbnd(~F, C.vsub(~F, y1, _), r)
   h
+
+# d - Y u = d - Y u2, for u = u2
+def sub_rw(~F: O.OField, +d: M.Vec(~F), +y: M.Mat(~F), +u: M.Vec(~F), +u2: M.Vec(~F), e: {u2 == u : M.Vec(~F)}) -> {C.vsub(~F, d, M.matvec(~F, y, u)) == C.vsub(~F, d, M.matvec(~F, y, u2)) : M.Vec(~F)}:
+  %e : {C.vsub(~F, d, M.matvec(~F, y, _)) == C.vsub(~F, d, M.matvec(~F, y, u2)) : M.Vec(~F)}
+  {==}
+
+# back from the fits to the vectors themselves, outside f
+def unfit2(~F: O.OField, +n: Nat, +y1: M.Vec(~F), +y2: M.Vec(~F), +a1: M.Vec(~F), +a2: M.Vec(~F), +r: M.Vec(~F), +h1: {M.len(~F, y1) == n : Nat}, +h2: {M.len(~F, y2) == n : Nat}, h: C.rbnd(~F, C.vsub(~F, C.vsub(~F, C.fit(~F, n, y1), a1), C.vsub(~F, C.fit(~F, n, y2), a2)), r)) -> C.rbnd(~F, C.vsub(~F, C.vsub(~F, y1, a1), C.vsub(~F, y2, a2)), r):
+  %FV.fit_len(~F, n, y1, h1) : C.rbnd(~F, C.vsub(~F, C.vsub(~F, _, a1), C.vsub(~F, y2, a2)), r)
+  %FV.fit_len(~F, n, y2, h2) : C.rbnd(~F, C.vsub(~F, C.vsub(~F, C.fit(~F, n, y1), a1), C.vsub(~F, _, a2)), r)
+  h
+
+# The contraction
+# ---------------
+
+# with z pinned and y1, y2 in the box within s radii of each other, the
+# Newton images are within q s radii
+def contract.go(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +q: N.NC(K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K), +ok: {CK.check.go(~K, eqs, n, yc, yr, q, ym, pc, pr) == True{} : Bool}, +z: M.Vec(~F), +hz: C.rbnd(~F, C.vsub(~F, z, N.ofkv(~K, ~F, ~H, pc)), N.ofkv(~K, ~F, ~H, pr)), +y1: M.Vec(~F), +hl1: {M.len(~F, y1) == M.len(~F, N.ofkv(~K, ~F, ~H, yc)) : Nat}, +hb1: C.rbnd(~F, C.vsub(~F, y1, N.ofkv(~K, ~F, ~H, yc)), N.ofkv(~K, ~F, ~H, yr)), +y2: M.Vec(~F), +hl2: {M.len(~F, y2) == M.len(~F, N.ofkv(~K, ~F, ~H, yc)) : Nat}, +hb2: C.rbnd(~F, C.vsub(~F, y2, N.ofkv(~K, ~F, ~H, yc)), N.ofkv(~K, ~F, ~H, yr)), +s: O.C(F), +hs0: O.le(~F, O.zero(F), s), +hs: C.rbnd(~F, C.vsub(~F, y1, y2), M.vscale(~F, s, N.ofkv(~K, ~F, ~H, yr)))) -> C.rbnd(~F, C.vsub(~F, C.vsub(~F, y1, M.matvec(~F, N.ofkm(~K, ~F, ~H, ym), C.fvals(~F, eqs, C.app(~F, C.fit(~F, n, y1), z)))), C.vsub(~F, y2, M.matvec(~F, N.ofkm(~K, ~F, ~H, ym), C.fvals(~F, eqs, C.app(~F, C.fit(~F, n, y2), z))))), M.vscale(~F, O.mul(F, N.emap(K, F, H, q), s), N.ofkv(~K, ~F, ~H, yr))):
+  +p = KA.klen(~K, pc)
+  +box = CK.box(~K, n, yc, yr, pc, pr)
+  +yF = N.ofkm(~K, ~F, ~H, ym)
+  +rF = N.ofkv(~K, ~F, ~H, yr)
+  +qF = N.emap(K, F, H, q)
+  +rowsK = CK.srows(~K, box, n, 0n, eqs)
+  +jK = CK.mcenters(~K, rowsK)
+  +dK = CK.mradii(~K, rowsK)
+  +jF = N.ofkm(~K, ~F, ~H, jK)
+  +dF = N.ofkm(~K, ~F, ~H, dK)
+  +aK = CK.imm(~K, n, ym, jK)
+  +u1 = C.fit(~F, n, y1)
+  +u2 = C.fit(~F, n, y2)
+  +x1 = C.app(~F, u1, z)
+  +x2 = C.app(~F, u2, z)
+  +f1 = C.fvals(~F, eqs, x1)
+  +f2 = C.fvals(~F, eqs, x2)
+  +sF = smat(~F, x1, x2, eqs, n, 0n)
+  +d = C.vsub(~F, u1, u2)
+  +w = M.vscale(~F, s, rF)
+  +r1 = M.matvec(~F, N.ofkm(~K, ~F, ~H, KA.kmabs(~K, aK)), w)
+  +r2 = M.matvec(~F, N.ofkm(~K, ~F, ~H, KA.kmabs(~K, ym)), M.matvec(~F, dF, w))
+  +hyc = nateq_ok(KA.klen(~K, yc), n, x_len_yc(~K, eqs, n, yc, yr, q, ym, pc, pr, ok))
+  +hly1 = Equal.trans(Nat, M.len(~F, y1), M.len(~F, N.ofkv(~K, ~F, ~H, yc)), n, hl1, Equal.trans(Nat, M.len(~F, N.ofkv(~K, ~F, ~H, yc)), KA.klen(~K, yc), n, len_ofkv(~K, ~F, ~H, yc), hyc))
+  +hly2 = Equal.trans(Nat, M.len(~F, y2), M.len(~F, N.ofkv(~K, ~F, ~H, yc)), n, hl2, Equal.trans(Nat, M.len(~F, N.ofkv(~K, ~F, ~H, yc)), KA.klen(~K, yc), n, len_ofkv(~K, ~F, ~H, yc), hyc))
+  +hnr = KA.kvle_ok(~K, ~F, ~H, Nil{}, yr, x_nn_yr(~K, eqs, n, yc, yr, q, ym, pc, pr, ok))
+  +hnp = KA.kvle_ok(~K, ~F, ~H, Nil{}, pr, x_nn_pr(~K, eqs, n, yc, yr, q, ym, pc, pr, ok))
+  +hh = x_held(~K, eqs, n, yc, yr, q, ym, pc, pr, ok)
+  +in1 = box_in(~K, ~F, ~H, n, y1, z, yc, yr, pc, pr, hb1, hly1, hyc, hnr, hz, hnp)
+  +in2 = box_in(~K, ~F, ~H, n, y2, z, yc, yr, pc, pr, hb2, hly2, hyc, hnr, hz, hnp)
+  +hlu1 = FV.len_fit(~F, n, y1)
+  +hlu2 = FV.len_fit(~F, n, y2)
+  +hdl = len_vsub(~F, u1, u2, n, hlu1, hlu2)
+  +hd = fit_rbnd(~F, n, y1, y2, w, hly1, hly2, hs)
+  +hw = FV.rnn_scale(~F, s, hs0, rF, hnr)
+  +hmb = mat_bnd(~K, ~F, ~H, x1, x2, box, eqs, n, 0n, hh, in1, in2)
+  +hmn = mat_nn(~K, ~F, ~H, x1, x2, box, eqs, n, 0n, hh, in1, in2)
+  +p1 = FV.rbnd_rw(~F, M.matvec(~F, N.ofkm(~K, ~F, ~H, aK), d), C.vsub(~F, d, M.matvec(~F, yF, M.matvec(~F, jF, d))), r1, imm_ok(~K, ~F, ~H, n, ym, jK, d, hdl), FV.mbnd_matvec(~F, N.ofkm(~K, ~F, ~H, aK), N.ofkm(~K, ~F, ~H, KA.kmabs(~K, aK)), d, w, KA.kmabs_bnd(~K, ~F, ~H, aK), hd, KA.kmabs_nn(~K, ~F, ~H, aK), hw))
+  +p2a = FV.rbnd_rw(~F, M.matvec(~F, M.madd(~F, sF, M.mneg(~F, jF)), d), C.vsub(~F, M.matvec(~F, sF, d), M.matvec(~F, jF, d)), M.matvec(~F, dF, w), sj_ok(~F, sF, jF, d), FV.mbnd_matvec(~F, M.madd(~F, sF, M.mneg(~F, jF)), dF, d, w, hmb, hd, hmn, hw))
+  +p2 = FV.mbnd_matvec(~F, yF, N.ofkm(~K, ~F, ~H, KA.kmabs(~K, ym)), C.vsub(~F, M.matvec(~F, sF, d), M.matvec(~F, jF, d)), M.matvec(~F, dF, w), KA.kmabs_bnd(~K, ~F, ~H, ym), p2a, KA.kmabs_nn(~K, ~F, ~H, ym), FV.matvec_nonneg(~F, dF, w, hmn, hw))
+  +hrows = Equal.trans(Nat, M.len(~F, d), n, FV.rows(~F, yF), hdl, Equal.sym(Nat, FV.rows(~F, yF), n, Equal.trans(Nat, FV.rows(~F, yF), CK.mlen(~K, ym), n, rows_ofkm(~K, ~F, ~H, ym), nateq_ok(CK.mlen(~K, ym), n, x_len_ym(~K, eqs, n, yc, yr, q, ym, pc, pr, ok)))))
+  +p3 = FV.split_bnd(~F, d, yF, M.matvec(~F, sF, d), M.matvec(~F, jF, d), r1, r2, hrows, p1, p2)
+  +hfd = fvecs_con(~F, u1, u2, z, eqs, n, p, x_below(~K, eqs, n, yc, yr, q, ym, pc, pr, ok), hlu1, hlu2)
+  +p4 = FV.rbnd_rw(~F, C.vsub(~F, d, M.matvec(~F, yF, M.matvec(~F, sF, d))), C.vsub(~F, d, M.matvec(~F, yF, C.vsub(~F, f1, f2))), M.vadd(~F, r1, r2), sub_rw(~F, d, yF, M.matvec(~F, sF, d), C.vsub(~F, f1, f2), hfd), p3)
+  +p5 = FV.newton_diff(~F, u1, u2, yF, f1, f2, M.vadd(~F, r1, r2), Equal.trans(Nat, M.len(~F, u1), n, M.len(~F, u2), hlu1, Equal.sym(Nat, M.len(~F, u2), n, hlu2)), Equal.trans(Nat, M.len(~F, u2), n, FV.rows(~F, yF), hlu2, Equal.sym(Nat, FV.rows(~F, yF), n, Equal.trans(Nat, FV.rows(~F, yF), CK.mlen(~K, ym), n, rows_ofkm(~K, ~F, ~H, ym), nateq_ok(CK.mlen(~K, ym), n, x_len_ym(~K, eqs, n, yc, yr, q, ym, pc, pr, ok))))), p4)
+  +gF = M.vadd(~F, M.matvec(~F, N.ofkm(~K, ~F, ~H, KA.kmabs(~K, aK)), rF), M.matvec(~F, N.ofkm(~K, ~F, ~H, KA.kmabs(~K, ym)), M.matvec(~F, dF, rF)))
+  +hg = FV.rle_rw(~F, N.ofkv(~K, ~F, ~H, CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr)), gF, N.ofkv(~K, ~F, ~H, KA.kvscale(~K, q, yr)), M.vscale(~F, qF, rF), gF_ok(~K, ~F, ~H, eqs, n, yc, yr, ym, pc, pr), Equal.sym(M.Vec(~F), M.vscale(~F, qF, rF), N.ofkv(~K, ~F, ~H, KA.kvscale(~K, q, yr)), KA.kvscale_ofk(~K, ~F, ~H, q, yr)), KA.kvle_ok(~K, ~F, ~H, CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr), KA.kvscale(~K, q, yr), x_con(~K, eqs, n, yc, yr, q, ym, pc, pr, ok)))
+  +p6 = FV.rle_rw(~F, M.vscale(~F, s, gF), M.vadd(~F, r1, r2), M.vscale(~F, s, M.vscale(~F, qF, rF)), M.vscale(~F, O.mul(F, qF, s), rF), Equal.sym(M.Vec(~F), M.vadd(~F, r1, r2), M.vscale(~F, s, gF), FV.r12_ok(~F, s, N.ofkm(~K, ~F, ~H, KA.kmabs(~K, aK)), N.ofkm(~K, ~F, ~H, KA.kmabs(~K, ym)), dF, rF)), FV.vscale2(~F, qF, s, rF), FV.rle_scale(~F, s, hs0, gF, M.vscale(~F, qF, rF), hg))
+  +p7 = FV.rbnd_mono(~F, C.vsub(~F, C.vsub(~F, u1, M.matvec(~F, yF, f1)), C.vsub(~F, u2, M.matvec(~F, yF, f2))), M.vadd(~F, r1, r2), M.vscale(~F, O.mul(F, qF, s), rF), p5, p6)
+  unfit2(~F, n, y1, y2, M.matvec(~F, yF, f1), M.matvec(~F, yF, f2), M.vscale(~F, O.mul(F, qF, s), rF), hly1, hly2, p7)
+
+def cert_contract.c(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +n: Nat, c: C.Cert<K>, ok: {CK.check.c(~K, eqs, n, c) == True{} : Bool}, +z: M.Vec(~F), hz: C.pinned(~K, ~F, ~H, c, z), +y1: M.Vec(~F), h1: C.ball(~K, ~F, ~H, c, y1), +y2: M.Vec(~F), h2: C.ball(~K, ~F, ~H, c, y2), +s: O.C(F), hs0: O.le(~F, O.zero(F), s), hs: C.near(~K, ~F, ~H, c, s, y1, y2)) -> C.near(~K, ~F, ~H, c, O.mul(F, C.factor(~K, ~F, ~H, c), s), C.newton(~K, ~F, ~H, C.Block{eqs, n}, c, z, y1), C.newton(~K, ~F, ~H, C.Block{eqs, n}, c, z, y2)):
+  match c:
+    case C.Cert{+yc, +yr, +q, +ym, +pc, +pr}:
+      (hl1, hb1) = h1
+      (hl2, hb2) = h2
+      contract.go(~K, ~F, ~H, eqs, n, yc, yr, q, ym, pc, pr, ok, z, hz, y1, hl1, hb1, y2, hl2, hb2, s, hs0, hs)
+
+# LAW cert_contract: the Newton map contracts the box by q
+def cert_contract(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, b: C.Block, c: C.Cert<K>, ok: {CK.check(~K, b, c) == True{} : Bool}, +z: M.Vec(~F), hz: C.pinned(~K, ~F, ~H, c, z), +y1: M.Vec(~F), h1: C.ball(~K, ~F, ~H, c, y1), +y2: M.Vec(~F), h2: C.ball(~K, ~F, ~H, c, y2), +s: O.C(F), hs0: O.le(~F, O.zero(F), s), hs: C.near(~K, ~F, ~H, c, s, y1, y2)) -> C.near(~K, ~F, ~H, c, O.mul(F, C.factor(~K, ~F, ~H, c), s), C.newton(~K, ~F, ~H, b, c, z, y1), C.newton(~K, ~F, ~H, b, c, z, y2)):
+  match b:
+    case C.Block{+eqs, +n}:
+      cert_contract.c(~K, ~F, ~H, eqs, n, c, ok, z, hz, y1, h1, y2, h2, s, hs0, hs)
