@@ -169,19 +169,17 @@ laws):
 
 **sk-05** (parametric block certificate, §8.3), with sk-06 (composition,
 §8.6 side conditions over balls). Danielle answered (2026-10-13, DESIGN §16):
-**Q16 yes**, state certificates for every ordered field. **Q17**: "the
-checker runs on the same numbers as everything else, so it can deal with
-irrationals". Claude's reading, sent to Danielle to confirm: compute on the
-spec dyadics `D` (bigint mantissas at runtime refining `D`), statements in
-every F; irrationals enter per §7 (algebraic constants as unknowns pinned by
-their minimal polynomial and sign; transcendental ones as parameters in a
-ball). A checker cannot compute in an abstract F (it must decide
-inequalities). If Danielle meant exact irrational arithmetic in the checker,
-that is a bigger change (§2 ruled it out at depth); ask.
+**Q16 yes**, certificates for every ordered field. **Q17 decided**: the
+checker runs "on the same numbers as everything else, so it can deal with
+irrationals". It is generic over its computing numbers K (a decided ordered
+ring record; D, ℚ, ℚ(√d) instances), and the law holds in every F with an
+order-preserving ring map K → F. (My first reading, fixed dyadics, was
+wrong; she restated it after the roll.)
 
-First sk-05 step: draft the block-certificate law statement (over every F,
-dyadic certificate data, polynomial system f(y, z)) and the checker shape,
-for Danielle's review before proving; decide Q12 (mean-value method) there.
+First sk-05 step: draft the block-certificate law statement (every F, every
+map K → F, certificate data in K, polynomial system f(y, z)), the decided
+ordered ring record, and the checker shape, for Danielle's review before
+proving; decide Q12 (mean-value method) there.
 
 sk-07's remaining items: line–line / point–circle / circle–circle distances
 (new kinds: spec arms, rerun `tools/mforms.py`, add per-kind lemmas), §8.6

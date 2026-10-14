@@ -432,6 +432,8 @@ constant**, with three kinds of constant:
 **7.1 Rationals.** Decimal mm, inch fractions, expressions over rationals.
 
 **7.2 Algebraic constants** of small degree: √2, √3, √5, the golden ratio, etc.
+(Q17: these may instead be computed exactly, with the checker running on
+K = ℚ(√d); the minimal polynomial then becomes a hypothesis on F.)
 Each is an aux variable in its block with its minimal polynomial (s² − 3 = 0)
 and a sign condition (s > 0). The block certificate then proves the variable is
 exactly that root. Angles that are multiples of 15° or 18° only need these.
@@ -793,17 +795,30 @@ sk-02 and sk-03 can run in parallel after sk-01.
   for every ordered field F, like the meanings (Q13). The contraction then
   holds in ℝ itself, where Banach's fixed point gives the exact solution, and
   ℚ is the instance `ofield_exists` builds. The matrix library already is.
-- **Q17** The checker runs on the same numbers as everything else (Danielle:
-  "so it can deal with irrationals"). Claude's reading, to confirm: compute
-  on the spec dyadics `D` that `spec/mat.bend` already uses (bigint
-  mantissas at runtime, refining `D` as sk-02 refines `Z`), not a separate
-  fixed-point format; state everything in every F. A checker cannot compute
-  in an abstract field (it must decide inequalities), so irrationals enter as
-  §7 already says: algebraic constants as unknowns pinned by their minimal
-  polynomial and a sign (√2: s² − 2 = 0, s > 0), transcendental ones as
-  parameters in a ball of proven radius. With Q16 the theorem then speaks
-  about the true irrational value in ℝ. Exact irrational arithmetic inside
-  the checker was ruled out in §2 (degree 2^k at depth k).
+- **Q17** The checker runs on the same numbers as everything else, "so it
+  can deal with irrationals" (Danielle, stated twice; Claude first misread
+  it as "fixed dyadics"). Shape: the checker is written once, generic over
+  its computing numbers K, a template record like `OField` (whose
+  `lt_total` returns `Or`, so on a concrete K it decides comparisons). The
+  soundness law: for every ordered field F and every order-preserving ring
+  map e : K → F, a passing certificate gives the contraction in F around
+  e(ỹ). Instances of K:
+  - the dyadics D (fast path; e = `ofd`, exists for every F);
+  - ℚ (e = `ofq`, every F);
+  - ℚ(√d) and small towers, for exact algebraic constants: e exists exactly
+    when F has a positive √d, so the theorem covers ℝ and every field with
+    the constants, and §7.2's "unknown pinned by its minimal polynomial"
+    becomes a hypothesis on F instead of a box in the certificate.
+  §2 does not rule this out: it rules out exact *solution coordinates*
+  (nested towers of degree 2^k), not a few exact constants. Transcendental
+  constants (π, cos θ) keep §7.3's balls; no exact computable field holds
+  them in general.
+  Claude's call within this (Danielle may overrule): K needs only an
+  ordered *ring* with decided order, since §8.3 never divides (Y is
+  certificate data). Every `OField` qualifies by forgetting `inv`, and so
+  does D, which is not a field. sk-05 therefore adds a decided-ordered-ring
+  record and states the checker over it; `dmat` becomes the D instance of
+  the generic matrix code rather than a parallel copy.
 
 ---
 
@@ -867,9 +882,9 @@ sk-02 and sk-03 can run in parallel after sk-01.
   gcd reduction (`q_reduce`), canonical ℚ as an ordered field
   (`ofield_exists`). §8.3: vectors and matrices as built (`spec/mat.bend`,
   20 laws). §14: `spec/mat.bend` trusted. §15: sk-04 done (92 laws). §16:
-  Q16 (certificates in every ordered field) decided yes; Q17 (checker
-  numbers: the spec dyadics, bigint mantissas at runtime) recorded with
-  Claude's reading, to confirm.
+  Q16 (certificates in every ordered field) decided yes; Q17 decided: the
+  checker is generic over its computing numbers K (D, ℚ, ℚ(√d), ...) with a
+  map into every F.
 
 **v0.7 → v0.8 (meaning lemmas proven):**
 - §5.5: the six meaning laws are proven in every ordered field (moved from
