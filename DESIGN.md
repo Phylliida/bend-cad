@@ -1,4 +1,4 @@
-# bend-cad — Design v0.12 (draft; exact by default; sk-06 proven: a checked plan gives exactly one solution in its box)
+# bend-cad — Design v0.13 (draft; exact by default; sk-06 done; sk-09: a verified proposer)
 
 A formally verified 2D sketch constraint solver in Bend 2, aiming at Onshape /
 FreeCAD sketcher parity, feeding an implicit-function (SDF) modeling pipeline.
@@ -52,7 +52,7 @@ designed for and built late (§7.4).
 | D4 | **Every curve piece passes through its endpoints by construction** (segments, bulge arcs, clamped splines, conic arcs as rational Béziers). Profiles are exactly closed. |
 | D5 | Contact points, trim/split points and curve parameters are **explicit variables**, with encodings chosen to be **regular** (nonsingular Jacobian) at the configurations users draw. |
 | D6 | The **typed IR is the spec and the persisted source of truth**. Each constraint kind has an exact equation form, defined in LAWS.bend, with a **mandatory meaning lemma**. |
-| D7 | **One acceptance theorem over arbitrary proposals.** The proposer is outside the trust story. |
+| D7 | **The proposer is verified** (Danielle, 2026-10-14: "trusted everything"): every answer the solver gives is a law about the sketch, and every stage is proven to succeed where it should (§10). (Was: one acceptance theorem over arbitrary proposals, the proposer outside the trust story.) |
 | D8 | **Block-decomposed parametric certificates** keep exact certification near-linear in sketch size (§8). |
 | D9 | **Dimension constants are exact**: rationals, certified algebraic roots, or constructive reals defined over ℚ (§7). Any measured quantity can be shown with guaranteed digits, more on demand (§9). |
 | D10 | **Uncertifiable constraints are flagged red**, individually; the rest of the sketch stays exactly certified. Positional tolerance checks are used for drag previews and to report how far a flagged constraint is from holding (§6). |
@@ -770,7 +770,88 @@ that might change; truncation is exact.
 
 ---
 
-## 10. Proposer (untrusted)
+## 10. Proposer (verified)
+
+Danielle, 2026-10-14: "we don't want untrusted proposer, we want trusted
+everything". The solver is Bend code with two kinds of law:
+
+- **What it says is true (soundness).** Every answer is a law about the
+  sketch, never about the solver's internals. *Certified:* the sk-06 laws
+  hold for the returned box and the sketch with its red constraints made
+  driven. *Red:* each red constraint comes with an over-determination
+  witness (below). *Pins:* reported; uniqueness is given them (§8.4).
+- **It says it when it should (completeness).** Each stage is proven to
+  succeed where it should: the structure stage never fails; exact linear
+  algebra returns an inverse or a kernel vector; and certification
+  succeeds, at some precision, for a regular solution near the drawing.
+  Completeness laws are drafted in ROADMAP.bend as open laws until they
+  are proven, so a gap is visible rather than assumed.
+
+Inside a stage, an algorithm may compute an answer and a checker verify
+it (as `q_reduce` does), but only with a law that the check always passes
+(a totality law), open in ROADMAP.bend until proven. The proposer is not
+in the trusted base (§14): it is verified, and nothing it computes is
+believed without proof.
+
+### 10.1 Stages (sk-09)
+
+1. **Front end.** `wf` is decided by a Bool function proven equivalent to
+   `Sketch.wf` (sound for the claim, complete so that a well-formed
+   sketch is never refused); coverage is `Sketch.within`.
+2. **Structure** (§8.1, §8.2). Incidence is syntactic occurrence of a
+   variable in an equation. Matching by augmenting paths (Kuhn): a failed
+   search from equation j visits equations S_j and variables W_j, every
+   variable of S_j lies in W_j, and |W_j| = |S_j| − 1. That is a Hall
+   violator, a fact about the equations alone, so it stays true however
+   the matching changes afterwards: the equations S_j constrain fewer
+   unknowns than they have equations. Each unmatched equation's constraint
+   is flagged red (made driven) with its S_j; unmatched variables are
+   pinned at their displayed values. Blocks are the strongly connected
+   components of the matched dependency graph, in dependency order. Each
+   block is validated as it is emitted (its equations use only earlier
+   variables and its own unknowns, as many as its equations), and
+   anything left over merges into one block, so the stage is total
+   whatever the component search does; the search only decides block
+   sizes, i.e. cost and precision.
+3. **Numbers** (§8.3, §8.5). Per block, in order: dyadic Newton at a
+   working precision P from the displayed values, with the parameters at
+   their centers; J⁻¹ by exact Gauss–Jordan over ℚ, which returns either
+   an inverse (J·Y = I, checked) or a kernel vector (J·v = 0, v ≠ 0,
+   checked: a singular block, flagged with its evidence, §8.8); Y rounded
+   to ~32 significant bits; radii from the §8.3 conditions with the
+   parameters' radii from earlier blocks (what `tools/gen_plan_chain.py`
+   computes today, in Bend). On failure the whole plan is redone at 2P, up
+   to a bound. No F32 on this path: completeness cannot rest on F32,
+   which is axiomatic; F32 may later supply first guesses.
+4. **Check.** The plan, the side conditions, wf and coverage go through
+   the verified checkers; only then is the answer Certified.
+
+### 10.2 Laws (drafts go to ROADMAP.bend for review)
+
+- `solve_exists` / `solve_unique`: if `solve` returns Certified with box
+  (gc, gr) and red constraints R, the conclusions of `sketch_exists` /
+  `sketch_unique` hold for `mark_driven(sk, R)` and the box, with K = D.
+- `solve_red`: every red constraint owns an equation j of the sketch's
+  exact system with a witness (S, W): S a list of distinct equation
+  indices containing j, every variable of every equation in S is in W,
+  and len W < len S.
+- `solve_total` (open until proven): on a well-formed, covered sketch the
+  structure stage always succeeds (matching, witnesses and block
+  validation never fail).
+- `solve_complete` (open until proven; the hard one): in a complete
+  ordered field, if the sketch, with the pins at their displayed values,
+  has a solution x* at which every block's Jacobian is invertible, there
+  is δ > 0 such that from any drawing within δ of x* (pins equal) some
+  precision P certifies a box containing x*. A Newton–Kantorovich
+  argument with rounding; stated qualitatively so that no constant needs
+  to be computed.
+
+### 10.3 Which solution (ink metric, a later stage)
+
+v1 solves with the free degrees of freedom pinned at their displayed
+values and Newton started from the drawing. Least ink displacement (D13)
+replaces that with a KKT solve, verified in the same way, with the
+optional nearest-ness certificate of §8.10:
 
 - **Objective: least ink displacement (D13).** Each drawn curve, construction
   geometry included, is treated as ink; the cost is ∫ \|γ_new − γ_old\|² over
@@ -794,19 +875,18 @@ that might change; truncation is exact.
   get a tiny positive weight (e.g. 2^−20 relative) for nonsingularity. Drag:
   cursor target with a large weight, or a hard equality (option).
 - **Outputs:** displayed grid geometry, pins, block order, per-block (ỹ, Y, r),
-  redundancy certificates, partition and anchors.
-- **Precision:** Bend has only F32. F32 linear solves with residuals computed
-  exactly (F32 → Int via `F32.bits`; scale residuals before conversion); each
-  refinement step gains ~24 − log₂(c·n·κ) bits, stalling around
-  κ ≈ 10^5–10^7; beyond that, exact/dyadic elimination (Wan 2006;
-  Saunders–Wood–Youse 2011). Certificate refinement uses dyadic Newton steps.
+  red constraints with witnesses, redundancy certificates, partition and
+  anchors.
 - **Projected continuation** for large edits; flips detected by anchor signs.
-- **Location:** Bend (D12). D7 still keeps it out of the trust story.
 - **Reference (not a dependency):** neoscad/sketch-solver.
 
 ---
 
 ## 11. Acceptance: the core theorem
+
+*To restate in sk-08:* with the proposer verified (D7, §10), the theorem
+is about `solve` itself rather than an arbitrary proposal `p`; the clauses
+below keep their meaning.
 
 ```
 law accept_sound:
@@ -896,7 +976,8 @@ statements, `accept_sound`) and the spec files it rests on (`spec/num.bend`,
 no longer mention blocks, certificates or Newton maps.
 optionally Euclidean-field axioms for SDF laws.
 
-**Not trusted:** the proposer; the UI; F32 rendering.
+**Not trusted, and not needed for any claim:** the UI; F32 rendering. The
+proposer is not trusted either: it is verified (§10).
 
 **Boundary:** JS-supplied values are unchecked; the typed IR and proposals are
 parsed and validated inside Bend. Differential testing of the JS and C lanes on
@@ -919,7 +1000,7 @@ random sketches.
 | sk-06 | Composition theorem (§8.4, exactly one solution in a complete ordered field), side conditions (§8.6), optional denominator clearing for D (Q19) | sk-05, sk-05b | **done (2026-10-14, reviewed)**: plan_exists, plan_unique, box_sides, sketch_exists, sketch_unique in LAWS (97 laws; the block laws became lemmas); denominator clearing optional (Q19) |
 | sk-07 | Core vocabulary §5.1 + meaning lemmas | sk-03, sk-06 | laws closed — **meaning lemmas proven** in every ordered field (2026-10-13); §8.6 for the vocabulary covered by `box_sides` + `check_sides` (`tests/sides_demo.bend`, every kind, 2026-10-14); remaining: line–line / point–circle / circle–circle distances |
 | sk-08 | `accept_sound`: certified, untouched, flips, diagnostics | sk-07 | law closed |
-| sk-09 | Proposer v1: pinning, decomposition, KKT/LM, refinement, certificate emission | sk-P1, sk-07 | fixture sketches certified; certify-on-commit time target set from sk-P1 |
+| sk-09 | Proposer v1, verified (§10): front end, structure (pins, red flags with Hall witnesses, blocks), exact numerics and the precision loop, all in Bend | sk-P1, sk-07, sk-06 | `solve_exists`/`solve_unique`/`solve_red` proven; `solve_total` and `solve_complete` drafted and proven in that order; fixture sketches certified end to end in Bend (no Python in the path) |
 | sk-10 | Bulge arcs, tangency, joins, trim/split (§5.2–5.3) | sk-07 | laws closed |
 | sk-11 | Exact constants: algebraic roots, constructive π / cos / sin / tan (§7.1–7.3) | sk-06 | laws closed; typed angles exact |
 | sk-12 | Guaranteed-digit queries (§9) | sk-09, sk-11 | demo |
@@ -1111,6 +1192,14 @@ sk-02 and sk-03 can run in parallel after sk-01.
 ---
 
 ## 19. Changelog
+
+**v0.12 → v0.13 (sk-06 reviewed; the proposer becomes verified):**
+- §8.3, §8.4, §14: the sk-06 laws are in LAWS.bend; the block laws are
+  lemmas and the certificate's definitions left the trusted base
+  (`lib/certdef.bend`; `rbnd`, `vsub` in `spec/box.bend`).
+- D7, §10, §14, §15: the proposer is verified, not untrusted (Danielle):
+  stages, the `solve_*` laws, completeness as open laws until proven;
+  §11 to be restated about `solve` in sk-08.
 
 **v0.11 → v0.12 (sk-06 proven, awaiting review):**
 - §8.4: composition as built (box claim, block-ordered checker,
