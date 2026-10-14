@@ -24,8 +24,10 @@ if [ -z "$bun" ]; then
   exec nix shell nixpkgs#bun -c env BEND_NO_TELEMETRY=1 bun "$src/bend2/main.ts" "$@"
 fi
 # native builds (-o) need a clang that finds libc headers; on NixOS the
-# system clang may not, so default CC to the newest nix clang wrapper
-if [ -z "${CC:-}" ]; then
+# system clang may not, and CC may name gcc (which Bend rejects), so unless CC
+# is already a clang, use a nix clang wrapper
+if [ -z "${CC:-}" ] || ! "$CC" --version 2>/dev/null | grep -q clang; then
+  CC=""
   for c in /nix/store/*-clang-wrapper-[0-9]*/bin/clang; do
     [ -x "$c" ] && CC="$c"
   done
