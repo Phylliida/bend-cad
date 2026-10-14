@@ -60,37 +60,6 @@ def blook(~K: N.Num, xs: List<&2, KB<K>>, i: Nat) -> KB<K>:
     case Con{h, t} 1n+j:
       blook(~K, t, j)
 
-def bvadd(~K: N.Num, u: List<&2, KB<K>>, w: List<&2, KB<K>>) -> List<&2, KB<K>>:
-  match u w:
-    case Nil{} w:
-      w
-    case Con{a, us} Nil{}:
-      Con{a, us}
-    case Con{a, us} Con{b, ws}:
-      Con{badd(~K, a, b), bvadd(~K, us, ws)}
-
-def bvneg(~K: N.Num, u: List<&2, KB<K>>) -> List<&2, KB<K>>:
-  match u:
-    case Nil{}:
-      Nil{}
-    case Con{a, us}:
-      Con{bneg(~K, a), bvneg(~K, us)}
-
-def bvscale(~K: N.Num, +x: KB<K>, u: List<&2, KB<K>>) -> List<&2, KB<K>>:
-  match u:
-    case Nil{}:
-      Nil{}
-    case Con{a, us}:
-      Con{bmul(~K, x, a), bvscale(~K, x, us)}
-
-# the slope of variable i: 1 at i, 0 elsewhere
-def bunit(~K: N.Num, i: Nat) -> List<&2, KB<K>>:
-  match i:
-    case 0n:
-      [KB{N.none(K), N.nzero(K)}]
-    case 1n+j:
-      Con{bzero(~K), bunit(~K, j)}
-
 def bcenters(~K: N.Num, u: List<&2, KB<K>>) -> List<&2, N.NC(K)>:
   match u:
     case Nil{}:
@@ -183,19 +152,51 @@ def kball(~K: N.Num, +box: List<&2, KB<K>>, e: E.QExpr) -> KB<K>:
     case E.QNeg{a}:
       bneg(~K, kball(~K, box, a))
 
-# an enclosure of e's telescoping slope over the box, one ball per variable:
+# 1 if i = j, else 0
+def kind(~K: N.Num, b: Bool) -> KB<K>:
+  match b:
+    case True{}:
+      KB{N.none(K), N.nzero(K)}
+    case False{}:
+      bzero(~K)
+
+# an enclosure of e's telescoping slope in variable i over the box:
 # slope(a b) = a(X1) slope(b) + b(X2) slope(a)
-def kslope(~K: N.Num, +box: List<&2, KB<K>>, e: E.QExpr) -> List<&2, KB<K>>:
+def ksl(~K: N.Num, +i: Nat, +box: List<&2, KB<K>>, e: E.QExpr) -> KB<K>:
   match e:
-    case E.QVar{i}:
-      bunit(~K, i)
+    case E.QVar{j}:
+      kind(~K, KA.nateq(i, j))
     case E.QCst{q}:
-      Nil{}
+      bzero(~K)
     case E.QAdd{a, b}:
-      bvadd(~K, kslope(~K, box, a), kslope(~K, box, b))
+      badd(~K, ksl(~K, i, box, a), ksl(~K, i, box, b))
     case E.QSub{a, b}:
-      bvadd(~K, kslope(~K, box, a), bvneg(~K, kslope(~K, box, b)))
+      badd(~K, ksl(~K, i, box, a), bneg(~K, ksl(~K, i, box, b)))
     case E.QMul{+a, +b}:
-      bvadd(~K, bvscale(~K, kball(~K, box, a), kslope(~K, box, b)), bvscale(~K, kball(~K, box, b), kslope(~K, box, a)))
+      badd(~K, bmul(~K, kball(~K, box, a), ksl(~K, i, box, b)), bmul(~K, kball(~K, box, b), ksl(~K, i, box, a)))
     case E.QNeg{a}:
-      bvneg(~K, kslope(~K, box, a))
+      bneg(~K, ksl(~K, i, box, a))
+
+# the slope enclosures in the cnt variables lo, lo + 1, ...
+def krange(~K: N.Num, +box: List<&2, KB<K>>, +e: E.QExpr, cnt: Nat, +lo: Nat) -> List<&2, KB<K>>:
+  match cnt:
+    case 0n:
+      Nil{}
+    case 1n+k:
+      Con{ksl(~K, lo, box, e), krange(~K, box, e, k, 1n+lo)}
+
+# every variable of e is below m
+def below(+m: Nat, e: E.QExpr) -> Bool:
+  match e:
+    case E.QVar{j}:
+      KA.natle(1n+j, m)
+    case E.QCst{q}:
+      True{}
+    case E.QAdd{a, b}:
+      KA.band(below(m, a), below(m, b))
+    case E.QSub{a, b}:
+      KA.band(below(m, a), below(m, b))
+    case E.QMul{a, b}:
+      KA.band(below(m, a), below(m, b))
+    case E.QNeg{a}:
+      below(m, a)

@@ -2,13 +2,13 @@
 # cert_* laws say what a passing check means. Generic over the computing
 # numbers K; everything is exact in K.
 #
-# With n unknowns, center X̃ = ỹ ++ z̃ and box radii R = r ++ rho over all
-# of the block's variables, the slope enclosure of each equation gives
-# J0 (centers) and D (radii), split into unknown columns (y) and parameter
-# columns (z). With G r = |I - Y J0y| r + |Y| (Dy r), the checker requires:
+# With n unknowns and p parameters, center X̃ = ỹ ++ z̃ and box radii
+# R = r ++ rho over all of the block's variables, each equation's slope
+# enclosures in the unknowns (variables 0..n-1) give the rows of J0y
+# (centers) and Dy (radii), and in the parameters (n..n+p-1) J0z and Dz. With G r = |I - Y J0y| r + |Y| (Dy r), the checker requires:
 #   shape:  n equations, Y with n rows, ỹ with n entries, at most n radii,
 #           a radius for each parameter center, no negative radius, every
-#           constant held by K;
+#           constant held by K, every variable an unknown or a parameter;
 #   factor: 0 <= q < 1;
 #   contraction: G r <= q r;
 #   self-map: |Y f(X̃)| + |Y| ((|J0z| + Dz) rho) + G r <= r;
@@ -36,43 +36,34 @@ def zipb(~K: N.Num, cs: N.KVec(~K), rs: N.KVec(~K)) -> List<&2, KB.KB<K>>:
     case Con{c, ct} Con{r, rt}:
       Con{KB.KB{c, r}, zipb(~K, ct, rt)}
 
-# each equation's slope enclosure
-def slopes(~K: N.Num, +box: List<&2, KB.KB<K>>, eqs: List<&2, E.QExpr>) -> List<&2, List<&2, KB.KB<K>>>:
+# each equation's slope enclosures in the cnt variables from lo
+def srows(~K: N.Num, +box: List<&2, KB.KB<K>>, +cnt: Nat, +lo: Nat, eqs: List<&2, E.QExpr>) -> List<&2, List<&2, KB.KB<K>>>:
   match eqs:
     case Nil{}:
       Nil{}
     case Con{e, es}:
-      Con{KB.kslope(~K, box, e), slopes(~K, box, es)}
+      Con{KB.krange(~K, box, e, cnt, lo), srows(~K, box, cnt, lo, es)}
 
-# the centers of each row, fitted to its first n columns
-def jy(~K: N.Num, +n: Nat, rows: List<&2, List<&2, KB.KB<K>>>) -> N.KMat(~K):
+def mcenters(~K: N.Num, rows: List<&2, List<&2, KB.KB<K>>>) -> N.KMat(~K):
   match rows:
     case Nil{}:
       Nil{}
     case Con{r, rs}:
-      Con{KA.kfit(~K, n, KB.bcenters(~K, r)), jy(~K, n, rs)}
+      Con{KB.bcenters(~K, r), mcenters(~K, rs)}
 
-def dy(~K: N.Num, +n: Nat, rows: List<&2, List<&2, KB.KB<K>>>) -> N.KMat(~K):
+def mradii(~K: N.Num, rows: List<&2, List<&2, KB.KB<K>>>) -> N.KMat(~K):
   match rows:
     case Nil{}:
       Nil{}
     case Con{r, rs}:
-      Con{KA.kfit(~K, n, KB.bradii(~K, r)), dy(~K, n, rs)}
+      Con{KB.bradii(~K, r), mradii(~K, rs)}
 
-# the centers of each row past its first n columns
-def jz(~K: N.Num, +n: Nat, rows: List<&2, List<&2, KB.KB<K>>>) -> N.KMat(~K):
-  match rows:
+def allbelow(+m: Nat, eqs: List<&2, E.QExpr>) -> Bool:
+  match eqs:
     case Nil{}:
-      Nil{}
-    case Con{r, rs}:
-      Con{KA.kdrop(~K, n, KB.bcenters(~K, r)), jz(~K, n, rs)}
-
-def dz(~K: N.Num, +n: Nat, rows: List<&2, List<&2, KB.KB<K>>>) -> N.KMat(~K):
-  match rows:
-    case Nil{}:
-      Nil{}
-    case Con{r, rs}:
-      Con{KA.kdrop(~K, n, KB.bradii(~K, r)), dz(~K, n, rs)}
+      True{}
+    case Con{e, es}:
+      KA.band(KB.below(m, e), allbelow(m, es))
 
 # the equations' values at env
 def kvals(~K: N.Num, +env: N.KVec(~K), eqs: List<&2, E.QExpr>) -> N.KVec(~K):
@@ -107,7 +98,7 @@ def mlen(~K: N.Num, a: N.KMat(~K)) -> Nat:
 # --------------
 
 def shape(~K: N.Num, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> Bool:
-  KA.band(KA.nateq(eqlen(eqs), n), KA.band(KA.nateq(mlen(~K, ym), n), KA.band(KA.nateq(KA.klen(~K, yc), n), KA.band(KA.natle(KA.klen(~K, yr), n), KA.band(KA.nateq(KA.klen(~K, pc), KA.klen(~K, pr)), KA.band(KA.kvle(~K, Nil{}, yr), KA.band(KA.kvle(~K, Nil{}, pr), allheld(~K, eqs))))))))
+  KA.band(KA.nateq(eqlen(eqs), n), KA.band(KA.nateq(mlen(~K, ym), n), KA.band(KA.nateq(KA.klen(~K, yc), n), KA.band(KA.natle(KA.klen(~K, yr), n), KA.band(KA.nateq(KA.klen(~K, pc), KA.klen(~K, pr)), KA.band(KA.kvle(~K, Nil{}, yr), KA.band(KA.kvle(~K, Nil{}, pr), KA.band(allheld(~K, eqs), allbelow(Nat.add(n, KA.klen(~K, pc)), eqs)))))))))
 
 def factor(~K: N.Num, +q: N.NC(K)) -> Bool:
   KA.band(KA.kle(~K, N.nzero(K), q), KA.klt(~K, q, N.none(K)))
@@ -118,11 +109,12 @@ def gr(~K: N.Num, +n: Nat, +ym: N.KMat(~K), +j0y: N.KMat(~K), +d0y: N.KMat(~K), 
 
 def check.go(~K: N.Num, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +q: N.NC(K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> Bool:
   +box = zipb(~K, KA.kapp(~K, yc, pc), KA.kapp(~K, KA.kfit(~K, n, yr), pr))
-  +rows = slopes(~K, box, eqs)
-  +r = KA.kfit(~K, n, yr)
-  +g = gr(~K, n, ym, jy(~K, n, rows), dy(~K, n, rows), r)
-  +self = KA.kvadd(~K, KA.kvadd(~K, KA.kvabs(~K, KA.kmatvec(~K, ym, kvals(~K, KA.kapp(~K, yc, pc), eqs))), KA.kmatvec(~K, KA.kmabs(~K, ym), KA.kmatvec(~K, KA.kmadd(~K, KA.kmabs(~K, jz(~K, n, rows)), dz(~K, n, rows)), pr))), g)
-  +inj = KA.kmatvec(~K, KA.kmabs(~K, KA.kmadd(~K, KA.kident(~K, n), KA.kmneg(~K, KA.kmatmul(~K, jy(~K, n, rows), ym)))), KA.kones(~K, n))
+  +ry = srows(~K, box, n, 0n, eqs)
+  +rz = srows(~K, box, KA.klen(~K, pc), n, eqs)
+  +r = yr
+  +g = gr(~K, n, ym, mcenters(~K, ry), mradii(~K, ry), r)
+  +self = KA.kvadd(~K, KA.kvadd(~K, KA.kvabs(~K, KA.kmatvec(~K, ym, kvals(~K, KA.kapp(~K, yc, pc), eqs))), KA.kmatvec(~K, KA.kmabs(~K, ym), KA.kmatvec(~K, KA.kmadd(~K, KA.kmabs(~K, mcenters(~K, rz)), mradii(~K, rz)), pr))), g)
+  +inj = KA.kmatvec(~K, KA.kmabs(~K, KA.kmadd(~K, KA.kident(~K, n), KA.kmneg(~K, KA.kmatmul(~K, mcenters(~K, ry), ym)))), KA.kones(~K, n))
   KA.band(shape(~K, eqs, n, yc, yr, ym, pc, pr), KA.band(factor(~K, q), KA.band(KA.kvle(~K, g, KA.kvscale(~K, q, r)), KA.band(KA.kvle(~K, self, r), KA.kvlt(~K, inj, KA.kones(~K, n))))))
 
 def check.c(~K: N.Num, +eqs: List<&2, E.QExpr>, +n: Nat, c: C.Cert<K>) -> Bool:
