@@ -12,6 +12,10 @@
 #   equations over 4 variables; the rest is certified.
 # - The circle demo with |PB| = 10, more than |AB| + r = 7: no geometry
 #   exists, and the solver refuses.
+# - (From the audit) a midpoint whose y equation is redundant beside
+#   x_q = 1: only the midpoint is red (its witness: its y equation and the
+#   three y fixes, 4 equations over 3 variables); x_q = 1 stays.
+# - The circle demo pins A and B (variables 0..3), held at the drawing.
 
 import Base
 import ../spec/num.bend as S
@@ -52,6 +56,15 @@ def over_red() -> {SO.Out.red(SO.solve(SR.over(), zeros4())) == [4n] : List<&2, 
   {==}
 
 def far_refused() -> {SO.Out.ok(SO.solve(far(), R.circle_g0())) == False{} : Bool}:
+  {==}
+
+def mid_ok() -> {SO.Out.ok(SO.solve(R.mid(), R.mid_g0())) == True{} : Bool}:
+  {==}
+
+def mid_red() -> {SO.Out.red(SO.solve(R.mid(), R.mid_g0())) == [3n] : List<&2, Nat>}:
+  {==}
+
+def circle_pins() -> {SO.Out.pins(SO.solve(SR.circle(), R.circle_g0())) == [0n, 1n, 2n, 3n] : List<&2, Nat>}:
   {==}
 
 # The laws at these sketches

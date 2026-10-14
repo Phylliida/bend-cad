@@ -23,3 +23,6 @@ def solve_unique(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: Lis
 
 def solve_red(+sk: SK.Sketch, +g0: List<&2, S.D>, +ok: {SO.Out.ok(SO.solve(sk, g0)) == True{} : Bool}) -> {SV.explained(sk, SO.Out.red(SO.solve(sk, g0)), SO.Out.why(SO.solve(sk, g0))) == True{} : Bool}:
   SP.solve_red(sk, g0, ok)
+
+def solve_pins(+sk: SK.Sketch, +g0: List<&2, S.D>, +ok: {SO.Out.ok(SO.solve(sk, g0)) == True{} : Bool}) -> {SV.held(SO.Out.pins(SO.solve(sk, g0)), g0, SO.Out.gc(SO.solve(sk, g0)), SO.Out.gr(SO.solve(sk, g0))) == True{} : Bool}:
+  SP.solve_pins(sk, g0, ok)

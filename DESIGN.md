@@ -826,25 +826,59 @@ believed without proof.
 4. **Check.** The plan, the side conditions, wf and coverage go through
    the verified checkers; only then is the answer Certified.
 
-### 10.2 Laws (drafts go to ROADMAP.bend for review)
+### 10.2 Laws (drafts in ROADMAP.bend, for review)
 
-- `solve_exists` / `solve_unique`: if `solve` returns Certified with box
-  (gc, gr) and red constraints R, the conclusions of `sketch_exists` /
-  `sketch_unique` hold for `mark_driven(sk, R)` and the box, with K = D.
-- `solve_red`: every red constraint owns an equation j of the sketch's
-  exact system with a witness (S, W): S a list of distinct equation
-  indices containing j, every variable of every equation in S is in W,
-  and len W < len S.
-- `solve_total` (open until proven): on a well-formed, covered sketch the
-  structure stage always succeeds (matching, witnesses and block
-  validation never fail).
-- `solve_complete` (open until proven; the hard one): in a complete
-  ordered field, if the sketch, with the pins at their displayed values,
-  has a solution x* at which every block's Jacobian is invertible, there
-  is δ > 0 such that from any drawing within δ of x* (pins equal) some
-  precision P certifies a box containing x*. A Newton–Kantorovich
-  argument with rounding; stated qualitatively so that no constant needs
-  to be computed.
+*As built (2026-10-14).* `solve(sk, g0)` (`lib/solve.bend`) is
+`seal(search(sk, g0))`: `search` runs the stages, and `seal` recomputes the
+verdict from the answer alone (every pin held at its drawn value with
+radius 0; every red constraint explained; the sketch less the red
+constraints well formed, covered by the box, its plan and side conditions
+checked). The laws follow from the verdict and the sk-06 sketch laws, so
+they hold whatever the search did (`lib/solvepf.bend`; restated with
+proofs in `tests/solve_laws.bend`). Trusted additions: `spec/solve.bend`
+(`mark`: constraints at given positions made driven; `owners`; `overdet`,
+a Hall violator: distinct equations of the system whose variables all lie
+in a shorter list; `explained`; `held`).
+- `solve_exists` / `solve_unique`: when ok, the conclusions of
+  `sketch_exists` / `sketch_unique` for `mark(red, sk)` and the returned
+  box, read through any ring map H from the dyadics into F (`KI.demb` is
+  one; `e_ofq` makes all agree on every dyadic).
+- `solve_red`: each red constraint owns an equation of an over-determined
+  set made only of its own and kept constraints' equations, so restoring
+  any one red constraint over-determines what was kept: no red flag is
+  spare.
+- `solve_pins`: each pin has radius 0 and its center is its drawn value.
+- `solve_total` (open, not drafted): the structure stage never fails; the
+  reported red constraints are always explained; wf and coverage are
+  preserved by marking.
+- `solve_complete` (open, not drafted; the hard one): in a complete
+  ordered field, if the sketch less its red constraints, with the pins at
+  their drawn values, has a solution x* at which every block's Jacobian is
+  invertible and every side condition is strictly positive (or
+  variable-free), there is δ > 0 such that every drawing within δ of x*
+  (pins equal) is certified with a box containing x*, for some precision
+  budget. A Newton–Kantorovich argument with rounding, stated
+  qualitatively; needs derivatives of `QExpr` in the spec and a budget
+  parameter on `solve` (the default stops at 512 bits).
+
+How the stages meet the laws: red constraints are found by matching
+constraints as units, in order (all of a constraint's equations or none;
+a failure rolls the matching back), so a witness passes only through kept
+constraints and the red one; the first version matched equation by
+equation and over-flagged (the independent audit found a midpoint sketch
+where it dropped a user's `Fix` beside the redundant midpoint; regression
+in `tests/solve_demo.bend`). Pins are the variables a second matching
+(variables to the kept equations, latest variables first) leaves free:
+the earliest-drawn variables.
+
+Measured: the depth-30 chains certify end to end in Bend from a drawing
+rounded to whole nm, as tightly as the Python generator (well P = 96:
+last radius 2⁻⁷⁴ nm; flat P = 96: 2⁻¹¹ nm), ~2 s per precision
+natively; inside Bend's checker, solving the circle demo takes ~4 s.
+Not yet claimed: where the box lies relative to the drawing (a mirrored
+branch is possible), a red constraint's deviation at the solution (sk-19),
+a witness for each pin (a variable-side Hall violator: the same
+machinery), and which solution (§10.3).
 
 ### 10.3 Which solution (ink metric, a later stage)
 
@@ -1000,7 +1034,7 @@ random sketches.
 | sk-06 | Composition theorem (§8.4, exactly one solution in a complete ordered field), side conditions (§8.6), optional denominator clearing for D (Q19) | sk-05, sk-05b | **done (2026-10-14, reviewed)**: plan_exists, plan_unique, box_sides, sketch_exists, sketch_unique in LAWS (97 laws; the block laws became lemmas); denominator clearing optional (Q19) |
 | sk-07 | Core vocabulary §5.1 + meaning lemmas | sk-03, sk-06 | laws closed — **meaning lemmas proven** in every ordered field (2026-10-13); §8.6 for the vocabulary covered by `box_sides` + `check_sides` (`tests/sides_demo.bend`, every kind, 2026-10-14); remaining: line–line / point–circle / circle–circle distances |
 | sk-08 | `accept_sound`: certified, untouched, flips, diagnostics | sk-07 | law closed |
-| sk-09 | Proposer v1, verified (§10): front end, structure (pins, red flags with Hall witnesses, blocks), exact numerics and the precision loop, all in Bend | sk-P1, sk-07, sk-06 | `solve_exists`/`solve_unique`/`solve_red` proven; `solve_total` and `solve_complete` drafted and proven in that order; fixture sketches certified end to end in Bend (no Python in the path) |
+| sk-09 | Proposer v1, verified (§10): front end, structure (pins, red flags with Hall witnesses, blocks), exact numerics and the precision loop, all in Bend | sk-P1, sk-07, sk-06 | `solve_exists`/`solve_unique`/`solve_red`/`solve_pins` proven, **drafts awaiting review (2026-10-14)**; `solve_total` and `solve_complete` to draft and prove in that order; the depth-30 chains and the demos certify end to end in Bend (no Python in the path) |
 | sk-10 | Bulge arcs, tangency, joins, trim/split (§5.2–5.3) | sk-07 | laws closed |
 | sk-11 | Exact constants: algebraic roots, constructive π / cos / sin / tan (§7.1–7.3) | sk-06 | laws closed; typed angles exact |
 | sk-12 | Guaranteed-digit queries (§9) | sk-09, sk-11 | demo |
@@ -1136,6 +1170,16 @@ sk-02 and sk-03 can run in parallel after sk-01.
   sk-09: every answer the solver gives is a law, and every stage is proven
   to succeed where it should (§10).
 
+**Open for Danielle:**
+- **sk-09 statements** (ROADMAP.bend): `solve_exists`, `solve_unique`,
+  `solve_red`, `solve_pins`, and `spec/solve.bend` (`mark` by constraint
+  position, `owners`, `overdet`, `explained` with its no-spare-flag
+  condition, `held`). All four are proven; an independent audit found no
+  blocker, and its two fixes are in (§10.2).
+- Whether a multi-equation constraint should be dropped whole when one of
+  its equations is redundant (as now: constraints are what the user sees),
+  or split.
+
 ---
 
 ## 17. Risks
@@ -1200,6 +1244,9 @@ sk-02 and sk-03 can run in parallel after sk-01.
 - D7, §10, §14, §15: the proposer is verified, not untrusted (Danielle):
   stages, the `solve_*` laws, completeness as open laws until proven;
   §11 to be restated about `solve` in sk-08.
+- §10.2 as built: `solve` = `seal(search)`, the four `solve_*` laws
+  proven (drafts), `spec/solve.bend`; the audit's two fixes (no spare red
+  flag; pins reported and held).
 
 **v0.11 → v0.12 (sk-06 proven, awaiting review):**
 - §8.4: composition as built (box claim, block-ordered checker,

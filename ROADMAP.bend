@@ -18,20 +18,33 @@ import ./lib/kinst.bend as KI
 import ./lib/solve.bend as SO
 
 # The verified solver (sk-09, DESIGN §10). DRAFTS FOR REVIEW, with
-# spec/solve.bend. All three are proven (lib/solvepf.bend; restated with
-# their proofs in tests/solve_laws.bend).
+# spec/solve.bend. All four are proven (lib/solvepf.bend; restated with
+# their proofs in tests/solve_laws.bend). Audited by a fresh agent
+# (2026-10-14): no blocker; its two fixes are in (red flags must leave
+# no spare: each red constraint's witness uses only kept constraints and
+# itself; pins are reported and held at the drawing).
 # ----------------------------------------------------------------------
 # solve(sk, g0) (lib/solve.bend) takes a sketch and a drawing (one dyadic
 # value per variable) and answers with ok, a box (centers gc and radii gr,
 # dyadics), a plan (input to the checker; it never appears in a claim),
-# and the constraints it flagged red with their reasons. When ok is True:
-# in every complete ordered field some geometry in the box means the
-# sketch with the red constraints made driven (spec/solve.bend: mark); in
-# every ordered field only one does (given the box's radius-0 coordinates:
-# the pins, held at the drawing's values, and anything solved exactly);
-# and every red constraint is explained (spec/solve.bend: explained). H
-# is any ring map from the dyadics into F with sound comparisons; there is
-# exactly one, so the box is read at its own numbers.
+# the variables it pinned, and the constraints it flagged red (by
+# position) with their reasons. When ok is True:
+# - solve_exists: in every complete ordered field some geometry in the
+#   box means the sketch with the red constraints made driven
+#   (spec/solve.bend: mark);
+# - solve_unique: in every ordered field only one does (given the box's
+#   radius-0 coordinates: the pins and anything solved exactly);
+# - solve_red: every red constraint is explained, and none is spare
+#   (spec/solve.bend: explained);
+# - solve_pins: every pin has radius 0 and sits exactly at its drawn value
+#   (spec/solve.bend: held), so pinning never moves what the user drew.
+# The laws say nothing yet about where the box is relative to the drawing
+# (it could be a mirrored branch), nor about a red constraint at the
+# solution (its deviation, sk-19). H is any ring map from the dyadics into
+# F with sound comparisons: KI.demb is one, and e_ofq makes every such map
+# agree with it on every dyadic, so the box is read at its own numbers.
+# The statements also use lib/solve.bend's Out type and its projections
+# (Out.ok, Out.gc, ...), one-line field reads: part of what is reviewed.
 #
 # solve recomputes its verdict from its answer alone (lib/solve.bend:
 # seal), so the proofs use nothing about how the answer was found.
@@ -64,12 +77,20 @@ law solve_unique:
   {x1 == x2 : M.Vec(~F)}
 
 # LAW: every red constraint is explained: it owns an equation in a set of
-# the sketch's equations that uses fewer variables than it has equations
+# the sketch's equations that uses fewer variables than it has equations,
+# made only of its own and kept constraints' equations
 law solve_red:
   for +sk: SK.Sketch
   for +g0: List<&2, S.D>
   for +ok: {SO.Out.ok(SO.solve(sk, g0)) == True{} : Bool}
   {SV.explained(sk, SO.Out.red(SO.solve(sk, g0)), SO.Out.why(SO.solve(sk, g0))) == True{} : Bool}
+
+# LAW: every pin is held at the drawing's value, with radius 0
+law solve_pins:
+  for +sk: SK.Sketch
+  for +g0: List<&2, S.D>
+  for +ok: {SO.Out.ok(SO.solve(sk, g0)) == True{} : Bool}
+  {SV.held(SO.Out.pins(SO.solve(sk, g0)), g0, SO.Out.gc(SO.solve(sk, g0)), SO.Out.gr(SO.solve(sk, g0))) == True{} : Bool}
 
 # Completeness (sk-09, DESIGN §10.2): planned, statements not yet drafted.
 # - solve_total: the structure stage never fails: on every sketch the red

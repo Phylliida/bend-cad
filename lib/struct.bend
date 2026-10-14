@@ -679,6 +679,55 @@ def skel.vars(+adj: List<&2, List<&2, Nat>>, +ne: Nat, +nv: Nat, red: List<&2, R
 def skel.go(+adj: List<&2, List<&2, Nat>>, +ne: Nat, +nv: Nat, +st: KS) -> Skel:
   skel.vars(adj, ne, nv, ks.red(st), minus(iota(ne, 0n), red.eqs(ks.red(st))), transpose(nv, 0n, minus(iota(ne, 0n), red.eqs(ks.red(st))), adj))
 
+# Constraints as units
+# --------------------
+# A constraint's equations are matched together: if one of them fails,
+# the matching goes back to what it was before the constraint, and the
+# constraint is red with that equation's witness. A witness then uses only
+# equations of constraints accepted earlier and of the red one itself, so
+# restoring any one red constraint over-determines the accepted ones.
+
+type GS is Data:
+  GOk{vm: List<&2, Maybe<&2, Nat>>}
+  GFail{r: Red}
+
+def gstep(+j: Nat, a: Aug, +vm: List<&2, Maybe<&2, Nat>>) -> GS:
+  match a:
+    case Found{vm2}:
+      GOk{vm2}
+    case Stuck{+vis}:
+      GFail{Red{j, Con{j, look(vm, vis)}, vis}}
+
+# the equations js of one constraint, in turn
+def grp(js: List<&2, Nat>, +adj: List<&2, List<&2, Nat>>, +f: Nat, st: GS) -> GS:
+  match js st:
+    case Nil{} st:
+      st
+    case Con{j, t} GFail{r}:
+      GFail{r}
+    case Con{+j, t} GOk{+vm}:
+      grp(t, adj, f, gstep(j, search(f, adj, Go{[Frame{j, None{}, nthl(adj, j)}], vm, []}), vm))
+
+def gfin(g: GS, st: KS) -> KS:
+  match g st:
+    case GOk{vm2} KS{vm, red}:
+      KS{vm2, red}
+    case GFail{r} KS{vm, red}:
+      KS{vm, Con{r, red}}
+
+def kuhng(gs: List<&2, List<&2, Nat>>, +adj: List<&2, List<&2, Nat>>, +f: Nat, +st: KS) -> KS:
+  match gs:
+    case Nil{}:
+      st
+    case Con{g, t}:
+      kuhng(t, adj, f, gfin(grp(g, adj, f, GOk{KS.vm(st)}), st))
+
+# the red constraints of es over nv variables, its equations grouped by
+# constraint (gs: each constraint's equation indices, in order): one red
+# equation and its witness per red constraint
+def reds(+es: List<&2, E.QExpr>, +nv: Nat, gs: List<&2, List<&2, Nat>>) -> List<&2, Red>:
+  ks.red(kuhng(gs, adj(es), Nat.add(total(adj(es)), Nat.add(nv, 2n)), KS{nones(nv), Nil{}}))
+
 # The structure of a system: es over variables 0 .. nv - 1
 def structure(+es: List<&2, E.QExpr>, +nv: Nat) -> Skel:
   skel.go(adj(es), len.q(es), nv, kuhn(iota(len.q(es), 0n), adj(es), Nat.add(total(adj(es)), Nat.add(nv, 2n)), KS{nones(nv), Nil{}}))

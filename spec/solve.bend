@@ -9,10 +9,20 @@
 # constraint must be explained: it owns an equation j of the sketch's exact
 # system (Sketch.eqs) that lies in a set S of the system's equations which
 # use fewer variables than S has equations (all of them in W, and W is
-# shorter than S). Such a set over-determines its variables: for generic
-# constants it has no solution, and some equation of it has to go. This
-# is a fact about the equations alone; it does not depend on how the
-# solver matched or pinned anything.
+# shorter than S). Such a set over-determines its variables: its
+# Jacobian has rank at most |W| < |S| everywhere, so it can never be part
+# of a certified (square, regular) system, and some equation of it has to
+# go. This is a fact about the equations alone; it does not depend on how
+# the solver matched or pinned anything. Moreover S may use, besides the
+# red constraint's own equations, only equations of constraints that stay
+# (are not red): so restoring any one red constraint alone over-determines
+# what was kept, and no red flag is spare. (Without this, an
+# over-determined set padded with unrelated equations would "explain"
+# dropping anything; found by the independent audit, 2026-10-14.)
+#
+# The solver may also pin variables: hold free degrees of freedom at the
+# drawing's values (radius 0). held says each pin is exactly at its drawn
+# value with radius 0, so a pin never moves anything the user drew.
 
 import Base
 import ./num.bend as S
@@ -200,14 +210,23 @@ def mark(+red: List<&2, Nat>, sk: SK.Sketch) -> SK.Sketch:
     case SK.Sketch{vs, es, cs}:
       SK.Sketch{vs, es, mark.cons(red, cs, 0n)}
 
+# every equation of s is owned by c or by a constraint not in red
+def clean(+own: List<&2, Nat>, +red: List<&2, Nat>, +c: Nat, s: List<&2, Nat>) -> Bool:
+  match s:
+    case Nil{}:
+      True{}
+    case Con{+k, t}:
+      band(bor(eq(nth(own, k), c), bnot(mem(nth(own, k), red))), clean(own, red, c, t))
+
 # why the constraint at a position is red: equation j, which it owns,
 # lies in the over-determined set s (whose variables are among w)
 type Why is Data:
   Why{j: Nat, s: List<&2, Nat>, w: List<&2, Nat>}
 
-# each red constraint (in order) is explained by the matching Why
-def explained(+sk: SK.Sketch, red: List<&2, Nat>, why: List<&2, Why>) -> Bool:
-  match red why:
+# each red constraint (rs, in order) is explained by the matching Why,
+# red being the whole list
+def explained.go(+sk: SK.Sketch, +red: List<&2, Nat>, rs: List<&2, Nat>, why: List<&2, Why>) -> Bool:
+  match rs why:
     case Nil{} Nil{}:
       True{}
     case Nil{} Con{y, yt}:
@@ -215,4 +234,43 @@ def explained(+sk: SK.Sketch, red: List<&2, Nat>, why: List<&2, Why>) -> Bool:
     case Con{c, rt} Nil{}:
       False{}
     case Con{+c, rt} Con{Why{+j, +s, +w}, yt}:
-      band(eq(nth(owners(sk), j), c), band(mem(j, s), band(overdet(SK.Sketch.eqs(sk), s, w), explained(sk, rt, yt))))
+      band(eq(nth(owners(sk), j), c), band(mem(j, s), band(overdet(SK.Sketch.eqs(sk), s, w), band(clean(owners(sk), red, c, s), explained.go(sk, red, rt, yt)))))
+
+def explained(+sk: SK.Sketch, +red: List<&2, Nat>, why: List<&2, Why>) -> Bool:
+  explained.go(sk, red, red, why)
+
+# Pins
+# ----
+
+def dzero() -> S.D:
+  S.D{S.Z0{}, 0n}
+
+def dnth(xs: List<&2, S.D>, k: Nat) -> S.D:
+  match xs k:
+    case Nil{} k:
+      dzero()
+    case Con{h, t} 0n:
+      h
+    case Con{h, t} 1n+j:
+      dnth(t, j)
+
+def iseq(c: Cmp) -> Bool:
+  match c:
+    case LT{}:
+      False{}
+    case EQ{}:
+      True{}
+    case GT{}:
+      False{}
+
+# a = b as numbers
+def deq(+a: S.D, +b: S.D) -> Bool:
+  iseq(S.Q.cmp(S.D.toq(a), S.D.toq(b)))
+
+# every pin has radius 0 in the box and its center is its drawn value
+def held(pins: List<&2, Nat>, +g0: List<&2, S.D>, +gc: List<&2, S.D>, +gr: List<&2, S.D>) -> Bool:
+  match pins:
+    case Nil{}:
+      True{}
+    case Con{+v, t}:
+      band(deq(dnth(gr, v), dzero()), band(deq(dnth(gc, v), dnth(g0, v)), held(t, g0, gc, gr)))
