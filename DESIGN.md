@@ -1,4 +1,4 @@
-# bend-cad — Design v0.4 (draft; exact by default; Danielle's answers recorded)
+# bend-cad — Design v0.5 (draft; exact by default; sk-01 number decisions recorded)
 
 A formally verified 2D sketch constraint solver in Bend 2, aiming at Onshape /
 FreeCAD sketcher parity, feeding an implicit-function (SDF) modeling pipeline.
@@ -7,7 +7,8 @@ This document is self-contained. It does not build on any existing project in
 the workspace; external solvers and papers are cited as references only.
 History: v0.1 was audited ([AUDIT-v0.1.md](AUDIT-v0.1.md)); v0.2 folded the
 audit in; v0.3 makes exactness the default; v0.4 records Danielle's answers
-to the open questions (§19 changelog).
+to the open questions; v0.5 records the spec-number choices made in sk-01
+(§3, §19 changelog).
 
 ---
 
@@ -100,14 +101,34 @@ constraint is from holding (accidental singularities, coincidental redundancy).
 
 ## 3. Numbers
 
-**Spec numbers (decide in sk-01).** Bend's checker evaluates `Nat` in unary
-(`{==}` on `Nat.is_lt(10^6, 10^6+1)` took 1.3 s in the audit), so closed facts
-about large constants cannot be decided by computation on Peano `Nat`.
-- **Recommended:** spec naturals in **binary** (positive / N style, as in Coq),
-  so constants are small terms the checker computes with cheaply.
-- Spec `Int` as `ofNat n | negSucc n` (canonical zero).
-- Rationals as normalized integer pairs; dyadics as (mantissa, exponent).
-- The reflective normalizer's coefficients are binary.
+**Spec numbers (decided in sk-01; `spec/num.bend`).** Bend's checker evaluates
+`Nat` in unary (`{==}` on `Nat.is_lt(10^6, 10^6+1)` took 1.3 s in the audit),
+so closed facts about large constants cannot be decided by computation on
+Peano `Nat`.
+- Positives in **binary**, Coq's shape (`XH | XO p | XI p`); addition is one
+  def with a carry bit (Bend has no mutual recursion). Meaning: `Pos.nat`,
+  proven injective and a homomorphism.
+- Integers `Z0 | Zpos p | Zneg p` (Coq's `Z`, canonical zero; approved by
+  Danielle over `ofNat | negSucc`). Meaning: `Z.of_diff(a, b)` = a − b, with
+  parts `Z.pnat`/`Z.nnat`; add/mul/neg/cmp are proven to act on differences
+  as integer arithmetic does.
+- **Rationals are unreduced** `Q{n: Z, d: Pos}` with `Q.eq` (cross-
+  multiplication) as their equality; ℚ is proven a field under `Q.eq`. Reducing
+  by gcd is a runtime choice, to be proven to keep `Q.eq` (sk-04). Rationale:
+  no proof needs reduced fractions to be unique (which would need the gcd /
+  Bézout theory), and every ℚ identity becomes a ℤ identity that the
+  normalizer decides. Operations use the projections `Q.num`/`Q.den`, so they
+  compute on unknown arguments.
+- Dyadics `D{m: Z, e: Nat}` = m/2^e (exponent unary: it stays small), meaning
+  `D.toq`; add aligns exponents by peeling common steps.
+- Binary `N` is not defined yet: no consumer needs it (exponents and variable
+  indices are small unary `Nat`). Add it when one does.
+- **Reflective normalizers** (`lib/zring.bend`, `lib/qring.bend`): ℤ ring
+  identities with binary coefficients, one `ring_eq(env, e1, e2, {==})` call;
+  ℚ identities (no division) by translating to numerator/denominator and
+  cross-multiplying. Checker cost is small: (a+b+c+d)^7 ≈ 0.9 s. They are
+  bootstrapped from a unary Nat normalizer and a ℤ-via-pairs tactic, so no
+  binary carry reasoning is ever done by hand.
 
 **Runtime numbers.** Limb bigints refining the spec. Limbs are runtime `Nat`
 values < 2^16 (runtime `Nat` is native but capped at 2^48 − 1, fail-stop on every
@@ -542,7 +563,7 @@ random sketches.
 |---|---|---|---|
 | sk-00 | Scaffold: LAWS / PROOF / ROADMAP; gate rules | — | gate green on empty law set |
 | sk-P1 | **Prototype spike in Bend (untrusted):** ink-metric proposer with F32 + exact refinement, pinning, block decomposition, certification cost and precision on the depth-30 chain (well- and ill-conditioned) and on one large cyclic block | — | report feeding Q12; go/no-go on §8.5 and on F32 refinement |
-| sk-01 | Spec numbers (binary N, Int, rationals, dyadics), reflective normalizer | sk-00 | soundness law closed |
+| sk-01 | Spec numbers (binary N, Int, rationals, dyadics), reflective normalizer | sk-00 | soundness law closed — **done** (2026-10-13; N deferred, §3) |
 | sk-02 | Limb bigints refining the spec | sk-01 | refinement laws; 256-bit mul benchmark |
 | sk-03 | Typed IR, exact equation forms, meaning-lemma statements; LAWS review | sk-01, sk-P1 | LAWS reviewed by Danielle |
 | sk-04 | Rational, dyadic and matrix library (∞-norms, products) | sk-02 | laws closed |
@@ -588,6 +609,11 @@ sk-02 and sk-03 can run in parallel after sk-01.
 - Construction geometry does not bound regions, but counts as ink in the
   displacement metric.
 - Standalone points count as 1 mm of ink.
+
+**Decided in sk-01 (Claude; object if wrong):**
+- Spec rationals are unreduced, with `Q.eq` as their equality (§3). DESIGN
+  v0.4 said "normalized integer pairs"; normalization moves to the runtime
+  layer, proven to preserve `Q.eq`.
 
 **Mine to decide:**
 - **Q12** Mean-value method (polynomial slopes vs selective quadratization),
@@ -645,6 +671,11 @@ sk-02 and sk-03 can run in parallel after sk-01.
 ---
 
 ## 19. Changelog
+
+**v0.4 → v0.5 (sk-01 done):**
+- §3: spec numbers as built: binary Pos/Z (Coq shape), unreduced ℚ with
+  `Q.eq`, dyadics m/2^e, binary N deferred; ℤ and ℚ reflective normalizers.
+- §15: sk-01 marked done; §16 records the unreduced-ℚ decision.
 
 **v0.3 → v0.4 (Danielle's answers):**
 - D10: per-constraint red flags replace the `ToleranceOnly` mode.
