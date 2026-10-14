@@ -610,10 +610,10 @@ sk-02 and sk-03 can run in parallel after sk-01.
   displacement metric.
 - Standalone points count as 1 mm of ink.
 
-**Decided in sk-01 (Claude; object if wrong):**
+**Decided in sk-01 (approved by Danielle, 2026-10-13):**
 - Spec rationals are unreduced, with `Q.eq` as their equality (§3). DESIGN
-  v0.4 said "normalized integer pairs"; normalization moves to the runtime
-  layer, proven to preserve `Q.eq`.
+  v0.4 said "normalized integer pairs"; reduction moves to the runtime layer,
+  proven to preserve `Q.eq`, and is used only where sizes would grow (R10).
 
 **Mine to decide:**
 - **Q12** Mean-value method (polynomial slopes vs selective quadratization),
@@ -636,6 +636,10 @@ sk-02 and sk-03 can run in parallel after sk-01.
   isolation.
 - **R8** No native library target (#813) constrains host integration.
 - **R9** No external references is a visible parity gap.
+- **R10** Unreduced rationals could grow along long chains of rational
+  arithmetic. Hot paths use dyadics at a fixed per-block precision and grid
+  integers, so this should stay local (dimension expressions, meaning-lemma
+  constants); watch sizes and reduce by gcd at runtime where they grow.
 
 ---
 
