@@ -498,9 +498,11 @@ index-overlap checks, and `cert_local` holds by construction.
 radius rᵢ for each unknown, a factor q, Y ≈ J_y⁻¹ (a row per unknown), and
 a center and radius for each parameter. Per-unknown radii make B
 a box, as in interval Newton methods, so blocks that mix scales still
-certify. A radius past the end of the list is 0, so B fixes every
-coordinate past the last unknown at 0 and has exactly the block's
-dimension. (The first draft used one radius and plain list norms; the audit
+certify. A point of B has exactly as many entries as the center (and a
+radius past the end of the list is 0), so B has exactly the block's
+dimension. (Stating the length, rather than relying on zero radii past the
+end, keeps every vector inside the proofs at length n, so vector identities
+are plain list equalities; 2026-10-14.) (The first draft used one radius and plain list norms; the audit
 showed `cert_contract` was then false: a coordinate past the unknowns
 passes through N unchanged and never contracts.)
 
@@ -514,7 +516,7 @@ B = {|yᵢ − ỹᵢ| ≤ rᵢ} (all certificate numbers sent through H):
 - `cert_contract`: if s ≥ 0 and |y₁ᵢ − y₂ᵢ| ≤ s·rᵢ for all i, then
   |N(y₁)ᵢ − N(y₂)ᵢ| ≤ q·s·rᵢ for all i (contraction in the r-weighted
   infinity norm, stated without division);
-- `cert_fix`: a fixed point of N is a zero of f;
+- `cert_fix`: a fixed point of N in B is a zero of f;
 - `cert_unique`: B holds at most one zero of f.
 
 In a complete ordered field these give exactly one zero of the block in B

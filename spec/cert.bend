@@ -16,9 +16,9 @@
 # fixed points are zeros of f. (In a complete ordered field, Banach's
 # theorem then gives exactly one zero in B; DESIGN §8.4, Q18.)
 #
-# Vectors are lists read with trailing zeros (spec/mat.bend). A radius past
-# the end of a radius list is 0, so a box fixes every coordinate past its
-# last radius at 0: B has exactly the block's dimension.
+# Vectors are lists read with trailing zeros (spec/mat.bend). A point of B
+# has exactly as many entries as the center, and a radius past the end of
+# a radius list is 0 (a parameter past the last radius is fixed at 0).
 
 import Base
 import ./ring.bend as E
@@ -147,9 +147,10 @@ def rbnd(~F: O.OField, d: M.Vec(~F), r: M.Vec(~F)) -> Data:
     case Con{a, ds} Con{s, rs}:
       M.Both(M.bnd(~F, a, s), rbnd(~F, ds, rs))
 
-# y lies in the box B: |y_i - ỹ_i| <= r_i
-def ball(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +c: Cert<K>, y: M.Vec(~F)) -> Data:
-  rbnd(~F, vsub(~F, y, center(~K, ~F, ~H, c)), radii(~K, ~F, ~H, c))
+# y lies in the box B: y has as many entries as the center ỹ, and
+# |y_i - ỹ_i| <= r_i
+def ball(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +c: Cert<K>, +y: M.Vec(~F)) -> Data:
+  M.Both({M.len(~F, y) == M.len(~F, center(~K, ~F, ~H, c)) : Nat}, rbnd(~F, vsub(~F, y, center(~K, ~F, ~H, c)), radii(~K, ~F, ~H, c)))
 
 # u and v are within s radii of each other: |u_i - v_i| <= s r_i
 def near(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, c: Cert<K>, +s: O.C(F), u: M.Vec(~F), v: M.Vec(~F)) -> Data:

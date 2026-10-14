@@ -17,8 +17,8 @@ import ./lib/cert.bend as CK
 # every ordered field F that K maps into (H: a ring map with sound
 # comparisons). For every z in the parameters' box, write N(y) =
 # y - Y f(y; z) for the certificate's Newton map and B for the box
-# |y_i - ỹ_i| <= r_i (r_i = 0 past the last radius, so B has the block's
-# dimension). Then 0 <= q < 1, B contains its center, N maps B into itself
+# |y_i - ỹ_i| <= r_i, for y with as many entries as ỹ (r_i = 0 past the
+# last radius). Then 0 <= q < 1, B contains its center, N maps B into itself
 # and contracts it by q (in the r-weighted infinity norm), a fixed point of
 # N is a zero of f, and B holds at most one zero. In a complete ordered
 # field these give exactly one zero of the block in B (Banach, proven in
@@ -94,6 +94,7 @@ law cert_fix:
   for  ok: {CK.check(~K, b, c) == True{} : Bool}
   for +z: M.Vec(~F)
   for +y: M.Vec(~F)
+  for  hy: C.ball(~K, ~F, ~H, c, y)
   for  hf: M.vbnd(~F, C.vsub(~F, C.newton(~K, ~F, ~H, b, c, z, y), y), O.zero(F))
   M.vbnd(~F, C.bfun(~F, b, y, z), O.zero(F))
 
