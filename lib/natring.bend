@@ -23,6 +23,7 @@ type NExpr is Data:
   NCst{c: Nat}
   NAdd{a: NExpr, b: NExpr}
   NMul{a: NExpr, b: NExpr}
+  NDbl{a: NExpr}
 
 # the i-th entry of env, 0n past its end
 def lookup(env: List<&2, Nat>, i: Nat) -> Nat:
@@ -44,6 +45,8 @@ def eval(+env: List<&2, Nat>, e: NExpr) -> Nat:
       Nat.add(eval(env, a), eval(env, b))
     case NMul{a, b}:
       Nat.mul(eval(env, a), eval(env, b))
+    case NDbl{a}:
+      Nat.double(eval(env, a))
 
 # Monomials: ascending lists of variable numbers
 # ---------------------------------------------
@@ -184,6 +187,8 @@ def norm(e: NExpr) -> List<&2, NTerm>:
       padd(norm(a), norm(b))
     case NMul{a, b}:
       pmul(norm(a), norm(b))
+    case NDbl{a}:
+      pmul(pconst(2n), norm(a))
 
 # Refutations
 # -----------
@@ -361,6 +366,16 @@ def pconst_ok(-env: List<&2, Nat>, c: Nat) -> {epoly(env, pconst(c)) == c : Nat}
       %N.mul_one(1n+k) : {_ == 1n+k : Nat}
       {==}
 
+# Nat.double as a product, for the NDbl case
+def double_mul(a: Nat) -> {Nat.mul(2n, a) == Nat.double(a) : Nat}:
+  match a:
+    case 0n:
+      {==}
+    case 1n++p:
+      %N.add_succ(p, Nat.add(p, 0n)) : {1n+_ == 2n+Nat.double(p) : Nat}
+      %double_mul(p) : {2n+Nat.add(p, Nat.add(p, 0n)) == 2n+_ : Nat}
+      {==}
+
 def norm_ok(+env: List<&2, Nat>, e: NExpr) -> {epoly(env, norm(e)) == eval(env, e) : Nat}:
   match e:
     case NVar{+i}:
@@ -379,6 +394,11 @@ def norm_ok(+env: List<&2, Nat>, e: NExpr) -> {epoly(env, norm(e)) == eval(env, 
       %norm_ok(env, a) : {epoly(env, pmul(norm(a), norm(b))) == Nat.mul(_, eval(env, b)) : Nat}
       %norm_ok(env, b) : {epoly(env, pmul(norm(a), norm(b))) == Nat.mul(epoly(env, norm(a)), _) : Nat}
       %pmul_ok(env, norm(a), norm(b)) : {_ == Nat.mul(epoly(env, norm(a)), epoly(env, norm(b))) : Nat}
+      {==}
+    case NDbl{+a}:
+      %norm_ok(env, a) : {epoly(env, pmul(pconst(2n), norm(a))) == Nat.double(_) : Nat}
+      %double_mul(epoly(env, norm(a))) : {epoly(env, pmul(pconst(2n), norm(a))) == _ : Nat}
+      %pmul_ok(env, pconst(2n), norm(a)) : {_ == Nat.mul(2n, epoly(env, norm(a))) : Nat}
       {==}
 
 # The normalizer's use: two expressions with equal normal forms are equal
