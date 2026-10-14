@@ -1,4 +1,4 @@
-# bend-cad — Design v0.8 (draft; exact by default; meaning lemmas proven)
+# bend-cad — Design v0.9 (draft; exact by default; sk-04 library built)
 
 A formally verified 2D sketch constraint solver in Bend 2, aiming at Onshape /
 FreeCAD sketcher parity, feeding an implicit-function (SDF) modeling pipeline.
@@ -10,8 +10,9 @@ audit in; v0.3 makes exactness the default; v0.4 records Danielle's answers
 to the open questions; v0.5 records the spec-number choices made in sk-01
 (§3); v0.6 records the typed IR, equation forms and meaning statements of
 sk-03 (§4, §5); v0.7 folds in Danielle's answers to the sk-03 review; v0.8
-records the meaning lemmas proven in every ordered field (§5.5, §19
-changelog).
+records the meaning lemmas proven in every ordered field (§5.5); v0.9
+records the sk-04 library: rational order, ℚ in every ordered field,
+vectors and matrices, gcd reduction, canonical ℚ (§3, §8.3, §19 changelog).
 
 ---
 
@@ -124,6 +125,24 @@ Peano `Nat`.
   compute on unknown arguments.
 - Dyadics `D{m: Z, e: Nat}` = m/2^e (exponent unary: it stays small), meaning
   `D.toq`; add aligns exponents by peeling common steps.
+- **Order (sk-04):** `Q.lt` (`Q.cmp` says LT) is a strict total order up to
+  `Q.eq`, respected by `Q.eq`, by adding a rational and by positive products,
+  so ℚ is an ordered field under `Q.eq`. Proven through signs
+  (`lib/zord.bend`): x < y exactly when a cross difference is positive, and
+  positivity is closed under + and · by computation.
+- **ℚ in every ordered field (sk-04):** `O.ofq` respects `Q.eq`, +, ·, −, 0
+  and 1, and preserves and reflects the order. So a rational fact decided by
+  computation holds in every ordered field: the bridge from a checker's
+  arithmetic to the exact (real) solution.
+- **Reduction (sk-04):** `lib/qreduce.bend` reduces by the gcd at runtime.
+  Division and gcd are untrusted; the result is checked by multiplying back,
+  so `Q.eq(reduce x, x)` needs no divisibility theory.
+- **Canonical ℚ (sk-04):** `lib/qfield.bend`, 0 or a sign and a Stern–Brocot
+  word (`lib/sb.bend`), so Bend's equality is equality of rationals; it is an
+  ordered-field instance (`ofield_exists`): the axioms of `spec/field.bend`
+  are consistent and every law stated for all ordered fields has content.
+  Encoding is subtractive Euclid (about n/d + d/n steps): for proofs and
+  small checks, not runtime.
 - Binary `N` is not defined yet: no consumer needs it (exponents and variable
   indices are small unary `Nat`). Add it when one does.
 - **Reflective normalizers** (`lib/zring.bend`, `lib/qring.bend`): ℤ ring
@@ -472,6 +491,18 @@ Mean-value bounds: either polynomial slopes built by telescoping with Taylor
 bounds, or selective quadratization (constant Hessian, exact midpoint identity
 2(f(x) − f(y)) = (2J₀ + T(x + y))(x − y)). Decide in sk-05 (Q12).
 
+*Linear algebra as built (sk-04, `spec/mat.bend`):* vectors are lists read
+with trailing zeros and matrices lists of rows, so (AB)v = A(Bv), (A + B)v,
+(−A)v and Iv = v hold with no shape conditions. Two parallel copies: over
+every ordered field F (where the contraction argument lives) and over the
+dyadics (what the checker computes, exactly); `ofd` maps the second into the
+first as a ring map, and every dyadic vector and matrix operation becomes
+F's. Norms are computed on dyadics (‖A‖∞ = largest row sum of |aᵢⱼ|); in F
+there are only bounds: `vbnd(v, s)` is ‖v‖∞ ≤ s, and `mmaj(M, B)` says M's
+entries are at most |B|'s. The product law: ‖Mv‖ ≤ ‖B‖·s for M majorized by
+B and ‖v‖ ≤ s, so a field matrix bounded entrywise by a dyadic one (the
+Taylor bounds of J over the ball) is handled like a dyadic one.
+
 ### 8.4 Composition theorem (ℚ only)
 
 By induction over blocks:
@@ -674,7 +705,7 @@ clang or the JS engine; base.bend; LAWS.bend (spec numbers, typed IR, exact
 equation forms, constant definitions, tolerance checks, meaning-lemma
 statements, `accept_sound`) and the spec files it rests on (`spec/num.bend`,
 `spec/ring.bend`, `spec/big.bend`, `spec/field.bend`, `spec/geom.bend`,
-`spec/sketch.bend`);
+`spec/sketch.bend`, `spec/mat.bend`);
 optionally Euclidean-field axioms for SDF laws.
 
 **Not trusted:** the proposer; the UI; F32 rendering.
@@ -694,7 +725,7 @@ random sketches.
 | sk-01 | Spec numbers (binary N, Int, rationals, dyadics), reflective normalizer | sk-00 | soundness law closed — **done** (2026-10-13; N deferred, §3) |
 | sk-02 | Limb bigints refining the spec | sk-01 | refinement laws; 256-bit mul benchmark — **done** (2026-10-13; §3) |
 | sk-03 | Typed IR, exact equation forms, meaning-lemma statements; LAWS review | sk-01, sk-P1 | LAWS reviewed by Danielle — **done** (2026-10-13; Q13–Q15 and follow-ups folded in) |
-| sk-04 | Rational, dyadic and matrix library (∞-norms, products); Q order laws; canonical ℚ as an ordered-field instance (optional) | sk-02 | laws closed |
+| sk-04 | Rational, dyadic and matrix library (∞-norms, products); Q order laws; canonical ℚ as an ordered-field instance (optional) | sk-02 | laws closed — **done** (2026-10-13; 37 laws: ℚ order, ℚ in every ordered field, gcd reduction, canonical ℚ, vectors and matrices; runtime bigint dyadics deferred to sk-05, §16) |
 | sk-05 | Parametric block certificate (§8.3), mean-value method (Q12) | sk-04 | law closed |
 | sk-06 | Composition theorem (§8.4), side conditions (§8.6) | sk-05 | laws closed |
 | sk-07 | Core vocabulary §5.1 + meaning lemmas | sk-03, sk-06 | laws closed — **meaning lemmas proven** in every ordered field (2026-10-13); remaining: §8.6 side-condition certification for the vocabulary (with sk-06), line–line / point–circle / circle–circle distances |
@@ -757,6 +788,19 @@ sk-02 and sk-03 can run in parallel after sk-01.
 - **Q12** Mean-value method (polynomial slopes vs selective quadratization),
   from sk-P1 data.
 
+**Proposed in sk-04 (for Danielle):**
+- **Q16** State the block certificate (§8.3) and composition (§8.4) for every
+  ordered field F, like the meanings (Q13), instead of over ℚ only. The
+  contraction inequalities then hold in ℝ itself, where Banach's fixed point
+  gives the exact solution (the same meta-level step as before, but simpler),
+  and ℚ is the instance `ofield_exists` builds. sk-04's matrix library is
+  already stated this way.
+- **Q17** Runtime numbers for the checker: per-entry dyadics over bigints
+  (refining `spec/mat.bend`'s dyadic copy, as sk-02 refines `Z`) or
+  fixed-point integers at one exponent per block (as the sk-P1 prototype did,
+  which avoids exponent alignment). Decide in sk-05 with the checker; the
+  spec-level laws do not change.
+
 ---
 
 ## 17. Risks
@@ -813,6 +857,14 @@ sk-02 and sk-03 can run in parallel after sk-01.
 ---
 
 ## 19. Changelog
+
+**v0.8 → v0.9 (sk-04 library):**
+- §3: rational order (`q_lt_*`), ℚ in every ordered field (`ofq_*`), checked
+  gcd reduction (`q_reduce`), canonical ℚ as an ordered field
+  (`ofield_exists`). §8.3: vectors and matrices as built (`spec/mat.bend`,
+  20 laws). §14: `spec/mat.bend` trusted. §15: sk-04 done (92 laws). §16:
+  Q16 (certificates in every ordered field) and Q17 (checker runtime
+  numbers) proposed.
 
 **v0.7 → v0.8 (meaning lemmas proven):**
 - §5.5: the six meaning laws are proven in every ordered field (moved from
