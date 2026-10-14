@@ -125,5 +125,8 @@ are within 2× of what the checker certifies.
   worst one. At depth 30 the well chain is under 1 nm from P = 64 and the
   flat one from P = 96.
 - **Cost:** within 2–4× of the spike's limb prototype at depth 30, with
-  no runtime bigints: about linear in depth and a little above linear in
+  no runtime bigints. Parsing is under 3% (`proto/plan_chain_parse.bend`:
+  0.01 s at depth 30, 0.1 s at depth 300), so the times are the checker's.
+  Per block: ~15 ms at P = 128 at both depth 30 and 100 (linear in
+  depth), ~47 ms at P = 320, ~75 ms at P = 448: a little above linear in
   P. A limb K (an `Emb` like `demb`) is a speedup, not a blocker.
