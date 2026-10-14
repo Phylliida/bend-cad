@@ -34,15 +34,20 @@ type Plan<-K: N.Num> is Data:
 # Local numbering
 # ---------------
 
-# v - o (0 when v < o)
-def nsub(v: Nat, o: Nat) -> Nat:
-  match v o:
-    case v 0n:
-      v
-    case 0n 1n+k:
+def pred(v: Nat) -> Nat:
+  match v:
+    case 0n:
       0n
-    case 1n+w 1n+k:
-      nsub(w, k)
+    case 1n+w:
+      w
+
+# v - o (0 when v < o)
+def minus(o: Nat, v: Nat) -> Nat:
+  match o:
+    case 0n:
+      v
+    case 1n+k:
+      minus(k, pred(v))
 
 def pos.go(b: Bool, rest: Nat) -> Nat:
   match b:
@@ -66,7 +71,7 @@ def loc.go(b: Bool, +o: Nat, +n: Nat, +pars: List<&2, Nat>, +v: Nat) -> Nat:
     case True{}:
       Nat.add(n, pos(v, pars))
     case False{}:
-      nsub(v, o)
+      minus(o, v)
 
 def loc(+o: Nat, +n: Nat, +pars: List<&2, Nat>, +v: Nat) -> Nat:
   loc.go(KA.natle(1n+v, o), o, n, pars, v)
@@ -255,3 +260,22 @@ def sides_ok(~K: N.Num, +box: List<&2, KB.KB<K>>, ss: List<&2, SK.Side>) -> Bool
 # every side condition holds over the box (radii not negative)
 def check_sides(~K: N.Num, +sides: List<&2, SK.Side>, +gc: N.KVec(~K), +gr: N.KVec(~K)) -> Bool:
   KA.band(KA.kvle(~K, Nil{}, gr), sides_ok(~K, CK.zipb(~K, gc, gr), sides))
+
+# Lists of numbers
+# ----------------
+
+def nlen(xs: List<&2, Nat>) -> Nat:
+  match xs:
+    case Nil{}:
+      0n
+    case Con{h, t}:
+      1n+nlen(t)
+
+def nthn(xs: List<&2, Nat>, k: Nat) -> Nat:
+  match xs k:
+    case Nil{} k:
+      0n
+    case Con{h, t} 0n:
+      h
+    case Con{h, t} 1n+j:
+      nthn(t, j)
