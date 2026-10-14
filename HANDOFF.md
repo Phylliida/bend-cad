@@ -328,10 +328,22 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
 - Independent audit of the drafts: no blocker; fixed: red flags could be
   spare (padding an over-determined set; the real search over-flagged a
   midpoint sketch), pins were promised but not reported.
-- Next: Danielle's review; solve_total and solve_complete statements
-  (completeness needs QExpr derivatives in the spec and a precision
-  budget); pin witnesses; ink-metric KKT (§10.3); speed (gate ~70 s, the
-  solver demo ~30 s of it).
+- Completeness drafts (open, type-checked by tools/stmtcheck.py in the
+  gate): solve_total and solve_complete in ROADMAP; spec/deriv.bend
+  (deriv, jac, Inverse entrywise, Regular) and spec/solve.bend's
+  completeness part (free, dyadic, PinnedAt, Near, Strict);
+  tests/regular_demo.bend proves Regular holds in Q (non-vacuity of the
+  shape). Solver changes for them: solve_b budget, structure-only
+  red_of/pins_of, 4-ulp settle, 2^40 step cutoff, elimination P+32 bits,
+  Y P/2 bits, retry on every failure (refusal now costs the whole budget:
+  11 s natively for the 3-point impossible sketch at budget 7).
+- Danielle (2026-10-14): red constraints shown whole; expanding names the
+  equation (lib/solve.bend eqlabel).
+- Next: audit of the completeness drafts (agent), Danielle's review of
+  all six; then prove solve_total (Kuhn/König, constraint-atomic
+  rollback, fuel bounds, wf_dec completeness), then solve_complete
+  (Kantorovich with rounding); pin witnesses; ink-metric KKT (§10.3);
+  speed.
 - Bend lessons: constructor names are global (Done clashed: NMore/NDone);
   `match` cannot scrutinize a computed value (helper def or pass it as a
   parameter of the recursive def: the "cur" idiom used for every loop

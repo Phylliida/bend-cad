@@ -848,18 +848,36 @@ in a shorter list; `explained`; `held`).
   any one red constraint over-determines what was kept: no red flag is
   spare.
 - `solve_pins`: each pin has radius 0 and its center is its drawn value.
-- `solve_total` (open, not drafted): the structure stage never fails; the
-  reported red constraints are always explained; wf and coverage are
-  preserved by marking.
-- `solve_complete` (open, not drafted; the hard one): in a complete
-  ordered field, if the sketch less its red constraints, with the pins at
-  their drawn values, has a solution x* at which every block's Jacobian is
-  invertible and every side condition is strictly positive (or
-  variable-free), there is δ > 0 such that every drawing within δ of x*
-  (pins equal) is certified with a box containing x*, for some precision
-  budget. A Newton–Kantorovich argument with rounding, stated
-  qualitatively; needs derivatives of `QExpr` in the spec and a budget
-  parameter on `solve` (the default stops at 512 bits).
+- `solve_total` (open, drafted 2026-10-14): for a well-formed, covered
+  sketch, whatever the drawing and budget, the reported red constraints,
+  reasons and pins are the sketch's own (`red_of`, `why_of`, `pins_of`
+  depend on the sketch alone); the red ones are explained; the marked
+  sketch passes the solver's wf check; the pins are distinct variables;
+  and the kept system is square once the pins are held.
+- `solve_complete` (open, drafted 2026-10-14; the hard one): in a complete
+  ordered field, a point x with one entry per variable that is the drawing
+  g0 at the pins, solves the sketch less its red constraints, meets its
+  side conditions strictly (a variable-free ≥ 0 may hold with equality),
+  and is a regular point in the free variables (`spec/deriv.bend`: the
+  Jacobian of symbolic derivatives has a two-sided inverse, entrywise),
+  for a sketch whose constants are dyadic: there are d > 0 and a budget b
+  such that from every drawing within d of x that agrees with g0 at the
+  pins, `solve_b` certifies with x in its box. A Newton–Kantorovich
+  argument with rounding, stated qualitatively. `tests/regular_demo.bend`
+  shows `Regular` holds (in ℚ, at a 3-4-5 point): the first draft compared
+  matrices as lists, and `M.ident` omits trailing zeros, which made the
+  law vacuous; caught before review.
+- To make `solve_complete` true the solver changed: a budget (`solve_b`;
+  `solve` is budget 7, up to 512 bits); Newton settles within 4 ulps (an
+  exact fixed point can be missed forever near a rounding midpoint) and
+  fails a precision on a step longer than 2⁴⁰ nm; elimination at P + 32
+  bits and Y at P/2 bits, so both grow with P; every failure moves to the
+  next precision (stopping at a low precision broke completeness for
+  ill-conditioned blocks). The price: refusing an impossible sketch costs
+  every precision of the budget (the 3-point demo: 0.4 s at budget 2,
+  11 s at 7). Faster refusal would need a proven infeasibility
+  certificate (§8.7, sk-13) or a smaller interactive budget with "try
+  harder".
 
 How the stages meet the laws: red constraints are found by matching
 constraints as units, in order (all of a constraint's equations or none;
