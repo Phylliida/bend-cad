@@ -813,12 +813,19 @@ sk-02 and sk-03 can run in parallel after sk-01.
   (nested towers of degree 2^k), not a few exact constants. Transcendental
   constants (π, cos θ) keep §7.3's balls; no exact computable field holds
   them in general.
-  Claude's call within this (Danielle may overrule): K needs only an
-  ordered *ring* with decided order, since §8.3 never divides (Y is
-  certificate data). Every `OField` qualifies by forgetting `inv`, and so
-  does D, which is not a field. sk-05 therefore adds a decided-ordered-ring
-  record and states the checker over it; `dmat` becomes the D instance of
-  the generic matrix code rather than a parallel copy.
+  Claude's call within this (Danielle agreed it seems right): K carries no
+  laws at all, only data and operations (zero, one, add, mul, neg, and a
+  comparison returning `Cmp`). All laws live in F, on the map: e is a ring
+  map (e(a + b) = e(a) + e(b), ...), and the comparison is sound through it
+  (LT gives e(a) < e(b) in F, and so on). This is how D already works: D is
+  m/2^e, not canonical, and `ofd_add` etc. are stated in F. So no K needs
+  canonical forms, and ℚ(√d) is pairs over ℚ with e(a, b) = a + b·s, its
+  laws proven in F from s² = d and s > 0 (much lighter than proving
+  ℚ(√d)'s own field laws). §8.3 never divides (Y is certificate data), so
+  no inverse is needed. `dmat` becomes the D instance of the generic
+  matrix code rather than a parallel copy.
+  Order of work: the generic shape with the D instance in sk-05; ℚ next
+  (`ofq` exists); ℚ(√d) later, as its own milestone.
 
 ---
 

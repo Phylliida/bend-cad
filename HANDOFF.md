@@ -171,14 +171,15 @@ laws):
 §8.6 side conditions over balls). Danielle answered (2026-10-13, DESIGN §16):
 **Q16 yes**, certificates for every ordered field. **Q17 decided**: the
 checker runs "on the same numbers as everything else, so it can deal with
-irrationals". It is generic over its computing numbers K (a decided ordered
-ring record; D, ℚ, ℚ(√d) instances), and the law holds in every F with an
-order-preserving ring map K → F. (My first reading, fixed dyadics, was
+irrationals". It is generic over its computing numbers K (data + operations + a
+Cmp-valued comparison, no laws; D, ℚ, ℚ(√d) instances), and the law holds in
+every F with a map K → F that carries all the laws (ring map, comparison
+sound), as `ofd` already does for D. (My first reading, fixed dyadics, was
 wrong; she restated it after the roll.)
 
 First sk-05 step: draft the block-certificate law statement (every F, every
-map K → F, certificate data in K, polynomial system f(y, z)), the decided
-ordered ring record, and the checker shape, for Danielle's review before
+map K → F, certificate data in K, polynomial system f(y, z)), the K record
+and the map record, and the checker shape, for Danielle's review before
 proving; decide Q12 (mean-value method) there.
 
 sk-07's remaining items: line–line / point–circle / circle–circle distances
