@@ -1,4 +1,4 @@
-# bend-cad — Design v0.9 (draft; exact by default; sk-04 library built)
+# bend-cad — Design v0.11 (draft; exact by default; sk-05b built: certified blocks have exactly one zero in ℝ)
 
 A formally verified 2D sketch constraint solver in Bend 2, aiming at Onshape /
 FreeCAD sketcher parity, feeding an implicit-function (SDF) modeling pipeline.
@@ -598,7 +598,39 @@ there qⁿ never drops below an infinitesimal.
 No complete ordered field can be built in Bend (ℝ has no decidable order),
 so a mis-stated completeness axiom could make the theorem vacuous. Guard:
 state the axioms in textbook form and check them against mathlib's ℝ in
-Lean. (The first plan here, approximate solvability in every F with the
+Lean.
+
+*As built (sk-05b, 2026-10-14).* `spec/real.bend` (trusted) states
+completeness in Skolem form, the way `OField` states inverses: a
+`Complete<F>` record holds `arch(x)`, a natural number above x, and
+`lim(s, m)`, the limit of a sequence s that is Cauchy with modulus m
+(|sᵢ − sⱼ| ≤ 1/(k+1) for i, j ≥ m(k)), which it approaches with the same
+modulus. Sequences and moduli are Bend functions; proofs pass them, and
+families of per-index facts, as template parameters (reusable, unlike plain
+function arguments). The law `cert_exists` (LAWS.bend, proven in
+`lib/banach.bend`): in every complete ordered field, a checked certificate's
+box holds a zero of its block for every choice of the parameters in their
+box. The proof iterates the Newton map from the center (cert_self keeps the
+iterates in the box; cert_contract brings any two points of the box, which
+are within 2 radii, q^k closer after k steps), so each coordinate is Cauchy
+with an explicit modulus (Bernoulli's inequality and the Archimedean
+property, `lib/real.bend`); the limits form a point of the box (closed
+bounds pass to limits), within 2qᵏ radii of the k-th iterate, which the
+Newton map moves by at most qᵏ·4q·rᵢ for every k: a fixed point, so a zero
+(cert_fix). With cert_unique: exactly one. Weakening either completeness
+axiom (the limit bound k+1 instead of 1/(k+1), or a trivial Archimedean
+law) breaks the proof.
+
+The Lean guard (`lean/`, run by `lean/check.sh`): `BendCad/Axioms.lean`
+transcribes `OField` and `Complete` (and `sub`, `le`, `bnd`, `nat`, `eps`,
+`cauchy`) and proves that mathlib's ℝ satisfies every axiom
+(`axioms_consistent`), and that ℚ with its usual operations has no
+`Complete` structure (`rat_not_complete`, via rational approximations of
+√2), using only Lean's standard axioms. `tools/axcheck.py` parses both
+sides into one normal form and compares them field by field (planted
+transcription errors are caught); `nat`, a two-case match, is compared by
+eye. `tests/sqrt5_demo.bend` (gated) uses the law: from the circle-circle
+certificate, every complete ordered field has a positive b with b² = 5. (The first plan here, approximate solvability in every F with the
 step to ℝ on paper, is replaced; it would need two more laws: a
 quantitative `cert_fix` and a bound on how N moves with the parameters.)
 
@@ -815,7 +847,7 @@ random sketches.
 | sk-03 | Typed IR, exact equation forms, meaning-lemma statements; LAWS review | sk-01, sk-P1 | LAWS reviewed by Danielle — **done** (2026-10-13; Q13–Q15 and follow-ups folded in) |
 | sk-04 | Rational, dyadic and matrix library (∞-norms, products); Q order laws; canonical ℚ as an ordered-field instance (optional) | sk-02 | laws closed — **done** (2026-10-13; 37 laws: ℚ order, ℚ in every ordered field, gcd reduction, canonical ℚ, vectors and matrices; runtime bigint dyadics deferred to sk-05, §16) |
 | sk-05 | Parametric block certificate (§8.3), mean-value method (Q12): generic K matrix library, slopes, ball arithmetic, checker, the six `cert_*` laws | sk-04 | **done (2026-10-14): 98 laws, gate green (~15 s)** |
-| sk-05b | Complete ordered fields (Q18): template (Archimedean + Cauchy with a modulus), axioms cross-checked against mathlib's ℝ in Lean, Banach's theorem; exactly one zero per block | sk-05 | laws closed |
+| sk-05b | Complete ordered fields (Q18): template (Archimedean + Cauchy with a modulus), axioms cross-checked against mathlib's ℝ in Lean, Banach's theorem; exactly one zero per block | sk-05 | **done (2026-10-14): `cert_exists`, 99 laws; Lean cross-check passes** |
 | sk-06 | Composition theorem (§8.4, exactly one solution in a complete ordered field), side conditions (§8.6), optional denominator clearing for D (Q19) | sk-05, sk-05b | laws closed |
 | sk-07 | Core vocabulary §5.1 + meaning lemmas | sk-03, sk-06 | laws closed — **meaning lemmas proven** in every ordered field (2026-10-13); remaining: §8.6 side-condition certification for the vocabulary (with sk-06), line–line / point–circle / circle–circle distances |
 | sk-08 | `accept_sound`: certified, untouched, flips, diagnostics | sk-07 | law closed |
@@ -1005,6 +1037,11 @@ sk-02 and sk-03 can run in parallel after sk-01.
 ---
 
 ## 19. Changelog
+
+**v0.10 → v0.11 (sk-05b done):**
+- §8.4: complete ordered fields as built (`spec/real.bend`, Skolem form),
+  the law `cert_exists` and its Banach proof, the Lean cross-check against
+  mathlib's ℝ (and ℚ shown not complete), the √5 demo. §15: sk-05b done.
 
 **v0.9 → v0.10 (sk-05 done):**
 - §8.3: the parametric block certificate as built and proven: the checker

@@ -28,6 +28,7 @@ import ./nat.bend as LN
 import ./cert.bend as CK
 import ./certpf.bend as CP
 import ./real.bend as RL
+import ./kball.bend as KB
 
 # From coordinates to vectors
 # ---------------------------
@@ -446,3 +447,30 @@ def cert_exists(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +b
   +y = ys(~K, ~F, ~R, ~H, b, c, z)
   +hy = ys_ball(~K, ~F, ~R, ~H, b, c, ok, z, hz)
   (y, (hy, CP.cert_fix(~K, ~F, ~H, b, c, ok, z, y, hy, ys_fix(~K, ~F, ~R, ~H, b, c, ok, z, hz))))
+
+def sub_l(~F: O.OField, +a: O.C(F), +a2: O.C(F), +b: O.C(F), e: {a == a2 : O.C(F)}) -> {O.sub(~F, a, b) == O.sub(~F, a2, b) : O.C(F)}:
+  %e : {O.sub(~F, a, b) == O.sub(~F, _, b) : O.C(F)}
+  {==}
+
+def sub_r(~F: O.OField, +a: O.C(F), +b: O.C(F), +b2: O.C(F), e: {b == b2 : O.C(F)}) -> {O.sub(~F, a, b) == O.sub(~F, a, b2) : O.C(F)}:
+  %e : {O.sub(~F, a, b) == O.sub(~F, a, _) : O.C(F)}
+  {==}
+
+# Signs from the box
+# ------------------
+
+def box_lo(~F: O.OField, +x: O.C(F), +ci: O.C(F), +ri: O.C(F), h: M.bnd(~F, O.sub(~F, x, ci), ri)) -> O.le(~F, O.sub(~F, ci, ri), x):
+  (h1, h2) = h
+  RL.le_by(~F, O.sub(~F, ci, ri), x, O.add(F, ri, O.sub(~F, x, ci)), FR.fring_eq(~F, [ri, x, ci], E.ZAdd{E.ZVar{0n}, E.ZSub{E.ZVar{1n}, E.ZVar{2n}}}, E.ZSub{E.ZVar{1n}, E.ZSub{E.ZVar{2n}, E.ZVar{0n}}}, {==}), h2)
+
+# coordinate i of every point of the box is positive, when the checker's
+# numbers say center_i - radius_i > 0
+def box_pos(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +c: C.Cert<K>, +y: M.Vec(~F), +hy: C.ball(~K, ~F, ~H, c, y), +i: Nat, +hi: {KA.natle(1n+i, M.len(~F, C.center(~K, ~F, ~H, c))) == True{} : Bool}, hk: {KA.klt(~K, N.nzero(K), KA.ksub(~K, KB.klook(~K, C.Cert.yc(K, c), i), KB.klook(~K, C.Cert.yr(K, c), i))) == True{} : Bool}) -> O.lt(F, O.zero(F), O.lookup(~F, y, i)):
+  +ck = KB.klook(~K, C.Cert.yc(K, c), i)
+  +rk = KB.klook(~K, C.Cert.yr(K, c), i)
+  +ci = O.lookup(~F, C.center(~K, ~F, ~H, c), i)
+  +ri = O.lookup(~F, C.radii(~K, ~F, ~H, c), i)
+  +h1 = FO.lt_subst_l(~F, N.emap(K, F, H, N.nzero(K)), O.zero(F), N.emap(K, F, H, KA.ksub(~K, ck, rk)), N.e_zero(K, F, H), KA.klt_ok(~K, ~F, ~H, N.nzero(K), KA.ksub(~K, ck, rk), hk))
+  +h2 = RL.lt_rw_r(~F, O.zero(F), N.emap(K, F, H, KA.ksub(~K, ck, rk)), O.sub(~F, N.emap(K, F, H, ck), N.emap(K, F, H, rk)), Equal.sym(O.C(F), O.sub(~F, N.emap(K, F, H, ck), N.emap(K, F, H, rk)), N.emap(K, F, H, KA.ksub(~K, ck, rk)), KA.es(~K, ~F, ~H, ck, rk)), h1)
+  +e = Equal.trans(O.C(F), O.sub(~F, N.emap(K, F, H, ck), N.emap(K, F, H, rk)), O.sub(~F, ci, N.emap(K, F, H, rk)), O.sub(~F, ci, ri), sub_l(~F, N.emap(K, F, H, ck), ci, N.emap(K, F, H, rk), CP.klook_ofk(~K, ~F, ~H, C.Cert.yc(K, c), i)), sub_r(~F, ci, N.emap(K, F, H, rk), ri, CP.klook_ofk(~K, ~F, ~H, C.Cert.yr(K, c), i)))
+  FO.lt_le_trans(~F, O.zero(F), O.sub(~F, ci, ri), O.lookup(~F, y, i), RL.lt_rw_r(~F, O.zero(F), O.sub(~F, N.emap(K, F, H, ck), N.emap(K, F, H, rk)), O.sub(~F, ci, ri), e, h2), box_lo(~F, O.lookup(~F, y, i), ci, ri, coord1(~K, ~F, ~H, c, y, i, hy, hi)))

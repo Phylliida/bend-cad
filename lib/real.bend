@@ -76,6 +76,29 @@ def nn_by(~F: O.OField, +t: O.C(F), contra: O.lt(F, t, O.zero(F)) -> Empty) -> O
 def le_lt_absurd(~F: O.OField, +d: O.C(F), +dl: O.C(F), h1: O.le(~F, d, dl), h2: O.lt(F, dl, d)) -> Empty:
   O.lt_irrefl(F)(d, FO.le_lt_trans(~F, d, dl, d, h1, h2))
 
+def le_antisymm.r(~F: O.OField, +a: O.C(F), +b: O.C(F), l: O.lt(F, a, b), h2: O.le(~F, b, a)) -> {a == b : O.C(F)}:
+  match h2:
+    case Inl{g}:
+      FO.absurd({a == b : O.C(F)}, O.lt_irrefl(F)(a, O.lt_trans(F)(a, b, a, l, g)))
+    case Inr{e}:
+      Equal.sym(O.C(F), b, a, e)
+
+def le_antisymm.go(~F: O.OField, +a: O.C(F), +b: O.C(F), h1: O.le(~F, a, b), h2: O.le(~F, b, a)) -> {a == b : O.C(F)}:
+  match h1:
+    case Inr{e}:
+      e
+    case Inl{l}:
+      le_antisymm.r(~F, a, b, l, h2)
+
+# a ≤ b ≤ a gives a = b
+def le_antisymm(~F: O.OField, +a: O.C(F), +b: O.C(F), h1: O.le(~F, a, b), h2: O.le(~F, b, a)) -> {a == b : O.C(F)}:
+  le_antisymm.go(~F, a, b, h1, h2)
+
+# |x| ≤ 0 gives x = 0
+def bnd0_eq(~F: O.OField, +x: O.C(F), h: M.bnd(~F, x, O.zero(F))) -> {x == O.zero(F) : O.C(F)}:
+  (h1, h2) = h
+  le_antisymm(~F, x, O.zero(F), le_by(~F, x, O.zero(F), O.sub(~F, O.zero(F), x), {==}, h1), le_by(~F, O.zero(F), x, O.add(F, O.zero(F), x), FR.fring_eq(~F, [x], E.ZAdd{E.ZCst{S.Z0{}}, E.ZVar{0n}}, E.ZSub{E.ZVar{0n}, E.ZCst{S.Z0{}}}, {==}), h2))
+
 # Powers
 # ------
 
