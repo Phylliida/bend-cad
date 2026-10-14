@@ -198,6 +198,28 @@ def search.go(+sk: SK.Sketch, +g0: List<&2, S.D>, +nv: Nat, +rs: List<&2, ST.Red
 def search(+sk: SK.Sketch, +g0: List<&2, S.D>) -> Out:
   search.go(sk, g0, nvars(sk), ST.reds(SK.Sketch.eqs(sk), nvars(sk), groups(ncons(sk), SV.owners(sk), 0n)))
 
+# For the UI: equation j is the k-th equation of its constraint (a red
+# constraint shows all red; expanded, it names the equation of its Why)
+def eqk.go(b: Bool, rest: Nat) -> Nat:
+  match b:
+    case True{}:
+      1n+rest
+    case False{}:
+      rest
+
+# how many of the first j equations share owner c
+def eqk(own: List<&2, Nat>, +c: Nat, j: Nat) -> Nat:
+  match own j:
+    case Nil{} j:
+      0n
+    case Con{o, t} 0n:
+      0n
+    case Con{o, t} 1n+i:
+      eqk.go(SV.eq(o, c), eqk(t, c, i))
+
+def eqlabel(+sk: SK.Sketch, +j: Nat) -> Nat:
+  eqk(SV.owners(sk), SV.nth(SV.owners(sk), j), j)
+
 # The verdict
 # -----------
 

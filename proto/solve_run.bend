@@ -12,12 +12,12 @@ import ./struct_run.bend as SR
 def shown(xs: List<&2, Nat>) -> String:
   SR.shown(xs)
 
-def showw(ws: List<&2, SV.Why>) -> String:
+def showw(+sk: SK.Sketch, ws: List<&2, SV.Why>) -> String:
   match ws:
     case Nil{}:
       ""
-    case Con{SV.Why{j, s, w}, t}:
-      " [eq " ++ Nat.show(j) ++ " in S {" ++ shown(s) ++ "} over W {" ++ shown(w) ++ "}]" ++ showw(t)
+    case Con{SV.Why{+j, s, w}, t}:
+      " [its equation " ++ Nat.show(SO.eqlabel(sk, j)) ++ " (eq " ++ Nat.show(j) ++ ") in S {" ++ shown(s) ++ "} over W {" ++ shown(w) ++ "}]" ++ showw(sk, t)
 
 def dlen(xs: List<&2, S.D>) -> Nat:
   match xs:
@@ -26,10 +26,10 @@ def dlen(xs: List<&2, S.D>) -> Nat:
     case Con{h, t}:
       1n+dlen(t)
 
-def show(o: SO.Out) -> String:
+def show(+sk: SK.Sketch, o: SO.Out) -> String:
   match o:
     case SO.Out{ok, red, why, pins, gc, gr, plan}:
-      "certified " ++ Bool.show(ok) ++ ", box of " ++ Nat.show(dlen(gc)) ++ ", pins {" ++ shown(pins) ++ "}, red {" ++ shown(red) ++ "}" ++ showw(why)
+      "certified " ++ Bool.show(ok) ++ ", box of " ++ Nat.show(dlen(gc)) ++ ", pins {" ++ shown(pins) ++ "}, red {" ++ shown(red) ++ "}" ++ showw(sk, why)
 
 def d(n: Nat) -> S.D:
   S.D{S.Z.of_diff(n, 0n), 0n}
@@ -82,8 +82,8 @@ def mid_g0() -> List<&2, S.D>:
 
 def main() -> IO(Unit):
   do IO<Unit>:
-    IO.print("circle: " ++ show(SO.solve(SR.circle(), circle_g0())))
-    IO.print("over:   " ++ show(SO.solve(SR.over(), ds([0n, 0n, 0n, 0n]))))
-    IO.print("free:   " ++ show(SO.solve(free(), ds([5n, 7n]))))
-    IO.print("far:    " ++ show(SO.solve(far(), circle_g0())))
-    IO.print("mid:    " ++ show(SO.solve(mid(), mid_g0())))
+    IO.print("circle: " ++ show(SR.circle(), SO.solve(SR.circle(), circle_g0())))
+    IO.print("over:   " ++ show(SR.over(), SO.solve(SR.over(), ds([0n, 0n, 0n, 0n]))))
+    IO.print("free:   " ++ show(free(), SO.solve(free(), ds([5n, 7n]))))
+    IO.print("far:    " ++ show(far(), SO.solve(far(), circle_g0())))
+    IO.print("mid:    " ++ show(mid(), SO.solve(mid(), mid_g0())))

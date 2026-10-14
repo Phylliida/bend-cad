@@ -1170,15 +1170,19 @@ sk-02 and sk-03 can run in parallel after sk-01.
   sk-09: every answer the solver gives is a law, and every stage is proven
   to succeed where it should (§10).
 
+**Decided (Danielle, 2026-10-14, sk-09):**
+- A red constraint is dropped whole (constraints are what the user sees),
+  and shown all red by default; expanding it in the UI shows which of its
+  equations is the over-determined one (the `Why`'s equation j, labelled
+  as the k-th equation of its constraint, e.g. a midpoint's y equation).
+
 **Open for Danielle:**
 - **sk-09 statements** (ROADMAP.bend): `solve_exists`, `solve_unique`,
   `solve_red`, `solve_pins`, and `spec/solve.bend` (`mark` by constraint
   position, `owners`, `overdet`, `explained` with its no-spare-flag
   condition, `held`). All four are proven; an independent audit found no
   blocker, and its two fixes are in (§10.2).
-- Whether a multi-equation constraint should be dropped whole when one of
-  its equations is redundant (as now: constraints are what the user sees),
-  or split.
+
 
 ---
 
