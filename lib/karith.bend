@@ -125,24 +125,15 @@ def kcmp_ok(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.NC(K), +b: N.NC(K), 
   %e : N.cmeans(F, _, N.emap(K, F, H, a), N.emap(K, F, H, b))
   N.e_cmp(K, F, H)(a, b)
 
-# |x| <= x when 0 <= x
-def bnd_self(~F: O.OField, +x: O.C(F), +h: O.le(~F, O.zero(F), x)) -> M.bnd(~F, x, x):
-  (FM.nn_eq(~F, O.sub(~F, x, x), O.zero(F), Equal.sym(O.C(F), O.sub(~F, x, x), O.zero(F), O.add_neg(F)(x)), FO.le_refl(~F, O.zero(F))), FO.nonneg_add(~F, x, x, h, h))
-
-# |x| <= -x when x < 0
-def bnd_negself(~F: O.OField, +x: O.C(F), h: O.lt(F, x, O.zero(F))) -> M.bnd(~F, x, O.neg(F, x)):
-  +p = FO.lt_le(~F, O.zero(F), O.neg(F, x), FO.neg_pos(~F, x, h))
-  (FO.nonneg_add(~F, O.neg(F, x), O.neg(F, x), p, p), FM.nn_eq(~F, O.add(F, O.neg(F, x), x), O.zero(F), Equal.sym(O.C(F), O.add(F, O.neg(F, x), x), O.zero(F), FL.neg_add_l(~F, x)), FO.le_refl(~F, O.zero(F))))
-
 def kabs_bnd.go(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, c: Cmp, +a: N.NC(K), e: {N.ncmp(K, a, N.nzero(K)) == c : Cmp}) -> M.bnd(~F, N.emap(K, F, H, a), N.emap(K, F, H, kabs.go(~K, c, a))):
   match c:
     case LT{}:
       %en(~K, ~F, ~H, a) : M.bnd(~F, N.emap(K, F, H, a), _)
-      bnd_negself(~F, N.emap(K, F, H, a), FO.lt_subst_r(~F, N.emap(K, F, H, N.nzero(K)), O.zero(F), N.emap(K, F, H, a), N.e_zero(K, F, H), kcmp_ok(~K, ~F, ~H, a, N.nzero(K), LT{}, e)))
+      FV.bnd_negself(~F, N.emap(K, F, H, a), FO.lt_subst_r(~F, N.emap(K, F, H, N.nzero(K)), O.zero(F), N.emap(K, F, H, a), N.e_zero(K, F, H), kcmp_ok(~K, ~F, ~H, a, N.nzero(K), LT{}, e)))
     case EQ{}:
-      bnd_self(~F, N.emap(K, F, H, a), Inr{Equal.sym(O.C(F), N.emap(K, F, H, a), O.zero(F), Equal.trans(O.C(F), N.emap(K, F, H, a), N.emap(K, F, H, N.nzero(K)), O.zero(F), kcmp_ok(~K, ~F, ~H, a, N.nzero(K), EQ{}, e), N.e_zero(K, F, H)))})
+      FV.bnd_self(~F, N.emap(K, F, H, a), Inr{Equal.sym(O.C(F), N.emap(K, F, H, a), O.zero(F), Equal.trans(O.C(F), N.emap(K, F, H, a), N.emap(K, F, H, N.nzero(K)), O.zero(F), kcmp_ok(~K, ~F, ~H, a, N.nzero(K), EQ{}, e), N.e_zero(K, F, H)))})
     case GT{}:
-      bnd_self(~F, N.emap(K, F, H, a), Inl{FO.lt_subst_l(~F, N.emap(K, F, H, N.nzero(K)), O.zero(F), N.emap(K, F, H, a), N.e_zero(K, F, H), kcmp_ok(~K, ~F, ~H, a, N.nzero(K), GT{}, e))})
+      FV.bnd_self(~F, N.emap(K, F, H, a), Inl{FO.lt_subst_l(~F, N.emap(K, F, H, N.nzero(K)), O.zero(F), N.emap(K, F, H, a), N.e_zero(K, F, H), kcmp_ok(~K, ~F, ~H, a, N.nzero(K), GT{}, e))})
 
 # |H a| <= H |a|
 def kabs_bnd(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.NC(K)) -> M.bnd(~F, N.emap(K, F, H, a), N.emap(K, F, H, kabs(~K, a))):
@@ -443,7 +434,8 @@ def kvle(~K: N.Num, u: N.KVec(~K), w: N.KVec(~K)) -> Bool:
     case Con{a, us} Con{b, ws}:
       band(kle(~K, a, b), kvle(~K, us, ws))
 
-# u_i < w_i for every i of w (u read with zeros past its end)
+# u_i < w_i for every i of w (u read with zeros past its end; u no longer
+# than w)
 def kvlt(~K: N.Num, u: N.KVec(~K), w: N.KVec(~K)) -> Bool:
   match u w:
     case Nil{} Nil{}:
@@ -451,7 +443,7 @@ def kvlt(~K: N.Num, u: N.KVec(~K), w: N.KVec(~K)) -> Bool:
     case Nil{} Con{b, ws}:
       band(klt(~K, N.nzero(K), b), kvlt(~K, Nil{}, ws))
     case Con{a, us} Nil{}:
-      True{}
+      False{}
     case Con{a, us} Con{b, ws}:
       band(klt(~K, a, b), kvlt(~K, us, ws))
 
@@ -536,3 +528,17 @@ def kmabs_nn(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, a: N.KMat(~K)) -> FV.mnn(
       Unit{}
     case Con{r, rs}:
       (kvabs_nn(~K, ~F, ~H, r), kmabs_nn(~K, ~F, ~H, rs))
+
+def klt1(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.NC(K), h: {klt(~K, a, N.none(K)) == True{} : Bool}) -> O.lt(F, N.emap(K, F, H, a), O.one(F)):
+  %N.e_one(K, F, H) : O.lt(F, N.emap(K, F, H, a), _)
+  klt_ok(~K, ~F, ~H, a, N.none(K), h)
+
+# K says u < 1 entrywise (and u has at most n entries), so H u < 1 in F
+def kvlt_ones_ok(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: N.KVec(~K), n: Nat, +h: {kvlt(~K, u, kones(~K, n)) == True{} : Bool}) -> FV.vlt_all(~F, N.ofkv(~K, ~F, ~H, u), O.one(F)):
+  match u n:
+    case Nil{} n:
+      Unit{}
+    case Con{+a, +us} 0n:
+      FO.absurd(FV.vlt_all(~F, N.ofkv(~K, ~F, ~H, Con{a, us}), O.one(F)), ft(h))
+    case Con{+a, +us} 1n++k:
+      (klt1(~K, ~F, ~H, a, band_l(klt(~K, a, N.none(K)), kvlt(~K, us, kones(~K, k)), h)), kvlt_ones_ok(~K, ~F, ~H, us, k, band_r(klt(~K, a, N.none(K)), kvlt(~K, us, kones(~K, k)), h)))
