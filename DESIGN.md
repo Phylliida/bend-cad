@@ -473,25 +473,63 @@ triangular structure. A depth-30 circle chain becomes 30 blocks of 2 unknowns.
 
 ### 8.3 Parametric block certificate
 
-For block k with unknowns y and parameters z (earlier blocks' variables, pinned
-values, constants) ranging over Z = product of their certified balls (radius ρ):
-- The proposer supplies (ỹ, Y, r) as dyadics at working precision p.
-- The checker computes, exactly:
-  - q₀ = ‖I − Y·J_y(ỹ, z̃)‖∞;
-  - a bound κ_y·r + κ_z·ρ on how far J_y can move over the ball, from exact
-    Taylor coefficients at (ỹ, z̃) (polynomials have finite Taylor expansions);
-  - a bound L_z·ρ on how far f can move as z varies.
-- It checks:
-  1. q = q₀ + ‖Y‖∞·(κ_y·r + κ_z·ρ) < 1;
-  2. ‖Y·f(ỹ, z̃)‖∞ + ‖Y‖∞·L_z·ρ ≤ (1 − q)·r;
-  3. q′ = ‖I − J_y(ỹ, z̃)·Y‖∞ < 1.
-- Then for every z ∈ Z, g_z(y) = y − Y·f(y, z) contracts by q on
-  B∞(ỹ, r) and maps it into itself (Krawczyk/Rump-style test in contraction
-  form).
+*Draft for review (sk-05).* Stated in `spec/cert.bend` (trusted) and
+`ROADMAP.bend` (`cert_factor`, `cert_self`, `cert_contract`, `cert_fix`);
+`lib/cert.bend` has the checker's final signature and a stub body that
+rejects everything.
 
-Mean-value bounds: either polynomial slopes built by telescoping with Taylor
-bounds, or selective quadratization (constant Hessian, exact midpoint identity
-2(f(x) − f(y)) = (2J₀ + T(x + y))(x − y)). Decide in sk-05 (Q12).
+**The block.** Equations `eqs` that must vanish (`QExpr`, as the sketch
+produces them), unknowns `ys` (variable indices, as many as equations),
+parameters `ps` (earlier blocks' variables, pinned values, constants).
+Write f(y; x) for the equations at a full assignment x with the unknowns set
+to y.
+
+**The certificate,** in the checker's numbers K (Q17): a center ỹ and
+radius r for the unknowns, a factor q, Y ≈ J_y⁻¹ (a row per unknown), and a
+center and radius for each parameter.
+
+**The laws.** For every ordered field F and every map H : K → F (a ring map
+with sound comparisons), if `check(b, c)` passes, then for every x whose
+parameters lie in their balls, with N(y) = y − Y·f(y; x) and B the ball
+‖y − ỹ‖∞ ≤ r (all certificate numbers sent through H):
+- `cert_factor`: 0 ≤ q < 1;
+- `cert_self`: N maps B into itself;
+- `cert_contract`: N contracts B by q (‖y₁ − y₂‖ ≤ s gives
+  ‖N(y₁) − N(y₂)‖ ≤ q·s);
+- `cert_fix`: a fixed point of N is a zero of f.
+
+In ℝ, Banach's theorem then gives exactly one zero of the block in B for
+each choice of the parameters. sk-06 composes the blocks (§8.4) and matches
+each block's parameter balls to the earlier blocks' certified balls.
+
+**The checker (proposed; it is not part of the statement).**
+1. *Shape:* as many unknowns as equations; Y square of that size; `ys`
+   distinct and disjoint from `ps`; the equations mention only `ys` and
+   `ps`; lists aligned. Constants must be integers: a dyadic K cannot hold
+   1/10, so rational constants are cleared when blocks are built (sk-06; a
+   multiple m·f with m ≠ 0 has the same zeros).
+2. *Slopes (Q12, proposed):* for each equation, a telescoping slope s with
+   f(X₁) − f(X₂) = s·(X₁ − X₂), built over the expression tree by
+   ab − a′b′ = a(b − b′) + b′(a − a′). It is exact for any polynomial and
+   any degree, and needs no change to the IR. At X₁ = X₂ = X̃ it is the
+   Jacobian J₀.
+3. *Ball arithmetic in K:* each slope entry is evaluated with both arguments
+   ranging over the box (unknowns within r, parameters within their radii),
+   as a center and a radius: (a, ρ) + (b, σ) = (a + b, ρ + σ),
+   (a, ρ)·(b, σ) = (ab, |a|σ + |b|ρ + ρσ). This is exact in K (no rounding)
+   and gives J₀ and Δ with |S − J₀| ≤ Δ entrywise over the box.
+4. *Conditions,* exact in K:
+   - ‖I − Y·J₀,y‖ + ‖|Y|·Δ_y‖ ≤ q < 1;
+   - ‖Y·f(X̃)‖ + ‖|Y|·(|J₀,z| + Δ_z)·ρ‖ + q·r ≤ r, in the sensitivity form
+     the spike found tighter than ‖Y‖·L_z·ρ (1–1.5 bits per step);
+   - ‖I − J₀,y·Y‖ < 1, so Y is injective (for `cert_fix`).
+
+Slopes rather than selective quadratization, because they are as tight on
+quadratics (the slope of x² is x₁ + x₂, the Jacobian at the midpoint), need
+no aux variables for the cubic mirror form, and each proof is a short
+induction over expressions: the slope identity (ring algebra in F) and
+ball soundness (order algebra in F). The certificate carries q rather than
+the checker computing it, so the laws can name it.
 
 *Linear algebra as built (sk-04, `spec/mat.bend`):* vectors are lists read
 with trailing zeros and matrices lists of rows, so (AB)v = A(Bv), (A + B)v,
@@ -707,7 +745,8 @@ clang or the JS engine; base.bend; LAWS.bend (spec numbers, typed IR, exact
 equation forms, constant definitions, tolerance checks, meaning-lemma
 statements, `accept_sound`) and the spec files it rests on (`spec/num.bend`,
 `spec/ring.bend`, `spec/big.bend`, `spec/field.bend`, `spec/geom.bend`,
-`spec/sketch.bend`, `spec/mat.bend`);
+`spec/sketch.bend`, `spec/mat.bend`; with sk-05, `spec/knum.bend` and
+`spec/cert.bend`);
 optionally Euclidean-field axioms for SDF laws.
 
 **Not trusted:** the proposer; the UI; F32 rendering.
@@ -788,7 +827,8 @@ sk-02 and sk-03 can run in parallel after sk-01.
 
 **Mine to decide:**
 - **Q12** Mean-value method (polynomial slopes vs selective quadratization),
-  from sk-P1 data.
+  from sk-P1 data. Proposed in the sk-05 draft: telescoping slopes
+  evaluated in ball arithmetic (§8.3).
 
 **Decided after sk-04 (Danielle, 2026-10-13):**
 - **Q16** The block certificate (§8.3) and composition (§8.4) are stated

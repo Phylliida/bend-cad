@@ -198,10 +198,18 @@ wrong; she restated it after the roll.)
   nice part is that the runtime refinement then becomes just another
   `Emb`, with no separate checker-refinement proof.
 
-First sk-05 step: draft the block-certificate law statement (every F, every
-map K → F, certificate data in K, polynomial system f(y, z)), the K record
-and the map record, and the checker shape, for Danielle's review before
-proving; decide Q12 (mean-value method) there.
+**sk-05 draft written, awaiting Danielle's review** (DESIGN §8.3):
+`spec/knum.bend` (Num, Emb, ofkv/ofkm; trusted), `spec/cert.bend` (Block,
+Cert, the block in F, `pinned`, `ball`, `newton`; trusted), `lib/cert.bend`
+(the checker's signature; stub body rejecting everything), and four draft
+laws in `ROADMAP.bend`: `cert_factor` (0 <= q < 1), `cert_self` (Newton map
+sends the ball into itself), `cert_contract` (contracts by q), `cert_fix`
+(fixed points are zeros). ROADMAP checks (96 TODOs = 92 imported + 4).
+Questions in the draft: the law shape; Q12 = telescoping slopes in ball
+arithmetic; integer constants (rational ones cleared at block building,
+sk-06); per-parameter balls carried in the certificate; q carried, not
+computed. After approval: generic K matrix library (dmat as D instance),
+slopes, ball arithmetic, the real checker, then the proofs.
 
 sk-07's remaining items: line–line / point–circle / circle–circle distances
 (new kinds: spec arms, rerun `tools/mforms.py`, add per-kind lemmas), §8.6
