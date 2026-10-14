@@ -396,3 +396,53 @@ def mat_nn(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +x1: M.Vec(~F), +x2: M.Vec(
       Unit{}
     case Con{+e, +es}:
       (row_nn(~K, ~F, ~H, x1, x2, box, e, cnt, lo, KB.range_ok(~K, ~F, ~H, x1, x2, box, e, KA.band_l(KB.held(~K, e), CK.allheld(~K, es), hh), h1, h2, cnt, lo)), mat_nn(~K, ~F, ~H, x1, x2, box, es, cnt, lo, KA.band_r(KB.held(~K, e), CK.allheld(~K, es), hh), h1, h2))
+
+# The checker's matrices in F
+# ---------------------------
+
+# (I - Y J) d = d - Y (J d), for d of length n
+def imm_ok(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +n: Nat, +ym: N.KMat(~K), +j: N.KMat(~K), +d: M.Vec(~F), hl: {M.len(~F, d) == n : Nat}) -> {M.matvec(~F, N.ofkm(~K, ~F, ~H, CK.imm(~K, n, ym, j)), d) == C.vsub(~F, d, M.matvec(~F, N.ofkm(~K, ~F, ~H, ym), M.matvec(~F, N.ofkm(~K, ~F, ~H, j), d))) : M.Vec(~F)}:
+  +y = N.ofkm(~K, ~F, ~H, ym)
+  +jf = N.ofkm(~K, ~F, ~H, j)
+  +rhs = C.vsub(~F, d, M.matvec(~F, y, M.matvec(~F, jf, d)))
+  %KA.kmadd_ofk(~K, ~F, ~H, KA.kident(~K, n), KA.kmneg(~K, KA.kmatmul(~K, ym, j))) : {M.matvec(~F, _, d) == rhs : M.Vec(~F)}
+  %KA.kident_ofk(~K, ~F, ~H, n) : {M.matvec(~F, M.madd(~F, _, N.ofkm(~K, ~F, ~H, KA.kmneg(~K, KA.kmatmul(~K, ym, j)))), d) == rhs : M.Vec(~F)}
+  %KA.kmneg_ofk(~K, ~F, ~H, KA.kmatmul(~K, ym, j)) : {M.matvec(~F, M.madd(~F, M.ident(~F, n), _), d) == rhs : M.Vec(~F)}
+  %KA.kmatmul_ofk(~K, ~F, ~H, ym, j) : {M.matvec(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, _)), d) == rhs : M.Vec(~F)}
+  %FM.mat_add(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, y, jf)), d) : {_ == rhs : M.Vec(~F)}
+  %FM.mat_neg(~F, M.matmul(~F, y, jf), d) : {M.vadd(~F, M.matvec(~F, M.ident(~F, n), d), _) == rhs : M.Vec(~F)}
+  %FM.mat_assoc(~F, y, jf, d) : {M.vadd(~F, M.matvec(~F, M.ident(~F, n), d), M.vneg(~F, _)) == rhs : M.Vec(~F)}
+  %hl : {M.vadd(~F, M.matvec(~F, M.ident(~F, _), d), M.vneg(~F, M.matvec(~F, y, M.matvec(~F, jf, d)))) == rhs : M.Vec(~F)}
+  %FM.mat_ident(~F, d) : {M.vadd(~F, _, M.vneg(~F, M.matvec(~F, y, M.matvec(~F, jf, d)))) == rhs : M.Vec(~F)}
+  {==}
+
+# (S - J) d = S d - J d
+def sj_ok(~F: O.OField, +s: M.Mat(~F), +j: M.Mat(~F), +d: M.Vec(~F)) -> {M.matvec(~F, M.madd(~F, s, M.mneg(~F, j)), d) == C.vsub(~F, M.matvec(~F, s, d), M.matvec(~F, j, d)) : M.Vec(~F)}:
+  %Equal.sym(M.Vec(~F), M.vneg(~F, M.matvec(~F, j, d)), M.matvec(~F, M.mneg(~F, j), d), FM.mat_neg(~F, j, d)) : {M.matvec(~F, M.madd(~F, s, M.mneg(~F, j)), d) == M.vadd(~F, M.matvec(~F, s, d), _) : M.Vec(~F)}
+  Equal.sym(M.Vec(~F), M.vadd(~F, M.matvec(~F, s, d), M.matvec(~F, M.mneg(~F, j), d)), M.matvec(~F, M.madd(~F, s, M.mneg(~F, j)), d), FM.mat_add(~F, s, M.mneg(~F, j), d))
+
+def rows_ofkm(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, a: N.KMat(~K)) -> {FV.rows(~F, N.ofkm(~K, ~F, ~H, a)) == CK.mlen(~K, a) : Nat}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{r, rs}:
+      %rows_ofkm(~K, ~F, ~H, rs) : {1n+FV.rows(~F, N.ofkm(~K, ~F, ~H, rs)) == 1n+_ : Nat}
+      {==}
+
+# the checker's G r, read in F
+def gF_ok(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> {N.ofkv(~K, ~F, ~H, CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr)) == M.vadd(~F, M.matvec(~F, N.ofkm(~K, ~F, ~H, KA.kmabs(~K, CK.imm(~K, n, ym, CK.mcenters(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr))))), N.ofkv(~K, ~F, ~H, yr)), M.matvec(~F, N.ofkm(~K, ~F, ~H, KA.kmabs(~K, ym)), M.matvec(~F, N.ofkm(~K, ~F, ~H, CK.mradii(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr))), N.ofkv(~K, ~F, ~H, yr)))) : M.Vec(~F)}:
+  +aa = KA.kmabs(~K, CK.imm(~K, n, ym, CK.mcenters(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr))))
+  +ay = KA.kmabs(~K, ym)
+  +dd = CK.mradii(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr))
+  +lhs = N.ofkv(~K, ~F, ~H, CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr))
+  %Equal.sym(M.Vec(~F), M.matvec(~F, N.ofkm(~K, ~F, ~H, dd), N.ofkv(~K, ~F, ~H, yr)), N.ofkv(~K, ~F, ~H, KA.kmatvec(~K, dd, yr)), KA.kmatvec_ofk(~K, ~F, ~H, dd, yr)) : {lhs == M.vadd(~F, M.matvec(~F, N.ofkm(~K, ~F, ~H, aa), N.ofkv(~K, ~F, ~H, yr)), M.matvec(~F, N.ofkm(~K, ~F, ~H, ay), _)) : M.Vec(~F)}
+  %Equal.sym(M.Vec(~F), M.matvec(~F, N.ofkm(~K, ~F, ~H, ay), N.ofkv(~K, ~F, ~H, KA.kmatvec(~K, dd, yr))), N.ofkv(~K, ~F, ~H, KA.kmatvec(~K, ay, KA.kmatvec(~K, dd, yr))), KA.kmatvec_ofk(~K, ~F, ~H, ay, KA.kmatvec(~K, dd, yr))) : {lhs == M.vadd(~F, M.matvec(~F, N.ofkm(~K, ~F, ~H, aa), N.ofkv(~K, ~F, ~H, yr)), _) : M.Vec(~F)}
+  %Equal.sym(M.Vec(~F), M.matvec(~F, N.ofkm(~K, ~F, ~H, aa), N.ofkv(~K, ~F, ~H, yr)), N.ofkv(~K, ~F, ~H, KA.kmatvec(~K, aa, yr)), KA.kmatvec_ofk(~K, ~F, ~H, aa, yr)) : {lhs == M.vadd(~F, _, N.ofkv(~K, ~F, ~H, KA.kmatvec(~K, ay, KA.kmatvec(~K, dd, yr)))) : M.Vec(~F)}
+  %Equal.sym(M.Vec(~F), M.vadd(~F, N.ofkv(~K, ~F, ~H, KA.kmatvec(~K, aa, yr)), N.ofkv(~K, ~F, ~H, KA.kmatvec(~K, ay, KA.kmatvec(~K, dd, yr)))), N.ofkv(~K, ~F, ~H, KA.kvadd(~K, KA.kmatvec(~K, aa, yr), KA.kmatvec(~K, ay, KA.kmatvec(~K, dd, yr)))), KA.kvadd_ofk(~K, ~F, ~H, KA.kmatvec(~K, aa, yr), KA.kmatvec(~K, ay, KA.kmatvec(~K, dd, yr)))) : {lhs == _ : M.Vec(~F)}
+  {==}
+
+# a bound on y1 - y2 is one on their fits to n entries, for y1, y2 of length n
+def fit_rbnd(~F: O.OField, +n: Nat, +y1: M.Vec(~F), +y2: M.Vec(~F), +r: M.Vec(~F), +h1: {M.len(~F, y1) == n : Nat}, +h2: {M.len(~F, y2) == n : Nat}, h: C.rbnd(~F, C.vsub(~F, y1, y2), r)) -> C.rbnd(~F, C.vsub(~F, C.fit(~F, n, y1), C.fit(~F, n, y2)), r):
+  %Equal.sym(M.Vec(~F), C.fit(~F, n, y1), y1, FV.fit_len(~F, n, y1, h1)) : C.rbnd(~F, C.vsub(~F, _, C.fit(~F, n, y2)), r)
+  %Equal.sym(M.Vec(~F), C.fit(~F, n, y2), y2, FV.fit_len(~F, n, y2, h2)) : C.rbnd(~F, C.vsub(~F, y1, _), r)
+  h

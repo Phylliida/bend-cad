@@ -522,3 +522,34 @@ def split_bnd(~F: O.OField, d: M.Vec(~F), ym: M.Mat(~F), +u: M.Vec(~F), +v: M.Ve
           split_bnd(~F, xs, ws, u, v, vtl(~F, r1), vtl(~F, r2), succ_inj(M.len(~F, xs), rows(~F, ws), hl),
             rbnd_tail(~F, O.sub(~F, x, M.dot(~F, w, v)), C.vsub(~F, xs, M.matvec(~F, ws, v)), r1, h1),
             rbnd_tail(~F, M.dot(~F, w, C.vsub(~F, u, v)), M.matvec(~F, ws, C.vsub(~F, u, v)), r2, h2))))
+
+# More rewriting and lengths
+# --------------------------
+
+def rbnd_rw(~F: O.OField, +d: M.Vec(~F), +d2: M.Vec(~F), +r: M.Vec(~F), e: {d == d2 : M.Vec(~F)}, h: C.rbnd(~F, d, r)) -> C.rbnd(~F, d2, r):
+  %e : C.rbnd(~F, _, r)
+  h
+
+def rle_rw(~F: O.OField, +u: M.Vec(~F), +u2: M.Vec(~F), +w: M.Vec(~F), +w2: M.Vec(~F), e1: {u == u2 : M.Vec(~F)}, e2: {w == w2 : M.Vec(~F)}, h: rle(~F, u, w)) -> rle(~F, u2, w2):
+  %e1 : rle(~F, _, w2)
+  %e2 : rle(~F, u, _)
+  h
+
+def len_fit(~F: O.OField, n: Nat, y: M.Vec(~F)) -> {M.len(~F, C.fit(~F, n, y)) == n : Nat}:
+  match n y:
+    case 0n y:
+      {==}
+    case 1n++k Nil{}:
+      %Equal.sym(Nat, M.len(~F, C.fit(~F, k, Nil{})), k, len_fit(~F, k, Nil{})) : {1n+_ == 1n+k : Nat}
+      {==}
+    case 1n++k Con{a, rest}:
+      %Equal.sym(Nat, M.len(~F, C.fit(~F, k, rest)), k, len_fit(~F, k, rest)) : {1n+_ == 1n+k : Nat}
+      {==}
+
+# A (s r) + Y (D (s r)) = s (A r + Y (D r))
+def r12_ok(~F: O.OField, +s: O.C(F), +a: M.Mat(~F), +y: M.Mat(~F), +d: M.Mat(~F), +r: M.Vec(~F)) -> {M.vadd(~F, M.matvec(~F, a, M.vscale(~F, s, r)), M.matvec(~F, y, M.matvec(~F, d, M.vscale(~F, s, r)))) == M.vscale(~F, s, M.vadd(~F, M.matvec(~F, a, r), M.matvec(~F, y, M.matvec(~F, d, r)))) : M.Vec(~F)}:
+  +rhs = M.vscale(~F, s, M.vadd(~F, M.matvec(~F, a, r), M.matvec(~F, y, M.matvec(~F, d, r))))
+  %matvec_vscale(~F, a, s, r) : {M.vadd(~F, _, M.matvec(~F, y, M.matvec(~F, d, M.vscale(~F, s, r)))) == rhs : M.Vec(~F)}
+  %matvec_vscale(~F, d, s, r) : {M.vadd(~F, M.vscale(~F, s, M.matvec(~F, a, r)), M.matvec(~F, y, _)) == rhs : M.Vec(~F)}
+  %matvec_vscale(~F, y, s, M.matvec(~F, d, r)) : {M.vadd(~F, M.vscale(~F, s, M.matvec(~F, a, r)), _) == rhs : M.Vec(~F)}
+  vadd_vscale(~F, s, M.matvec(~F, a, r), M.matvec(~F, y, M.matvec(~F, d, r)))
