@@ -134,3 +134,161 @@ def cert_center(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, b: C.Block, c: C.Cert<
   match b:
     case C.Block{+eqs, +n}:
       cert_center.c(~K, ~F, ~H, eqs, n, c, ok)
+
+# Lengths and naturals
+# --------------------
+
+def nateq_ok(a: Nat, b: Nat, h: {KA.nateq(a, b) == True{} : Bool}) -> {a == b : Nat}:
+  match a b:
+    case 0n 0n:
+      {==}
+    case 0n 1n+j:
+      FO.absurd({0n == 1n+j : Nat}, KA.ft(h))
+    case 1n+i 0n:
+      FO.absurd({1n+i == 0n : Nat}, KA.ft(h))
+    case 1n++i 1n+j:
+      %nateq_ok(i, j, h) : {1n+i == 1n+_ : Nat}
+      {==}
+
+def len_ofkv(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, v: N.KVec(~K)) -> {M.len(~F, N.ofkv(~K, ~F, ~H, v)) == KA.klen(~K, v) : Nat}:
+  match v:
+    case Nil{}:
+      {==}
+    case Con{a, vs}:
+      %len_ofkv(~K, ~F, ~H, vs) : {1n+M.len(~F, N.ofkv(~K, ~F, ~H, vs)) == 1n+_ : Nat}
+      {==}
+
+def klen_kfit(~K: N.Num, n: Nat, r: N.KVec(~K)) -> {KA.klen(~K, KA.kfit(~K, n, r)) == n : Nat}:
+  match n r:
+    case 0n r:
+      {==}
+    case 1n++k Nil{}:
+      %klen_kfit(~K, k, Nil{}) : {1n+KA.klen(~K, KA.kfit(~K, k, Nil{})) == 1n+_ : Nat}
+      {==}
+    case 1n++k Con{x, xs}:
+      %klen_kfit(~K, k, xs) : {1n+KA.klen(~K, KA.kfit(~K, k, xs)) == 1n+_ : Nat}
+      {==}
+
+# u - w has length n, for u and w of length n
+def len_vsub(~F: O.OField, u: M.Vec(~F), w: M.Vec(~F), n: Nat, h1: {M.len(~F, u) == n : Nat}, h2: {M.len(~F, w) == n : Nat}) -> {M.len(~F, C.vsub(~F, u, w)) == n : Nat}:
+  match u w n:
+    case Nil{} Nil{} n:
+      h1
+    case Nil{} Con{+b, +bs} n:
+      FO.absurd({M.len(~F, C.vsub(~F, Nil{}, Con{b, bs})) == n : Nat}, FV.zero_ne(M.len(~F, bs), Equal.trans(Nat, 0n, n, 1n+M.len(~F, bs), h1, Equal.sym(Nat, 1n+M.len(~F, bs), n, h2))))
+    case Con{+a, +as} Nil{} n:
+      FO.absurd({M.len(~F, C.vsub(~F, Con{a, as}, Nil{})) == n : Nat}, FV.succ_ne(M.len(~F, as), Equal.trans(Nat, 1n+M.len(~F, as), n, 0n, h1, Equal.sym(Nat, 0n, n, h2))))
+    case Con{+a, +as} Con{+b, +bs} 0n:
+      FO.absurd({M.len(~F, C.vsub(~F, Con{a, as}, Con{b, bs})) == 0n : Nat}, FV.succ_ne(M.len(~F, as), h1))
+    case Con{a, +as} Con{b, +bs} 1n++k:
+      %Equal.sym(Nat, M.len(~F, C.vsub(~F, as, bs)), k, len_vsub(~F, as, bs, k, FV.succ_inj(M.len(~F, as), k, h1), FV.succ_inj(M.len(~F, bs), k, h2))) : {1n+_ == 1n+k : Nat}
+      {==}
+
+# |a| <= H 0 from |a| <= 0
+def rbnd_e0(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: O.C(F), h: M.bnd(~F, a, O.zero(F))) -> M.bnd(~F, a, N.emap(K, F, H, N.nzero(K))):
+  %KA.ez(~K, ~F, ~H) : M.bnd(~F, a, _)
+  h
+
+# Radii fitted to n entries
+# -------------------------
+
+def rbnd_kfit(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, n: Nat, d: M.Vec(~F), r: N.KVec(~K), h: C.rbnd(~F, d, N.ofkv(~K, ~F, ~H, r)), hl: {M.len(~F, d) == n : Nat}) -> C.rbnd(~F, d, N.ofkv(~K, ~F, ~H, KA.kfit(~K, n, r))):
+  match n d r:
+    case 0n Nil{} r:
+      Unit{}
+    case 0n Con{+a, +ds} r:
+      FO.absurd(C.rbnd(~F, Con{a, ds}, N.ofkv(~K, ~F, ~H, KA.kfit(~K, 0n, r))), FV.succ_ne(M.len(~F, ds), hl))
+    case 1n++k Nil{} r:
+      FO.absurd(C.rbnd(~F, Nil{}, N.ofkv(~K, ~F, ~H, KA.kfit(~K, 1n+k, r))), FV.zero_ne(k, hl))
+    case 1n+k Con{+a, +ds} Nil{}:
+      (ha, hds) = h
+      (rbnd_e0(~K, ~F, ~H, a, ha), rbnd_kfit(~K, ~F, ~H, k, ds, Nil{}, hds, FV.succ_inj(M.len(~F, ds), k, hl)))
+    case 1n+k Con{+a, +ds} Con{x, xs}:
+      (ha, hds) = h
+      (ha, rbnd_kfit(~K, ~F, ~H, k, ds, xs, hds, FV.succ_inj(M.len(~F, ds), k, hl)))
+
+def rnn_kfit(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, n: Nat, r: N.KVec(~K), h: FV.rnn(~F, N.ofkv(~K, ~F, ~H, r))) -> FV.rnn(~F, N.ofkv(~K, ~F, ~H, KA.kfit(~K, n, r))):
+  match n r:
+    case 0n r:
+      Unit{}
+    case 1n+k Nil{}:
+      (KB.e0_nonneg(~K, ~F, ~H), rnn_kfit(~K, ~F, ~H, k, Nil{}, Unit{}))
+    case 1n+k Con{x, xs}:
+      (hx, hxs) = h
+      (hx, rnn_kfit(~K, ~F, ~H, k, xs, hxs))
+
+# From entrywise bounds to the checker's box
+# ------------------------------------------
+
+def sub0_eq(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: O.C(F)) -> {a == O.sub(~F, a, N.emap(K, F, H, N.nzero(K))) : O.C(F)}:
+  %KA.ez(~K, ~F, ~H) : {a == O.sub(~F, a, _) : O.C(F)}
+  FR.fring_eq(~F, [a], E.ZVar{0n}, E.ZSub{E.ZVar{0n}, E.ZCst{S.Z0{}}}, {==})
+
+def neg_eq(~F: O.OField, +c: O.C(F)) -> {O.neg(F, c) == O.sub(~F, O.zero(F), c) : O.C(F)}:
+  FR.fring_eq(~F, [c], E.ZNeg{E.ZVar{0n}}, E.ZSub{E.ZCst{S.Z0{}}, E.ZVar{0n}}, {==})
+
+def rbnd_vnil(~F: O.OField, +u: M.Vec(~F), +r: M.Vec(~F), h: C.rbnd(~F, u, r)) -> C.rbnd(~F, C.vsub(~F, u, Nil{}), r):
+  %FV.vadd_nil_r(~F, u) : C.rbnd(~F, _, r)
+  h
+
+# |0 - H 0| <= s, for 0 <= s
+def rbnd_e0z(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +s: O.C(F), hs: O.le(~F, O.zero(F), s)) -> M.bnd(~F, O.sub(~F, O.zero(F), N.emap(K, F, H, N.nzero(K))), s):
+  %KA.ez(~K, ~F, ~H) : M.bnd(~F, O.sub(~F, O.zero(F), _), s)
+  FV.bnd_sself(~F, O.zero(F), s, hs)
+
+# |u - c| <= r entrywise puts u in the box of balls (c_i, r_i)
+def rbnd_inbox(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: M.Vec(~F), cs: N.KVec(~K), rs: N.KVec(~K), h: C.rbnd(~F, C.vsub(~F, u, N.ofkv(~K, ~F, ~H, cs)), N.ofkv(~K, ~F, ~H, rs)), hn: FV.rnn(~F, N.ofkv(~K, ~F, ~H, rs))) -> KB.inbox(~K, ~F, ~H, u, CK.zipb(~K, cs, rs)):
+  match u cs rs:
+    case Nil{} Nil{} Nil{}:
+      Unit{}
+    case Nil{} Nil{} Con{+r, rt}:
+      (hr, hrt) = hn
+      (rbnd_e0z(~K, ~F, ~H, N.emap(K, F, H, r), hr), rbnd_inbox(~K, ~F, ~H, Nil{}, Nil{}, rt, Unit{}, hrt))
+    case Nil{} Con{+c, ct} Nil{}:
+      (hc, hct) = h
+      (rbnd_e0(~K, ~F, ~H, O.sub(~F, O.zero(F), N.emap(K, F, H, c)), KB.bnd_val(~F, O.neg(F, N.emap(K, F, H, c)), O.sub(~F, O.zero(F), N.emap(K, F, H, c)), O.zero(F), neg_eq(~F, N.emap(K, F, H, c)), hc)), rbnd_inbox(~K, ~F, ~H, Nil{}, ct, Nil{}, hct, Unit{}))
+    case Nil{} Con{+c, ct} Con{+r, rt}:
+      (hc, hct) = h
+      (hr, hrt) = hn
+      (KB.bnd_val(~F, O.neg(F, N.emap(K, F, H, c)), O.sub(~F, O.zero(F), N.emap(K, F, H, c)), N.emap(K, F, H, r), neg_eq(~F, N.emap(K, F, H, c)), hc), rbnd_inbox(~K, ~F, ~H, Nil{}, ct, rt, hct, hrt))
+    case Con{+a, +as} Nil{} Nil{}:
+      (ha, has) = h
+      (rbnd_e0(~K, ~F, ~H, O.sub(~F, a, N.emap(K, F, H, N.nzero(K))), KB.bnd_val(~F, a, O.sub(~F, a, N.emap(K, F, H, N.nzero(K))), O.zero(F), sub0_eq(~K, ~F, ~H, a), ha)), rbnd_inbox(~K, ~F, ~H, as, Nil{}, Nil{}, rbnd_vnil(~F, as, Nil{}, has), Unit{}))
+    case Con{+a, +as} Nil{} Con{+r, +rt}:
+      (ha, has) = h
+      (hr, hrt) = hn
+      (KB.bnd_val(~F, a, O.sub(~F, a, N.emap(K, F, H, N.nzero(K))), N.emap(K, F, H, r), sub0_eq(~K, ~F, ~H, a), ha), rbnd_inbox(~K, ~F, ~H, as, Nil{}, rt, rbnd_vnil(~F, as, N.ofkv(~K, ~F, ~H, rt), has), hrt))
+    case Con{+a, +as} Con{+c, ct} Nil{}:
+      (ha, has) = h
+      (rbnd_e0(~K, ~F, ~H, O.sub(~F, a, N.emap(K, F, H, c)), ha), rbnd_inbox(~K, ~F, ~H, as, ct, Nil{}, has, Unit{}))
+    case Con{+a, +as} Con{+c, ct} Con{+r, rt}:
+      (ha, has) = h
+      (hr, hrt) = hn
+      (ha, rbnd_inbox(~K, ~F, ~H, as, ct, rt, has, hrt))
+
+# u ++ w in the concatenated box, for u in the first part and w in the rest
+def inbox_app(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: M.Vec(~F), +w: M.Vec(~F), cs: N.KVec(~K), +cs2: N.KVec(~K), rs: N.KVec(~K), +rs2: N.KVec(~K), hu: KB.inbox(~K, ~F, ~H, u, CK.zipb(~K, cs, rs)), hw: KB.inbox(~K, ~F, ~H, w, CK.zipb(~K, cs2, rs2)), hl1: {M.len(~F, u) == KA.klen(~K, cs) : Nat}, hl2: {KA.klen(~K, cs) == KA.klen(~K, rs) : Nat}) -> KB.inbox(~K, ~F, ~H, C.app(~F, u, w), CK.zipb(~K, KA.kapp(~K, cs, cs2), KA.kapp(~K, rs, rs2))):
+  match u cs rs:
+    case Nil{} Nil{} Nil{}:
+      hw
+    case Nil{} Nil{} Con{+r, +rt}:
+      FO.absurd(KB.inbox(~K, ~F, ~H, w, CK.zipb(~K, cs2, KA.kapp(~K, Con{r, rt}, rs2))), FV.zero_ne(KA.klen(~K, rt), hl2))
+    case Nil{} Con{+c, +ct} rs:
+      FO.absurd(KB.inbox(~K, ~F, ~H, w, CK.zipb(~K, KA.kapp(~K, Con{c, ct}, cs2), KA.kapp(~K, rs, rs2))), FV.zero_ne(KA.klen(~K, ct), hl1))
+    case Con{+a, +as} Nil{} rs:
+      FO.absurd(KB.inbox(~K, ~F, ~H, Con{a, C.app(~F, as, w)}, CK.zipb(~K, cs2, KA.kapp(~K, rs, rs2))), FV.succ_ne(M.len(~F, as), hl1))
+    case Con{+a, +as} Con{+c, +ct} Nil{}:
+      FO.absurd(KB.inbox(~K, ~F, ~H, Con{a, C.app(~F, as, w)}, CK.zipb(~K, Con{c, KA.kapp(~K, ct, cs2)}, rs2)), FV.succ_ne(KA.klen(~K, ct), hl2))
+    case Con{+a, +as} Con{+c, +ct} Con{+r, +rt}:
+      (hu1, hus) = hu
+      (hu1, inbox_app(~K, ~F, ~H, as, w, ct, cs2, rt, rs2, hus, hw, FV.succ_inj(M.len(~F, as), KA.klen(~K, ct), hl1), FV.succ_inj(KA.klen(~K, ct), KA.klen(~K, rt), hl2)))
+
+# a point of the unknowns' box, followed by pinned parameters, lies in the
+# checker's box
+def box_in(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +n: Nat, +y: M.Vec(~F), +z: M.Vec(~F), +yc: N.KVec(~K), +yr: N.KVec(~K), +pc: N.KVec(~K), +pr: N.KVec(~K), hy: C.rbnd(~F, C.vsub(~F, y, N.ofkv(~K, ~F, ~H, yc)), N.ofkv(~K, ~F, ~H, yr)), +hly: {M.len(~F, y) == n : Nat}, +hyc: {KA.klen(~K, yc) == n : Nat}, hnr: FV.rnn(~F, N.ofkv(~K, ~F, ~H, yr)), hz: C.rbnd(~F, C.vsub(~F, z, N.ofkv(~K, ~F, ~H, pc)), N.ofkv(~K, ~F, ~H, pr)), hnp: FV.rnn(~F, N.ofkv(~K, ~F, ~H, pr))) -> KB.inbox(~K, ~F, ~H, C.app(~F, C.fit(~F, n, y), z), CK.box(~K, n, yc, yr, pc, pr)):
+  %Equal.sym(M.Vec(~F), C.fit(~F, n, y), y, FV.fit_len(~F, n, y, hly)) : KB.inbox(~K, ~F, ~H, C.app(~F, _, z), CK.box(~K, n, yc, yr, pc, pr))
+  inbox_app(~K, ~F, ~H, y, z, yc, pc, KA.kfit(~K, n, yr), pr,
+    rbnd_inbox(~K, ~F, ~H, y, yc, KA.kfit(~K, n, yr), rbnd_kfit(~K, ~F, ~H, n, C.vsub(~F, y, N.ofkv(~K, ~F, ~H, yc)), yr, hy, len_vsub(~F, y, N.ofkv(~K, ~F, ~H, yc), n, hly, Equal.trans(Nat, M.len(~F, N.ofkv(~K, ~F, ~H, yc)), KA.klen(~K, yc), n, len_ofkv(~K, ~F, ~H, yc), hyc))), rnn_kfit(~K, ~F, ~H, n, yr, hnr)),
+    rbnd_inbox(~K, ~F, ~H, z, pc, pr, hz, hnp),
+    Equal.trans(Nat, M.len(~F, y), n, KA.klen(~K, yc), hly, Equal.sym(Nat, KA.klen(~K, yc), n, hyc)),
+    Equal.trans(Nat, KA.klen(~K, yc), n, KA.klen(~K, KA.kfit(~K, n, yr)), hyc, Equal.sym(Nat, KA.klen(~K, KA.kfit(~K, n, yr)), n, klen_kfit(~K, n, yr))))
