@@ -255,6 +255,17 @@ step that needs it.
   (every F: at most one), a few lines each from the plan laws plus
   `MN.sketch_sound` / `MN.sketch_complete`; also restated in
   `tests/plan_laws.bend`.
+- `tests/sketch_plan_demo.bend` (gated, 4 s): a real 4-point sketch
+  (driving Distance constraints) meets both sketch laws' hypotheses (wf,
+  the chain plan on its own Sketch.eqs, its sides); concluded K-free: in
+  every complete ordered field a geometry means it with A = (0, 0),
+  B = (4, 0). `PP.box_pin`: a radius-0 coordinate of a box point is its
+  center. Do not write the dyadic box (`BX.inbox(~KI.dnum(), ...)`) in a
+  type: O.ofp doubles by adding, so 40-bit centers unfold into 2^40-node
+  terms (11 min, then Bun crashed). Generic in K, instantiate once.
+- Benchmark (`tools/gen_plan_chain.py`, `proto/plan_chain_run.bend`,
+  results in `proto/RESULTS.md`): the verified checker on the spike's
+  depth-30 chains as sketches, 0.24-0.70 s native; depth 300 in 14 s.
 - For Danielle: review the five statements; decide the trusted-base
   option (recommended: cert_* and cert_exists become lib lemmas, rbnd and
   vsub move to spec/box.bend).

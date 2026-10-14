@@ -690,6 +690,15 @@ certificate over a merged block has no wrapping growth. Total certification
 cost is near-linear in sketch size for typical sketches; the worst case is one
 large cyclic block (O(k³) on k unknowns).
 
+*Measured with the verified checker (sk-06, `proto/RESULTS.md`):* the
+spike's depth-30 chains built as sketches (driving `Distance`
+constraints), checked by `PL.check` on `Sketch.eqs` natively over the
+spec's binary dyadics: 0.24–0.70 s, under 1 nm at depth 30 from P = 64
+(well conditioned, ~0.8 bits per step) and P = 96 (flat, ~2.8 bits per
+step); depth 300 in 14 s. Halving any one radius is refused, so the
+generator's radii are within 2× of what the checker certifies. A limb K is
+a speedup, not a blocker.
+
 ### 8.6 Side conditions over balls
 
 *As built (sk-03):* a side condition is e > 0 or e ≥ 0. A nonnegative one is
@@ -1094,7 +1103,9 @@ sk-02 and sk-03 can run in parallel after sk-01.
 - §8.4: composition as built (box claim, block-ordered checker,
   substitution law); §15: sk-06 status; §16: sk-06 review and the
   trusted-base recommendation.
-- §8.4: the sketch-level laws sketch_exists / sketch_unique (same review).
+- §8.4: the sketch-level laws sketch_exists / sketch_unique (same review);
+  `tests/sketch_plan_demo.bend`. §8.5: the verified checker measured on
+  the spike's chains.
 
 **v0.10 → v0.11 (sk-05b done):**
 - §8.4: complete ordered fields as built (`spec/real.bend`, Skolem form),
