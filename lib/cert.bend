@@ -20,6 +20,7 @@ import ../spec/knum.bend as N
 import ../spec/cert.bend as C
 import ./karith.bend as KA
 import ./kball.bend as KB
+import ./slope.bend as SL
 
 # Pieces
 # ------
@@ -63,7 +64,7 @@ def allbelow(+m: Nat, eqs: List<&2, E.QExpr>) -> Bool:
     case Nil{}:
       True{}
     case Con{e, es}:
-      KA.band(KB.below(m, e), allbelow(m, es))
+      KA.band(SL.below(m, e), allbelow(m, es))
 
 # the equations' values at env
 def kvals(~K: N.Num, +env: N.KVec(~K), eqs: List<&2, E.QExpr>) -> N.KVec(~K):

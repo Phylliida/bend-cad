@@ -190,22 +190,6 @@ def krange(~K: N.Num, +box: List<&2, KB<K>>, +e: E.QExpr, cnt: Nat, +lo: Nat) ->
     case 1n+k:
       Con{ksl(~K, lo, box, e), krange(~K, box, e, k, 1n+lo)}
 
-# every variable of e is below m
-def below(+m: Nat, e: E.QExpr) -> Bool:
-  match e:
-    case E.QVar{j}:
-      KA.natle(1n+j, m)
-    case E.QCst{q}:
-      True{}
-    case E.QAdd{a, b}:
-      KA.band(below(m, a), below(m, b))
-    case E.QSub{a, b}:
-      KA.band(below(m, a), below(m, b))
-    case E.QMul{a, b}:
-      KA.band(below(m, a), below(m, b))
-    case E.QNeg{a}:
-      below(m, a)
-
 # What the balls mean in F
 # ------------------------
 
