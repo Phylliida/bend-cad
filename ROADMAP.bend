@@ -55,7 +55,9 @@ law plan_unique:
   {x1 == x2 : M.Vec(~F)}
 
 # LAW: in every ordered field, every point of the box meets the side
-# conditions the checker certified (e > 0, or e >= 0)
+# conditions the checker certified (e > 0, or e >= 0). Proven
+# (lib/planpf.bend: ball enclosures over the box, a comparison in K); moves
+# to LAWS.bend once the statement is reviewed.
 law box_sides:
   for ~K: N.Num
   for ~F: O.OField
