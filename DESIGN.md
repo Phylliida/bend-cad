@@ -524,7 +524,7 @@ for each choice of the parameters: Banach's theorem, proven in Bend (Q18,
 **The checker (proposed; it is not part of the statement).**
 1. *Shape (each line is a way a naive checker would accept a bad
    certificate; the audit has the counterexamples):*
-   - n = len(`ys`) = len(`eqs`); Y has n rows of at most n entries; every
+   - n = len(`eqs`); Y has n rows of at most n entries; every
      identity matrix has size n, never len(Y);
    - len(ỹ) ≤ n, len(r) ≤ n, every rᵢ ≥ 0, every parameter radius ≥ 0;
    - len(pc) = len(pr);
@@ -581,7 +581,8 @@ Everything is proven in Bend (Q18). In every ordered field, by induction
 over the blocks in order: each block's parameter balls contain the earlier
 blocks' certified boxes (a comparison in K) and the pinned values, so the
 `cert_*` laws apply to every assignment the earlier blocks allow, and
-`cert_local` makes a block see only those values. In a *complete* ordered
+a block reads only its own unknowns and parameters, mapped to the sketch's
+variables by substitution. In a *complete* ordered
 field (an ordered field that is Archimedean and in which every Cauchy
 sequence with a modulus converges; up to isomorphism only ℝ), Banach's
 theorem, proven in Bend, gives each block exactly one zero in its box for
