@@ -669,6 +669,17 @@ back (variable v is the solution at v's position in vp); uniqueness maps
 both solutions into block order. Tested on the chain renumbered (Q, A, P,
 B; equations shuffled): accepted, and rejected with identity lists.
 
+At the sketch level (two more laws in ROADMAP.bend, same review): for a
+well-formed sketch whose exact system `Sketch.eqs` has a checked plan and
+whose `Sketch.sides` are checked over the box,
+- `sketch_exists`: in every complete ordered field some x in the box has
+  `Sketch.means(x, sk)` (circles and arcs proper, each driving constraint
+  meaning what it says, sk-07);
+- `sketch_unique`: in every ordered field at most one x in the box does.
+Both are a few lines from the plan laws with `sketch_sound` and
+`sketch_complete` (`lib/meaning.bend`). These are the statements the
+end-to-end claim (§9's accept_sound) will cite.
+
 ### 8.5 Precision and its cost
 
 Each block's ball radius feeds the next block's parameter radius, so radii grow
@@ -883,7 +894,7 @@ random sketches.
 | sk-04 | Rational, dyadic and matrix library (∞-norms, products); Q order laws; canonical ℚ as an ordered-field instance (optional) | sk-02 | laws closed — **done** (2026-10-13; 37 laws: ℚ order, ℚ in every ordered field, gcd reduction, canonical ℚ, vectors and matrices; runtime bigint dyadics deferred to sk-05, §16) |
 | sk-05 | Parametric block certificate (§8.3), mean-value method (Q12): generic K matrix library, slopes, ball arithmetic, checker, the six `cert_*` laws | sk-04 | **done (2026-10-14): 98 laws, gate green (~15 s)** |
 | sk-05b | Complete ordered fields (Q18): template (Archimedean + Cauchy with a modulus), axioms cross-checked against mathlib's ℝ in Lean, Banach's theorem; exactly one zero per block | sk-05 | **done (2026-10-14): `cert_exists`, 99 laws; Lean cross-check passes** |
-| sk-06 | Composition theorem (§8.4, exactly one solution in a complete ordered field), side conditions (§8.6), optional denominator clearing for D (Q19) | sk-05, sk-05b | **proven, awaiting review (2026-10-14)**: plan_exists, plan_unique, box_sides in ROADMAP (systems in any order); denominator clearing open |
+| sk-06 | Composition theorem (§8.4, exactly one solution in a complete ordered field), side conditions (§8.6), optional denominator clearing for D (Q19) | sk-05, sk-05b | **proven, awaiting review (2026-10-14)**: plan_exists, plan_unique, box_sides, and at the sketch level sketch_exists, sketch_unique, in ROADMAP (systems in any order); denominator clearing open |
 | sk-07 | Core vocabulary §5.1 + meaning lemmas | sk-03, sk-06 | laws closed — **meaning lemmas proven** in every ordered field (2026-10-13); remaining: §8.6 side-condition certification for the vocabulary (with sk-06), line–line / point–circle / circle–circle distances |
 | sk-08 | `accept_sound`: certified, untouched, flips, diagnostics | sk-07 | law closed |
 | sk-09 | Proposer v1: pinning, decomposition, KKT/LM, refinement, certificate emission | sk-P1, sk-07 | fixture sketches certified; certify-on-commit time target set from sk-P1 |
@@ -1012,8 +1023,9 @@ sk-02 and sk-03 can run in parallel after sk-01.
 
 **Open for Danielle:**
 - **sk-06 statements** (ROADMAP.bend): `plan_exists`, `plan_unique`,
-  `box_sides`, and `spec/box.bend`. All three are proven; they move to
-  LAWS.bend once reviewed.
+  `box_sides`, the sketch-level `sketch_exists` and `sketch_unique`, and
+  `spec/box.bend`. All five are proven; they move to LAWS.bend once
+  reviewed.
 - **Trusted base:** the composed claim now exists and mentions no block,
   certificate or Newton map, so the `cert_*` laws and `cert_exists` could
   become untrusted library lemmas, with `spec/cert.bend` untrusted except
@@ -1082,6 +1094,7 @@ sk-02 and sk-03 can run in parallel after sk-01.
 - §8.4: composition as built (box claim, block-ordered checker,
   substitution law); §15: sk-06 status; §16: sk-06 review and the
   trusted-base recommendation.
+- §8.4: the sketch-level laws sketch_exists / sketch_unique (same review).
 
 **v0.10 → v0.11 (sk-05b done):**
 - §8.4: complete ordered fields as built (`spec/real.bend`, Skolem form),

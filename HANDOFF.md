@@ -249,11 +249,19 @@ and ep lists), two-block chain test
 six malformed plans rejected). Sabotage: weakening the center match, the
 pins' radius 0, or the parameter containment each breaks the proof at the
 step that needs it.
-- For Danielle: review the three statements; decide the trusted-base
+- Sketch level (same review): `sketch_exists` (complete F: some x in the
+  box with `Sketch.means(x, sk)`, given wf, a checked plan on
+  `Sketch.eqs(sk)` and checked `Sketch.sides(sk)`) and `sketch_unique`
+  (every F: at most one), a few lines each from the plan laws plus
+  `MN.sketch_sound` / `MN.sketch_complete`; also restated in
+  `tests/plan_laws.bend`.
+- For Danielle: review the five statements; decide the trusted-base
   option (recommended: cert_* and cert_exists become lib lemmas, rbnd and
   vsub move to spec/box.bend).
-- Next work: sketch-level link (Sketch.eqs / Sketch.sides with pins,
-  accept_sound); runtime bigint K; denominator clearing (Q19).
+- Next work: accept_sound (§9); runtime bigint K; denominator clearing
+  (Q19).
+- Shell note: `grep` in this environment is a wrapper that fails with
+  "-G: error while loading shared libraries"; use `command grep`.
 
 sk-07's remaining items: line–line / point–circle / circle–circle distances
 (new kinds: spec arms, rerun `tools/mforms.py`, add per-kind lemmas), §8.6
