@@ -4,7 +4,10 @@
 #
 # sk-01 (spec numbers and the ring normalizers). Trusted definitions:
 # spec/num.bend (binary positives, integers, rationals and dyadics, and their
-# meaning) and spec/ring.bend (ring expressions and their meaning).
+# meaning) and spec/ring.bend (ring expressions and their meaning). sk-03 and
+# sk-07 (the typed sketch and what it means): spec/field.bend (ordered
+# fields), spec/geom.bend (plane geometry) and spec/sketch.bend (the IR,
+# exact equation forms and meanings).
 
 import Base
 import ./spec/num.bend as S
@@ -13,6 +16,8 @@ import ./lib/zring.bend as R
 import ./lib/qring.bend as QR
 import ./spec/big.bend as SB
 import ./rt/big.bend as RB
+import ./spec/field.bend as O
+import ./spec/sketch.bend as K
 
 # Positives
 # ---------
@@ -394,3 +399,67 @@ law big_mul_wf:
   for  wa: SB.Big.wf(bp, a)
   for  wb: SB.Big.wf(bp, b)
   SB.Big.wf(bp, RB.Big.mul(bp, a, b))
+
+# Meaning lemmas (stated in sk-03, proven in sk-07; DESIGN §5.5)
+# --------------------------------------------------------------
+# In every ordered field F (so in the reals, where a sketch's exact solution
+# lives), for every assignment env of values to the variables: a
+# constraint's exact equations vanish and its side conditions are positive
+# exactly when it means what it says (K.Constraint.means, one case per kind,
+# in the vocabulary of spec/geom.bend). Merge kinds need their variable
+# sharing (wf). F is a template parameter: the proofs see its operations
+# only through the ordered-field axioms (spec/field.bend).
+
+# LAW: the exact form implies the meaning
+law means_sound:
+  for ~F: O.OField
+  for +env: List<&2, O.C(F)>
+  for +es: List<&2, K.Ent>
+  for +k: K.Constraint
+  for  w: K.Constraint.wf(es, k)
+  for  h: K.Constraint.holds(~F, env, es, k)
+  K.Constraint.means(~F, env, es, k)
+
+# LAW: the meaning implies the exact form (the form asks for nothing more)
+law means_complete:
+  for ~F: O.OField
+  for +env: List<&2, O.C(F)>
+  for +es: List<&2, K.Ent>
+  for +k: K.Constraint
+  for  h: K.Constraint.means(~F, env, es, k)
+  K.Constraint.holds(~F, env, es, k)
+
+# LAW: an entity's side conditions hold exactly when it is proper
+law ent_sound:
+  for ~F: O.OField
+  for +env: List<&2, O.C(F)>
+  for +e: K.Ent
+  for  h: K.Ent.holds(~F, env, e)
+  K.Ent.means(~F, env, e)
+
+# LAW: a proper entity satisfies its side conditions
+law ent_complete:
+  for ~F: O.OField
+  for +env: List<&2, O.C(F)>
+  for +e: K.Ent
+  for  h: K.Ent.means(~F, env, e)
+  K.Ent.holds(~F, env, e)
+
+# LAW: a solution of a well-formed sketch's exact system (F = 0, every side
+# condition positive) is a sketch where every circle and arc is proper and
+# every driving constraint means what it says
+law sketch_sound:
+  for ~F: O.OField
+  for +env: List<&2, O.C(F)>
+  for +sk: K.Sketch
+  for  w: K.Sketch.wf(sk)
+  for  h: K.Sketch.holds(~F, env, sk)
+  K.Sketch.means(~F, env, sk)
+
+# LAW: and conversely
+law sketch_complete:
+  for ~F: O.OField
+  for +env: List<&2, O.C(F)>
+  for +sk: K.Sketch
+  for  h: K.Sketch.means(~F, env, sk)
+  K.Sketch.holds(~F, env, sk)

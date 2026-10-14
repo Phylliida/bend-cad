@@ -1,0 +1,87 @@
+# Every kind: the exact form implies the meaning
+def means_sound(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, K.Ent>, +k: K.Constraint, w: K.Constraint.wf(es, k), h: K.Constraint.holds(~F, env, es, k)) -> K.Constraint.means(~F, env, es, k):
+  match k:
+    case K.Coincident{a, b}:
+      Coincident.sound(~F, env, K.pt(es, a), K.pt(es, b), w, h)
+    case K.Horizontal{a, b}:
+      Horizontal.sound(~F, env, K.pt(es, a), K.pt(es, b), w, h)
+    case K.Vertical{a, b}:
+      Vertical.sound(~F, env, K.pt(es, a), K.pt(es, b), w, h)
+    case K.Concentric{a, b}:
+      Concentric.sound(~F, env, K.circ(es, a), K.circ(es, b), w, h)
+    case K.EqualRadius{a, b}:
+      EqualRadius.sound(~F, env, K.circ(es, a), K.circ(es, b), w, h)
+    case K.Fix{v, c}:
+      Fix.sound(~F, env, v, c, w, h)
+    case K.Distance{p, q, d}:
+      Distance.sound(~F, env, K.pt(es, p), K.pt(es, q), d, w, h)
+    case K.HDistance{p, q, d}:
+      HDistance.sound(~F, env, K.pt(es, p), K.pt(es, q), d, w, h)
+    case K.VDistance{p, q, d}:
+      VDistance.sound(~F, env, K.pt(es, p), K.pt(es, q), d, w, h)
+    case K.Radius{c, d}:
+      Radius.sound(~F, env, K.circ(es, c), d, w, h)
+    case K.Diameter{c, d}:
+      Diameter.sound(~F, env, K.circ(es, c), d, w, h)
+    case K.LineDistance{p, a, rev, d, l}:
+      LineDistance.sound(~F, env, K.pt(es, p), K.seg(es, a), rev, d, l, w, h)
+    case K.Angle{a, ra, b, rb, c, s}:
+      Angle.sound(~F, env, K.seg(es, a), ra, K.seg(es, b), rb, c, s, w, h)
+    case K.EqualLength{a, b}:
+      EqualLength.sound(~F, env, K.seg(es, a), K.seg(es, b), w, h)
+    case K.Perpendicular{a, b}:
+      Perpendicular.sound(~F, env, K.seg(es, a), K.seg(es, b), w, h)
+    case K.Parallel{a, b}:
+      Parallel.sound(~F, env, K.seg(es, a), K.seg(es, b), w, h)
+    case K.OnLine{p, a}:
+      OnLine.sound(~F, env, K.pt(es, p), K.seg(es, a), w, h)
+    case K.OnCircle{p, c}:
+      OnCircle.sound(~F, env, K.pt(es, p), K.circ(es, c), w, h)
+    case K.Midpoint{m, a}:
+      Midpoint.sound(~F, env, K.pt(es, m), K.seg(es, a), w, h)
+    case K.Symmetric{p, q, a}:
+      Symmetric.sound(~F, env, K.pt(es, p), K.pt(es, q), K.seg(es, a), w, h)
+
+# Every kind: the meaning implies the exact form
+def means_complete(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, K.Ent>, +k: K.Constraint, h: K.Constraint.means(~F, env, es, k)) -> K.Constraint.holds(~F, env, es, k):
+  match k:
+    case K.Coincident{a, b}:
+      Coincident.complete(~F, env, K.pt(es, a), K.pt(es, b), h)
+    case K.Horizontal{a, b}:
+      Horizontal.complete(~F, env, K.pt(es, a), K.pt(es, b), h)
+    case K.Vertical{a, b}:
+      Vertical.complete(~F, env, K.pt(es, a), K.pt(es, b), h)
+    case K.Concentric{a, b}:
+      Concentric.complete(~F, env, K.circ(es, a), K.circ(es, b), h)
+    case K.EqualRadius{a, b}:
+      EqualRadius.complete(~F, env, K.circ(es, a), K.circ(es, b), h)
+    case K.Fix{v, c}:
+      Fix.complete(~F, env, v, c, h)
+    case K.Distance{p, q, d}:
+      Distance.complete(~F, env, K.pt(es, p), K.pt(es, q), d, h)
+    case K.HDistance{p, q, d}:
+      HDistance.complete(~F, env, K.pt(es, p), K.pt(es, q), d, h)
+    case K.VDistance{p, q, d}:
+      VDistance.complete(~F, env, K.pt(es, p), K.pt(es, q), d, h)
+    case K.Radius{c, d}:
+      Radius.complete(~F, env, K.circ(es, c), d, h)
+    case K.Diameter{c, d}:
+      Diameter.complete(~F, env, K.circ(es, c), d, h)
+    case K.LineDistance{p, a, rev, d, l}:
+      LineDistance.complete(~F, env, K.pt(es, p), K.seg(es, a), rev, d, l, h)
+    case K.Angle{a, ra, b, rb, c, s}:
+      Angle.complete(~F, env, K.seg(es, a), ra, K.seg(es, b), rb, c, s, h)
+    case K.EqualLength{a, b}:
+      EqualLength.complete(~F, env, K.seg(es, a), K.seg(es, b), h)
+    case K.Perpendicular{a, b}:
+      Perpendicular.complete(~F, env, K.seg(es, a), K.seg(es, b), h)
+    case K.Parallel{a, b}:
+      Parallel.complete(~F, env, K.seg(es, a), K.seg(es, b), h)
+    case K.OnLine{p, a}:
+      OnLine.complete(~F, env, K.pt(es, p), K.seg(es, a), h)
+    case K.OnCircle{p, c}:
+      OnCircle.complete(~F, env, K.pt(es, p), K.circ(es, c), h)
+    case K.Midpoint{m, a}:
+      Midpoint.complete(~F, env, K.pt(es, m), K.seg(es, a), h)
+    case K.Symmetric{p, q, a}:
+      Symmetric.complete(~F, env, K.pt(es, p), K.pt(es, q), K.seg(es, a), h)

@@ -1,0 +1,800 @@
+# The meaning lemmas, in every ordered field: for each constraint kind, its
+# exact equations and side conditions hold exactly when its meaning does
+# (ROADMAP.bend: means_sound, means_complete). Each kind is proven by value
+# (lib/mforms.bend states it with references resolved), matching on the
+# points so that both sides compute to the same coordinates; polynomial
+# reasoning goes through certificates (lib/ford.bend) checked by the
+# normalizer (lib/fring.bend).
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ../spec/geom.bend as G
+import ../spec/sketch.bend as K
+import ./flaws.bend as FL
+import ./fring.bend as FR
+import ./ford.bend as FO
+import ./mforms.bend as MF
+
+# Vectors
+# -------
+
+def pv(~F: O.OField, +env: List<&2, @T>, x: Nat, y: Nat) -> G.Vec(~F):
+  G.V2{@LK(x), @LK(y)}
+
+# componentwise equality
+def v2_eq(~F: O.OField, +a: @T, +b: @T, +c: @T, +d: @T, e1: {a == c : @T}, e2: {b == d : @T}) -> {G.V2{a, b} == G.V2{c, d} : G.Vec(~F)}:
+  %e1 : {G.V2{a, b} == G.V2{_, d} : G.Vec(~F)}
+  %e2 : {G.V2{a, b} == G.V2{a, _} : G.Vec(~F)}
+  {==}
+
+def x_eq(~F: O.OField, +a: @T, +b: @T, +c: @T, +d: @T, e: {G.V2{a, b} == G.V2{c, d} : G.Vec(~F)}) -> {a == c : @T}:
+  Equal.cong(G.Vec(~F), @T, v => G.x(~F, v), G.V2{a, b}, G.V2{c, d}, e)
+
+def y_eq(~F: O.OField, +a: @T, +b: @T, +c: @T, +d: @T, e: {G.V2{a, b} == G.V2{c, d} : G.Vec(~F)}) -> {b == d : @T}:
+  Equal.cong(G.Vec(~F), @T, v => G.y(~F, v), G.V2{a, b}, G.V2{c, d}, e)
+
+# |u|² as a term
+def n2(~F: O.OField, +x: @T, +y: @T) -> @T:
+  @A(@M(x, x), @M(y, y))
+
+# 0 ≤ x x + y y
+def n2_nonneg(~F: O.OField, +x: @T, +y: @T) -> O.le(~F, @0, n2(~F, x, y)):
+  FO.nonneg_add(~F, @M(x, x), @M(y, y), FO.sq_nonneg(~F, x), FO.sq_nonneg(~F, y))
+
+# x x + y y = 0 gives y = 0 (with sumsq_zero for x)
+def n2_zero_y(~F: O.OField, +x: @T, +y: @T, h: {n2(~F, x, y) == @0 : @T}) -> {y == @0 : @T}:
+  FO.sumsq_zero(~F, y, x, Equal.trans(@T, @A(@M(y, y), @M(x, x)), n2(~F, x, y), @0, FL.add_comm(~F, @M(y, y), @M(x, x)), h))
+
+# Parallel directions
+# -------------------
+
+# cross(u, v) = 0: one of u, v is a multiple of the other
+def par_sound.pos(~F: O.OField, +ux: @T, +uy: @T, +vx: @T, +vy: @T, +h: {@S(@M(ux, vy), @M(uy, vx)) == @0 : @T}, +g: O.lt(F, @0, n2(~F, ux, uy))) -> {G.V2{vx, vy} == G.V2{@M(@M(@A(@M(ux, vx), @M(uy, vy)), O.inv(F, n2(~F, ux, uy))), ux), @M(@M(@A(@M(ux, vx), @M(uy, vy)), O.inv(F, n2(~F, ux, uy))), uy)} : G.Vec(~F)}:
+  v2_eq(~F, vx, vy, @M(@M(@A(@M(ux, vx), @M(uy, vy)), O.inv(F, n2(~F, ux, uy))), ux), @M(@M(@A(@M(ux, vx), @M(uy, vy)), O.inv(F, n2(~F, ux, uy))), uy),
+    FO.eq_of_sub(~F, vx, @M(@M(@A(@M(ux, vx), @M(uy, vy)), O.inv(F, n2(~F, ux, uy))), ux),
+      FO.cert2(~F, @S(vx, @M(@M(@A(@M(ux, vx), @M(uy, vy)), O.inv(F, n2(~F, ux, uy))), ux)),
+        @N(vx), @S(@M(n2(~F, ux, uy), O.inv(F, n2(~F, ux, uy))), @1), @N(@M(O.inv(F, n2(~F, ux, uy)), uy)), @S(@M(ux, vy), @M(uy, vx)),
+        @ZEQ[ux,, uy,, vx,, vy,, i=O.inv(F, n2(~F, ux, uy)) | vx - ((ux*vx + uy*vy)*i)*ux | -vx*((ux*ux + uy*uy)*i - 1) + -(i*uy)*(ux*vy - uy*vx)],
+        FO.inv_rel(~F, n2(~F, ux, uy), FO.ne_of_gt(~F, n2(~F, ux, uy), @0, g)), h)),
+    FO.eq_of_sub(~F, vy, @M(@M(@A(@M(ux, vx), @M(uy, vy)), O.inv(F, n2(~F, ux, uy))), uy),
+      FO.cert2(~F, @S(vy, @M(@M(@A(@M(ux, vx), @M(uy, vy)), O.inv(F, n2(~F, ux, uy))), uy)),
+        @N(vy), @S(@M(n2(~F, ux, uy), O.inv(F, n2(~F, ux, uy))), @1), @M(O.inv(F, n2(~F, ux, uy)), ux), @S(@M(ux, vy), @M(uy, vx)),
+        @ZEQ[ux,, uy,, vx,, vy,, i=O.inv(F, n2(~F, ux, uy)) | vy - ((ux*vx + uy*vy)*i)*uy | -vy*((ux*ux + uy*uy)*i - 1) + (i*ux)*(ux*vy - uy*vx)],
+        FO.inv_rel(~F, n2(~F, ux, uy), FO.ne_of_gt(~F, n2(~F, ux, uy), @0, g)), h)))
+
+# u = 0 = 0 v
+def par_sound.zero(~F: O.OField, +ux: @T, +uy: @T, +vx: @T, +vy: @T, +e: {n2(~F, ux, uy) == @0 : @T}) -> {G.V2{ux, uy} == G.V2{@M(@0, vx), @M(@0, vy)} : G.Vec(~F)}:
+  v2_eq(~F, ux, uy, @M(@0, vx), @M(@0, vy),
+    Equal.trans(@T, ux, @0, @M(@0, vx), FO.sumsq_zero(~F, ux, uy, e), Equal.sym(@T, @M(@0, vx), @0, FL.zero_mul(~F, vx))),
+    Equal.trans(@T, uy, @0, @M(@0, vy), n2_zero_y(~F, ux, uy, e), Equal.sym(@T, @M(@0, vy), @0, FL.zero_mul(~F, vy))))
+
+def par_sound.go(~F: O.OField, +ux: @T, +uy: @T, +vx: @T, +vy: @T, +h: {@S(@M(ux, vy), @M(uy, vx)) == @0 : @T}, t: Or(O.lt(F, n2(~F, ux, uy), @0), Or({n2(~F, ux, uy) == @0 : @T}, O.lt(F, @0, n2(~F, ux, uy))))) -> G.parallel(~F, G.V2{ux, uy}, G.V2{vx, vy}):
+  match t:
+    case Inl{l}:
+      FO.absurd(G.parallel(~F, G.V2{ux, uy}, G.V2{vx, vy}), O.lt_irrefl(F)(@0)(FO.le_lt_trans(~F, @0, n2(~F, ux, uy), @0, n2_nonneg(~F, ux, uy), l)))
+    case Inr{Inl{e}}:
+      Inr{(@0, par_sound.zero(~F, ux, uy, vx, vy, e))}
+    case Inr{Inr{g}}:
+      Inl{(@M(@A(@M(ux, vx), @M(uy, vy)), O.inv(F, n2(~F, ux, uy))), par_sound.pos(~F, ux, uy, vx, vy, h, g))}
+
+def par_sound(~F: O.OField, +ux: @T, +uy: @T, +vx: @T, +vy: @T, +h: {@S(@M(ux, vy), @M(uy, vx)) == @0 : @T}) -> G.parallel(~F, G.V2{ux, uy}, G.V2{vx, vy}):
+  par_sound.go(~F, ux, uy, vx, vy, h, O.lt_total(F)(n2(~F, ux, uy), @0))
+
+def par_complete(~F: O.OField, +ux: @T, +uy: @T, +vx: @T, +vy: @T, h: G.parallel(~F, G.V2{ux, uy}, G.V2{vx, vy})) -> {@S(@M(ux, vy), @M(uy, vx)) == @0 : @T}:
+  match h:
+    case Inl{x}:
+      (+l, e) = x
+      %Equal.sym(G.Vec(~F), G.V2{vx, vy}, G.scale(~F, l, G.V2{ux, uy}), e) : {G.cross(~F, G.V2{ux, uy}, _) == @0 : @T}
+      @ZEQ[ux,, uy,, l | ux*(l*uy) - uy*(l*ux) | 0]
+    case Inr{x}:
+      (+l, e) = x
+      %Equal.sym(G.Vec(~F), G.V2{ux, uy}, G.scale(~F, l, G.V2{vx, vy}), e) : {G.cross(~F, _, G.V2{vx, vy}) == @0 : @T}
+      @ZEQ[vx,, vy,, l | (l*vx)*vy - (l*vy)*vx | 0]
+
+# dot(u, v) = 0: v is parallel to u turned a quarter turn
+def perp_sound(~F: O.OField, +ux: @T, +uy: @T, +vx: @T, +vy: @T, h: {@A(@M(ux, vx), @M(uy, vy)) == @0 : @T}) -> G.parallel(~F, G.V2{@N(uy), ux}, G.V2{vx, vy}):
+  par_sound(~F, @N(uy), ux, vx, vy,
+    FO.cert1(~F, @S(@M(@N(uy), vy), @M(ux, vx)), @N(@1), @A(@M(ux, vx), @M(uy, vy)),
+      @ZEQ[ux,, uy,, vx,, vy | -uy*vy - ux*vx | -1*(ux*vx + uy*vy)], h))
+
+def perp_complete(~F: O.OField, +ux: @T, +uy: @T, +vx: @T, +vy: @T, h: G.parallel(~F, G.V2{@N(uy), ux}, G.V2{vx, vy})) -> {@A(@M(ux, vx), @M(uy, vy)) == @0 : @T}:
+  FO.cert1(~F, @A(@M(ux, vx), @M(uy, vy)), @N(@1), @S(@M(@N(uy), vy), @M(ux, vx)),
+    @ZEQ[ux,, uy,, vx,, vy | ux*vx + uy*vy | -1*(-uy*vy - ux*vx)],
+    par_complete(~F, @N(uy), ux, vx, vy, h))
+
+# a coordinate difference
+def dx(~F: O.OField, +env: List<&2, @T>, a: Nat, b: Nat) -> @T:
+  @S(@LK(a), @LK(b))
+
+# Merges
+# ------
+
+def Coincident.sound(~F: O.OField, +env: List<&2, @T>, +a: K.Pt, +b: K.Pt, w: MF.W.Coincident(a, b), h: MF.H.Coincident(~F, env, a, b)) -> MF.M.Coincident(~F, env, a, b):
+  %w : {K.at(~F, env, a) == K.at(~F, env, _) : G.Vec(~F)}
+  {==}
+
+def Coincident.complete(~F: O.OField, +env: List<&2, @T>, +a: K.Pt, +b: K.Pt, h: MF.M.Coincident(~F, env, a, b)) -> MF.H.Coincident(~F, env, a, b):
+  (Unit{}, Unit{})
+
+def Horizontal.sound(~F: O.OField, +env: List<&2, @T>, +a: K.Pt, +b: K.Pt, w: MF.W.Horizontal(a, b), h: MF.H.Horizontal(~F, env, a, b)) -> MF.M.Horizontal(~F, env, a, b):
+  match a b:
+    case K.Pt{ax, ay} K.Pt{bx, by}:
+      %w : {@LK(ay) == @LK(_) : @T}
+      {==}
+
+def Horizontal.complete(~F: O.OField, +env: List<&2, @T>, +a: K.Pt, +b: K.Pt, h: MF.M.Horizontal(~F, env, a, b)) -> MF.H.Horizontal(~F, env, a, b):
+  (Unit{}, Unit{})
+
+def Vertical.sound(~F: O.OField, +env: List<&2, @T>, +a: K.Pt, +b: K.Pt, w: MF.W.Vertical(a, b), h: MF.H.Vertical(~F, env, a, b)) -> MF.M.Vertical(~F, env, a, b):
+  match a b:
+    case K.Pt{ax, ay} K.Pt{bx, by}:
+      %w : {@LK(ax) == @LK(_) : @T}
+      {==}
+
+def Vertical.complete(~F: O.OField, +env: List<&2, @T>, +a: K.Pt, +b: K.Pt, h: MF.M.Vertical(~F, env, a, b)) -> MF.H.Vertical(~F, env, a, b):
+  (Unit{}, Unit{})
+
+def Concentric.sound(~F: O.OField, +env: List<&2, @T>, +a: K.Circ, +b: K.Circ, w: MF.W.Concentric(a, b), h: MF.H.Concentric(~F, env, a, b)) -> MF.M.Concentric(~F, env, a, b):
+  %w : {K.at(~F, env, K.Circ.c(a)) == K.at(~F, env, _) : G.Vec(~F)}
+  {==}
+
+def Concentric.complete(~F: O.OField, +env: List<&2, @T>, +a: K.Circ, +b: K.Circ, h: MF.M.Concentric(~F, env, a, b)) -> MF.H.Concentric(~F, env, a, b):
+  (Unit{}, Unit{})
+
+def EqualRadius.sound(~F: O.OField, +env: List<&2, @T>, +a: K.Circ, +b: K.Circ, w: MF.W.EqualRadius(a, b), h: MF.H.EqualRadius(~F, env, a, b)) -> MF.M.EqualRadius(~F, env, a, b):
+  %w : {@LK(K.Circ.r(a)) == @LK(_) : @T}
+  {==}
+
+def EqualRadius.complete(~F: O.OField, +env: List<&2, @T>, +a: K.Circ, +b: K.Circ, h: MF.M.EqualRadius(~F, env, a, b)) -> MF.H.EqualRadius(~F, env, a, b):
+  (Unit{}, Unit{})
+
+# Fix and dimensions
+# ------------------
+
+def Fix.sound(~F: O.OField, +env: List<&2, @T>, +v: Nat, +c: S.Q, w: MF.W.Fix(v, c), h: MF.H.Fix(~F, env, v, c)) -> MF.M.Fix(~F, env, v, c):
+  ((hz, u1), u2) = h
+  FO.eq_of_sub(~F, @LK(v), O.ofq(~F, c), hz)
+
+def Fix.complete(~F: O.OField, +env: List<&2, @T>, +v: Nat, +c: S.Q, h: MF.M.Fix(~F, env, v, c)) -> MF.H.Fix(~F, env, v, c):
+  ((FO.sub_of_eq(~F, @LK(v), O.ofq(~F, c), h), Unit{}), Unit{})
+
+def Distance.sound(~F: O.OField, +env: List<&2, @T>, +p: K.Pt, +q: K.Pt, +d: E.QExpr, w: MF.W.Distance(p, q, d), h: MF.H.Distance(~F, env, p, q, d)) -> MF.M.Distance(~F, env, p, q, d):
+  match p q:
+    case K.Pt{px, py} K.Pt{qx, qy}:
+      ((hz, u1), (hs, u2)) = h
+      (hs, FO.eq_of_sub(~F, G.norm2(~F, G.sub(~F, pv(~F, env, qx, qy), pv(~F, env, px, py))), @M(O.eval(~F, env, d), O.eval(~F, env, d)), hz))
+
+def Distance.complete(~F: O.OField, +env: List<&2, @T>, +p: K.Pt, +q: K.Pt, +d: E.QExpr, h: MF.M.Distance(~F, env, p, q, d)) -> MF.H.Distance(~F, env, p, q, d):
+  match p q:
+    case K.Pt{px, py} K.Pt{qx, qy}:
+      (hs, he) = h
+      ((FO.sub_of_eq(~F, G.norm2(~F, G.sub(~F, pv(~F, env, qx, qy), pv(~F, env, px, py))), @M(O.eval(~F, env, d), O.eval(~F, env, d)), he), Unit{}), (hs, Unit{}))
+
+def HDistance.sound(~F: O.OField, +env: List<&2, @T>, +p: K.Pt, +q: K.Pt, +d: E.QExpr, w: MF.W.HDistance(p, q, d), h: MF.H.HDistance(~F, env, p, q, d)) -> MF.M.HDistance(~F, env, p, q, d):
+  match p q:
+    case K.Pt{px, py} K.Pt{qx, qy}:
+      ((hz, u1), (hs, u2)) = h
+      (hs, FO.eq_of_sub(~F, dx(~F, env, qx, px), O.eval(~F, env, d), hz))
+
+def HDistance.complete(~F: O.OField, +env: List<&2, @T>, +p: K.Pt, +q: K.Pt, +d: E.QExpr, h: MF.M.HDistance(~F, env, p, q, d)) -> MF.H.HDistance(~F, env, p, q, d):
+  match p q:
+    case K.Pt{px, py} K.Pt{qx, qy}:
+      (hs, he) = h
+      ((FO.sub_of_eq(~F, dx(~F, env, qx, px), O.eval(~F, env, d), he), Unit{}), (hs, Unit{}))
+
+def VDistance.sound(~F: O.OField, +env: List<&2, @T>, +p: K.Pt, +q: K.Pt, +d: E.QExpr, w: MF.W.VDistance(p, q, d), h: MF.H.VDistance(~F, env, p, q, d)) -> MF.M.VDistance(~F, env, p, q, d):
+  match p q:
+    case K.Pt{px, py} K.Pt{qx, qy}:
+      ((hz, u1), (hs, u2)) = h
+      (hs, FO.eq_of_sub(~F, dx(~F, env, qy, py), O.eval(~F, env, d), hz))
+
+def VDistance.complete(~F: O.OField, +env: List<&2, @T>, +p: K.Pt, +q: K.Pt, +d: E.QExpr, h: MF.M.VDistance(~F, env, p, q, d)) -> MF.H.VDistance(~F, env, p, q, d):
+  match p q:
+    case K.Pt{px, py} K.Pt{qx, qy}:
+      (hs, he) = h
+      ((FO.sub_of_eq(~F, dx(~F, env, qy, py), O.eval(~F, env, d), he), Unit{}), (hs, Unit{}))
+
+def Radius.sound(~F: O.OField, +env: List<&2, @T>, +c: K.Circ, +d: E.QExpr, w: MF.W.Radius(c, d), h: MF.H.Radius(~F, env, c, d)) -> MF.M.Radius(~F, env, c, d):
+  ((hz, u1), u2) = h
+  FO.eq_of_sub(~F, @LK(K.Circ.r(c)), O.eval(~F, env, d), hz)
+
+def Radius.complete(~F: O.OField, +env: List<&2, @T>, +c: K.Circ, +d: E.QExpr, h: MF.M.Radius(~F, env, c, d)) -> MF.H.Radius(~F, env, c, d):
+  ((FO.sub_of_eq(~F, @LK(K.Circ.r(c)), O.eval(~F, env, d), h), Unit{}), Unit{})
+
+def Diameter.sound(~F: O.OField, +env: List<&2, @T>, +c: K.Circ, +d: E.QExpr, w: MF.W.Diameter(c, d), h: MF.H.Diameter(~F, env, c, d)) -> MF.M.Diameter(~F, env, c, d):
+  ((hz, u1), u2) = h
+  FO.eq_of_sub(~F, @A(@LK(K.Circ.r(c)), @LK(K.Circ.r(c))), O.eval(~F, env, d), hz)
+
+def Diameter.complete(~F: O.OField, +env: List<&2, @T>, +c: K.Circ, +d: E.QExpr, h: MF.M.Diameter(~F, env, c, d)) -> MF.H.Diameter(~F, env, c, d):
+  ((FO.sub_of_eq(~F, @A(@LK(K.Circ.r(c)), @LK(K.Circ.r(c))), O.eval(~F, env, d), h), Unit{}), Unit{})
+
+# Relations
+# ---------
+
+def EqualLength.sound(~F: O.OField, +env: List<&2, @T>, +a: K.Seg, +b: K.Seg, w: MF.W.EqualLength(a, b), h: MF.H.EqualLength(~F, env, a, b)) -> MF.M.EqualLength(~F, env, a, b):
+  match a b:
+    case K.Seg{K.Pt{a0x, a0y}, K.Pt{a1x, a1y}} K.Seg{K.Pt{b0x, b0y}, K.Pt{b1x, b1y}}:
+      ((hz, u1), u2) = h
+      FO.eq_of_sub(~F, n2(~F, dx(~F, env, a1x, a0x), dx(~F, env, a1y, a0y)), n2(~F, dx(~F, env, b1x, b0x), dx(~F, env, b1y, b0y)), hz)
+
+def EqualLength.complete(~F: O.OField, +env: List<&2, @T>, +a: K.Seg, +b: K.Seg, h: MF.M.EqualLength(~F, env, a, b)) -> MF.H.EqualLength(~F, env, a, b):
+  match a b:
+    case K.Seg{K.Pt{a0x, a0y}, K.Pt{a1x, a1y}} K.Seg{K.Pt{b0x, b0y}, K.Pt{b1x, b1y}}:
+      ((FO.sub_of_eq(~F, n2(~F, dx(~F, env, a1x, a0x), dx(~F, env, a1y, a0y)), n2(~F, dx(~F, env, b1x, b0x), dx(~F, env, b1y, b0y)), h), Unit{}), Unit{})
+
+def Perpendicular.sound(~F: O.OField, +env: List<&2, @T>, +a: K.Seg, +b: K.Seg, w: MF.W.Perpendicular(a, b), h: MF.H.Perpendicular(~F, env, a, b)) -> MF.M.Perpendicular(~F, env, a, b):
+  match a b:
+    case K.Seg{K.Pt{a0x, a0y}, K.Pt{a1x, a1y}} K.Seg{K.Pt{b0x, b0y}, K.Pt{b1x, b1y}}:
+      ((hz, u1), u2) = h
+      perp_sound(~F, dx(~F, env, a1x, a0x), dx(~F, env, a1y, a0y), dx(~F, env, b1x, b0x), dx(~F, env, b1y, b0y), hz)
+
+def Perpendicular.complete(~F: O.OField, +env: List<&2, @T>, +a: K.Seg, +b: K.Seg, h: MF.M.Perpendicular(~F, env, a, b)) -> MF.H.Perpendicular(~F, env, a, b):
+  match a b:
+    case K.Seg{K.Pt{a0x, a0y}, K.Pt{a1x, a1y}} K.Seg{K.Pt{b0x, b0y}, K.Pt{b1x, b1y}}:
+      ((perp_complete(~F, dx(~F, env, a1x, a0x), dx(~F, env, a1y, a0y), dx(~F, env, b1x, b0x), dx(~F, env, b1y, b0y), h), Unit{}), Unit{})
+
+def Parallel.sound(~F: O.OField, +env: List<&2, @T>, +a: K.Seg, +b: K.Seg, w: MF.W.Parallel(a, b), h: MF.H.Parallel(~F, env, a, b)) -> MF.M.Parallel(~F, env, a, b):
+  match a b:
+    case K.Seg{K.Pt{a0x, a0y}, K.Pt{a1x, a1y}} K.Seg{K.Pt{b0x, b0y}, K.Pt{b1x, b1y}}:
+      ((hz, u1), u2) = h
+      par_sound(~F, dx(~F, env, a1x, a0x), dx(~F, env, a1y, a0y), dx(~F, env, b1x, b0x), dx(~F, env, b1y, b0y), hz)
+
+def Parallel.complete(~F: O.OField, +env: List<&2, @T>, +a: K.Seg, +b: K.Seg, h: MF.M.Parallel(~F, env, a, b)) -> MF.H.Parallel(~F, env, a, b):
+  match a b:
+    case K.Seg{K.Pt{a0x, a0y}, K.Pt{a1x, a1y}} K.Seg{K.Pt{b0x, b0y}, K.Pt{b1x, b1y}}:
+      ((par_complete(~F, dx(~F, env, a1x, a0x), dx(~F, env, a1y, a0y), dx(~F, env, b1x, b0x), dx(~F, env, b1y, b0y), h), Unit{}), Unit{})
+
+def OnLine.sound(~F: O.OField, +env: List<&2, @T>, +p: K.Pt, +a: K.Seg, w: MF.W.OnLine(p, a), h: MF.H.OnLine(~F, env, p, a)) -> MF.M.OnLine(~F, env, p, a):
+  match p a:
+    case K.Pt{px, py} K.Seg{K.Pt{ax, ay}, K.Pt{bx, by}}:
+      ((hz, u1), u2) = h
+      par_sound(~F, dx(~F, env, bx, ax), dx(~F, env, by, ay), dx(~F, env, px, ax), dx(~F, env, py, ay), hz)
+
+def OnLine.complete(~F: O.OField, +env: List<&2, @T>, +p: K.Pt, +a: K.Seg, h: MF.M.OnLine(~F, env, p, a)) -> MF.H.OnLine(~F, env, p, a):
+  match p a:
+    case K.Pt{px, py} K.Seg{K.Pt{ax, ay}, K.Pt{bx, by}}:
+      ((par_complete(~F, dx(~F, env, bx, ax), dx(~F, env, by, ay), dx(~F, env, px, ax), dx(~F, env, py, ay), h), Unit{}), Unit{})
+
+def OnCircle.sound(~F: O.OField, +env: List<&2, @T>, +p: K.Pt, +c: K.Circ, w: MF.W.OnCircle(p, c), h: MF.H.OnCircle(~F, env, p, c)) -> MF.M.OnCircle(~F, env, p, c):
+  match p c:
+    case K.Pt{px, py} K.Circ{K.Pt{cx, cy}, r}:
+      ((hz, u1), u2) = h
+      FO.eq_of_sub(~F, n2(~F, dx(~F, env, px, cx), dx(~F, env, py, cy)), @M(@LK(r), @LK(r)), hz)
+
+def OnCircle.complete(~F: O.OField, +env: List<&2, @T>, +p: K.Pt, +c: K.Circ, h: MF.M.OnCircle(~F, env, p, c)) -> MF.H.OnCircle(~F, env, p, c):
+  match p c:
+    case K.Pt{px, py} K.Circ{K.Pt{cx, cy}, r}:
+      ((FO.sub_of_eq(~F, n2(~F, dx(~F, env, px, cx), dx(~F, env, py, cy)), @M(@LK(r), @LK(r)), h), Unit{}), Unit{})
+
+# Midpoint
+# --------
+
+def Midpoint.sound(~F: O.OField, +env: List<&2, @T>, +m: K.Pt, +a: K.Seg, w: MF.W.Midpoint(m, a), h: MF.H.Midpoint(~F, env, m, a)) -> MF.M.Midpoint(~F, env, m, a):
+  match m a:
+    case K.Pt{mx, my} K.Seg{K.Pt{ax, ay}, K.Pt{bx, by}}:
+      ((hx, (hy, u1)), u2) = h
+      @ATOMS midx = m=@LK(mx),, a=@LK(ax),, b=@LK(bx),, h=O.half(~F)
+      @ATOMS midy = m=@LK(my),, a=@LK(ay),, b=@LK(by),, h=O.half(~F)
+      v2_eq(~F, @LK(mx), @LK(my), @FT[midx | h*(a + b)], @FT[midy | h*(a + b)],
+        @CERTEQ[midx | m | h*(a + b) | h ; (m + m) - (a + b) | -m ; (1 + 1)*h - 1 || hx, FO.half_rel(~F)],
+        @CERTEQ[midy | m | h*(a + b) | h ; (m + m) - (a + b) | -m ; (1 + 1)*h - 1 || hy, FO.half_rel(~F)])
+
+def mid_complete(~F: O.OField, +mx: @T, +my: @T, +ax: @T, +ay: @T, +bx: @T, +by: @T, +h: {G.V2{mx, my} == G.mid(~F, G.V2{ax, ay}, G.V2{bx, by}) : G.Vec(~F)}) -> K.Both({@S(@A(mx, mx), @A(ax, bx)) == @0 : @T}, K.Both({@S(@A(my, my), @A(ay, by)) == @0 : @T}, Unit)) & Unit:
+  @ATOMS mcx2 = m=mx,, a=ax,, b=bx,, h=O.half(~F)
+  @ATOMS mcy2 = m=my,, a=ay,, b=by,, h=O.half(~F)
+  ((@CERT[mcx2 | (m + m) - (a + b) | 1 + 1 ; m - h*(a + b) | a + b ; (1 + 1)*h - 1 || FO.sub_of_eq(~F, mx, @FT[mcx2 | h*(a + b)], x_eq(~F, mx, my, @FT[mcx2 | h*(a + b)], @FT[mcy2 | h*(a + b)], h)), FO.half_rel(~F)],
+    (@CERT[mcy2 | (m + m) - (a + b) | 1 + 1 ; m - h*(a + b) | a + b ; (1 + 1)*h - 1 || FO.sub_of_eq(~F, my, @FT[mcy2 | h*(a + b)], y_eq(~F, mx, my, @FT[mcx2 | h*(a + b)], @FT[mcy2 | h*(a + b)], h)), FO.half_rel(~F)], Unit{})), Unit{})
+
+def Midpoint.complete(~F: O.OField, +env: List<&2, @T>, +m: K.Pt, +a: K.Seg, h: MF.M.Midpoint(~F, env, m, a)) -> MF.H.Midpoint(~F, env, m, a):
+  match m a:
+    case K.Pt{mx, my} K.Seg{K.Pt{ax, ay}, K.Pt{bx, by}}:
+      mid_complete(~F, @LK(mx), @LK(my), @LK(ax), @LK(ay), @LK(bx), @LK(by), h)
+
+# Mirror image
+# ------------
+# w = b - a, u = p - a, v = q - a, n = |w|²; E1, E2 are the mirror
+# equations |w|² v - R̂ u = 0; z = mid(p, q) - a.
+
+@ATOMS sy = px,, py,, qx,, qy,, ax,, ay,, bx,, by,, h=O.half(~F),, i=O.inv(F, n2(~F, @S(bx, ax), @S(by, ay))),, wx:=(bx - ax),, wy:=(by - ay),, ux:=(px - ax),, uy:=(py - ay),, vx:=(qx - ax),, vy:=(qy - ay),, nn:=(wx*wx + wy*wy),, zx:=(h*(px + qx) - ax),, zy:=(h*(py + qy) - ay),, E1:=(nn*vx - ((wx*wx - wy*wy)*ux + (wx*wy + wx*wy)*uy)),, E2:=(nn*vy - ((wx*wy + wx*wy)*ux + (wy*wy - wx*wx)*uy))
+
+def sym_sound.go(~F: O.OField, +px: @T, +py: @T, +qx: @T, +qy: @T, +ax: @T, +ay: @T, +bx: @T, +by: @T, +h1: {@FT[sy | E1] == @0 : @T}, +h2: {@FT[sy | E2] == @0 : @T}, t: Or(O.lt(F, n2(~F, @S(bx, ax), @S(by, ay)), @0), Or({n2(~F, @S(bx, ax), @S(by, ay)) == @0 : @T}, O.lt(F, @0, n2(~F, @S(bx, ax), @S(by, ay)))))) -> G.mirror(~F, G.V2{px, py}, G.V2{qx, qy}, G.V2{ax, ay}, G.V2{bx, by}):
+  match t:
+    case Inl{l}:
+      FO.absurd(G.mirror(~F, G.V2{px, py}, G.V2{qx, qy}, G.V2{ax, ay}, G.V2{bx, by}), O.lt_irrefl(F)(@0)(FO.le_lt_trans(~F, @0, n2(~F, @S(bx, ax), @S(by, ay)), @0, n2_nonneg(~F, @S(bx, ax), @S(by, ay)), l)))
+    case Inr{Inl{+e}}:
+      +ewx = FO.sumsq_zero(~F, @S(bx, ax), @S(by, ay), e)
+      +ewy = n2_zero_y(~F, @S(bx, ax), @S(by, ay), e)
+      (par_sound(~F, @FT[sy | wx], @FT[sy | wy], @FT[sy | zx], @FT[sy | zy], @CERT[sy | wx*zy - wy*zx | zy ; wx | -zx ; wy || ewx, ewy]),
+       @CERT[sy | (qx - px)*wx + (qy - py)*wy | qx - px ; wx | qy - py ; wy || ewx, ewy])
+    case Inr{Inr{g}}:
+      +hn = FO.inv_rel(~F, n2(~F, @S(bx, ax), @S(by, ay)), FO.ne_of_gt(~F, n2(~F, @S(bx, ax), @S(by, ay)), @0, g))
+      (par_sound(~F, @FT[sy | wx], @FT[sy | wy], @FT[sy | zx], @FT[sy | zy],
+         @CERT[sy | wx*zy - wy*zx | -(h*i*wy) ; E1 | h*i*wx ; E2 | -(h*(wx*(uy + vy) - wy*(ux + vx))) ; nn*i - 1 | wx*ay - wy*ax ; (1 + 1)*h - 1 || h1, h2, hn, FO.half_rel(~F)]),
+       @CERT[sy | (qx - px)*wx + (qy - py)*wy | i*wx ; E1 | i*wy ; E2 | -((qx - px)*wx + (qy - py)*wy) ; nn*i - 1 || h1, h2, hn])
+
+def sym_sound(~F: O.OField, +px: @T, +py: @T, +qx: @T, +qy: @T, +ax: @T, +ay: @T, +bx: @T, +by: @T, +h1: {@FT[sy | E1] == @0 : @T}, +h2: {@FT[sy | E2] == @0 : @T}) -> G.mirror(~F, G.V2{px, py}, G.V2{qx, qy}, G.V2{ax, ay}, G.V2{bx, by}):
+  sym_sound.go(~F, px, py, qx, qy, ax, ay, bx, by, h1, h2, O.lt_total(F)(n2(~F, @S(bx, ax), @S(by, ay)), @0))
+
+def sym_complete(~F: O.OField, +px: @T, +py: @T, +qx: @T, +qy: @T, +ax: @T, +ay: @T, +bx: @T, +by: @T, h: G.mirror(~F, G.V2{px, py}, G.V2{qx, qy}, G.V2{ax, ay}, G.V2{bx, by})) -> K.Both({@FT[sy | E1] == @0 : @T}, K.Both({@FT[sy | E2] == @0 : @T}, Unit)) & Unit:
+  (ol, +hd0) = h
+  +c = par_complete(~F, @FT[sy | wx], @FT[sy | wy], @FT[sy | zx], @FT[sy | zy], ol)
+  ((@CERT[sy | E1 | wx ; (qx - px)*wx + (qy - py)*wy | -(2*wy) ; wx*zy - wy*zx | wy*((wx*(uy + vy) - wy*(ux + vx)) + 2*(wx*ay - wy*ax)) ; (1 + 1)*h - 1 || hd0, c, FO.half_rel(~F)],
+   (@CERT[sy | E2 | wy ; (qx - px)*wx + (qy - py)*wy | 2*wx ; wx*zy - wy*zx | -(wx*((wx*(uy + vy) - wy*(ux + vx)) + 2*(wx*ay - wy*ax))) ; (1 + 1)*h - 1 || hd0, c, FO.half_rel(~F)], Unit{})), Unit{})
+
+def Symmetric.sound(~F: O.OField, +env: List<&2, @T>, +p: K.Pt, +q: K.Pt, +a: K.Seg, w: MF.W.Symmetric(p, q, a), h: MF.H.Symmetric(~F, env, p, q, a)) -> MF.M.Symmetric(~F, env, p, q, a):
+  match p q a:
+    case K.Pt{px, py} K.Pt{qx, qy} K.Seg{K.Pt{ax, ay}, K.Pt{bx, by}}:
+      ((h1, (h2, u1)), u2) = h
+      sym_sound(~F, @LK(px), @LK(py), @LK(qx), @LK(qy), @LK(ax), @LK(ay), @LK(bx), @LK(by), h1, h2)
+
+def Symmetric.complete(~F: O.OField, +env: List<&2, @T>, +p: K.Pt, +q: K.Pt, +a: K.Seg, h: MF.M.Symmetric(~F, env, p, q, a)) -> MF.H.Symmetric(~F, env, p, q, a):
+  match p q a:
+    case K.Pt{px, py} K.Pt{qx, qy} K.Seg{K.Pt{ax, ay}, K.Pt{bx, by}}:
+      sym_complete(~F, @LK(px), @LK(py), @LK(qx), @LK(qy), @LK(ax), @LK(ay), @LK(bx), @LK(by), h)
+
+# 0 < x x + y y unless (x, y) = 0
+def sumsq_pos.go(~F: O.OField, +x: @T, +y: @T, h: {G.V2{x, y} == G.vzero(~F) : G.Vec(~F)} -> Empty, t: Or(O.lt(F, n2(~F, x, y), @0), Or({n2(~F, x, y) == @0 : @T}, O.lt(F, @0, n2(~F, x, y))))) -> O.lt(F, @0, n2(~F, x, y)):
+  match t:
+    case Inl{l}:
+      FO.absurd(O.lt(F, @0, n2(~F, x, y)), O.lt_irrefl(F)(@0)(FO.le_lt_trans(~F, @0, n2(~F, x, y), @0, n2_nonneg(~F, x, y), l)))
+    case Inr{Inl{+e}}:
+      FO.absurd(O.lt(F, @0, n2(~F, x, y)), h(v2_eq(~F, x, y, @0, @0, FO.sumsq_zero(~F, x, y, e), n2_zero_y(~F, x, y, e))))
+    case Inr{Inr{g}}:
+      g
+
+def sumsq_pos(~F: O.OField, +x: @T, +y: @T, h: {G.V2{x, y} == G.vzero(~F) : G.Vec(~F)} -> Empty) -> O.lt(F, @0, n2(~F, x, y)):
+  sumsq_pos.go(~F, x, y, h, O.lt_total(F)(n2(~F, x, y), @0))
+
+# Angle
+# -----
+# w = R u, the rotation (c, s) applied to u
+
+@ATOMS an = c,, s,, ux,, uy,, vx,, vy,, wx:=(c*ux - s*uy),, wy:=(s*ux + c*uy)
+@ATOMS anl = c,, s,, ux,, uy,, l,, wx:=(c*ux - s*uy),, wy:=(s*ux + c*uy)
+
+# u = 0 would make dot(R u, v) = 0
+def angle.u_ne.lt(~F: O.OField, +ux: @T, +uy: @T, +vx: @T, +vy: @T, +c: @T, +s: @T, hs: O.lt(F, @0, G.dot(~F, G.rot(~F, c, s, G.V2{ux, uy}), G.V2{vx, vy})), e: {G.V2{ux, uy} == G.vzero(~F) : G.Vec(~F)}) -> O.lt(F, @0, @0):
+  %@ZEQ[c,, s,, vx,, vy | (c*0 - s*0)*vx + (s*0 + c*0)*vy | 0] : O.lt(F, @0, _)
+  %e : O.lt(F, @0, G.dot(~F, G.rot(~F, c, s, _), G.V2{vx, vy}))
+  hs
+
+# (c, s) = 0 would too
+def angle.cs_ne.lt(~F: O.OField, +ux: @T, +uy: @T, +vx: @T, +vy: @T, +c: @T, +s: @T, hs: O.lt(F, @0, G.dot(~F, G.rot(~F, c, s, G.V2{ux, uy}), G.V2{vx, vy})), +e: {G.V2{c, s} == G.vzero(~F) : G.Vec(~F)}) -> O.lt(F, @0, @0):
+  %@ZEQ[ux,, uy,, vx,, vy | (0*ux - 0*uy)*vx + (0*ux + 0*uy)*vy | 0] : O.lt(F, @0, _)
+  %x_eq(~F, c, s, @0, @0, e) : O.lt(F, @0, G.dot(~F, G.rot(~F, _, @0, G.V2{ux, uy}), G.V2{vx, vy}))
+  %y_eq(~F, c, s, @0, @0, e) : O.lt(F, @0, G.dot(~F, G.rot(~F, c, _, G.V2{ux, uy}), G.V2{vx, vy}))
+  hs
+
+def angle.l.go(~F: O.OField, +ux: @T, +uy: @T, +vx: @T, +vy: @T, +c: @T, +s: @T, +hz: {@FT[an | wx*vy - wy*vx] == @0 : @T}, +hs: O.lt(F, @0, @FT[an | wx*vx + wy*vy]), t: Or(O.lt(F, n2(~F, @FT[an | wx], @FT[an | wy]), @0), Or({n2(~F, @FT[an | wx], @FT[an | wy]) == @0 : @T}, O.lt(F, @0, n2(~F, @FT[an | wx], @FT[an | wy]))))) -> Exists(@T, l => O.lt(F, @0, l) & {G.V2{vx, vy} == G.scale(~F, l, G.rot(~F, c, s, G.V2{ux, uy})) : G.Vec(~F)}):
+  match t:
+    case Inl{l}:
+      FO.absurd(Exists(@T, l => O.lt(F, @0, l) & {G.V2{vx, vy} == G.scale(~F, l, G.rot(~F, c, s, G.V2{ux, uy})) : G.Vec(~F)}), O.lt_irrefl(F)(@0)(FO.le_lt_trans(~F, @0, n2(~F, @FT[an | wx], @FT[an | wy]), @0, n2_nonneg(~F, @FT[an | wx], @FT[an | wy]), l)))
+    case Inr{Inl{+e}}:
+      +ewx = FO.sumsq_zero(~F, @FT[an | wx], @FT[an | wy], e)
+      +ewy = n2_zero_y(~F, @FT[an | wx], @FT[an | wy], e)
+      FO.absurd(Exists(@T, l => O.lt(F, @0, l) & {G.V2{vx, vy} == G.scale(~F, l, G.rot(~F, c, s, G.V2{ux, uy})) : G.Vec(~F)}), FO.ne_of_gt(~F, @FT[an | wx*vx + wy*vy], @0, hs)(@CERT[an | wx*vx + wy*vy | vx ; wx | vy ; wy || ewx, ewy]))
+    case Inr{Inr{+g}}:
+      (@M(@FT[an | wx*vx + wy*vy], O.inv(F, n2(~F, @FT[an | wx], @FT[an | wy]))),
+       (O.lt_mul(F)(@FT[an | wx*vx + wy*vy], O.inv(F, n2(~F, @FT[an | wx], @FT[an | wy])))(hs)(FO.inv_pos(~F, n2(~F, @FT[an | wx], @FT[an | wy]), g)),
+        par_sound.pos(~F, @FT[an | wx], @FT[an | wy], vx, vy, hz, g)))
+
+def angle_sound(~F: O.OField, +ux: @T, +uy: @T, +vx: @T, +vy: @T, +c: @T, +s: @T, +hz: {@FT[an | wx*vy - wy*vx] == @0 : @T}, +hs: O.lt(F, @0, @FT[an | wx*vx + wy*vy])) -> G.angle(~F, G.V2{ux, uy}, G.V2{vx, vy}, c, s):
+  (e => O.lt_irrefl(F)(@0)(angle.u_ne.lt(~F, ux, uy, vx, vy, c, s, hs, e)),
+   (e => O.lt_irrefl(F)(@0)(angle.cs_ne.lt(~F, ux, uy, vx, vy, c, s, hs, e)),
+    angle.l.go(~F, ux, uy, vx, vy, c, s, hz, hs, O.lt_total(F)(n2(~F, @FT[an | wx], @FT[an | wy]), @0))))
+
+def angle_complete.cross(~F: O.OField, +ux: @T, +uy: @T, +vx: @T, +vy: @T, +c: @T, +s: @T, +l: @T, e: {G.V2{vx, vy} == G.scale(~F, l, G.rot(~F, c, s, G.V2{ux, uy})) : G.Vec(~F)}) -> {@FT[an | wx*vy - wy*vx] == @0 : @T}:
+  %Equal.sym(G.Vec(~F), G.V2{vx, vy}, G.scale(~F, l, G.rot(~F, c, s, G.V2{ux, uy})), e) : {G.cross(~F, G.rot(~F, c, s, G.V2{ux, uy}), _) == @0 : @T}
+  @ZEQ[anl | wx*(l*wy) - wy*(l*wx) | 0]
+
+def angle_complete.dot(~F: O.OField, +ux: @T, +uy: @T, +vx: @T, +vy: @T, +c: @T, +s: @T, +l: @T, lpos: O.lt(F, @0, l), e: {G.V2{vx, vy} == G.scale(~F, l, G.rot(~F, c, s, G.V2{ux, uy})) : G.Vec(~F)}, nu: {G.V2{ux, uy} == G.vzero(~F) : G.Vec(~F)} -> Empty, ncs: {G.V2{c, s} == G.vzero(~F) : G.Vec(~F)} -> Empty) -> O.lt(F, @0, @FT[an | wx*vx + wy*vy]):
+  %Equal.sym(G.Vec(~F), G.V2{vx, vy}, G.scale(~F, l, G.rot(~F, c, s, G.V2{ux, uy})), e) : O.lt(F, @0, G.dot(~F, G.rot(~F, c, s, G.V2{ux, uy}), _))
+  %@ZEQ[anl | l*((c*c + s*s)*(ux*ux + uy*uy)) | wx*(l*wx) + wy*(l*wy)] : O.lt(F, @0, _)
+  O.lt_mul(F)(l, @M(n2(~F, c, s), n2(~F, ux, uy)))(lpos)(O.lt_mul(F)(n2(~F, c, s), n2(~F, ux, uy))(sumsq_pos(~F, c, s, ncs))(sumsq_pos(~F, ux, uy, nu)))
+
+def angle_complete.go(~F: O.OField, +ux: @T, +uy: @T, +vx: @T, +vy: @T, +c: @T, +s: @T, +l: @T, +lpos: O.lt(F, @0, l), +e: {G.V2{vx, vy} == G.scale(~F, l, G.rot(~F, c, s, G.V2{ux, uy})) : G.Vec(~F)}, nu: {G.V2{ux, uy} == G.vzero(~F) : G.Vec(~F)} -> Empty, ncs: {G.V2{c, s} == G.vzero(~F) : G.Vec(~F)} -> Empty) -> K.Both({@FT[an | wx*vy - wy*vx] == @0 : @T}, Unit) & K.Both(O.lt(F, @0, @FT[an | wx*vx + wy*vy]), Unit):
+  ((angle_complete.cross(~F, ux, uy, vx, vy, c, s, l, e), Unit{}), (angle_complete.dot(~F, ux, uy, vx, vy, c, s, l, lpos, e, nu, ncs), Unit{}))
+
+def angle_complete(~F: O.OField, +ux: @T, +uy: @T, +vx: @T, +vy: @T, +c: @T, +s: @T, h: G.angle(~F, G.V2{ux, uy}, G.V2{vx, vy}, c, s)) -> K.Both({@FT[an | wx*vy - wy*vx] == @0 : @T}, Unit) & K.Both(O.lt(F, @0, @FT[an | wx*vx + wy*vy]), Unit):
+  (nu, x) = h
+  (ncs, y) = x
+  (l, z) = y
+  (lpos, e) = z
+  angle_complete.go(~F, ux, uy, vx, vy, c, s, l, lpos, e, nu, ncs)
+
+def Angle.sound.r(~F: O.OField, +env: List<&2, @T>, +a0x: Nat, +a0y: Nat, +a1x: Nat, +a1y: Nat, +b0x: Nat, +b0y: Nat, +b1x: Nat, +b1y: Nat, +ra: Bool, +rb: Bool, +c: E.QExpr, +s: E.QExpr, h: MF.H.Angle(~F, env, K.Seg{K.Pt{a0x, a0y}, K.Pt{a1x, a1y}}, ra, K.Seg{K.Pt{b0x, b0y}, K.Pt{b1x, b1y}}, rb, c, s)) -> MF.M.Angle(~F, env, K.Seg{K.Pt{a0x, a0y}, K.Pt{a1x, a1y}}, ra, K.Seg{K.Pt{b0x, b0y}, K.Pt{b1x, b1y}}, rb, c, s):
+  match ra rb:
+    case False{} False{}:
+      ((hz, u1), (hs, u2)) = h
+      angle_sound(~F, dx(~F, env, a1x, a0x), dx(~F, env, a1y, a0y), dx(~F, env, b1x, b0x), dx(~F, env, b1y, b0y), O.eval(~F, env, c), O.eval(~F, env, s), hz, hs)
+    case False{} True{}:
+      ((hz, u1), (hs, u2)) = h
+      angle_sound(~F, dx(~F, env, a1x, a0x), dx(~F, env, a1y, a0y), dx(~F, env, b0x, b1x), dx(~F, env, b0y, b1y), O.eval(~F, env, c), O.eval(~F, env, s), hz, hs)
+    case True{} False{}:
+      ((hz, u1), (hs, u2)) = h
+      angle_sound(~F, dx(~F, env, a0x, a1x), dx(~F, env, a0y, a1y), dx(~F, env, b1x, b0x), dx(~F, env, b1y, b0y), O.eval(~F, env, c), O.eval(~F, env, s), hz, hs)
+    case True{} True{}:
+      ((hz, u1), (hs, u2)) = h
+      angle_sound(~F, dx(~F, env, a0x, a1x), dx(~F, env, a0y, a1y), dx(~F, env, b0x, b1x), dx(~F, env, b0y, b1y), O.eval(~F, env, c), O.eval(~F, env, s), hz, hs)
+
+def Angle.sound(~F: O.OField, +env: List<&2, @T>, +a: K.Seg, +ra: Bool, +b: K.Seg, +rb: Bool, +c: E.QExpr, +s: E.QExpr, w: MF.W.Angle(a, ra, b, rb, c, s), h: MF.H.Angle(~F, env, a, ra, b, rb, c, s)) -> MF.M.Angle(~F, env, a, ra, b, rb, c, s):
+  match a b:
+    case K.Seg{K.Pt{a0x, a0y}, K.Pt{a1x, a1y}} K.Seg{K.Pt{b0x, b0y}, K.Pt{b1x, b1y}}:
+      Angle.sound.r(~F, env, a0x, a0y, a1x, a1y, b0x, b0y, b1x, b1y, ra, rb, c, s, h)
+
+def Angle.complete.r(~F: O.OField, +env: List<&2, @T>, +a0x: Nat, +a0y: Nat, +a1x: Nat, +a1y: Nat, +b0x: Nat, +b0y: Nat, +b1x: Nat, +b1y: Nat, +ra: Bool, +rb: Bool, +c: E.QExpr, +s: E.QExpr, h: MF.M.Angle(~F, env, K.Seg{K.Pt{a0x, a0y}, K.Pt{a1x, a1y}}, ra, K.Seg{K.Pt{b0x, b0y}, K.Pt{b1x, b1y}}, rb, c, s)) -> MF.H.Angle(~F, env, K.Seg{K.Pt{a0x, a0y}, K.Pt{a1x, a1y}}, ra, K.Seg{K.Pt{b0x, b0y}, K.Pt{b1x, b1y}}, rb, c, s):
+  match ra rb:
+    case False{} False{}:
+      angle_complete(~F, dx(~F, env, a1x, a0x), dx(~F, env, a1y, a0y), dx(~F, env, b1x, b0x), dx(~F, env, b1y, b0y), O.eval(~F, env, c), O.eval(~F, env, s), h)
+    case False{} True{}:
+      angle_complete(~F, dx(~F, env, a1x, a0x), dx(~F, env, a1y, a0y), dx(~F, env, b0x, b1x), dx(~F, env, b0y, b1y), O.eval(~F, env, c), O.eval(~F, env, s), h)
+    case True{} False{}:
+      angle_complete(~F, dx(~F, env, a0x, a1x), dx(~F, env, a0y, a1y), dx(~F, env, b1x, b0x), dx(~F, env, b1y, b0y), O.eval(~F, env, c), O.eval(~F, env, s), h)
+    case True{} True{}:
+      angle_complete(~F, dx(~F, env, a0x, a1x), dx(~F, env, a0y, a1y), dx(~F, env, b0x, b1x), dx(~F, env, b0y, b1y), O.eval(~F, env, c), O.eval(~F, env, s), h)
+
+def Angle.complete(~F: O.OField, +env: List<&2, @T>, +a: K.Seg, +ra: Bool, +b: K.Seg, +rb: Bool, +c: E.QExpr, +s: E.QExpr, h: MF.M.Angle(~F, env, a, ra, b, rb, c, s)) -> MF.H.Angle(~F, env, a, ra, b, rb, c, s):
+  match a b:
+    case K.Seg{K.Pt{a0x, a0y}, K.Pt{a1x, a1y}} K.Seg{K.Pt{b0x, b0y}, K.Pt{b1x, b1y}}:
+      Angle.complete.r(~F, env, a0x, a0y, a1x, a1y, b0x, b0y, b1x, b1y, ra, rb, c, s, h)
+
+# Point-line distance
+# -------------------
+# Oriented line a → b, w = b - a, z = p - a, n = |w|², D = dot(z, w),
+# Cr = cross(w, z); the foot of the perpendicular is f = a + t w, t = D / n.
+
+@ATOMS ld = ax,, ay,, bx,, by,, px,, py,, d,, l,, i=O.inv(F, n2(~F, @S(bx, ax), @S(by, ay))),, wx:=(bx - ax),, wy:=(by - ay),, zx:=(px - ax),, zy:=(py - ay),, nn:=(wx*wx + wy*wy),, D:=(zx*wx + zy*wy),, Cr:=(wx*zy - wy*zx),, t:=(D*i),, fx:=(ax + t*wx),, fy:=(ay + t*wy)
+@ATOMS ldc = ax,, ay,, bx,, by,, px,, py,, d,, l,, fx,, fy,, wx:=(bx - ax),, wy:=(by - ay),, zx:=(px - ax),, zy:=(py - ay),, nn:=(wx*wx + wy*wy),, Cr:=(wx*zy - wy*zx)
+
+# 0 ≤ orient(a, b, p) = d l
+def ld.orient(~F: O.OField, +ax: @T, +ay: @T, +bx: @T, +by: @T, +px: @T, +py: @T, +d: @T, +l: @T, h1: {@FT[ld | Cr - d*l] == @0 : @T}, hlp: O.lt(F, @0, l), hd: O.le(~F, @0, d)) -> O.le(~F, @0, @FT[ld | Cr]):
+  %Equal.sym(@T, @FT[ld | Cr], @M(d, l), FO.eq_of_sub(~F, @FT[ld | Cr], @M(d, l), h1)) : O.le(~F, @0, _)
+  FO.mul_nonneg(~F, d, l, hd, FO.lt_le(~F, @0, l, hlp))
+
+# 0 < n = l l
+def ld.npos(~F: O.OField, +ax: @T, +ay: @T, +bx: @T, +by: @T, +l: @T, hl: {@S(@M(l, l), n2(~F, @S(bx, ax), @S(by, ay))) == @0 : @T}, +hlp: O.lt(F, @0, l)) -> O.lt(F, @0, n2(~F, @S(bx, ax), @S(by, ay))):
+  %FO.eq_of_sub(~F, @M(l, l), n2(~F, @S(bx, ax), @S(by, ay)), hl) : O.lt(F, @0, _)
+  O.lt_mul(F)(l, l)(hlp)(hlp)
+
+def ld_sound(~F: O.OField, +ax: @T, +ay: @T, +bx: @T, +by: @T, +px: @T, +py: @T, +d: @T, +l: @T, +h1: {@FT[ld | Cr - d*l] == @0 : @T}, +hl: {@FT[ld | l*l - nn] == @0 : @T}, +hlp: O.lt(F, @0, l), +hd: O.le(~F, @0, d)) -> G.line_dist(~F, G.V2{px, py}, G.V2{ax, ay}, G.V2{bx, by}, d):
+  +hn = FO.inv_rel(~F, n2(~F, @S(bx, ax), @S(by, ay)), FO.ne_of_gt(~F, n2(~F, @S(bx, ax), @S(by, ay)), @0, ld.npos(~F, ax, ay, bx, by, l, hl, hlp)))
+  (ld.orient(~F, ax, ay, bx, by, px, py, d, l, h1, hlp, hd),
+   (G.V2{@FT[ld | fx], @FT[ld | fy]},
+    (Inl{(@FT[ld | t], v2_eq(~F, @FT[ld | fx - ax], @FT[ld | fy - ay], @FT[ld | t*wx], @FT[ld | t*wy], @ZEQ[ld | fx - ax | t*wx], @ZEQ[ld | fy - ay | t*wy]))},
+     (@CERT[ld | (px - fx)*wx + (py - fy)*wy | -D ; nn*i - 1 || hn],
+      (hd, @CERTEQ[ld | (px - fx)*(px - fx) + (py - fy)*(py - fy) | d*d | d*d - (zx*zx + zy*zy) + D*D*i ; nn*i - 1 | d*d*i ; l*l - nn | (d*l + Cr)*i ; Cr - d*l || hn, hl, h1])))))
+
+# the exact form from the meaning: cross² = (d l)², both sides ≥ 0
+def ld_complete.fin(~F: O.OField, -e2t: @T, +ax: @T, +ay: @T, +bx: @T, +by: @T, +px: @T, +py: @T, +d: @T, +l: @T, +fx: @T, +fy: @T, horient: O.le(~F, @0, @FT[ldc | Cr]), fon: G.on_line(~F, G.V2{fx, fy}, G.V2{ax, ay}, G.V2{bx, by}), +fdot: {@FT[ldc | (px - fx)*wx + (py - fy)*wy] == @0 : @T}, +hd: O.le(~F, @0, d), +fdd: {@FT[ldc | (px - fx)*(px - fx) + (py - fy)*(py - fy)] == @M(d, d) : @T}, +hl: {@FT[ldc | l*l - nn] == @0 : @T}, e2: {e2t == @0 : @T}, +hlp: O.lt(F, @0, l)) -> K.Both({@FT[ldc | Cr - d*l] == @0 : @T}, K.Both({e2t == @0 : @T}, Unit)) & K.Both(O.lt(F, @0, l), K.Both(O.le(~F, @0, d), Unit)):
+  +c0 = par_complete(~F, @FT[ldc | wx], @FT[ldc | wy], @FT[ldc | fx - ax], @FT[ldc | fy - ay], fon)
+  +dd = FO.sub_of_eq(~F, @FT[ldc | (px - fx)*(px - fx) + (py - fy)*(py - fy)], @M(d, d), fdd)
+  ((FO.sub_of_eq(~F, @FT[ldc | Cr], @M(d, l), FO.sq_eq(~F, @FT[ldc | Cr], @M(d, l), horient, FO.mul_nonneg(~F, d, l, hd, FO.lt_le(~F, @0, l, hlp)),
+      @CERTEQ[ldc | Cr*Cr | (d*l)*(d*l) | -(d*d) ; l*l - nn | nn ; (px - fx)*(px - fx) + (py - fy)*(py - fy) - d*d | -((px - fx)*wx + (py - fy)*wy) ; (px - fx)*wx + (py - fy)*wy | 2*(wx*(py - fy) - wy*(px - fx)) + (wx*(fy - ay) - wy*(fx - ax)) ; wx*(fy - ay) - wy*(fx - ax) || hl, dd, fdot, c0])),
+    (e2, Unit{})),
+   (hlp, (hd, Unit{})))
+
+def ld_complete.f(~F: O.OField, -e2t: @T, +ax: @T, +ay: @T, +bx: @T, +by: @T, +px: @T, +py: @T, +d: @T, +l: @T, horient: O.le(~F, @0, @FT[ldc | Cr]), +f: G.Vec(~F), y: G.on_line(~F, f, G.V2{ax, ay}, G.V2{bx, by}) & ({G.dot(~F, G.sub(~F, G.V2{px, py}, f), G.sub(~F, G.V2{bx, by}, G.V2{ax, ay})) == @0 : @T} & G.dist(~F, f, G.V2{px, py}, d)), +hl: {@FT[ldc | l*l - nn] == @0 : @T}, e2: {e2t == @0 : @T}, +hlp: O.lt(F, @0, l)) -> K.Both({@FT[ldc | Cr - d*l] == @0 : @T}, K.Both({e2t == @0 : @T}, Unit)) & K.Both(O.lt(F, @0, l), K.Both(O.le(~F, @0, d), Unit)):
+  match f:
+    case G.V2{fx, fy}:
+      (fon, z) = y
+      (fdot, fdist) = z
+      (hd, fdd) = fdist
+      ld_complete.fin(~F, e2t, ax, ay, bx, by, px, py, d, l, fx, fy, horient, fon, fdot, hd, fdd, hl, e2, hlp)
+
+def ld_complete(~F: O.OField, -e2t: @T, +ax: @T, +ay: @T, +bx: @T, +by: @T, +px: @T, +py: @T, +d: @T, +l: @T, h: G.line_dist(~F, G.V2{px, py}, G.V2{ax, ay}, G.V2{bx, by}, d), +hl: {@FT[ldc | l*l - nn] == @0 : @T}, e2: {e2t == @0 : @T}, +hlp: O.lt(F, @0, l)) -> K.Both({@FT[ldc | Cr - d*l] == @0 : @T}, K.Both({e2t == @0 : @T}, Unit)) & K.Both(O.lt(F, @0, l), K.Both(O.le(~F, @0, d), Unit)):
+  (horient, x) = h
+  (f, y) = x
+  ld_complete.f(~F, e2t, ax, ay, bx, by, px, py, d, l, horient, f, y, hl, e2, hlp)
+
+# the same with the line taken from b to a
+@ATOMS ldr = ax=bx,, ay=by,, bx=ax,, by=ay,, px,, py,, d,, l,, wx:=(bx - ax),, wy:=(by - ay),, zx:=(px - ax),, zy:=(py - ay),, nn:=(wx*wx + wy*wy),, Cr:=(wx*zy - wy*zx)
+
+# |a - b|² = |b - a|²
+@ATOMS ldf = ax=bx,, ay=by,, bx=ax,, by=ay,, l,, wx:=(bx - ax),, wy:=(by - ay),, nn:=(wx*wx + wy*wy)
+
+def ld.flip(~F: O.OField, +ax: @T, +ay: @T, +bx: @T, +by: @T, +l: @T, h2: {@S(@M(l, l), n2(~F, @S(bx, ax), @S(by, ay))) == @0 : @T}) -> {@FT[ldf | l*l - nn] == @0 : @T}:
+  @CERT[ldf | l*l - nn | 1 ; l*l - ((ax - bx)*(ax - bx) + (ay - by)*(ay - by)) || h2]
+
+def ld_full_f(~F: O.OField, +ax: @T, +ay: @T, +bx: @T, +by: @T, +px: @T, +py: @T, +d: @T, +l: @T, +h1: {@FT[ld | Cr - d*l] == @0 : @T}, +h2: {@FT[ld | l*l - nn] == @0 : @T}, +hlp: O.lt(F, @0, l), +hd: O.le(~F, @0, d)) -> O.lt(F, @0, l) & (G.dist(~F, G.V2{ax, ay}, G.V2{bx, by}, l) & G.line_dist(~F, G.V2{px, py}, G.V2{ax, ay}, G.V2{bx, by}, d)):
+  (hlp, ((FO.lt_le(~F, @0, l, hlp), Equal.sym(@T, @M(l, l), n2(~F, @S(bx, ax), @S(by, ay)), FO.eq_of_sub(~F, @M(l, l), n2(~F, @S(bx, ax), @S(by, ay)), h2))),
+    ld_sound(~F, ax, ay, bx, by, px, py, d, l, h1, h2, hlp, hd)))
+
+def ld_full_t(~F: O.OField, +ax: @T, +ay: @T, +bx: @T, +by: @T, +px: @T, +py: @T, +d: @T, +l: @T, +h1: {@FT[ldr | Cr - d*l] == @0 : @T}, +h2: {@FT[ld | l*l - nn] == @0 : @T}, +hlp: O.lt(F, @0, l), +hd: O.le(~F, @0, d)) -> O.lt(F, @0, l) & (G.dist(~F, G.V2{ax, ay}, G.V2{bx, by}, l) & G.line_dist(~F, G.V2{px, py}, G.V2{bx, by}, G.V2{ax, ay}, d)):
+  (hlp, ((FO.lt_le(~F, @0, l, hlp), Equal.sym(@T, @M(l, l), n2(~F, @S(bx, ax), @S(by, ay)), FO.eq_of_sub(~F, @M(l, l), n2(~F, @S(bx, ax), @S(by, ay)), h2))),
+    ld_sound(~F, bx, by, ax, ay, px, py, d, l, h1, ld.flip(~F, ax, ay, bx, by, l, h2), hlp, hd)))
+
+def LineDistance.sound.r(~F: O.OField, +env: List<&2, @T>, +px: Nat, +py: Nat, +ax: Nat, +ay: Nat, +bx: Nat, +by: Nat, +rev: Bool, +d: E.QExpr, +l: Nat, h: MF.H.LineDistance(~F, env, K.Pt{px, py}, K.Seg{K.Pt{ax, ay}, K.Pt{bx, by}}, rev, d, l)) -> MF.M.LineDistance(~F, env, K.Pt{px, py}, K.Seg{K.Pt{ax, ay}, K.Pt{bx, by}}, rev, d, l):
+  match rev:
+    case False{}:
+      ((h1, (h2, u1)), (hlp, (hd, u2))) = h
+      ld_full_f(~F, @LK(ax), @LK(ay), @LK(bx), @LK(by), @LK(px), @LK(py), O.eval(~F, env, d), @LK(l), h1, h2, hlp, hd)
+    case True{}:
+      ((h1, (h2, u1)), (hlp, (hd, u2))) = h
+      ld_full_t(~F, @LK(ax), @LK(ay), @LK(bx), @LK(by), @LK(px), @LK(py), O.eval(~F, env, d), @LK(l), h1, h2, hlp, hd)
+
+def LineDistance.sound(~F: O.OField, +env: List<&2, @T>, +p: K.Pt, +a: K.Seg, +rev: Bool, +d: E.QExpr, +l: Nat, w: MF.W.LineDistance(p, a, rev, d, l), h: MF.H.LineDistance(~F, env, p, a, rev, d, l)) -> MF.M.LineDistance(~F, env, p, a, rev, d, l):
+  match p a:
+    case K.Pt{px, py} K.Seg{K.Pt{ax, ay}, K.Pt{bx, by}}:
+      LineDistance.sound.r(~F, env, px, py, ax, ay, bx, by, rev, d, l, h)
+
+# |b - a|² = l l, from the meaning
+def ld.e2(~F: O.OField, +ax: @T, +ay: @T, +bx: @T, +by: @T, +l: @T, he: {n2(~F, @S(bx, ax), @S(by, ay)) == @M(l, l) : @T}) -> {@S(@M(l, l), n2(~F, @S(bx, ax), @S(by, ay))) == @0 : @T}:
+  FO.sub_of_eq(~F, @M(l, l), n2(~F, @S(bx, ax), @S(by, ay)), Equal.sym(@T, n2(~F, @S(bx, ax), @S(by, ay)), @M(l, l), he))
+
+def ld_cfull_f.go(~F: O.OField, +ax: @T, +ay: @T, +bx: @T, +by: @T, +px: @T, +py: @T, +d: @T, +l: @T, +hlp: O.lt(F, @0, l), +e2: {@S(@M(l, l), n2(~F, @S(bx, ax), @S(by, ay))) == @0 : @T}, hline: G.line_dist(~F, G.V2{px, py}, G.V2{ax, ay}, G.V2{bx, by}, d)) -> K.Both({@FT[ld | Cr - d*l] == @0 : @T}, K.Both({@S(@M(l, l), n2(~F, @S(bx, ax), @S(by, ay))) == @0 : @T}, Unit)) & K.Both(O.lt(F, @0, l), K.Both(O.le(~F, @0, d), Unit)):
+  ld_complete(~F, @S(@M(l, l), n2(~F, @S(bx, ax), @S(by, ay))), ax, ay, bx, by, px, py, d, l, hline, e2, e2, hlp)
+
+def ld_cfull_t.go(~F: O.OField, +ax: @T, +ay: @T, +bx: @T, +by: @T, +px: @T, +py: @T, +d: @T, +l: @T, +hlp: O.lt(F, @0, l), +e2: {@S(@M(l, l), n2(~F, @S(bx, ax), @S(by, ay))) == @0 : @T}, hline: G.line_dist(~F, G.V2{px, py}, G.V2{bx, by}, G.V2{ax, ay}, d)) -> K.Both({@FT[ldr | Cr - d*l] == @0 : @T}, K.Both({@S(@M(l, l), n2(~F, @S(bx, ax), @S(by, ay))) == @0 : @T}, Unit)) & K.Both(O.lt(F, @0, l), K.Both(O.le(~F, @0, d), Unit)):
+  ld_complete(~F, @S(@M(l, l), n2(~F, @S(bx, ax), @S(by, ay))), bx, by, ax, ay, px, py, d, l, hline, ld.flip(~F, ax, ay, bx, by, l, e2), e2, hlp)
+
+def ld_cfull_f(~F: O.OField, +ax: @T, +ay: @T, +bx: @T, +by: @T, +px: @T, +py: @T, +d: @T, +l: @T, h: O.lt(F, @0, l) & (G.dist(~F, G.V2{ax, ay}, G.V2{bx, by}, l) & G.line_dist(~F, G.V2{px, py}, G.V2{ax, ay}, G.V2{bx, by}, d))) -> K.Both({@FT[ld | Cr - d*l] == @0 : @T}, K.Both({@S(@M(l, l), n2(~F, @S(bx, ax), @S(by, ay))) == @0 : @T}, Unit)) & K.Both(O.lt(F, @0, l), K.Both(O.le(~F, @0, d), Unit)):
+  (hlp, x) = h
+  (hdist, hline) = x
+  (hll, he) = hdist
+  ld_cfull_f.go(~F, ax, ay, bx, by, px, py, d, l, hlp, ld.e2(~F, ax, ay, bx, by, l, he), hline)
+
+def ld_cfull_t(~F: O.OField, +ax: @T, +ay: @T, +bx: @T, +by: @T, +px: @T, +py: @T, +d: @T, +l: @T, h: O.lt(F, @0, l) & (G.dist(~F, G.V2{ax, ay}, G.V2{bx, by}, l) & G.line_dist(~F, G.V2{px, py}, G.V2{bx, by}, G.V2{ax, ay}, d))) -> K.Both({@FT[ldr | Cr - d*l] == @0 : @T}, K.Both({@S(@M(l, l), n2(~F, @S(bx, ax), @S(by, ay))) == @0 : @T}, Unit)) & K.Both(O.lt(F, @0, l), K.Both(O.le(~F, @0, d), Unit)):
+  (hlp, x) = h
+  (hdist, hline) = x
+  (hll, he) = hdist
+  ld_cfull_t.go(~F, ax, ay, bx, by, px, py, d, l, hlp, ld.e2(~F, ax, ay, bx, by, l, he), hline)
+
+def LineDistance.complete.r(~F: O.OField, +env: List<&2, @T>, +px: Nat, +py: Nat, +ax: Nat, +ay: Nat, +bx: Nat, +by: Nat, +rev: Bool, +d: E.QExpr, +l: Nat, h: MF.M.LineDistance(~F, env, K.Pt{px, py}, K.Seg{K.Pt{ax, ay}, K.Pt{bx, by}}, rev, d, l)) -> MF.H.LineDistance(~F, env, K.Pt{px, py}, K.Seg{K.Pt{ax, ay}, K.Pt{bx, by}}, rev, d, l):
+  match rev:
+    case False{}:
+      ld_cfull_f(~F, @LK(ax), @LK(ay), @LK(bx), @LK(by), @LK(px), @LK(py), O.eval(~F, env, d), @LK(l), h)
+    case True{}:
+      ld_cfull_t(~F, @LK(ax), @LK(ay), @LK(bx), @LK(by), @LK(px), @LK(py), O.eval(~F, env, d), @LK(l), h)
+
+def LineDistance.complete(~F: O.OField, +env: List<&2, @T>, +p: K.Pt, +a: K.Seg, +rev: Bool, +d: E.QExpr, +l: Nat, h: MF.M.LineDistance(~F, env, p, a, rev, d, l)) -> MF.H.LineDistance(~F, env, p, a, rev, d, l):
+  match p a:
+    case K.Pt{px, py} K.Seg{K.Pt{ax, ay}, K.Pt{bx, by}}:
+      LineDistance.complete.r(~F, env, px, py, ax, ay, bx, by, rev, d, l, h)
+# Every kind: the exact form implies the meaning
+def means_sound(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, K.Ent>, +k: K.Constraint, w: K.Constraint.wf(es, k), h: K.Constraint.holds(~F, env, es, k)) -> K.Constraint.means(~F, env, es, k):
+  match k:
+    case K.Coincident{a, b}:
+      Coincident.sound(~F, env, K.pt(es, a), K.pt(es, b), w, h)
+    case K.Horizontal{a, b}:
+      Horizontal.sound(~F, env, K.pt(es, a), K.pt(es, b), w, h)
+    case K.Vertical{a, b}:
+      Vertical.sound(~F, env, K.pt(es, a), K.pt(es, b), w, h)
+    case K.Concentric{a, b}:
+      Concentric.sound(~F, env, K.circ(es, a), K.circ(es, b), w, h)
+    case K.EqualRadius{a, b}:
+      EqualRadius.sound(~F, env, K.circ(es, a), K.circ(es, b), w, h)
+    case K.Fix{v, c}:
+      Fix.sound(~F, env, v, c, w, h)
+    case K.Distance{p, q, d}:
+      Distance.sound(~F, env, K.pt(es, p), K.pt(es, q), d, w, h)
+    case K.HDistance{p, q, d}:
+      HDistance.sound(~F, env, K.pt(es, p), K.pt(es, q), d, w, h)
+    case K.VDistance{p, q, d}:
+      VDistance.sound(~F, env, K.pt(es, p), K.pt(es, q), d, w, h)
+    case K.Radius{c, d}:
+      Radius.sound(~F, env, K.circ(es, c), d, w, h)
+    case K.Diameter{c, d}:
+      Diameter.sound(~F, env, K.circ(es, c), d, w, h)
+    case K.LineDistance{p, a, rev, d, l}:
+      LineDistance.sound(~F, env, K.pt(es, p), K.seg(es, a), rev, d, l, w, h)
+    case K.Angle{a, ra, b, rb, c, s}:
+      Angle.sound(~F, env, K.seg(es, a), ra, K.seg(es, b), rb, c, s, w, h)
+    case K.EqualLength{a, b}:
+      EqualLength.sound(~F, env, K.seg(es, a), K.seg(es, b), w, h)
+    case K.Perpendicular{a, b}:
+      Perpendicular.sound(~F, env, K.seg(es, a), K.seg(es, b), w, h)
+    case K.Parallel{a, b}:
+      Parallel.sound(~F, env, K.seg(es, a), K.seg(es, b), w, h)
+    case K.OnLine{p, a}:
+      OnLine.sound(~F, env, K.pt(es, p), K.seg(es, a), w, h)
+    case K.OnCircle{p, c}:
+      OnCircle.sound(~F, env, K.pt(es, p), K.circ(es, c), w, h)
+    case K.Midpoint{m, a}:
+      Midpoint.sound(~F, env, K.pt(es, m), K.seg(es, a), w, h)
+    case K.Symmetric{p, q, a}:
+      Symmetric.sound(~F, env, K.pt(es, p), K.pt(es, q), K.seg(es, a), w, h)
+
+# Every kind: the meaning implies the exact form
+def means_complete(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, K.Ent>, +k: K.Constraint, h: K.Constraint.means(~F, env, es, k)) -> K.Constraint.holds(~F, env, es, k):
+  match k:
+    case K.Coincident{a, b}:
+      Coincident.complete(~F, env, K.pt(es, a), K.pt(es, b), h)
+    case K.Horizontal{a, b}:
+      Horizontal.complete(~F, env, K.pt(es, a), K.pt(es, b), h)
+    case K.Vertical{a, b}:
+      Vertical.complete(~F, env, K.pt(es, a), K.pt(es, b), h)
+    case K.Concentric{a, b}:
+      Concentric.complete(~F, env, K.circ(es, a), K.circ(es, b), h)
+    case K.EqualRadius{a, b}:
+      EqualRadius.complete(~F, env, K.circ(es, a), K.circ(es, b), h)
+    case K.Fix{v, c}:
+      Fix.complete(~F, env, v, c, h)
+    case K.Distance{p, q, d}:
+      Distance.complete(~F, env, K.pt(es, p), K.pt(es, q), d, h)
+    case K.HDistance{p, q, d}:
+      HDistance.complete(~F, env, K.pt(es, p), K.pt(es, q), d, h)
+    case K.VDistance{p, q, d}:
+      VDistance.complete(~F, env, K.pt(es, p), K.pt(es, q), d, h)
+    case K.Radius{c, d}:
+      Radius.complete(~F, env, K.circ(es, c), d, h)
+    case K.Diameter{c, d}:
+      Diameter.complete(~F, env, K.circ(es, c), d, h)
+    case K.LineDistance{p, a, rev, d, l}:
+      LineDistance.complete(~F, env, K.pt(es, p), K.seg(es, a), rev, d, l, h)
+    case K.Angle{a, ra, b, rb, c, s}:
+      Angle.complete(~F, env, K.seg(es, a), ra, K.seg(es, b), rb, c, s, h)
+    case K.EqualLength{a, b}:
+      EqualLength.complete(~F, env, K.seg(es, a), K.seg(es, b), h)
+    case K.Perpendicular{a, b}:
+      Perpendicular.complete(~F, env, K.seg(es, a), K.seg(es, b), h)
+    case K.Parallel{a, b}:
+      Parallel.complete(~F, env, K.seg(es, a), K.seg(es, b), h)
+    case K.OnLine{p, a}:
+      OnLine.complete(~F, env, K.pt(es, p), K.seg(es, a), h)
+    case K.OnCircle{p, c}:
+      OnCircle.complete(~F, env, K.pt(es, p), K.circ(es, c), h)
+    case K.Midpoint{m, a}:
+      Midpoint.complete(~F, env, K.pt(es, m), K.seg(es, a), h)
+    case K.Symmetric{p, q, a}:
+      Symmetric.complete(~F, env, K.pt(es, p), K.pt(es, q), K.seg(es, a), h)
+
+# Entities
+# --------
+
+def ent_sound(~F: O.OField, +env: List<&2, @T>, e: K.Ent, h: K.Ent.holds(~F, env, e)) -> K.Ent.means(~F, env, e):
+  match e:
+    case K.Ent{id, cst, K.GPoint{x, y}}:
+      Unit{}
+    case K.Ent{id, cst, K.GSeg{p, q}}:
+      Unit{}
+    case K.Ent{id, cst, K.GCirc{c, r}}:
+      (hr, u) = h
+      hr
+    case K.Ent{id, cst, K.GArc{s, f, b}}:
+      (hb, u) = h
+      hb
+
+def ent_complete(~F: O.OField, +env: List<&2, @T>, e: K.Ent, h: K.Ent.means(~F, env, e)) -> K.Ent.holds(~F, env, e):
+  match e:
+    case K.Ent{id, cst, K.GPoint{x, y}}:
+      Unit{}
+    case K.Ent{id, cst, K.GSeg{p, q}}:
+      Unit{}
+    case K.Ent{id, cst, K.GCirc{c, r}}:
+      (h, Unit{})
+    case K.Ent{id, cst, K.GArc{s, f, b}}:
+      (h, Unit{})
+
+# Lists of equations and side conditions
+# --------------------------------------
+
+def zeros_l(~F: O.OField, +env: List<&2, @T>, xs: List<&2, E.QExpr>, +ys: List<&2, E.QExpr>, +h: K.Zeros(~F, env, K.cat(xs, ys))) -> K.Zeros(~F, env, xs):
+  match xs:
+    case Nil{}:
+      Unit{}
+    case Con{x, t}:
+      (+hx, +rest) = h
+      (hx, zeros_l(~F, env, t, ys, rest))
+
+def zeros_r(~F: O.OField, +env: List<&2, @T>, xs: List<&2, E.QExpr>, +ys: List<&2, E.QExpr>, +h: K.Zeros(~F, env, K.cat(xs, ys))) -> K.Zeros(~F, env, ys):
+  match xs:
+    case Nil{}:
+      h
+    case Con{x, t}:
+      (+hx, +rest) = h
+      zeros_r(~F, env, t, ys, rest)
+
+def zeros_cat(~F: O.OField, +env: List<&2, @T>, xs: List<&2, E.QExpr>, +ys: List<&2, E.QExpr>, +a: K.Zeros(~F, env, xs), +b: K.Zeros(~F, env, ys)) -> K.Zeros(~F, env, K.cat(xs, ys)):
+  match xs:
+    case Nil{}:
+      b
+    case Con{x, t}:
+      (+ha, +ra) = a
+      (ha, zeros_cat(~F, env, t, ys, ra, b))
+
+def sides_l(~F: O.OField, +env: List<&2, @T>, xs: List<&2, K.Side>, +ys: List<&2, K.Side>, +h: K.Sides(~F, env, K.cats(xs, ys))) -> K.Sides(~F, env, xs):
+  match xs:
+    case Nil{}:
+      Unit{}
+    case Con{K.Gt0{e}, t}:
+      (+hx, +rest) = h
+      (hx, sides_l(~F, env, t, ys, rest))
+    case Con{K.Ge0{e}, t}:
+      (+hx, +rest) = h
+      (hx, sides_l(~F, env, t, ys, rest))
+
+def sides_r(~F: O.OField, +env: List<&2, @T>, xs: List<&2, K.Side>, +ys: List<&2, K.Side>, +h: K.Sides(~F, env, K.cats(xs, ys))) -> K.Sides(~F, env, ys):
+  match xs:
+    case Nil{}:
+      h
+    case Con{K.Gt0{e}, t}:
+      (+hx, +rest) = h
+      sides_r(~F, env, t, ys, rest)
+    case Con{K.Ge0{e}, t}:
+      (+hx, +rest) = h
+      sides_r(~F, env, t, ys, rest)
+
+def sides_cat(~F: O.OField, +env: List<&2, @T>, xs: List<&2, K.Side>, +ys: List<&2, K.Side>, +a: K.Sides(~F, env, xs), +b: K.Sides(~F, env, ys)) -> K.Sides(~F, env, K.cats(xs, ys)):
+  match xs:
+    case Nil{}:
+      b
+    case Con{K.Gt0{e}, t}:
+      (+ha, +ra) = a
+      (ha, sides_cat(~F, env, t, ys, ra, b))
+    case Con{K.Ge0{e}, t}:
+      (+ha, +ra) = a
+      (ha, sides_cat(~F, env, t, ys, ra, b))
+
+# Entities and constraints of a sketch
+# ------------------------------------
+
+def ents_sound(~F: O.OField, +env: List<&2, @T>, xs: List<&2, K.Ent>, +h: K.Sides(~F, env, K.Sketch.sides.ents(xs))) -> K.Sketch.means.ents(~F, env, xs):
+  match xs:
+    case Nil{}:
+      Unit{}
+    case Con{+e, +t}:
+      (ent_sound(~F, env, e, sides_l(~F, env, K.Ent.sides(e), K.Sketch.sides.ents(t), h)),
+       ents_sound(~F, env, t, sides_r(~F, env, K.Ent.sides(e), K.Sketch.sides.ents(t), h)))
+
+def ents_complete(~F: O.OField, +env: List<&2, @T>, xs: List<&2, K.Ent>, h: K.Sketch.means.ents(~F, env, xs)) -> K.Sides(~F, env, K.Sketch.sides.ents(xs)):
+  match xs:
+    case Nil{}:
+      Unit{}
+    case Con{+e, +t}:
+      (he, ht) = h
+      sides_cat(~F, env, K.Ent.sides(e), K.Sketch.sides.ents(t), ent_complete(~F, env, e, he), ents_complete(~F, env, t, ht))
+
+def cons_sound(~F: O.OField, +env: List<&2, @T>, +es: List<&2, K.Ent>, cs: List<&2, K.Rec>, w: K.Sketch.wf.cons(es, cs), +hz: K.Zeros(~F, env, K.Sketch.eqs.go(es, cs)), +hs: K.Sides(~F, env, K.Sketch.sides.cons(es, cs))) -> K.Sketch.means.cons(~F, env, es, cs):
+  match cs:
+    case Nil{}:
+      Unit{}
+    case Con{K.Rec{id, True{}, +k}, +t}:
+      (wr, x) = w
+      (wk, wt) = x
+      cons_sound(~F, env, es, t, wt, hz, hs)
+    case Con{K.Rec{id, False{}, +k}, +t}:
+      (wr, x) = w
+      (wk, wt) = x
+      (means_sound(~F, env, es, k, wk, (zeros_l(~F, env, K.Constraint.eqs(es, k), K.Sketch.eqs.go(es, t), hz), sides_l(~F, env, K.Constraint.sides(es, k), K.Sketch.sides.cons(es, t), hs))),
+       cons_sound(~F, env, es, t, wt, zeros_r(~F, env, K.Constraint.eqs(es, k), K.Sketch.eqs.go(es, t), hz), sides_r(~F, env, K.Constraint.sides(es, k), K.Sketch.sides.cons(es, t), hs)))
+
+def cons_complete.k(~F: O.OField, +env: List<&2, @T>, +es: List<&2, K.Ent>, +k: K.Constraint, +t: List<&2, K.Rec>, hk: K.Constraint.holds(~F, env, es, k), rest: K.Both(K.Zeros(~F, env, K.Sketch.eqs.go(es, t)), K.Sides(~F, env, K.Sketch.sides.cons(es, t)))) -> K.Both(K.Zeros(~F, env, K.cat(K.Constraint.eqs(es, k), K.Sketch.eqs.go(es, t))), K.Sides(~F, env, K.cats(K.Constraint.sides(es, k), K.Sketch.sides.cons(es, t)))):
+  (zk, sk) = hk
+  (zt, st) = rest
+  (zeros_cat(~F, env, K.Constraint.eqs(es, k), K.Sketch.eqs.go(es, t), zk, zt), sides_cat(~F, env, K.Constraint.sides(es, k), K.Sketch.sides.cons(es, t), sk, st))
+
+def cons_complete(~F: O.OField, +env: List<&2, @T>, +es: List<&2, K.Ent>, cs: List<&2, K.Rec>, h: K.Sketch.means.cons(~F, env, es, cs)) -> K.Both(K.Zeros(~F, env, K.Sketch.eqs.go(es, cs)), K.Sides(~F, env, K.Sketch.sides.cons(es, cs))):
+  match cs:
+    case Nil{}:
+      (Unit{}, Unit{})
+    case Con{K.Rec{id, True{}, k}, t}:
+      cons_complete(~F, env, es, t, h)
+    case Con{K.Rec{id, False{}, +k}, +t}:
+      (hk, ht) = h
+      cons_complete.k(~F, env, es, k, t, means_complete(~F, env, es, k, hk), cons_complete(~F, env, es, t, ht))
+
+# Whole sketches
+# --------------
+
+def sketch_sound.k(~F: O.OField, +env: List<&2, @T>, +es: List<&2, K.Ent>, +cs: List<&2, K.Rec>, wc: K.Sketch.wf.cons(es, cs), hz: K.Zeros(~F, env, K.Sketch.eqs.go(es, cs)), +hs: K.Sides(~F, env, K.cats(K.Sketch.sides.ents(es), K.Sketch.sides.cons(es, cs)))) -> K.Sketch.means.ents(~F, env, es) & K.Sketch.means.cons(~F, env, es, cs):
+  (ents_sound(~F, env, es, sides_l(~F, env, K.Sketch.sides.ents(es), K.Sketch.sides.cons(es, cs), hs)),
+   cons_sound(~F, env, es, cs, wc, hz, sides_r(~F, env, K.Sketch.sides.ents(es), K.Sketch.sides.cons(es, cs), hs)))
+
+def sketch_sound(~F: O.OField, +env: List<&2, @T>, sk: K.Sketch, w: K.Sketch.wf(sk), h: K.Sketch.holds(~F, env, sk)) -> K.Sketch.means(~F, env, sk):
+  match sk:
+    case K.Sketch{vs, +es, +cs}:
+      (we, wc) = w
+      (hz, hs) = h
+      sketch_sound.k(~F, env, es, cs, wc, hz, hs)
+
+def sketch_complete.k(~F: O.OField, +env: List<&2, @T>, +es: List<&2, K.Ent>, +cs: List<&2, K.Rec>, se: K.Sides(~F, env, K.Sketch.sides.ents(es)), rest: K.Both(K.Zeros(~F, env, K.Sketch.eqs.go(es, cs)), K.Sides(~F, env, K.Sketch.sides.cons(es, cs)))) -> K.Zeros(~F, env, K.Sketch.eqs.go(es, cs)) & K.Sides(~F, env, K.cats(K.Sketch.sides.ents(es), K.Sketch.sides.cons(es, cs))):
+  (z, s) = rest
+  (z, sides_cat(~F, env, K.Sketch.sides.ents(es), K.Sketch.sides.cons(es, cs), se, s))
+
+def sketch_complete(~F: O.OField, +env: List<&2, @T>, sk: K.Sketch, h: K.Sketch.means(~F, env, sk)) -> K.Sketch.holds(~F, env, sk):
+  match sk:
+    case K.Sketch{vs, +es, +cs}:
+      (he, hc) = h
+      sketch_complete.k(~F, env, es, cs, ents_complete(~F, env, es, he), cons_complete(~F, env, es, cs, hc))

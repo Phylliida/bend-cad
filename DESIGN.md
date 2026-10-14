@@ -1,4 +1,4 @@
-# bend-cad — Design v0.7 (draft; exact by default; sk-03 IR revised after review)
+# bend-cad — Design v0.8 (draft; exact by default; meaning lemmas proven)
 
 A formally verified 2D sketch constraint solver in Bend 2, aiming at Onshape /
 FreeCAD sketcher parity, feeding an implicit-function (SDF) modeling pipeline.
@@ -9,7 +9,8 @@ History: v0.1 was audited ([AUDIT-v0.1.md](AUDIT-v0.1.md)); v0.2 folded the
 audit in; v0.3 makes exactness the default; v0.4 records Danielle's answers
 to the open questions; v0.5 records the spec-number choices made in sk-01
 (§3); v0.6 records the typed IR, equation forms and meaning statements of
-sk-03 (§4, §5); v0.7 folds in Danielle's answers to the sk-03 review (§19
+sk-03 (§4, §5); v0.7 folds in Danielle's answers to the sk-03 review; v0.8
+records the meaning lemmas proven in every ordered field (§5.5, §19
 changelog).
 
 ---
@@ -321,7 +322,8 @@ Mandatory, one per kind, connecting the equation to its geometric meaning
 Q = mirror(P); the tangency equations ⇔ the curves touch at T with the stated
 side). Exact forms make these much shorter than the tolerance versions.
 
-*As stated in sk-03* (`ROADMAP.bend`, proven in sk-07): the meanings are
+*As stated in sk-03 and proven in sk-07* (`LAWS.bend`, `lib/meaning.bend`):
+the meanings are
 `Constraint.means`, one case per kind, in the textbook vocabulary of
 `spec/geom.bend`. For example: parallel means one direction is a multiple
 of the other;
@@ -348,6 +350,20 @@ may be used any number of times, which an ordinary function argument could
 not (it is affine). Equality in F is Bend's own `{==}`, so proofs rewrite
 with `%` as usual. Equation constants enter F through `ofq` (n/d built from
 1, +, −, inverse), and expressions are evaluated by `eval`.
+
+**Proofs (sk-07).** All six laws are proven for every ordered field, from
+the axioms alone. The machinery, all untrusted: `lib/flaws.bend` (ring laws
+from the axioms), `lib/fring.bend` (the ℤ normalizer's soundness re-proven
+in F, with integer coefficients entering through `ofz`), `lib/ford.bend`
+(order facts and *certificates*: x = 0 from relations rᵢ = 0 and one
+normalizer call x = Σ cᵢ rᵢ; a division enters as an atom i with the
+relation n·i − 1 = 0). Each kind is proven by value against
+`lib/mforms.bend` (generated from the spec arms), matching on the resolved
+points so both sides compute to the same coordinates. The deep cases: the
+parallel family splits on |u|² (zero, or v = (dot/|u|²) u); the mirror uses
+four-relation certificates; the point–line distance builds the foot of the
+perpendicular and uses Lagrange's identity, with uniqueness of nonnegative
+square roots for the converse. Drafts and generators: `tools/`.
 
 `tests/sketch_demo.bend` checks every form over ℚ on a rectangle with a
 known rational solution, including a collapsed segment and zero distances,
@@ -677,11 +693,11 @@ random sketches.
 | sk-P1 | **Prototype spike in Bend (untrusted):** ink-metric proposer with F32 + exact refinement, pinning, block decomposition, certification cost and precision on the depth-30 chain (well- and ill-conditioned) and on one large cyclic block | — | report feeding Q12; go/no-go on §8.5 and on F32 refinement |
 | sk-01 | Spec numbers (binary N, Int, rationals, dyadics), reflective normalizer | sk-00 | soundness law closed — **done** (2026-10-13; N deferred, §3) |
 | sk-02 | Limb bigints refining the spec | sk-01 | refinement laws; 256-bit mul benchmark — **done** (2026-10-13; §3) |
-| sk-03 | Typed IR, exact equation forms, meaning-lemma statements; LAWS review | sk-01, sk-P1 | LAWS reviewed by Danielle — **revised after her answers** (2026-10-13; §4, §5.1, §5.5); awaiting a final look |
+| sk-03 | Typed IR, exact equation forms, meaning-lemma statements; LAWS review | sk-01, sk-P1 | LAWS reviewed by Danielle — **done** (2026-10-13; Q13–Q15 and follow-ups folded in) |
 | sk-04 | Rational, dyadic and matrix library (∞-norms, products); Q order laws; canonical ℚ as an ordered-field instance (optional) | sk-02 | laws closed |
 | sk-05 | Parametric block certificate (§8.3), mean-value method (Q12) | sk-04 | law closed |
 | sk-06 | Composition theorem (§8.4), side conditions (§8.6) | sk-05 | laws closed |
-| sk-07 | Core vocabulary §5.1 + meaning lemmas | sk-03, sk-06 | laws closed |
+| sk-07 | Core vocabulary §5.1 + meaning lemmas | sk-03, sk-06 | laws closed — **meaning lemmas proven** in every ordered field (2026-10-13); remaining: §8.6 side-condition certification for the vocabulary (with sk-06), line–line / point–circle / circle–circle distances |
 | sk-08 | `accept_sound`: certified, untouched, flips, diagnostics | sk-07 | law closed |
 | sk-09 | Proposer v1: pinning, decomposition, KKT/LM, refinement, certificate emission | sk-P1, sk-07 | fixture sketches certified; certify-on-commit time target set from sk-P1 |
 | sk-10 | Bulge arcs, tangency, joins, trim/split (§5.2–5.3) | sk-07 | laws closed |
@@ -797,6 +813,15 @@ sk-02 and sk-03 can run in parallel after sk-01.
 ---
 
 ## 19. Changelog
+
+**v0.7 → v0.8 (meaning lemmas proven):**
+- §5.5: the six meaning laws are proven in every ordered field (moved from
+  ROADMAP to LAWS/PROOF; 55 laws, gate green); proof machinery and the
+  certificate technique described. §15: sk-03 done; sk-07's meaning half
+  done.
+- `spec/field.bend`: order facts are Data; `spec/sketch.bend`: `Zeros` and
+  `Sides` are reusable (`Both`), `dseg` factored through `Seg.rev_if`
+  (kind and factoring changes only, same meaning).
 
 **v0.6 → v0.7 (Danielle's sk-03 answers):**
 - §5.5, `spec/field.bend`: meanings in every ordered field via a template

@@ -1,0 +1,274 @@
+# Order facts and certificate helpers in every ordered field, from the
+# axioms of spec/field.bend. A certificate proves x = 0 from relations
+# r1 = 0, ..., rn = 0 and one normalizer call showing x = c1 r1 + ... + cn rn
+# (the §8.7 identity-certificate technique; divisions enter as an atom i
+# with the relation n i - 1 = 0).
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ./flaws.bend as FL
+import ./fring.bend as FR
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+# Equalities as differences
+# -------------------------
+
+# a = b gives a - b = 0
+def sub_of_eq(~F: O.OField, +a: @T, +b: @T, h: {a == b : @T}) -> {@S(a, b) == @0 : @T}:
+  %h : {@S(a, _) == @0 : @T}
+  O.add_neg(F)(a)
+
+# a - b = 0 gives a = b
+def eq_of_sub(~F: O.OField, +a: @T, +b: @T, h: {@S(a, b) == @0 : @T}) -> {a == b : @T}:
+  %FL.zero_add(~F, b) : {a == _ : @T}
+  %h : {a == @A(_, b) : @T}
+  %Equal.sym(@T, @A(@A(a, @N(b)), b), @A(a, @A(@N(b), b)), O.add_assoc(F)(a, @N(b), b)) : {a == _ : @T}
+  %Equal.sym(@T, @A(@N(b), b), @0, FL.neg_add_l(~F, b)) : {a == @A(a, _) : @T}
+  %Equal.sym(@T, @A(a, @0), a, O.add_zero(F)(a)) : {a == _ : @T}
+  {==}
+
+# Certificates
+# ------------
+
+def cert1(~F: O.OField, +x: @T, +c1: @T, +r1: @T, hid: {x == @M(c1, r1) : @T}, h1: {r1 == @0 : @T}) -> {x == @0 : @T}:
+  %Equal.sym(@T, x, @M(c1, r1), hid) : {_ == @0 : @T}
+  %Equal.sym(@T, r1, @0, h1) : {@M(c1, _) == @0 : @T}
+  Equal.sym(@T, @0, @M(c1, @0), FL.mul_zero(~F, c1))
+
+def cert2(~F: O.OField, +x: @T, +c1: @T, +r1: @T, +c2: @T, +r2: @T, hid: {x == @A(@M(c1, r1), @M(c2, r2)) : @T}, h1: {r1 == @0 : @T}, h2: {r2 == @0 : @T}) -> {x == @0 : @T}:
+  %Equal.sym(@T, x, @A(@M(c1, r1), @M(c2, r2)), hid) : {_ == @0 : @T}
+  %Equal.sym(@T, r1, @0, h1) : {@A(@M(c1, _), @M(c2, r2)) == @0 : @T}
+  %Equal.sym(@T, r2, @0, h2) : {@A(@M(c1, @0), @M(c2, _)) == @0 : @T}
+  %FL.mul_zero(~F, c1) : {@A(_, @M(c2, @0)) == @0 : @T}
+  %FL.mul_zero(~F, c2) : {@A(@0, _) == @0 : @T}
+  O.add_zero(F)(@0)
+
+def cert3(~F: O.OField, +x: @T, +c1: @T, +r1: @T, +c2: @T, +r2: @T, +c3: @T, +r3: @T, hid: {x == @A(@A(@M(c1, r1), @M(c2, r2)), @M(c3, r3)) : @T}, h1: {r1 == @0 : @T}, h2: {r2 == @0 : @T}, h3: {r3 == @0 : @T}) -> {x == @0 : @T}:
+  %Equal.sym(@T, x, @A(@A(@M(c1, r1), @M(c2, r2)), @M(c3, r3)), hid) : {_ == @0 : @T}
+  %Equal.sym(@T, r1, @0, h1) : {@A(@A(@M(c1, _), @M(c2, r2)), @M(c3, r3)) == @0 : @T}
+  %Equal.sym(@T, r2, @0, h2) : {@A(@A(@M(c1, @0), @M(c2, _)), @M(c3, r3)) == @0 : @T}
+  %Equal.sym(@T, r3, @0, h3) : {@A(@A(@M(c1, @0), @M(c2, @0)), @M(c3, _)) == @0 : @T}
+  %FL.mul_zero(~F, c1) : {@A(@A(_, @M(c2, @0)), @M(c3, @0)) == @0 : @T}
+  %FL.mul_zero(~F, c2) : {@A(@A(@0, _), @M(c3, @0)) == @0 : @T}
+  %FL.mul_zero(~F, c3) : {@A(@A(@0, @0), _) == @0 : @T}
+  %FL.add_zero(~F, @0) : {@A(_, @0) == @0 : @T}
+  O.add_zero(F)(@0)
+
+# Order
+# -----
+
+def lt_subst_l(~F: O.OField, +a: @T, +b: @T, +c: @T, e: {a == b : @T}, h: O.lt(F, a, c)) -> O.lt(F, b, c):
+  %e : O.lt(F, _, c)
+  h
+
+def lt_subst_r(~F: O.OField, +a: @T, +b: @T, +c: @T, e: {a == b : @T}, h: O.lt(F, c, a)) -> O.lt(F, c, b):
+  %e : O.lt(F, c, _)
+  h
+
+# a < b gives a ≠ b, and b ≠ a
+def ne_of_lt(~F: O.OField, +a: @T, +b: @T, h: O.lt(F, a, b)) -> {a == b : @T} -> Empty:
+  e => O.lt_irrefl(F)(b)(lt_subst_l(~F, a, b, b, e, h))
+
+def ne_of_gt(~F: O.OField, +a: @T, +b: @T, h: O.lt(F, b, a)) -> {a == b : @T} -> Empty:
+  e => O.lt_irrefl(F)(b)(lt_subst_r(~F, a, b, b, e, h))
+
+def lt_le(~F: O.OField, +a: @T, +b: @T, h: O.lt(F, a, b)) -> O.le(~F, a, b):
+  Inl{h}
+
+def le_refl(~F: O.OField, +a: @T) -> O.le(~F, a, a):
+  Inr{{==}}
+
+def lt_le_trans(~F: O.OField, +a: @T, +b: @T, +c: @T, h1: O.lt(F, a, b), h2: O.le(~F, b, c)) -> O.lt(F, a, c):
+  match h2:
+    case Inl{l}:
+      O.lt_trans(F)(a, b, c)(h1)(l)
+    case Inr{e}:
+      %e : O.lt(F, a, _)
+      h1
+
+def le_lt_trans(~F: O.OField, +a: @T, +b: @T, +c: @T, h1: O.le(~F, a, b), h2: O.lt(F, b, c)) -> O.lt(F, a, c):
+  match h1:
+    case Inl{l}:
+      O.lt_trans(F)(a, b, c)(l)(h2)
+    case Inr{e}:
+      %Equal.sym(@T, a, b, e) : O.lt(F, _, c)
+      h2
+
+# a < 0 gives 0 < -a
+def neg_pos(~F: O.OField, +a: @T, h: O.lt(F, a, @0)) -> O.lt(F, @0, @N(a)):
+  %O.add_neg(F)(a) : O.lt(F, _, @N(a))
+  %FL.zero_add(~F, @N(a)) : O.lt(F, @A(a, @N(a)), _)
+  O.lt_add(F)(a, @0, @N(a))(h)
+
+# 0 < a gives -a < 0
+def pos_neg(~F: O.OField, +a: @T, h: O.lt(F, @0, a)) -> O.lt(F, @N(a), @0):
+  %FL.zero_add(~F, @N(a)) : O.lt(F, _, @0)
+  %O.add_neg(F)(a) : O.lt(F, @A(@0, @N(a)), _)
+  O.lt_add(F)(@0, a, @N(a))(h)
+
+# 0 < a and 0 ≤ b give 0 < a + b
+def pos_add.step(~F: O.OField, +a: @T, +b: @T, ha: O.lt(F, @0, a)) -> O.lt(F, b, @A(a, b)):
+  %FL.zero_add(~F, b) : O.lt(F, _, @A(a, b))
+  O.lt_add(F)(@0, a, b)(ha)
+
+def pos_add(~F: O.OField, +a: @T, +b: @T, ha: O.lt(F, @0, a), hb: O.le(~F, @0, b)) -> O.lt(F, @0, @A(a, b)):
+  le_lt_trans(~F, @0, b, @A(a, b), hb, pos_add.step(~F, a, b, ha))
+
+def pos_add_r(~F: O.OField, +a: @T, +b: @T, ha: O.le(~F, @0, a), hb: O.lt(F, @0, b)) -> O.lt(F, @0, @A(a, b)):
+  %FL.add_comm(~F, b, a) : O.lt(F, @0, _)
+  pos_add(~F, b, a, hb, ha)
+
+def nonneg_add(~F: O.OField, +a: @T, +b: @T, ha: O.le(~F, @0, a), +hb: O.le(~F, @0, b)) -> O.le(~F, @0, @A(a, b)):
+  match ha:
+    case Inl{l}:
+      Inl{pos_add(~F, a, b, l, hb)}
+    case Inr{e}:
+      %e : O.le(~F, @0, @A(_, b))
+      %Equal.sym(@T, @A(@0, b), b, FL.zero_add(~F, b)) : O.le(~F, @0, _)
+      hb
+
+def mul_nonneg(~F: O.OField, +a: @T, +b: @T, ha: O.le(~F, @0, a), hb: O.le(~F, @0, b)) -> O.le(~F, @0, @M(a, b)):
+  match ha:
+    case Inl{la}:
+      match hb:
+        case Inl{lb}:
+          Inl{O.lt_mul(F)(a, b)(la)(lb)}
+        case Inr{e}:
+          %e : O.le(~F, @0, @M(a, _))
+          Inr{FL.mul_zero(~F, a)}
+    case Inr{e}:
+      %e : O.le(~F, @0, @M(_, b))
+      Inr{Equal.sym(@T, @M(@0, b), @0, FL.zero_mul(~F, b))}
+
+# a ≠ 0 gives 0 < a a
+def sq_pos.go(~F: O.OField, +a: @T, h: {a == @0 : @T} -> Empty, t: Or(O.lt(F, a, @0), Or({a == @0 : @T}, O.lt(F, @0, a)))) -> O.lt(F, @0, @M(a, a)):
+  match t:
+    case Inl{+l}:
+      %FL.neg_mul_neg(~F, a, a) : O.lt(F, @0, _)
+      O.lt_mul(F)(@N(a), @N(a))(neg_pos(~F, a, l))(neg_pos(~F, a, l))
+    case Inr{Inl{e}}:
+      absurd(O.lt(F, @0, @M(a, a)), h(e))
+    case Inr{Inr{+g}}:
+      O.lt_mul(F)(a, a)(g)(g)
+
+def sq_pos(~F: O.OField, +a: @T, h: {a == @0 : @T} -> Empty) -> O.lt(F, @0, @M(a, a)):
+  sq_pos.go(~F, a, h, O.lt_total(F)(a, @0))
+
+# 0 ≤ a a
+def sq_nonneg.go(~F: O.OField, +a: @T, t: Or(O.lt(F, a, @0), Or({a == @0 : @T}, O.lt(F, @0, a)))) -> O.le(~F, @0, @M(a, a)):
+  match t:
+    case Inl{+l}:
+      %FL.neg_mul_neg(~F, a, a) : O.le(~F, @0, _)
+      Inl{O.lt_mul(F)(@N(a), @N(a))(neg_pos(~F, a, l))(neg_pos(~F, a, l))}
+    case Inr{Inl{e}}:
+      %Equal.sym(@T, a, @0, e) : O.le(~F, @0, @M(_, _))
+      Inr{FL.mul_zero(~F, @0)}
+    case Inr{Inr{+g}}:
+      Inl{O.lt_mul(F)(a, a)(g)(g)}
+
+def sq_nonneg(~F: O.OField, +a: @T) -> O.le(~F, @0, @M(a, a)):
+  sq_nonneg.go(~F, a, O.lt_total(F)(a, @0))
+
+# a a = 0 gives a = 0
+def sq_zero.go(~F: O.OField, +a: @T, +h: {@M(a, a) == @0 : @T}, t: Or(O.lt(F, a, @0), Or({a == @0 : @T}, O.lt(F, @0, a)))) -> {a == @0 : @T}:
+  match t:
+    case Inl{l}:
+      absurd({a == @0 : @T}, ne_of_gt(~F, @M(a, a), @0, sq_pos(~F, a, ne_of_lt(~F, a, @0, l)))(h))
+    case Inr{Inl{e}}:
+      e
+    case Inr{Inr{g}}:
+      absurd({a == @0 : @T}, ne_of_gt(~F, @M(a, a), @0, sq_pos(~F, a, ne_of_gt(~F, a, @0, g)))(h))
+
+def sq_zero(~F: O.OField, +a: @T, h: {@M(a, a) == @0 : @T}) -> {a == @0 : @T}:
+  sq_zero.go(~F, a, h, O.lt_total(F)(a, @0))
+
+# a a + b b = 0 gives a = 0
+def sumsq_zero.go(~F: O.OField, +a: @T, +b: @T, +h: {@A(@M(a, a), @M(b, b)) == @0 : @T}, t: Or(O.lt(F, a, @0), Or({a == @0 : @T}, O.lt(F, @0, a)))) -> {a == @0 : @T}:
+  match t:
+    case Inl{l}:
+      absurd({a == @0 : @T}, ne_of_gt(~F, @A(@M(a, a), @M(b, b)), @0, pos_add(~F, @M(a, a), @M(b, b), sq_pos(~F, a, ne_of_lt(~F, a, @0, l)), sq_nonneg(~F, b)))(h))
+    case Inr{Inl{e}}:
+      e
+    case Inr{Inr{g}}:
+      absurd({a == @0 : @T}, ne_of_gt(~F, @A(@M(a, a), @M(b, b)), @0, pos_add(~F, @M(a, a), @M(b, b), sq_pos(~F, a, ne_of_gt(~F, a, @0, g)), sq_nonneg(~F, b)))(h))
+
+def sumsq_zero(~F: O.OField, +a: @T, +b: @T, h: {@A(@M(a, a), @M(b, b)) == @0 : @T}) -> {a == @0 : @T}:
+  sumsq_zero.go(~F, a, b, h, O.lt_total(F)(a, @0))
+
+# Inverses
+# --------
+
+# a ≠ 0: a (1/a) - 1 = 0, the relation a certificate uses
+def inv_rel(~F: O.OField, +a: @T, h: {a == @0 : @T} -> Empty) -> {@S(@M(a, O.inv(F, a)), @1) == @0 : @T}:
+  sub_of_eq(~F, @M(a, O.inv(F, a)), @1, O.mul_inv(F)(a)(h))
+
+# a ≠ 0 and a b = 0 give b = 0
+def mul_eq_zero(~F: O.OField, +a: @T, +b: @T, ha: {a == @0 : @T} -> Empty, h: {@M(a, b) == @0 : @T}) -> {b == @0 : @T}:
+  cert2(~F, b, @N(b), @S(@M(a, O.inv(F, a)), @1), O.inv(F, a), @M(a, b),
+    @ZEQ[a,, b,, i=O.inv(F, a) | b | -b*(a*i - 1) + i*(a*b)],
+    inv_rel(~F, a, ha), h)
+
+# 0 < a gives 0 < 1/a
+def inv_pos.neg(~F: O.OField, +a: @T, +h: O.lt(F, @0, a), l: O.lt(F, O.inv(F, a), @0)) -> O.lt(F, @0, @N(@1)):
+  %O.mul_inv(F)(a)(ne_of_gt(~F, a, @0, h)) : O.lt(F, @0, @N(_))
+  %FL.mul_neg(~F, a, O.inv(F, a)) : O.lt(F, @0, _)
+  O.lt_mul(F)(a, @N(O.inv(F, a)))(h)(neg_pos(~F, O.inv(F, a), l))
+
+def inv_pos.zero(~F: O.OField, +a: @T, +h: O.lt(F, @0, a), e: {O.inv(F, a) == @0 : @T}) -> {@0 == @1 : @T}:
+  %O.mul_inv(F)(a)(ne_of_gt(~F, a, @0, h)) : {@0 == _ : @T}
+  %Equal.sym(@T, O.inv(F, a), @0, e) : {@0 == @M(a, _) : @T}
+  FL.mul_zero(~F, a)
+
+def inv_pos.go(~F: O.OField, +a: @T, +h: O.lt(F, @0, a), t: Or(O.lt(F, O.inv(F, a), @0), Or({O.inv(F, a) == @0 : @T}, O.lt(F, @0, O.inv(F, a))))) -> O.lt(F, @0, O.inv(F, a)):
+  match t:
+    case Inl{l}:
+      absurd(O.lt(F, @0, O.inv(F, a)), O.lt_irrefl(F)(@0)(O.lt_trans(F)(@0, @N(@1), @0)(inv_pos.neg(~F, a, h, l))(pos_neg(~F, @1, O.zero_lt_one(F)))))
+    case Inr{Inl{e}}:
+      absurd(O.lt(F, @0, O.inv(F, a)), ne_of_lt(~F, @0, @1, O.zero_lt_one(F))(inv_pos.zero(~F, a, h, e)))
+    case Inr{Inr{g}}:
+      g
+
+def inv_pos(~F: O.OField, +a: @T, +h: O.lt(F, @0, a)) -> O.lt(F, @0, O.inv(F, a)):
+  inv_pos.go(~F, a, h, O.lt_total(F)(O.inv(F, a), @0))
+
+# 0 < 2, and 2 (1/2) - 1 = 0
+def two_pos(~F: O.OField) -> O.lt(F, @0, O.two(~F)):
+  pos_add(~F, @1, @1, O.zero_lt_one(F), lt_le(~F, @0, @1, O.zero_lt_one(F)))
+
+def half_rel(~F: O.OField) -> {@S(@M(O.two(~F), O.half(~F)), @1) == @0 : @T}:
+  inv_rel(~F, O.two(~F), ne_of_gt(~F, O.two(~F), @0, two_pos(~F)))
+
+# Square roots are unique: 0 ≤ x, 0 ≤ y and x x = y y give x = y
+def sq_eq.yy(~F: O.OField, +x: @T, +y: @T, e: {@0 == x : @T}, h: {@M(x, x) == @M(y, y) : @T}) -> {@M(y, y) == @0 : @T}:
+  %h : {_ == @0 : @T}
+  %e : {@M(_, _) == @0 : @T}
+  Equal.sym(@T, @0, @M(@0, @0), FL.mul_zero(~F, @0))
+
+def sq_eq(~F: O.OField, +x: @T, +y: @T, hx: O.le(~F, @0, x), +hy: O.le(~F, @0, y), +h: {@M(x, x) == @M(y, y) : @T}) -> {x == y : @T}:
+  match hx:
+    case Inl{+lx}:
+      eq_of_sub(~F, x, y, mul_eq_zero(~F, @A(x, y), @S(x, y), ne_of_gt(~F, @A(x, y), @0, pos_add(~F, x, y, lx, hy)),
+        cert1(~F, @M(@A(x, y), @S(x, y)), @1, @S(@M(x, x), @M(y, y)),
+          @ZEQ[x,, y | (x + y)*(x - y) | 1*(x*x - y*y)],
+          sub_of_eq(~F, @M(x, x), @M(y, y), h))))
+    case Inr{+e}:
+      %e : {_ == y : @T}
+      Equal.sym(@T, y, @0, sq_zero(~F, y, sq_eq.yy(~F, x, y, e, h)))
+
+def cert4(~F: O.OField, +x: @T, +c1: @T, +r1: @T, +c2: @T, +r2: @T, +c3: @T, +r3: @T, +c4: @T, +r4: @T, hid: {x == @A(@A(@A(@M(c1, r1), @M(c2, r2)), @M(c3, r3)), @M(c4, r4)) : @T}, h1: {r1 == @0 : @T}, h2: {r2 == @0 : @T}, h3: {r3 == @0 : @T}, h4: {r4 == @0 : @T}) -> {x == @0 : @T}:
+  %Equal.sym(@T, x, @A(@A(@A(@M(c1, r1), @M(c2, r2)), @M(c3, r3)), @M(c4, r4)), hid) : {_ == @0 : @T}
+  %Equal.sym(@T, r1, @0, h1) : {@A(@A(@A(@M(c1, _), @M(c2, r2)), @M(c3, r3)), @M(c4, r4)) == @0 : @T}
+  %Equal.sym(@T, r2, @0, h2) : {@A(@A(@A(@M(c1, @0), @M(c2, _)), @M(c3, r3)), @M(c4, r4)) == @0 : @T}
+  %Equal.sym(@T, r3, @0, h3) : {@A(@A(@A(@M(c1, @0), @M(c2, @0)), @M(c3, _)), @M(c4, r4)) == @0 : @T}
+  %Equal.sym(@T, r4, @0, h4) : {@A(@A(@A(@M(c1, @0), @M(c2, @0)), @M(c3, @0)), @M(c4, _)) == @0 : @T}
+  %FL.mul_zero(~F, c1) : {@A(@A(@A(_, @M(c2, @0)), @M(c3, @0)), @M(c4, @0)) == @0 : @T}
+  %FL.mul_zero(~F, c2) : {@A(@A(@A(@0, _), @M(c3, @0)), @M(c4, @0)) == @0 : @T}
+  %FL.mul_zero(~F, c3) : {@A(@A(@A(@0, @0), _), @M(c4, @0)) == @0 : @T}
+  %FL.mul_zero(~F, c4) : {@A(@A(@A(@0, @0), @0), _) == @0 : @T}
+  %FL.add_zero(~F, @0) : {@A(@A(_, @0), @0) == @0 : @T}
+  %FL.add_zero(~F, @0) : {@A(_, @0) == @0 : @T}
+  O.add_zero(F)(@0)

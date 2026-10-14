@@ -1,0 +1,333 @@
+# The ring normalizer of lib/zring.bend, proven sound in every ordered field:
+# two integer-coefficient expressions with equal normal forms are equal for
+# every assignment of field values to their variables. The normalizer
+# (R.norm) is the same untrusted code; only the soundness proof is new, a
+# line-for-line port of lib/zring.bend's with the laws of lib/flaws.bend.
+# The coefficients enter the field through O.ofz, which respects integer
+# addition, multiplication and negation (proven here through unary
+# naturals, as lib/z.bend relates binary integers to differences).
+#
+# Use: fring_eq(~F, env, e1, e2, {==}) proves
+# {zeval(~F, env, e1) == zeval(~F, env, e2)} when e1, e2 normalize alike.
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ./flaws.bend as FL
+import ./pos.bend as P
+import ./z.bend as LZ
+import ./natring.bend as NR
+import ./zring.bend as R
+
+# Integer expressions evaluated in F
+def zeval(~F: O.OField, +env: List<&2, @T>, e: E.ZExpr) -> @T:
+  match e:
+    case E.ZVar{i}:
+      @LK(i)
+    case E.ZCst{c}:
+      @OZ(c)
+    case E.ZAdd{a, b}:
+      @A(@ZE(a), @ZE(b))
+    case E.ZSub{a, b}:
+      @S(@ZE(a), @ZE(b))
+    case E.ZMul{a, b}:
+      @M(@ZE(a), @ZE(b))
+    case E.ZNeg{a}:
+      @N(@ZE(a))
+
+# The integers in F
+# -----------------
+
+# n as 1 + 1 + ... + 1 in F
+def ofn(~F: O.OField, n: Nat) -> @T:
+  match n:
+    case 0n:
+      @0
+    case 1n+k:
+      @A(@1, @ON(k))
+
+def ofn_add(~F: O.OField, a: Nat, +b: Nat) -> {@A(@ON(a), @ON(b)) == @ON(Nat.add(a, b)) : @T}:
+  match a:
+    case 0n:
+      FL.zero_add(~F, @ON(b))
+    case 1n++p:
+      %ofn_add(~F, p, b) : {@A(@A(@1, @ON(p)), @ON(b)) == @A(@1, _) : @T}
+      O.add_assoc(F)(@1, @ON(p), @ON(b))
+
+def ofn_mul(~F: O.OField, a: Nat, +b: Nat) -> {@M(@ON(a), @ON(b)) == @ON(Nat.mul(a, b)) : @T}:
+  match a:
+    case 0n:
+      FL.zero_mul(~F, @ON(b))
+    case 1n++p:
+      %ofn_add(~F, b, Nat.mul(p, b)) : {@M(@A(@1, @ON(p)), @ON(b)) == _ : @T}
+      %ofn_mul(~F, p, b) : {@M(@A(@1, @ON(p)), @ON(b)) == @A(@ON(b), _) : @T}
+      %FL.mul_add_r(~F, @1, @ON(p), @ON(b)) : {_ == @A(@ON(b), @M(@ON(p), @ON(b))) : @T}
+      %FL.one_mul(~F, @ON(b)) : {@A(_, @M(@ON(p), @ON(b))) == @A(@ON(b), @M(@ON(p), @ON(b))) : @T}
+      {==}
+
+def ofn_double(~F: O.OField, n: Nat) -> {@ON(Nat.double(n)) == @A(@ON(n), @ON(n)) : @T}:
+  match n:
+    case 0n:
+      FL.add_zero(~F, @0)
+    case 1n++p:
+      %Equal.sym(@T, @ON(Nat.double(p)), @A(@ON(p), @ON(p)), ofn_double(~F, p)) : {@A(@1, @A(@1, _)) == @A(@A(@1, @ON(p)), @A(@1, @ON(p))) : @T}
+      %FL.add_assoc(~F, @1, @ON(p), @A(@1, @ON(p))) : {@A(@1, @A(@1, @A(@ON(p), @ON(p)))) == _ : @T}
+      %FL.add_swap(~F, @1, @ON(p), @ON(p)) : {@A(@1, @A(@1, @A(@ON(p), @ON(p)))) == @A(@1, _) : @T}
+      {==}
+
+# a binary positive is its unary meaning
+def ofp_nat(~F: O.OField, p: S.Pos) -> {@ON(S.Pos.nat(p)) == O.ofp(~F, p) : @T}:
+  match p:
+    case S.XH{}:
+      O.add_zero(F)(@1)
+    case S.XO{+q}:
+      %ofp_nat(~F, q) : {@ON(Nat.double(S.Pos.nat(q))) == @A(_, _) : @T}
+      ofn_double(~F, S.Pos.nat(q))
+    case S.XI{+q}:
+      %ofp_nat(~F, q) : {@ON(1n+Nat.double(S.Pos.nat(q))) == @A(@A(_, _), @1) : @T}
+      %Equal.sym(@T, @ON(Nat.double(S.Pos.nat(q))), @A(@ON(S.Pos.nat(q)), @ON(S.Pos.nat(q))), ofn_double(~F, S.Pos.nat(q))) : {@A(@1, _) == @A(@A(@ON(S.Pos.nat(q)), @ON(S.Pos.nat(q))), @1) : @T}
+      FL.add_comm(~F, @1, @A(@ON(S.Pos.nat(q)), @ON(S.Pos.nat(q))))
+
+# of_diff(a, b) is a - b in F
+def ofz_diff(~F: O.OField, a: Nat, b: Nat) -> {@S(@ON(a), @ON(b)) == @OZ(S.Z.of_diff(a, b)) : @T}:
+  match a b:
+    case 0n 0n:
+      O.add_neg(F)(@0)
+    case 1n++k 0n:
+      %ofp_nat(~F, S.Pos.of_succ(k)) : {@A(@ON(1n+k), @N(@0)) == _ : @T}
+      %P.nat_os(k) : {@A(@ON(1n+k), @N(@0)) == @ON(_) : @T}
+      FL.sub_zero(~F, @ON(1n+k))
+    case 0n 1n++k:
+      %ofp_nat(~F, S.Pos.of_succ(k)) : {@A(@0, @N(@ON(1n+k))) == @N(_) : @T}
+      %P.nat_os(k) : {@A(@0, @N(@ON(1n+k))) == @N(@ON(_)) : @T}
+      FL.zero_add(~F, @N(@ON(1n+k)))
+    case 1n++i 1n++j:
+      %ofz_diff(~F, i, j) : {@S(@ON(1n+i), @ON(1n+j)) == _ : @T}
+      FL.sub_succ(~F, @ON(i), @ON(j))
+
+def ofz_add(~F: O.OField, +x: S.Z, +y: S.Z) -> {@A(@OZ(x), @OZ(y)) == @OZ(S.Z.add(x, y)) : @T}:
+  %LZ.add_diff(x, y) : {@A(@OZ(x), @OZ(y)) == @OZ(_) : @T}
+  %ofz_diff(~F, Nat.add(S.Z.pnat(x), S.Z.pnat(y)), Nat.add(S.Z.nnat(x), S.Z.nnat(y))) : {@A(@OZ(x), @OZ(y)) == _ : @T}
+  %ofn_add(~F, S.Z.pnat(x), S.Z.pnat(y)) : {@A(@OZ(x), @OZ(y)) == @S(_, @ON(Nat.add(S.Z.nnat(x), S.Z.nnat(y)))) : @T}
+  %ofn_add(~F, S.Z.nnat(x), S.Z.nnat(y)) : {@A(@OZ(x), @OZ(y)) == @S(@A(@ON(S.Z.pnat(x)), @ON(S.Z.pnat(y))), _) : @T}
+  %LZ.diff_parts(x) : {@A(@OZ(_), @OZ(y)) == @S(@A(@ON(S.Z.pnat(x)), @ON(S.Z.pnat(y))), @A(@ON(S.Z.nnat(x)), @ON(S.Z.nnat(y)))) : @T}
+  %ofz_diff(~F, S.Z.pnat(x), S.Z.nnat(x)) : {@A(_, @OZ(y)) == @S(@A(@ON(S.Z.pnat(x)), @ON(S.Z.pnat(y))), @A(@ON(S.Z.nnat(x)), @ON(S.Z.nnat(y)))) : @T}
+  %LZ.diff_parts(y) : {@A(@S(@ON(S.Z.pnat(x)), @ON(S.Z.nnat(x))), @OZ(_)) == @S(@A(@ON(S.Z.pnat(x)), @ON(S.Z.pnat(y))), @A(@ON(S.Z.nnat(x)), @ON(S.Z.nnat(y)))) : @T}
+  %ofz_diff(~F, S.Z.pnat(y), S.Z.nnat(y)) : {@A(@S(@ON(S.Z.pnat(x)), @ON(S.Z.nnat(x))), _) == @S(@A(@ON(S.Z.pnat(x)), @ON(S.Z.pnat(y))), @A(@ON(S.Z.nnat(x)), @ON(S.Z.nnat(y)))) : @T}
+  %FL.neg_add(~F, @ON(S.Z.nnat(x)), @ON(S.Z.nnat(y))) : {@A(@S(@ON(S.Z.pnat(x)), @ON(S.Z.nnat(x))), @S(@ON(S.Z.pnat(y)), @ON(S.Z.nnat(y)))) == @A(@A(@ON(S.Z.pnat(x)), @ON(S.Z.pnat(y))), _) : @T}
+  FL.add_shuffle(~F, @ON(S.Z.pnat(x)), @N(@ON(S.Z.nnat(x))), @ON(S.Z.pnat(y)), @N(@ON(S.Z.nnat(y))))
+
+def ofz_mul(~F: O.OField, +x: S.Z, +y: S.Z) -> {@M(@OZ(x), @OZ(y)) == @OZ(S.Z.mul(x, y)) : @T}:
+  %LZ.mul_diff(x, y) : {@M(@OZ(x), @OZ(y)) == @OZ(_) : @T}
+  %ofz_diff(~F, Nat.add(Nat.mul(S.Z.pnat(x), S.Z.pnat(y)), Nat.mul(S.Z.nnat(x), S.Z.nnat(y))), Nat.add(Nat.mul(S.Z.pnat(x), S.Z.nnat(y)), Nat.mul(S.Z.nnat(x), S.Z.pnat(y)))) : {@M(@OZ(x), @OZ(y)) == _ : @T}
+  %ofn_add(~F, Nat.mul(S.Z.pnat(x), S.Z.pnat(y)), Nat.mul(S.Z.nnat(x), S.Z.nnat(y))) : {@M(@OZ(x), @OZ(y)) == @S(_, @ON(Nat.add(Nat.mul(S.Z.pnat(x), S.Z.nnat(y)), Nat.mul(S.Z.nnat(x), S.Z.pnat(y))))) : @T}
+  %ofn_add(~F, Nat.mul(S.Z.pnat(x), S.Z.nnat(y)), Nat.mul(S.Z.nnat(x), S.Z.pnat(y))) : {@M(@OZ(x), @OZ(y)) == @S(@A(@ON(Nat.mul(S.Z.pnat(x), S.Z.pnat(y))), @ON(Nat.mul(S.Z.nnat(x), S.Z.nnat(y)))), _) : @T}
+  %ofn_mul(~F, S.Z.pnat(x), S.Z.pnat(y)) : {@M(@OZ(x), @OZ(y)) == @S(@A(_, @ON(Nat.mul(S.Z.nnat(x), S.Z.nnat(y)))), @A(@ON(Nat.mul(S.Z.pnat(x), S.Z.nnat(y))), @ON(Nat.mul(S.Z.nnat(x), S.Z.pnat(y))))) : @T}
+  %ofn_mul(~F, S.Z.nnat(x), S.Z.nnat(y)) : {@M(@OZ(x), @OZ(y)) == @S(@A(@M(@ON(S.Z.pnat(x)), @ON(S.Z.pnat(y))), _), @A(@ON(Nat.mul(S.Z.pnat(x), S.Z.nnat(y))), @ON(Nat.mul(S.Z.nnat(x), S.Z.pnat(y))))) : @T}
+  %ofn_mul(~F, S.Z.pnat(x), S.Z.nnat(y)) : {@M(@OZ(x), @OZ(y)) == @S(@A(@M(@ON(S.Z.pnat(x)), @ON(S.Z.pnat(y))), @M(@ON(S.Z.nnat(x)), @ON(S.Z.nnat(y)))), @A(_, @ON(Nat.mul(S.Z.nnat(x), S.Z.pnat(y))))) : @T}
+  %ofn_mul(~F, S.Z.nnat(x), S.Z.pnat(y)) : {@M(@OZ(x), @OZ(y)) == @S(@A(@M(@ON(S.Z.pnat(x)), @ON(S.Z.pnat(y))), @M(@ON(S.Z.nnat(x)), @ON(S.Z.nnat(y)))), @A(@M(@ON(S.Z.pnat(x)), @ON(S.Z.nnat(y))), _)) : @T}
+  %LZ.diff_parts(x) : {@M(@OZ(_), @OZ(y)) == @S(@A(@M(@ON(S.Z.pnat(x)), @ON(S.Z.pnat(y))), @M(@ON(S.Z.nnat(x)), @ON(S.Z.nnat(y)))), @A(@M(@ON(S.Z.pnat(x)), @ON(S.Z.nnat(y))), @M(@ON(S.Z.nnat(x)), @ON(S.Z.pnat(y))))) : @T}
+  %ofz_diff(~F, S.Z.pnat(x), S.Z.nnat(x)) : {@M(_, @OZ(y)) == @S(@A(@M(@ON(S.Z.pnat(x)), @ON(S.Z.pnat(y))), @M(@ON(S.Z.nnat(x)), @ON(S.Z.nnat(y)))), @A(@M(@ON(S.Z.pnat(x)), @ON(S.Z.nnat(y))), @M(@ON(S.Z.nnat(x)), @ON(S.Z.pnat(y))))) : @T}
+  %LZ.diff_parts(y) : {@M(@S(@ON(S.Z.pnat(x)), @ON(S.Z.nnat(x))), @OZ(_)) == @S(@A(@M(@ON(S.Z.pnat(x)), @ON(S.Z.pnat(y))), @M(@ON(S.Z.nnat(x)), @ON(S.Z.nnat(y)))), @A(@M(@ON(S.Z.pnat(x)), @ON(S.Z.nnat(y))), @M(@ON(S.Z.nnat(x)), @ON(S.Z.pnat(y))))) : @T}
+  %ofz_diff(~F, S.Z.pnat(y), S.Z.nnat(y)) : {@M(@S(@ON(S.Z.pnat(x)), @ON(S.Z.nnat(x))), _) == @S(@A(@M(@ON(S.Z.pnat(x)), @ON(S.Z.pnat(y))), @M(@ON(S.Z.nnat(x)), @ON(S.Z.nnat(y)))), @A(@M(@ON(S.Z.pnat(x)), @ON(S.Z.nnat(y))), @M(@ON(S.Z.nnat(x)), @ON(S.Z.pnat(y))))) : @T}
+  FL.mul_sub(~F, @ON(S.Z.pnat(x)), @ON(S.Z.nnat(x)), @ON(S.Z.pnat(y)), @ON(S.Z.nnat(y)))
+
+def ofz_neg(~F: O.OField, x: S.Z) -> {@N(@OZ(x)) == @OZ(S.Z.neg(x)) : @T}:
+  match x:
+    case S.Z0{}:
+      Equal.sym(@T, @0, @N(@0), FL.neg_zero(~F))
+    case S.Zpos{p}:
+      {==}
+    case S.Zneg{+p}:
+      FL.neg_neg(~F, O.ofp(~F, p))
+
+# Polynomials evaluated in F
+# --------------------------
+
+def femono(~F: O.OField, +env: List<&2, @T>, m: List<&2, Nat>) -> @T:
+  match m:
+    case Nil{}:
+      @1
+    case Con{v, vs}:
+      @M(@LK(v), @EM(vs))
+
+def fepoly(~F: O.OField, +env: List<&2, @T>, p: List<&2, R.ZTerm>) -> @T:
+  match p:
+    case Nil{}:
+      @0
+    case Con{R.ZTerm{c, m}, rest}:
+      @A(@M(@OZ(c), @EM(m)), @EP(rest))
+
+# Soundness (lib/zring.bend's, in F)
+# ----------------------------------
+
+def minsert_ok.dec(~F: O.OField, +env: List<&2, @T>, b: Bool, +x: Nat, +h: Nat, +t: List<&2, Nat>,
+  rec: {@M(@LK(x), @EM(t)) == @EM(NR.minsert(x, t)) : @T})
+  -> {@M(@LK(x), @M(@LK(h), @EM(t))) == @EM(NR.minsert.dec(b, x, h, t, NR.minsert(x, t))) : @T}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      %rec : {@M(@LK(x), @M(@LK(h), @EM(t))) == @M(@LK(h), _) : @T}
+      FL.mul_swap(~F, @LK(x), @LK(h), @EM(t))
+
+def minsert_ok(~F: O.OField, +env: List<&2, @T>, +x: Nat, m: List<&2, Nat>) -> {@M(@LK(x), @EM(m)) == @EM(NR.minsert(x, m)) : @T}:
+  match m:
+    case Nil{}:
+      {==}
+    case Con{+h, +t}:
+      minsert_ok.dec(~F, env, Nat.is_le(x, h), x, h, t, minsert_ok(~F, env, x, t))
+
+def mmul_ok(~F: O.OField, +env: List<&2, @T>, m1: List<&2, Nat>, +m2: List<&2, Nat>) -> {@M(@EM(m1), @EM(m2)) == @EM(NR.mmul(m1, m2)) : @T}:
+  match m1:
+    case Nil{}:
+      %FL.one_mul(~F, @EM(m2)) : {_ == @EM(m2) : @T}
+      {==}
+    case Con{+v, +vs}:
+      %minsert_ok(~F, env, v, NR.mmul(vs, m2)) : {@M(@M(@LK(v), @EM(vs)), @EM(m2)) == _ : @T}
+      %mmul_ok(~F, env, vs, m2) : {@M(@M(@LK(v), @EM(vs)), @EM(m2)) == @M(@LK(v), _) : @T}
+      %FL.mul_assoc(~F, @LK(v), @EM(vs), @EM(m2)) : {_ == @M(@LK(v), @M(@EM(vs), @EM(m2))) : @T}
+      {==}
+
+def pcoef_ok(~F: O.OField, +env: List<&2, @T>, s: S.Z, +n: List<&2, Nat>, +rest: List<&2, R.ZTerm>) -> {@A(@M(@OZ(s), @EM(n)), @EP(rest)) == @EP(R.pcoef(s, n, rest)) : @T}:
+  match s:
+    case S.Z0{}:
+      %Equal.sym(@T, @M(@0, @EM(n)), @0, FL.zero_mul(~F, @EM(n))) : {@A(_, @EP(rest)) == @EP(rest) : @T}
+      FL.zero_add(~F, @EP(rest))
+    case S.Zpos{p}:
+      {==}
+    case S.Zneg{p}:
+      {==}
+
+def pins_ok.dec(~F: O.OField, +env: List<&2, @T>, o: Cmp, +c: S.Z, +m: List<&2, Nat>, +d: S.Z, +n: List<&2, Nat>, +rest: List<&2, R.ZTerm>,
+  e: {o == NR.mcmp(m, n) : Cmp},
+  rec: {@A(@M(@OZ(c), @EM(m)), @EP(rest)) == @EP(R.pins(c, m, rest)) : @T})
+  -> {@A(@M(@OZ(c), @EM(m)), @A(@M(@OZ(d), @EM(n)), @EP(rest))) == @EP(R.pins.dec(o, c, m, d, n, rest, R.pins(c, m, rest))) : @T}:
+  match o:
+    case LT{}:
+      {==}
+    case EQ{}:
+      %pcoef_ok(~F, env, S.Z.add(c, d), n, rest) : {@A(@M(@OZ(c), @EM(m)), @A(@M(@OZ(d), @EM(n)), @EP(rest))) == _ : @T}
+      %ofz_add(~F, c, d) : {@A(@M(@OZ(c), @EM(m)), @A(@M(@OZ(d), @EM(n)), @EP(rest))) == @A(@M(_, @EM(n)), @EP(rest)) : @T}
+      %FL.mul_add_r(~F, @OZ(c), @OZ(d), @EM(n)) : {@A(@M(@OZ(c), @EM(m)), @A(@M(@OZ(d), @EM(n)), @EP(rest))) == @A(_, @EP(rest)) : @T}
+      %FL.add_assoc(~F, @M(@OZ(c), @EM(n)), @M(@OZ(d), @EM(n)), @EP(rest)) : {@A(@M(@OZ(c), @EM(m)), @A(@M(@OZ(d), @EM(n)), @EP(rest))) == _ : @T}
+      %NR.mcmp_eq(m, n, e) : {@A(@M(@OZ(c), @EM(m)), @A(@M(@OZ(d), @EM(n)), @EP(rest))) == @A(@M(@OZ(c), @EM(_)), @A(@M(@OZ(d), @EM(n)), @EP(rest))) : @T}
+      {==}
+    case GT{}:
+      %rec : {@A(@M(@OZ(c), @EM(m)), @A(@M(@OZ(d), @EM(n)), @EP(rest))) == @A(@M(@OZ(d), @EM(n)), _) : @T}
+      FL.add_swap(~F, @M(@OZ(c), @EM(m)), @M(@OZ(d), @EM(n)), @EP(rest))
+
+def pins_ok(~F: O.OField, +env: List<&2, @T>, +c: S.Z, +m: List<&2, Nat>, p: List<&2, R.ZTerm>) -> {@A(@M(@OZ(c), @EM(m)), @EP(p)) == @EP(R.pins(c, m, p)) : @T}:
+  match p:
+    case Nil{}:
+      {==}
+    case Con{R.ZTerm{+d, +n}, +rest}:
+      pins_ok.dec(~F, env, NR.mcmp(m, n), c, m, d, n, rest, {==}, pins_ok(~F, env, c, m, rest))
+
+def pinsert_ok(~F: O.OField, +env: List<&2, @T>, c: S.Z, +m: List<&2, Nat>, +p: List<&2, R.ZTerm>) -> {@A(@M(@OZ(c), @EM(m)), @EP(p)) == @EP(R.pinsert(c, m, p)) : @T}:
+  match c:
+    case S.Z0{}:
+      %Equal.sym(@T, @M(@0, @EM(m)), @0, FL.zero_mul(~F, @EM(m))) : {@A(_, @EP(p)) == @EP(p) : @T}
+      FL.zero_add(~F, @EP(p))
+    case S.Zpos{q}:
+      pins_ok(~F, env, S.Zpos{q}, m, p)
+    case S.Zneg{q}:
+      pins_ok(~F, env, S.Zneg{q}, m, p)
+
+def padd_ok(~F: O.OField, +env: List<&2, @T>, p: List<&2, R.ZTerm>, +q: List<&2, R.ZTerm>) -> {@A(@EP(p), @EP(q)) == @EP(R.padd(p, q)) : @T}:
+  match p:
+    case Nil{}:
+      FL.zero_add(~F, @EP(q))
+    case Con{R.ZTerm{+c, +m}, +rest}:
+      %pinsert_ok(~F, env, c, m, R.padd(rest, q)) : {@A(@A(@M(@OZ(c), @EM(m)), @EP(rest)), @EP(q)) == _ : @T}
+      %padd_ok(~F, env, rest, q) : {@A(@A(@M(@OZ(c), @EM(m)), @EP(rest)), @EP(q)) == @A(@M(@OZ(c), @EM(m)), _) : @T}
+      %FL.add_assoc(~F, @M(@OZ(c), @EM(m)), @EP(rest), @EP(q)) : {_ == @A(@M(@OZ(c), @EM(m)), @A(@EP(rest), @EP(q))) : @T}
+      {==}
+
+def pscale_ok(~F: O.OField, +env: List<&2, @T>, +c: S.Z, +m: List<&2, Nat>, q: List<&2, R.ZTerm>) -> {@M(@M(@OZ(c), @EM(m)), @EP(q)) == @EP(R.pscale(c, m, q)) : @T}:
+  match q:
+    case Nil{}:
+      %FL.mul_zero(~F, @M(@OZ(c), @EM(m))) : {_ == @0 : @T}
+      {==}
+    case Con{R.ZTerm{+d, +n}, +rest}:
+      %pinsert_ok(~F, env, S.Z.mul(c, d), NR.mmul(m, n), R.pscale(c, m, rest)) : {@M(@M(@OZ(c), @EM(m)), @A(@M(@OZ(d), @EM(n)), @EP(rest))) == _ : @T}
+      %pscale_ok(~F, env, c, m, rest) : {@M(@M(@OZ(c), @EM(m)), @A(@M(@OZ(d), @EM(n)), @EP(rest))) == @A(@M(@OZ(S.Z.mul(c, d)), @EM(NR.mmul(m, n))), _) : @T}
+      %mmul_ok(~F, env, m, n) : {@M(@M(@OZ(c), @EM(m)), @A(@M(@OZ(d), @EM(n)), @EP(rest))) == @A(@M(@OZ(S.Z.mul(c, d)), _), @M(@M(@OZ(c), @EM(m)), @EP(rest))) : @T}
+      %ofz_mul(~F, c, d) : {@M(@M(@OZ(c), @EM(m)), @A(@M(@OZ(d), @EM(n)), @EP(rest))) == @A(@M(_, @M(@EM(m), @EM(n))), @M(@M(@OZ(c), @EM(m)), @EP(rest))) : @T}
+      %FL.mul_shuffle(~F, @OZ(c), @OZ(d), @EM(m), @EM(n)) : {@M(@M(@OZ(c), @EM(m)), @A(@M(@OZ(d), @EM(n)), @EP(rest))) == @A(_, @M(@M(@OZ(c), @EM(m)), @EP(rest))) : @T}
+      %FL.mul_add_l(~F, @M(@OZ(c), @EM(m)), @M(@OZ(d), @EM(n)), @EP(rest)) : {_ == @A(@M(@M(@OZ(c), @EM(m)), @M(@OZ(d), @EM(n))), @M(@M(@OZ(c), @EM(m)), @EP(rest))) : @T}
+      {==}
+
+def pmul_ok(~F: O.OField, +env: List<&2, @T>, p: List<&2, R.ZTerm>, +q: List<&2, R.ZTerm>) -> {@M(@EP(p), @EP(q)) == @EP(R.pmul(p, q)) : @T}:
+  match p:
+    case Nil{}:
+      FL.zero_mul(~F, @EP(q))
+    case Con{R.ZTerm{+c, +m}, +rest}:
+      %padd_ok(~F, env, R.pscale(c, m, q), R.pmul(rest, q)) : {@M(@A(@M(@OZ(c), @EM(m)), @EP(rest)), @EP(q)) == _ : @T}
+      %pscale_ok(~F, env, c, m, q) : {@M(@A(@M(@OZ(c), @EM(m)), @EP(rest)), @EP(q)) == @A(_, @EP(R.pmul(rest, q))) : @T}
+      %pmul_ok(~F, env, rest, q) : {@M(@A(@M(@OZ(c), @EM(m)), @EP(rest)), @EP(q)) == @A(@M(@M(@OZ(c), @EM(m)), @EP(q)), _) : @T}
+      %FL.mul_add_r(~F, @M(@OZ(c), @EM(m)), @EP(rest), @EP(q)) : {_ == @A(@M(@M(@OZ(c), @EM(m)), @EP(q)), @M(@EP(rest), @EP(q))) : @T}
+      {==}
+
+def pneg_ok(~F: O.OField, +env: List<&2, @T>, p: List<&2, R.ZTerm>) -> {@N(@EP(p)) == @EP(R.pneg(p)) : @T}:
+  match p:
+    case Nil{}:
+      Equal.sym(@T, @0, @N(@0), FL.neg_zero(~F))
+    case Con{R.ZTerm{+c, +m}, +rest}:
+      %pneg_ok(~F, env, rest) : {@N(@A(@M(@OZ(c), @EM(m)), @EP(rest))) == @A(@M(@OZ(S.Z.neg(c)), @EM(m)), _) : @T}
+      %ofz_neg(~F, c) : {@N(@A(@M(@OZ(c), @EM(m)), @EP(rest))) == @A(@M(_, @EM(m)), @N(@EP(rest))) : @T}
+      %FL.neg_add(~F, @M(@OZ(c), @EM(m)), @EP(rest)) : {_ == @A(@M(@N(@OZ(c)), @EM(m)), @N(@EP(rest))) : @T}
+      %FL.neg_mul(~F, @OZ(c), @EM(m)) : {@A(_, @N(@EP(rest))) == @A(@M(@N(@OZ(c)), @EM(m)), @N(@EP(rest))) : @T}
+      {==}
+
+def pconst_ok(~F: O.OField, +env: List<&2, @T>, c: S.Z) -> {@EP(R.pconst(c)) == @OZ(c) : @T}:
+  match c:
+    case S.Z0{}:
+      {==}
+    case S.Zpos{+q}:
+      %FL.add_zero(~F, @M(O.ofp(~F, q), @1)) : {_ == O.ofp(~F, q) : @T}
+      %FL.mul_one(~F, O.ofp(~F, q)) : {_ == O.ofp(~F, q) : @T}
+      {==}
+    case S.Zneg{+q}:
+      %FL.add_zero(~F, @M(@N(O.ofp(~F, q)), @1)) : {_ == @N(O.ofp(~F, q)) : @T}
+      %FL.mul_one(~F, @N(O.ofp(~F, q))) : {_ == @N(O.ofp(~F, q)) : @T}
+      {==}
+
+def norm_ok(~F: O.OField, +env: List<&2, @T>, e: E.ZExpr) -> {@EP(R.norm(e)) == @ZE(e) : @T}:
+  match e:
+    case E.ZVar{+i}:
+      %FL.add_zero(~F, @M(@1, @M(@LK(i), @1))) : {_ == @LK(i) : @T}
+      %FL.one_mul(~F, @M(@LK(i), @1)) : {_ == @LK(i) : @T}
+      %FL.mul_one(~F, @LK(i)) : {_ == @LK(i) : @T}
+      {==}
+    case E.ZCst{c}:
+      pconst_ok(~F, env, c)
+    case E.ZAdd{+a, +b}:
+      %norm_ok(~F, env, a) : {@EP(R.padd(R.norm(a), R.norm(b))) == @A(_, @ZE(b)) : @T}
+      %norm_ok(~F, env, b) : {@EP(R.padd(R.norm(a), R.norm(b))) == @A(@EP(R.norm(a)), _) : @T}
+      %padd_ok(~F, env, R.norm(a), R.norm(b)) : {_ == @A(@EP(R.norm(a)), @EP(R.norm(b))) : @T}
+      {==}
+    case E.ZSub{+a, +b}:
+      %norm_ok(~F, env, a) : {@EP(R.padd(R.norm(a), R.pneg(R.norm(b)))) == @A(_, @N(@ZE(b))) : @T}
+      %norm_ok(~F, env, b) : {@EP(R.padd(R.norm(a), R.pneg(R.norm(b)))) == @A(@EP(R.norm(a)), @N(_)) : @T}
+      %padd_ok(~F, env, R.norm(a), R.pneg(R.norm(b))) : {_ == @A(@EP(R.norm(a)), @N(@EP(R.norm(b)))) : @T}
+      %pneg_ok(~F, env, R.norm(b)) : {@A(@EP(R.norm(a)), _) == @A(@EP(R.norm(a)), @N(@EP(R.norm(b)))) : @T}
+      {==}
+    case E.ZMul{+a, +b}:
+      %norm_ok(~F, env, a) : {@EP(R.pmul(R.norm(a), R.norm(b))) == @M(_, @ZE(b)) : @T}
+      %norm_ok(~F, env, b) : {@EP(R.pmul(R.norm(a), R.norm(b))) == @M(@EP(R.norm(a)), _) : @T}
+      %pmul_ok(~F, env, R.norm(a), R.norm(b)) : {_ == @M(@EP(R.norm(a)), @EP(R.norm(b))) : @T}
+      {==}
+    case E.ZNeg{+a}:
+      %norm_ok(~F, env, a) : {@EP(R.pneg(R.norm(a))) == @N(_) : @T}
+      %pneg_ok(~F, env, R.norm(a)) : {_ == @N(@EP(R.norm(a))) : @T}
+      {==}
+
+# The normalizer's use: two expressions with equal normal forms are equal in
+# every ordered field. The hypothesis is checked by computation, {==}.
+def fring_eq(~F: O.OField, +env: List<&2, @T>, +e1: E.ZExpr, +e2: E.ZExpr, h: {R.norm(e1) == R.norm(e2) : List<&2, R.ZTerm>}) -> {@ZE(e1) == @ZE(e2) : @T}:
+  %norm_ok(~F, env, e1) : {_ == @ZE(e2) : @T}
+  %norm_ok(~F, env, e2) : {@EP(R.norm(e1)) == _ : @T}
+  %h : {@EP(R.norm(e1)) == @EP(_) : @T}
+  {==}

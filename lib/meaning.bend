@@ -541,3 +541,249 @@ def LineDistance.complete(~F: O.OField, +env: List<&2, O.C(F)>, +p: K.Pt, +a: K.
   match p a:
     case K.Pt{px, py} K.Seg{K.Pt{ax, ay}, K.Pt{bx, by}}:
       LineDistance.complete.r(~F, env, px, py, ax, ay, bx, by, rev, d, l, h)
+# Every kind: the exact form implies the meaning
+def means_sound(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, K.Ent>, +k: K.Constraint, w: K.Constraint.wf(es, k), h: K.Constraint.holds(~F, env, es, k)) -> K.Constraint.means(~F, env, es, k):
+  match k:
+    case K.Coincident{a, b}:
+      Coincident.sound(~F, env, K.pt(es, a), K.pt(es, b), w, h)
+    case K.Horizontal{a, b}:
+      Horizontal.sound(~F, env, K.pt(es, a), K.pt(es, b), w, h)
+    case K.Vertical{a, b}:
+      Vertical.sound(~F, env, K.pt(es, a), K.pt(es, b), w, h)
+    case K.Concentric{a, b}:
+      Concentric.sound(~F, env, K.circ(es, a), K.circ(es, b), w, h)
+    case K.EqualRadius{a, b}:
+      EqualRadius.sound(~F, env, K.circ(es, a), K.circ(es, b), w, h)
+    case K.Fix{v, c}:
+      Fix.sound(~F, env, v, c, w, h)
+    case K.Distance{p, q, d}:
+      Distance.sound(~F, env, K.pt(es, p), K.pt(es, q), d, w, h)
+    case K.HDistance{p, q, d}:
+      HDistance.sound(~F, env, K.pt(es, p), K.pt(es, q), d, w, h)
+    case K.VDistance{p, q, d}:
+      VDistance.sound(~F, env, K.pt(es, p), K.pt(es, q), d, w, h)
+    case K.Radius{c, d}:
+      Radius.sound(~F, env, K.circ(es, c), d, w, h)
+    case K.Diameter{c, d}:
+      Diameter.sound(~F, env, K.circ(es, c), d, w, h)
+    case K.LineDistance{p, a, rev, d, l}:
+      LineDistance.sound(~F, env, K.pt(es, p), K.seg(es, a), rev, d, l, w, h)
+    case K.Angle{a, ra, b, rb, c, s}:
+      Angle.sound(~F, env, K.seg(es, a), ra, K.seg(es, b), rb, c, s, w, h)
+    case K.EqualLength{a, b}:
+      EqualLength.sound(~F, env, K.seg(es, a), K.seg(es, b), w, h)
+    case K.Perpendicular{a, b}:
+      Perpendicular.sound(~F, env, K.seg(es, a), K.seg(es, b), w, h)
+    case K.Parallel{a, b}:
+      Parallel.sound(~F, env, K.seg(es, a), K.seg(es, b), w, h)
+    case K.OnLine{p, a}:
+      OnLine.sound(~F, env, K.pt(es, p), K.seg(es, a), w, h)
+    case K.OnCircle{p, c}:
+      OnCircle.sound(~F, env, K.pt(es, p), K.circ(es, c), w, h)
+    case K.Midpoint{m, a}:
+      Midpoint.sound(~F, env, K.pt(es, m), K.seg(es, a), w, h)
+    case K.Symmetric{p, q, a}:
+      Symmetric.sound(~F, env, K.pt(es, p), K.pt(es, q), K.seg(es, a), w, h)
+
+# Every kind: the meaning implies the exact form
+def means_complete(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, K.Ent>, +k: K.Constraint, h: K.Constraint.means(~F, env, es, k)) -> K.Constraint.holds(~F, env, es, k):
+  match k:
+    case K.Coincident{a, b}:
+      Coincident.complete(~F, env, K.pt(es, a), K.pt(es, b), h)
+    case K.Horizontal{a, b}:
+      Horizontal.complete(~F, env, K.pt(es, a), K.pt(es, b), h)
+    case K.Vertical{a, b}:
+      Vertical.complete(~F, env, K.pt(es, a), K.pt(es, b), h)
+    case K.Concentric{a, b}:
+      Concentric.complete(~F, env, K.circ(es, a), K.circ(es, b), h)
+    case K.EqualRadius{a, b}:
+      EqualRadius.complete(~F, env, K.circ(es, a), K.circ(es, b), h)
+    case K.Fix{v, c}:
+      Fix.complete(~F, env, v, c, h)
+    case K.Distance{p, q, d}:
+      Distance.complete(~F, env, K.pt(es, p), K.pt(es, q), d, h)
+    case K.HDistance{p, q, d}:
+      HDistance.complete(~F, env, K.pt(es, p), K.pt(es, q), d, h)
+    case K.VDistance{p, q, d}:
+      VDistance.complete(~F, env, K.pt(es, p), K.pt(es, q), d, h)
+    case K.Radius{c, d}:
+      Radius.complete(~F, env, K.circ(es, c), d, h)
+    case K.Diameter{c, d}:
+      Diameter.complete(~F, env, K.circ(es, c), d, h)
+    case K.LineDistance{p, a, rev, d, l}:
+      LineDistance.complete(~F, env, K.pt(es, p), K.seg(es, a), rev, d, l, h)
+    case K.Angle{a, ra, b, rb, c, s}:
+      Angle.complete(~F, env, K.seg(es, a), ra, K.seg(es, b), rb, c, s, h)
+    case K.EqualLength{a, b}:
+      EqualLength.complete(~F, env, K.seg(es, a), K.seg(es, b), h)
+    case K.Perpendicular{a, b}:
+      Perpendicular.complete(~F, env, K.seg(es, a), K.seg(es, b), h)
+    case K.Parallel{a, b}:
+      Parallel.complete(~F, env, K.seg(es, a), K.seg(es, b), h)
+    case K.OnLine{p, a}:
+      OnLine.complete(~F, env, K.pt(es, p), K.seg(es, a), h)
+    case K.OnCircle{p, c}:
+      OnCircle.complete(~F, env, K.pt(es, p), K.circ(es, c), h)
+    case K.Midpoint{m, a}:
+      Midpoint.complete(~F, env, K.pt(es, m), K.seg(es, a), h)
+    case K.Symmetric{p, q, a}:
+      Symmetric.complete(~F, env, K.pt(es, p), K.pt(es, q), K.seg(es, a), h)
+
+# Entities
+# --------
+
+def ent_sound(~F: O.OField, +env: List<&2, O.C(F)>, e: K.Ent, h: K.Ent.holds(~F, env, e)) -> K.Ent.means(~F, env, e):
+  match e:
+    case K.Ent{id, cst, K.GPoint{x, y}}:
+      Unit{}
+    case K.Ent{id, cst, K.GSeg{p, q}}:
+      Unit{}
+    case K.Ent{id, cst, K.GCirc{c, r}}:
+      (hr, u) = h
+      hr
+    case K.Ent{id, cst, K.GArc{s, f, b}}:
+      (hb, u) = h
+      hb
+
+def ent_complete(~F: O.OField, +env: List<&2, O.C(F)>, e: K.Ent, h: K.Ent.means(~F, env, e)) -> K.Ent.holds(~F, env, e):
+  match e:
+    case K.Ent{id, cst, K.GPoint{x, y}}:
+      Unit{}
+    case K.Ent{id, cst, K.GSeg{p, q}}:
+      Unit{}
+    case K.Ent{id, cst, K.GCirc{c, r}}:
+      (h, Unit{})
+    case K.Ent{id, cst, K.GArc{s, f, b}}:
+      (h, Unit{})
+
+# Lists of equations and side conditions
+# --------------------------------------
+
+def zeros_l(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, E.QExpr>, +ys: List<&2, E.QExpr>, +h: K.Zeros(~F, env, K.cat(xs, ys))) -> K.Zeros(~F, env, xs):
+  match xs:
+    case Nil{}:
+      Unit{}
+    case Con{x, t}:
+      (+hx, +rest) = h
+      (hx, zeros_l(~F, env, t, ys, rest))
+
+def zeros_r(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, E.QExpr>, +ys: List<&2, E.QExpr>, +h: K.Zeros(~F, env, K.cat(xs, ys))) -> K.Zeros(~F, env, ys):
+  match xs:
+    case Nil{}:
+      h
+    case Con{x, t}:
+      (+hx, +rest) = h
+      zeros_r(~F, env, t, ys, rest)
+
+def zeros_cat(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, E.QExpr>, +ys: List<&2, E.QExpr>, +a: K.Zeros(~F, env, xs), +b: K.Zeros(~F, env, ys)) -> K.Zeros(~F, env, K.cat(xs, ys)):
+  match xs:
+    case Nil{}:
+      b
+    case Con{x, t}:
+      (+ha, +ra) = a
+      (ha, zeros_cat(~F, env, t, ys, ra, b))
+
+def sides_l(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, K.Side>, +ys: List<&2, K.Side>, +h: K.Sides(~F, env, K.cats(xs, ys))) -> K.Sides(~F, env, xs):
+  match xs:
+    case Nil{}:
+      Unit{}
+    case Con{K.Gt0{e}, t}:
+      (+hx, +rest) = h
+      (hx, sides_l(~F, env, t, ys, rest))
+    case Con{K.Ge0{e}, t}:
+      (+hx, +rest) = h
+      (hx, sides_l(~F, env, t, ys, rest))
+
+def sides_r(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, K.Side>, +ys: List<&2, K.Side>, +h: K.Sides(~F, env, K.cats(xs, ys))) -> K.Sides(~F, env, ys):
+  match xs:
+    case Nil{}:
+      h
+    case Con{K.Gt0{e}, t}:
+      (+hx, +rest) = h
+      sides_r(~F, env, t, ys, rest)
+    case Con{K.Ge0{e}, t}:
+      (+hx, +rest) = h
+      sides_r(~F, env, t, ys, rest)
+
+def sides_cat(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, K.Side>, +ys: List<&2, K.Side>, +a: K.Sides(~F, env, xs), +b: K.Sides(~F, env, ys)) -> K.Sides(~F, env, K.cats(xs, ys)):
+  match xs:
+    case Nil{}:
+      b
+    case Con{K.Gt0{e}, t}:
+      (+ha, +ra) = a
+      (ha, sides_cat(~F, env, t, ys, ra, b))
+    case Con{K.Ge0{e}, t}:
+      (+ha, +ra) = a
+      (ha, sides_cat(~F, env, t, ys, ra, b))
+
+# Entities and constraints of a sketch
+# ------------------------------------
+
+def ents_sound(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, K.Ent>, +h: K.Sides(~F, env, K.Sketch.sides.ents(xs))) -> K.Sketch.means.ents(~F, env, xs):
+  match xs:
+    case Nil{}:
+      Unit{}
+    case Con{+e, +t}:
+      (ent_sound(~F, env, e, sides_l(~F, env, K.Ent.sides(e), K.Sketch.sides.ents(t), h)),
+       ents_sound(~F, env, t, sides_r(~F, env, K.Ent.sides(e), K.Sketch.sides.ents(t), h)))
+
+def ents_complete(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, K.Ent>, h: K.Sketch.means.ents(~F, env, xs)) -> K.Sides(~F, env, K.Sketch.sides.ents(xs)):
+  match xs:
+    case Nil{}:
+      Unit{}
+    case Con{+e, +t}:
+      (he, ht) = h
+      sides_cat(~F, env, K.Ent.sides(e), K.Sketch.sides.ents(t), ent_complete(~F, env, e, he), ents_complete(~F, env, t, ht))
+
+def cons_sound(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, K.Ent>, cs: List<&2, K.Rec>, w: K.Sketch.wf.cons(es, cs), +hz: K.Zeros(~F, env, K.Sketch.eqs.go(es, cs)), +hs: K.Sides(~F, env, K.Sketch.sides.cons(es, cs))) -> K.Sketch.means.cons(~F, env, es, cs):
+  match cs:
+    case Nil{}:
+      Unit{}
+    case Con{K.Rec{id, True{}, +k}, +t}:
+      (wr, x) = w
+      (wk, wt) = x
+      cons_sound(~F, env, es, t, wt, hz, hs)
+    case Con{K.Rec{id, False{}, +k}, +t}:
+      (wr, x) = w
+      (wk, wt) = x
+      (means_sound(~F, env, es, k, wk, (zeros_l(~F, env, K.Constraint.eqs(es, k), K.Sketch.eqs.go(es, t), hz), sides_l(~F, env, K.Constraint.sides(es, k), K.Sketch.sides.cons(es, t), hs))),
+       cons_sound(~F, env, es, t, wt, zeros_r(~F, env, K.Constraint.eqs(es, k), K.Sketch.eqs.go(es, t), hz), sides_r(~F, env, K.Constraint.sides(es, k), K.Sketch.sides.cons(es, t), hs)))
+
+def cons_complete.k(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, K.Ent>, +k: K.Constraint, +t: List<&2, K.Rec>, hk: K.Constraint.holds(~F, env, es, k), rest: K.Both(K.Zeros(~F, env, K.Sketch.eqs.go(es, t)), K.Sides(~F, env, K.Sketch.sides.cons(es, t)))) -> K.Both(K.Zeros(~F, env, K.cat(K.Constraint.eqs(es, k), K.Sketch.eqs.go(es, t))), K.Sides(~F, env, K.cats(K.Constraint.sides(es, k), K.Sketch.sides.cons(es, t)))):
+  (zk, sk) = hk
+  (zt, st) = rest
+  (zeros_cat(~F, env, K.Constraint.eqs(es, k), K.Sketch.eqs.go(es, t), zk, zt), sides_cat(~F, env, K.Constraint.sides(es, k), K.Sketch.sides.cons(es, t), sk, st))
+
+def cons_complete(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, K.Ent>, cs: List<&2, K.Rec>, h: K.Sketch.means.cons(~F, env, es, cs)) -> K.Both(K.Zeros(~F, env, K.Sketch.eqs.go(es, cs)), K.Sides(~F, env, K.Sketch.sides.cons(es, cs))):
+  match cs:
+    case Nil{}:
+      (Unit{}, Unit{})
+    case Con{K.Rec{id, True{}, k}, t}:
+      cons_complete(~F, env, es, t, h)
+    case Con{K.Rec{id, False{}, +k}, +t}:
+      (hk, ht) = h
+      cons_complete.k(~F, env, es, k, t, means_complete(~F, env, es, k, hk), cons_complete(~F, env, es, t, ht))
+
+# Whole sketches
+# --------------
+
+def sketch_sound.k(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, K.Ent>, +cs: List<&2, K.Rec>, wc: K.Sketch.wf.cons(es, cs), hz: K.Zeros(~F, env, K.Sketch.eqs.go(es, cs)), +hs: K.Sides(~F, env, K.cats(K.Sketch.sides.ents(es), K.Sketch.sides.cons(es, cs)))) -> K.Sketch.means.ents(~F, env, es) & K.Sketch.means.cons(~F, env, es, cs):
+  (ents_sound(~F, env, es, sides_l(~F, env, K.Sketch.sides.ents(es), K.Sketch.sides.cons(es, cs), hs)),
+   cons_sound(~F, env, es, cs, wc, hz, sides_r(~F, env, K.Sketch.sides.ents(es), K.Sketch.sides.cons(es, cs), hs)))
+
+def sketch_sound(~F: O.OField, +env: List<&2, O.C(F)>, sk: K.Sketch, w: K.Sketch.wf(sk), h: K.Sketch.holds(~F, env, sk)) -> K.Sketch.means(~F, env, sk):
+  match sk:
+    case K.Sketch{vs, +es, +cs}:
+      (we, wc) = w
+      (hz, hs) = h
+      sketch_sound.k(~F, env, es, cs, wc, hz, hs)
+
+def sketch_complete.k(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, K.Ent>, +cs: List<&2, K.Rec>, se: K.Sides(~F, env, K.Sketch.sides.ents(es)), rest: K.Both(K.Zeros(~F, env, K.Sketch.eqs.go(es, cs)), K.Sides(~F, env, K.Sketch.sides.cons(es, cs)))) -> K.Zeros(~F, env, K.Sketch.eqs.go(es, cs)) & K.Sides(~F, env, K.cats(K.Sketch.sides.ents(es), K.Sketch.sides.cons(es, cs))):
+  (z, s) = rest
+  (z, sides_cat(~F, env, K.Sketch.sides.ents(es), K.Sketch.sides.cons(es, cs), se, s))
+
+def sketch_complete(~F: O.OField, +env: List<&2, O.C(F)>, sk: K.Sketch, h: K.Sketch.means(~F, env, sk)) -> K.Sketch.holds(~F, env, sk):
+  match sk:
+    case K.Sketch{vs, +es, +cs}:
+      (he, hc) = h
+      sketch_complete.k(~F, env, es, cs, ents_complete(~F, env, es, he), cons_complete(~F, env, es, cs, hc))

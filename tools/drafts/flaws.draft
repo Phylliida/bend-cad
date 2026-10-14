@@ -1,0 +1,201 @@
+# The commutative ring laws in every ordered field, stated as lib/zlaws.bend
+# states them for the integers ({target == source}, so a rewrite
+# %law(..) : P turns the source form into the target form), plus the facts
+# about 0 and negation that the axioms leave implicit. Each is proven from
+# the axioms of spec/field.bend; F is a template parameter.
+
+import Base
+import ../spec/field.bend as O
+
+# 0 + x = x
+def zero_add(~F: O.OField, +x: @T) -> {@A(@0, x) == x : @T}:
+  %O.add_comm(F)(x, @0) : {_ == x : @T}
+  %O.add_zero(F)(x) : {@A(x, @0) == _ : @T}
+  {==}
+
+# -x + x = 0
+def neg_add_l(~F: O.OField, +x: @T) -> {@A(@N(x), x) == @0 : @T}:
+  %O.add_comm(F)(x, @N(x)) : {_ == @0 : @T}
+  %O.add_neg(F)(x) : {@A(x, @N(x)) == _ : @T}
+  {==}
+
+# x + y = y + x
+def add_comm(~F: O.OField, +x: @T, +y: @T) -> {@A(x, y) == @A(y, x) : @T}:
+  %O.add_comm(F)(y, x) : {_ == @A(y, x) : @T}
+  {==}
+
+# x + (y + z) = (x + y) + z
+def add_assoc(~F: O.OField, +x: @T, +y: @T, +z: @T) -> {@A(x, @A(y, z)) == @A(@A(x, y), z) : @T}:
+  %O.add_assoc(F)(x, y, z) : {_ == @A(@A(x, y), z) : @T}
+  {==}
+
+# x + (y + z) = y + (x + z)
+def add_swap(~F: O.OField, +x: @T, +y: @T, +z: @T) -> {@A(x, @A(y, z)) == @A(y, @A(x, z)) : @T}:
+  %O.add_assoc(F)(y, x, z) : {@A(x, @A(y, z)) == _ : @T}
+  %O.add_comm(F)(x, y) : {@A(x, @A(y, z)) == @A(_, z) : @T}
+  %O.add_assoc(F)(x, y, z) : {_ == @A(@A(x, y), z) : @T}
+  {==}
+
+# (x + y) + (z + w) = (x + z) + (y + w)
+def add_shuffle(~F: O.OField, +x: @T, +y: @T, +z: @T, +w: @T) -> {@A(@A(x, y), @A(z, w)) == @A(@A(x, z), @A(y, w)) : @T}:
+  %add_assoc(~F, x, y, @A(z, w)) : {_ == @A(@A(x, z), @A(y, w)) : @T}
+  %add_swap(~F, z, y, w) : {@A(x, _) == @A(@A(x, z), @A(y, w)) : @T}
+  %add_assoc(~F, x, z, @A(y, w)) : {@A(x, @A(z, @A(y, w))) == _ : @T}
+  {==}
+
+# x = x + 0
+def add_zero(~F: O.OField, +x: @T) -> {x == @A(x, @0) : @T}:
+  %O.add_zero(F)(x) : {_ == @A(x, @0) : @T}
+  {==}
+
+# x * y = y * x
+def mul_comm(~F: O.OField, +x: @T, +y: @T) -> {@M(x, y) == @M(y, x) : @T}:
+  %O.mul_comm(F)(y, x) : {_ == @M(y, x) : @T}
+  {==}
+
+# x * (y * z) = (x * y) * z
+def mul_assoc(~F: O.OField, +x: @T, +y: @T, +z: @T) -> {@M(x, @M(y, z)) == @M(@M(x, y), z) : @T}:
+  %O.mul_assoc(F)(x, y, z) : {_ == @M(@M(x, y), z) : @T}
+  {==}
+
+# x * (y * z) = y * (x * z)
+def mul_swap(~F: O.OField, +x: @T, +y: @T, +z: @T) -> {@M(x, @M(y, z)) == @M(y, @M(x, z)) : @T}:
+  %O.mul_assoc(F)(y, x, z) : {@M(x, @M(y, z)) == _ : @T}
+  %O.mul_comm(F)(x, y) : {@M(x, @M(y, z)) == @M(_, z) : @T}
+  %O.mul_assoc(F)(x, y, z) : {_ == @M(@M(x, y), z) : @T}
+  {==}
+
+# (x * z) * (y * w) = (x * y) * (z * w)
+def mul_shuffle(~F: O.OField, +x: @T, +y: @T, +z: @T, +w: @T) -> {@M(@M(x, z), @M(y, w)) == @M(@M(x, y), @M(z, w)) : @T}:
+  %mul_assoc(~F, x, z, @M(y, w)) : {_ == @M(@M(x, y), @M(z, w)) : @T}
+  %mul_swap(~F, y, z, w) : {@M(x, _) == @M(@M(x, y), @M(z, w)) : @T}
+  %mul_assoc(~F, x, y, @M(z, w)) : {@M(x, @M(y, @M(z, w))) == _ : @T}
+  {==}
+
+# x = x * 1
+def mul_one(~F: O.OField, +x: @T) -> {x == @M(x, @1) : @T}:
+  %O.mul_one(F)(x) : {_ == @M(x, @1) : @T}
+  {==}
+
+# x = 1 * x
+def one_mul(~F: O.OField, +x: @T) -> {x == @M(@1, x) : @T}:
+  %O.mul_comm(F)(x, @1) : {x == _ : @T}
+  mul_one(~F, x)
+
+# x * y + x * z = x * (y + z)
+def mul_add_l(~F: O.OField, +x: @T, +y: @T, +z: @T) -> {@A(@M(x, y), @M(x, z)) == @M(x, @A(y, z)) : @T}:
+  %O.mul_add(F)(x, y, z) : {_ == @M(x, @A(y, z)) : @T}
+  {==}
+
+# x * z + y * z = (x + y) * z
+def mul_add_r(~F: O.OField, +x: @T, +y: @T, +z: @T) -> {@A(@M(x, z), @M(y, z)) == @M(@A(x, y), z) : @T}:
+  %O.mul_comm(F)(z, @A(x, y)) : {@A(@M(x, z), @M(y, z)) == _ : @T}
+  %mul_add_l(~F, z, x, y) : {@A(@M(x, z), @M(y, z)) == _ : @T}
+  %O.mul_comm(F)(x, z) : {@A(@M(x, z), @M(y, z)) == @A(_, @M(z, y)) : @T}
+  %O.mul_comm(F)(y, z) : {@A(@M(x, z), @M(y, z)) == @A(@M(x, z), _) : @T}
+  {==}
+
+# Zero and negation
+# -----------------
+
+# x + x = x only for x = 0
+def double_zero(~F: O.OField, +x: @T, h: {@A(x, x) == x : @T}) -> {x == @0 : @T}:
+  %O.add_zero(F)(x) : {_ == @0 : @T}
+  %O.add_neg(F)(x) : {@A(x, _) == @0 : @T}
+  %O.add_assoc(F)(x, x, @N(x)) : {_ == @0 : @T}
+  %Equal.sym(@T, @A(x, x), x, h) : {@A(_, @N(x)) == @0 : @T}
+  %O.add_neg(F)(x) : {@A(x, @N(x)) == _ : @T}
+  {==}
+
+# x * 0 + x * 0 = x * 0
+def mul_zero.h(~F: O.OField, +x: @T) -> {@A(@M(x, @0), @M(x, @0)) == @M(x, @0) : @T}:
+  %O.mul_add(F)(x, @0, @0) : {_ == @M(x, @0) : @T}
+  %add_zero(~F, @0) : {@M(x, _) == @M(x, @0) : @T}
+  {==}
+
+# 0 = x * 0
+def mul_zero(~F: O.OField, +x: @T) -> {@0 == @M(x, @0) : @T}:
+  Equal.sym(@T, @M(x, @0), @0, double_zero(~F, @M(x, @0), mul_zero.h(~F, x)))
+
+# 0 * x = 0
+def zero_mul(~F: O.OField, +x: @T) -> {@M(@0, x) == @0 : @T}:
+  %O.mul_comm(F)(x, @0) : {_ == @0 : @T}
+  %mul_zero(~F, x) : {_ == @0 : @T}
+  {==}
+
+# the negative is unique: a + b = 0 gives b = -a
+def neg_uniq(~F: O.OField, +a: @T, +b: @T, h: {@A(a, b) == @0 : @T}) -> {b == @N(a) : @T}:
+  %zero_add(~F, b) : {_ == @N(a) : @T}
+  %neg_add_l(~F, a) : {@A(_, b) == @N(a) : @T}
+  %add_assoc(~F, @N(a), a, b) : {_ == @N(a) : @T}
+  %Equal.sym(@T, @A(a, b), @0, h) : {@A(@N(a), _) == @N(a) : @T}
+  %O.add_zero(F)(@N(a)) : {@A(@N(a), @0) == _ : @T}
+  {==}
+
+# --x = x
+def neg_neg(~F: O.OField, +x: @T) -> {@N(@N(x)) == x : @T}:
+  Equal.sym(@T, x, @N(@N(x)), neg_uniq(~F, @N(x), x, neg_add_l(~F, x)))
+
+# 0 = -0
+def neg_zero(~F: O.OField) -> {@0 == @N(@0) : @T}:
+  neg_uniq(~F, @0, @0, O.add_zero(F)(@0))
+
+# (x + y) + (-x + -y) = 0
+def neg_add.sum(~F: O.OField, +x: @T, +y: @T) -> {@A(@A(x, y), @A(@N(x), @N(y))) == @0 : @T}:
+  %add_shuffle(~F, x, @N(x), y, @N(y)) : {_ == @0 : @T}
+  %O.add_zero(F)(@0) : {@A(@A(x, @N(x)), @A(y, @N(y))) == _ : @T}
+  %O.add_neg(F)(x) : {@A(@A(x, @N(x)), @A(y, @N(y))) == @A(_, @0) : @T}
+  %O.add_neg(F)(y) : {@A(@A(x, @N(x)), @A(y, @N(y))) == @A(@A(x, @N(x)), _) : @T}
+  {==}
+
+# -x + -y = -(x + y)
+def neg_add(~F: O.OField, +x: @T, +y: @T) -> {@A(@N(x), @N(y)) == @N(@A(x, y)) : @T}:
+  neg_uniq(~F, @A(x, y), @A(@N(x), @N(y)), neg_add.sum(~F, x, y))
+
+# x * y + -x * y = 0
+def neg_mul.sum(~F: O.OField, +x: @T, +y: @T) -> {@A(@M(x, y), @M(@N(x), y)) == @0 : @T}:
+  %zero_mul(~F, y) : {@A(@M(x, y), @M(@N(x), y)) == _ : @T}
+  %O.add_neg(F)(x) : {@A(@M(x, y), @M(@N(x), y)) == @M(_, y) : @T}
+  %mul_add_r(~F, x, @N(x), y) : {@A(@M(x, y), @M(@N(x), y)) == _ : @T}
+  {==}
+
+# -x * y = -(x * y)
+def neg_mul(~F: O.OField, +x: @T, +y: @T) -> {@M(@N(x), y) == @N(@M(x, y)) : @T}:
+  neg_uniq(~F, @M(x, y), @M(@N(x), y), neg_mul.sum(~F, x, y))
+
+# x * -y = -(x * y)
+def mul_neg(~F: O.OField, +x: @T, +y: @T) -> {@M(x, @N(y)) == @N(@M(x, y)) : @T}:
+  %O.mul_comm(F)(@N(y), x) : {_ == @N(@M(x, y)) : @T}
+  %O.mul_comm(F)(y, x) : {@M(@N(y), x) == @N(_) : @T}
+  neg_mul(~F, y, x)
+
+# -x * -y = x * y
+def neg_mul_neg(~F: O.OField, +x: @T, +y: @T) -> {@M(@N(x), @N(y)) == @M(x, y) : @T}:
+  %Equal.sym(@T, @M(@N(x), @N(y)), @N(@M(x, @N(y))), neg_mul(~F, x, @N(y))) : {_ == @M(x, y) : @T}
+  %Equal.sym(@T, @M(x, @N(y)), @N(@M(x, y)), mul_neg(~F, x, y)) : {@N(_) == @M(x, y) : @T}
+  neg_neg(~F, @M(x, y))
+
+# x - 0 = x
+def sub_zero(~F: O.OField, +x: @T) -> {@A(x, @N(@0)) == x : @T}:
+  %neg_zero(~F) : {@A(x, _) == x : @T}
+  %O.add_zero(F)(x) : {@A(x, @0) == _ : @T}
+  {==}
+
+# (1 + a) - (1 + b) = a - b
+def sub_succ(~F: O.OField, +a: @T, +b: @T) -> {@A(@A(@1, a), @N(@A(@1, b))) == @A(a, @N(b)) : @T}:
+  %neg_add(~F, @1, b) : {@A(@A(@1, a), _) == @A(a, @N(b)) : @T}
+  %add_shuffle(~F, @1, @N(@1), a, @N(b)) : {_ == @A(a, @N(b)) : @T}
+  %Equal.sym(@T, @A(@1, @N(@1)), @0, O.add_neg(F)(@1)) : {@A(_, @A(a, @N(b))) == @A(a, @N(b)) : @T}
+  zero_add(~F, @A(a, @N(b)))
+
+# (a - b)(c - d) = (ac + bd) - (ad + bc)
+def mul_sub(~F: O.OField, +a: @T, +b: @T, +c: @T, +d: @T) -> {@M(@A(a, @N(b)), @A(c, @N(d))) == @A(@A(@M(a, c), @M(b, d)), @N(@A(@M(a, d), @M(b, c)))) : @T}:
+  %mul_add_r(~F, a, @N(b), @A(c, @N(d))) : {_ == @A(@A(@M(a, c), @M(b, d)), @N(@A(@M(a, d), @M(b, c)))) : @T}
+  %mul_add_l(~F, a, c, @N(d)) : {@A(_, @M(@N(b), @A(c, @N(d)))) == @A(@A(@M(a, c), @M(b, d)), @N(@A(@M(a, d), @M(b, c)))) : @T}
+  %mul_add_l(~F, @N(b), c, @N(d)) : {@A(@A(@M(a, c), @M(a, @N(d))), _) == @A(@A(@M(a, c), @M(b, d)), @N(@A(@M(a, d), @M(b, c)))) : @T}
+  %Equal.sym(@T, @M(a, @N(d)), @N(@M(a, d)), mul_neg(~F, a, d)) : {@A(@A(@M(a, c), _), @A(@M(@N(b), c), @M(@N(b), @N(d)))) == @A(@A(@M(a, c), @M(b, d)), @N(@A(@M(a, d), @M(b, c)))) : @T}
+  %Equal.sym(@T, @M(@N(b), c), @N(@M(b, c)), neg_mul(~F, b, c)) : {@A(@A(@M(a, c), @N(@M(a, d))), @A(_, @M(@N(b), @N(d)))) == @A(@A(@M(a, c), @M(b, d)), @N(@A(@M(a, d), @M(b, c)))) : @T}
+  %Equal.sym(@T, @M(@N(b), @N(d)), @M(b, d), neg_mul_neg(~F, b, d)) : {@A(@A(@M(a, c), @N(@M(a, d))), @A(@N(@M(b, c)), _)) == @A(@A(@M(a, c), @M(b, d)), @N(@A(@M(a, d), @M(b, c)))) : @T}
+  %neg_add(~F, @M(a, d), @M(b, c)) : {@A(@A(@M(a, c), @N(@M(a, d))), @A(@N(@M(b, c)), @M(b, d))) == @A(@A(@M(a, c), @M(b, d)), _) : @T}
+  %add_comm(~F, @M(b, d), @N(@M(b, c))) : {@A(@A(@M(a, c), @N(@M(a, d))), _) == @A(@A(@M(a, c), @M(b, d)), @A(@N(@M(a, d)), @N(@M(b, c)))) : @T}
+  add_shuffle(~F, @M(a, c), @N(@M(a, d)), @M(b, d), @N(@M(b, c)))

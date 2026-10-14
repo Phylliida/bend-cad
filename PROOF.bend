@@ -13,6 +13,7 @@ import ./lib/qring.bend as QR
 import ./lib/q.bend as LQ
 import ./lib/dyadic.bend as LD
 import ./lib/big.bend as LB
+import ./lib/meaning.bend as MN
 
 # Positives
 # ---------
@@ -182,3 +183,26 @@ def Laws.big_neg_wf(bp, a, wa):
 
 def Laws.big_mul_wf(bp, a, b, hb, wa, wb):
   LB.mul_wf(bp, a, b, hb, wa, wb)
+
+# Meaning lemmas
+# --------------
+# Each holds in every ordered field (lib/meaning.bend); F is passed on as a
+# template argument.
+
+def Laws.means_sound(F, env, es, k, w, h):
+  MN.means_sound(~F, env, es, k, w, h)
+
+def Laws.means_complete(F, env, es, k, h):
+  MN.means_complete(~F, env, es, k, h)
+
+def Laws.ent_sound(F, env, e, h):
+  MN.ent_sound(~F, env, e, h)
+
+def Laws.ent_complete(F, env, e, h):
+  MN.ent_complete(~F, env, e, h)
+
+def Laws.sketch_sound(F, env, sk, w, h):
+  MN.sketch_sound(~F, env, sk, w, h)
+
+def Laws.sketch_complete(F, env, sk, h):
+  MN.sketch_complete(~F, env, sk, h)
