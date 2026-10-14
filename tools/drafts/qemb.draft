@@ -1,0 +1,147 @@
+# The rationals inside every ordered field: O.ofq sends n/d to n * (1/d).
+# It respects Q.eq and the operations, and it preserves and reflects the
+# order, so a rational fact decided by computation holds in every ordered
+# field. Each identity is one certificate (lib/ford.bend) with the
+# denominators' inverses as atoms; positivity of denominators is by
+# induction on the binary positive.
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ./flaws.bend as FL
+import ./fring.bend as FR
+import ./ford.bend as FO
+import ./zord.bend as ZO
+import ./qord.bend as LQO
+
+@ATOMS QE = a=O.ofz(~F, S.Q.num(x)),, b=O.ofz(~F, S.Q.num(y)),, p=O.ofp(~F, S.Q.den(x)),, q=O.ofp(~F, S.Q.den(y)),, i=O.inv(F, O.ofp(~F, S.Q.den(x))),, j=O.inv(F, O.ofp(~F, S.Q.den(y)))
+@ATOMS QA = a=O.ofz(~F, S.Q.num(x)),, b=O.ofz(~F, S.Q.num(y)),, p=O.ofp(~F, S.Q.den(x)),, q=O.ofp(~F, S.Q.den(y)),, i=O.inv(F, O.ofp(~F, S.Q.den(x))),, j=O.inv(F, O.ofp(~F, S.Q.den(y))),, k=O.inv(F, @M(O.ofp(~F, S.Q.den(x)), O.ofp(~F, S.Q.den(y))))
+
+# Positives are positive
+# ----------------------
+
+def ofp_pos(~F: O.OField, p: S.Pos) -> O.lt(F, @0, O.ofp(~F, p)):
+  match p:
+    case S.XH{}:
+      O.zero_lt_one(F)
+    case S.XO{+q}:
+      +h = ofp_pos(~F, q)
+      FO.pos_add(~F, O.ofp(~F, q), O.ofp(~F, q), h, FO.lt_le(~F, @0, O.ofp(~F, q), h))
+    case S.XI{+q}:
+      +h = ofp_pos(~F, q)
+      FO.pos_add(~F, @A(O.ofp(~F, q), O.ofp(~F, q)), @1, FO.pos_add(~F, O.ofp(~F, q), O.ofp(~F, q), h, FO.lt_le(~F, @0, O.ofp(~F, q), h)), FO.lt_le(~F, @0, @1, O.zero_lt_one(F)))
+
+def ofp_ne(~F: O.OField, +p: S.Pos) -> {O.ofp(~F, p) == @0 : @T} -> Empty:
+  FO.ne_of_gt(~F, O.ofp(~F, p), @0, ofp_pos(~F, p))
+
+# p (1/p) - 1 = 0
+def ofp_rel(~F: O.OField, +p: S.Pos) -> {@S(@M(O.ofp(~F, p), O.inv(F, O.ofp(~F, p))), @1) == @0 : @T}:
+  FO.inv_rel(~F, O.ofp(~F, p), ofp_ne(~F, p))
+
+# p q (1/(p q)) - 1 = 0
+def ofp2_rel(~F: O.OField, +p: S.Pos, +q: S.Pos) -> {@S(@M(@M(O.ofp(~F, p), O.ofp(~F, q)), O.inv(F, @M(O.ofp(~F, p), O.ofp(~F, q)))), @1) == @0 : @T}:
+  FO.inv_rel(~F, @M(O.ofp(~F, p), O.ofp(~F, q)), FO.ne_of_gt(~F, @M(O.ofp(~F, p), O.ofp(~F, q)), @0, O.lt_mul(F)(O.ofp(~F, p), O.ofp(~F, q))(ofp_pos(~F, p))(ofp_pos(~F, q))))
+
+# a positive integer is positive
+def ofz_pos(~F: O.OField, s: S.Z, h: ZO.pos(s)) -> O.lt(F, @0, O.ofz(~F, s)):
+  match s:
+    case S.Z0{}:
+      FO.absurd(O.lt(F, @0, @0), h)
+    case S.Zpos{p}:
+      ofp_pos(~F, p)
+    case S.Zneg{p}:
+      FO.absurd(O.lt(F, @0, @N(O.ofp(~F, p))), h)
+
+# Integer facts in F
+# ------------------
+
+def ofz_eq(~F: O.OField, +u: S.Z, +v: S.Z, h: {u == v : S.Z}) -> {O.ofz(~F, u) == O.ofz(~F, v) : @T}:
+  %h : {O.ofz(~F, u) == O.ofz(~F, _) : @T}
+  {==}
+
+# u p - v q, for u p = v q in Z
+def ofz_cross(~F: O.OField, +u: S.Z, +p: S.Pos, +v: S.Z, +q: S.Pos, h: {S.Z.mul(u, S.Zpos{p}) == S.Z.mul(v, S.Zpos{q}) : S.Z}) -> {@S(@M(O.ofz(~F, u), O.ofp(~F, p)), @M(O.ofz(~F, v), O.ofp(~F, q))) == @0 : @T}:
+  FO.sub_of_eq(~F, @M(O.ofz(~F, u), O.ofp(~F, p)), @M(O.ofz(~F, v), O.ofp(~F, q)),
+    Equal.trans(@T, @M(O.ofz(~F, u), O.ofp(~F, p)), O.ofz(~F, S.Z.mul(u, S.Zpos{p})), @M(O.ofz(~F, v), O.ofp(~F, q)), FR.ofz_mul(~F, u, S.Zpos{p}),
+      Equal.trans(@T, O.ofz(~F, S.Z.mul(u, S.Zpos{p})), O.ofz(~F, S.Z.mul(v, S.Zpos{q})), @M(O.ofz(~F, v), O.ofp(~F, q)), ofz_eq(~F, S.Z.mul(u, S.Zpos{p}), S.Z.mul(v, S.Zpos{q}), h),
+        Equal.sym(@T, @M(O.ofz(~F, v), O.ofp(~F, q)), O.ofz(~F, S.Z.mul(v, S.Zpos{q})), FR.ofz_mul(~F, v, S.Zpos{q})))))
+
+# u p - v q is the integer u p - v q
+def ofz_dif(~F: O.OField, +u: S.Z, +p: S.Pos, +v: S.Z, +q: S.Pos) -> {@S(@M(O.ofz(~F, u), O.ofp(~F, p)), @M(O.ofz(~F, v), O.ofp(~F, q))) == O.ofz(~F, S.Z.sub(S.Z.mul(u, S.Zpos{p}), S.Z.mul(v, S.Zpos{q}))) : @T}:
+  %FR.ofz_add(~F, S.Z.mul(u, S.Zpos{p}), S.Z.neg(S.Z.mul(v, S.Zpos{q}))) : {@S(@M(O.ofz(~F, u), O.ofp(~F, p)), @M(O.ofz(~F, v), O.ofp(~F, q))) == _ : @T}
+  %FR.ofz_neg(~F, S.Z.mul(v, S.Zpos{q})) : {@S(@M(O.ofz(~F, u), O.ofp(~F, p)), @M(O.ofz(~F, v), O.ofp(~F, q))) == @A(O.ofz(~F, S.Z.mul(u, S.Zpos{p})), _) : @T}
+  %FR.ofz_mul(~F, u, S.Zpos{p}) : {@S(@M(O.ofz(~F, u), O.ofp(~F, p)), @M(O.ofz(~F, v), O.ofp(~F, q))) == @A(_, @N(O.ofz(~F, S.Z.mul(v, S.Zpos{q})))) : @T}
+  %FR.ofz_mul(~F, v, S.Zpos{q}) : {@S(@M(O.ofz(~F, u), O.ofp(~F, p)), @M(O.ofz(~F, v), O.ofp(~F, q))) == @A(@M(O.ofz(~F, u), O.ofp(~F, p)), @N(_)) : @T}
+  {==}
+
+# 0 < b - a gives a < b
+def lt_of_sub(~F: O.OField, +a: @T, +b: @T, h: O.lt(F, @0, @S(b, a))) -> O.lt(F, a, b):
+  FO.lt_subst_l(~F, @A(@0, a), a, b, FL.zero_add(~F, a),
+    FO.lt_subst_r(~F, @A(@S(b, a), a), b, @A(@0, a), @ZEQ[b,, a | (b - a) + a | b],
+      O.lt_add(F)(@0, @S(b, a), a)(h)))
+
+# The embedding
+# -------------
+
+def ofq_eq(~F: O.OField, +x: S.Q, +y: S.Q, h: S.Q.eq(x, y)) -> {O.ofq(~F, x) == O.ofq(~F, y) : @T}:
+  @CERTEQ[QE | a*i | b*j | b*j ; p*i - 1 | -(a*i) ; q*j - 1 | i*j ; a*q - b*p || ofp_rel(~F, S.Q.den(x)), ofp_rel(~F, S.Q.den(y)), ofz_cross(~F, S.Q.num(x), S.Q.den(y), S.Q.num(y), S.Q.den(x), h)]
+
+def ofq_add(~F: O.OField, +x: S.Q, +y: S.Q) -> {O.ofq(~F, S.Q.add(x, y)) == @A(O.ofq(~F, x), O.ofq(~F, y)) : @T}:
+  %FR.ofz_add(~F, S.Z.mul(S.Q.num(x), S.Zpos{S.Q.den(y)}), S.Z.mul(S.Q.num(y), S.Zpos{S.Q.den(x)})) : {@M(_, O.inv(F, O.ofp(~F, S.Pos.mul(S.Q.den(x), S.Q.den(y))))) == @FT[QA | a*i + b*j] : @T}
+  %FR.ofz_mul(~F, S.Q.num(x), S.Zpos{S.Q.den(y)}) : {@M(@A(_, O.ofz(~F, S.Z.mul(S.Q.num(y), S.Zpos{S.Q.den(x)}))), O.inv(F, O.ofp(~F, S.Pos.mul(S.Q.den(x), S.Q.den(y))))) == @FT[QA | a*i + b*j] : @T}
+  %FR.ofz_mul(~F, S.Q.num(y), S.Zpos{S.Q.den(x)}) : {@M(@A(@FT[QA | a*q], _), O.inv(F, O.ofp(~F, S.Pos.mul(S.Q.den(x), S.Q.den(y))))) == @FT[QA | a*i + b*j] : @T}
+  %FR.ofz_mul(~F, S.Zpos{S.Q.den(x)}, S.Zpos{S.Q.den(y)}) : {@M(@FT[QA | a*q + b*p], O.inv(F, _)) == @FT[QA | a*i + b*j] : @T}
+  @CERTEQ[QA | (a*q + b*p)*k | a*i + b*j | -(a*q*k) ; p*i - 1 | -(b*p*k) ; q*j - 1 | a*i + b*j ; p*q*k - 1 || ofp_rel(~F, S.Q.den(x)), ofp_rel(~F, S.Q.den(y)), ofp2_rel(~F, S.Q.den(x), S.Q.den(y))]
+
+def ofq_mul(~F: O.OField, +x: S.Q, +y: S.Q) -> {O.ofq(~F, S.Q.mul(x, y)) == @M(O.ofq(~F, x), O.ofq(~F, y)) : @T}:
+  %FR.ofz_mul(~F, S.Q.num(x), S.Q.num(y)) : {@M(_, O.inv(F, O.ofp(~F, S.Pos.mul(S.Q.den(x), S.Q.den(y))))) == @FT[QA | (a*i)*(b*j)] : @T}
+  %FR.ofz_mul(~F, S.Zpos{S.Q.den(x)}, S.Zpos{S.Q.den(y)}) : {@M(@FT[QA | a*b], O.inv(F, _)) == @FT[QA | (a*i)*(b*j)] : @T}
+  @CERTEQ[QA | (a*b)*k | (a*i)*(b*j) | -(a*b*k*q*j) ; p*i - 1 | -(a*b*k) ; q*j - 1 | a*b*i*j ; p*q*k - 1 || ofp_rel(~F, S.Q.den(x)), ofp_rel(~F, S.Q.den(y)), ofp2_rel(~F, S.Q.den(x), S.Q.den(y))]
+
+def ofq_neg(~F: O.OField, +x: S.Q) -> {O.ofq(~F, S.Q.neg(x)) == @N(O.ofq(~F, x)) : @T}:
+  %FR.ofz_neg(~F, S.Q.num(x)) : {@M(_, O.inv(F, O.ofp(~F, S.Q.den(x)))) == @N(O.ofq(~F, x)) : @T}
+  FL.neg_mul(~F, O.ofz(~F, S.Q.num(x)), O.inv(F, O.ofp(~F, S.Q.den(x))))
+
+def ofq_zero(~F: O.OField) -> {O.ofq(~F, S.Q{S.Z0{}, S.XH{}}) == @0 : @T}:
+  FL.zero_mul(~F, O.inv(F, @1))
+
+def ofq_one(~F: O.OField) -> {O.ofq(~F, S.Q{S.Zpos{S.XH{}}, S.XH{}}) == @1 : @T}:
+  O.mul_inv(F)(@1)(ofp_ne(~F, S.XH{}))
+
+# x < y gives ofq x < ofq y: ofq y - ofq x is the cross difference over p q
+def ofq_lt(~F: O.OField, +x: S.Q, +y: S.Q, h: S.Q.lt(x, y)) -> O.lt(F, O.ofq(~F, x), O.ofq(~F, y)):
+  +d = FO.lt_subst_r(~F, O.ofz(~F, LQO.dif(x, y)), @FT[QE | b*p - a*q], @0,
+    Equal.sym(@T, @FT[QE | b*p - a*q], O.ofz(~F, LQO.dif(x, y)), ofz_dif(~F, S.Q.num(y), S.Q.den(x), S.Q.num(x), S.Q.den(y))),
+    ofz_pos(~F, LQO.dif(x, y), LQO.lt_dif(x, y, h)))
+  +ij = O.lt_mul(F)(@FT[QE | i], @FT[QE | j])(FO.inv_pos(~F, @FT[QE | p], ofp_pos(~F, S.Q.den(x))))(FO.inv_pos(~F, @FT[QE | q], ofp_pos(~F, S.Q.den(y))))
+  lt_of_sub(~F, O.ofq(~F, x), O.ofq(~F, y),
+    FO.lt_subst_r(~F, @FT[QE | (b*p - a*q)*(i*j)], @FT[QE | b*j - a*i], @0,
+      @CERTEQ[QE | (b*p - a*q)*(i*j) | b*j - a*i | b*j ; p*i - 1 | -(a*i) ; q*j - 1 || ofp_rel(~F, S.Q.den(x)), ofp_rel(~F, S.Q.den(y))],
+      O.lt_mul(F)(@FT[QE | b*p - a*q], @FT[QE | i*j])(d)(ij)))
+
+# and back: ofq x < ofq y gives x < y
+def ofq_lt_rev.go(~F: O.OField, +x: S.Q, +y: S.Q, +h: O.lt(F, O.ofq(~F, x), O.ofq(~F, y)), t: Or(S.Q.lt(x, y), Or(S.Q.eq(x, y), S.Q.lt(y, x)))) -> S.Q.lt(x, y):
+  match t:
+    case Inl{l}:
+      l
+    case Inr{Inl{e}}:
+      FO.absurd(S.Q.lt(x, y), O.lt_irrefl(F)(O.ofq(~F, y))(FO.lt_subst_l(~F, O.ofq(~F, x), O.ofq(~F, y), O.ofq(~F, y), ofq_eq(~F, x, y, e), h)))
+    case Inr{Inr{g}}:
+      FO.absurd(S.Q.lt(x, y), O.lt_irrefl(F)(O.ofq(~F, x))(O.lt_trans(F)(O.ofq(~F, x), O.ofq(~F, y), O.ofq(~F, x))(h)(ofq_lt(~F, y, x, g))))
+
+def ofq_lt_rev(~F: O.OField, +x: S.Q, +y: S.Q, +h: O.lt(F, O.ofq(~F, x), O.ofq(~F, y))) -> S.Q.lt(x, y):
+  ofq_lt_rev.go(~F, x, y, h, LQO.q_lt_total(x, y))
+
+# ofq x = ofq y gives x = y
+def ofq_eq_rev.go(~F: O.OField, +x: S.Q, +y: S.Q, +e: {O.ofq(~F, x) == O.ofq(~F, y) : @T}, t: Or(S.Q.lt(x, y), Or(S.Q.eq(x, y), S.Q.lt(y, x)))) -> S.Q.eq(x, y):
+  match t:
+    case Inl{l}:
+      FO.absurd(S.Q.eq(x, y), O.lt_irrefl(F)(O.ofq(~F, y))(FO.lt_subst_l(~F, O.ofq(~F, x), O.ofq(~F, y), O.ofq(~F, y), e, ofq_lt(~F, x, y, l))))
+    case Inr{Inl{q}}:
+      q
+    case Inr{Inr{g}}:
+      FO.absurd(S.Q.eq(x, y), O.lt_irrefl(F)(O.ofq(~F, y))(FO.lt_subst_r(~F, O.ofq(~F, x), O.ofq(~F, y), O.ofq(~F, y), e, ofq_lt(~F, y, x, g))))
+
+def ofq_eq_rev(~F: O.OField, +x: S.Q, +y: S.Q, +e: {O.ofq(~F, x) == O.ofq(~F, y) : @T}) -> S.Q.eq(x, y):
+  ofq_eq_rev.go(~F, x, y, e, LQO.q_lt_total(x, y))

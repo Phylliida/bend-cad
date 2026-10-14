@@ -345,6 +345,76 @@ law qring_eq:
   for  h: {R.norm(E.ZMul{QR.trn(e1), QR.trd(e2)}) == R.norm(E.ZMul{QR.trn(e2), QR.trd(e1)}) : List<&2, R.ZTerm>}
   S.Q.eq(E.qeval(env, e1), E.qeval(env, e2))
 
+# The rationals in every ordered field
+# ------------------------------------
+# O.ofq (spec/field.bend) sends n/d to n * (1/d) in an ordered field F. It
+# is an embedding of ordered fields: it respects Q.eq and the operations,
+# and it preserves and reflects the order. So an identity or inequality
+# between rationals, decided by computation, holds in every ordered field,
+# where the exact solution lives.
+
+# LAW: equal rationals land on the same element
+law ofq_eq:
+  for ~F: O.OField
+  for +x: S.Q
+  for +y: S.Q
+  for  h: S.Q.eq(x, y)
+  {O.ofq(~F, x) == O.ofq(~F, y) : O.C(F)}
+
+# LAW: ofq(x + y) = ofq x + ofq y
+law ofq_add:
+  for ~F: O.OField
+  for +x: S.Q
+  for +y: S.Q
+  {O.ofq(~F, S.Q.add(x, y)) == O.add(F, O.ofq(~F, x), O.ofq(~F, y)) : O.C(F)}
+
+# LAW: ofq(x * y) = ofq x * ofq y
+law ofq_mul:
+  for ~F: O.OField
+  for +x: S.Q
+  for +y: S.Q
+  {O.ofq(~F, S.Q.mul(x, y)) == O.mul(F, O.ofq(~F, x), O.ofq(~F, y)) : O.C(F)}
+
+# LAW: ofq(-x) = -ofq x
+law ofq_neg:
+  for ~F: O.OField
+  for +x: S.Q
+  {O.ofq(~F, S.Q.neg(x)) == O.neg(F, O.ofq(~F, x)) : O.C(F)}
+
+# LAW: ofq 0 = 0
+law ofq_zero:
+  for ~F: O.OField
+  {O.ofq(~F, S.Q{S.Z0{}, S.XH{}}) == O.zero(F) : O.C(F)}
+
+# LAW: ofq 1 = 1
+law ofq_one:
+  for ~F: O.OField
+  {O.ofq(~F, S.Q{S.Zpos{S.XH{}}, S.XH{}}) == O.one(F) : O.C(F)}
+
+# LAW: x < y gives ofq x < ofq y
+law ofq_lt:
+  for ~F: O.OField
+  for +x: S.Q
+  for +y: S.Q
+  for  h: S.Q.lt(x, y)
+  O.lt(F, O.ofq(~F, x), O.ofq(~F, y))
+
+# LAW: ofq x < ofq y gives x < y
+law ofq_lt_rev:
+  for ~F: O.OField
+  for +x: S.Q
+  for +y: S.Q
+  for +h: O.lt(F, O.ofq(~F, x), O.ofq(~F, y))
+  S.Q.lt(x, y)
+
+# LAW: ofq x = ofq y gives x = y
+law ofq_eq_rev:
+  for ~F: O.OField
+  for +x: S.Q
+  for +y: S.Q
+  for +e: {O.ofq(~F, x) == O.ofq(~F, y) : O.C(F)}
+  S.Q.eq(x, y)
+
 # Dyadics
 # -------
 # A dyadic m/2^e means the rational D.toq; its operations are the rational

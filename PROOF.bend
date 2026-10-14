@@ -12,6 +12,7 @@ import ./lib/zring.bend as R
 import ./lib/qring.bend as QR
 import ./lib/q.bend as LQ
 import ./lib/qord.bend as LQO
+import ./lib/qemb.bend as QE
 import ./lib/dyadic.bend as LD
 import ./lib/big.bend as LB
 import ./lib/meaning.bend as MN
@@ -162,6 +163,35 @@ def Laws.q_mul_add(x, y, z):
 
 def Laws.q_mul_inv(x, h):
   LQ.q_mul_inv(x, h)
+
+# The rationals in every ordered field
+
+def Laws.ofq_eq(F, x, y, h):
+  QE.ofq_eq(~F, x, y, h)
+
+def Laws.ofq_add(F, x, y):
+  QE.ofq_add(~F, x, y)
+
+def Laws.ofq_mul(F, x, y):
+  QE.ofq_mul(~F, x, y)
+
+def Laws.ofq_neg(F, x):
+  QE.ofq_neg(~F, x)
+
+def Laws.ofq_zero(F):
+  QE.ofq_zero(~F)
+
+def Laws.ofq_one(F):
+  QE.ofq_one(~F)
+
+def Laws.ofq_lt(F, x, y, h):
+  QE.ofq_lt(~F, x, y, h)
+
+def Laws.ofq_lt_rev(F, x, y, h):
+  QE.ofq_lt_rev(~F, x, y, h)
+
+def Laws.ofq_eq_rev(F, x, y, e):
+  QE.ofq_eq_rev(~F, x, y, e)
 
 # Dyadics
 # -------
