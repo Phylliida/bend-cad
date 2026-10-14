@@ -275,9 +275,13 @@ step that needs it.
   one variable short. By design, noted in comments: uniqueness is given
   the radius-0 coordinates; degenerate geometry (collapsed segments) is
   allowed (sk-03). `tools/lawsync.py` (in the gate) keeps ROADMAP's
-  statements identical to their gated restatements. Open from the audit:
-  no gated test has a plan box with variable sides (circle r > 0) checked
-  jointly; `plan_unique`/`sketch_unique` have no concrete instance.
+  statements identical to their gated restatements. `tests/circle_plan_demo.bend`
+  (from the audit): a circle with a variable radius fixed by a Radius
+  dimension, P on it; the plan solves r exactly (a 1 × 1 block, radius 0),
+  then P with r as a parameter; the circle's side r > 0 is certified over
+  the plan's box; refused: a box where r may reach 0, and radius 0. Still
+  open from the audit: `plan_unique`/`sketch_unique` have no concrete
+  instance (their hypotheses are met through the exists laws).
 - For Danielle: review the five statements; decide the trusted-base
   option (recommended: cert_* and cert_exists become lib lemmas, rbnd and
   vsub move to spec/box.bend).
