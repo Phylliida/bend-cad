@@ -1,4 +1,4 @@
-# bend-cad — Design v0.11 (draft; exact by default; sk-05b built: certified blocks have exactly one zero in ℝ)
+# bend-cad — Design v0.12 (draft; exact by default; sk-06 proven: a checked plan gives exactly one solution in its box)
 
 A formally verified 2D sketch constraint solver in Bend 2, aiming at Onshape /
 FreeCAD sketcher parity, feeding an implicit-function (SDF) modeling pipeline.
@@ -634,6 +634,35 @@ certificate, every complete ordered field has a positive b with b² = 5. (The fi
 step to ℝ on paper, is replaced; it would need two more laws: a
 quantitative `cert_fix` and a bound on how N moves with the parameters.)
 
+*Composition as built (sk-06, 2026-10-14; statements await review).* The
+composed claim mentions only the system's equations, a box (a center and a
+radius per variable in K; radius 0 pins a variable) and the side
+conditions (`spec/box.bend`: `inbox`); the plan is input to the untrusted
+checker and never appears in it. Three laws, stated in ROADMAP.bend and
+proven in `lib/planpf.bend` (gated through `tests/plan_laws.bend`):
+- `plan_exists`: in every complete ordered field the box holds a solution;
+- `plan_unique`: in every ordered field it holds at most one (list
+  equality of the two assignments);
+- `box_sides`: every point of the box meets the side conditions the
+  checker certified (ball enclosure of each side over the box, its lower
+  end > 0 or ≥ 0, compared in K).
+
+The checker (`lib/plan.bend`) reads the system in block order: variables
+0..np−1 pinned, then each block's n unknowns and n equations in turn;
+parameters are a sparse list of earlier variables, renumbered locally
+after the unknowns. Per block it checks: the equations use only earlier
+variables and its own unknowns; the renumbered block's certificate passes
+`check`; the certificate's box is the plan's box on the block's unknowns;
+each parameter ball contains the plan's box on that variable
+(|c_v − pc_k| + r_v ≤ pr_k); blocks end within the box, and blocks,
+equations and variables run out together. Proofs: a substitution law
+(renumbered equation at y ++ z equals the original at p ++ y), prefixes
+(later blocks leave earlier equations' values), and induction over the
+blocks with cert_exists / cert_unique. Tested on a two-block chain
+(`tests/plan_demo.bend`, gated; six malformed plans rejected natively).
+A system in another variable or equation order needs a renumbering layer
+first (a permutation in the plan; same statement), not built yet.
+
 ### 8.5 Precision and its cost
 
 Each block's ball radius feeds the next block's parameter radius, so radii grow
@@ -848,7 +877,7 @@ random sketches.
 | sk-04 | Rational, dyadic and matrix library (∞-norms, products); Q order laws; canonical ℚ as an ordered-field instance (optional) | sk-02 | laws closed — **done** (2026-10-13; 37 laws: ℚ order, ℚ in every ordered field, gcd reduction, canonical ℚ, vectors and matrices; runtime bigint dyadics deferred to sk-05, §16) |
 | sk-05 | Parametric block certificate (§8.3), mean-value method (Q12): generic K matrix library, slopes, ball arithmetic, checker, the six `cert_*` laws | sk-04 | **done (2026-10-14): 98 laws, gate green (~15 s)** |
 | sk-05b | Complete ordered fields (Q18): template (Archimedean + Cauchy with a modulus), axioms cross-checked against mathlib's ℝ in Lean, Banach's theorem; exactly one zero per block | sk-05 | **done (2026-10-14): `cert_exists`, 99 laws; Lean cross-check passes** |
-| sk-06 | Composition theorem (§8.4, exactly one solution in a complete ordered field), side conditions (§8.6), optional denominator clearing for D (Q19) | sk-05, sk-05b | laws closed |
+| sk-06 | Composition theorem (§8.4, exactly one solution in a complete ordered field), side conditions (§8.6), optional denominator clearing for D (Q19) | sk-05, sk-05b | **proven, awaiting review (2026-10-14)**: plan_exists, plan_unique, box_sides in ROADMAP; renumbering layer and denominator clearing open |
 | sk-07 | Core vocabulary §5.1 + meaning lemmas | sk-03, sk-06 | laws closed — **meaning lemmas proven** in every ordered field (2026-10-13); remaining: §8.6 side-condition certification for the vocabulary (with sk-06), line–line / point–circle / circle–circle distances |
 | sk-08 | `accept_sound`: certified, untouched, flips, diagnostics | sk-07 | law closed |
 | sk-09 | Proposer v1: pinning, decomposition, KKT/LM, refinement, certificate emission | sk-P1, sk-07 | fixture sketches certified; certify-on-commit time target set from sk-P1 |
@@ -976,10 +1005,15 @@ sk-02 and sk-03 can run in parallel after sk-01.
   so the final theorem speaks about the true π.
 
 **Open for Danielle:**
-- **Trusted base:** the audit suggests the `cert_*` laws could become
-  untrusted library lemmas, with only the composed theorem trusted (then
-  `newton`, Y, q and `setv` need not be trusted). Natural to decide at sk-06,
-  when the composed theorem exists.
+- **sk-06 statements** (ROADMAP.bend): `plan_exists`, `plan_unique`,
+  `box_sides`, and `spec/box.bend`. All three are proven; they move to
+  LAWS.bend once reviewed.
+- **Trusted base:** the composed claim now exists and mentions no block,
+  certificate or Newton map, so the `cert_*` laws and `cert_exists` could
+  become untrusted library lemmas, with `spec/cert.bend` untrusted except
+  `rbnd` and `vsub` (which `inbox` uses; they would move to
+  `spec/box.bend`). Recommendation: do it. The trusted spec shrinks to
+  what the claim says, and the block laws stay proven as lemmas.
 
 ---
 
@@ -1037,6 +1071,11 @@ sk-02 and sk-03 can run in parallel after sk-01.
 ---
 
 ## 19. Changelog
+
+**v0.11 → v0.12 (sk-06 proven, awaiting review):**
+- §8.4: composition as built (box claim, block-ordered checker,
+  substitution law); §15: sk-06 status; §16: sk-06 review and the
+  trusted-base recommendation.
 
 **v0.10 → v0.11 (sk-05b done):**
 - §8.4: complete ordered fields as built (`spec/real.bend`, Skolem form),
