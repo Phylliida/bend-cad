@@ -168,11 +168,20 @@ laws):
 ## Next
 
 **sk-05** (parametric block certificate, §8.3), with sk-06 (composition,
-§8.6 side conditions over balls). Two questions for Danielle first
-(DESIGN §16): **Q16** state certificates for every ordered field (like the
-meanings; the matrix library already is), and **Q17** the checker's runtime
-numbers (bigint dyadics refining `spec/mat.bend`, or fixed point at one
-exponent per block as in sk-P1). Q12 (mean-value method) is mine, in sk-05.
+§8.6 side conditions over balls). Danielle answered (2026-10-13, DESIGN §16):
+**Q16 yes**, state certificates for every ordered field. **Q17**: "the
+checker runs on the same numbers as everything else, so it can deal with
+irrationals". Claude's reading, sent to Danielle to confirm: compute on the
+spec dyadics `D` (bigint mantissas at runtime refining `D`), statements in
+every F; irrationals enter per §7 (algebraic constants as unknowns pinned by
+their minimal polynomial and sign; transcendental ones as parameters in a
+ball). A checker cannot compute in an abstract F (it must decide
+inequalities). If Danielle meant exact irrational arithmetic in the checker,
+that is a bigger change (§2 ruled it out at depth); ask.
+
+First sk-05 step: draft the block-certificate law statement (over every F,
+dyadic certificate data, polynomial system f(y, z)) and the checker shape,
+for Danielle's review before proving; decide Q12 (mean-value method) there.
 
 sk-07's remaining items: line–line / point–circle / circle–circle distances
 (new kinds: spec arms, rerun `tools/mforms.py`, add per-kind lemmas), §8.6

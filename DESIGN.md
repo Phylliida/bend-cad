@@ -503,7 +503,7 @@ entries are at most |B|'s. The product law: ‖Mv‖ ≤ ‖B‖·s for M majori
 B and ‖v‖ ≤ s, so a field matrix bounded entrywise by a dyadic one (the
 Taylor bounds of J over the ball) is handled like a dyadic one.
 
-### 8.4 Composition theorem (ℚ only)
+### 8.4 Composition theorem (in every ordered field, Q16)
 
 By induction over blocks:
 - **Approximate solvability:** ∀k. ∃ rational x in the product of the
@@ -788,18 +788,22 @@ sk-02 and sk-03 can run in parallel after sk-01.
 - **Q12** Mean-value method (polynomial slopes vs selective quadratization),
   from sk-P1 data.
 
-**Proposed in sk-04 (for Danielle):**
-- **Q16** State the block certificate (§8.3) and composition (§8.4) for every
-  ordered field F, like the meanings (Q13), instead of over ℚ only. The
-  contraction inequalities then hold in ℝ itself, where Banach's fixed point
-  gives the exact solution (the same meta-level step as before, but simpler),
-  and ℚ is the instance `ofield_exists` builds. sk-04's matrix library is
-  already stated this way.
-- **Q17** Runtime numbers for the checker: per-entry dyadics over bigints
-  (refining `spec/mat.bend`'s dyadic copy, as sk-02 refines `Z`) or
-  fixed-point integers at one exponent per block (as the sk-P1 prototype did,
-  which avoids exponent alignment). Decide in sk-05 with the checker; the
-  spec-level laws do not change.
+**Decided after sk-04 (Danielle, 2026-10-13):**
+- **Q16** The block certificate (§8.3) and composition (§8.4) are stated
+  for every ordered field F, like the meanings (Q13). The contraction then
+  holds in ℝ itself, where Banach's fixed point gives the exact solution, and
+  ℚ is the instance `ofield_exists` builds. The matrix library already is.
+- **Q17** The checker runs on the same numbers as everything else (Danielle:
+  "so it can deal with irrationals"). Claude's reading, to confirm: compute
+  on the spec dyadics `D` that `spec/mat.bend` already uses (bigint
+  mantissas at runtime, refining `D` as sk-02 refines `Z`), not a separate
+  fixed-point format; state everything in every F. A checker cannot compute
+  in an abstract field (it must decide inequalities), so irrationals enter as
+  §7 already says: algebraic constants as unknowns pinned by their minimal
+  polynomial and a sign (√2: s² − 2 = 0, s > 0), transcendental ones as
+  parameters in a ball of proven radius. With Q16 the theorem then speaks
+  about the true irrational value in ℝ. Exact irrational arithmetic inside
+  the checker was ruled out in §2 (degree 2^k at depth k).
 
 ---
 
@@ -863,8 +867,9 @@ sk-02 and sk-03 can run in parallel after sk-01.
   gcd reduction (`q_reduce`), canonical ℚ as an ordered field
   (`ofield_exists`). §8.3: vectors and matrices as built (`spec/mat.bend`,
   20 laws). §14: `spec/mat.bend` trusted. §15: sk-04 done (92 laws). §16:
-  Q16 (certificates in every ordered field) and Q17 (checker runtime
-  numbers) proposed.
+  Q16 (certificates in every ordered field) decided yes; Q17 (checker
+  numbers: the spec dyadics, bigint mantissas at runtime) recorded with
+  Claude's reading, to confirm.
 
 **v0.7 → v0.8 (meaning lemmas proven):**
 - §5.5: the six meaning laws are proven in every ordered field (moved from
