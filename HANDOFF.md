@@ -245,7 +245,7 @@ ROADMAP.bend (`plan_exists`, `plan_unique`, `box_sides`; `spec/box.bend`
 `inbox`), proofs in `lib/planpf.bend`, gated via `tests/plan_laws.bend`;
 checker `lib/plan.bend` (any variable/equation order, via the plan's vp
 and ep lists), two-block chain test
-`tests/plan_demo.bend` (+ `tools/gen_chain.py`, `proto/chain_run.bend`:
+`tests/plan_demo.bend` (+ `tools/gen_chain.py`, `proto/plan_run.bend`:
 six malformed plans rejected). Sabotage: weakening the center match, the
 pins' radius 0, or the parameter containment each breaks the proof at the
 step that needs it.

@@ -89,3 +89,41 @@ Conditioning sweep (n = 25, framework flattened; drawing noise scaled with it):
 - The ink-metric proposer, pinning and block decomposition in Bend (the
   cyclic-block x̃ and Y came from Python).
 - An F32 Gauss–Jordan in Bend (emulated in Python here).
+
+## The verified checker on the chain (sk-06, 2026-10-14)
+
+`tools/gen_plan_chain.py` writes the spike's chains (same strips, same seed)
+as a **sketch** (points, driving `Distance` constraints) plus a plan to
+`proto/plan_chain.txt`; `proto/plan_chain_run.bend` builds the sketch at
+run time and runs the verified `PL.check` on `Sketch.eqs(sk)` and
+`PL.check_sides` on `Sketch.sides(sk)`, over the dyadics with the spec's
+binary numbers (no limbs). Centers are the solution rounded to 2^−P nm, Y
+has 32 significant bits, q = 1/2; radii come from an exact-rational
+emulation of the §8.3 conditions (Δ doubled, +1%, 8 significant bits).
+Native, one thread, parsing and sketch construction included:
+
+| chain | N | P | last radius | result | time |
+|---|---|---|---|---|---|
+| well | 30 | 64 | 2^−40.9 nm | accepted | 0.24 s |
+| well | 30 | 96 | 2^−73.7 nm | accepted | 0.34 s |
+| well | 30 | 128 | 2^−104.7 nm | accepted | 0.45 s |
+| flat | 30 | 64 | — | no contracting radius at block 28 | — |
+| flat | 30 | 96 | 2^−9.2 nm | accepted | 0.35 s |
+| flat | 30 | 128 | 2^−41.8 nm | accepted | 0.45 s |
+| flat | 30 | 192 | 2^−106.9 nm | accepted | 0.70 s |
+| well | 100 | 128 | 2^−47.4 nm | accepted | 1.5 s |
+| flat | 100 | 448 | 2^−151.5 nm | accepted | 7.5 s |
+| well | 300 | 320 | 2^−76.5 nm | accepted | 14.2 s |
+
+Refused, as they should be: any one block's radius halved (block 0, 29,
+or 20 of the flat chain), and one center moved by 2^−48 nm. So the radii
+are within 2× of what the checker certifies.
+
+- **Precision:** ~0.8 bits per step (well) and ~2.8 (flat), below the
+  spike's 1.3 and 4.0: the componentwise conditions (§8.3, entries
+  combined before any maximum) track each coordinate rather than the
+  worst one. At depth 30 the well chain is under 1 nm from P = 64 and the
+  flat one from P = 96.
+- **Cost:** within 2–4× of the spike's limb prototype at depth 30, with
+  no runtime bigints: about linear in depth and a little above linear in
+  P. A limb K (an `Emb` like `demb`) is a speedup, not a blocker.
