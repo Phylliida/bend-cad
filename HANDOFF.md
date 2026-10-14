@@ -60,7 +60,6 @@ laws):
   reusable `Data` proof object. Destructure with `(+k, e) = h`.
 - Python `%` formatting collides with Bend's `%e :` rewrites in generator
   scripts: use `@@name@@` placeholders or concatenation.
-
 - `%e : P` replaces the *right* side of `e` at the `_` holes with its left
   side, so lemmas are stated `{target == source}`. When the wrong side is in
   the goal, rewrite the other side of the goal or use `Equal.sym`.
@@ -76,6 +75,11 @@ laws):
   reused.
 
 ## Next
+
+**Danielle chose sk-03 next (2026-10-13)**, after a context roll. Start by
+re-reading DESIGN §4–§5 (typed IR, exact equation forms) and §11 (acceptance),
+then draft the IR and meaning-lemma *statements* for Danielle's review; the
+LAWS review is sk-03's exit criterion.
 
 DESIGN §15: **sk-03** (typed IR, exact equation forms, meaning-lemma
 statements; needs Danielle's LAWS review) and **sk-04** (rational, dyadic and
