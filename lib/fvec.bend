@@ -1,0 +1,232 @@
+# Entrywise bounds on vectors and matrices in every ordered field (the
+# certificate's box arithmetic in F). Vectors are lists read with trailing
+# zeros. Untrusted: proofs only.
+#   C.rbnd(d, r): |d_i| <= r_i            (spec/cert.bend)
+#   rle(u, w):    u_i <= w_i
+#   rnn(w):       0 <= w_i
+#   mbnd(M, B):   |M_ij| <= B_ij
+#   mnn(B):       0 <= B_ij
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ../spec/mat.bend as M
+import ../spec/cert.bend as C
+import ./flaws.bend as FL
+import ./fring.bend as FR
+import ./ford.bend as FO
+import ./fmat.bend as FM
+import ./dmat.bend as DM
+
+# Definitions
+# -----------
+
+# u_i <= w_i for every i
+def rle(~F: O.OField, u: M.Vec(~F), w: M.Vec(~F)) -> Data:
+  match u w:
+    case Nil{} Nil{}:
+      Unit
+    case Nil{} Con{b, ws}:
+      M.Both(O.le(~F, O.zero(F), b), rle(~F, Nil{}, ws))
+    case Con{a, us} Nil{}:
+      M.Both(O.le(~F, a, O.zero(F)), rle(~F, us, Nil{}))
+    case Con{a, us} Con{b, ws}:
+      M.Both(O.le(~F, a, b), rle(~F, us, ws))
+
+# 0 <= w_i for every i
+def rnn(~F: O.OField, w: M.Vec(~F)) -> Data:
+  rle(~F, Nil{}, w)
+
+# |M_ij| <= B_ij for every i, j
+def mbnd(~F: O.OField, m: M.Mat(~F), b: M.Mat(~F)) -> Data:
+  match m b:
+    case Nil{} b:
+      Unit
+    case Con{r, rs} Nil{}:
+      M.Both(C.rbnd(~F, r, Nil{}), mbnd(~F, rs, Nil{}))
+    case Con{r, rs} Con{t, ts}:
+      M.Both(C.rbnd(~F, r, t), mbnd(~F, rs, ts))
+
+# 0 <= B_ij for every i, j
+def mnn(~F: O.OField, b: M.Mat(~F)) -> Data:
+  match b:
+    case Nil{}:
+      Unit
+    case Con{r, rs}:
+      M.Both(rnn(~F, r), mnn(~F, rs))
+
+# the first entry and the rest (zero and empty past the end)
+def vhd(~F: O.OField, v: M.Vec(~F)) -> O.C(F):
+  match v:
+    case Nil{}:
+      O.zero(F)
+    case Con{a, t}:
+      a
+
+def vtl(~F: O.OField, v: M.Vec(~F)) -> M.Vec(~F):
+  match v:
+    case Nil{}:
+      Nil{}
+    case Con{a, t}:
+      t
+
+# Taking vectors apart
+# --------------------
+
+def rbnd_head(~F: O.OField, +a: O.C(F), +ds: M.Vec(~F), r: M.Vec(~F), h: C.rbnd(~F, Con{a, ds}, r)) -> M.bnd(~F, a, vhd(~F, r)):
+  match r:
+    case Nil{}:
+      (ha, hs) = h
+      ha
+    case Con{s, rs}:
+      (ha, hs) = h
+      ha
+
+def rbnd_tail(~F: O.OField, +a: O.C(F), +ds: M.Vec(~F), r: M.Vec(~F), h: C.rbnd(~F, Con{a, ds}, r)) -> C.rbnd(~F, ds, vtl(~F, r)):
+  match r:
+    case Nil{}:
+      (ha, hs) = h
+      hs
+    case Con{s, rs}:
+      (ha, hs) = h
+      hs
+
+def rnn_head(~F: O.OField, w: M.Vec(~F), h: rnn(~F, w)) -> O.le(~F, O.zero(F), vhd(~F, w)):
+  match w:
+    case Nil{}:
+      FO.le_refl(~F, O.zero(F))
+    case Con{b, ws}:
+      (hb, hs) = h
+      hb
+
+def rnn_tail(~F: O.OField, w: M.Vec(~F), h: rnn(~F, w)) -> rnn(~F, vtl(~F, w)):
+  match w:
+    case Nil{}:
+      Unit{}
+    case Con{b, ws}:
+      (hb, hs) = h
+      hs
+
+def dot_nil_r(~F: O.OField, xs: M.Vec(~F)) -> {O.zero(F) == M.dot(~F, xs, Nil{}) : O.C(F)}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{x, t}:
+      {==}
+
+# dot(b, w) = b_0 w_0 + dot(tail b, tail w)
+def dot_cons(~F: O.OField, b: M.Vec(~F), +w: M.Vec(~F)) -> {M.dot(~F, b, w) == O.add(F, O.mul(F, vhd(~F, b), vhd(~F, w)), M.dot(~F, vtl(~F, b), vtl(~F, w))) : O.C(F)}:
+  match b w:
+    case Nil{} w:
+      FR.fring_eq(~F, [vhd(~F, w)], E.ZCst{S.Z0{}}, E.ZAdd{E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{0n}}, E.ZCst{S.Z0{}}}, {==})
+    case Con{+x, +xs} Nil{}:
+      %dot_nil_r(~F, xs) : {O.zero(F) == O.add(F, O.mul(F, x, O.zero(F)), _) : O.C(F)}
+      FR.fring_eq(~F, [x], E.ZCst{S.Z0{}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZCst{S.Z0{}}}, E.ZCst{S.Z0{}}}, {==})
+    case Con{x, xs} Con{y, ys}:
+      {==}
+
+def rle_head(~F: O.OField, u: M.Vec(~F), w: M.Vec(~F), h: rle(~F, u, w)) -> O.le(~F, vhd(~F, u), vhd(~F, w)):
+  match u w:
+    case Nil{} Nil{}:
+      FO.le_refl(~F, O.zero(F))
+    case Nil{} Con{b, ws}:
+      (hb, hs) = h
+      hb
+    case Con{a, us} Nil{}:
+      (hb, hs) = h
+      hb
+    case Con{a, us} Con{b, ws}:
+      (hb, hs) = h
+      hb
+
+def rle_tail(~F: O.OField, u: M.Vec(~F), w: M.Vec(~F), h: rle(~F, u, w)) -> rle(~F, vtl(~F, u), vtl(~F, w)):
+  match u w:
+    case Nil{} Nil{}:
+      Unit{}
+    case Nil{} Con{b, ws}:
+      (hb, hs) = h
+      hs
+    case Con{a, us} Nil{}:
+      (hb, hs) = h
+      hs
+    case Con{a, us} Con{b, ws}:
+      (hb, hs) = h
+      hs
+
+# a box bound, put together from its head and tail
+def rbnd_mk(~F: O.OField, +a: O.C(F), +ds: M.Vec(~F), r: M.Vec(~F), h1: M.bnd(~F, a, vhd(~F, r)), h2: C.rbnd(~F, ds, vtl(~F, r))) -> C.rbnd(~F, Con{a, ds}, r):
+  match r:
+    case Nil{}:
+      (h1, h2)
+    case Con{s, rs}:
+      (h1, h2)
+
+# Sums and products of nonnegatives
+# ---------------------------------
+
+def dot_nonneg(~F: O.OField, b: M.Vec(~F), w: M.Vec(~F), hb: rnn(~F, b), hw: rnn(~F, w)) -> O.le(~F, O.zero(F), M.dot(~F, b, w)):
+  match b w:
+    case Nil{} w:
+      FO.le_refl(~F, O.zero(F))
+    case Con{x, xs} Nil{}:
+      FO.le_refl(~F, O.zero(F))
+    case Con{+x, +xs} Con{+y, +ys}:
+      (hx, hxs) = hb
+      (hy, hys) = hw
+      FO.nonneg_add(~F, O.mul(F, x, y), M.dot(~F, xs, ys), FO.mul_nonneg(~F, x, y, hx, hy), dot_nonneg(~F, xs, ys, hxs, hys))
+
+def matvec_nonneg(~F: O.OField, b: M.Mat(~F), +w: M.Vec(~F), hb: mnn(~F, b), +hw: rnn(~F, w)) -> rnn(~F, M.matvec(~F, b, w)):
+  match b:
+    case Nil{}:
+      Unit{}
+    case Con{+r, +rs}:
+      (hr, hrs) = hb
+      (dot_nonneg(~F, r, w, hr, hw), matvec_nonneg(~F, rs, w, hrs, hw))
+
+# Products of bounded things
+# --------------------------
+
+# |r . d| <= b . w, for |r| <= b and |d| <= w
+def dot_bnd(~F: O.OField, r: M.Vec(~F), +b: M.Vec(~F), d: M.Vec(~F), +w: M.Vec(~F), +hr: C.rbnd(~F, r, b), +hd: C.rbnd(~F, d, w), +hb: rnn(~F, b), +hw: rnn(~F, w)) -> M.bnd(~F, M.dot(~F, r, d), M.dot(~F, b, w)):
+  match r d:
+    case Nil{} d:
+      FM.bnd_zero(~F, M.dot(~F, b, w), dot_nonneg(~F, b, w, hb, hw))
+    case Con{x, xs} Nil{}:
+      FM.bnd_zero(~F, M.dot(~F, b, w), dot_nonneg(~F, b, w, hb, hw))
+    case Con{+x, +xs} Con{+y, +ys}:
+      FM.bnd_eq(~F, M.dot(~F, Con{x, xs}, Con{y, ys}), O.add(F, O.mul(F, vhd(~F, b), vhd(~F, w)), M.dot(~F, vtl(~F, b), vtl(~F, w))), M.dot(~F, b, w),
+        Equal.sym(O.C(F), M.dot(~F, b, w), O.add(F, O.mul(F, vhd(~F, b), vhd(~F, w)), M.dot(~F, vtl(~F, b), vtl(~F, w))), dot_cons(~F, b, w)),
+        FM.bnd_add(~F, O.mul(F, x, y), O.mul(F, vhd(~F, b), vhd(~F, w)), M.dot(~F, xs, ys), M.dot(~F, vtl(~F, b), vtl(~F, w)),
+          FM.bnd_mul(~F, x, vhd(~F, b), y, vhd(~F, w), rbnd_head(~F, x, xs, b, hr), rbnd_head(~F, y, ys, w, hd)),
+          dot_bnd(~F, xs, vtl(~F, b), ys, vtl(~F, w), rbnd_tail(~F, x, xs, b, hr), rbnd_tail(~F, y, ys, w, hd), rnn_tail(~F, b, hb), rnn_tail(~F, w, hw))))
+
+# |M d| <= B w, for |M| <= B and |d| <= w (B, w not negative)
+def mbnd_matvec(~F: O.OField, m: M.Mat(~F), b: M.Mat(~F), +d: M.Vec(~F), +w: M.Vec(~F), hm: mbnd(~F, m, b), +hd: C.rbnd(~F, d, w), hb: mnn(~F, b), +hw: rnn(~F, w)) -> C.rbnd(~F, M.matvec(~F, m, d), M.matvec(~F, b, w)):
+  match m b:
+    case Nil{} b:
+      Unit{}
+    case Con{+r, +rs} Nil{}:
+      (hr, hrs) = hm
+      (dot_bnd(~F, r, Nil{}, d, w, hr, hd, Unit{}, hw), mbnd_matvec(~F, rs, Nil{}, d, w, hrs, hd, Unit{}, hw))
+    case Con{+r, +rs} Con{+t, +ts}:
+      (hr, hrs) = hm
+      (ht, hts) = hb
+      (dot_bnd(~F, r, t, d, w, hr, hd, ht, hw), mbnd_matvec(~F, rs, ts, d, w, hrs, hd, hts, hw))
+
+# Monotonicity, negation, sums
+# ----------------------------
+
+def rbnd_mono(~F: O.OField, d: M.Vec(~F), +r: M.Vec(~F), +t: M.Vec(~F), +h: C.rbnd(~F, d, r), +hrt: rle(~F, r, t)) -> C.rbnd(~F, d, t):
+  match d:
+    case Nil{}:
+      Unit{}
+    case Con{+a, +ds}:
+      rbnd_mk(~F, a, ds, t, FM.bnd_mono(~F, a, vhd(~F, r), vhd(~F, t), rbnd_head(~F, a, ds, r, h), FM.sub_nonneg(~F, vhd(~F, r), vhd(~F, t), rle_head(~F, r, t, hrt))), rbnd_mono(~F, ds, vtl(~F, r), vtl(~F, t), rbnd_tail(~F, a, ds, r, h), rle_tail(~F, r, t, hrt)))
+
+def rbnd_neg(~F: O.OField, u: M.Vec(~F), +r: M.Vec(~F), +h: C.rbnd(~F, u, r)) -> C.rbnd(~F, M.vneg(~F, u), r):
+  match u:
+    case Nil{}:
+      Unit{}
+    case Con{+a, +us}:
+      rbnd_mk(~F, O.neg(F, a), M.vneg(~F, us), r, FM.bnd_neg(~F, a, vhd(~F, r), rbnd_head(~F, a, us, r, h)), rbnd_neg(~F, us, vtl(~F, r), rbnd_tail(~F, a, us, r, h)))
