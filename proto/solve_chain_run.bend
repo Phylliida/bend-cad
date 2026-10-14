@@ -34,11 +34,13 @@ def log2r(xs: List<&2, S.D>) -> String:
     case Con{x, t}:
       log2r(t)
 
-def report(+es: List<&2, E.QExpr>, +p: Nat, m: Maybe<&2, NU.NP>) -> String:
+def report(+es: List<&2, E.QExpr>, +p: Nat, m: NU.PR) -> String:
   match m:
-    case None{}:
-      "P " ++ Nat.show(p) ++ ": no plan"
-    case Some{NU.NP{plan, +gc, +gr}}:
+    case NU.PRetry{}:
+      "P " ++ Nat.show(p) ++ ": no plan (retry)"
+    case NU.PStop{}:
+      "P " ++ Nat.show(p) ++ ": no plan (stop)"
+    case NU.POk{NU.NP{plan, +gc, +gr}}:
       "P " ++ Nat.show(p) ++ ": plan checks " ++ Bool.show(PL.check(~KI.dnum(), es, gc, gr, plan)) ++ "; " ++ log2r(gr)
 
 def go.es(+es: List<&2, E.QExpr>, +nv: Nat, +gc: List<&2, S.D>, +p: Nat) -> String:

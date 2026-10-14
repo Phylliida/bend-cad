@@ -704,7 +704,7 @@ def newton(k: Nat, +eqs: List<&2, E.QExpr>, +n: Nat, +pc: List<&2, S.D>, +p: Nat
     case k NDone{y}:
       Some{y}
     case 0n NMore{y}:
-      Some{y}
+      None{}
     case 1n+j NMore{+y}:
       newton(j, eqs, n, pc, p, classify(y, nstep(eqs, n, pc, p, y)))
 
@@ -765,32 +765,40 @@ def rsearch(k: Nat, ok: Bool, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.
 def r0(+eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.D>, +ym: List<&2, List<&2, S.D>>, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> S.D:
   dsigup(S.D.mul(dvmax(CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr)), S.D{S.Zpos{S.XI{S.XO{S.XO{S.XO{S.XO{S.XO{S.XH{}}}}}}}}, 6n}), 8n)
 
-def block.r(m: Maybe<&2, S.D>, +n: Nat, +yc: List<&2, S.D>, +ym: List<&2, List<&2, S.D>>, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> Maybe<&2, C.Cert<KI.dnum()>>:
+# a block's outcome: a certificate; no radius found (a higher precision
+# may help); or Newton did not settle, or the Jacobian looked singular
+# (stop: more precision will not help)
+type BR is Data:
+  BOk{c: C.Cert<KI.dnum()>}
+  BRetry{}
+  BStop{}
+
+def block.r(m: Maybe<&2, S.D>, +n: Nat, +yc: List<&2, S.D>, +ym: List<&2, List<&2, S.D>>, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> BR:
   match m:
     case None{}:
-      None{}
+      BRetry{}
     case Some{+r}:
-      Some{mkcert(n, yc, r, ym, pc, pr)}
+      BOk{mkcert(n, yc, r, ym, pc, pr)}
 
-def block.ym(+ym: List<&2, List<&2, S.D>>, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> Maybe<&2, C.Cert<KI.dnum()>>:
+def block.ym(+ym: List<&2, List<&2, S.D>>, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> BR:
   block.r(rsearch(64n, okr(eqs, n, yc, r0(eqs, n, yc, ym, pc, pr), ym, pc, pr), eqs, n, yc, r0(eqs, n, yc, ym, pc, pr), ym, pc, pr), n, yc, ym, pc, pr)
 
-def block.y2(m: Maybe<&2, List<&2, List<&2, S.D>>>, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> Maybe<&2, C.Cert<KI.dnum()>>:
+def block.y2(m: Maybe<&2, List<&2, List<&2, S.D>>>, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> BR:
   match m:
     case None{}:
-      None{}
+      BStop{}
     case Some{inv}:
       block.ym(ysig(inv), eqs, n, yc, pc, pr)
 
-def block.y(m: Maybe<&2, List<&2, S.D>>, +eqs: List<&2, E.QExpr>, +n: Nat, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> Maybe<&2, C.Cert<KI.dnum()>>:
+def block.y(m: Maybe<&2, List<&2, S.D>>, +eqs: List<&2, E.QExpr>, +n: Nat, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> BR:
   match m:
     case None{}:
-      None{}
+      BStop{}
     case Some{+yc}:
       block.y2(dinverse(n, jac(eqs, n, dapp(yc, pc))), eqs, n, yc, pc, pr)
 
 # a block's certificate at precision p, from the drawing's values y0
-def block(+eqs: List<&2, E.QExpr>, +n: Nat, +pc: List<&2, S.D>, +pr: List<&2, S.D>, y0: List<&2, S.D>, +p: Nat) -> Maybe<&2, C.Cert<KI.dnum()>>:
+def block(+eqs: List<&2, E.QExpr>, +n: Nat, +pc: List<&2, S.D>, +pr: List<&2, S.D>, y0: List<&2, S.D>, +p: Nat) -> BR:
   block.y(newton(Nat.add(p, 8n), eqs, n, pc, p, NMore{y0}), eqs, n, pc, pr)
 
 # A plan at precision P
@@ -824,19 +832,24 @@ def dtake(n: Nat, xs: List<&2, S.D>) -> List<&2, S.D>:
     case 1n+m Con{h, t}:
       Con{h, dtake(m, t)}
 
-# the first block's certificate (None for no block)
-def bcert.n(+n: Nat, +pars: List<&2, Nat>, +sys: List<&2, E.QExpr>, +g0b: List<&2, S.D>, +p: Nat, +o: Nat, +gc: List<&2, S.D>, +gr: List<&2, S.D>) -> Maybe<&2, C.Cert<KI.dnum()>>:
+# the first block's outcome (stop for no block)
+def bcert.n(+n: Nat, +pars: List<&2, Nat>, +sys: List<&2, E.QExpr>, +g0b: List<&2, S.D>, +p: Nat, +o: Nat, +gc: List<&2, S.D>, +gr: List<&2, S.D>) -> BR:
   block(PL.renames(o, n, pars, PL.takeq(n, sys)), n, dpick(gc, pars), dpick(gr, pars), dtake(n, ddrop(o, g0b)), p)
 
-def bcert(bs: List<&2, ST.SkB>, +sys: List<&2, E.QExpr>, +g0b: List<&2, S.D>, +p: Nat, +o: Nat, +gc: List<&2, S.D>, +gr: List<&2, S.D>) -> Maybe<&2, C.Cert<KI.dnum()>>:
+def bcert(bs: List<&2, ST.SkB>, +sys: List<&2, E.QExpr>, +g0b: List<&2, S.D>, +p: Nat, +o: Nat, +gc: List<&2, S.D>, +gr: List<&2, S.D>) -> BR:
   match bs:
     case Nil{}:
-      None{}
+      BStop{}
     case Con{ST.SkB{es, vs, +pars}, t}:
       bcert.n(ST.len(es), pars, sys, g0b, p, o, gc, gr)
 
 type PB is Data:
   PB{bs: List<&2, PL.PBlock<KI.dnum()>>, gc: List<&2, S.D>, gr: List<&2, S.D>}
+
+type PBR is Data:
+  PBOk{pb: PB}
+  PBRetry{}
+  PBStop{}
 
 def revpb.go(xs: List<&2, PL.PBlock<KI.dnum()>>, acc: List<&2, PL.PBlock<KI.dnum()>>) -> List<&2, PL.PBlock<KI.dnum()>>:
   match xs:
@@ -856,13 +869,15 @@ def cert.yr(c: C.Cert<KI.dnum()>) -> List<&2, S.D>:
       yr
 
 # the blocks in turn (cur: the first block's certificate)
-def pblocks(bs: List<&2, ST.SkB>, cur: Maybe<&2, C.Cert<KI.dnum()>>, +sys: List<&2, E.QExpr>, +g0b: List<&2, S.D>, +p: Nat, +o: Nat, +gc: List<&2, S.D>, +gr: List<&2, S.D>, acc: List<&2, PL.PBlock<KI.dnum()>>) -> Maybe<&2, PB>:
+def pblocks(bs: List<&2, ST.SkB>, cur: BR, +sys: List<&2, E.QExpr>, +g0b: List<&2, S.D>, +p: Nat, +o: Nat, +gc: List<&2, S.D>, +gr: List<&2, S.D>, acc: List<&2, PL.PBlock<KI.dnum()>>) -> PBR:
   match bs cur:
     case Nil{} cur:
-      Some{PB{revpb.go(acc, Nil{}), gc, gr}}
-    case Con{b, t} None{}:
-      None{}
-    case Con{ST.SkB{es, vs, +pars}, +t} Some{+c}:
+      PBOk{PB{revpb.go(acc, Nil{}), gc, gr}}
+    case Con{b, t} BRetry{}:
+      PBRetry{}
+    case Con{b, t} BStop{}:
+      PBStop{}
+    case Con{ST.SkB{es, vs, +pars}, +t} BOk{+c}:
       +n = ST.len(es)
       +sys2 = PL.dropq(n, sys)
       +gc2 = dapp(gc, cert.yc(c))
@@ -882,17 +897,25 @@ def unperm(n: Nat, +k: Nat, +xs: List<&2, S.D>, +vp: List<&2, Nat>) -> List<&2, 
 type NP is Data:
   NP{plan: PL.Plan<KI.dnum()>, gc: List<&2, S.D>, gr: List<&2, S.D>}
 
-def plan.fin(+vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +nv: Nat, m: Maybe<&2, PB>) -> Maybe<&2, NP>:
-  match m:
-    case None{}:
-      None{}
-    case Some{PB{bs, +gc, +gr}}:
-      Some{NP{PL.Plan{vp, ep, np, bs}, unperm(nv, 0n, gc, vp), unperm(nv, 0n, gr, vp)}}
+# a plan, or retry at a higher precision, or stop
+type PR is Data:
+  POk{np: NP}
+  PRetry{}
+  PStop{}
 
-def plan.go(+es: List<&2, E.QExpr>, +nv: Nat, +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, ST.SkB>, +g0b: List<&2, S.D>, +p: Nat) -> Maybe<&2, NP>:
+def plan.fin(+vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +nv: Nat, m: PBR) -> PR:
+  match m:
+    case PBRetry{}:
+      PRetry{}
+    case PBStop{}:
+      PStop{}
+    case PBOk{PB{bs, +gc, +gr}}:
+      POk{NP{PL.Plan{vp, ep, np, bs}, unperm(nv, 0n, gc, vp), unperm(nv, 0n, gr, vp)}}
+
+def plan.go(+es: List<&2, E.QExpr>, +nv: Nat, +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, ST.SkB>, +g0b: List<&2, S.D>, +p: Nat) -> PR:
   plan.fin(vp, ep, np, nv, pblocks(bs, bcert(bs, PL.reorder(vp, es, ep), g0b, p, np, dtake(np, g0b), dreps(np, dzero())), PL.reorder(vp, es, ep), g0b, p, np, dtake(np, g0b), dreps(np, dzero()), Nil{}))
 
-def plan(+es: List<&2, E.QExpr>, +nv: Nat, sk: ST.Skel, +g0: List<&2, S.D>, +p: Nat) -> Maybe<&2, NP>:
+def plan(+es: List<&2, E.QExpr>, +nv: Nat, sk: ST.Skel, +g0: List<&2, S.D>, +p: Nat) -> PR:
   match sk:
     case ST.Skel{+vp, +ep, +np, +bs, red}:
       plan.go(es, nv, vp, ep, np, bs, dpick(g0, vp), p)
