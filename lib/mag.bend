@@ -174,3 +174,49 @@ def norm_wf(+bp: Nat, m: List<&2, Nat>, wm: SB.Mag.wf(bp, m)) -> SB.Mag.wf(bp, R
     case Con{+h, +t}:
       (lh, wt) = wm
       normcon_wf(bp, h, RM.Mag.norm(t), lh, norm_wf(bp, t, wt))
+
+# Comparison
+# ----------
+
+# the high parts' verdict o, refined by limbs below the base, is the verdict
+# of the whole numbers
+def fin_ok(+bp: Nat, o: Cmp, +ah: Nat, +bh: Nat, +x: Nat, +y: Nat, e: {o == Nat.cmp(x, y) : Cmp}, la: SB.Le(ah, bp), lb: SB.Le(bh, bp))
+  -> {RM.Mag.cmp.fin(o, ah, bh) == Nat.cmp(Nat.add(ah, Nat.mul(x, 1n+bp)), Nat.add(bh, Nat.mul(y, 1n+bp))) : Cmp}:
+  match o:
+    case LT{}:
+      O.lt_cmp(Nat.add(ah, Nat.mul(x, 1n+bp)), Nat.add(bh, Nat.mul(y, 1n+bp)), O.lift_lt(bp, ah, bh, x, y, la, O.cmp_lt(x, y, e)))
+    case EQ{}:
+      %NR.nat_cmp_eq(x, y, e) : {Nat.cmp(ah, bh) == Nat.cmp(Nat.add(ah, Nat.mul(x, 1n+bp)), Nat.add(bh, Nat.mul(_, 1n+bp))) : Cmp}
+      O.cmp_add_r(ah, bh, Nat.mul(x, 1n+bp))
+    case GT{}:
+      O.gt_cmp(Nat.add(ah, Nat.mul(x, 1n+bp)), Nat.add(bh, Nat.mul(y, 1n+bp)), O.lift_lt(bp, bh, ah, y, x, lb, O.cmp_gt(x, y, e)))
+
+def cmpz_ok(+bp: Nat, a: List<&2, Nat>, wa: SB.Mag.wf(bp, a)) -> {RM.Mag.cmpz(a) == Nat.cmp(SB.Mag.val(bp, a), 0n) : Cmp}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+h, +t}:
+      (lh, wt) = wa
+      fin_ok(bp, RM.Mag.cmpz(t), h, 0n, SB.Mag.val(bp, t), 0n, cmpz_ok(bp, t, wt), lh, (bp, {==}))
+
+def zcmp_ok(+bp: Nat, b: List<&2, Nat>, wb: SB.Mag.wf(bp, b)) -> {RM.Mag.zcmp(b) == Nat.cmp(0n, SB.Mag.val(bp, b)) : Cmp}:
+  match b:
+    case Nil{}:
+      {==}
+    case Con{+h, +t}:
+      (lh, wt) = wb
+      fin_ok(bp, RM.Mag.zcmp(t), 0n, h, 0n, SB.Mag.val(bp, t), zcmp_ok(bp, t, wt), (bp, {==}), lh)
+
+# Mag.cmp compares the values of well-formed magnitudes
+def cmp_ok(+bp: Nat, a: List<&2, Nat>, b: List<&2, Nat>, wa: SB.Mag.wf(bp, a), wb: SB.Mag.wf(bp, b)) -> {RM.Mag.cmp(a, b) == Nat.cmp(SB.Mag.val(bp, a), SB.Mag.val(bp, b)) : Cmp}:
+  match a b:
+    case Nil{} Nil{}:
+      {==}
+    case Nil{} Con{bh, bt}:
+      zcmp_ok(bp, Con{bh, bt}, wb)
+    case Con{ah, at} Nil{}:
+      cmpz_ok(bp, Con{ah, at}, wa)
+    case Con{+ah, +at} Con{+bh, +bt}:
+      (la, wat) = wa
+      (lb, wbt) = wb
+      fin_ok(bp, RM.Mag.cmp(at, bt), ah, bh, SB.Mag.val(bp, at), SB.Mag.val(bp, bt), cmp_ok(bp, at, bt, wat, wbt), la, lb)

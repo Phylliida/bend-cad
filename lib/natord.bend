@@ -208,3 +208,45 @@ def le_mul_mono(+a: Nat, -b: Nat, +c: Nat, -d: Nat, h1: SB.Le(a, b), h2: SB.Le(c
   (+k1, e1) = h1
   (+k2, e2) = h2
   (Nat.add(Nat.add(Nat.mul(a, k2), Nat.mul(k1, c)), Nat.mul(k1, k2)), le_mul_mono.eq(a, b, c, d, k1, k2, e1, e2))
+
+def gt_cmp(x: Nat, y: Nat, h: SB.Le(1n+y, x)) -> {GT{} == Nat.cmp(x, y) : Cmp}:
+  match x y:
+    case 0n 0n:
+      (k, e) = h
+      %e : N.NatD(_, {GT{} == EQ{} : Cmp}, Unit)
+      Unit{}
+    case 0n 1n+j:
+      (k, e) = h
+      %e : N.NatD(_, {GT{} == LT{} : Cmp}, Unit)
+      Unit{}
+    case 1n+i 0n:
+      {==}
+    case 1n+i 1n+j:
+      gt_cmp(i, j, le_pred(1n+j, i, h))
+
+# adding c to both sides keeps the comparison
+def cmp_add_l(c: Nat, -a: Nat, -b: Nat) -> {Nat.cmp(a, b) == Nat.cmp(Nat.add(c, a), Nat.add(c, b)) : Cmp}:
+  match c:
+    case 0n:
+      {==}
+    case 1n+k:
+      cmp_add_l(k, a, b)
+
+def cmp_add_r(+a: Nat, +b: Nat, +c: Nat) -> {Nat.cmp(a, b) == Nat.cmp(Nat.add(a, c), Nat.add(b, c)) : Cmp}:
+  %N.add_comm(c, a) : {Nat.cmp(a, b) == Nat.cmp(_, Nat.add(b, c)) : Cmp}
+  %N.add_comm(c, b) : {Nat.cmp(a, b) == Nat.cmp(Nat.add(c, a), _) : Cmp}
+  cmp_add_l(c, a, b)
+
+# a low limb ah below the base cannot make up a deficit in the high part:
+# 1 + X <= Y gives 1 + (ah + X*B) <= bh + Y*B
+def lift_lt.eq(+bp: Nat, +ah: Nat, +bh: Nat, +x: Nat, -y: Nat, +k1: Nat, +k2: Nat, e1: {Nat.add(ah, k1) == bp : Nat}, e2: {Nat.add(1n+x, k2) == y : Nat})
+  -> {Nat.add(1n+Nat.add(ah, Nat.mul(x, 1n+bp)), Nat.add(Nat.add(k1, Nat.mul(k2, 1n+bp)), bh)) == Nat.add(bh, Nat.mul(y, 1n+bp)) : Nat}:
+  %e2 : {Nat.add(1n+Nat.add(ah, Nat.mul(x, 1n+bp)), Nat.add(Nat.add(k1, Nat.mul(k2, 1n+bp)), bh)) == Nat.add(bh, Nat.mul(_, 1n+bp)) : Nat}
+  %NR.ring_eq([ah, k1, x, k2, bh, bp], NR.NAdd{NR.NAdd{NR.NAdd{NR.NCst{1n}, NR.NAdd{NR.NVar{0n}, NR.NVar{1n}}}, NR.NAdd{NR.NMul{NR.NVar{2n}, NR.NAdd{NR.NCst{1n}, NR.NVar{5n}}}, NR.NMul{NR.NVar{3n}, NR.NAdd{NR.NCst{1n}, NR.NVar{5n}}}}}, NR.NVar{4n}}, NR.NAdd{NR.NAdd{NR.NCst{1n}, NR.NAdd{NR.NVar{0n}, NR.NMul{NR.NVar{2n}, NR.NAdd{NR.NCst{1n}, NR.NVar{5n}}}}}, NR.NAdd{NR.NAdd{NR.NVar{1n}, NR.NMul{NR.NVar{3n}, NR.NAdd{NR.NCst{1n}, NR.NVar{5n}}}}, NR.NVar{4n}}}, {==}) : {_ == Nat.add(bh, Nat.mul(Nat.add(1n+x, k2), 1n+bp)) : Nat}
+  %Equal.sym(Nat, Nat.add(ah, k1), bp, e1) : {Nat.add(Nat.add(1n+_, Nat.add(Nat.mul(x, 1n+bp), Nat.mul(k2, 1n+bp))), bh) == Nat.add(bh, Nat.mul(Nat.add(1n+x, k2), 1n+bp)) : Nat}
+  NR.ring_eq([bp, x, k2, bh], NR.NAdd{NR.NAdd{NR.NAdd{NR.NCst{1n}, NR.NVar{0n}}, NR.NAdd{NR.NMul{NR.NVar{1n}, NR.NAdd{NR.NCst{1n}, NR.NVar{0n}}}, NR.NMul{NR.NVar{2n}, NR.NAdd{NR.NCst{1n}, NR.NVar{0n}}}}}, NR.NVar{3n}}, NR.NAdd{NR.NVar{3n}, NR.NMul{NR.NAdd{NR.NAdd{NR.NCst{1n}, NR.NVar{1n}}, NR.NVar{2n}}, NR.NAdd{NR.NCst{1n}, NR.NVar{0n}}}}, {==})
+
+def lift_lt(+bp: Nat, +ah: Nat, +bh: Nat, +x: Nat, -y: Nat, la: SB.Le(ah, bp), h: SB.Le(1n+x, y)) -> SB.Le(1n+Nat.add(ah, Nat.mul(x, 1n+bp)), Nat.add(bh, Nat.mul(y, 1n+bp))):
+  (+k1, e1) = la
+  (+k2, e2) = h
+  (Nat.add(Nat.add(k1, Nat.mul(k2, 1n+bp)), bh), lift_lt.eq(bp, ah, bh, x, y, k1, k2, e1, e2))

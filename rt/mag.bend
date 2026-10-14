@@ -72,3 +72,44 @@ def Mag.norm(m: List<&2, Nat>) -> List<&2, Nat>:
       Nil{}
     case Con{h, t}:
       Mag.norm.con(h, Mag.norm(t))
+
+# Comparison
+# ----------
+# Lists are least significant first, so the tails' verdict decides unless
+# it is EQ{}, when the low limbs do.
+
+def Mag.cmp.fin(hi: Cmp, ah: Nat, bh: Nat) -> Cmp:
+  match hi:
+    case LT{}:
+      LT{}
+    case EQ{}:
+      Nat.cmp(ah, bh)
+    case GT{}:
+      GT{}
+
+# a compared with zero
+def Mag.cmpz(a: List<&2, Nat>) -> Cmp:
+  match a:
+    case Nil{}:
+      EQ{}
+    case Con{h, t}:
+      Mag.cmp.fin(Mag.cmpz(t), h, 0n)
+
+# zero compared with b
+def Mag.zcmp(b: List<&2, Nat>) -> Cmp:
+  match b:
+    case Nil{}:
+      EQ{}
+    case Con{h, t}:
+      Mag.cmp.fin(Mag.zcmp(t), 0n, h)
+
+def Mag.cmp(a: List<&2, Nat>, b: List<&2, Nat>) -> Cmp:
+  match a b:
+    case Nil{} Nil{}:
+      EQ{}
+    case Nil{} Con{bh, bt}:
+      Mag.zcmp(Con{bh, bt})
+    case Con{ah, at} Nil{}:
+      Mag.cmpz(Con{ah, at})
+    case Con{ah, at} Con{bh, bt}:
+      Mag.cmp.fin(Mag.cmp(at, bt), ah, bh)
