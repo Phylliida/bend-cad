@@ -15,4 +15,16 @@ fi
 if ! printf '%s\n' "$out" | command grep -qx "All terms check."; then
   echo "GATE: FAIL (no clean verdict)"; exit 1
 fi
+# the demos in tests/ must keep checking too
+for t in tests/*.bend; do
+  [ -e "$t" ] || continue
+  tout="$(bin/bend "$t" --check-only 2>&1)"; tcode=$?
+  if [ $tcode -ne 0 ] || ! printf '%s\n' "$tout" | command grep -qx "All terms check."; then
+    printf '%s\n' "$tout"
+    echo "GATE: FAIL ($t)"; exit 1
+  fi
+  if printf '%s\n' "$tout" | command grep -q "unsafe or foreign"; then
+    echo "GATE: FAIL ($t relies on unsafe or foreign code)"; exit 1
+  fi
+done
 echo "GATE: PASS"
