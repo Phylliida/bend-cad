@@ -113,3 +113,47 @@ def Mag.cmp(a: List<&2, Nat>, b: List<&2, Nat>) -> Cmp:
       Mag.cmpz(Con{ah, at})
     case Con{ah, at} Con{bh, bt}:
       Mag.cmp.fin(Mag.cmp(at, bt), ah, bh)
+
+# Subtraction
+# -----------
+# a - (b + w) for a borrow bit w, when b + w <= a. At each limb t = bh + w:
+# if ah >= t the limb is ah - t and no borrow; else it is B + ah - t and the
+# next limb borrows 1. Both differences are exact.
+
+def Mag.borrow.fin(o: Cmp) -> Nat:
+  match o:
+    case LT{}:
+      1n
+    case EQ{}:
+      0n
+    case GT{}:
+      0n
+
+# 1 when ah < t
+def Mag.borrow(ah: Nat, t: Nat) -> Nat:
+  Mag.borrow.fin(Nat.cmp(ah, t))
+
+# what a borrow adds back to the limb: B for w = 1
+def Mag.bval(+bp: Nat, w: Nat) -> Nat:
+  match w:
+    case 0n:
+      0n
+    case 1n+k:
+      1n+bp
+
+def Mag.sub.go(+bp: Nat, a: List<&2, Nat>, b: List<&2, Nat>, w: Nat) -> List<&2, Nat>:
+  match a b:
+    case Nil{} bb:
+      Nil{}
+    case Con{+ah, at} Nil{}:
+      +t = Nat.add(0n, w)
+      +w2 = Mag.borrow(ah, t)
+      Con{Nat.sub(Nat.add(Mag.bval(bp, w2), ah), t), Mag.sub.go(bp, at, Nil{}, w2)}
+    case Con{+ah, at} Con{bh, bt}:
+      +t = Nat.add(bh, w)
+      +w2 = Mag.borrow(ah, t)
+      Con{Nat.sub(Nat.add(Mag.bval(bp, w2), ah), t), Mag.sub.go(bp, at, bt, w2)}
+
+# a - b, for b <= a
+def Mag.sub(+bp: Nat, a: List<&2, Nat>, b: List<&2, Nat>) -> List<&2, Nat>:
+  Mag.norm(Mag.sub.go(bp, a, b, 0n))

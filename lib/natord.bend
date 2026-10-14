@@ -250,3 +250,30 @@ def lift_lt(+bp: Nat, +ah: Nat, +bh: Nat, +x: Nat, -y: Nat, la: SB.Le(ah, bp), h
   (+k1, e1) = la
   (+k2, e2) = h
   (Nat.add(Nat.add(k1, Nat.mul(k2, 1n+bp)), bh), lift_lt.eq(bp, ah, bh, x, y, k1, k2, e1, e2))
+
+# truncated subtraction is exact when y <= x
+def sub_add(x: Nat, y: Nat, h: SB.Le(y, x)) -> {Nat.add(Nat.sub(x, y), y) == x : Nat}:
+  match x y:
+    case 0n 0n:
+      {==}
+    case 0n 1n+j:
+      (k, e) = h
+      %e : N.NatD(_, {Nat.add(Nat.sub(0n, 1n+j), 1n+j) == 0n : Nat}, Unit)
+      Unit{}
+    case 1n+i 0n:
+      %N.add_zero(i) : {1n+_ == 1n+i : Nat}
+      {==}
+    case 1n++i 1n++j:
+      %N.add_succ(Nat.sub(i, j), j) : {_ == 1n+i : Nat}
+      %sub_add(i, j, le_pred(j, i, h)) : {1n+Nat.add(Nat.sub(i, j), j) == 1n+_ : Nat}
+      {==}
+
+def le_weaken.eq(+t: Nat, -a: Nat, +k: Nat, e: {1n+Nat.add(t, k) == a : Nat}) -> {Nat.add(t, 1n+k) == a : Nat}:
+  %e : {Nat.add(t, 1n+k) == _ : Nat}
+  %N.add_succ(t, k) : {_ == 1n+Nat.add(t, k) : Nat}
+  {==}
+
+# 1 + t <= a gives t <= a
+def le_weaken(+t: Nat, -a: Nat, h: SB.Le(1n+t, a)) -> SB.Le(t, a):
+  (+k, e) = h
+  (1n+k, le_weaken.eq(t, a, k, e))

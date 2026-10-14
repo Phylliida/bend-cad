@@ -220,3 +220,185 @@ def cmp_ok(+bp: Nat, a: List<&2, Nat>, b: List<&2, Nat>, wa: SB.Mag.wf(bp, a), w
       (la, wat) = wa
       (lb, wbt) = wb
       fin_ok(bp, RM.Mag.cmp(at, bt), ah, bh, SB.Mag.val(bp, at), SB.Mag.val(bp, bt), cmp_ok(bp, at, bt, wat, wbt), la, lb)
+
+# Subtraction
+# -----------
+# Mag.sub.go(a, b, w) with b + w <= a: the precondition passes to the tails
+# (pre0 without a borrow, pre1 with one), and each limb is an exact
+# difference (O.sub_add).
+
+def pre0.c(+bp: Nat, +ah: Nat, +bh: Nat, +w: Nat, +vat: Nat, +vbt: Nat, +j: Nat, +k: Nat, f: {Nat.add(Nat.add(bh, w), j) == ah : Nat}, e: {Nat.add(Nat.add(Nat.add(bh, Nat.mul(vbt, 1n+bp)), w), k) == Nat.add(ah, Nat.mul(vat, 1n+bp)) : Nat})
+  -> {Nat.add(Nat.add(bh, w), Nat.add(Nat.mul(vbt, 1n+bp), k)) == Nat.add(Nat.add(bh, w), Nat.add(j, Nat.mul(vat, 1n+bp))) : Nat}:
+  %NR.ring_eq([bh, w, j, k, vbt, vat, bp], NR.NAdd{NR.NAdd{NR.NAdd{NR.NVar{0n}, NR.NVar{1n}}, NR.NVar{2n}}, NR.NMul{NR.NVar{5n}, NR.NAdd{NR.NCst{1n}, NR.NVar{6n}}}}, NR.NAdd{NR.NAdd{NR.NVar{0n}, NR.NVar{1n}}, NR.NAdd{NR.NVar{2n}, NR.NMul{NR.NVar{5n}, NR.NAdd{NR.NCst{1n}, NR.NVar{6n}}}}}, {==}) : {Nat.add(Nat.add(bh, w), Nat.add(Nat.mul(vbt, 1n+bp), k)) == _ : Nat}
+  %Equal.sym(Nat, Nat.add(Nat.add(bh, w), j), ah, f) : {Nat.add(Nat.add(bh, w), Nat.add(Nat.mul(vbt, 1n+bp), k)) == Nat.add(_, Nat.mul(vat, 1n+bp)) : Nat}
+  %NR.ring_eq([bh, w, j, k, vbt, vat, bp], NR.NAdd{NR.NAdd{NR.NAdd{NR.NVar{0n}, NR.NMul{NR.NVar{4n}, NR.NAdd{NR.NCst{1n}, NR.NVar{6n}}}}, NR.NVar{1n}}, NR.NVar{3n}}, NR.NAdd{NR.NAdd{NR.NVar{0n}, NR.NVar{1n}}, NR.NAdd{NR.NMul{NR.NVar{4n}, NR.NAdd{NR.NCst{1n}, NR.NVar{6n}}}, NR.NVar{3n}}}, {==}) : {_ == Nat.add(ah, Nat.mul(vat, 1n+bp)) : Nat}
+  e
+
+def pre0.jb.eq(+bp: Nat, -ah: Nat, +t: Nat, +j: Nat, +m0: Nat, f: {Nat.add(t, j) == ah : Nat}, g0: {Nat.add(ah, m0) == bp : Nat}) -> {Nat.add(j, Nat.add(t, m0)) == bp : Nat}:
+  %g0 : {Nat.add(j, Nat.add(t, m0)) == _ : Nat}
+  %f : {Nat.add(j, Nat.add(t, m0)) == Nat.add(_, m0) : Nat}
+  NR.ring_eq([j, t, m0], NR.NAdd{NR.NVar{0n}, NR.NAdd{NR.NVar{1n}, NR.NVar{2n}}}, NR.NAdd{NR.NAdd{NR.NVar{1n}, NR.NVar{0n}}, NR.NVar{2n}}, {==})
+
+def pre0.jb(+bp: Nat, -ah: Nat, +t: Nat, +j: Nat, f: {Nat.add(t, j) == ah : Nat}, la: SB.Le(ah, bp)) -> SB.Le(j, bp):
+  (+m0, g0) = la
+  (Nat.add(t, m0), pre0.jb.eq(bp, ah, t, j, m0, f, g0))
+
+def pre0.fin.eq(+bp: Nat, +vat: Nat, +vbt: Nat, +j: Nat, +k: Nat, +m: Nat, g: {Nat.add(j, m) == bp : Nat}, c1: {Nat.add(Nat.mul(vbt, 1n+bp), k) == Nat.add(j, Nat.mul(vat, 1n+bp)) : Nat})
+  -> {Nat.add(Nat.mul(vbt, 1n+bp), Nat.add(k, m)) == Nat.add(bp, Nat.mul(vat, 1n+bp)) : Nat}:
+  %g : {Nat.add(Nat.mul(vbt, 1n+bp), Nat.add(k, m)) == Nat.add(_, Nat.mul(vat, 1n+bp)) : Nat}
+  %NR.ring_eq([vbt, vat, j, k, m, bp], NR.NAdd{NR.NAdd{NR.NVar{2n}, NR.NMul{NR.NVar{1n}, NR.NAdd{NR.NCst{1n}, NR.NVar{5n}}}}, NR.NVar{4n}}, NR.NAdd{NR.NAdd{NR.NVar{2n}, NR.NVar{4n}}, NR.NMul{NR.NVar{1n}, NR.NAdd{NR.NCst{1n}, NR.NVar{5n}}}}, {==}) : {Nat.add(Nat.mul(vbt, 1n+bp), Nat.add(k, m)) == _ : Nat}
+  %c1 : {Nat.add(Nat.mul(vbt, 1n+bp), Nat.add(k, m)) == Nat.add(_, m) : Nat}
+  NR.ring_eq([vbt, k, m, bp], NR.NAdd{NR.NMul{NR.NVar{0n}, NR.NAdd{NR.NCst{1n}, NR.NVar{3n}}}, NR.NAdd{NR.NVar{1n}, NR.NVar{2n}}}, NR.NAdd{NR.NAdd{NR.NMul{NR.NVar{0n}, NR.NAdd{NR.NCst{1n}, NR.NVar{3n}}}, NR.NVar{1n}}, NR.NVar{2n}}, {==})
+
+def pre0.fin(+bp: Nat, +vat: Nat, +vbt: Nat, +j: Nat, +k: Nat, jb: SB.Le(j, bp), c1: {Nat.add(Nat.mul(vbt, 1n+bp), k) == Nat.add(j, Nat.mul(vat, 1n+bp)) : Nat}) -> SB.Le(vbt, vat):
+  (+m, g) = jb
+  O.le_mul_cancel(vbt, vat, bp, (Nat.add(k, m), pre0.fin.eq(bp, vat, vbt, j, k, m, g, c1)))
+
+# no borrow (t = bh + w <= ah): vbt <= vat
+def pre0(+bp: Nat, +ah: Nat, +bh: Nat, +w: Nat, +vat: Nat, +vbt: Nat, la: SB.Le(ah, bp), ht: SB.Le(Nat.add(bh, w), ah),
+  hpre: SB.Le(Nat.add(Nat.add(bh, Nat.mul(vbt, 1n+bp)), w), Nat.add(ah, Nat.mul(vat, 1n+bp)))) -> SB.Le(Nat.add(vbt, 0n), vat):
+  (+j, +f) = ht
+  (+k, e) = hpre
+  %N.add_zero(vbt) : SB.Le(_, vat)
+  pre0.fin(bp, vat, vbt, j, k, pre0.jb(bp, ah, Nat.add(bh, w), j, f, la),
+    N.add_cancel(Nat.add(bh, w), Nat.add(Nat.mul(vbt, 1n+bp), k), Nat.add(j, Nat.mul(vat, 1n+bp)), pre0.c(bp, ah, bh, w, vat, vbt, j, k, f, e)))
+
+def pre1.c(+bp: Nat, +ah: Nat, +bh: Nat, +w: Nat, -vat: Nat, +vbt: Nat, +j: Nat, +k: Nat, f: {Nat.add(1n+ah, j) == Nat.add(bh, w) : Nat}, e: {Nat.add(Nat.add(Nat.add(bh, Nat.mul(vbt, 1n+bp)), w), k) == Nat.add(ah, Nat.mul(vat, 1n+bp)) : Nat})
+  -> {Nat.add(ah, Nat.add(1n+j, Nat.add(Nat.mul(vbt, 1n+bp), k))) == Nat.add(ah, Nat.mul(vat, 1n+bp)) : Nat}:
+  %NR.ring_eq([ah, j, vbt, k, bh, w, bp], NR.NAdd{NR.NAdd{NR.NAdd{NR.NCst{1n}, NR.NVar{0n}}, NR.NVar{1n}}, NR.NAdd{NR.NMul{NR.NVar{2n}, NR.NAdd{NR.NCst{1n}, NR.NVar{6n}}}, NR.NVar{3n}}}, NR.NAdd{NR.NVar{0n}, NR.NAdd{NR.NAdd{NR.NCst{1n}, NR.NVar{1n}}, NR.NAdd{NR.NMul{NR.NVar{2n}, NR.NAdd{NR.NCst{1n}, NR.NVar{6n}}}, NR.NVar{3n}}}}, {==}) : {_ == Nat.add(ah, Nat.mul(vat, 1n+bp)) : Nat}
+  %Equal.sym(Nat, Nat.add(1n+ah, j), Nat.add(bh, w), f) : {Nat.add(_, Nat.add(Nat.mul(vbt, 1n+bp), k)) == Nat.add(ah, Nat.mul(vat, 1n+bp)) : Nat}
+  %NR.ring_eq([ah, j, vbt, k, bh, w, bp], NR.NAdd{NR.NAdd{NR.NAdd{NR.NVar{4n}, NR.NMul{NR.NVar{2n}, NR.NAdd{NR.NCst{1n}, NR.NVar{6n}}}}, NR.NVar{5n}}, NR.NVar{3n}}, NR.NAdd{NR.NAdd{NR.NVar{4n}, NR.NVar{5n}}, NR.NAdd{NR.NMul{NR.NVar{2n}, NR.NAdd{NR.NCst{1n}, NR.NVar{6n}}}, NR.NVar{3n}}}, {==}) : {_ == Nat.add(ah, Nat.mul(vat, 1n+bp)) : Nat}
+  e
+
+def pre1.fin.eq(+bp: Nat, -vat: Nat, +vbt: Nat, +j: Nat, +k: Nat, c2: {Nat.add(1n+j, Nat.add(Nat.mul(vbt, 1n+bp), k)) == Nat.mul(vat, 1n+bp) : Nat})
+  -> {Nat.add(Nat.mul(Nat.add(vbt, 1n), 1n+bp), Nat.add(j, k)) == Nat.add(bp, Nat.mul(vat, 1n+bp)) : Nat}:
+  %c2 : {Nat.add(Nat.mul(Nat.add(vbt, 1n), 1n+bp), Nat.add(j, k)) == Nat.add(bp, _) : Nat}
+  NR.ring_eq([vbt, j, k, bp], NR.NAdd{NR.NMul{NR.NAdd{NR.NVar{0n}, NR.NCst{1n}}, NR.NAdd{NR.NCst{1n}, NR.NVar{3n}}}, NR.NAdd{NR.NVar{1n}, NR.NVar{2n}}}, NR.NAdd{NR.NVar{3n}, NR.NAdd{NR.NAdd{NR.NCst{1n}, NR.NVar{1n}}, NR.NAdd{NR.NMul{NR.NVar{0n}, NR.NAdd{NR.NCst{1n}, NR.NVar{3n}}}, NR.NVar{2n}}}}, {==})
+
+# a borrow (ah < t = bh + w): vbt + 1 <= vat
+def pre1(+bp: Nat, +ah: Nat, +bh: Nat, +w: Nat, +vat: Nat, +vbt: Nat, ht: SB.Le(1n+ah, Nat.add(bh, w)),
+  hpre: SB.Le(Nat.add(Nat.add(bh, Nat.mul(vbt, 1n+bp)), w), Nat.add(ah, Nat.mul(vat, 1n+bp)))) -> SB.Le(Nat.add(vbt, 1n), vat):
+  (+j, f) = ht
+  (+k, e) = hpre
+  O.le_mul_cancel(Nat.add(vbt, 1n), vat, bp, (Nat.add(j, k), pre1.fin.eq(bp, vat, vbt, j, k,
+    N.add_cancel(ah, Nat.add(1n+j, Nat.add(Nat.mul(vbt, 1n+bp), k)), Nat.mul(vat, 1n+bp), pre1.c(bp, ah, bh, w, vat, vbt, j, k, f, e)))))
+
+# no borrow: the limb is ah - t
+def zero_case(+bp: Nat, +ah: Nat, +bh: Nat, +w: Nat, +at: List<&2, Nat>, +bt: List<&2, Nat>, +ht0: SB.Le(Nat.add(bh, w), ah), la: SB.Le(ah, bp), hpre: SB.Le(Nat.add(Nat.add(bh, Nat.mul(SB.Mag.val(bp, bt), 1n+bp)), w), Nat.add(ah, Nat.mul(SB.Mag.val(bp, at), 1n+bp))),
+  rec0: SB.Le(0n, 1n) -> SB.Le(Nat.add(SB.Mag.val(bp, bt), 0n), SB.Mag.val(bp, at)) -> {Nat.add(SB.Mag.val(bp, RM.Mag.sub.go(bp, at, bt, 0n)), Nat.add(SB.Mag.val(bp, bt), 0n)) == SB.Mag.val(bp, at) : Nat}) -> {Nat.add(Nat.add(Nat.sub(Nat.add(RM.Mag.bval(bp, 0n), ah), Nat.add(bh, w)), Nat.mul(SB.Mag.val(bp, RM.Mag.sub.go(bp, at, bt, 0n)), 1n+bp)), Nat.add(Nat.add(bh, Nat.mul(SB.Mag.val(bp, bt), 1n+bp)), w)) == Nat.add(ah, Nat.mul(SB.Mag.val(bp, at), 1n+bp)) : Nat}:
+  %rec0((1n, {==}), pre0(bp, ah, bh, w, SB.Mag.val(bp, at), SB.Mag.val(bp, bt), la, ht0, hpre)) : {Nat.add(Nat.add(Nat.sub(Nat.add(RM.Mag.bval(bp, 0n), ah), Nat.add(bh, w)), Nat.mul(SB.Mag.val(bp, RM.Mag.sub.go(bp, at, bt, 0n)), 1n+bp)), Nat.add(Nat.add(bh, Nat.mul(SB.Mag.val(bp, bt), 1n+bp)), w)) == Nat.add(ah, Nat.mul(_, 1n+bp)) : Nat}
+  %O.sub_add(ah, Nat.add(bh, w), ht0) : {Nat.add(Nat.add(Nat.sub(Nat.add(RM.Mag.bval(bp, 0n), ah), Nat.add(bh, w)), Nat.mul(SB.Mag.val(bp, RM.Mag.sub.go(bp, at, bt, 0n)), 1n+bp)), Nat.add(Nat.add(bh, Nat.mul(SB.Mag.val(bp, bt), 1n+bp)), w)) == Nat.add(_, Nat.mul(Nat.add(SB.Mag.val(bp, RM.Mag.sub.go(bp, at, bt, 0n)), Nat.add(SB.Mag.val(bp, bt), 0n)), 1n+bp)) : Nat}
+  NR.ring_eq([Nat.sub(ah, Nat.add(bh, w)), SB.Mag.val(bp, RM.Mag.sub.go(bp, at, bt, 0n)), bh, SB.Mag.val(bp, bt), w, bp], NR.NAdd{NR.NAdd{NR.NVar{0n}, NR.NMul{NR.NVar{1n}, NR.NAdd{NR.NCst{1n}, NR.NVar{5n}}}}, NR.NAdd{NR.NAdd{NR.NVar{2n}, NR.NMul{NR.NVar{3n}, NR.NAdd{NR.NCst{1n}, NR.NVar{5n}}}}, NR.NVar{4n}}}, NR.NAdd{NR.NAdd{NR.NVar{0n}, NR.NAdd{NR.NVar{2n}, NR.NVar{4n}}}, NR.NMul{NR.NAdd{NR.NVar{1n}, NR.NAdd{NR.NVar{3n}, NR.NCst{0n}}}, NR.NAdd{NR.NCst{1n}, NR.NVar{5n}}}}, {==})
+
+# bh + w <= B + ah
+def t_le(+bp: Nat, +ah: Nat, +bh: Nat, +w: Nat, lb: SB.Le(bh, bp), hw: SB.Le(w, 1n)) -> SB.Le(Nat.add(bh, w), Nat.add(1n+bp, ah)):
+  O.le_trans(Nat.add(bh, w), Nat.add(bp, 1n), Nat.add(1n+bp, ah), O.le_add_mono(bh, bp, w, 1n, lb, hw),
+    (ah, NR.ring_eq([bp, ah], NR.NAdd{NR.NAdd{NR.NVar{0n}, NR.NCst{1n}}, NR.NVar{1n}}, NR.NAdd{NR.NAdd{NR.NCst{1n}, NR.NVar{0n}}, NR.NVar{1n}}, {==})))
+
+# a borrow: the limb is B + ah - t
+def one_case(+bp: Nat, +ah: Nat, +bh: Nat, +w: Nat, +at: List<&2, Nat>, +bt: List<&2, Nat>, ht1: SB.Le(1n+ah, Nat.add(bh, w)), lb: SB.Le(bh, bp), hw: SB.Le(w, 1n), hpre: SB.Le(Nat.add(Nat.add(bh, Nat.mul(SB.Mag.val(bp, bt), 1n+bp)), w), Nat.add(ah, Nat.mul(SB.Mag.val(bp, at), 1n+bp))),
+  rec1: SB.Le(1n, 1n) -> SB.Le(Nat.add(SB.Mag.val(bp, bt), 1n), SB.Mag.val(bp, at)) -> {Nat.add(SB.Mag.val(bp, RM.Mag.sub.go(bp, at, bt, 1n)), Nat.add(SB.Mag.val(bp, bt), 1n)) == SB.Mag.val(bp, at) : Nat}) -> {Nat.add(Nat.add(Nat.sub(Nat.add(RM.Mag.bval(bp, 1n), ah), Nat.add(bh, w)), Nat.mul(SB.Mag.val(bp, RM.Mag.sub.go(bp, at, bt, 1n)), 1n+bp)), Nat.add(Nat.add(bh, Nat.mul(SB.Mag.val(bp, bt), 1n+bp)), w)) == Nat.add(ah, Nat.mul(SB.Mag.val(bp, at), 1n+bp)) : Nat}:
+  %rec1((0n, {==}), pre1(bp, ah, bh, w, SB.Mag.val(bp, at), SB.Mag.val(bp, bt), ht1, hpre)) : {Nat.add(Nat.add(Nat.sub(Nat.add(RM.Mag.bval(bp, 1n), ah), Nat.add(bh, w)), Nat.mul(SB.Mag.val(bp, RM.Mag.sub.go(bp, at, bt, 1n)), 1n+bp)), Nat.add(Nat.add(bh, Nat.mul(SB.Mag.val(bp, bt), 1n+bp)), w)) == Nat.add(ah, Nat.mul(_, 1n+bp)) : Nat}
+  %NR.ring_eq([ah, SB.Mag.val(bp, RM.Mag.sub.go(bp, at, bt, 1n)), SB.Mag.val(bp, bt), bp], NR.NAdd{NR.NAdd{NR.NAdd{NR.NCst{1n}, NR.NVar{3n}}, NR.NVar{0n}}, NR.NMul{NR.NAdd{NR.NVar{1n}, NR.NVar{2n}}, NR.NAdd{NR.NCst{1n}, NR.NVar{3n}}}}, NR.NAdd{NR.NVar{0n}, NR.NMul{NR.NAdd{NR.NVar{1n}, NR.NAdd{NR.NVar{2n}, NR.NCst{1n}}}, NR.NAdd{NR.NCst{1n}, NR.NVar{3n}}}}, {==}) : {Nat.add(Nat.add(Nat.sub(Nat.add(RM.Mag.bval(bp, 1n), ah), Nat.add(bh, w)), Nat.mul(SB.Mag.val(bp, RM.Mag.sub.go(bp, at, bt, 1n)), 1n+bp)), Nat.add(Nat.add(bh, Nat.mul(SB.Mag.val(bp, bt), 1n+bp)), w)) == _ : Nat}
+  %O.sub_add(Nat.add(1n+bp, ah), Nat.add(bh, w), t_le(bp, ah, bh, w, lb, hw)) : {Nat.add(Nat.add(Nat.sub(Nat.add(RM.Mag.bval(bp, 1n), ah), Nat.add(bh, w)), Nat.mul(SB.Mag.val(bp, RM.Mag.sub.go(bp, at, bt, 1n)), 1n+bp)), Nat.add(Nat.add(bh, Nat.mul(SB.Mag.val(bp, bt), 1n+bp)), w)) == Nat.add(_, Nat.mul(Nat.add(SB.Mag.val(bp, RM.Mag.sub.go(bp, at, bt, 1n)), SB.Mag.val(bp, bt)), 1n+bp)) : Nat}
+  NR.ring_eq([Nat.sub(Nat.add(1n+bp, ah), Nat.add(bh, w)), SB.Mag.val(bp, RM.Mag.sub.go(bp, at, bt, 1n)), bh, SB.Mag.val(bp, bt), w, bp], NR.NAdd{NR.NAdd{NR.NVar{0n}, NR.NMul{NR.NVar{1n}, NR.NAdd{NR.NCst{1n}, NR.NVar{5n}}}}, NR.NAdd{NR.NAdd{NR.NVar{2n}, NR.NMul{NR.NVar{3n}, NR.NAdd{NR.NCst{1n}, NR.NVar{5n}}}}, NR.NVar{4n}}}, NR.NAdd{NR.NAdd{NR.NVar{0n}, NR.NAdd{NR.NVar{2n}, NR.NVar{4n}}}, NR.NMul{NR.NAdd{NR.NVar{1n}, NR.NVar{3n}}, NR.NAdd{NR.NCst{1n}, NR.NVar{5n}}}}, {==})
+
+def le_of_eq.go(+t: Nat, ah: Nat, eq: {ah == t : Nat}) -> {Nat.add(t, 0n) == ah : Nat}:
+  %eq : {Nat.add(_, 0n) == ah : Nat}
+  Equal.sym(Nat, ah, Nat.add(ah, 0n), N.add_zero(ah))
+
+def le_of_eq(+t: Nat, ah: Nat, eq: {ah == t : Nat}) -> SB.Le(t, ah):
+  (0n, le_of_eq.go(t, ah, eq))
+
+def sub_step(+bp: Nat, o: Cmp, +ah: Nat, +bh: Nat, +w: Nat, +at: List<&2, Nat>, +bt: List<&2, Nat>, e: {o == Nat.cmp(ah, Nat.add(bh, w)) : Cmp},
+  la: SB.Le(ah, bp), lb: SB.Le(bh, bp), hw: SB.Le(w, 1n), hpre: SB.Le(Nat.add(Nat.add(bh, Nat.mul(SB.Mag.val(bp, bt), 1n+bp)), w), Nat.add(ah, Nat.mul(SB.Mag.val(bp, at), 1n+bp))), rec: SB.Le(RM.Mag.borrow.fin(o), 1n) -> SB.Le(Nat.add(SB.Mag.val(bp, bt), RM.Mag.borrow.fin(o)), SB.Mag.val(bp, at)) -> {Nat.add(SB.Mag.val(bp, RM.Mag.sub.go(bp, at, bt, RM.Mag.borrow.fin(o))), Nat.add(SB.Mag.val(bp, bt), RM.Mag.borrow.fin(o))) == SB.Mag.val(bp, at) : Nat}) -> {Nat.add(Nat.add(Nat.sub(Nat.add(RM.Mag.bval(bp, RM.Mag.borrow.fin(o)), ah), Nat.add(bh, w)), Nat.mul(SB.Mag.val(bp, RM.Mag.sub.go(bp, at, bt, RM.Mag.borrow.fin(o))), 1n+bp)), Nat.add(Nat.add(bh, Nat.mul(SB.Mag.val(bp, bt), 1n+bp)), w)) == Nat.add(ah, Nat.mul(SB.Mag.val(bp, at), 1n+bp)) : Nat}:
+  match o:
+    case LT{}:
+      one_case(bp, ah, bh, w, at, bt, O.cmp_lt(ah, Nat.add(bh, w), e), lb, hw, hpre, rec)
+    case EQ{}:
+      zero_case(bp, ah, bh, w, at, bt, le_of_eq(Nat.add(bh, w), ah, NR.nat_cmp_eq(ah, Nat.add(bh, w), e)), la, hpre, rec)
+    case GT{}:
+      zero_case(bp, ah, bh, w, at, bt, O.le_weaken(Nat.add(bh, w), ah, O.cmp_gt(ah, Nat.add(bh, w), e)), la, hpre, rec)
+
+# Mag.sub.go subtracts: for b + w <= a, result + (b + w) = a
+def sub_go_val(+bp: Nat, a: List<&2, Nat>, b: List<&2, Nat>, +w: Nat, hw: SB.Le(w, 1n), wa: SB.Mag.wf(bp, a), wb: SB.Mag.wf(bp, b), hpre: SB.Le(Nat.add(SB.Mag.val(bp, b), w), SB.Mag.val(bp, a)))
+  -> {Nat.add(SB.Mag.val(bp, RM.Mag.sub.go(bp, a, b, w)), Nat.add(SB.Mag.val(bp, b), w)) == SB.Mag.val(bp, a) : Nat}:
+  match a b:
+    case Nil{} bb:
+      O.le_zero(Nat.add(SB.Mag.val(bp, bb), w), hpre)
+    case Con{+ah, +at} Nil{}:
+      (la, wat) = wa
+      sub_step(bp, Nat.cmp(ah, Nat.add(0n, w)), ah, 0n, w, at, Nil{}, {==}, la, (bp, {==}), hw, hpre,
+        h2 => h3 => sub_go_val(bp, at, Nil{}, RM.Mag.borrow(ah, Nat.add(0n, w)), h2, wat, Unit{}, h3))
+    case Con{+ah, +at} Con{+bh, +bt}:
+      (la, wat) = wa
+      (lb, wbt) = wb
+      sub_step(bp, Nat.cmp(ah, Nat.add(bh, w)), ah, bh, w, at, bt, {==}, la, lb, hw, hpre,
+        h2 => h3 => sub_go_val(bp, at, bt, RM.Mag.borrow(ah, Nat.add(bh, w)), h2, wat, wbt, h3))
+
+def le_add0.go(+x: Nat, -y: Nat, -k: Nat, e: {Nat.add(x, k) == y : Nat}) -> {Nat.add(Nat.add(x, 0n), k) == y : Nat}:
+  %N.add_zero(x) : {Nat.add(_, k) == y : Nat}
+  e
+
+def le_add0(x: Nat, -y: Nat, h: SB.Le(x, y)) -> SB.Le(Nat.add(x, 0n), y):
+  (+k, e) = h
+  (k, le_add0.go(x, y, k, e))
+
+# Mag.sub subtracts: for b <= a, (a - b) + b = a
+def sub_val(+bp: Nat, +a: List<&2, Nat>, +b: List<&2, Nat>, wa: SB.Mag.wf(bp, a), wb: SB.Mag.wf(bp, b), h: SB.Le(SB.Mag.val(bp, b), SB.Mag.val(bp, a)))
+  -> {Nat.add(SB.Mag.val(bp, RM.Mag.sub(bp, a, b)), SB.Mag.val(bp, b)) == SB.Mag.val(bp, a) : Nat}:
+  %norm_val(bp, RM.Mag.sub.go(bp, a, b, 0n)) : {Nat.add(_, SB.Mag.val(bp, b)) == SB.Mag.val(bp, a) : Nat}
+  Equal.trans(Nat, Nat.add(SB.Mag.val(bp, RM.Mag.sub.go(bp, a, b, 0n)), SB.Mag.val(bp, b)), Nat.add(SB.Mag.val(bp, RM.Mag.sub.go(bp, a, b, 0n)), Nat.add(SB.Mag.val(bp, b), 0n)), SB.Mag.val(bp, a),
+    Equal.cong(Nat, Nat, n => Nat.add(SB.Mag.val(bp, RM.Mag.sub.go(bp, a, b, 0n)), n), SB.Mag.val(bp, b), Nat.add(SB.Mag.val(bp, b), 0n), N.add_zero(SB.Mag.val(bp, b))),
+    sub_go_val(bp, a, b, 0n, (1n, {==}), wa, wb, le_add0(SB.Mag.val(bp, b), SB.Mag.val(bp, a), h)))
+
+def borrow_le(o: Cmp) -> SB.Le(RM.Mag.borrow.fin(o), 1n):
+  match o:
+    case LT{}:
+      (0n, {==})
+    case EQ{}:
+      (1n, {==})
+    case GT{}:
+      (1n, {==})
+
+def lw1.eq(+bp: Nat, +ah: Nat, +bh: Nat, +w: Nat, +j: Nat, f: {Nat.add(1n+ah, j) == Nat.add(bh, w) : Nat}, sa: {Nat.add(Nat.sub(Nat.add(1n+bp, ah), Nat.add(bh, w)), Nat.add(bh, w)) == Nat.add(1n+bp, ah) : Nat})
+  -> {Nat.add(1n+ah, Nat.add(Nat.sub(Nat.add(1n+bp, ah), Nat.add(bh, w)), j)) == Nat.add(1n+ah, bp) : Nat}:
+  %NR.ring_eq([ah, bp], NR.NAdd{NR.NAdd{NR.NCst{1n}, NR.NVar{1n}}, NR.NVar{0n}}, NR.NAdd{NR.NAdd{NR.NCst{1n}, NR.NVar{0n}}, NR.NVar{1n}}, {==}) : {Nat.add(1n+ah, Nat.add(Nat.sub(Nat.add(1n+bp, ah), Nat.add(bh, w)), j)) == _ : Nat}
+  %sa : {Nat.add(1n+ah, Nat.add(Nat.sub(Nat.add(1n+bp, ah), Nat.add(bh, w)), j)) == _ : Nat}
+  %f : {Nat.add(1n+ah, Nat.add(Nat.sub(Nat.add(1n+bp, ah), Nat.add(bh, w)), j)) == Nat.add(Nat.sub(Nat.add(1n+bp, ah), Nat.add(bh, w)), _) : Nat}
+  NR.ring_eq([ah, Nat.sub(Nat.add(1n+bp, ah), Nat.add(bh, w)), j], NR.NAdd{NR.NAdd{NR.NCst{1n}, NR.NVar{0n}}, NR.NAdd{NR.NVar{1n}, NR.NVar{2n}}}, NR.NAdd{NR.NVar{1n}, NR.NAdd{NR.NAdd{NR.NCst{1n}, NR.NVar{0n}}, NR.NVar{2n}}}, {==})
+
+def lw1(+bp: Nat, +ah: Nat, +bh: Nat, +w: Nat, ht1: SB.Le(1n+ah, Nat.add(bh, w)), lb: SB.Le(bh, bp), hw: SB.Le(w, 1n)) -> SB.Le(Nat.sub(Nat.add(1n+bp, ah), Nat.add(bh, w)), bp):
+  (+j, f) = ht1
+  (j, N.add_cancel(1n+ah, Nat.add(Nat.sub(Nat.add(1n+bp, ah), Nat.add(bh, w)), j), bp, lw1.eq(bp, ah, bh, w, j, f, O.sub_add(Nat.add(1n+bp, ah), Nat.add(bh, w), t_le(bp, ah, bh, w, lb, hw)))))
+
+def lw0(+bp: Nat, +ah: Nat, +t: Nat, +ht0: SB.Le(t, ah), la: SB.Le(ah, bp)) -> SB.Le(Nat.sub(ah, t), bp):
+  O.le_trans(Nat.sub(ah, t), ah, bp, (t, O.sub_add(ah, t, ht0)), la)
+
+# each limb of a subtraction is below the base
+def limb_le(+bp: Nat, o: Cmp, +ah: Nat, +bh: Nat, +w: Nat, e: {o == Nat.cmp(ah, Nat.add(bh, w)) : Cmp}, la: SB.Le(ah, bp), lb: SB.Le(bh, bp), hw: SB.Le(w, 1n))
+  -> SB.Le(Nat.sub(Nat.add(RM.Mag.bval(bp, RM.Mag.borrow.fin(o)), ah), Nat.add(bh, w)), bp):
+  match o:
+    case LT{}:
+      lw1(bp, ah, bh, w, O.cmp_lt(ah, Nat.add(bh, w), e), lb, hw)
+    case EQ{}:
+      lw0(bp, ah, Nat.add(bh, w), le_of_eq(Nat.add(bh, w), ah, NR.nat_cmp_eq(ah, Nat.add(bh, w), e)), la)
+    case GT{}:
+      lw0(bp, ah, Nat.add(bh, w), O.le_weaken(Nat.add(bh, w), ah, O.cmp_gt(ah, Nat.add(bh, w), e)), la)
+
+def sub_go_wf(+bp: Nat, a: List<&2, Nat>, b: List<&2, Nat>, +w: Nat, hw: SB.Le(w, 1n), wa: SB.Mag.wf(bp, a), wb: SB.Mag.wf(bp, b)) -> SB.Mag.wf(bp, RM.Mag.sub.go(bp, a, b, w)):
+  match a b:
+    case Nil{} bb:
+      Unit{}
+    case Con{+ah, at} Nil{}:
+      (la, wat) = wa
+      (limb_le(bp, Nat.cmp(ah, Nat.add(0n, w)), ah, 0n, w, {==}, la, (bp, {==}), hw),
+        sub_go_wf(bp, at, Nil{}, RM.Mag.borrow(ah, Nat.add(0n, w)), borrow_le(Nat.cmp(ah, Nat.add(0n, w))), wat, Unit{}))
+    case Con{+ah, at} Con{+bh, bt}:
+      (la, wat) = wa
+      (lb, wbt) = wb
+      (limb_le(bp, Nat.cmp(ah, Nat.add(bh, w)), ah, bh, w, {==}, la, lb, hw),
+        sub_go_wf(bp, at, bt, RM.Mag.borrow(ah, Nat.add(bh, w)), borrow_le(Nat.cmp(ah, Nat.add(bh, w))), wat, wbt))
+
+def sub_wf(+bp: Nat, +a: List<&2, Nat>, +b: List<&2, Nat>, wa: SB.Mag.wf(bp, a), wb: SB.Mag.wf(bp, b)) -> SB.Mag.wf(bp, RM.Mag.sub(bp, a, b)):
+  norm_wf(bp, RM.Mag.sub.go(bp, a, b, 0n), sub_go_wf(bp, a, b, 0n, (1n, {==}), wa, wb))
