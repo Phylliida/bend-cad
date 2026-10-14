@@ -18,6 +18,7 @@ import ./spec/big.bend as SB
 import ./rt/big.bend as RB
 import ./spec/field.bend as O
 import ./spec/sketch.bend as K
+import ./spec/mat.bend as M
 
 # Positives
 # ---------
@@ -436,6 +437,164 @@ law d_mul:
 law d_neg:
   for +x: S.D
   S.Q.eq(S.D.toq(S.D.neg(x)), S.Q.neg(S.D.toq(x)))
+
+# Vectors and matrices (sk-04)
+# ----------------------------
+# spec/mat.bend: lists read with trailing zeros, matrices as lists of rows.
+# In every ordered field, matrix-vector products compose, distribute and
+# have an identity. A checker computes with dyadics, and ofd turns its
+# results into the field's: ofd is a ring map, and every dyadic vector and
+# matrix operation becomes the field operation. Norms bound products: a
+# field matrix whose entries are at most the absolute values of a dyadic
+# matrix B sends a vector of norm at most s to one of norm at most
+# ||B|| s.
+
+# LAW: (A B) v = A (B v)
+law mat_assoc:
+  for ~F: O.OField
+  for +a: M.Mat(~F)
+  for +b: M.Mat(~F)
+  for +v: M.Vec(~F)
+  {M.matvec(~F, M.matmul(~F, a, b), v) == M.matvec(~F, a, M.matvec(~F, b, v)) : M.Vec(~F)}
+
+# LAW: (A + B) v = A v + B v
+law mat_add:
+  for ~F: O.OField
+  for +a: M.Mat(~F)
+  for +b: M.Mat(~F)
+  for +v: M.Vec(~F)
+  {M.matvec(~F, M.madd(~F, a, b), v) == M.vadd(~F, M.matvec(~F, a, v), M.matvec(~F, b, v)) : M.Vec(~F)}
+
+# LAW: (-A) v = -(A v)
+law mat_neg:
+  for ~F: O.OField
+  for +a: M.Mat(~F)
+  for +v: M.Vec(~F)
+  {M.matvec(~F, M.mneg(~F, a), v) == M.vneg(~F, M.matvec(~F, a, v)) : M.Vec(~F)}
+
+# LAW: I v = v, for the identity of v's size
+law mat_ident:
+  for ~F: O.OField
+  for +v: M.Vec(~F)
+  {M.matvec(~F, M.ident(~F, M.len(~F, v)), v) == v : M.Vec(~F)}
+
+# LAW: ofd(x + y) = ofd x + ofd y
+law ofd_add:
+  for ~F: O.OField
+  for +x: S.D
+  for +y: S.D
+  {M.ofd(~F, S.D.add(x, y)) == O.add(F, M.ofd(~F, x), M.ofd(~F, y)) : O.C(F)}
+
+# LAW: ofd(x * y) = ofd x * ofd y
+law ofd_mul:
+  for ~F: O.OField
+  for +x: S.D
+  for +y: S.D
+  {M.ofd(~F, S.D.mul(x, y)) == O.mul(F, M.ofd(~F, x), M.ofd(~F, y)) : O.C(F)}
+
+# LAW: ofd(-x) = -ofd x
+law ofd_neg:
+  for ~F: O.OField
+  for +x: S.D
+  {M.ofd(~F, S.D.neg(x)) == O.neg(F, M.ofd(~F, x)) : O.C(F)}
+
+# LAW: dyadic vector sums are field sums
+law dvadd_ofd:
+  for ~F: O.OField
+  for +u: M.DVec()
+  for +w: M.DVec()
+  {M.ofdv(~F, M.dvadd(u, w)) == M.vadd(~F, M.ofdv(~F, u), M.ofdv(~F, w)) : M.Vec(~F)}
+
+# LAW: dyadic vector negation is field negation
+law dvneg_ofd:
+  for ~F: O.OField
+  for +u: M.DVec()
+  {M.ofdv(~F, M.dvneg(u)) == M.vneg(~F, M.ofdv(~F, u)) : M.Vec(~F)}
+
+# LAW: dyadic matrix-vector products are field products
+law dmatvec_ofd:
+  for ~F: O.OField
+  for +a: M.DMat()
+  for +v: M.DVec()
+  {M.ofdv(~F, M.dmatvec(a, v)) == M.matvec(~F, M.ofdm(~F, a), M.ofdv(~F, v)) : M.Vec(~F)}
+
+# LAW: dyadic matrix products are field products
+law dmatmul_ofd:
+  for ~F: O.OField
+  for +a: M.DMat()
+  for +b: M.DMat()
+  {M.ofdm(~F, M.dmatmul(a, b)) == M.matmul(~F, M.ofdm(~F, a), M.ofdm(~F, b)) : M.Mat(~F)}
+
+# LAW: dyadic matrix sums are field sums
+law dmadd_ofd:
+  for ~F: O.OField
+  for +a: M.DMat()
+  for +b: M.DMat()
+  {M.ofdm(~F, M.dmadd(a, b)) == M.madd(~F, M.ofdm(~F, a), M.ofdm(~F, b)) : M.Mat(~F)}
+
+# LAW: dyadic matrix negation is field negation
+law dmneg_ofd:
+  for ~F: O.OField
+  for +a: M.DMat()
+  {M.ofdm(~F, M.dmneg(a)) == M.mneg(~F, M.ofdm(~F, a)) : M.Mat(~F)}
+
+# LAW: the dyadic identity is the field identity
+law dident_ofd:
+  for ~F: O.OField
+  for +n: Nat
+  {M.ofdm(~F, M.dident(n)) == M.ident(~F, n) : M.Mat(~F)}
+
+# LAW: ||M v|| <= ||B|| s, for M majorized by B and ||v|| <= s
+law maj_matvec:
+  for ~F: O.OField
+  for +m: M.Mat(~F)
+  for +b: M.DMat()
+  for +v: M.Vec(~F)
+  for +s: O.C(F)
+  for  hm: M.mmaj(~F, m, b)
+  for  hv: M.vbnd(~F, v, s)
+  M.vbnd(~F, M.matvec(~F, m, v), O.mul(F, M.ofd(~F, M.dnorm(b)), s))
+
+# LAW: a dyadic matrix is majorized by itself
+law maj_ofd:
+  for ~F: O.OField
+  for +a: M.DMat()
+  M.mmaj(~F, M.ofdm(~F, a), a)
+
+# LAW: ||ofd v|| <= ofd ||v||
+law vbnd_ofd:
+  for ~F: O.OField
+  for +v: M.DVec()
+  M.vbnd(~F, M.ofdv(~F, v), M.ofd(~F, M.dvnorm(v)))
+
+# LAW: ||u + w|| <= s + t, for ||u|| <= s and ||w|| <= t
+law vbnd_add:
+  for ~F: O.OField
+  for +u: M.Vec(~F)
+  for +s: O.C(F)
+  for +w: M.Vec(~F)
+  for +t: O.C(F)
+  for  hu: M.vbnd(~F, u, s)
+  for  hw: M.vbnd(~F, w, t)
+  M.vbnd(~F, M.vadd(~F, u, w), O.add(F, s, t))
+
+# LAW: ||-u|| <= s, for ||u|| <= s
+law vbnd_neg:
+  for ~F: O.OField
+  for +u: M.Vec(~F)
+  for +s: O.C(F)
+  for  h: M.vbnd(~F, u, s)
+  M.vbnd(~F, M.vneg(~F, u), s)
+
+# LAW: ||u|| <= t, for ||u|| <= s and s <= t
+law vbnd_mono:
+  for ~F: O.OField
+  for +u: M.Vec(~F)
+  for +s: O.C(F)
+  for +t: O.C(F)
+  for  h: M.vbnd(~F, u, s)
+  for  hst: O.le(~F, s, t)
+  M.vbnd(~F, u, t)
 
 # Big integers (sk-02)
 # --------------------

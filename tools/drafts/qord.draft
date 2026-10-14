@@ -42,15 +42,22 @@ def q_lt_trans(+x: S.Q, +y: S.Q, +z: S.Q, h1: S.Q.lt(x, y), h2: S.Q.lt(y, z)) ->
         ZO.pos_mul(@ZT[X3 | dz], dif(x, y), Unit{}, lt_dif(x, y, h1)),
         ZO.pos_mul(@ZT[X3 | dx], dif(y, z), Unit{}, lt_dif(y, z, h2))))))
 
+# a comparison's verdicts EQ and GT
+def q_cmp_eq(+x: S.Q, +y: S.Q, e: {S.Q.cmp(x, y) == EQ{} : Cmp}) -> S.Q.eq(x, y):
+  ZO.sub_eq(@ZT[X2 | nx*dy], @ZT[X2 | ny*dx], ZO.eq_zero(@ZT[X2 | nx*dy], @ZT[X2 | ny*dx], e))
+
+def q_cmp_gt(+x: S.Q, +y: S.Q, e: {S.Q.cmp(x, y) == GT{} : Cmp}) -> S.Q.lt(y, x):
+  dif_lt(y, x, ZO.pos_eq(dif(y, x), @ZT[X2 | -(ny*dx - nx*dy)], @RING[X2 | nx*dy - ny*dx | -(ny*dx - nx*dy)], ZO.gt_pos(@ZT[X2 | nx*dy], @ZT[X2 | ny*dx], e)))
+
 # by the comparison's verdict c
 def q_lt_total.go(+x: S.Q, +y: S.Q, c: Cmp, e: {S.Q.cmp(x, y) == c : Cmp}) -> Or(S.Q.lt(x, y), Or(S.Q.eq(x, y), S.Q.lt(y, x))):
   match c:
     case LT{}:
       Inl{e}
     case EQ{}:
-      Inr{Inl{ZO.sub_eq(@ZT[X2 | nx*dy], @ZT[X2 | ny*dx], ZO.eq_zero(@ZT[X2 | nx*dy], @ZT[X2 | ny*dx], e))}}
+      Inr{Inl{q_cmp_eq(x, y, e)}}
     case GT{}:
-      Inr{Inr{dif_lt(y, x, ZO.pos_eq(dif(y, x), @ZT[X2 | -(ny*dx - nx*dy)], @RING[X2 | nx*dy - ny*dx | -(ny*dx - nx*dy)], ZO.gt_pos(@ZT[X2 | nx*dy], @ZT[X2 | ny*dx], e)))}}
+      Inr{Inr{q_cmp_gt(x, y, e)}}
 
 def q_lt_total(+x: S.Q, +y: S.Q) -> Or(S.Q.lt(x, y), Or(S.Q.eq(x, y), S.Q.lt(y, x))):
   q_lt_total.go(x, y, S.Q.cmp(x, y), {==})

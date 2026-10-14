@@ -13,6 +13,10 @@ import ./lib/qring.bend as QR
 import ./lib/q.bend as LQ
 import ./lib/qord.bend as LQO
 import ./lib/qemb.bend as QE
+import ./lib/fmat.bend as FM
+import ./lib/dmat.bend as DM
+import ./spec/mat.bend as M
+import ./spec/field.bend as O
 import ./lib/dyadic.bend as LD
 import ./lib/big.bend as LB
 import ./lib/meaning.bend as MN
@@ -204,6 +208,69 @@ def Laws.d_mul(x, y):
 
 def Laws.d_neg(x):
   LD.toq_neg(x)
+
+# Vectors and matrices
+# --------------------
+
+def Laws.mat_assoc(F, a, b, v):
+  Equal.sym(M.Vec(~F), M.matvec(~F, a, M.matvec(~F, b, v)), M.matvec(~F, M.matmul(~F, a, b), v), FM.mat_assoc(~F, a, b, v))
+
+def Laws.mat_add(F, a, b, v):
+  Equal.sym(M.Vec(~F), M.vadd(~F, M.matvec(~F, a, v), M.matvec(~F, b, v)), M.matvec(~F, M.madd(~F, a, b), v), FM.mat_add(~F, a, b, v))
+
+def Laws.mat_neg(F, a, v):
+  Equal.sym(M.Vec(~F), M.vneg(~F, M.matvec(~F, a, v)), M.matvec(~F, M.mneg(~F, a), v), FM.mat_neg(~F, a, v))
+
+def Laws.mat_ident(F, v):
+  Equal.sym(M.Vec(~F), v, M.matvec(~F, M.ident(~F, M.len(~F, v)), v), FM.mat_ident(~F, v))
+
+def Laws.ofd_add(F, x, y):
+  Equal.sym(O.C(F), O.add(F, M.ofd(~F, x), M.ofd(~F, y)), M.ofd(~F, S.D.add(x, y)), DM.ofd_add(~F, x, y))
+
+def Laws.ofd_mul(F, x, y):
+  Equal.sym(O.C(F), O.mul(F, M.ofd(~F, x), M.ofd(~F, y)), M.ofd(~F, S.D.mul(x, y)), DM.ofd_mul(~F, x, y))
+
+def Laws.ofd_neg(F, x):
+  Equal.sym(O.C(F), O.neg(F, M.ofd(~F, x)), M.ofd(~F, S.D.neg(x)), DM.ofd_neg(~F, x))
+
+def Laws.dvadd_ofd(F, u, w):
+  Equal.sym(M.Vec(~F), M.vadd(~F, M.ofdv(~F, u), M.ofdv(~F, w)), M.ofdv(~F, M.dvadd(u, w)), DM.dvadd_ofd(~F, u, w))
+
+def Laws.dvneg_ofd(F, u):
+  Equal.sym(M.Vec(~F), M.vneg(~F, M.ofdv(~F, u)), M.ofdv(~F, M.dvneg(u)), DM.dvneg_ofd(~F, u))
+
+def Laws.dmatvec_ofd(F, a, v):
+  Equal.sym(M.Vec(~F), M.matvec(~F, M.ofdm(~F, a), M.ofdv(~F, v)), M.ofdv(~F, M.dmatvec(a, v)), DM.dmatvec_ofd(~F, a, v))
+
+def Laws.dmatmul_ofd(F, a, b):
+  Equal.sym(M.Mat(~F), M.matmul(~F, M.ofdm(~F, a), M.ofdm(~F, b)), M.ofdm(~F, M.dmatmul(a, b)), DM.dmatmul_ofd(~F, a, b))
+
+def Laws.dmadd_ofd(F, a, b):
+  Equal.sym(M.Mat(~F), M.madd(~F, M.ofdm(~F, a), M.ofdm(~F, b)), M.ofdm(~F, M.dmadd(a, b)), DM.dmadd_ofd(~F, a, b))
+
+def Laws.dmneg_ofd(F, a):
+  Equal.sym(M.Mat(~F), M.mneg(~F, M.ofdm(~F, a)), M.ofdm(~F, M.dmneg(a)), DM.dmneg_ofd(~F, a))
+
+def Laws.dident_ofd(F, n):
+  Equal.sym(M.Mat(~F), M.ident(~F, n), M.ofdm(~F, M.dident(n)), DM.dident_ofd(~F, n))
+
+def Laws.maj_matvec(F, m, b, v, s, hm, hv):
+  DM.maj_matvec(~F, m, b, v, s, hm, hv)
+
+def Laws.maj_ofd(F, a):
+  DM.maj_ofd(~F, a)
+
+def Laws.vbnd_ofd(F, v):
+  DM.vbnd_ofd(~F, v)
+
+def Laws.vbnd_add(F, u, s, w, t, hu, hw):
+  FM.vbnd_add(~F, u, s, w, t, hu, hw)
+
+def Laws.vbnd_neg(F, u, s, h):
+  FM.vbnd_neg(~F, u, s, h)
+
+def Laws.vbnd_mono(F, u, s, t, h, hst):
+  FM.vbnd_mono(~F, u, s, t, h, hst)
 
 # Big integers
 # ------------

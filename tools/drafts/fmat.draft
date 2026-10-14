@@ -1,0 +1,247 @@
+# Linear algebra in every ordered field (spec/mat.bend). Matrix-vector
+# products compose, distribute over sums and negation and have an
+# identity; bounds (|a| <= s, ||v|| <= s) add, negate, multiply and grow.
+# Lists are read with trailing zeros, so the identities need no shape
+# conditions. Lemmas are stated {target == source}, so a rewrite
+# %lemma(..) : P turns the source form into the target form. Each
+# inequality is a sum of products of nonnegative quantities, matched to
+# the goal by one normalizer call.
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ../spec/mat.bend as M
+import ./flaws.bend as FL
+import ./fring.bend as FR
+import ./ford.bend as FO
+
+# Products of vectors
+# -------------------
+
+# u . v + w . v = (u + w) . v
+def dot_vadd(~F: O.OField, u: M.Vec(~F), w: M.Vec(~F), +v: M.Vec(~F)) -> {@A(M.dot(~F, u, v), M.dot(~F, w, v)) == M.dot(~F, M.vadd(~F, u, w), v) : @T}:
+  match u w v:
+    case Nil{} w v:
+      FL.zero_add(~F, M.dot(~F, w, v))
+    case Con{+a, +us} Nil{} v:
+      Equal.sym(@T, M.dot(~F, Con{a, us}, v), @A(M.dot(~F, Con{a, us}, v), @0), FL.add_zero(~F, M.dot(~F, Con{a, us}, v)))
+    case Con{+a, +us} Con{+b, +ws} Nil{}:
+      Equal.sym(@T, @0, @A(@0, @0), FL.add_zero(~F, @0))
+    case Con{+a, +us} Con{+b, +ws} Con{+y, +ys}:
+      %dot_vadd(~F, us, ws, ys) : {@A(@A(@M(a, y), M.dot(~F, us, ys)), @A(@M(b, y), M.dot(~F, ws, ys))) == @A(@M(@A(a, b), y), _) : @T}
+      @ZEQ[a,, b,, y,, p=M.dot(~F, us, ys),, q=M.dot(~F, ws, ys) | (a*y + p) + (b*y + q) | (a + b)*y + (p + q)]
+
+# -(u . v) = (-u) . v
+def dot_vneg(~F: O.OField, u: M.Vec(~F), +v: M.Vec(~F)) -> {@N(M.dot(~F, u, v)) == M.dot(~F, M.vneg(~F, u), v) : @T}:
+  match u v:
+    case Nil{} v:
+      Equal.sym(@T, @0, @N(@0), FL.neg_zero(~F))
+    case Con{+a, +us} Nil{}:
+      Equal.sym(@T, @0, @N(@0), FL.neg_zero(~F))
+    case Con{+a, +us} Con{+y, +ys}:
+      %dot_vneg(~F, us, ys) : {@N(@A(@M(a, y), M.dot(~F, us, ys))) == @A(@M(@N(a), y), _) : @T}
+      @ZEQ[a,, y,, p=M.dot(~F, us, ys) | -(a*y + p) | (-a)*y + -p]
+
+# c (u . v) = (c u) . v
+def dot_vscale(~F: O.OField, +c: @T, u: M.Vec(~F), +v: M.Vec(~F)) -> {@M(c, M.dot(~F, u, v)) == M.dot(~F, M.vscale(~F, c, u), v) : @T}:
+  match u v:
+    case Nil{} v:
+      Equal.sym(@T, @0, @M(c, @0), FL.mul_zero(~F, c))
+    case Con{+a, +us} Nil{}:
+      Equal.sym(@T, @0, @M(c, @0), FL.mul_zero(~F, c))
+    case Con{+a, +us} Con{+y, +ys}:
+      %dot_vscale(~F, c, us, ys) : {@M(c, @A(@M(a, y), M.dot(~F, us, ys))) == @A(@M(@M(c, a), y), _) : @T}
+      @ZEQ[c,, a,, y,, p=M.dot(~F, us, ys) | c*(a*y + p) | (c*a)*y + c*p]
+
+# a . (B v) = (a B) . v
+def vecmat_dot(~F: O.OField, a: M.Vec(~F), b: M.Mat(~F), +v: M.Vec(~F)) -> {M.dot(~F, a, M.matvec(~F, b, v)) == M.dot(~F, M.vecmat(~F, a, b), v) : @T}:
+  match a b:
+    case Nil{} b:
+      {==}
+    case Con{+x, +xs} Nil{}:
+      {==}
+    case Con{+x, +xs} Con{+r, +rs}:
+      %dot_vadd(~F, M.vscale(~F, x, r), M.vecmat(~F, xs, rs), v) : {@A(@M(x, M.dot(~F, r, v)), M.dot(~F, xs, M.matvec(~F, rs, v))) == _ : @T}
+      %dot_vscale(~F, x, r, v) : {@A(@M(x, M.dot(~F, r, v)), M.dot(~F, xs, M.matvec(~F, rs, v))) == @A(_, M.dot(~F, M.vecmat(~F, xs, rs), v)) : @T}
+      %vecmat_dot(~F, xs, rs, v) : {@A(@M(x, M.dot(~F, r, v)), M.dot(~F, xs, M.matvec(~F, rs, v))) == @A(@M(x, M.dot(~F, r, v)), _) : @T}
+      {==}
+
+# Products of matrices and vectors
+# --------------------------------
+
+# A (B v) = (A B) v
+def mat_assoc(~F: O.OField, a: M.Mat(~F), +b: M.Mat(~F), +v: M.Vec(~F)) -> {M.matvec(~F, a, M.matvec(~F, b, v)) == M.matvec(~F, M.matmul(~F, a, b), v) : M.Vec(~F)}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +rs}:
+      %vecmat_dot(~F, r, b, v) : {Con{M.dot(~F, r, M.matvec(~F, b, v)), M.matvec(~F, rs, M.matvec(~F, b, v))} == Con{_, M.matvec(~F, M.matmul(~F, rs, b), v)} : M.Vec(~F)}
+      %mat_assoc(~F, rs, b, v) : {Con{M.dot(~F, r, M.matvec(~F, b, v)), M.matvec(~F, rs, M.matvec(~F, b, v))} == Con{M.dot(~F, r, M.matvec(~F, b, v)), _} : M.Vec(~F)}
+      {==}
+
+# A v + B v = (A + B) v
+def mat_add(~F: O.OField, a: M.Mat(~F), b: M.Mat(~F), +v: M.Vec(~F)) -> {M.vadd(~F, M.matvec(~F, a, v), M.matvec(~F, b, v)) == M.matvec(~F, M.madd(~F, a, b), v) : M.Vec(~F)}:
+  match a b:
+    case Nil{} b:
+      {==}
+    case Con{+r, +rs} Nil{}:
+      {==}
+    case Con{+r, +rs} Con{+t, +ts}:
+      %dot_vadd(~F, r, t, v) : {Con{@A(M.dot(~F, r, v), M.dot(~F, t, v)), M.vadd(~F, M.matvec(~F, rs, v), M.matvec(~F, ts, v))} == Con{_, M.matvec(~F, M.madd(~F, rs, ts), v)} : M.Vec(~F)}
+      %mat_add(~F, rs, ts, v) : {Con{@A(M.dot(~F, r, v), M.dot(~F, t, v)), M.vadd(~F, M.matvec(~F, rs, v), M.matvec(~F, ts, v))} == Con{@A(M.dot(~F, r, v), M.dot(~F, t, v)), _} : M.Vec(~F)}
+      {==}
+
+# -(A v) = (-A) v
+def mat_neg(~F: O.OField, a: M.Mat(~F), +v: M.Vec(~F)) -> {M.vneg(~F, M.matvec(~F, a, v)) == M.matvec(~F, M.mneg(~F, a), v) : M.Vec(~F)}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +rs}:
+      %dot_vneg(~F, r, v) : {Con{@N(M.dot(~F, r, v)), M.vneg(~F, M.matvec(~F, rs, v))} == Con{_, M.matvec(~F, M.mneg(~F, rs), v)} : M.Vec(~F)}
+      %mat_neg(~F, rs, v) : {Con{@N(M.dot(~F, r, v)), M.vneg(~F, M.matvec(~F, rs, v))} == Con{@N(M.dot(~F, r, v)), _} : M.Vec(~F)}
+      {==}
+
+# A ys = (shift A) (y, ys)
+def shift_matvec(~F: O.OField, a: M.Mat(~F), +y: @T, +ys: M.Vec(~F)) -> {M.matvec(~F, a, ys) == M.matvec(~F, M.shift(~F, a), Con{y, ys}) : M.Vec(~F)}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +rs}:
+      %@ZEQ[y,, p=M.dot(~F, r, ys) | p | 0*y + p] : {Con{M.dot(~F, r, ys), M.matvec(~F, rs, ys)} == Con{_, M.matvec(~F, M.shift(~F, rs), Con{y, ys})} : M.Vec(~F)}
+      %shift_matvec(~F, rs, y, ys) : {Con{M.dot(~F, r, ys), M.matvec(~F, rs, ys)} == Con{M.dot(~F, r, ys), _} : M.Vec(~F)}
+      {==}
+
+# v = I v, for the identity of v's length
+def mat_ident(~F: O.OField, v: M.Vec(~F)) -> {v == M.matvec(~F, M.ident(~F, M.len(~F, v)), v) : M.Vec(~F)}:
+  match v:
+    case Nil{}:
+      {==}
+    case Con{+y, +ys}:
+      %shift_matvec(~F, M.ident(~F, M.len(~F, ys)), y, ys) : {Con{y, ys} == Con{@A(@M(@1, y), @0), _} : M.Vec(~F)}
+      %mat_ident(~F, ys) : {Con{y, ys} == Con{@A(@M(@1, y), @0), _} : M.Vec(~F)}
+      %@ZEQ[y | y | 1*y + 0] : {Con{y, ys} == Con{_, ys} : M.Vec(~F)}
+      {==}
+
+# Order helpers
+# -------------
+
+# nonnegativity moves along b = a
+def nn_eq(~F: O.OField, +a: @T, +b: @T, e: {b == a : @T}, h: O.le(~F, @0, b)) -> O.le(~F, @0, a):
+  %e : O.le(~F, @0, _)
+  h
+
+# 0 <= x + x gives 0 <= x
+def twice_nonneg.go(~F: O.OField, +x: @T, +h: O.le(~F, @0, @A(x, x)), t: Or(O.lt(F, x, @0), Or({x == @0 : @T}, O.lt(F, @0, x)))) -> O.le(~F, @0, x):
+  match t:
+    case Inl{+l}:
+      FO.absurd(O.le(~F, @0, x), O.lt_irrefl(F)(@0)(FO.le_lt_trans(~F, @0, @A(x, x), @0, h, O.lt_trans(F)(@A(x, x), x, @0)(FO.lt_subst_r(~F, @A(@0, x), x, @A(x, x), FL.zero_add(~F, x), O.lt_add(F)(x, @0, x)(l)))(l))))
+    case Inr{Inl{e}}:
+      %Equal.sym(@T, x, @0, e) : O.le(~F, @0, _)
+      FO.le_refl(~F, @0)
+    case Inr{Inr{g}}:
+      FO.lt_le(~F, @0, x, g)
+
+def twice_nonneg(~F: O.OField, +x: @T, +h: O.le(~F, @0, @A(x, x))) -> O.le(~F, @0, x):
+  twice_nonneg.go(~F, x, h, O.lt_total(F)(x, @0))
+
+# s <= t gives 0 <= t - s
+def sub_nonneg(~F: O.OField, +s: @T, +t: @T, h: O.le(~F, s, t)) -> O.le(~F, @0, @S(t, s)):
+  match h:
+    case Inl{l}:
+      FO.lt_le(~F, @0, @S(t, s), FO.lt_subst_l(~F, @A(s, @N(s)), @0, @S(t, s), O.add_neg(F)(s), O.lt_add(F)(s, t, @N(s))(l)))
+    case Inr{e}:
+      %e : O.le(~F, @0, @S(_, s))
+      nn_eq(~F, @S(s, s), @0, Equal.sym(@T, @S(s, s), @0, O.add_neg(F)(s)), FO.le_refl(~F, @0))
+
+# x <= y and 0 <= s give 0 <= y s - x s
+def mono_mul(~F: O.OField, +x: @T, +y: @T, +s: @T, h: O.le(~F, x, y), hs: O.le(~F, @0, s)) -> O.le(~F, @0, @S(@M(y, s), @M(x, s))):
+  nn_eq(~F, @FT[x,, y,, s | y*s - x*s], @FT[x,, y,, s | (y - x)*s], @ZEQ[x,, y,, s | (y - x)*s | y*s - x*s], FO.mul_nonneg(~F, @S(y, x), s, sub_nonneg(~F, x, y, h), hs))
+
+# Bounds
+# ------
+
+def bnd_add(~F: O.OField, +a: @T, +s: @T, +b: @T, +t: @T, ha: M.bnd(~F, a, s), hb: M.bnd(~F, b, t)) -> M.bnd(~F, @A(a, b), @A(s, t)):
+  (h1, h2) = ha
+  (h3, h4) = hb
+  (nn_eq(~F, @FT[a,, s,, b,, t | (s + t) - (a + b)], @FT[a,, s,, b,, t | (s - a) + (t - b)], @ZEQ[a,, s,, b,, t | (s - a) + (t - b) | (s + t) - (a + b)], FO.nonneg_add(~F, @S(s, a), @S(t, b), h1, h3)),
+   nn_eq(~F, @FT[a,, s,, b,, t | (s + t) + (a + b)], @FT[a,, s,, b,, t | (s + a) + (t + b)], @ZEQ[a,, s,, b,, t | (s + a) + (t + b) | (s + t) + (a + b)], FO.nonneg_add(~F, @A(s, a), @A(t, b), h2, h4)))
+
+def bnd_neg(~F: O.OField, +a: @T, +s: @T, h: M.bnd(~F, a, s)) -> M.bnd(~F, @N(a), s):
+  (h1, h2) = h
+  (nn_eq(~F, @FT[a,, s | s - -a], @A(s, a), @ZEQ[a,, s | s + a | s - -a], h2), h1)
+
+# |a b| <= s t: twice s t -/+ a b is a sum of products of nonnegatives
+def bnd_mul(~F: O.OField, +a: @T, +s: @T, +b: @T, +t: @T, ha: M.bnd(~F, a, s), hb: M.bnd(~F, b, t)) -> M.bnd(~F, @M(a, b), @M(s, t)):
+  (+h1, +h2) = ha
+  (+h3, +h4) = hb
+  (twice_nonneg(~F, @FT[a,, s,, b,, t | s*t - a*b], nn_eq(~F, @FT[a,, s,, b,, t | (s*t - a*b) + (s*t - a*b)], @FT[a,, s,, b,, t | (s - a)*(t + b) + (s + a)*(t - b)],
+      @ZEQ[a,, s,, b,, t | (s - a)*(t + b) + (s + a)*(t - b) | (s*t - a*b) + (s*t - a*b)],
+      FO.nonneg_add(~F, @M(@S(s, a), @A(t, b)), @M(@A(s, a), @S(t, b)), FO.mul_nonneg(~F, @S(s, a), @A(t, b), h1, h4), FO.mul_nonneg(~F, @A(s, a), @S(t, b), h2, h3)))),
+   twice_nonneg(~F, @FT[a,, s,, b,, t | s*t + a*b], nn_eq(~F, @FT[a,, s,, b,, t | (s*t + a*b) + (s*t + a*b)], @FT[a,, s,, b,, t | (s - a)*(t - b) + (s + a)*(t + b)],
+      @ZEQ[a,, s,, b,, t | (s - a)*(t - b) + (s + a)*(t + b) | (s*t + a*b) + (s*t + a*b)],
+      FO.nonneg_add(~F, @M(@S(s, a), @S(t, b)), @M(@A(s, a), @A(t, b)), FO.mul_nonneg(~F, @S(s, a), @S(t, b), h1, h3), FO.mul_nonneg(~F, @A(s, a), @A(t, b), h2, h4)))))
+
+# |a| <= s and 0 <= t - s give |a| <= t
+def bnd_mono(~F: O.OField, +a: @T, +s: @T, +t: @T, h: M.bnd(~F, a, s), +d: O.le(~F, @0, @S(t, s))) -> M.bnd(~F, a, t):
+  (h1, h2) = h
+  (nn_eq(~F, @S(t, a), @FT[a,, s,, t | (t - s) + (s - a)], @ZEQ[a,, s,, t | (t - s) + (s - a) | t - a], FO.nonneg_add(~F, @S(t, s), @S(s, a), d, h1)),
+   nn_eq(~F, @A(t, a), @FT[a,, s,, t | (t - s) + (s + a)], @ZEQ[a,, s,, t | (t - s) + (s + a) | t + a], FO.nonneg_add(~F, @S(t, s), @A(s, a), d, h2)))
+
+# |a| <= s gives 0 <= s
+def bnd_nonneg(~F: O.OField, +a: @T, +s: @T, h: M.bnd(~F, a, s)) -> O.le(~F, @0, s):
+  (h1, h2) = h
+  twice_nonneg(~F, s, nn_eq(~F, @A(s, s), @FT[a,, s | (s - a) + (s + a)], @ZEQ[a,, s | (s - a) + (s + a) | s + s], FO.nonneg_add(~F, @S(s, a), @A(s, a), h1, h2)))
+
+# |0| <= s for 0 <= s
+def bnd_zero(~F: O.OField, +s: @T, +h: O.le(~F, @0, s)) -> M.bnd(~F, @0, s):
+  (nn_eq(~F, @S(s, @0), s, @ZEQ[s | s | s - 0], h), nn_eq(~F, @A(s, @0), s, @ZEQ[s | s | s + 0], h))
+
+# bounds move along s = t
+def bnd_eq(~F: O.OField, +a: @T, +s: @T, +t: @T, e: {s == t : @T}, h: M.bnd(~F, a, s)) -> M.bnd(~F, a, t):
+  %e : M.bnd(~F, a, _)
+  h
+
+# Vector bounds
+# -------------
+
+def vall_mono(~F: O.OField, v: M.Vec(~F), +s: @T, +t: @T, h: M.vbnd.all(~F, v, s), +d: O.le(~F, @0, @S(t, s))) -> M.vbnd.all(~F, v, t):
+  match v:
+    case Nil{}:
+      Unit{}
+    case Con{+x, +xs}:
+      (hx, hxs) = h
+      (bnd_mono(~F, x, s, t, hx, d), vall_mono(~F, xs, s, t, hxs, d))
+
+def vall_add(~F: O.OField, u: M.Vec(~F), +s: @T, w: M.Vec(~F), +t: @T, hu: M.vbnd.all(~F, u, s), hw: M.vbnd.all(~F, w, t), +hs: O.le(~F, @0, s), +ht: O.le(~F, @0, t)) -> M.vbnd.all(~F, M.vadd(~F, u, w), @A(s, t)):
+  match u w:
+    case Nil{} w:
+      vall_mono(~F, w, t, @A(s, t), hw, nn_eq(~F, @S(@A(s, t), t), s, @ZEQ[s,, t | s | (s + t) - t], hs))
+    case Con{+x, +xs} Nil{}:
+      vall_mono(~F, Con{x, xs}, s, @A(s, t), hu, nn_eq(~F, @S(@A(s, t), s), t, @ZEQ[s,, t | t | (s + t) - s], ht))
+    case Con{+x, +xs} Con{+y, +ys}:
+      (hx, hxs) = hu
+      (hy, hys) = hw
+      (bnd_add(~F, x, s, y, t, hx, hy), vall_add(~F, xs, s, ys, t, hxs, hys, hs, ht))
+
+def vall_neg(~F: O.OField, u: M.Vec(~F), +s: @T, h: M.vbnd.all(~F, u, s)) -> M.vbnd.all(~F, M.vneg(~F, u), s):
+  match u:
+    case Nil{}:
+      Unit{}
+    case Con{+x, +xs}:
+      (hx, hxs) = h
+      (bnd_neg(~F, x, s, hx), vall_neg(~F, xs, s, hxs))
+
+def vbnd_add(~F: O.OField, +u: M.Vec(~F), +s: @T, +w: M.Vec(~F), +t: @T, hu: M.vbnd(~F, u, s), hw: M.vbnd(~F, w, t)) -> M.vbnd(~F, M.vadd(~F, u, w), @A(s, t)):
+  (+hs, hu2) = hu
+  (+ht, hw2) = hw
+  (FO.nonneg_add(~F, s, t, hs, ht), vall_add(~F, u, s, w, t, hu2, hw2, hs, ht))
+
+def vbnd_neg(~F: O.OField, +u: M.Vec(~F), +s: @T, h: M.vbnd(~F, u, s)) -> M.vbnd(~F, M.vneg(~F, u), s):
+  (hs, hu) = h
+  (hs, vall_neg(~F, u, s, hu))
+
+def vbnd_mono(~F: O.OField, +u: M.Vec(~F), +s: @T, +t: @T, h: M.vbnd(~F, u, s), hst: O.le(~F, s, t)) -> M.vbnd(~F, u, t):
+  (hs, hu) = h
+  +d = sub_nonneg(~F, s, t, hst)
+  (nn_eq(~F, t, @FT[s,, t | s + (t - s)], @ZEQ[s,, t | s + (t - s) | t], FO.nonneg_add(~F, s, @S(t, s), hs, d)), vall_mono(~F, u, s, t, hu, d))

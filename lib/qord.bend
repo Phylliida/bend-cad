@@ -37,15 +37,22 @@ def q_lt_trans(+x: S.Q, +y: S.Q, +z: S.Q, h1: S.Q.lt(x, y), h2: S.Q.lt(y, z)) ->
         ZO.pos_mul(S.Zpos{S.Q.den(z)}, dif(x, y), Unit{}, lt_dif(x, y, h1)),
         ZO.pos_mul(S.Zpos{S.Q.den(x)}, dif(y, z), Unit{}, lt_dif(y, z, h2))))))
 
+# a comparison's verdicts EQ and GT
+def q_cmp_eq(+x: S.Q, +y: S.Q, e: {S.Q.cmp(x, y) == EQ{} : Cmp}) -> S.Q.eq(x, y):
+  ZO.sub_eq(S.Z.mul(S.Q.num(x), S.Zpos{S.Q.den(y)}), S.Z.mul(S.Q.num(y), S.Zpos{S.Q.den(x)}), ZO.eq_zero(S.Z.mul(S.Q.num(x), S.Zpos{S.Q.den(y)}), S.Z.mul(S.Q.num(y), S.Zpos{S.Q.den(x)}), e))
+
+def q_cmp_gt(+x: S.Q, +y: S.Q, e: {S.Q.cmp(x, y) == GT{} : Cmp}) -> S.Q.lt(y, x):
+  dif_lt(y, x, ZO.pos_eq(dif(y, x), S.Z.neg(S.Z.sub(S.Z.mul(S.Q.num(y), S.Zpos{S.Q.den(x)}), S.Z.mul(S.Q.num(x), S.Zpos{S.Q.den(y)}))), R.ring_eq([S.Q.num(x), S.Zpos{S.Q.den(x)}, S.Q.num(y), S.Zpos{S.Q.den(y)}], E.ZSub{E.ZMul{E.ZVar{0n}, E.ZVar{3n}}, E.ZMul{E.ZVar{2n}, E.ZVar{1n}}}, E.ZNeg{E.ZSub{E.ZMul{E.ZVar{2n}, E.ZVar{1n}}, E.ZMul{E.ZVar{0n}, E.ZVar{3n}}}}, {==}), ZO.gt_pos(S.Z.mul(S.Q.num(x), S.Zpos{S.Q.den(y)}), S.Z.mul(S.Q.num(y), S.Zpos{S.Q.den(x)}), e)))
+
 # by the comparison's verdict c
 def q_lt_total.go(+x: S.Q, +y: S.Q, c: Cmp, e: {S.Q.cmp(x, y) == c : Cmp}) -> Or(S.Q.lt(x, y), Or(S.Q.eq(x, y), S.Q.lt(y, x))):
   match c:
     case LT{}:
       Inl{e}
     case EQ{}:
-      Inr{Inl{ZO.sub_eq(S.Z.mul(S.Q.num(x), S.Zpos{S.Q.den(y)}), S.Z.mul(S.Q.num(y), S.Zpos{S.Q.den(x)}), ZO.eq_zero(S.Z.mul(S.Q.num(x), S.Zpos{S.Q.den(y)}), S.Z.mul(S.Q.num(y), S.Zpos{S.Q.den(x)}), e))}}
+      Inr{Inl{q_cmp_eq(x, y, e)}}
     case GT{}:
-      Inr{Inr{dif_lt(y, x, ZO.pos_eq(dif(y, x), S.Z.neg(S.Z.sub(S.Z.mul(S.Q.num(y), S.Zpos{S.Q.den(x)}), S.Z.mul(S.Q.num(x), S.Zpos{S.Q.den(y)}))), R.ring_eq([S.Q.num(x), S.Zpos{S.Q.den(x)}, S.Q.num(y), S.Zpos{S.Q.den(y)}], E.ZSub{E.ZMul{E.ZVar{0n}, E.ZVar{3n}}, E.ZMul{E.ZVar{2n}, E.ZVar{1n}}}, E.ZNeg{E.ZSub{E.ZMul{E.ZVar{2n}, E.ZVar{1n}}, E.ZMul{E.ZVar{0n}, E.ZVar{3n}}}}, {==}), ZO.gt_pos(S.Z.mul(S.Q.num(x), S.Zpos{S.Q.den(y)}), S.Z.mul(S.Q.num(y), S.Zpos{S.Q.den(x)}), e)))}}
+      Inr{Inr{q_cmp_gt(x, y, e)}}
 
 def q_lt_total(+x: S.Q, +y: S.Q) -> Or(S.Q.lt(x, y), Or(S.Q.eq(x, y), S.Q.lt(y, x))):
   q_lt_total.go(x, y, S.Q.cmp(x, y), {==})
