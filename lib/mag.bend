@@ -85,3 +85,92 @@ def norm_val(+bp: Nat, m: List<&2, Nat>) -> {SB.Mag.val(bp, m) == SB.Mag.val(bp,
       %normcon_val(bp, h, RM.Mag.norm(t)) : {Nat.add(h, Nat.mul(SB.Mag.val(bp, t), 1n+bp)) == _ : Nat}
       %norm_val(bp, t) : {Nat.add(h, Nat.mul(SB.Mag.val(bp, t), 1n+bp)) == Nat.add(h, Nat.mul(_, 1n+bp)) : Nat}
       {==}
+
+# Well-formedness
+# ---------------
+# Results of well-formed inputs are well-formed (every limb below the base),
+# given a base of at least 2. Each carry is bounded through O.div_le.
+
+def limb_wf(+bp: Nat, c: Nat, h: SB.Le(c, bp)) -> SB.Mag.wf(bp, RM.Mag.limb(c)):
+  match c:
+    case 0n:
+      Unit{}
+    case 1n+k:
+      (h, Unit{})
+
+# bp + 1 <= bp + 1 * B
+def le_carry1(+bp: Nat) -> SB.Le(Nat.add(bp, 1n), Nat.add(bp, Nat.mul(1n, 1n+bp))):
+  (bp, NR.ring_eq([bp], NR.NAdd{NR.NAdd{NR.NVar{0n}, NR.NCst{1n}}, NR.NVar{0n}}, NR.NAdd{NR.NVar{0n}, NR.NMul{NR.NCst{1n}, NR.NAdd{NR.NCst{1n}, NR.NVar{0n}}}}, {==}))
+
+# (bp + bp) + 1 <= bp + 1 * B
+def le_carry2(+bp: Nat) -> SB.Le(Nat.add(Nat.add(bp, bp), 1n), Nat.add(bp, Nat.mul(1n, 1n+bp))):
+  (0n, NR.ring_eq([bp], NR.NAdd{NR.NAdd{NR.NAdd{NR.NVar{0n}, NR.NVar{0n}}, NR.NCst{1n}}, NR.NCst{0n}}, NR.NAdd{NR.NVar{0n}, NR.NMul{NR.NCst{1n}, NR.NAdd{NR.NCst{1n}, NR.NVar{0n}}}}, {==}))
+
+# bp * bp + bp <= bp + bp * B
+def le_carryb(+bp: Nat) -> SB.Le(Nat.add(Nat.mul(bp, bp), bp), Nat.add(bp, Nat.mul(bp, 1n+bp))):
+  (bp, NR.ring_eq([bp], NR.NAdd{NR.NAdd{NR.NMul{NR.NVar{0n}, NR.NVar{0n}}, NR.NVar{0n}}, NR.NVar{0n}}, NR.NAdd{NR.NVar{0n}, NR.NMul{NR.NVar{0n}, NR.NAdd{NR.NCst{1n}, NR.NVar{0n}}}}, {==}))
+
+def addc_wf(+bp: Nat, a: List<&2, Nat>, +c: Nat, +hb: SB.Le(1n, bp), hc: SB.Le(c, 1n), wa: SB.Mag.wf(bp, a)) -> SB.Mag.wf(bp, RM.Mag.addc(bp, a, c)):
+  match a:
+    case Nil{}:
+      limb_wf(bp, c, O.le_trans(c, 1n, bp, hc, hb))
+    case Con{+h, t}:
+      (lh, wt) = wa
+      (O.mod_le(Nat.add(h, c), bp), addc_wf(bp, t, Nat.div(Nat.add(h, c), 1n+bp), hb,
+        O.div_le(Nat.add(h, c), bp, 1n, O.le_trans(Nat.add(h, c), Nat.add(bp, 1n), Nat.add(bp, Nat.mul(1n, 1n+bp)), O.le_add_mono(h, bp, c, 1n, lh, hc), le_carry1(bp))),
+        wt))
+
+def add_go_wf(+bp: Nat, a: List<&2, Nat>, b: List<&2, Nat>, +c: Nat, +hb: SB.Le(1n, bp), hc: SB.Le(c, 1n), wa: SB.Mag.wf(bp, a), wb: SB.Mag.wf(bp, b)) -> SB.Mag.wf(bp, RM.Mag.add.go(bp, a, b, c)):
+  match a b:
+    case Nil{} Nil{}:
+      limb_wf(bp, c, O.le_trans(c, 1n, bp, hc, hb))
+    case Nil{} Con{bh, bt}:
+      addc_wf(bp, Con{bh, bt}, c, hb, hc, wb)
+    case Con{ah, at} Nil{}:
+      addc_wf(bp, Con{ah, at}, c, hb, hc, wa)
+    case Con{+ah, at} Con{+bh, bt}:
+      (la, wat) = wa
+      (lb, wbt) = wb
+      (O.mod_le(Nat.add(Nat.add(ah, bh), c), bp), add_go_wf(bp, at, bt, Nat.div(Nat.add(Nat.add(ah, bh), c), 1n+bp), hb,
+        O.div_le(Nat.add(Nat.add(ah, bh), c), bp, 1n, O.le_trans(Nat.add(Nat.add(ah, bh), c), Nat.add(Nat.add(bp, bp), 1n), Nat.add(bp, Nat.mul(1n, 1n+bp)),
+          O.le_add_mono(Nat.add(ah, bh), Nat.add(bp, bp), c, 1n, O.le_add_mono(ah, bp, bh, bp, la, lb), hc), le_carry2(bp))),
+        wat, wbt))
+
+def add_wf(+bp: Nat, a: List<&2, Nat>, b: List<&2, Nat>, +hb: SB.Le(1n, bp), wa: SB.Mag.wf(bp, a), wb: SB.Mag.wf(bp, b)) -> SB.Mag.wf(bp, RM.Mag.add(bp, a, b)):
+  add_go_wf(bp, a, b, 0n, hb, (1n, {==}), wa, wb)
+
+def mul1_wf(+bp: Nat, a: List<&2, Nat>, +k: Nat, +c: Nat, +hk: SB.Le(k, bp), hc: SB.Le(c, bp), wa: SB.Mag.wf(bp, a)) -> SB.Mag.wf(bp, RM.Mag.mul1(bp, a, k, c)):
+  match a:
+    case Nil{}:
+      limb_wf(bp, c, hc)
+    case Con{+h, t}:
+      (lh, wt) = wa
+      (O.mod_le(Nat.add(Nat.mul(h, k), c), bp), mul1_wf(bp, t, k, Nat.div(Nat.add(Nat.mul(h, k), c), 1n+bp), hk,
+        O.div_le(Nat.add(Nat.mul(h, k), c), bp, bp, O.le_trans(Nat.add(Nat.mul(h, k), c), Nat.add(Nat.mul(bp, bp), bp), Nat.add(bp, Nat.mul(bp, 1n+bp)),
+          O.le_add_mono(Nat.mul(h, k), Nat.mul(bp, bp), c, bp, O.le_mul_mono(h, bp, k, bp, lh, hk), hc), le_carryb(bp))),
+        wt))
+
+def mul_wf(+bp: Nat, a: List<&2, Nat>, +b: List<&2, Nat>, +hb: SB.Le(1n, bp), wa: SB.Mag.wf(bp, a), +wb: SB.Mag.wf(bp, b)) -> SB.Mag.wf(bp, RM.Mag.mul(bp, a, b)):
+  match a:
+    case Nil{}:
+      Unit{}
+    case Con{+h, +t}:
+      (lh, wt) = wa
+      add_wf(bp, RM.Mag.mul1(bp, b, h, 0n), Con{0n, RM.Mag.mul(bp, t, b)}, hb,
+        mul1_wf(bp, b, h, 0n, lh, (bp, {==}), wb),
+        ((bp, {==}), mul_wf(bp, t, b, hb, wt, wb)))
+
+def normcon_wf(+bp: Nat, h: Nat, t: List<&2, Nat>, lh: SB.Le(h, bp), wt: SB.Mag.wf(bp, t)) -> SB.Mag.wf(bp, RM.Mag.norm.con(h, t)):
+  match t:
+    case Nil{}:
+      limb_wf(bp, h, lh)
+    case Con{x, y}:
+      (lh, wt)
+
+def norm_wf(+bp: Nat, m: List<&2, Nat>, wm: SB.Mag.wf(bp, m)) -> SB.Mag.wf(bp, RM.Mag.norm(m)):
+  match m:
+    case Nil{}:
+      Unit{}
+    case Con{+h, +t}:
+      (lh, wt) = wm
+      normcon_wf(bp, h, RM.Mag.norm(t), lh, norm_wf(bp, t, wt))

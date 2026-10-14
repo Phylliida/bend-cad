@@ -4,6 +4,7 @@
 # positive factor, proven through the unary meaning.
 
 import Base
+import ./nat.bend as N
 import ./pos.bend as P
 import ./z.bend as LZ
 import ./zring.bend as R
@@ -14,34 +15,19 @@ import ../spec/ring.bend as E
 # Cancellation
 # ------------
 
-# a type picked by a Nat: a rewrite through it refutes 0n == 1n+k
-def NatD(n: Nat, z: Type, s: Type) -> Type:
-  match n:
-    case 0n:
-      z
-    case 1n+k:
-      s
-
-def add_cancel(c: Nat, -x: Nat, -y: Nat, e: {Nat.add(c, x) == Nat.add(c, y) : Nat}) -> {x == y : Nat}:
-  match c:
-    case 0n:
-      e
-    case 1n+k:
-      add_cancel(k, x, y, Equal.cong(Nat, Nat, n => P.pred(n), 1n+Nat.add(k, x), 1n+Nat.add(k, y), e))
-
 # a * (1 + k) = b * (1 + k) gives a = b
 def mul_cancel_nat(a: Nat, b: Nat, +k: Nat, e: {Nat.mul(a, 1n+k) == Nat.mul(b, 1n+k) : Nat}) -> {a == b : Nat}:
   match a b:
     case 0n 0n:
       {==}
     case 0n 1n+j:
-      %e : NatD(_, Unit, {0n == 1n+j : Nat})
+      %e : N.NatD(_, Unit, {0n == 1n+j : Nat})
       Unit{}
     case 1n+i 0n:
-      %e : NatD(_, {1n+i == 0n : Nat}, Unit)
+      %e : N.NatD(_, {1n+i == 0n : Nat}, Unit)
       Unit{}
     case 1n+i 1n+j:
-      %mul_cancel_nat(i, j, k, add_cancel(1n+k, Nat.mul(i, 1n+k), Nat.mul(j, 1n+k), e)) : {1n+i == 1n+_ : Nat}
+      %mul_cancel_nat(i, j, k, N.add_cancel(1n+k, Nat.mul(i, 1n+k), Nat.mul(j, 1n+k), e)) : {1n+i == 1n+_ : Nat}
       {==}
 
 def pnat_mulp(x: S.Z, +p: S.Pos) -> {S.Z.pnat(S.Z.mul(x, S.Zpos{p})) == Nat.mul(S.Z.pnat(x), S.Pos.nat(p)) : Nat}:

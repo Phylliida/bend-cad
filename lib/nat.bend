@@ -124,3 +124,28 @@ def mul_swap(+a: Nat, +b: Nat, +c: Nat) -> {Nat.mul(a, Nat.mul(b, c)) == Nat.mul
   %mul_assoc(b, c, a) : {_ == Nat.mul(b, Nat.mul(a, c)) : Nat}
   %mul_comm(c, a) : {Nat.mul(b, Nat.mul(c, a)) == Nat.mul(b, _) : Nat}
   {==}
+
+# Cancellation and refutation
+# ---------------------------
+
+def pred(n: Nat) -> Nat:
+  match n:
+    case 0n:
+      0n
+    case 1n+k:
+      k
+
+# a type picked by a Nat: a rewrite through it refutes 0n == 1n+k
+def NatD(n: Nat, z: Type, s: Type) -> Type:
+  match n:
+    case 0n:
+      z
+    case 1n+k:
+      s
+
+def add_cancel(c: Nat, -x: Nat, -y: Nat, e: {Nat.add(c, x) == Nat.add(c, y) : Nat}) -> {x == y : Nat}:
+  match c:
+    case 0n:
+      e
+    case 1n+k:
+      add_cancel(k, x, y, Equal.cong(Nat, Nat, n => pred(n), 1n+Nat.add(k, x), 1n+Nat.add(k, y), e))

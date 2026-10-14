@@ -7,8 +7,8 @@ import Base
 import ./num.bend as S
 
 # a <= b, witnessed by the gap k with a + k = b
-def Le(a: Nat, b: Nat) -> Type:
-  &k: Nat -> {Nat.add(a, k) == b : Nat}
+def Le(a: Nat, b: Nat) -> Data:
+  Sigma<&2, &2, Nat, k => {Nat.add(a, k) == b : Nat}>
 
 def Mag.val(+bp: Nat, m: List<&2, Nat>) -> Nat:
   match m:
@@ -18,12 +18,12 @@ def Mag.val(+bp: Nat, m: List<&2, Nat>) -> Nat:
       Nat.add(h, Nat.mul(Mag.val(bp, t), 1n+bp))
 
 # every limb is below the base
-def Mag.wf(+bp: Nat, m: List<&2, Nat>) -> Type:
+def Mag.wf(+bp: Nat, m: List<&2, Nat>) -> Data:
   match m:
     case Nil{}:
       Unit
     case Con{h, t}:
-      Le(h, bp) & Mag.wf(bp, t)
+      Sigma<&2, &2, Le(h, bp), x => Mag.wf(bp, t)>
 
 type Big is Data:
   BPos{m: List<&2, Nat>}
@@ -36,7 +36,7 @@ def Big.val(+bp: Nat, x: Big) -> S.Z:
     case BNeg{m}:
       S.Z.of_diff(0n, Mag.val(bp, m))
 
-def Big.wf(+bp: Nat, x: Big) -> Type:
+def Big.wf(+bp: Nat, x: Big) -> Data:
   match x:
     case BPos{m}:
       Mag.wf(bp, m)
