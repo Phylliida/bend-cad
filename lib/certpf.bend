@@ -19,6 +19,7 @@ import ./karith.bend as KA
 import ./kball.bend as KB
 import ./slope.bend as SL
 import ./cert.bend as CK
+import ./nat.bend as LN
 
 # The checker's facts
 # -------------------
@@ -292,3 +293,40 @@ def box_in(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +n: Nat, +y: M.Vec(~F), +z:
     rbnd_inbox(~K, ~F, ~H, z, pc, pr, hz, hnp),
     Equal.trans(Nat, M.len(~F, y), n, KA.klen(~K, yc), hly, Equal.sym(Nat, KA.klen(~K, yc), n, hyc)),
     Equal.trans(Nat, KA.klen(~K, yc), n, KA.klen(~K, KA.kfit(~K, n, yr)), hyc, Equal.sym(Nat, KA.klen(~K, KA.kfit(~K, n, yr)), n, klen_kfit(~K, n, yr))))
+
+# Slope rows of a block
+# ---------------------
+
+def smat(~F: O.OField, +x1: M.Vec(~F), +x2: M.Vec(~F), eqs: List<&2, E.QExpr>, +cnt: Nat, +lo: Nat) -> M.Mat(~F):
+  match eqs:
+    case Nil{}:
+      Nil{}
+    case Con{e, es}:
+      Con{SL.srange(~F, x1, x2, e, cnt, lo), smat(~F, x1, x2, es, cnt, lo)}
+
+def len_srange(~F: O.OField, +x1: M.Vec(~F), +x2: M.Vec(~F), +e: E.QExpr, cnt: Nat, +lo: Nat) -> {M.len(~F, SL.srange(~F, x1, x2, e, cnt, lo)) == cnt : Nat}:
+  match cnt:
+    case 0n:
+      {==}
+    case 1n+k:
+      %Equal.sym(Nat, M.len(~F, SL.srange(~F, x1, x2, e, k, 1n+lo)), k, len_srange(~F, x1, x2, e, k, 1n+lo)) : {1n+_ == 1n+k : Nat}
+      {==}
+
+# the slopes in n + p variables are those in the first n, then the next p
+def srange_app(~F: O.OField, +x1: M.Vec(~F), +x2: M.Vec(~F), +e: E.QExpr, n: Nat, +p: Nat, +lo: Nat) -> {SL.srange(~F, x1, x2, e, Nat.add(n, p), lo) == C.app(~F, SL.srange(~F, x1, x2, e, n, lo), SL.srange(~F, x1, x2, e, p, Nat.add(n, lo))) : M.Vec(~F)}:
+  match n:
+    case 0n:
+      {==}
+    case 1n++k:
+      %Equal.sym(M.Vec(~F), SL.srange(~F, x1, x2, e, Nat.add(k, p), 1n+lo), C.app(~F, SL.srange(~F, x1, x2, e, k, 1n+lo), SL.srange(~F, x1, x2, e, p, Nat.add(k, 1n+lo))), srange_app(~F, x1, x2, e, k, p, 1n+lo)) : {Con{SL.sl(~F, lo, x1, x2, e), _} == Con{SL.sl(~F, lo, x1, x2, e), C.app(~F, SL.srange(~F, x1, x2, e, k, 1n+lo), SL.srange(~F, x1, x2, e, p, 1n+Nat.add(k, lo)))} : M.Vec(~F)}
+      %LN.add_succ(k, lo) : {Con{SL.sl(~F, lo, x1, x2, e), C.app(~F, SL.srange(~F, x1, x2, e, k, 1n+lo), SL.srange(~F, x1, x2, e, p, _))} == Con{SL.sl(~F, lo, x1, x2, e), C.app(~F, SL.srange(~F, x1, x2, e, k, 1n+lo), SL.srange(~F, x1, x2, e, p, 1n+Nat.add(k, lo)))} : M.Vec(~F)}
+      {==}
+
+# e(u1 ++ z1) - e(u2 ++ z2) = sy . (u1 - u2) + sz . (z1 - z2)
+def eq_slope(~F: O.OField, +u1: M.Vec(~F), +u2: M.Vec(~F), +z1: M.Vec(~F), +z2: M.Vec(~F), +e: E.QExpr, +n: Nat, +p: Nat, hb: {SL.below(Nat.add(n, p), e) == True{} : Bool}, +h1: {M.len(~F, u1) == n : Nat}, +h2: {M.len(~F, u2) == n : Nat}) -> {O.sub(~F, O.eval(~F, C.app(~F, u1, z1), e), O.eval(~F, C.app(~F, u2, z2), e)) == O.add(F, M.dot(~F, SL.srange(~F, C.app(~F, u1, z1), C.app(~F, u2, z2), e, n, 0n), C.vsub(~F, u1, u2)), M.dot(~F, SL.srange(~F, C.app(~F, u1, z1), C.app(~F, u2, z2), e, p, Nat.add(n, 0n)), C.vsub(~F, z1, z2))) : O.C(F)}:
+  +x1 = C.app(~F, u1, z1)
+  +x2 = C.app(~F, u2, z2)
+  %FV.dot_app(~F, SL.srange(~F, x1, x2, e, n, 0n), SL.srange(~F, x1, x2, e, p, Nat.add(n, 0n)), C.vsub(~F, u1, u2), C.vsub(~F, z1, z2), Equal.trans(Nat, M.len(~F, SL.srange(~F, x1, x2, e, n, 0n)), n, M.len(~F, C.vsub(~F, u1, u2)), len_srange(~F, x1, x2, e, n, 0n), Equal.sym(Nat, M.len(~F, C.vsub(~F, u1, u2)), n, len_vsub(~F, u1, u2, n, h1, h2)))) : {O.sub(~F, O.eval(~F, x1, e), O.eval(~F, x2, e)) == _ : O.C(F)}
+  %FV.vsub_app(~F, u1, u2, z1, z2, Equal.trans(Nat, M.len(~F, u1), n, M.len(~F, u2), h1, Equal.sym(Nat, M.len(~F, u2), n, h2))) : {O.sub(~F, O.eval(~F, x1, e), O.eval(~F, x2, e)) == M.dot(~F, C.app(~F, SL.srange(~F, x1, x2, e, n, 0n), SL.srange(~F, x1, x2, e, p, Nat.add(n, 0n))), _) : O.C(F)}
+  %srange_app(~F, x1, x2, e, n, p, 0n) : {O.sub(~F, O.eval(~F, x1, e), O.eval(~F, x2, e)) == M.dot(~F, _, C.vsub(~F, x1, x2)) : O.C(F)}
+  SL.slope_ok(~F, x1, x2, e, Nat.add(n, p), hb)
