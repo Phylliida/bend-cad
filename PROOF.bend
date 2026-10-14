@@ -14,6 +14,7 @@ import ./lib/q.bend as LQ
 import ./lib/qord.bend as LQO
 import ./lib/qemb.bend as QE
 import ./lib/qreduce.bend as QRD
+import ./lib/qfield.bend as QF
 import ./lib/fmat.bend as FM
 import ./lib/dmat.bend as DM
 import ./spec/mat.bend as M
@@ -200,6 +201,11 @@ def Laws.ofq_lt_rev(F, x, y, h):
 
 def Laws.ofq_eq_rev(F, x, y, e):
   QE.ofq_eq_rev(~F, x, y, e)
+
+# The canonical rationals are an ordered field
+
+def Laws.ofield_exists():
+  QF.qfield()
 
 # Dyadics
 # -------

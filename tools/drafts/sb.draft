@@ -1,0 +1,392 @@
+# Canonical positive rationals: every positive rational is exactly one
+# Stern-Brocot word (its path from 1 in the Stern-Brocot tree), so Bend's
+# own equality on words is equality of rationals. encode reads the path off
+# n/d by subtractive Euclid; decode builds a fraction back. Three facts:
+# decode (encode n d) is n/d (dec_enc), encode depends only on the ratio
+# (enc_ratio), and encode (decode w) is w (enc_dec). Uniqueness comes from
+# the construction, so no gcd theory is needed.
+#
+# encode takes about n/d + d/n steps (subtraction, not division), which is
+# fine for proofs and small checks; runtime reduction is lib/qreduce.bend.
+
+import Base
+import ./nat.bend as N
+import ./natord.bend as NO
+import ./pos.bend as P
+import ./zlaws.bend as LZL
+import ./zring.bend as R
+import ./zord.bend as ZO
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/big.bend as SB
+
+type SB is Data:
+  SB1{}
+  SBL{w: SB}
+  SBR{w: SB}
+
+# a fraction a/b of positives
+type PP is Data:
+  PP{a: S.Pos, b: S.Pos}
+
+def decode.l(p: PP) -> PP:
+  match p:
+    case PP{+a, b}:
+      PP{a, S.Pos.add(a, b)}
+
+def decode.r(p: PP) -> PP:
+  match p:
+    case PP{a, +b}:
+      PP{S.Pos.add(a, b), b}
+
+# the fraction at the end of the path w: going right adds 1, going left
+# takes x to x / (1 + x)
+def decode(w: SB) -> PP:
+  match w:
+    case SB1{}:
+      PP{S.XH{}, S.XH{}}
+    case SBL{v}:
+      decode.l(decode(v))
+    case SBR{v}:
+      decode.r(decode(v))
+
+def zpart(z: S.Z) -> S.Pos:
+  match z:
+    case S.Zpos{p}:
+      p
+    case S.Z0{}:
+      S.XH{}
+    case S.Zneg{p}:
+      S.XH{}
+
+# n - d, for n > d
+def psub(+n: S.Pos, +d: S.Pos) -> S.Pos:
+  zpart(S.Z.pos_sub(n, d))
+
+# the path of n/d, given fuel k >= n + d and c = cmp(n, d)
+def encode.go(k: Nat, c: Cmp, +n: S.Pos, +d: S.Pos) -> SB:
+  match k c:
+    case 0n c:
+      SB1{}
+    case 1n++f EQ{}:
+      SB1{}
+    case 1n++f GT{}:
+      SBR{encode.go(f, S.Pos.cmp(psub(n, d), d), psub(n, d), d)}
+    case 1n++f LT{}:
+      SBL{encode.go(f, S.Pos.cmp(n, psub(d, n)), n, psub(d, n))}
+
+def encode(+n: S.Pos, +d: S.Pos) -> SB:
+  encode.go(Nat.add(S.Pos.nat(n), S.Pos.nat(d)), S.Pos.cmp(n, d), n, d)
+
+# Subtraction
+# -----------
+
+# a positive integer is Zpos of its part
+def zpart_eq(z: S.Z, h: ZO.pos(z)) -> {S.Zpos{zpart(z)} == z : S.Z}:
+  match z:
+    case S.Zpos{p}:
+      {==}
+    case S.Z0{}:
+      ZO.absurd({S.Zpos{S.XH{}} == S.Z0{} : S.Z}, h)
+    case S.Zneg{p}:
+      ZO.absurd({S.Zpos{S.XH{}} == S.Zneg{p} : S.Z}, h)
+
+# Zpos is one-to-one
+def zpos_inj(+p: S.Pos, +q: S.Pos, e: {S.Zpos{p} == S.Zpos{q} : S.Z}) -> {p == q : S.Pos}:
+  Equal.cong(S.Z, S.Pos, z => zpart(z), S.Zpos{p}, S.Zpos{q}, e)
+
+# n > d: n - d is n - d
+def psub_gt(+n: S.Pos, +d: S.Pos, e: {S.Pos.cmp(n, d) == GT{} : Cmp}) -> {S.Zpos{psub(n, d)} == S.Z.sub(S.Zpos{n}, S.Zpos{d}) : S.Z}:
+  zpart_eq(S.Z.sub(S.Zpos{n}, S.Zpos{d}),
+    ZO.pos_eq(S.Z.sub(S.Zpos{n}, S.Zpos{d}), S.Z.neg(S.Z.sub(S.Zpos{d}, S.Zpos{n})), @RING[n=S.Zpos{n},, d=S.Zpos{d} | n - d | -(d - n)], ZO.gt_pos(S.Zpos{n}, S.Zpos{d}, e)))
+
+# n < d: d - n is d - n
+def psub_lt(+n: S.Pos, +d: S.Pos, e: {S.Pos.cmp(n, d) == LT{} : Cmp}) -> {S.Zpos{psub(d, n)} == S.Z.sub(S.Zpos{d}, S.Zpos{n}) : S.Z}:
+  zpart_eq(S.Z.sub(S.Zpos{d}, S.Zpos{n}), ZO.lt_pos(S.Zpos{n}, S.Zpos{d}, e))
+
+# n = d when they compare EQ
+def cmp_eq(+n: S.Pos, +d: S.Pos, e: {S.Pos.cmp(n, d) == EQ{} : Cmp}) -> {n == d : S.Pos}:
+  zpos_inj(n, d, ZO.sub_eq(S.Zpos{n}, S.Zpos{d}, ZO.eq_zero(S.Zpos{n}, S.Zpos{d}, e)))
+
+# (n - d) + d = n, for n > d
+def psub_add(+n: S.Pos, +d: S.Pos, e: {S.Pos.cmp(n, d) == GT{} : Cmp}) -> {S.Pos.add(psub(n, d), d) == n : S.Pos}:
+  zpos_inj(S.Pos.add(psub(n, d), d), n,
+    Equal.trans(S.Z, S.Z.add(S.Zpos{psub(n, d)}, S.Zpos{d}), S.Z.add(S.Z.sub(S.Zpos{n}, S.Zpos{d}), S.Zpos{d}), S.Zpos{n},
+      ZO.zeq_add_r(S.Zpos{psub(n, d)}, S.Z.sub(S.Zpos{n}, S.Zpos{d}), S.Zpos{d}, psub_gt(n, d, e)),
+      @RING[n=S.Zpos{n},, d=S.Zpos{d} | (n - d) + d | n]))
+
+# n + (d - n) = d, for n < d
+def psub_add_l(+n: S.Pos, +d: S.Pos, e: {S.Pos.cmp(n, d) == LT{} : Cmp}) -> {S.Pos.add(n, psub(d, n)) == d : S.Pos}:
+  zpos_inj(S.Pos.add(n, psub(d, n)), d,
+    Equal.trans(S.Z, S.Z.add(S.Zpos{n}, S.Zpos{psub(d, n)}), S.Z.add(S.Zpos{n}, S.Z.sub(S.Zpos{d}, S.Zpos{n})), S.Zpos{d},
+      ZO.zeq_add_l(S.Zpos{n}, S.Zpos{psub(d, n)}, S.Z.sub(S.Zpos{d}, S.Zpos{n}), psub_lt(n, d, e)),
+      @RING[n=S.Zpos{n},, d=S.Zpos{d} | n + (d - n) | d]))
+
+def zpos_eq(+p: S.Pos, +q: S.Pos, e: {p == q : S.Pos}) -> {S.Zpos{p} == S.Zpos{q} : S.Z}:
+  %e : {S.Zpos{p} == S.Zpos{_} : S.Z}
+  {==}
+
+# Fuel
+# ----
+# encode.go runs on fuel k >= n + d; each step's pair fits in k - 1.
+
+# order facts move along b = a
+def le_eq_l(+a: Nat, +b: Nat, +c: Nat, e: {b == a : Nat}, h: SB.Le(b, c)) -> SB.Le(a, c):
+  %e : SB.Le(_, c)
+  h
+
+def fuel_eq(+x: Nat, +p: S.Pos) -> {Nat.add(x, S.Pos.nat(p)) == 1n+Nat.add(x, P.pm1(p)) : Nat}:
+  %P.form_nat(p) : {Nat.add(x, _) == 1n+Nat.add(x, P.pm1(p)) : Nat}
+  Equal.sym(Nat, 1n+Nat.add(x, P.pm1(p)), Nat.add(x, 1n+P.pm1(p)), N.add_succ(x, P.pm1(p)))
+
+# x + p <= 1 + f gives x <= f
+def fuel_l(+x: Nat, +p: S.Pos, +f: Nat, h: SB.Le(Nat.add(x, S.Pos.nat(p)), 1n+f)) -> SB.Le(x, f):
+  NO.le_trans(x, Nat.add(x, P.pm1(p)), f, NO.le_add(x, P.pm1(p)),
+    NO.le_pred(Nat.add(x, P.pm1(p)), f, le_eq_l(1n+Nat.add(x, P.pm1(p)), Nat.add(x, S.Pos.nat(p)), 1n+f, fuel_eq(x, p), h)))
+
+# p + x <= 1 + f gives x <= f
+def fuel_r(+x: Nat, +p: S.Pos, +f: Nat, h: SB.Le(Nat.add(S.Pos.nat(p), x), 1n+f)) -> SB.Le(x, f):
+  fuel_l(x, p, f, le_eq_l(Nat.add(x, S.Pos.nat(p)), Nat.add(S.Pos.nat(p), x), 1n+f, N.add_comm(S.Pos.nat(p), x), h))
+
+# u + v = w as naturals
+def nat_sum(+u: S.Pos, +v: S.Pos, +w: S.Pos, he: {S.Pos.add(u, v) == w : S.Pos}) -> {S.Pos.nat(w) == Nat.add(S.Pos.nat(u), S.Pos.nat(v)) : Nat}:
+  %he : {S.Pos.nat(_) == Nat.add(S.Pos.nat(u), S.Pos.nat(v)) : Nat}
+  Equal.sym(Nat, Nat.add(S.Pos.nat(u), S.Pos.nat(v)), S.Pos.nat(S.Pos.add(u, v)), P.add_nat(u, v))
+
+def gt_fuel(+n: S.Pos, +d: S.Pos, +f: Nat, e: {S.Pos.cmp(n, d) == GT{} : Cmp}, h: SB.Le(Nat.add(S.Pos.nat(n), S.Pos.nat(d)), 1n+f)) -> SB.Le(Nat.add(S.Pos.nat(psub(n, d)), S.Pos.nat(d)), f):
+  le_eq_l(Nat.add(S.Pos.nat(psub(n, d)), S.Pos.nat(d)), S.Pos.nat(n), f, nat_sum(psub(n, d), d, n, psub_add(n, d, e)), fuel_l(S.Pos.nat(n), d, f, h))
+
+def lt_fuel(+n: S.Pos, +d: S.Pos, +f: Nat, e: {S.Pos.cmp(n, d) == LT{} : Cmp}, h: SB.Le(Nat.add(S.Pos.nat(n), S.Pos.nat(d)), 1n+f)) -> SB.Le(Nat.add(S.Pos.nat(n), S.Pos.nat(psub(d, n))), f):
+  le_eq_l(Nat.add(S.Pos.nat(n), S.Pos.nat(psub(d, n))), S.Pos.nat(d), f, nat_sum(n, psub(d, n), d, psub_add_l(n, d, e)), fuel_r(S.Pos.nat(d), n, f, h))
+
+# no pair fits in no fuel
+def no_fuel(+n: S.Pos, +d: S.Pos, h: SB.Le(Nat.add(S.Pos.nat(n), S.Pos.nat(d)), 0n)) -> Empty:
+  %NO.le_zero(Nat.add(S.Pos.nat(n), S.Pos.nat(d)), h) : N.NatD(_, Empty, Unit)
+  %P.form_nat(n) : N.NatD(Nat.add(_, S.Pos.nat(d)), Empty, Unit)
+  Unit{}
+
+# decode (encode n d) is n/d
+# ------------------------
+
+# p is the fraction n/d
+def pp_eq(p: PP, +n: S.Pos, +d: S.Pos) -> Data:
+  match p:
+    case PP{a, b}:
+      {S.Z.mul(S.Zpos{a}, S.Zpos{d}) == S.Z.mul(S.Zpos{n}, S.Zpos{b}) : S.Z}
+
+@ATOMS DR = a=S.Zpos{a},, b=S.Zpos{b},, d=S.Zpos{d},, m=S.Zpos{m}
+@ATOMS DL = a=S.Zpos{a},, b=S.Zpos{b},, n=S.Zpos{n},, e=S.Zpos{e}
+
+# a/b = m/d gives (a + b)/b = (m + d)/d
+def dec_r_ok(p: PP, +m: S.Pos, +d: S.Pos, +n: S.Pos, h: pp_eq(p, m, d), hn: {S.Z.add(S.Zpos{m}, S.Zpos{d}) == S.Zpos{n} : S.Z}) -> pp_eq(decode.r(p), n, d):
+  match p:
+    case PP{+a, +b}:
+      %hn : {@ZT[DR | (a + b)*d] == S.Z.mul(_, S.Zpos{b}) : S.Z}
+      %@RING[DR | a*d + b*d | (a + b)*d] : {_ == @ZT[DR | (m + d)*b] : S.Z}
+      %Equal.sym(S.Z, @ZT[DR | a*d], @ZT[DR | m*b], h) : {S.Z.add(_, @ZT[DR | b*d]) == @ZT[DR | (m + d)*b] : S.Z}
+      @RING[DR | m*b + b*d | (m + d)*b]
+
+# a/b = n/e gives a/(a + b) = n/(n + e)
+def dec_l_ok(p: PP, +n: S.Pos, +e: S.Pos, +d: S.Pos, h: pp_eq(p, n, e), hd: {S.Z.add(S.Zpos{n}, S.Zpos{e}) == S.Zpos{d} : S.Z}) -> pp_eq(decode.l(p), n, d):
+  match p:
+    case PP{+a, +b}:
+      %hd : {S.Z.mul(S.Zpos{a}, _) == @ZT[DL | n*(a + b)] : S.Z}
+      %@RING[DL | a*n + a*e | a*(n + e)] : {_ == @ZT[DL | n*(a + b)] : S.Z}
+      %Equal.sym(S.Z, @ZT[DL | a*e], @ZT[DL | n*b], h) : {S.Z.add(@ZT[DL | a*n], _) == @ZT[DL | n*(a + b)] : S.Z}
+      @RING[DL | a*n + n*b | n*(a + b)]
+
+def dec_enc(k: Nat, c: Cmp, +n: S.Pos, +d: S.Pos, +e: {S.Pos.cmp(n, d) == c : Cmp}, h: SB.Le(Nat.add(S.Pos.nat(n), S.Pos.nat(d)), k)) -> pp_eq(decode(encode.go(k, c, n, d)), n, d):
+  match k c:
+    case 0n c:
+      ZO.absurd(pp_eq(PP{S.XH{}, S.XH{}}, n, d), no_fuel(n, d, h))
+    case 1n++f EQ{}:
+      %Equal.sym(S.Pos, n, d, cmp_eq(n, d, e)) : {S.Z.mul(S.Zpos{S.XH{}}, S.Zpos{d}) == S.Z.mul(S.Zpos{_}, S.Zpos{S.XH{}}) : S.Z}
+      @RING[d=S.Zpos{d} | 1*d | d*1]
+    case 1n++f GT{}:
+      dec_r_ok(decode(encode.go(f, S.Pos.cmp(psub(n, d), d), psub(n, d), d)), psub(n, d), d, n,
+        dec_enc(f, S.Pos.cmp(psub(n, d), d), psub(n, d), d, {==}, gt_fuel(n, d, f, e, h)),
+        zpos_eq(S.Pos.add(psub(n, d), d), n, psub_add(n, d, e)))
+    case 1n++f LT{}:
+      dec_l_ok(decode(encode.go(f, S.Pos.cmp(n, psub(d, n)), n, psub(d, n))), n, psub(d, n), d,
+        dec_enc(f, S.Pos.cmp(n, psub(d, n)), n, psub(d, n), {==}, lt_fuel(n, d, f, e, h)),
+        zpos_eq(S.Pos.add(n, psub(d, n)), d, psub_add_l(n, d, e)))
+
+# encode depends only on the ratio
+# --------------------------------
+
+def cmp0_eq(+u: S.Z, +v: S.Z, e: {u == v : S.Z}) -> {S.Z.cmp(S.Z0{}, u) == S.Z.cmp(S.Z0{}, v) : Cmp}:
+  %e : {S.Z.cmp(S.Z0{}, u) == S.Z.cmp(S.Z0{}, _) : Cmp}
+  {==}
+
+# a positive factor keeps the sign
+def sign_scale(-p: S.Pos, s: S.Z) -> {S.Z.cmp(S.Z0{}, s) == S.Z.cmp(S.Z0{}, S.Z.mul(S.Zpos{p}, s)) : Cmp}:
+  match s:
+    case S.Z0{}:
+      {==}
+    case S.Zpos{q}:
+      {==}
+    case S.Zneg{q}:
+      {==}
+
+@ATOMS RT = n=S.Zpos{n},, d=S.Zpos{d},, n2=S.Zpos{n2},, d2=S.Zpos{d2}
+
+# d2 (d - n) = d (d2 - n2), from n d2 = n2 d
+def cmp_ratio.eq(+n: S.Pos, +d: S.Pos, +n2: S.Pos, +d2: S.Pos, r: {@ZT[RT | n*d2] == @ZT[RT | n2*d] : S.Z}) -> {@ZT[RT | d2*(d - n)] == @ZT[RT | d*(d2 - n2)] : S.Z}:
+  %@RING[RT | d2*d - n*d2 | d2*(d - n)] : {_ == @ZT[RT | d*(d2 - n2)] : S.Z}
+  %Equal.sym(S.Z, @ZT[RT | n*d2], @ZT[RT | n2*d], r) : {S.Z.sub(@ZT[RT | d2*d], _) == @ZT[RT | d*(d2 - n2)] : S.Z}
+  @RING[RT | d2*d - n2*d | d*(d2 - n2)]
+
+# n/d = n2/d2 compare with 1 alike
+def cmp_ratio(+n: S.Pos, +d: S.Pos, +n2: S.Pos, +d2: S.Pos, r: {@ZT[RT | n*d2] == @ZT[RT | n2*d] : S.Z}) -> {S.Pos.cmp(n, d) == S.Pos.cmp(n2, d2) : Cmp}:
+  Equal.trans(Cmp, S.Pos.cmp(n, d), S.Z.cmp(S.Z0{}, @ZT[RT | d - n]), S.Pos.cmp(n2, d2), ZO.cmp_sub(S.Zpos{n}, S.Zpos{d}),
+    Equal.trans(Cmp, S.Z.cmp(S.Z0{}, @ZT[RT | d - n]), S.Z.cmp(S.Z0{}, @ZT[RT | d2*(d - n)]), S.Pos.cmp(n2, d2), sign_scale(d2, @ZT[RT | d - n]),
+      Equal.trans(Cmp, S.Z.cmp(S.Z0{}, @ZT[RT | d2*(d - n)]), S.Z.cmp(S.Z0{}, @ZT[RT | d*(d2 - n2)]), S.Pos.cmp(n2, d2), cmp0_eq(@ZT[RT | d2*(d - n)], @ZT[RT | d*(d2 - n2)], cmp_ratio.eq(n, d, n2, d2, r)),
+        Equal.trans(Cmp, S.Z.cmp(S.Z0{}, @ZT[RT | d*(d2 - n2)]), S.Z.cmp(S.Z0{}, @ZT[RT | d2 - n2]), S.Pos.cmp(n2, d2), Equal.sym(Cmp, S.Z.cmp(S.Z0{}, @ZT[RT | d2 - n2]), S.Z.cmp(S.Z0{}, @ZT[RT | d*(d2 - n2)]), sign_scale(d, @ZT[RT | d2 - n2])),
+          Equal.sym(Cmp, S.Pos.cmp(n2, d2), S.Z.cmp(S.Z0{}, @ZT[RT | d2 - n2]), ZO.cmp_sub(S.Zpos{n2}, S.Zpos{d2}))))))
+
+# any sufficient fuel gives the same path
+def enc_fuel(k: Nat, k2: Nat, c: Cmp, +n: S.Pos, +d: S.Pos, +e: {S.Pos.cmp(n, d) == c : Cmp}, h: SB.Le(Nat.add(S.Pos.nat(n), S.Pos.nat(d)), k), h2: SB.Le(Nat.add(S.Pos.nat(n), S.Pos.nat(d)), k2)) -> {encode.go(k, c, n, d) == encode.go(k2, c, n, d) : SB}:
+  match k k2 c:
+    case 0n k2 c:
+      ZO.absurd({SB1{} == encode.go(k2, c, n, d) : SB}, no_fuel(n, d, h))
+    case 1n+f 0n c:
+      ZO.absurd({encode.go(1n+f, c, n, d) == SB1{} : SB}, no_fuel(n, d, h2))
+    case 1n++f 1n++g EQ{}:
+      {==}
+    case 1n++f 1n++g GT{}:
+      %enc_fuel(f, g, S.Pos.cmp(psub(n, d), d), psub(n, d), d, {==}, gt_fuel(n, d, f, e, h), gt_fuel(n, d, g, e, h2)) : {SBR{encode.go(f, S.Pos.cmp(psub(n, d), d), psub(n, d), d)} == SBR{_} : SB}
+      {==}
+    case 1n++f 1n++g LT{}:
+      %enc_fuel(f, g, S.Pos.cmp(n, psub(d, n)), n, psub(d, n), {==}, lt_fuel(n, d, f, e, h), lt_fuel(n, d, g, e, h2)) : {SBL{encode.go(f, S.Pos.cmp(n, psub(d, n)), n, psub(d, n))} == SBL{_} : SB}
+      {==}
+
+# (n - d)/d = (n2 - d2)/d2
+def gt_ratio(+n: S.Pos, +d: S.Pos, +n2: S.Pos, +d2: S.Pos, e: {S.Pos.cmp(n, d) == GT{} : Cmp}, e2: {S.Pos.cmp(n2, d2) == GT{} : Cmp}, r: {@ZT[RT | n*d2] == @ZT[RT | n2*d] : S.Z}) -> {S.Z.mul(S.Zpos{psub(n, d)}, S.Zpos{d2}) == S.Z.mul(S.Zpos{psub(n2, d2)}, S.Zpos{d}) : S.Z}:
+  %Equal.sym(S.Z, S.Zpos{psub(n, d)}, @ZT[RT | n - d], psub_gt(n, d, e)) : {S.Z.mul(_, S.Zpos{d2}) == S.Z.mul(S.Zpos{psub(n2, d2)}, S.Zpos{d}) : S.Z}
+  %Equal.sym(S.Z, S.Zpos{psub(n2, d2)}, @ZT[RT | n2 - d2], psub_gt(n2, d2, e2)) : {@ZT[RT | (n - d)*d2] == S.Z.mul(_, S.Zpos{d}) : S.Z}
+  %@RING[RT | n*d2 - d*d2 | (n - d)*d2] : {_ == @ZT[RT | (n2 - d2)*d] : S.Z}
+  %Equal.sym(S.Z, @ZT[RT | n*d2], @ZT[RT | n2*d], r) : {S.Z.sub(_, @ZT[RT | d*d2]) == @ZT[RT | (n2 - d2)*d] : S.Z}
+  @RING[RT | n2*d - d*d2 | (n2 - d2)*d]
+
+# n/(d - n) = n2/(d2 - n2)
+def lt_ratio(+n: S.Pos, +d: S.Pos, +n2: S.Pos, +d2: S.Pos, e: {S.Pos.cmp(n, d) == LT{} : Cmp}, e2: {S.Pos.cmp(n2, d2) == LT{} : Cmp}, r: {@ZT[RT | n*d2] == @ZT[RT | n2*d] : S.Z}) -> {S.Z.mul(S.Zpos{n}, S.Zpos{psub(d2, n2)}) == S.Z.mul(S.Zpos{n2}, S.Zpos{psub(d, n)}) : S.Z}:
+  %Equal.sym(S.Z, S.Zpos{psub(d2, n2)}, @ZT[RT | d2 - n2], psub_lt(n2, d2, e2)) : {S.Z.mul(S.Zpos{n}, _) == S.Z.mul(S.Zpos{n2}, S.Zpos{psub(d, n)}) : S.Z}
+  %Equal.sym(S.Z, S.Zpos{psub(d, n)}, @ZT[RT | d - n], psub_lt(n, d, e)) : {@ZT[RT | n*(d2 - n2)] == S.Z.mul(S.Zpos{n2}, _) : S.Z}
+  %@RING[RT | n*d2 - n*n2 | n*(d2 - n2)] : {_ == @ZT[RT | n2*(d - n)] : S.Z}
+  %Equal.sym(S.Z, @ZT[RT | n*d2], @ZT[RT | n2*d], r) : {S.Z.sub(_, @ZT[RT | n*n2]) == @ZT[RT | n2*(d - n)] : S.Z}
+  @RING[RT | n2*d - n*n2 | n2*(d - n)]
+
+def ratio_sym(+n: S.Pos, +d: S.Pos, +n2: S.Pos, +d2: S.Pos, r: {@ZT[RT | n*d2] == @ZT[RT | n2*d] : S.Z}) -> {@ZT[RT | n2*d] == @ZT[RT | n*d2] : S.Z}:
+  Equal.sym(S.Z, @ZT[RT | n*d2], @ZT[RT | n2*d], r)
+
+# with one fuel for both, equal ratios give equal paths
+def enc_ratio(k: Nat, c: Cmp, +n: S.Pos, +d: S.Pos, +n2: S.Pos, +d2: S.Pos, +e: {S.Pos.cmp(n, d) == c : Cmp}, +e2: {S.Pos.cmp(n2, d2) == c : Cmp},
+  h: SB.Le(Nat.add(S.Pos.nat(n), S.Pos.nat(d)), k), h2: SB.Le(Nat.add(S.Pos.nat(n2), S.Pos.nat(d2)), k), +r: {@ZT[RT | n*d2] == @ZT[RT | n2*d] : S.Z}) -> {encode.go(k, c, n, d) == encode.go(k, c, n2, d2) : SB}:
+  match k c:
+    case 0n c:
+      ZO.absurd({SB1{} == SB1{} : SB}, no_fuel(n, d, h))
+    case 1n++f EQ{}:
+      {==}
+    case 1n++f GT{}:
+      +r1 = gt_ratio(n, d, n2, d2, e, e2, r)
+      %cmp_ratio(psub(n, d), d, psub(n2, d2), d2, r1) : {SBR{encode.go(f, S.Pos.cmp(psub(n, d), d), psub(n, d), d)} == SBR{encode.go(f, _, psub(n2, d2), d2)} : SB}
+      %enc_ratio(f, S.Pos.cmp(psub(n, d), d), psub(n, d), d, psub(n2, d2), d2, {==},
+          Equal.sym(Cmp, S.Pos.cmp(psub(n, d), d), S.Pos.cmp(psub(n2, d2), d2), cmp_ratio(psub(n, d), d, psub(n2, d2), d2, r1)),
+          gt_fuel(n, d, f, e, h), gt_fuel(n2, d2, f, e2, h2), r1) : {SBR{encode.go(f, S.Pos.cmp(psub(n, d), d), psub(n, d), d)} == SBR{_} : SB}
+      {==}
+    case 1n++f LT{}:
+      +r1 = lt_ratio(n, d, n2, d2, e, e2, r)
+      %cmp_ratio(n, psub(d, n), n2, psub(d2, n2), r1) : {SBL{encode.go(f, S.Pos.cmp(n, psub(d, n)), n, psub(d, n))} == SBL{encode.go(f, _, n2, psub(d2, n2))} : SB}
+      %enc_ratio(f, S.Pos.cmp(n, psub(d, n)), n, psub(d, n), n2, psub(d2, n2), {==},
+          Equal.sym(Cmp, S.Pos.cmp(n, psub(d, n)), S.Pos.cmp(n2, psub(d2, n2)), cmp_ratio(n, psub(d, n), n2, psub(d2, n2), r1)),
+          lt_fuel(n, d, f, e, h), lt_fuel(n2, d2, f, e2, h2), r1) : {SBL{encode.go(f, S.Pos.cmp(n, psub(d, n)), n, psub(d, n))} == SBL{_} : SB}
+      {==}
+
+# b <= a + b
+def le_add_r(+a: Nat, +b: Nat) -> SB.Le(b, Nat.add(a, b)):
+  (a, N.add_comm(b, a))
+
+# equal ratios, equal paths
+def enc_resp(+n: S.Pos, +d: S.Pos, +n2: S.Pos, +d2: S.Pos, +r: {@ZT[RT | n*d2] == @ZT[RT | n2*d] : S.Z}) -> {encode(n, d) == encode(n2, d2) : SB}:
+  +a = Nat.add(S.Pos.nat(n), S.Pos.nat(d))
+  +b = Nat.add(S.Pos.nat(n2), S.Pos.nat(d2))
+  +c1 = S.Pos.cmp(n, d)
+  +c2 = S.Pos.cmp(n2, d2)
+  +k = Nat.add(a, b)
+  Equal.trans(SB, encode.go(a, c1, n, d), encode.go(k, c1, n, d), encode.go(b, c2, n2, d2), enc_fuel(a, k, c1, n, d, {==}, NO.le_refl(a), NO.le_add(a, b)),
+    Equal.trans(SB, encode.go(k, c1, n, d), encode.go(k, c1, n2, d2), encode.go(b, c2, n2, d2), enc_ratio(k, c1, n, d, n2, d2, {==}, Equal.sym(Cmp, c1, c2, cmp_ratio(n, d, n2, d2, r)), NO.le_add(a, b), le_add_r(a, b), r),
+      Equal.trans(SB, encode.go(k, c1, n2, d2), encode.go(k, c2, n2, d2), encode.go(b, c2, n2, d2), Equal.cong(Cmp, SB, c => encode.go(k, c, n2, d2), c1, c2, cmp_ratio(n, d, n2, d2, r)),
+        enc_fuel(k, b, c2, n2, d2, {==}, le_add_r(a, b), NO.le_refl(b)))))
+
+# encode (decode w) is w
+# ----------------------
+
+# a step right and a step left
+def go_gt(k: Nat, +n: S.Pos, +d: S.Pos, +e: {S.Pos.cmp(n, d) == GT{} : Cmp}, h: SB.Le(Nat.add(S.Pos.nat(n), S.Pos.nat(d)), k)) -> {encode.go(k, GT{}, n, d) == SBR{encode(psub(n, d), d)} : SB}:
+  match k:
+    case 0n:
+      ZO.absurd({SB1{} == SBR{encode(psub(n, d), d)} : SB}, no_fuel(n, d, h))
+    case 1n++f:
+      %enc_fuel(f, Nat.add(S.Pos.nat(psub(n, d)), S.Pos.nat(d)), S.Pos.cmp(psub(n, d), d), psub(n, d), d, {==}, gt_fuel(n, d, f, e, h), NO.le_refl(Nat.add(S.Pos.nat(psub(n, d)), S.Pos.nat(d)))) : {SBR{encode.go(f, S.Pos.cmp(psub(n, d), d), psub(n, d), d)} == SBR{_} : SB}
+      {==}
+
+def go_lt(k: Nat, +n: S.Pos, +d: S.Pos, +e: {S.Pos.cmp(n, d) == LT{} : Cmp}, h: SB.Le(Nat.add(S.Pos.nat(n), S.Pos.nat(d)), k)) -> {encode.go(k, LT{}, n, d) == SBL{encode(n, psub(d, n))} : SB}:
+  match k:
+    case 0n:
+      ZO.absurd({SB1{} == SBL{encode(n, psub(d, n))} : SB}, no_fuel(n, d, h))
+    case 1n++f:
+      %enc_fuel(f, Nat.add(S.Pos.nat(n), S.Pos.nat(psub(d, n))), S.Pos.cmp(n, psub(d, n)), n, psub(d, n), {==}, lt_fuel(n, d, f, e, h), NO.le_refl(Nat.add(S.Pos.nat(n), S.Pos.nat(psub(d, n))))) : {SBL{encode.go(f, S.Pos.cmp(n, psub(d, n)), n, psub(d, n))} == SBL{_} : SB}
+      {==}
+
+def enc_gt(+n: S.Pos, +d: S.Pos, +e: {S.Pos.cmp(n, d) == GT{} : Cmp}) -> {encode(n, d) == SBR{encode(psub(n, d), d)} : SB}:
+  %Equal.sym(Cmp, S.Pos.cmp(n, d), GT{}, e) : {encode.go(Nat.add(S.Pos.nat(n), S.Pos.nat(d)), _, n, d) == SBR{encode(psub(n, d), d)} : SB}
+  go_gt(Nat.add(S.Pos.nat(n), S.Pos.nat(d)), n, d, e, NO.le_refl(Nat.add(S.Pos.nat(n), S.Pos.nat(d))))
+
+def enc_lt(+n: S.Pos, +d: S.Pos, +e: {S.Pos.cmp(n, d) == LT{} : Cmp}) -> {encode(n, d) == SBL{encode(n, psub(d, n))} : SB}:
+  %Equal.sym(Cmp, S.Pos.cmp(n, d), LT{}, e) : {encode.go(Nat.add(S.Pos.nat(n), S.Pos.nat(d)), _, n, d) == SBL{encode(n, psub(d, n))} : SB}
+  go_lt(Nat.add(S.Pos.nat(n), S.Pos.nat(d)), n, d, e, NO.le_refl(Nat.add(S.Pos.nat(n), S.Pos.nat(d))))
+
+@ATOMS AB = a=S.Zpos{a},, b=S.Zpos{b}
+
+# a + b > b, a < a + b, (a + b) - b = a, (a + b) - a = b
+def gt_sum(+a: S.Pos, +b: S.Pos) -> {S.Pos.cmp(S.Pos.add(a, b), b) == GT{} : Cmp}:
+  Equal.trans(Cmp, S.Pos.cmp(S.Pos.add(a, b), b), S.Z.cmp(S.Z0{}, @ZT[AB | b - (a + b)]), GT{}, ZO.cmp_sub(S.Zpos{S.Pos.add(a, b)}, S.Zpos{b}),
+    cmp0_eq(@ZT[AB | b - (a + b)], S.Zneg{a}, @RING[AB | b - (a + b) | -a]))
+
+def lt_sum(+a: S.Pos, +b: S.Pos) -> {S.Pos.cmp(a, S.Pos.add(a, b)) == LT{} : Cmp}:
+  Equal.trans(Cmp, S.Pos.cmp(a, S.Pos.add(a, b)), S.Z.cmp(S.Z0{}, @ZT[AB | (a + b) - a]), LT{}, ZO.cmp_sub(S.Zpos{a}, S.Zpos{S.Pos.add(a, b)}),
+    cmp0_eq(@ZT[AB | (a + b) - a], S.Zpos{b}, @RING[AB | (a + b) - a | b]))
+
+def psub_sum(+a: S.Pos, +b: S.Pos) -> {psub(S.Pos.add(a, b), b) == a : S.Pos}:
+  Equal.cong(S.Z, S.Pos, z => zpart(z), @ZT[AB | (a + b) - b], S.Zpos{a}, @RING[AB | (a + b) - b | a])
+
+def psub_sum_l(+a: S.Pos, +b: S.Pos) -> {psub(S.Pos.add(a, b), a) == b : S.Pos}:
+  Equal.cong(S.Z, S.Pos, z => zpart(z), @ZT[AB | (a + b) - a], S.Zpos{b}, @RING[AB | (a + b) - a | b])
+
+def encode_pp(p: PP) -> SB:
+  match p:
+    case PP{a, b}:
+      encode(a, b)
+
+def enc_r(p: PP) -> {encode_pp(decode.r(p)) == SBR{encode_pp(p)} : SB}:
+  match p:
+    case PP{+a, +b}:
+      Equal.trans(SB, encode(S.Pos.add(a, b), b), SBR{encode(psub(S.Pos.add(a, b), b), b)}, SBR{encode(a, b)}, enc_gt(S.Pos.add(a, b), b, gt_sum(a, b)),
+        Equal.cong(S.Pos, SB, x => SBR{encode(x, b)}, psub(S.Pos.add(a, b), b), a, psub_sum(a, b)))
+
+def enc_l(p: PP) -> {encode_pp(decode.l(p)) == SBL{encode_pp(p)} : SB}:
+  match p:
+    case PP{+a, +b}:
+      Equal.trans(SB, encode(a, S.Pos.add(a, b)), SBL{encode(a, psub(S.Pos.add(a, b), a))}, SBL{encode(a, b)}, enc_lt(a, S.Pos.add(a, b), lt_sum(a, b)),
+        Equal.cong(S.Pos, SB, x => SBL{encode(a, x)}, psub(S.Pos.add(a, b), a), b, psub_sum_l(a, b)))
+
+def enc_dec(w: SB) -> {encode_pp(decode(w)) == w : SB}:
+  match w:
+    case SB1{}:
+      {==}
+    case SBR{+v}:
+      %enc_dec(v) : {encode_pp(decode.r(decode(v))) == SBR{_} : SB}
+      enc_r(decode(v))
+    case SBL{+v}:
+      %enc_dec(v) : {encode_pp(decode.l(decode(v))) == SBL{_} : SB}
+      enc_l(decode(v))

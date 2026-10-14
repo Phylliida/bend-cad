@@ -170,3 +170,16 @@ def pos_eq(+s: S.Z, +t: S.Z, e: {s == t : S.Z}, h: pos(t)) -> pos(s):
 # 0 is not positive
 def pos_zero(+s: S.Z, e: {s == S.Z0{} : S.Z}, h: pos(s)) -> Empty:
   pos_eq(S.Z0{}, s, Equal.sym(S.Z, s, S.Z0{}, e), h)
+
+# equals added to the same integer
+def zeq_add_r(+a: S.Z, +b: S.Z, +c: S.Z, e: {a == b : S.Z}) -> {S.Z.add(a, c) == S.Z.add(b, c) : S.Z}:
+  %e : {S.Z.add(a, c) == S.Z.add(_, c) : S.Z}
+  {==}
+
+def zeq_add_l(+c: S.Z, +a: S.Z, +b: S.Z, e: {a == b : S.Z}) -> {S.Z.add(c, a) == S.Z.add(c, b) : S.Z}:
+  %e : {S.Z.add(c, a) == S.Z.add(c, _) : S.Z}
+  {==}
+
+def zeq_mul_l(+c: S.Z, +a: S.Z, +b: S.Z, e: {a == b : S.Z}) -> {S.Z.mul(c, a) == S.Z.mul(c, b) : S.Z}:
+  %e : {S.Z.mul(c, a) == S.Z.mul(c, _) : S.Z}
+  {==}

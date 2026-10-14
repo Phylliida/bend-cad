@@ -424,6 +424,15 @@ law ofq_eq_rev:
   for +e: {O.ofq(~F, x) == O.ofq(~F, y) : O.C(F)}
   S.Q.eq(x, y)
 
+# The ordered-field axioms are consistent
+# ---------------------------------------
+# LAW: there is an ordered field. PROOF.bend gives the rationals in a
+# canonical form (lib/qfield.bend: 0, or a sign and a Stern-Brocot word),
+# so that Bend's equality is equality of rationals. So the laws stated for
+# every ordered field are not vacuous.
+law ofield_exists:
+  O.OField
+
 # Dyadics
 # -------
 # A dyadic m/2^e means the rational D.toq; its operations are the rational
