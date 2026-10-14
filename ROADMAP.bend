@@ -13,7 +13,8 @@ import ./spec/sketch.bend as SK
 import ./spec/box.bend as BX
 import ./lib/plan.bend as PL
 
-# Composition (sk-06, DESIGN §8.4). DRAFT FOR REVIEW.
+# Composition (sk-06, DESIGN §8.4). DRAFT FOR REVIEW; all three proven in
+# lib/planpf.bend, and tests/plan_laws.bend keeps the proofs in the gate.
 # --------------------------------------------------
 # A system is a list of equations over variables 0, 1, ... (the sketch's
 # equations, pins made into radius-0 variables). A box gives each variable
@@ -38,7 +39,11 @@ law plan_exists:
   for  ok: {PL.check(~K, eqs, gc, gr, p) == True{} : Bool}
   Sigma<&2, &2, M.Vec(~F), x => M.Both(BX.inbox(~K, ~F, ~H, gc, gr, x), SK.Zeros(~F, x, eqs))>
 
-# LAW: in every ordered field, the box holds at most one solution
+# LAW: in every ordered field, the box holds at most one solution. Proven
+# (lib/planpf.bend: pinned coordinates are their centers; then block by
+# block, both solutions' stretches lie in the certificate's box and are
+# zeros of the block at the same parameters, so cert_unique makes them
+# equal); moves to LAWS.bend once the statement is reviewed.
 law plan_unique:
   for ~K: N.Num
   for ~F: O.OField
