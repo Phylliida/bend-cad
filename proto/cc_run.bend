@@ -1,5 +1,5 @@
 import Base
-import ../spec/cert.bend as C
+import ../lib/certdef.bend as C
 import ../lib/kinst.bend as KI
 import ../lib/cert.bend as CK
 import ../tests/cc_data.bend as D

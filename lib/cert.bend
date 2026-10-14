@@ -17,7 +17,7 @@
 import Base
 import ../spec/ring.bend as E
 import ../spec/knum.bend as N
-import ../spec/cert.bend as C
+import ./certdef.bend as C
 import ./karith.bend as KA
 import ./kball.bend as KB
 import ./slope.bend as SL

@@ -22,8 +22,7 @@ import ./spec/field.bend as O
 import ./lib/dyadic.bend as LD
 import ./lib/big.bend as LB
 import ./lib/meaning.bend as MN
-import ./lib/certpf.bend as CP
-import ./lib/banach.bend as BA
+import ./lib/planpf.bend as PP
 
 # Positives
 # ---------
@@ -337,29 +336,20 @@ def Laws.sketch_sound(F, env, sk, w, h):
 def Laws.sketch_complete(F, env, sk, h):
   MN.sketch_complete(~F, env, sk, h)
 
-# Block certificates (sk-05)
-# --------------------------
+# Composition (sk-06)
+# --------------------
 
-def Laws.cert_factor(K, F, H, b, c, ok):
-  CP.cert_factor(~K, ~F, ~H, b, c, ok)
+def Laws.plan_exists(K, F, R, H, eqs, gc, gr, p, ok):
+  PP.plan_exists(~K, ~F, ~R, ~H, eqs, gc, gr, p, ok)
 
-def Laws.cert_center(K, F, H, b, c, ok):
-  CP.cert_center(~K, ~F, ~H, b, c, ok)
+def Laws.plan_unique(K, F, H, eqs, gc, gr, p, ok, x1, h1, z1, x2, h2, z2):
+  PP.plan_unique(~K, ~F, ~H, eqs, gc, gr, p, ok, x1, h1, z1, x2, h2, z2)
 
-def Laws.cert_self(K, F, H, b, c, ok, z, hz, y, hy):
-  CP.cert_self(~K, ~F, ~H, b, c, ok, z, hz, y, hy)
+def Laws.box_sides(K, F, H, sides, gc, gr, ok, x, h):
+  PP.box_sides(~K, ~F, ~H, sides, gc, gr, ok, x, h)
 
-def Laws.cert_contract(K, F, H, b, c, ok, z, hz, y1, h1, y2, h2, s, hs0, hs):
-  CP.cert_contract(~K, ~F, ~H, b, c, ok, z, hz, y1, h1, y2, h2, s, hs0, hs)
+def Laws.sketch_exists(K, F, R, H, sk, w, gc, gr, cov, p, ok, os):
+  PP.sketch_exists(~K, ~F, ~R, ~H, sk, w, gc, gr, cov, p, ok, os)
 
-def Laws.cert_fix(K, F, H, b, c, ok, z, y, hy, hf):
-  CP.cert_fix(~K, ~F, ~H, b, c, ok, z, y, hy, hf)
-
-def Laws.cert_unique(K, F, H, b, c, ok, z, hz, y1, h1, z1, y2, h2, z2):
-  CP.cert_unique(~K, ~F, ~H, b, c, ok, z, hz, y1, h1, z1, y2, h2, z2)
-
-# Existence (sk-05b)
-# ------------------
-
-def Laws.cert_exists(K, F, R, H, b, c, ok, z, hz):
-  BA.cert_exists(~K, ~F, ~R, ~H, b, c, ok, z, hz)
+def Laws.sketch_unique(K, F, H, sk, gc, gr, cov, p, ok, x1, h1, m1, x2, h2, m2):
+  PP.sketch_unique(~K, ~F, ~H, sk, gc, gr, cov, p, ok, x1, h1, m1, x2, h2, m2)

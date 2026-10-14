@@ -9,12 +9,13 @@ import ../spec/ring.bend as E
 import ../spec/field.bend as O
 import ../spec/mat.bend as M
 import ../spec/knum.bend as N
+import ../spec/box.bend as BX
 import ./flaws.bend as FL
 import ./fring.bend as FR
 import ./ford.bend as FO
 import ./fmat.bend as FM
 import ./fvec.bend as FV
-import ../spec/cert.bend as C
+import ./certdef.bend as C
 
 # The map's laws, turned to rewrite F's operations into K's
 # --------------------------------------------------------
@@ -501,7 +502,7 @@ def kvle_ok(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: N.KVec(~K), w: N.KVec(~
       (kle_ok(~K, ~F, ~H, a, b, band_l(kle(~K, a, b), kvle(~K, us, ws), h)), kvle_ok(~K, ~F, ~H, us, ws, band_r(kle(~K, a, b), kvle(~K, us, ws), h)))
 
 # |H a| <= H |a|, entrywise
-def kvabs_bnd(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: N.KVec(~K)) -> C.rbnd(~F, N.ofkv(~K, ~F, ~H, u), N.ofkv(~K, ~F, ~H, kvabs(~K, u))):
+def kvabs_bnd(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: N.KVec(~K)) -> BX.rbnd(~F, N.ofkv(~K, ~F, ~H, u), N.ofkv(~K, ~F, ~H, kvabs(~K, u))):
   match u:
     case Nil{}:
       Unit{}

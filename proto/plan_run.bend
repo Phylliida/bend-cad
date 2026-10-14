@@ -1,6 +1,6 @@
 import Base
 import ../spec/num.bend as S
-import ../spec/cert.bend as C
+import ../lib/certdef.bend as C
 import ../lib/kinst.bend as KI
 import ../lib/plan.bend as PL
 import ../tests/chain_data.bend as D

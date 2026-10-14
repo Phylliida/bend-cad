@@ -14,8 +14,9 @@ import ../spec/ring.bend as E
 import ../spec/field.bend as O
 import ../spec/mat.bend as M
 import ../spec/knum.bend as N
-import ../spec/cert.bend as C
+import ./certdef.bend as C
 import ../spec/real.bend as CR
+import ../spec/box.bend as BX
 import ./flaws.bend as FL
 import ./fring.bend as FR
 import ./ford.bend as FO
@@ -83,7 +84,7 @@ def lk_shift_con(~F: O.OField, +x: O.C(F), +xs: M.Vec(~F), +s: O.C(F), +rs: M.Ve
       (h0, lk_shift_con(~F, x, xs, s, rs, c, 1n+i0, hs))
 
 # the facts for every index give the vector bound
-def rbnd_of_lk(~F: O.OField, d: M.Vec(~F), n: Nat, r: M.Vec(~F), hl: {M.len(~F, d) == n : Nat}, h: lkall(~F, d, r, n, 0n)) -> C.rbnd(~F, d, r):
+def rbnd_of_lk(~F: O.OField, d: M.Vec(~F), n: Nat, r: M.Vec(~F), hl: {M.len(~F, d) == n : Nat}, h: lkall(~F, d, r, n, 0n)) -> BX.rbnd(~F, d, r):
   match d n r:
     case Nil{} 0n Nil{}:
       Unit{}
@@ -94,9 +95,9 @@ def rbnd_of_lk(~F: O.OField, d: M.Vec(~F), n: Nat, r: M.Vec(~F), hl: {M.len(~F, 
     case Nil{} 1n+k Con{s, rs}:
       Unit{}
     case Con{+x, +xs} 0n Nil{}:
-      FO.absurd(C.rbnd(~F, Con{x, xs}, Nil{}), FV.succ_ne(M.len(~F, xs), hl))
+      FO.absurd(BX.rbnd(~F, Con{x, xs}, Nil{}), FV.succ_ne(M.len(~F, xs), hl))
     case Con{+x, +xs} 0n Con{+s, +rs}:
-      FO.absurd(C.rbnd(~F, Con{x, xs}, Con{s, rs}), FV.succ_ne(M.len(~F, xs), hl))
+      FO.absurd(BX.rbnd(~F, Con{x, xs}, Con{s, rs}), FV.succ_ne(M.len(~F, xs), hl))
     case Con{+x, +xs} 1n++k Nil{}:
       (h0, hs) = h
       (h0, rbnd_of_lk(~F, xs, k, Nil{}, FV.succ_inj(M.len(~F, xs), k, hl), lk_shift_nil(~F, x, xs, k, 0n, hs)))
@@ -105,7 +106,7 @@ def rbnd_of_lk(~F: O.OField, d: M.Vec(~F), n: Nat, r: M.Vec(~F), hl: {M.len(~F, 
       (h0, rbnd_of_lk(~F, xs, k, rs, FV.succ_inj(M.len(~F, xs), k, hl), lk_shift_con(~F, x, xs, s, rs, k, 0n, hs)))
 
 # bounds by nothing are bounds by 0
-def vall_of_rbnd(~F: O.OField, d: M.Vec(~F), h: C.rbnd(~F, d, Nil{})) -> M.vbnd.all(~F, d, O.zero(F)):
+def vall_of_rbnd(~F: O.OField, d: M.Vec(~F), h: BX.rbnd(~F, d, Nil{})) -> M.vbnd.all(~F, d, O.zero(F)):
   match d:
     case Nil{}:
       Unit{}
@@ -132,7 +133,7 @@ def bnd_rw_s(~F: O.OField, +a: O.C(F), +s: O.C(F), +s2: O.C(F), e: {s == s2 : O.
   h
 
 # a vector bound gives each entry's bound, for indices below the length
-def rbnd_look(~F: O.OField, d: M.Vec(~F), +r: M.Vec(~F), +h: C.rbnd(~F, d, r), n: Nat, hl: {M.len(~F, d) == n : Nat}, i: Nat, hi: {KA.natle(1n+i, n) == True{} : Bool}) -> M.bnd(~F, O.lookup(~F, d, i), O.lookup(~F, r, i)):
+def rbnd_look(~F: O.OField, d: M.Vec(~F), +r: M.Vec(~F), +h: BX.rbnd(~F, d, r), n: Nat, hl: {M.len(~F, d) == n : Nat}, i: Nat, hi: {KA.natle(1n+i, n) == True{} : Bool}) -> M.bnd(~F, O.lookup(~F, d, i), O.lookup(~F, r, i)):
   match d n i:
     case Nil{} 0n i:
       FO.absurd(M.bnd(~F, O.zero(F), O.lookup(~F, r, i)), KA.ft(hi))
@@ -160,7 +161,7 @@ def ball_len(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +c: C.Cert<K>, +y: M.Vec(
   (hl, hb) = h
   hl
 
-def ball_rb(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +c: C.Cert<K>, +y: M.Vec(~F), h: C.ball(~K, ~F, ~H, c, y)) -> C.rbnd(~F, C.vsub(~F, y, C.center(~K, ~F, ~H, c)), C.radii(~K, ~F, ~H, c)):
+def ball_rb(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +c: C.Cert<K>, +y: M.Vec(~F), h: C.ball(~K, ~F, ~H, c, y)) -> BX.rbnd(~F, BX.vsub(~F, y, C.center(~K, ~F, ~H, c)), C.radii(~K, ~F, ~H, c)):
   (hl, hb) = h
   hb
 
@@ -241,15 +242,15 @@ def coord(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +c: C.Cert<K>, +u: M.Vec(~F)
   +m0 = M.len(~F, C.center(~K, ~F, ~H, c))
   +rad = C.radii(~K, ~F, ~H, c)
   bnd_rw_s(~F, O.sub(~F, O.lookup(~F, u, i), O.lookup(~F, v, i)), O.lookup(~F, M.vscale(~F, s, rad), i), O.mul(F, s, O.lookup(~F, rad, i)), Equal.sym(O.C(F), O.mul(F, s, O.lookup(~F, rad, i)), O.lookup(~F, M.vscale(~F, s, rad), i), look_vscale(~F, s, rad, i)),
-    FV.bval(~F, O.lookup(~F, C.vsub(~F, u, v), i), O.sub(~F, O.lookup(~F, u, i), O.lookup(~F, v, i)), O.lookup(~F, M.vscale(~F, s, rad), i), Equal.sym(O.C(F), O.sub(~F, O.lookup(~F, u, i), O.lookup(~F, v, i)), O.lookup(~F, C.vsub(~F, u, v), i), SL.lookup_vsub(~F, u, v, i)),
-      rbnd_look(~F, C.vsub(~F, u, v), M.vscale(~F, s, rad), hn, m0, CP.len_vsub(~F, u, v, m0, hlu, hlv), i, hi)))
+    FV.bval(~F, O.lookup(~F, BX.vsub(~F, u, v), i), O.sub(~F, O.lookup(~F, u, i), O.lookup(~F, v, i)), O.lookup(~F, M.vscale(~F, s, rad), i), Equal.sym(O.C(F), O.sub(~F, O.lookup(~F, u, i), O.lookup(~F, v, i)), O.lookup(~F, BX.vsub(~F, u, v), i), SL.lookup_vsub(~F, u, v, i)),
+      rbnd_look(~F, BX.vsub(~F, u, v), M.vscale(~F, s, rad), hn, m0, CP.len_vsub(~F, u, v, m0, hlu, hlv), i, hi)))
 
 # entry i of a point of the box
 def coord1(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +c: C.Cert<K>, +u: M.Vec(~F), +i: Nat, h: C.ball(~K, ~F, ~H, c, u), hi: {KA.natle(1n+i, M.len(~F, C.center(~K, ~F, ~H, c))) == True{} : Bool}) -> M.bnd(~F, O.sub(~F, O.lookup(~F, u, i), O.lookup(~F, C.center(~K, ~F, ~H, c), i)), O.lookup(~F, C.radii(~K, ~F, ~H, c), i)):
   (hl, hb) = h
   +c0 = C.center(~K, ~F, ~H, c)
-  FV.bval(~F, O.lookup(~F, C.vsub(~F, u, c0), i), O.sub(~F, O.lookup(~F, u, i), O.lookup(~F, c0, i)), O.lookup(~F, C.radii(~K, ~F, ~H, c), i), Equal.sym(O.C(F), O.sub(~F, O.lookup(~F, u, i), O.lookup(~F, c0, i)), O.lookup(~F, C.vsub(~F, u, c0), i), SL.lookup_vsub(~F, u, c0, i)),
-    rbnd_look(~F, C.vsub(~F, u, c0), C.radii(~K, ~F, ~H, c), hb, M.len(~F, c0), CP.len_vsub(~F, u, c0, M.len(~F, c0), hl, {==}), i, hi))
+  FV.bval(~F, O.lookup(~F, BX.vsub(~F, u, c0), i), O.sub(~F, O.lookup(~F, u, i), O.lookup(~F, c0, i)), O.lookup(~F, C.radii(~K, ~F, ~H, c), i), Equal.sym(O.C(F), O.sub(~F, O.lookup(~F, u, i), O.lookup(~F, c0, i)), O.lookup(~F, BX.vsub(~F, u, c0), i), SL.lookup_vsub(~F, u, c0, i)),
+    rbnd_look(~F, BX.vsub(~F, u, c0), C.radii(~K, ~F, ~H, c), hb, M.len(~F, c0), CP.len_vsub(~F, u, c0, M.len(~F, c0), hl, {==}), i, hi))
 
 # the radii are not negative (below the center's length)
 def ri_nn(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +b: C.Block, +c: C.Cert<K>, +ok: {CK.check(~K, b, c) == True{} : Bool}, +i: Nat, +hi: {KA.natle(1n+i, M.len(~F, C.center(~K, ~F, ~H, c))) == True{} : Bool}) -> O.le(~F, O.zero(F), O.lookup(~F, C.radii(~K, ~F, ~H, c), i)):
@@ -347,40 +348,40 @@ def len_ys(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +b: C.B
   len_lims(~K, ~F, ~R, ~H, b, c, z, M.len(~F, C.center(~K, ~F, ~H, c)), 0n)
 
 # entry i of y* - v, for the limit point y*
-def ys_sub(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +b: C.Block, +c: C.Cert<K>, +z: M.Vec(~F), +v: M.Vec(~F), +i: Nat, hi: {KA.natle(1n+i, M.len(~F, C.center(~K, ~F, ~H, c))) == True{} : Bool}) -> {O.sub(~F, lm(~K, ~F, ~R, ~H, b, c, z, i), O.lookup(~F, v, i)) == O.lookup(~F, C.vsub(~F, ys(~K, ~F, ~R, ~H, b, c, z), v), i) : O.C(F)}:
-  %look_ys(~K, ~F, ~R, ~H, b, c, z, i, hi) : {O.sub(~F, _, O.lookup(~F, v, i)) == O.lookup(~F, C.vsub(~F, ys(~K, ~F, ~R, ~H, b, c, z), v), i) : O.C(F)}
+def ys_sub(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +b: C.Block, +c: C.Cert<K>, +z: M.Vec(~F), +v: M.Vec(~F), +i: Nat, hi: {KA.natle(1n+i, M.len(~F, C.center(~K, ~F, ~H, c))) == True{} : Bool}) -> {O.sub(~F, lm(~K, ~F, ~R, ~H, b, c, z, i), O.lookup(~F, v, i)) == O.lookup(~F, BX.vsub(~F, ys(~K, ~F, ~R, ~H, b, c, z), v), i) : O.C(F)}:
+  %look_ys(~K, ~F, ~R, ~H, b, c, z, i, hi) : {O.sub(~F, _, O.lookup(~F, v, i)) == O.lookup(~F, BX.vsub(~F, ys(~K, ~F, ~R, ~H, b, c, z), v), i) : O.C(F)}
   SL.lookup_vsub(~F, ys(~K, ~F, ~R, ~H, b, c, z), v, i)
 
 def lk_end(+n: Nat) -> {Nat.add(n, 0n) == n : Nat}:
   Equal.sym(Nat, n, Nat.add(n, 0n), LN.add_zero(n))
 
 # the limit point is in the box
-def ys_in.f(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +b: C.Block, +c: C.Cert<K>, +ok: {CK.check(~K, b, c) == True{} : Bool}, +z: M.Vec(~F), +hz: C.pinned(~K, ~F, ~H, c, z), +i: Nat, +hi: {KA.natle(1n+i, M.len(~F, C.center(~K, ~F, ~H, c))) == True{} : Bool}) -> M.bnd(~F, O.lookup(~F, C.vsub(~F, ys(~K, ~F, ~R, ~H, b, c, z), C.center(~K, ~F, ~H, c)), i), O.lookup(~F, C.radii(~K, ~F, ~H, c), i)):
+def ys_in.f(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +b: C.Block, +c: C.Cert<K>, +ok: {CK.check(~K, b, c) == True{} : Bool}, +z: M.Vec(~F), +hz: C.pinned(~K, ~F, ~H, c, z), +i: Nat, +hi: {KA.natle(1n+i, M.len(~F, C.center(~K, ~F, ~H, c))) == True{} : Bool}) -> M.bnd(~F, O.lookup(~F, BX.vsub(~F, ys(~K, ~F, ~R, ~H, b, c, z), C.center(~K, ~F, ~H, c)), i), O.lookup(~F, C.radii(~K, ~F, ~H, c), i)):
   +c0 = C.center(~K, ~F, ~H, c)
-  FV.bval(~F, O.sub(~F, lm(~K, ~F, ~R, ~H, b, c, z, i), O.lookup(~F, c0, i)), O.lookup(~F, C.vsub(~F, ys(~K, ~F, ~R, ~H, b, c, z), c0), i), O.lookup(~F, C.radii(~K, ~F, ~H, c), i), ys_sub(~K, ~F, ~R, ~H, b, c, z, c0, i, hi), in_lim(~K, ~F, ~R, ~H, b, c, ok, z, hz, i, hi))
+  FV.bval(~F, O.sub(~F, lm(~K, ~F, ~R, ~H, b, c, z, i), O.lookup(~F, c0, i)), O.lookup(~F, BX.vsub(~F, ys(~K, ~F, ~R, ~H, b, c, z), c0), i), O.lookup(~F, C.radii(~K, ~F, ~H, c), i), ys_sub(~K, ~F, ~R, ~H, b, c, z, c0, i, hi), in_lim(~K, ~F, ~R, ~H, b, c, ok, z, hz, i, hi))
 
 def ys_ball(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +b: C.Block, +c: C.Cert<K>, +ok: {CK.check(~K, b, c) == True{} : Bool}, +z: M.Vec(~F), +hz: C.pinned(~K, ~F, ~H, c, z)) -> C.ball(~K, ~F, ~H, c, ys(~K, ~F, ~R, ~H, b, c, z)):
   +c0 = C.center(~K, ~F, ~H, c)
   +m0 = M.len(~F, c0)
   +y = ys(~K, ~F, ~R, ~H, b, c, z)
-  +d = C.vsub(~F, y, c0)
+  +d = BX.vsub(~F, y, c0)
   +rad = C.radii(~K, ~F, ~H, c)
   (len_ys(~K, ~F, ~R, ~H, b, c, z), rbnd_of_lk(~F, d, m0, rad, CP.len_vsub(~F, y, c0, m0, len_ys(~K, ~F, ~R, ~H, b, c, z), {==}), lk_build(~F, ~d, ~rad, ~m0, ~(i => hi => ys_in.f(~K, ~F, ~R, ~H, b, c, ok, z, hz, i, hi)), m0, 0n, lk_end(m0))))
 
 # the limit point is within 2 q^k radii of iterate k
-def ys_near.f(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +b: C.Block, +c: C.Cert<K>, +ok: {CK.check(~K, b, c) == True{} : Bool}, +z: M.Vec(~F), +hz: C.pinned(~K, ~F, ~H, c, z), +k: Nat, +i: Nat, +hi: {KA.natle(1n+i, M.len(~F, C.center(~K, ~F, ~H, c))) == True{} : Bool}) -> M.bnd(~F, O.lookup(~F, C.vsub(~F, ys(~K, ~F, ~R, ~H, b, c, z), it(~K, ~F, ~H, b, c, z, k)), i), O.lookup(~F, M.vscale(~F, O.mul(F, RL.pw(~F, C.factor(~K, ~F, ~H, c), k), O.two(~F)), C.radii(~K, ~F, ~H, c)), i)):
+def ys_near.f(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +b: C.Block, +c: C.Cert<K>, +ok: {CK.check(~K, b, c) == True{} : Bool}, +z: M.Vec(~F), +hz: C.pinned(~K, ~F, ~H, c, z), +k: Nat, +i: Nat, +hi: {KA.natle(1n+i, M.len(~F, C.center(~K, ~F, ~H, c))) == True{} : Bool}) -> M.bnd(~F, O.lookup(~F, BX.vsub(~F, ys(~K, ~F, ~R, ~H, b, c, z), it(~K, ~F, ~H, b, c, z, k)), i), O.lookup(~F, M.vscale(~F, O.mul(F, RL.pw(~F, C.factor(~K, ~F, ~H, c), k), O.two(~F)), C.radii(~K, ~F, ~H, c)), i)):
   +sm = O.mul(F, RL.pw(~F, C.factor(~K, ~F, ~H, c), k), O.two(~F))
   +rad = C.radii(~K, ~F, ~H, c)
   +itk = it(~K, ~F, ~H, b, c, z, k)
-  bnd_rw_s(~F, O.lookup(~F, C.vsub(~F, ys(~K, ~F, ~R, ~H, b, c, z), itk), i), O.mul(F, sm, O.lookup(~F, rad, i)), O.lookup(~F, M.vscale(~F, sm, rad), i), look_vscale(~F, sm, rad, i),
-    FV.bval(~F, O.sub(~F, lm(~K, ~F, ~R, ~H, b, c, z, i), O.lookup(~F, itk, i)), O.lookup(~F, C.vsub(~F, ys(~K, ~F, ~R, ~H, b, c, z), itk), i), O.mul(F, sm, O.lookup(~F, rad, i)), ys_sub(~K, ~F, ~R, ~H, b, c, z, itk, i, hi), near_lim(~K, ~F, ~R, ~H, b, c, ok, z, hz, i, hi, k)))
+  bnd_rw_s(~F, O.lookup(~F, BX.vsub(~F, ys(~K, ~F, ~R, ~H, b, c, z), itk), i), O.mul(F, sm, O.lookup(~F, rad, i)), O.lookup(~F, M.vscale(~F, sm, rad), i), look_vscale(~F, sm, rad, i),
+    FV.bval(~F, O.sub(~F, lm(~K, ~F, ~R, ~H, b, c, z, i), O.lookup(~F, itk, i)), O.lookup(~F, BX.vsub(~F, ys(~K, ~F, ~R, ~H, b, c, z), itk), i), O.mul(F, sm, O.lookup(~F, rad, i)), ys_sub(~K, ~F, ~R, ~H, b, c, z, itk, i, hi), near_lim(~K, ~F, ~R, ~H, b, c, ok, z, hz, i, hi, k)))
 
 def ys_near(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +b: C.Block, +c: C.Cert<K>, +ok: {CK.check(~K, b, c) == True{} : Bool}, +z: M.Vec(~F), +hz: C.pinned(~K, ~F, ~H, c, z), +k: Nat) -> C.near(~K, ~F, ~H, c, O.mul(F, RL.pw(~F, C.factor(~K, ~F, ~H, c), k), O.two(~F)), ys(~K, ~F, ~R, ~H, b, c, z), it(~K, ~F, ~H, b, c, z, k)):
   +c0 = C.center(~K, ~F, ~H, c)
   +m0 = M.len(~F, c0)
   +y = ys(~K, ~F, ~R, ~H, b, c, z)
   +itk = it(~K, ~F, ~H, b, c, z, k)
-  +d = C.vsub(~F, y, itk)
+  +d = BX.vsub(~F, y, itk)
   +w = M.vscale(~F, O.mul(F, RL.pw(~F, C.factor(~K, ~F, ~H, c), k), O.two(~F)), C.radii(~K, ~F, ~H, c))
   rbnd_of_lk(~F, d, m0, w, CP.len_vsub(~F, y, itk, m0, len_ys(~K, ~F, ~R, ~H, b, c, z), ball_len(~K, ~F, ~H, c, itk, it_ball(~K, ~F, ~H, b, c, ok, z, hz, k))), lk_build(~F, ~d, ~w, ~m0, ~(i => hi => ys_near.f(~K, ~F, ~R, ~H, b, c, ok, z, hz, k, i, hi)), m0, 0n, lk_end(m0)))
 
@@ -396,7 +397,7 @@ def cfx(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +c: C.Cert<K>, +i: Nat) -> O.C
   O.mul(F, O.add(F, O.two(~F), O.two(~F)), O.mul(F, C.factor(~K, ~F, ~H, c), O.lookup(~F, C.radii(~K, ~F, ~H, c), i)))
 
 # entry i of N(y*) - y* is within q^k (4 q r_i), for every k
-def fixb(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +b: C.Block, +c: C.Cert<K>, +ok: {CK.check(~K, b, c) == True{} : Bool}, +z: M.Vec(~F), +hz: C.pinned(~K, ~F, ~H, c, z), +i: Nat, +hi: {KA.natle(1n+i, M.len(~F, C.center(~K, ~F, ~H, c))) == True{} : Bool}, +k: Nat) -> M.bnd(~F, O.lookup(~F, C.vsub(~F, C.newton(~K, ~F, ~H, b, c, z, ys(~K, ~F, ~R, ~H, b, c, z)), ys(~K, ~F, ~R, ~H, b, c, z)), i), O.mul(F, RL.pw(~F, C.factor(~K, ~F, ~H, c), k), cfx(~K, ~F, ~H, c, i))):
+def fixb(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +b: C.Block, +c: C.Cert<K>, +ok: {CK.check(~K, b, c) == True{} : Bool}, +z: M.Vec(~F), +hz: C.pinned(~K, ~F, ~H, c, z), +i: Nat, +hi: {KA.natle(1n+i, M.len(~F, C.center(~K, ~F, ~H, c))) == True{} : Bool}, +k: Nat) -> M.bnd(~F, O.lookup(~F, BX.vsub(~F, C.newton(~K, ~F, ~H, b, c, z, ys(~K, ~F, ~R, ~H, b, c, z)), ys(~K, ~F, ~R, ~H, b, c, z)), i), O.mul(F, RL.pw(~F, C.factor(~K, ~F, ~H, c), k), cfx(~K, ~F, ~H, c, i))):
   +q = C.factor(~K, ~F, ~H, c)
   +p = RL.pw(~F, q, k)
   +ri = O.lookup(~F, C.radii(~K, ~F, ~H, c), i)
@@ -418,26 +419,26 @@ def fixb(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +b: C.Blo
   +ba = O.mul(F, O.mul(F, q, sm), ri)
   +bb = O.mul(F, sm1, ri)
   +sum = FM.bnd_add(~F, O.sub(~F, a1, w), ba, O.neg(F, O.sub(~F, a2, w)), bb, ca, FM.bnd_neg(~F, O.sub(~F, a2, w), bb, cb))
-  +ev = Equal.trans(O.C(F), O.add(F, O.sub(~F, a1, w), O.neg(F, O.sub(~F, a2, w))), O.sub(~F, a1, a2), O.lookup(~F, C.vsub(~F, ny, y), i), FR.fring_eq(~F, [a1, a2, w], E.ZAdd{E.ZSub{E.ZVar{0n}, E.ZVar{2n}}, E.ZNeg{E.ZSub{E.ZVar{1n}, E.ZVar{2n}}}}, E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, {==}), SL.lookup_vsub(~F, ny, y, i))
+  +ev = Equal.trans(O.C(F), O.add(F, O.sub(~F, a1, w), O.neg(F, O.sub(~F, a2, w))), O.sub(~F, a1, a2), O.lookup(~F, BX.vsub(~F, ny, y), i), FR.fring_eq(~F, [a1, a2, w], E.ZAdd{E.ZSub{E.ZVar{0n}, E.ZVar{2n}}, E.ZNeg{E.ZSub{E.ZVar{1n}, E.ZVar{2n}}}}, E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, {==}), SL.lookup_vsub(~F, ny, y, i))
   +two = {E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZCst{S.Zpos{S.XH{}}}} : E.ZExpr}
   +eb = FR.fring_eq(~F, [p, q, ri], E.ZAdd{E.ZMul{E.ZMul{E.ZVar{1n}, E.ZMul{E.ZVar{0n}, two}}, E.ZVar{2n}}, E.ZMul{E.ZMul{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, two}, E.ZVar{2n}}}, E.ZMul{E.ZVar{0n}, E.ZMul{E.ZAdd{two, two}, E.ZMul{E.ZVar{1n}, E.ZVar{2n}}}}, {==})
-  bnd_rw_s(~F, O.lookup(~F, C.vsub(~F, ny, y), i), O.add(F, ba, bb), O.mul(F, p, cfx(~K, ~F, ~H, c, i)), eb, FV.bval(~F, O.add(F, O.sub(~F, a1, w), O.neg(F, O.sub(~F, a2, w))), O.lookup(~F, C.vsub(~F, ny, y), i), O.add(F, ba, bb), ev, sum))
+  bnd_rw_s(~F, O.lookup(~F, BX.vsub(~F, ny, y), i), O.add(F, ba, bb), O.mul(F, p, cfx(~K, ~F, ~H, c, i)), eb, FV.bval(~F, O.add(F, O.sub(~F, a1, w), O.neg(F, O.sub(~F, a2, w))), O.lookup(~F, BX.vsub(~F, ny, y), i), O.add(F, ba, bb), ev, sum))
 
 def cfx_nn(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +b: C.Block, +c: C.Cert<K>, +ok: {CK.check(~K, b, c) == True{} : Bool}, +i: Nat, +hi: {KA.natle(1n+i, M.len(~F, C.center(~K, ~F, ~H, c))) == True{} : Bool}) -> O.le(~F, O.zero(F), cfx(~K, ~F, ~H, c, i)):
   +two0 = FO.lt_le(~F, O.zero(F), O.two(~F), FO.two_pos(~F))
   FO.mul_nonneg(~F, O.add(F, O.two(~F), O.two(~F)), O.mul(F, C.factor(~K, ~F, ~H, c), O.lookup(~F, C.radii(~K, ~F, ~H, c), i)), FO.nonneg_add(~F, O.two(~F), O.two(~F), two0, two0), FO.mul_nonneg(~F, C.factor(~K, ~F, ~H, c), O.lookup(~F, C.radii(~K, ~F, ~H, c), i), fac0(~K, ~F, ~H, c, CP.cert_factor(~K, ~F, ~H, b, c, ok)), ri_nn(~K, ~F, ~H, b, c, ok, i, hi)))
 
 # so entry i of N(y*) - y* is 0
-def fixz(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +b: C.Block, +c: C.Cert<K>, +ok: {CK.check(~K, b, c) == True{} : Bool}, +z: M.Vec(~F), +hz: C.pinned(~K, ~F, ~H, c, z), +i: Nat, +hi: {KA.natle(1n+i, M.len(~F, C.center(~K, ~F, ~H, c))) == True{} : Bool}) -> M.bnd(~F, O.lookup(~F, C.vsub(~F, C.newton(~K, ~F, ~H, b, c, z, ys(~K, ~F, ~R, ~H, b, c, z)), ys(~K, ~F, ~R, ~H, b, c, z)), i), O.zero(F)):
+def fixz(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +b: C.Block, +c: C.Cert<K>, +ok: {CK.check(~K, b, c) == True{} : Bool}, +z: M.Vec(~F), +hz: C.pinned(~K, ~F, ~H, c, z), +i: Nat, +hi: {KA.natle(1n+i, M.len(~F, C.center(~K, ~F, ~H, c))) == True{} : Bool}) -> M.bnd(~F, O.lookup(~F, BX.vsub(~F, C.newton(~K, ~F, ~H, b, c, z, ys(~K, ~F, ~R, ~H, b, c, z)), ys(~K, ~F, ~R, ~H, b, c, z)), i), O.zero(F)):
   +hf = CP.cert_factor(~K, ~F, ~H, b, c, ok)
-  RL.pw_zero(~F, ~R, ~C.factor(~K, ~F, ~H, c), ~fac0(~K, ~F, ~H, c, hf), ~fac1(~K, ~F, ~H, c, hf), ~cfx(~K, ~F, ~H, c, i), ~cfx_nn(~K, ~F, ~H, b, c, ok, i, hi), ~O.lookup(~F, C.vsub(~F, C.newton(~K, ~F, ~H, b, c, z, ys(~K, ~F, ~R, ~H, b, c, z)), ys(~K, ~F, ~R, ~H, b, c, z)), i), ~(k => fixb(~K, ~F, ~R, ~H, b, c, ok, z, hz, i, hi, k)))
+  RL.pw_zero(~F, ~R, ~C.factor(~K, ~F, ~H, c), ~fac0(~K, ~F, ~H, c, hf), ~fac1(~K, ~F, ~H, c, hf), ~cfx(~K, ~F, ~H, c, i), ~cfx_nn(~K, ~F, ~H, b, c, ok, i, hi), ~O.lookup(~F, BX.vsub(~F, C.newton(~K, ~F, ~H, b, c, z, ys(~K, ~F, ~R, ~H, b, c, z)), ys(~K, ~F, ~R, ~H, b, c, z)), i), ~(k => fixb(~K, ~F, ~R, ~H, b, c, ok, z, hz, i, hi, k)))
 
 # the limit point is a fixed point of the Newton map
-def ys_fix(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +b: C.Block, +c: C.Cert<K>, +ok: {CK.check(~K, b, c) == True{} : Bool}, +z: M.Vec(~F), +hz: C.pinned(~K, ~F, ~H, c, z)) -> M.vbnd(~F, C.vsub(~F, C.newton(~K, ~F, ~H, b, c, z, ys(~K, ~F, ~R, ~H, b, c, z)), ys(~K, ~F, ~R, ~H, b, c, z)), O.zero(F)):
+def ys_fix(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +b: C.Block, +c: C.Cert<K>, +ok: {CK.check(~K, b, c) == True{} : Bool}, +z: M.Vec(~F), +hz: C.pinned(~K, ~F, ~H, c, z)) -> M.vbnd(~F, BX.vsub(~F, C.newton(~K, ~F, ~H, b, c, z, ys(~K, ~F, ~R, ~H, b, c, z)), ys(~K, ~F, ~R, ~H, b, c, z)), O.zero(F)):
   +m0 = M.len(~F, C.center(~K, ~F, ~H, c))
   +y = ys(~K, ~F, ~R, ~H, b, c, z)
   +ny = C.newton(~K, ~F, ~H, b, c, z, y)
-  +d = C.vsub(~F, ny, y)
+  +d = BX.vsub(~F, ny, y)
   +ln = CP.len_vsub(~F, ny, y, m0, ball_len(~K, ~F, ~H, c, ny, CP.cert_self(~K, ~F, ~H, b, c, ok, z, hz, y, ys_ball(~K, ~F, ~R, ~H, b, c, ok, z, hz))), len_ys(~K, ~F, ~R, ~H, b, c, z))
   (FO.le_refl(~F, O.zero(F)), vall_of_rbnd(~F, d, rbnd_of_lk(~F, d, m0, Nil{}, ln, lk_build(~F, ~d, ~{Nil{} : M.Vec(~F)}, ~m0, ~(i => hi => fixz(~K, ~F, ~R, ~H, b, c, ok, z, hz, i, hi)), m0, 0n, lk_end(m0)))))
 

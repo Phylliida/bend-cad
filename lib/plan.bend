@@ -5,7 +5,7 @@
 # (radius 0 in the box), and then each block in turn takes the next n
 # variables as its unknowns and the next n equations as its own. A block
 # names its parameters (pars: earlier variables its equations use) and
-# carries a certificate (spec/cert.bend) for its equations renumbered
+# carries a certificate (lib/certdef.bend) for its equations renumbered
 # locally: unknowns 0..n-1, then the parameters in the order listed. The
 # checker requires, besides each certificate's check: every equation of a
 # block uses only earlier variables and its own unknowns, the certificate's
@@ -22,7 +22,7 @@ import Base
 import ../spec/num.bend as S
 import ../spec/ring.bend as E
 import ../spec/knum.bend as N
-import ../spec/cert.bend as C
+import ./certdef.bend as C
 import ../spec/sketch.bend as SK
 import ./karith.bend as KA
 import ./kball.bend as KB

@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
-"""Check that the sk-06 laws in ROADMAP.bend say exactly what
-tests/plan_laws.bend proves.
+"""Check that the laws drafted in ROADMAP.bend say exactly what their
+restatements in tests/ prove.
 
 `bend ROADMAP.bend` stops at the count of open laws before type-checking,
-so the statements there are checked only through their restatements in
-tests/plan_laws.bend (each a def whose body is the proof). This turns
-every `law X:` of the sk-06 sections into a def signature and compares it
-with the test's `def X(...)` line: same binders in the same order, same
-types, same conclusion. Binder reuse markers (`+`) and parentheses around
-the whole conclusion are ignored. Run from bend-cad/; exit 1 on any
-difference.
+so a draft statement there is checked only through a restatement in a
+gated test (a def of the same name whose body is the proof). For every
+`law X:` in ROADMAP.bend that some tests/*.bend defines as `def X(...)`,
+this turns the law into a def signature and compares: same binders in the
+same order, same types, same conclusion. Binder reuse markers (`+`) and
+parentheses around the whole conclusion are ignored. A law with no
+restatement is simply open. Run from bend-cad/; exit 1 on any difference.
 """
-import re, sys
-
-LAWS = ['plan_exists', 'plan_unique', 'box_sides', 'sketch_exists', 'sketch_unique']
+import glob, re, sys
 
 def norm(binders, concl):
     bs = [re.sub(r'^\+', '', b.strip()) for b in binders]
@@ -47,13 +45,17 @@ def split_top(s):
     return out
 
 road = open('ROADMAP.bend').read()
-test = open('tests/plan_laws.bend').read()
+tests = {p: open(p).read() for p in sorted(glob.glob('tests/*.bend'))}
 ok = True
-for name in LAWS:
-    m = re.search(r'^law ' + name + r':\n((?:  .*\n?)+)', road, re.M)
-    if not m:
-        print('MISSING in ROADMAP.bend:', name); ok = False; continue
-    lines = [l.strip() for l in m.group(1).splitlines() if l.strip()]
+for m in re.finditer(r'^law (\w+):\n((?:  .*\n?)+)', road, re.M):
+    name = m.group(1)
+    found = [(p, t) for p, t in tests.items() if re.search(r'^def ' + name + r'\(', t, re.M)]
+    if not found:
+        print('open', name); continue
+    if len(found) > 1:
+        print('TWO restatements of', name, [p for p, _ in found]); ok = False; continue
+    path, test = found[0]
+    lines = [l.strip() for l in m.group(2).splitlines() if l.strip()]
     binders = [l[len('for'):].strip() for l in lines if l.startswith('for ')]
     concl = [l for l in lines if not l.startswith('for ')]
     if len(concl) != 1:
@@ -61,7 +63,7 @@ for name in LAWS:
     lb, lc = norm(binders, concl[0])
     d = re.search(r'^def ' + name + r'\((.*):$', test, re.M)
     if not d:
-        print('MISSING in tests/plan_laws.bend:', name); ok = False; continue
+        print('CANNOT FIND the def', name, 'in', path); ok = False; continue
     sig, depth = d.group(1), 1
     for j, ch in enumerate(sig):
         depth += ch == '('
@@ -83,5 +85,5 @@ for name in LAWS:
                 print('   binder %d: ROADMAP %s | test %s' % (i, a, b))
         if lc != dc:
             print('   conclusion: ROADMAP %s | test %s' % (lc, dc))
-print('LAWS IN SYNC' if ok else 'LAWS DIFFER')
+print('DRAFTS IN SYNC' if ok else 'DRAFTS DIFFER')
 sys.exit(0 if ok else 1)

@@ -473,9 +473,10 @@ triangular structure. A depth-30 circle chain becomes 30 blocks of 2 unknowns.
 
 ### 8.3 Parametric block certificate
 
-*Done (sk-05, 2026-10-14).* Stated in `spec/cert.bend` (trusted) and
-`LAWS.bend` (six `cert_*` laws), proven in `PROOF.bend` through
-`lib/certpf.bend`; the checker is `lib/cert.bend`. `tests/cert_demo.bend`
+*Done (sk-05, 2026-10-14).* Defined in `lib/certdef.bend`, the six
+`cert_*` statements proven in `lib/certpf.bend` (laws in `LAWS.bend` until
+the sk-06 review, when the trusted claim moved to the sketch level and
+these became lemmas); the checker is `lib/cert.bend`. `tests/cert_demo.bend`
 (gated) runs the checker inside Bend's own checker on a real circle-circle
 block over the dyadics: it accepts the certificate and rejects an
 off-center one. Natively it also rejects six other bad certificates
@@ -634,12 +635,13 @@ certificate, every complete ordered field has a positive b with b² = 5. (The fi
 step to ℝ on paper, is replaced; it would need two more laws: a
 quantitative `cert_fix` and a bound on how N moves with the parameters.)
 
-*Composition as built (sk-06, 2026-10-14; statements await review).* The
+*Composition as built (sk-06, 2026-10-14; statements reviewed by Danielle
+the same day, now in `LAWS.bend`).* The
 composed claim mentions only the system's equations, a box (a center and a
 radius per variable in K; radius 0 pins a variable) and the side
 conditions (`spec/box.bend`: `inbox`); the plan is input to the untrusted
-checker and never appears in it. Three laws, stated in ROADMAP.bend and
-proven in `lib/planpf.bend` (gated through `tests/plan_laws.bend`):
+checker and never appears in it. Three laws, in `LAWS.bend`, proven in
+`lib/planpf.bend`:
 - `plan_exists`: in every complete ordered field the box holds a solution;
 - `plan_unique`: in every ordered field it holds at most one (list
   equality of the two assignments);
@@ -669,7 +671,7 @@ back (variable v is the solution at v's position in vp); uniqueness maps
 both solutions into block order. Tested on the chain renumbered (Q, A, P,
 B; equations shuffled): accepted, and rejected with identity lists.
 
-At the sketch level (two more laws in ROADMAP.bend, same review): for a
+At the sketch level (two more laws in `LAWS.bend`): for a
 well-formed sketch whose exact system `Sketch.eqs` has a checked plan and
 whose `Sketch.sides` are checked over the box,
 - `sketch_exists`: in every complete ordered field some x in the box has
@@ -684,8 +686,9 @@ few lines from the plan laws with `sketch_sound` and `sketch_complete`
 (`lib/meaning.bend`). "Exactly one" is given the radius-0 coordinates
 (pins may be free degrees of freedom, §8.1); accept_sound (§11) reports
 pins separately. These are the statements the end-to-end claim will
-cite. `tools/lawsync.py` (in the gate) checks that ROADMAP's statements
-match their gated restatements in `tests/plan_laws.bend`.
+cite. While they were drafts, `tools/lawsync.py` (in the gate) checked
+that ROADMAP's statements matched their gated restatements in `tests/`;
+it does so for every future draft.
 
 ### 8.5 Precision and its cost
 
@@ -887,8 +890,10 @@ clang or the JS engine; base.bend; LAWS.bend (spec numbers, typed IR, exact
 equation forms, constant definitions, tolerance checks, meaning-lemma
 statements, `accept_sound`) and the spec files it rests on (`spec/num.bend`,
 `spec/ring.bend`, `spec/big.bend`, `spec/field.bend`, `spec/geom.bend`,
-`spec/sketch.bend`, `spec/mat.bend`; with sk-05, `spec/knum.bend` and
-`spec/cert.bend`);
+`spec/sketch.bend`, `spec/mat.bend`; with sk-05/sk-06, `spec/knum.bend`,
+`spec/real.bend` and `spec/box.bend`). The block certificate's definitions
+(`lib/certdef.bend`) left the trusted base at the sk-06 review: the laws
+no longer mention blocks, certificates or Newton maps.
 optionally Euclidean-field axioms for SDF laws.
 
 **Not trusted:** the proposer; the UI; F32 rendering.
@@ -911,7 +916,7 @@ random sketches.
 | sk-04 | Rational, dyadic and matrix library (∞-norms, products); Q order laws; canonical ℚ as an ordered-field instance (optional) | sk-02 | laws closed — **done** (2026-10-13; 37 laws: ℚ order, ℚ in every ordered field, gcd reduction, canonical ℚ, vectors and matrices; runtime bigint dyadics deferred to sk-05, §16) |
 | sk-05 | Parametric block certificate (§8.3), mean-value method (Q12): generic K matrix library, slopes, ball arithmetic, checker, the six `cert_*` laws | sk-04 | **done (2026-10-14): 98 laws, gate green (~15 s)** |
 | sk-05b | Complete ordered fields (Q18): template (Archimedean + Cauchy with a modulus), axioms cross-checked against mathlib's ℝ in Lean, Banach's theorem; exactly one zero per block | sk-05 | **done (2026-10-14): `cert_exists`, 99 laws; Lean cross-check passes** |
-| sk-06 | Composition theorem (§8.4, exactly one solution in a complete ordered field), side conditions (§8.6), optional denominator clearing for D (Q19) | sk-05, sk-05b | **proven, awaiting review (2026-10-14)**: plan_exists, plan_unique, box_sides, and at the sketch level sketch_exists, sketch_unique, in ROADMAP (systems in any order); denominator clearing open |
+| sk-06 | Composition theorem (§8.4, exactly one solution in a complete ordered field), side conditions (§8.6), optional denominator clearing for D (Q19) | sk-05, sk-05b | **done (2026-10-14, reviewed)**: plan_exists, plan_unique, box_sides, sketch_exists, sketch_unique in LAWS (97 laws; the block laws became lemmas); denominator clearing optional (Q19) |
 | sk-07 | Core vocabulary §5.1 + meaning lemmas | sk-03, sk-06 | laws closed — **meaning lemmas proven** in every ordered field (2026-10-13); §8.6 for the vocabulary covered by `box_sides` + `check_sides` (`tests/sides_demo.bend`, every kind, 2026-10-14); remaining: line–line / point–circle / circle–circle distances |
 | sk-08 | `accept_sound`: certified, untouched, flips, diagnostics | sk-07 | law closed |
 | sk-09 | Proposer v1: pinning, decomposition, KKT/LM, refinement, certificate emission | sk-P1, sk-07 | fixture sketches certified; certify-on-commit time target set from sk-P1 |
@@ -1038,17 +1043,17 @@ sk-02 and sk-03 can run in parallel after sk-01.
   proves (§7.3); π itself is defined in the complete-field template (Q18),
   so the final theorem speaks about the true π.
 
-**Open for Danielle:**
-- **sk-06 statements** (ROADMAP.bend): `plan_exists`, `plan_unique`,
-  `box_sides`, the sketch-level `sketch_exists` and `sketch_unique`, and
-  `spec/box.bend`. All five are proven; they move to LAWS.bend once
-  reviewed.
-- **Trusted base:** the composed claim now exists and mentions no block,
-  certificate or Newton map, so the `cert_*` laws and `cert_exists` could
-  become untrusted library lemmas, with `spec/cert.bend` untrusted except
-  `rbnd` and `vsub` (which `inbox` uses; they would move to
-  `spec/box.bend`). Recommendation: do it. The trusted spec shrinks to
-  what the claim says, and the block laws stay proven as lemmas.
+**Decided in the sk-06 review (Danielle, 2026-10-14):**
+- The five sk-06 statements (`plan_exists`, `plan_unique`, `box_sides`,
+  `sketch_exists`, `sketch_unique`, with the audit's coverage hypothesis)
+  and `spec/box.bend` are approved and moved to LAWS.bend.
+- Smaller trusted base: the `cert_*` laws and `cert_exists` are library
+  lemmas now; the certificate's definitions moved to `lib/certdef.bend`,
+  and `rbnd` and `vsub` (which `inbox` uses) to `spec/box.bend`.
+- **The proposer is verified, not untrusted** ("we don't want untrusted
+  proposer, we want trusted everything"). D7 and §10 are rewritten for
+  sk-09: every answer the solver gives is a law, and every stage is proven
+  to succeed where it should (§10).
 
 ---
 

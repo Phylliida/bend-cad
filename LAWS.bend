@@ -7,7 +7,13 @@
 # meaning) and spec/ring.bend (ring expressions and their meaning). sk-03 and
 # sk-07 (the typed sketch and what it means): spec/field.bend (ordered
 # fields), spec/geom.bend (plane geometry) and spec/sketch.bend (the IR,
-# exact equation forms and meanings).
+# exact equation forms and meanings). sk-02: spec/big.bend (runtime
+# integers). sk-04: spec/mat.bend (vectors and matrices). sk-06 (what a
+# certified sketch is): spec/knum.bend (computing numbers and their maps
+# into F), spec/real.bend (complete ordered fields) and spec/box.bend
+# (boxes, and the variables a sketch names). Checkers (lib/plan.bend)
+# appear only in hypotheses `check(..) == True`: what they compute is not
+# trusted, only what a passing check is proven to mean.
 
 import Base
 import ./spec/num.bend as S
@@ -19,11 +25,12 @@ import ./spec/big.bend as SB
 import ./rt/big.bend as RB
 import ./spec/field.bend as O
 import ./spec/sketch.bend as K
+import ./spec/sketch.bend as SK
 import ./spec/mat.bend as M
 import ./spec/knum.bend as N
-import ./spec/cert.bend as C
+import ./spec/box.bend as BX
 import ./spec/real.bend as CR
-import ./lib/cert.bend as CK
+import ./lib/plan.bend as PL
 
 # Positives
 # ---------
@@ -768,128 +775,124 @@ law sketch_complete:
   for  h: K.Sketch.means(~F, env, sk)
   K.Sketch.holds(~F, env, sk)
 
-# Block certificates (sk-05, DESIGN §8.3)
-# ---------------------------------------
-# A certificate is checked in the computing numbers K (spec/knum.bend) by
-# lib/cert.bend, and its claim holds in every ordered field F that K maps
-# into (H: a ring map with sound comparisons). Blocks number their own
-# variables: n unknowns, then the parameters. For every z in the
-# parameters' box, write N(y) = y - Y f(y; z) for the certificate's Newton
-# map and B for the box |y_i - ỹ_i| <= r_i, for y with as many entries as
-# ỹ (r_i = 0 past the last radius). Then 0 <= q < 1, B contains its
-# center, N maps B into itself and contracts it by q (in the r-weighted
-# infinity norm), a fixed point of N in B is a zero of f, and B holds at
-# most one zero. In a complete ordered field these give exactly one zero
-# of the block in B (Banach; sk-05b, Q18). tests/cert_demo.bend runs the
-# checker on a real block.
+# The block certificates of sk-05 (cert_factor, cert_center, cert_self,
+# cert_contract, cert_fix, cert_unique) and sk-05b's cert_exists were laws
+# until 2026-10-14; they are lemmas now (lib/certpf.bend,
+# lib/banach.bend), since the laws below mention no block, certificate or
+# Newton map (Danielle approved the smaller trusted base).
 
-# LAW: the contraction factor is in [0, 1)
-law cert_factor:
-  for ~K: N.Num
-  for ~F: O.OField
-  for ~H: N.Emb<K, F>
-  for +b: C.Block
-  for +c: C.Cert<K>
-  for  ok: {CK.check(~K, b, c) == True{} : Bool}
-  M.Both(O.le(~F, O.zero(F), C.factor(~K, ~F, ~H, c)), O.lt(F, C.factor(~K, ~F, ~H, c), O.one(F)))
+# Composition (sk-06, DESIGN §8.4; reviewed 2026-10-14)
+# ------------------------------------------------------
+# A system is a list of equations over variables 0, 1, ... (the sketch's
+# equations, pins made into radius-0 variables). A box gives each variable
+# a center and a radius in the computing numbers K. A plan (lib/plan.bend:
+# blocks in order, each with its unknowns, parameters, equations and a
+# certificate) is checked by lib/plan.bend's checker; it never appears in
+# the claim. The claim: the box holds exactly one solution of the system,
+# and every point of the box meets the side conditions. "Exactly one" is
+# given the radius-0 coordinates: the proposer may pin free degrees of
+# freedom (§8.1), and the statement cannot tell them from fixed ones. A
+# variable past the box's end would read 0 in Zeros; these laws are about
+# systems over the box's variables, which the checker enforces (it rejects
+# an equation naming a later variable), and the sketch laws below state
+# their coverage as a hypothesis.
 
-# LAW: the box contains its center (so it is not empty)
-law cert_center:
-  for ~K: N.Num
-  for ~F: O.OField
-  for ~H: N.Emb<K, F>
-  for +b: C.Block
-  for +c: C.Cert<K>
-  for  ok: {CK.check(~K, b, c) == True{} : Bool}
-  C.ball(~K, ~F, ~H, c, C.center(~K, ~F, ~H, c))
-
-# LAW: the Newton map sends the box into itself
-law cert_self:
-  for ~K: N.Num
-  for ~F: O.OField
-  for ~H: N.Emb<K, F>
-  for +b: C.Block
-  for +c: C.Cert<K>
-  for  ok: {CK.check(~K, b, c) == True{} : Bool}
-  for +z: M.Vec(~F)
-  for  hz: C.pinned(~K, ~F, ~H, c, z)
-  for +y: M.Vec(~F)
-  for  hy: C.ball(~K, ~F, ~H, c, y)
-  C.ball(~K, ~F, ~H, c, C.newton(~K, ~F, ~H, b, c, z, y))
-
-# LAW: the Newton map contracts the box by q: points within s radii of
-# each other go to points within q s radii (s >= 0: with s < 0 and two
-# empty lists the hypothesis holds vacuously and the conclusion is false)
-law cert_contract:
-  for ~K: N.Num
-  for ~F: O.OField
-  for ~H: N.Emb<K, F>
-  for +b: C.Block
-  for +c: C.Cert<K>
-  for  ok: {CK.check(~K, b, c) == True{} : Bool}
-  for +z: M.Vec(~F)
-  for  hz: C.pinned(~K, ~F, ~H, c, z)
-  for +y1: M.Vec(~F)
-  for  h1: C.ball(~K, ~F, ~H, c, y1)
-  for +y2: M.Vec(~F)
-  for  h2: C.ball(~K, ~F, ~H, c, y2)
-  for +s: O.C(F)
-  for  hs0: O.le(~F, O.zero(F), s)
-  for  hs: C.near(~K, ~F, ~H, c, s, y1, y2)
-  C.near(~K, ~F, ~H, c, O.mul(F, C.factor(~K, ~F, ~H, c), s), C.newton(~K, ~F, ~H, b, c, z, y1), C.newton(~K, ~F, ~H, b, c, z, y2))
-
-# LAW: a fixed point of the Newton map is a zero of the block
-law cert_fix:
-  for ~K: N.Num
-  for ~F: O.OField
-  for ~H: N.Emb<K, F>
-  for +b: C.Block
-  for +c: C.Cert<K>
-  for  ok: {CK.check(~K, b, c) == True{} : Bool}
-  for +z: M.Vec(~F)
-  for +y: M.Vec(~F)
-  for  hy: C.ball(~K, ~F, ~H, c, y)
-  for  hf: M.vbnd(~F, C.vsub(~F, C.newton(~K, ~F, ~H, b, c, z, y), y), O.zero(F))
-  M.vbnd(~F, C.bfun(~F, b, y, z), O.zero(F))
-
-# LAW: the box holds at most one zero of the block
-law cert_unique:
-  for ~K: N.Num
-  for ~F: O.OField
-  for ~H: N.Emb<K, F>
-  for +b: C.Block
-  for +c: C.Cert<K>
-  for  ok: {CK.check(~K, b, c) == True{} : Bool}
-  for +z: M.Vec(~F)
-  for  hz: C.pinned(~K, ~F, ~H, c, z)
-  for +y1: M.Vec(~F)
-  for  h1: C.ball(~K, ~F, ~H, c, y1)
-  for  z1: M.vbnd(~F, C.bfun(~F, b, y1, z), O.zero(F))
-  for +y2: M.Vec(~F)
-  for  h2: C.ball(~K, ~F, ~H, c, y2)
-  for  z2: M.vbnd(~F, C.bfun(~F, b, y2, z), O.zero(F))
-  M.vbnd(~F, C.vsub(~F, y1, y2), O.zero(F))
-
-# Existence (sk-05b, DESIGN §8.4, Q18)
-# ------------------------------------
-# In a complete ordered field (spec/real.bend: Archimedean, Cauchy
-# sequences with a modulus converge; checked against mathlib's ℝ in
-# lean/), the Newton map of a checked certificate has a fixed point in its
-# box (Banach): iterate from the center, take the limit coordinate by
-# coordinate. By cert_fix that point is a zero of the block, and by
-# cert_unique it is the only one: exactly one zero per block and choice of
-# parameters.
-
-# LAW: in a complete ordered field the box holds a zero of the block, for
-# every choice of the parameters in their box
-law cert_exists:
+# LAW: in a complete ordered field, the box holds a solution of the system
+# (lib/planpf.bend: the blocks in order, each extended by its Banach point)
+law plan_exists:
   for ~K: N.Num
   for ~F: O.OField
   for ~R: CR.Complete<F>
   for ~H: N.Emb<K, F>
-  for +b: C.Block
-  for +c: C.Cert<K>
-  for  ok: {CK.check(~K, b, c) == True{} : Bool}
-  for +z: M.Vec(~F)
-  for  hz: C.pinned(~K, ~F, ~H, c, z)
-  Sigma<&2, &2, M.Vec(~F), y => M.Both(C.ball(~K, ~F, ~H, c, y), M.vbnd(~F, C.bfun(~F, b, y, z), O.zero(F)))>
+  for +eqs: List<&2, E.QExpr>
+  for +gc: N.KVec(~K)
+  for +gr: N.KVec(~K)
+  for +p: PL.Plan<K>
+  for  ok: {PL.check(~K, eqs, gc, gr, p) == True{} : Bool}
+  Sigma<&2, &2, M.Vec(~F), x => M.Both(BX.inbox(~K, ~F, ~H, gc, gr, x), SK.Zeros(~F, x, eqs))>
+
+# LAW: in every ordered field, the box holds at most one solution
+# (lib/planpf.bend: pinned coordinates are their centers; then block by
+# block, both solutions' stretches lie in the certificate's box and are
+# zeros of the block at the same parameters, so the block's uniqueness
+# lemma makes them equal)
+law plan_unique:
+  for ~K: N.Num
+  for ~F: O.OField
+  for ~H: N.Emb<K, F>
+  for +eqs: List<&2, E.QExpr>
+  for +gc: N.KVec(~K)
+  for +gr: N.KVec(~K)
+  for +p: PL.Plan<K>
+  for  ok: {PL.check(~K, eqs, gc, gr, p) == True{} : Bool}
+  for +x1: M.Vec(~F)
+  for  h1: BX.inbox(~K, ~F, ~H, gc, gr, x1)
+  for  z1: SK.Zeros(~F, x1, eqs)
+  for +x2: M.Vec(~F)
+  for  h2: BX.inbox(~K, ~F, ~H, gc, gr, x2)
+  for  z2: SK.Zeros(~F, x2, eqs)
+  {x1 == x2 : M.Vec(~F)}
+
+# LAW: in every ordered field, every point of the box meets the side
+# conditions the checker certified (e > 0, or e >= 0) (lib/planpf.bend:
+# ball enclosures over the box, a comparison in K)
+law box_sides:
+  for ~K: N.Num
+  for ~F: O.OField
+  for ~H: N.Emb<K, F>
+  for +sides: List<&2, SK.Side>
+  for +gc: N.KVec(~K)
+  for +gr: N.KVec(~K)
+  for  ok: {PL.check_sides(~K, sides, gc, gr) == True{} : Bool}
+  for +x: M.Vec(~F)
+  for  h: BX.inbox(~K, ~F, ~H, gc, gr, x)
+  SK.Sides(~F, x, sides)
+
+# Sketches (sk-06 capstone; reviewed 2026-10-14)
+# ----------------------------------------------
+# For a sketch whose exact system (Sketch.eqs) has a checked plan, with a
+# box that covers every variable the sketch names (spec/box.bend:
+# Sketch.within; a shorter box would silently read the rest as 0): in every
+# complete ordered field, if the sketch is well formed and its side
+# conditions (Sketch.sides) are checked over the box, there is a geometry
+# in the box where every circle and arc is proper and every driving
+# constraint means what it says (sk-07's meaning laws); and in every ordered
+# field only one geometry in the box does (given the radius-0
+# coordinates). Both follow from the laws above with sketch_sound and
+# sketch_complete. Degenerate geometry is allowed (sk-03): a segment may
+# collapse, and then parallel, perpendicular and on-line hold of it.
+
+# LAW: in a complete ordered field the box holds a geometry meaning the sketch
+law sketch_exists:
+  for ~K: N.Num
+  for ~F: O.OField
+  for ~R: CR.Complete<F>
+  for ~H: N.Emb<K, F>
+  for +sk: SK.Sketch
+  for  w: SK.Sketch.wf(sk)
+  for +gc: N.KVec(~K)
+  for +gr: N.KVec(~K)
+  for  cov: {BX.Sketch.within(sk, List.length(&2, N.NC(K), gc)) == True{} : Bool}
+  for +p: PL.Plan<K>
+  for  ok: {PL.check(~K, SK.Sketch.eqs(sk), gc, gr, p) == True{} : Bool}
+  for  os: {PL.check_sides(~K, SK.Sketch.sides(sk), gc, gr) == True{} : Bool}
+  (&x: M.Vec(~F) -> (BX.inbox(~K, ~F, ~H, gc, gr, x) & SK.Sketch.means(~F, x, sk)))
+
+# LAW: in every ordered field, at most one geometry in the box means the sketch
+law sketch_unique:
+  for ~K: N.Num
+  for ~F: O.OField
+  for ~H: N.Emb<K, F>
+  for +sk: SK.Sketch
+  for +gc: N.KVec(~K)
+  for +gr: N.KVec(~K)
+  for  cov: {BX.Sketch.within(sk, List.length(&2, N.NC(K), gc)) == True{} : Bool}
+  for +p: PL.Plan<K>
+  for  ok: {PL.check(~K, SK.Sketch.eqs(sk), gc, gr, p) == True{} : Bool}
+  for +x1: M.Vec(~F)
+  for  h1: BX.inbox(~K, ~F, ~H, gc, gr, x1)
+  for  m1: SK.Sketch.means(~F, x1, sk)
+  for +x2: M.Vec(~F)
+  for  h2: BX.inbox(~K, ~F, ~H, gc, gr, x2)
+  for  m2: SK.Sketch.means(~F, x2, sk)
+  {x1 == x2 : M.Vec(~F)}

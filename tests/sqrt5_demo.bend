@@ -12,7 +12,7 @@ import ../spec/ring.bend as E
 import ../spec/field.bend as O
 import ../spec/mat.bend as M
 import ../spec/knum.bend as N
-import ../spec/cert.bend as C
+import ../lib/certdef.bend as C
 import ../spec/real.bend as CR
 import ../lib/fring.bend as FR
 import ../lib/ford.bend as FO

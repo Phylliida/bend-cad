@@ -1,7 +1,7 @@
 # Entrywise bounds on vectors and matrices in every ordered field (the
 # certificate's box arithmetic in F). Vectors are lists read with trailing
 # zeros. Untrusted: proofs only.
-#   C.rbnd(d, r): |d_i| <= r_i            (spec/cert.bend)
+#   BX.rbnd(d, r): |d_i| <= r_i            (spec/box.bend)
 #   rle(u, w):    u_i <= w_i
 #   rnn(w):       0 <= w_i
 #   mbnd(M, B):   |M_ij| <= B_ij
@@ -12,7 +12,8 @@ import ../spec/num.bend as S
 import ../spec/ring.bend as E
 import ../spec/field.bend as O
 import ../spec/mat.bend as M
-import ../spec/cert.bend as C
+import ../spec/box.bend as BX
+import ./certdef.bend as C
 import ./flaws.bend as FL
 import ./fring.bend as FR
 import ./ford.bend as FO
@@ -46,9 +47,9 @@ def mbnd(~F: O.OField, m: M.Mat(~F), b: M.Mat(~F)) -> Data:
     case Nil{} b:
       Unit
     case Con{r, rs} Nil{}:
-      M.Both(C.rbnd(~F, r, Nil{}), mbnd(~F, rs, Nil{}))
+      M.Both(BX.rbnd(~F, r, Nil{}), mbnd(~F, rs, Nil{}))
     case Con{r, rs} Con{t, ts}:
-      M.Both(C.rbnd(~F, r, t), mbnd(~F, rs, ts))
+      M.Both(BX.rbnd(~F, r, t), mbnd(~F, rs, ts))
 
 # 0 <= B_ij for every i, j
 def mnn(~F: O.OField, b: M.Mat(~F)) -> Data:
@@ -76,7 +77,7 @@ def vtl(~F: O.OField, v: M.Vec(~F)) -> M.Vec(~F):
 # Taking vectors apart
 # --------------------
 
-def rbnd_head(~F: O.OField, +a: O.C(F), +ds: M.Vec(~F), r: M.Vec(~F), h: C.rbnd(~F, Con{a, ds}, r)) -> M.bnd(~F, a, vhd(~F, r)):
+def rbnd_head(~F: O.OField, +a: O.C(F), +ds: M.Vec(~F), r: M.Vec(~F), h: BX.rbnd(~F, Con{a, ds}, r)) -> M.bnd(~F, a, vhd(~F, r)):
   match r:
     case Nil{}:
       (ha, hs) = h
@@ -85,7 +86,7 @@ def rbnd_head(~F: O.OField, +a: O.C(F), +ds: M.Vec(~F), r: M.Vec(~F), h: C.rbnd(
       (ha, hs) = h
       ha
 
-def rbnd_tail(~F: O.OField, +a: O.C(F), +ds: M.Vec(~F), r: M.Vec(~F), h: C.rbnd(~F, Con{a, ds}, r)) -> C.rbnd(~F, ds, vtl(~F, r)):
+def rbnd_tail(~F: O.OField, +a: O.C(F), +ds: M.Vec(~F), r: M.Vec(~F), h: BX.rbnd(~F, Con{a, ds}, r)) -> BX.rbnd(~F, ds, vtl(~F, r)):
   match r:
     case Nil{}:
       (ha, hs) = h
@@ -157,7 +158,7 @@ def rle_tail(~F: O.OField, u: M.Vec(~F), w: M.Vec(~F), h: rle(~F, u, w)) -> rle(
       hs
 
 # a box bound, put together from its head and tail
-def rbnd_mk(~F: O.OField, +a: O.C(F), +ds: M.Vec(~F), r: M.Vec(~F), h1: M.bnd(~F, a, vhd(~F, r)), h2: C.rbnd(~F, ds, vtl(~F, r))) -> C.rbnd(~F, Con{a, ds}, r):
+def rbnd_mk(~F: O.OField, +a: O.C(F), +ds: M.Vec(~F), r: M.Vec(~F), h1: M.bnd(~F, a, vhd(~F, r)), h2: BX.rbnd(~F, ds, vtl(~F, r))) -> BX.rbnd(~F, Con{a, ds}, r):
   match r:
     case Nil{}:
       (h1, h2)
@@ -190,7 +191,7 @@ def matvec_nonneg(~F: O.OField, b: M.Mat(~F), +w: M.Vec(~F), hb: mnn(~F, b), +hw
 # --------------------------
 
 # |r . d| <= b . w, for |r| <= b and |d| <= w
-def dot_bnd(~F: O.OField, r: M.Vec(~F), +b: M.Vec(~F), d: M.Vec(~F), +w: M.Vec(~F), +hr: C.rbnd(~F, r, b), +hd: C.rbnd(~F, d, w), +hb: rnn(~F, b), +hw: rnn(~F, w)) -> M.bnd(~F, M.dot(~F, r, d), M.dot(~F, b, w)):
+def dot_bnd(~F: O.OField, r: M.Vec(~F), +b: M.Vec(~F), d: M.Vec(~F), +w: M.Vec(~F), +hr: BX.rbnd(~F, r, b), +hd: BX.rbnd(~F, d, w), +hb: rnn(~F, b), +hw: rnn(~F, w)) -> M.bnd(~F, M.dot(~F, r, d), M.dot(~F, b, w)):
   match r d:
     case Nil{} d:
       FM.bnd_zero(~F, M.dot(~F, b, w), dot_nonneg(~F, b, w, hb, hw))
@@ -204,7 +205,7 @@ def dot_bnd(~F: O.OField, r: M.Vec(~F), +b: M.Vec(~F), d: M.Vec(~F), +w: M.Vec(~
           dot_bnd(~F, xs, vtl(~F, b), ys, vtl(~F, w), rbnd_tail(~F, x, xs, b, hr), rbnd_tail(~F, y, ys, w, hd), rnn_tail(~F, b, hb), rnn_tail(~F, w, hw))))
 
 # |M d| <= B w, for |M| <= B and |d| <= w (B, w not negative)
-def mbnd_matvec(~F: O.OField, m: M.Mat(~F), b: M.Mat(~F), +d: M.Vec(~F), +w: M.Vec(~F), hm: mbnd(~F, m, b), +hd: C.rbnd(~F, d, w), hb: mnn(~F, b), +hw: rnn(~F, w)) -> C.rbnd(~F, M.matvec(~F, m, d), M.matvec(~F, b, w)):
+def mbnd_matvec(~F: O.OField, m: M.Mat(~F), b: M.Mat(~F), +d: M.Vec(~F), +w: M.Vec(~F), hm: mbnd(~F, m, b), +hd: BX.rbnd(~F, d, w), hb: mnn(~F, b), +hw: rnn(~F, w)) -> BX.rbnd(~F, M.matvec(~F, m, d), M.matvec(~F, b, w)):
   match m b:
     case Nil{} b:
       Unit{}
@@ -219,14 +220,14 @@ def mbnd_matvec(~F: O.OField, m: M.Mat(~F), b: M.Mat(~F), +d: M.Vec(~F), +w: M.V
 # Monotonicity, negation, sums
 # ----------------------------
 
-def rbnd_mono(~F: O.OField, d: M.Vec(~F), +r: M.Vec(~F), +t: M.Vec(~F), +h: C.rbnd(~F, d, r), +hrt: rle(~F, r, t)) -> C.rbnd(~F, d, t):
+def rbnd_mono(~F: O.OField, d: M.Vec(~F), +r: M.Vec(~F), +t: M.Vec(~F), +h: BX.rbnd(~F, d, r), +hrt: rle(~F, r, t)) -> BX.rbnd(~F, d, t):
   match d:
     case Nil{}:
       Unit{}
     case Con{+a, +ds}:
       rbnd_mk(~F, a, ds, t, FM.bnd_mono(~F, a, vhd(~F, r), vhd(~F, t), rbnd_head(~F, a, ds, r, h), FM.sub_nonneg(~F, vhd(~F, r), vhd(~F, t), rle_head(~F, r, t, hrt))), rbnd_mono(~F, ds, vtl(~F, r), vtl(~F, t), rbnd_tail(~F, a, ds, r, h), rle_tail(~F, r, t, hrt)))
 
-def rbnd_neg(~F: O.OField, u: M.Vec(~F), +r: M.Vec(~F), +h: C.rbnd(~F, u, r)) -> C.rbnd(~F, M.vneg(~F, u), r):
+def rbnd_neg(~F: O.OField, u: M.Vec(~F), +r: M.Vec(~F), +h: BX.rbnd(~F, u, r)) -> BX.rbnd(~F, M.vneg(~F, u), r):
   match u:
     case Nil{}:
       Unit{}
@@ -239,12 +240,12 @@ def bnd_sself(~F: O.OField, +a: O.C(F), +s: O.C(F), +hs: O.le(~F, O.zero(F), s))
   FM.bnd_zero(~F, s, hs)
 
 # |u_i - u_i| <= r_i, for r not negative
-def rbnd_self(~F: O.OField, u: M.Vec(~F), +r: M.Vec(~F), +h: rnn(~F, r)) -> C.rbnd(~F, C.vsub(~F, u, u), r):
+def rbnd_self(~F: O.OField, u: M.Vec(~F), +r: M.Vec(~F), +h: rnn(~F, r)) -> BX.rbnd(~F, BX.vsub(~F, u, u), r):
   match u:
     case Nil{}:
       Unit{}
     case Con{+a, +us}:
-      rbnd_mk(~F, O.sub(~F, a, a), C.vsub(~F, us, us), r, bnd_sself(~F, a, vhd(~F, r), rnn_head(~F, r, h)), rbnd_self(~F, us, vtl(~F, r), rnn_tail(~F, r, h)))
+      rbnd_mk(~F, O.sub(~F, a, a), BX.vsub(~F, us, us), r, bnd_sself(~F, a, vhd(~F, r), rnn_head(~F, r, h)), rbnd_self(~F, us, vtl(~F, r), rnn_tail(~F, r, h)))
 
 # Lengths
 # -------
@@ -293,16 +294,16 @@ def fit_len(~F: O.OField, n: Nat, y: M.Vec(~F), h: {M.len(~F, y) == n : Nat}) ->
 # --------------
 
 # (u1 ++ w1) - (u2 ++ w2) = (u1 - u2) ++ (w1 - w2), for u1, u2 of equal length
-def vsub_app(~F: O.OField, u1: M.Vec(~F), u2: M.Vec(~F), +w1: M.Vec(~F), +w2: M.Vec(~F), h: {M.len(~F, u1) == M.len(~F, u2) : Nat}) -> {C.vsub(~F, C.app(~F, u1, w1), C.app(~F, u2, w2)) == C.app(~F, C.vsub(~F, u1, u2), C.vsub(~F, w1, w2)) : M.Vec(~F)}:
+def vsub_app(~F: O.OField, u1: M.Vec(~F), u2: M.Vec(~F), +w1: M.Vec(~F), +w2: M.Vec(~F), h: {M.len(~F, u1) == M.len(~F, u2) : Nat}) -> {BX.vsub(~F, C.app(~F, u1, w1), C.app(~F, u2, w2)) == C.app(~F, BX.vsub(~F, u1, u2), BX.vsub(~F, w1, w2)) : M.Vec(~F)}:
   match u1 u2:
     case Nil{} Nil{}:
       {==}
     case Nil{} Con{+b, +bs}:
-      FO.absurd({C.vsub(~F, w1, C.app(~F, Con{b, bs}, w2)) == C.app(~F, C.vsub(~F, Nil{}, Con{b, bs}), C.vsub(~F, w1, w2)) : M.Vec(~F)}, zero_ne(M.len(~F, bs), h))
+      FO.absurd({BX.vsub(~F, w1, C.app(~F, Con{b, bs}, w2)) == C.app(~F, BX.vsub(~F, Nil{}, Con{b, bs}), BX.vsub(~F, w1, w2)) : M.Vec(~F)}, zero_ne(M.len(~F, bs), h))
     case Con{+a, +as} Nil{}:
-      FO.absurd({C.vsub(~F, C.app(~F, Con{a, as}, w1), w2) == C.app(~F, C.vsub(~F, Con{a, as}, Nil{}), C.vsub(~F, w1, w2)) : M.Vec(~F)}, succ_ne(M.len(~F, as), h))
+      FO.absurd({BX.vsub(~F, C.app(~F, Con{a, as}, w1), w2) == C.app(~F, BX.vsub(~F, Con{a, as}, Nil{}), BX.vsub(~F, w1, w2)) : M.Vec(~F)}, succ_ne(M.len(~F, as), h))
     case Con{+a, +as} Con{+b, +bs}:
-      %vsub_app(~F, as, bs, w1, w2, succ_inj(M.len(~F, as), M.len(~F, bs), h)) : {Con{O.sub(~F, a, b), C.vsub(~F, C.app(~F, as, w1), C.app(~F, bs, w2))} == Con{O.sub(~F, a, b), _} : M.Vec(~F)}
+      %vsub_app(~F, as, bs, w1, w2, succ_inj(M.len(~F, as), M.len(~F, bs), h)) : {Con{O.sub(~F, a, b), BX.vsub(~F, C.app(~F, as, w1), C.app(~F, bs, w2))} == Con{O.sub(~F, a, b), _} : M.Vec(~F)}
       {==}
 
 # (u ++ w) . (a ++ b) = u . a + w . b, for u, a of equal length
@@ -319,7 +320,7 @@ def dot_app(~F: O.OField, u: M.Vec(~F), +w: M.Vec(~F), a: M.Vec(~F), +b: M.Vec(~
       FR.fring_eq(~F, [O.mul(F, x, y), M.dot(~F, xs, ys), M.dot(~F, w, b)], E.ZAdd{E.ZVar{0n}, E.ZAdd{E.ZVar{1n}, E.ZVar{2n}}}, E.ZAdd{E.ZAdd{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{2n}}, {==})
 
 # w . (z - z) = 0
-def dot_self0(~F: O.OField, w: M.Vec(~F), z: M.Vec(~F)) -> {O.zero(F) == M.dot(~F, w, C.vsub(~F, z, z)) : O.C(F)}:
+def dot_self0(~F: O.OField, w: M.Vec(~F), z: M.Vec(~F)) -> {O.zero(F) == M.dot(~F, w, BX.vsub(~F, z, z)) : O.C(F)}:
   match w z:
     case Nil{} z:
       {==}
@@ -333,7 +334,7 @@ def dot_self0(~F: O.OField, w: M.Vec(~F), z: M.Vec(~F)) -> {O.zero(F) == M.dot(~
 # ---------------------------------------
 
 # r . u - r . v = r . (u - v)
-def dot_r_vsub(~F: O.OField, r: M.Vec(~F), u: M.Vec(~F), v: M.Vec(~F)) -> {O.sub(~F, M.dot(~F, r, u), M.dot(~F, r, v)) == M.dot(~F, r, C.vsub(~F, u, v)) : O.C(F)}:
+def dot_r_vsub(~F: O.OField, r: M.Vec(~F), u: M.Vec(~F), v: M.Vec(~F)) -> {O.sub(~F, M.dot(~F, r, u), M.dot(~F, r, v)) == M.dot(~F, r, BX.vsub(~F, u, v)) : O.C(F)}:
   match r u v:
     case Nil{} u v:
       FR.fring_eq(~F, Nil{}, E.ZSub{E.ZCst{S.Z0{}}, E.ZCst{S.Z0{}}}, E.ZCst{S.Z0{}}, {==})
@@ -470,64 +471,64 @@ def bval(~F: O.OField, +a: O.C(F), +a2: O.C(F), +s: O.C(F), e: {a == a2 : O.C(F)
   %e : M.bnd(~F, _, s)
   h
 
-def nd_eq(~F: O.OField, +a: O.C(F), +b: O.C(F), +w: M.Vec(~F), +f1: M.Vec(~F), +f2: M.Vec(~F)) -> {O.sub(~F, O.sub(~F, a, b), M.dot(~F, w, C.vsub(~F, f1, f2))) == O.sub(~F, O.sub(~F, a, M.dot(~F, w, f1)), O.sub(~F, b, M.dot(~F, w, f2))) : O.C(F)}:
+def nd_eq(~F: O.OField, +a: O.C(F), +b: O.C(F), +w: M.Vec(~F), +f1: M.Vec(~F), +f2: M.Vec(~F)) -> {O.sub(~F, O.sub(~F, a, b), M.dot(~F, w, BX.vsub(~F, f1, f2))) == O.sub(~F, O.sub(~F, a, M.dot(~F, w, f1)), O.sub(~F, b, M.dot(~F, w, f2))) : O.C(F)}:
   %dot_r_vsub(~F, w, f1, f2) : {O.sub(~F, O.sub(~F, a, b), _) == O.sub(~F, O.sub(~F, a, M.dot(~F, w, f1)), O.sub(~F, b, M.dot(~F, w, f2))) : O.C(F)}
   FR.fring_eq(~F, [a, b, M.dot(~F, w, f1), M.dot(~F, w, f2)], E.ZSub{E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, E.ZSub{E.ZVar{2n}, E.ZVar{3n}}}, E.ZSub{E.ZSub{E.ZVar{0n}, E.ZVar{2n}}, E.ZSub{E.ZVar{1n}, E.ZVar{3n}}}, {==})
 
 # (y1 - Y f1) - (y2 - Y f2) has the bounds of (y1 - y2) - Y (f1 - f2)
-def newton_diff(~F: O.OField, y1: M.Vec(~F), y2: M.Vec(~F), ym: M.Mat(~F), +f1: M.Vec(~F), +f2: M.Vec(~F), +r: M.Vec(~F), hl1: {M.len(~F, y1) == M.len(~F, y2) : Nat}, hl2: {M.len(~F, y2) == rows(~F, ym) : Nat}, +h: C.rbnd(~F, C.vsub(~F, C.vsub(~F, y1, y2), M.matvec(~F, ym, C.vsub(~F, f1, f2))), r)) -> C.rbnd(~F, C.vsub(~F, C.vsub(~F, y1, M.matvec(~F, ym, f1)), C.vsub(~F, y2, M.matvec(~F, ym, f2))), r):
+def newton_diff(~F: O.OField, y1: M.Vec(~F), y2: M.Vec(~F), ym: M.Mat(~F), +f1: M.Vec(~F), +f2: M.Vec(~F), +r: M.Vec(~F), hl1: {M.len(~F, y1) == M.len(~F, y2) : Nat}, hl2: {M.len(~F, y2) == rows(~F, ym) : Nat}, +h: BX.rbnd(~F, BX.vsub(~F, BX.vsub(~F, y1, y2), M.matvec(~F, ym, BX.vsub(~F, f1, f2))), r)) -> BX.rbnd(~F, BX.vsub(~F, BX.vsub(~F, y1, M.matvec(~F, ym, f1)), BX.vsub(~F, y2, M.matvec(~F, ym, f2))), r):
   match y1 y2 ym:
     case Nil{} Nil{} Nil{}:
       Unit{}
     case Nil{} Nil{} Con{+w, +ws}:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, C.vsub(~F, Nil{}, M.matvec(~F, Con{w, ws}, f1)), C.vsub(~F, Nil{}, M.matvec(~F, Con{w, ws}, f2))), r), zero_ne(rows(~F, ws), hl2))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, BX.vsub(~F, Nil{}, M.matvec(~F, Con{w, ws}, f1)), BX.vsub(~F, Nil{}, M.matvec(~F, Con{w, ws}, f2))), r), zero_ne(rows(~F, ws), hl2))
     case Nil{} Con{+b, +bs} ym:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, C.vsub(~F, Nil{}, M.matvec(~F, ym, f1)), C.vsub(~F, Con{b, bs}, M.matvec(~F, ym, f2))), r), zero_ne(M.len(~F, bs), hl1))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, BX.vsub(~F, Nil{}, M.matvec(~F, ym, f1)), BX.vsub(~F, Con{b, bs}, M.matvec(~F, ym, f2))), r), zero_ne(M.len(~F, bs), hl1))
     case Con{+a, +as} Nil{} ym:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, C.vsub(~F, Con{a, as}, M.matvec(~F, ym, f1)), C.vsub(~F, Nil{}, M.matvec(~F, ym, f2))), r), succ_ne(M.len(~F, as), hl1))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, BX.vsub(~F, Con{a, as}, M.matvec(~F, ym, f1)), BX.vsub(~F, Nil{}, M.matvec(~F, ym, f2))), r), succ_ne(M.len(~F, as), hl1))
     case Con{+a, +as} Con{+b, +bs} Nil{}:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, C.vsub(~F, Con{a, as}, Nil{}), C.vsub(~F, Con{b, bs}, Nil{})), r), succ_ne(M.len(~F, bs), hl2))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, BX.vsub(~F, Con{a, as}, Nil{}), BX.vsub(~F, Con{b, bs}, Nil{})), r), succ_ne(M.len(~F, bs), hl2))
     case Con{+a, +as} Con{+b, +bs} Con{+w, +ws}:
-      rbnd_mk(~F, O.sub(~F, O.sub(~F, a, M.dot(~F, w, f1)), O.sub(~F, b, M.dot(~F, w, f2))), C.vsub(~F, C.vsub(~F, as, M.matvec(~F, ws, f1)), C.vsub(~F, bs, M.matvec(~F, ws, f2))), r,
-        bval(~F, O.sub(~F, O.sub(~F, a, b), M.dot(~F, w, C.vsub(~F, f1, f2))), O.sub(~F, O.sub(~F, a, M.dot(~F, w, f1)), O.sub(~F, b, M.dot(~F, w, f2))), vhd(~F, r), nd_eq(~F, a, b, w, f1, f2),
-          rbnd_head(~F, O.sub(~F, O.sub(~F, a, b), M.dot(~F, w, C.vsub(~F, f1, f2))), C.vsub(~F, C.vsub(~F, as, bs), M.matvec(~F, ws, C.vsub(~F, f1, f2))), r, h)),
+      rbnd_mk(~F, O.sub(~F, O.sub(~F, a, M.dot(~F, w, f1)), O.sub(~F, b, M.dot(~F, w, f2))), BX.vsub(~F, BX.vsub(~F, as, M.matvec(~F, ws, f1)), BX.vsub(~F, bs, M.matvec(~F, ws, f2))), r,
+        bval(~F, O.sub(~F, O.sub(~F, a, b), M.dot(~F, w, BX.vsub(~F, f1, f2))), O.sub(~F, O.sub(~F, a, M.dot(~F, w, f1)), O.sub(~F, b, M.dot(~F, w, f2))), vhd(~F, r), nd_eq(~F, a, b, w, f1, f2),
+          rbnd_head(~F, O.sub(~F, O.sub(~F, a, b), M.dot(~F, w, BX.vsub(~F, f1, f2))), BX.vsub(~F, BX.vsub(~F, as, bs), M.matvec(~F, ws, BX.vsub(~F, f1, f2))), r, h)),
         newton_diff(~F, as, bs, ws, f1, f2, vtl(~F, r), succ_inj(M.len(~F, as), M.len(~F, bs), hl1), succ_inj(M.len(~F, bs), rows(~F, ws), hl2),
-          rbnd_tail(~F, O.sub(~F, O.sub(~F, a, b), M.dot(~F, w, C.vsub(~F, f1, f2))), C.vsub(~F, C.vsub(~F, as, bs), M.matvec(~F, ws, C.vsub(~F, f1, f2))), r, h)))
+          rbnd_tail(~F, O.sub(~F, O.sub(~F, a, b), M.dot(~F, w, BX.vsub(~F, f1, f2))), BX.vsub(~F, BX.vsub(~F, as, bs), M.matvec(~F, ws, BX.vsub(~F, f1, f2))), r, h)))
 
-def split_eq(~F: O.OField, +x: O.C(F), +w: M.Vec(~F), +u: M.Vec(~F), +v: M.Vec(~F)) -> {O.add(F, O.sub(~F, x, M.dot(~F, w, v)), O.neg(F, M.dot(~F, w, C.vsub(~F, u, v)))) == O.sub(~F, x, M.dot(~F, w, u)) : O.C(F)}:
+def split_eq(~F: O.OField, +x: O.C(F), +w: M.Vec(~F), +u: M.Vec(~F), +v: M.Vec(~F)) -> {O.add(F, O.sub(~F, x, M.dot(~F, w, v)), O.neg(F, M.dot(~F, w, BX.vsub(~F, u, v)))) == O.sub(~F, x, M.dot(~F, w, u)) : O.C(F)}:
   %dot_r_vsub(~F, w, u, v) : {O.add(F, O.sub(~F, x, M.dot(~F, w, v)), O.neg(F, _)) == O.sub(~F, x, M.dot(~F, w, u)) : O.C(F)}
   FR.fring_eq(~F, [x, M.dot(~F, w, u), M.dot(~F, w, v)], E.ZAdd{E.ZSub{E.ZVar{0n}, E.ZVar{2n}}, E.ZNeg{E.ZSub{E.ZVar{1n}, E.ZVar{2n}}}}, E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, {==})
 
-def rbnd_vtl_vadd(~F: O.OField, +d: M.Vec(~F), +r1: M.Vec(~F), +r2: M.Vec(~F), h: C.rbnd(~F, d, M.vadd(~F, vtl(~F, r1), vtl(~F, r2)))) -> C.rbnd(~F, d, vtl(~F, M.vadd(~F, r1, r2))):
-  %vtl_vadd(~F, r1, r2) : C.rbnd(~F, d, _)
+def rbnd_vtl_vadd(~F: O.OField, +d: M.Vec(~F), +r1: M.Vec(~F), +r2: M.Vec(~F), h: BX.rbnd(~F, d, M.vadd(~F, vtl(~F, r1), vtl(~F, r2)))) -> BX.rbnd(~F, d, vtl(~F, M.vadd(~F, r1, r2))):
+  %vtl_vadd(~F, r1, r2) : BX.rbnd(~F, d, _)
   h
 
 # d - Y u has the bounds r1 + r2 of d - Y v and Y (u - v)
-def split_bnd(~F: O.OField, d: M.Vec(~F), ym: M.Mat(~F), +u: M.Vec(~F), +v: M.Vec(~F), +r1: M.Vec(~F), +r2: M.Vec(~F), hl: {M.len(~F, d) == rows(~F, ym) : Nat}, +h1: C.rbnd(~F, C.vsub(~F, d, M.matvec(~F, ym, v)), r1), +h2: C.rbnd(~F, M.matvec(~F, ym, C.vsub(~F, u, v)), r2)) -> C.rbnd(~F, C.vsub(~F, d, M.matvec(~F, ym, u)), M.vadd(~F, r1, r2)):
+def split_bnd(~F: O.OField, d: M.Vec(~F), ym: M.Mat(~F), +u: M.Vec(~F), +v: M.Vec(~F), +r1: M.Vec(~F), +r2: M.Vec(~F), hl: {M.len(~F, d) == rows(~F, ym) : Nat}, +h1: BX.rbnd(~F, BX.vsub(~F, d, M.matvec(~F, ym, v)), r1), +h2: BX.rbnd(~F, M.matvec(~F, ym, BX.vsub(~F, u, v)), r2)) -> BX.rbnd(~F, BX.vsub(~F, d, M.matvec(~F, ym, u)), M.vadd(~F, r1, r2)):
   match d ym:
     case Nil{} Nil{}:
       Unit{}
     case Nil{} Con{+w, +ws}:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, Nil{}, M.matvec(~F, Con{w, ws}, u)), M.vadd(~F, r1, r2)), zero_ne(rows(~F, ws), hl))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, Nil{}, M.matvec(~F, Con{w, ws}, u)), M.vadd(~F, r1, r2)), zero_ne(rows(~F, ws), hl))
     case Con{+x, +xs} Nil{}:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, Con{x, xs}, Nil{}), M.vadd(~F, r1, r2)), succ_ne(M.len(~F, xs), hl))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, Con{x, xs}, Nil{}), M.vadd(~F, r1, r2)), succ_ne(M.len(~F, xs), hl))
     case Con{+x, +xs} Con{+w, +ws}:
-      rbnd_mk(~F, O.sub(~F, x, M.dot(~F, w, u)), C.vsub(~F, xs, M.matvec(~F, ws, u)), M.vadd(~F, r1, r2),
+      rbnd_mk(~F, O.sub(~F, x, M.dot(~F, w, u)), BX.vsub(~F, xs, M.matvec(~F, ws, u)), M.vadd(~F, r1, r2),
         FM.bnd_eq(~F, O.sub(~F, x, M.dot(~F, w, u)), O.add(F, vhd(~F, r1), vhd(~F, r2)), vhd(~F, M.vadd(~F, r1, r2)), vhd_vadd(~F, r1, r2),
-          bval(~F, O.add(F, O.sub(~F, x, M.dot(~F, w, v)), O.neg(F, M.dot(~F, w, C.vsub(~F, u, v)))), O.sub(~F, x, M.dot(~F, w, u)), O.add(F, vhd(~F, r1), vhd(~F, r2)), split_eq(~F, x, w, u, v),
-            FM.bnd_add(~F, O.sub(~F, x, M.dot(~F, w, v)), vhd(~F, r1), O.neg(F, M.dot(~F, w, C.vsub(~F, u, v))), vhd(~F, r2),
-              rbnd_head(~F, O.sub(~F, x, M.dot(~F, w, v)), C.vsub(~F, xs, M.matvec(~F, ws, v)), r1, h1),
-              FM.bnd_neg(~F, M.dot(~F, w, C.vsub(~F, u, v)), vhd(~F, r2), rbnd_head(~F, M.dot(~F, w, C.vsub(~F, u, v)), M.matvec(~F, ws, C.vsub(~F, u, v)), r2, h2))))),
-        rbnd_vtl_vadd(~F, C.vsub(~F, xs, M.matvec(~F, ws, u)), r1, r2,
+          bval(~F, O.add(F, O.sub(~F, x, M.dot(~F, w, v)), O.neg(F, M.dot(~F, w, BX.vsub(~F, u, v)))), O.sub(~F, x, M.dot(~F, w, u)), O.add(F, vhd(~F, r1), vhd(~F, r2)), split_eq(~F, x, w, u, v),
+            FM.bnd_add(~F, O.sub(~F, x, M.dot(~F, w, v)), vhd(~F, r1), O.neg(F, M.dot(~F, w, BX.vsub(~F, u, v))), vhd(~F, r2),
+              rbnd_head(~F, O.sub(~F, x, M.dot(~F, w, v)), BX.vsub(~F, xs, M.matvec(~F, ws, v)), r1, h1),
+              FM.bnd_neg(~F, M.dot(~F, w, BX.vsub(~F, u, v)), vhd(~F, r2), rbnd_head(~F, M.dot(~F, w, BX.vsub(~F, u, v)), M.matvec(~F, ws, BX.vsub(~F, u, v)), r2, h2))))),
+        rbnd_vtl_vadd(~F, BX.vsub(~F, xs, M.matvec(~F, ws, u)), r1, r2,
           split_bnd(~F, xs, ws, u, v, vtl(~F, r1), vtl(~F, r2), succ_inj(M.len(~F, xs), rows(~F, ws), hl),
-            rbnd_tail(~F, O.sub(~F, x, M.dot(~F, w, v)), C.vsub(~F, xs, M.matvec(~F, ws, v)), r1, h1),
-            rbnd_tail(~F, M.dot(~F, w, C.vsub(~F, u, v)), M.matvec(~F, ws, C.vsub(~F, u, v)), r2, h2))))
+            rbnd_tail(~F, O.sub(~F, x, M.dot(~F, w, v)), BX.vsub(~F, xs, M.matvec(~F, ws, v)), r1, h1),
+            rbnd_tail(~F, M.dot(~F, w, BX.vsub(~F, u, v)), M.matvec(~F, ws, BX.vsub(~F, u, v)), r2, h2))))
 
 # More rewriting and lengths
 # --------------------------
 
-def rbnd_rw(~F: O.OField, +d: M.Vec(~F), +d2: M.Vec(~F), +r: M.Vec(~F), e: {d == d2 : M.Vec(~F)}, h: C.rbnd(~F, d, r)) -> C.rbnd(~F, d2, r):
-  %e : C.rbnd(~F, _, r)
+def rbnd_rw(~F: O.OField, +d: M.Vec(~F), +d2: M.Vec(~F), +r: M.Vec(~F), e: {d == d2 : M.Vec(~F)}, h: BX.rbnd(~F, d, r)) -> BX.rbnd(~F, d2, r):
+  %e : BX.rbnd(~F, _, r)
   h
 
 def rle_rw(~F: O.OField, +u: M.Vec(~F), +u2: M.Vec(~F), +w: M.Vec(~F), +w2: M.Vec(~F), e1: {u == u2 : M.Vec(~F)}, e2: {w == w2 : M.Vec(~F)}, h: rle(~F, u, w)) -> rle(~F, u2, w2):
@@ -570,24 +571,24 @@ def dot_r_vadd(~F: O.OField, r: M.Vec(~F), u: M.Vec(~F), v: M.Vec(~F)) -> {O.add
       FR.fring_eq(~F, [x, a, b, M.dot(~F, xs, as), M.dot(~F, xs, bs)], E.ZAdd{E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{3n}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{2n}}, E.ZVar{4n}}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZAdd{E.ZVar{1n}, E.ZVar{2n}}}, E.ZAdd{E.ZVar{3n}, E.ZVar{4n}}}, {==})
 
 # (u - c) - Y f has the bounds of (u - Y f) - c, row by row
-def shift(~F: O.OField, u: M.Vec(~F), c: M.Vec(~F), ym: M.Mat(~F), +f: M.Vec(~F), +r: M.Vec(~F), hl1: {M.len(~F, u) == M.len(~F, c) : Nat}, hl2: {M.len(~F, c) == rows(~F, ym) : Nat}, +h: C.rbnd(~F, C.vsub(~F, C.vsub(~F, u, c), M.matvec(~F, ym, f)), r)) -> C.rbnd(~F, C.vsub(~F, C.vsub(~F, u, M.matvec(~F, ym, f)), c), r):
+def shift(~F: O.OField, u: M.Vec(~F), c: M.Vec(~F), ym: M.Mat(~F), +f: M.Vec(~F), +r: M.Vec(~F), hl1: {M.len(~F, u) == M.len(~F, c) : Nat}, hl2: {M.len(~F, c) == rows(~F, ym) : Nat}, +h: BX.rbnd(~F, BX.vsub(~F, BX.vsub(~F, u, c), M.matvec(~F, ym, f)), r)) -> BX.rbnd(~F, BX.vsub(~F, BX.vsub(~F, u, M.matvec(~F, ym, f)), c), r):
   match u c ym:
     case Nil{} Nil{} Nil{}:
       Unit{}
     case Nil{} Nil{} Con{+w, +ws}:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, C.vsub(~F, Nil{}, M.matvec(~F, Con{w, ws}, f)), Nil{}), r), zero_ne(rows(~F, ws), hl2))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, BX.vsub(~F, Nil{}, M.matvec(~F, Con{w, ws}, f)), Nil{}), r), zero_ne(rows(~F, ws), hl2))
     case Nil{} Con{+b, +bs} ym:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, C.vsub(~F, Nil{}, M.matvec(~F, ym, f)), Con{b, bs}), r), zero_ne(M.len(~F, bs), hl1))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, BX.vsub(~F, Nil{}, M.matvec(~F, ym, f)), Con{b, bs}), r), zero_ne(M.len(~F, bs), hl1))
     case Con{+a, +as} Nil{} ym:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, C.vsub(~F, Con{a, as}, M.matvec(~F, ym, f)), Nil{}), r), succ_ne(M.len(~F, as), hl1))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, BX.vsub(~F, Con{a, as}, M.matvec(~F, ym, f)), Nil{}), r), succ_ne(M.len(~F, as), hl1))
     case Con{+a, +as} Con{+b, +bs} Nil{}:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, C.vsub(~F, Con{a, as}, Nil{}), Con{b, bs}), r), succ_ne(M.len(~F, bs), hl2))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, BX.vsub(~F, Con{a, as}, Nil{}), Con{b, bs}), r), succ_ne(M.len(~F, bs), hl2))
     case Con{+a, +as} Con{+b, +bs} Con{+w, +ws}:
-      rbnd_mk(~F, O.sub(~F, O.sub(~F, a, M.dot(~F, w, f)), b), C.vsub(~F, C.vsub(~F, as, M.matvec(~F, ws, f)), bs), r,
+      rbnd_mk(~F, O.sub(~F, O.sub(~F, a, M.dot(~F, w, f)), b), BX.vsub(~F, BX.vsub(~F, as, M.matvec(~F, ws, f)), bs), r,
         bval(~F, O.sub(~F, O.sub(~F, a, b), M.dot(~F, w, f)), O.sub(~F, O.sub(~F, a, M.dot(~F, w, f)), b), vhd(~F, r), FR.fring_eq(~F, [a, b, M.dot(~F, w, f)], E.ZSub{E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{2n}}, E.ZSub{E.ZSub{E.ZVar{0n}, E.ZVar{2n}}, E.ZVar{1n}}, {==}),
-          rbnd_head(~F, O.sub(~F, O.sub(~F, a, b), M.dot(~F, w, f)), C.vsub(~F, C.vsub(~F, as, bs), M.matvec(~F, ws, f)), r, h)),
+          rbnd_head(~F, O.sub(~F, O.sub(~F, a, b), M.dot(~F, w, f)), BX.vsub(~F, BX.vsub(~F, as, bs), M.matvec(~F, ws, f)), r, h)),
         shift(~F, as, bs, ws, f, vtl(~F, r), succ_inj(M.len(~F, as), M.len(~F, bs), hl1), succ_inj(M.len(~F, bs), rows(~F, ws), hl2),
-          rbnd_tail(~F, O.sub(~F, O.sub(~F, a, b), M.dot(~F, w, f)), C.vsub(~F, C.vsub(~F, as, bs), M.matvec(~F, ws, f)), r, h)))
+          rbnd_tail(~F, O.sub(~F, O.sub(~F, a, b), M.dot(~F, w, f)), BX.vsub(~F, BX.vsub(~F, as, bs), M.matvec(~F, ws, f)), r, h)))
 
 def dot_cong(~F: O.OField, +w: M.Vec(~F), +u: M.Vec(~F), +u2: M.Vec(~F), e: {u == u2 : M.Vec(~F)}) -> {M.dot(~F, w, u) == M.dot(~F, w, u2) : O.C(F)}:
   %e : {M.dot(~F, w, u) == M.dot(~F, w, _) : O.C(F)}
@@ -599,18 +600,18 @@ def split3(~F: O.OField, +fv: O.C(F), +pv: O.C(F), +q: O.C(F), e: {O.sub(~F, fv,
   FR.fring_eq(~F, [fv, pv], E.ZVar{0n}, E.ZAdd{E.ZVar{1n}, E.ZSub{E.ZVar{0n}, E.ZVar{1n}}}, {==})
 
 # x - w.f = -(w.ft) - w.t + (x - w.a), for f - ft = a + t
-def self_eq(~F: O.OField, +x: O.C(F), +w: M.Vec(~F), +f: M.Vec(~F), +ft: M.Vec(~F), +a: M.Vec(~F), +t: M.Vec(~F), e: {C.vsub(~F, f, ft) == M.vadd(~F, a, t) : M.Vec(~F)}) -> {O.add(F, O.add(F, O.neg(F, M.dot(~F, w, ft)), O.neg(F, M.dot(~F, w, t))), O.sub(~F, x, M.dot(~F, w, a))) == O.sub(~F, x, M.dot(~F, w, f)) : O.C(F)}:
+def self_eq(~F: O.OField, +x: O.C(F), +w: M.Vec(~F), +f: M.Vec(~F), +ft: M.Vec(~F), +a: M.Vec(~F), +t: M.Vec(~F), e: {BX.vsub(~F, f, ft) == M.vadd(~F, a, t) : M.Vec(~F)}) -> {O.add(F, O.add(F, O.neg(F, M.dot(~F, w, ft)), O.neg(F, M.dot(~F, w, t))), O.sub(~F, x, M.dot(~F, w, a))) == O.sub(~F, x, M.dot(~F, w, f)) : O.C(F)}:
   +fv = M.dot(~F, w, f)
   +pv = M.dot(~F, w, ft)
   +av = M.dot(~F, w, a)
   +tv = M.dot(~F, w, t)
-  +e1 = Equal.trans(O.C(F), O.sub(~F, fv, pv), M.dot(~F, w, C.vsub(~F, f, ft)), O.add(F, av, tv), dot_r_vsub(~F, w, f, ft), Equal.trans(O.C(F), M.dot(~F, w, C.vsub(~F, f, ft)), M.dot(~F, w, M.vadd(~F, a, t)), O.add(F, av, tv), dot_cong(~F, w, C.vsub(~F, f, ft), M.vadd(~F, a, t), e), Equal.sym(O.C(F), O.add(F, av, tv), M.dot(~F, w, M.vadd(~F, a, t)), dot_r_vadd(~F, w, a, t))))
+  +e1 = Equal.trans(O.C(F), O.sub(~F, fv, pv), M.dot(~F, w, BX.vsub(~F, f, ft)), O.add(F, av, tv), dot_r_vsub(~F, w, f, ft), Equal.trans(O.C(F), M.dot(~F, w, BX.vsub(~F, f, ft)), M.dot(~F, w, M.vadd(~F, a, t)), O.add(F, av, tv), dot_cong(~F, w, BX.vsub(~F, f, ft), M.vadd(~F, a, t), e), Equal.sym(O.C(F), O.add(F, av, tv), M.dot(~F, w, M.vadd(~F, a, t)), dot_r_vadd(~F, w, a, t))))
   %Equal.sym(O.C(F), fv, O.add(F, pv, O.add(F, av, tv)), split3(~F, fv, pv, O.add(F, av, tv), e1)) : {O.add(F, O.add(F, O.neg(F, pv), O.neg(F, tv)), O.sub(~F, x, av)) == O.sub(~F, x, _) : O.C(F)}
   FR.fring_eq(~F, [x, pv, av, tv], E.ZAdd{E.ZAdd{E.ZNeg{E.ZVar{1n}}, E.ZNeg{E.ZVar{3n}}}, E.ZSub{E.ZVar{0n}, E.ZVar{2n}}}, E.ZSub{E.ZVar{0n}, E.ZAdd{E.ZVar{1n}, E.ZAdd{E.ZVar{2n}, E.ZVar{3n}}}}, {==})
 
-def rbnd3_tail(~F: O.OField, +d: M.Vec(~F), +r3: M.Vec(~F), +r4: M.Vec(~F), +r1: M.Vec(~F), h: C.rbnd(~F, d, M.vadd(~F, M.vadd(~F, vtl(~F, r3), vtl(~F, r4)), vtl(~F, r1)))) -> C.rbnd(~F, d, vtl(~F, M.vadd(~F, M.vadd(~F, r3, r4), r1))):
-  %vtl_vadd(~F, M.vadd(~F, r3, r4), r1) : C.rbnd(~F, d, _)
-  %vtl_vadd(~F, r3, r4) : C.rbnd(~F, d, M.vadd(~F, _, vtl(~F, r1)))
+def rbnd3_tail(~F: O.OField, +d: M.Vec(~F), +r3: M.Vec(~F), +r4: M.Vec(~F), +r1: M.Vec(~F), h: BX.rbnd(~F, d, M.vadd(~F, M.vadd(~F, vtl(~F, r3), vtl(~F, r4)), vtl(~F, r1)))) -> BX.rbnd(~F, d, vtl(~F, M.vadd(~F, M.vadd(~F, r3, r4), r1))):
+  %vtl_vadd(~F, M.vadd(~F, r3, r4), r1) : BX.rbnd(~F, d, _)
+  %vtl_vadd(~F, r3, r4) : BX.rbnd(~F, d, M.vadd(~F, _, vtl(~F, r1)))
   h
 
 def vhd3(~F: O.OField, +r3: M.Vec(~F), +r4: M.Vec(~F), +r1: M.Vec(~F)) -> {O.add(F, O.add(F, vhd(~F, r3), vhd(~F, r4)), vhd(~F, r1)) == vhd(~F, M.vadd(~F, M.vadd(~F, r3, r4), r1)) : O.C(F)}:
@@ -619,26 +620,26 @@ def vhd3(~F: O.OField, +r3: M.Vec(~F), +r4: M.Vec(~F), +r1: M.Vec(~F)) -> {O.add
   {==}
 
 # d - Y f has the bounds (r3 + r4) + r1 of Y ft, Y t and d - Y a, for f - ft = a + t
-def self3(~F: O.OField, d: M.Vec(~F), ym: M.Mat(~F), +f: M.Vec(~F), +ft: M.Vec(~F), +a: M.Vec(~F), +t: M.Vec(~F), +r1: M.Vec(~F), +r3: M.Vec(~F), +r4: M.Vec(~F), hl: {M.len(~F, d) == rows(~F, ym) : Nat}, +e: {C.vsub(~F, f, ft) == M.vadd(~F, a, t) : M.Vec(~F)}, +ha: C.rbnd(~F, C.vsub(~F, d, M.matvec(~F, ym, a)), r1), +hb: C.rbnd(~F, M.matvec(~F, ym, ft), r3), +hc: C.rbnd(~F, M.matvec(~F, ym, t), r4)) -> C.rbnd(~F, C.vsub(~F, d, M.matvec(~F, ym, f)), M.vadd(~F, M.vadd(~F, r3, r4), r1)):
+def self3(~F: O.OField, d: M.Vec(~F), ym: M.Mat(~F), +f: M.Vec(~F), +ft: M.Vec(~F), +a: M.Vec(~F), +t: M.Vec(~F), +r1: M.Vec(~F), +r3: M.Vec(~F), +r4: M.Vec(~F), hl: {M.len(~F, d) == rows(~F, ym) : Nat}, +e: {BX.vsub(~F, f, ft) == M.vadd(~F, a, t) : M.Vec(~F)}, +ha: BX.rbnd(~F, BX.vsub(~F, d, M.matvec(~F, ym, a)), r1), +hb: BX.rbnd(~F, M.matvec(~F, ym, ft), r3), +hc: BX.rbnd(~F, M.matvec(~F, ym, t), r4)) -> BX.rbnd(~F, BX.vsub(~F, d, M.matvec(~F, ym, f)), M.vadd(~F, M.vadd(~F, r3, r4), r1)):
   match d ym:
     case Nil{} Nil{}:
       Unit{}
     case Nil{} Con{+w, +ws}:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, Nil{}, M.matvec(~F, Con{w, ws}, f)), M.vadd(~F, M.vadd(~F, r3, r4), r1)), zero_ne(rows(~F, ws), hl))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, Nil{}, M.matvec(~F, Con{w, ws}, f)), M.vadd(~F, M.vadd(~F, r3, r4), r1)), zero_ne(rows(~F, ws), hl))
     case Con{+x, +xs} Nil{}:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, Con{x, xs}, Nil{}), M.vadd(~F, M.vadd(~F, r3, r4), r1)), succ_ne(M.len(~F, xs), hl))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, Con{x, xs}, Nil{}), M.vadd(~F, M.vadd(~F, r3, r4), r1)), succ_ne(M.len(~F, xs), hl))
     case Con{+x, +xs} Con{+w, +ws}:
-      rbnd_mk(~F, O.sub(~F, x, M.dot(~F, w, f)), C.vsub(~F, xs, M.matvec(~F, ws, f)), M.vadd(~F, M.vadd(~F, r3, r4), r1),
+      rbnd_mk(~F, O.sub(~F, x, M.dot(~F, w, f)), BX.vsub(~F, xs, M.matvec(~F, ws, f)), M.vadd(~F, M.vadd(~F, r3, r4), r1),
         FM.bnd_eq(~F, O.sub(~F, x, M.dot(~F, w, f)), O.add(F, O.add(F, vhd(~F, r3), vhd(~F, r4)), vhd(~F, r1)), vhd(~F, M.vadd(~F, M.vadd(~F, r3, r4), r1)), vhd3(~F, r3, r4, r1),
           bval(~F, O.add(F, O.add(F, O.neg(F, M.dot(~F, w, ft)), O.neg(F, M.dot(~F, w, t))), O.sub(~F, x, M.dot(~F, w, a))), O.sub(~F, x, M.dot(~F, w, f)), O.add(F, O.add(F, vhd(~F, r3), vhd(~F, r4)), vhd(~F, r1)), self_eq(~F, x, w, f, ft, a, t, e),
             FM.bnd_add(~F, O.add(F, O.neg(F, M.dot(~F, w, ft)), O.neg(F, M.dot(~F, w, t))), O.add(F, vhd(~F, r3), vhd(~F, r4)), O.sub(~F, x, M.dot(~F, w, a)), vhd(~F, r1),
               FM.bnd_add(~F, O.neg(F, M.dot(~F, w, ft)), vhd(~F, r3), O.neg(F, M.dot(~F, w, t)), vhd(~F, r4),
                 FM.bnd_neg(~F, M.dot(~F, w, ft), vhd(~F, r3), rbnd_head(~F, M.dot(~F, w, ft), M.matvec(~F, ws, ft), r3, hb)),
                 FM.bnd_neg(~F, M.dot(~F, w, t), vhd(~F, r4), rbnd_head(~F, M.dot(~F, w, t), M.matvec(~F, ws, t), r4, hc))),
-              rbnd_head(~F, O.sub(~F, x, M.dot(~F, w, a)), C.vsub(~F, xs, M.matvec(~F, ws, a)), r1, ha)))),
-        rbnd3_tail(~F, C.vsub(~F, xs, M.matvec(~F, ws, f)), r3, r4, r1,
+              rbnd_head(~F, O.sub(~F, x, M.dot(~F, w, a)), BX.vsub(~F, xs, M.matvec(~F, ws, a)), r1, ha)))),
+        rbnd3_tail(~F, BX.vsub(~F, xs, M.matvec(~F, ws, f)), r3, r4, r1,
           self3(~F, xs, ws, f, ft, a, t, vtl(~F, r1), vtl(~F, r3), vtl(~F, r4), succ_inj(M.len(~F, xs), rows(~F, ws), hl), e,
-            rbnd_tail(~F, O.sub(~F, x, M.dot(~F, w, a)), C.vsub(~F, xs, M.matvec(~F, ws, a)), r1, ha),
+            rbnd_tail(~F, O.sub(~F, x, M.dot(~F, w, a)), BX.vsub(~F, xs, M.matvec(~F, ws, a)), r1, ha),
             rbnd_tail(~F, M.dot(~F, w, ft), M.matvec(~F, ws, ft), r3, hb),
             rbnd_tail(~F, M.dot(~F, w, t), M.matvec(~F, ws, t), r4, hc))))
 
@@ -839,7 +840,7 @@ def zero_of_le_mul(~F: O.OField, +m: O.C(F), +t: O.C(F), h: O.le(~F, m, O.mul(F,
   zero_of_le_mul.go(~F, m, t, O.lt_total(F)(O.zero(F), m), h, ht)
 
 # |f_i| <= m t, for |f_i| <= m th_i, |th_i| <= t, m >= 0, m t >= 0
-def rbnd_to_vall(~F: O.OField, f: M.Vec(~F), +m: O.C(F), th: M.Vec(~F), +t: O.C(F), h: C.rbnd(~F, f, M.vscale(~F, m, th)), hth: M.vbnd.all(~F, th, t), +hm: O.le(~F, O.zero(F), m), +hmt: O.le(~F, O.zero(F), O.mul(F, m, t))) -> M.vbnd.all(~F, f, O.mul(F, m, t)):
+def rbnd_to_vall(~F: O.OField, f: M.Vec(~F), +m: O.C(F), th: M.Vec(~F), +t: O.C(F), h: BX.rbnd(~F, f, M.vscale(~F, m, th)), hth: M.vbnd.all(~F, th, t), +hm: O.le(~F, O.zero(F), m), +hmt: O.le(~F, O.zero(F), O.mul(F, m, t))) -> M.vbnd.all(~F, f, O.mul(F, m, t)):
   match f th:
     case Nil{} th:
       Unit{}
@@ -853,7 +854,7 @@ def rbnd_to_vall(~F: O.OField, f: M.Vec(~F), +m: O.C(F), th: M.Vec(~F), +t: O.C(
       (FM.bnd_mono(~F, a, O.mul(F, m, c), O.mul(F, m, t), ha, FM.sub_nonneg(~F, O.mul(F, m, c), O.mul(F, m, t), mul_le(~F, m, c, t, hm, le_of_sub(~F, c, t, hc1)))), rbnd_to_vall(~F, as, m, cs, t, has, hcs, hm, hmt))
 
 # a fixed point: |(Y f)_i| <= 0, from |(y - Y f) - y| <= 0
-def fix_yf(~F: O.OField, y: M.Vec(~F), ym: M.Mat(~F), +f: M.Vec(~F), hl: {M.len(~F, y) == rows(~F, ym) : Nat}, h: M.vbnd.all(~F, C.vsub(~F, C.vsub(~F, y, M.matvec(~F, ym, f)), y), O.zero(F))) -> M.vbnd.all(~F, M.matvec(~F, ym, f), O.zero(F)):
+def fix_yf(~F: O.OField, y: M.Vec(~F), ym: M.Mat(~F), +f: M.Vec(~F), hl: {M.len(~F, y) == rows(~F, ym) : Nat}, h: M.vbnd.all(~F, BX.vsub(~F, BX.vsub(~F, y, M.matvec(~F, ym, f)), y), O.zero(F))) -> M.vbnd.all(~F, M.matvec(~F, ym, f), O.zero(F)):
   match y ym:
     case Nil{} Nil{}:
       Unit{}
@@ -865,7 +866,7 @@ def fix_yf(~F: O.OField, y: M.Vec(~F), ym: M.Mat(~F), +f: M.Vec(~F), hl: {M.len(
       (h0, hs) = h
       (bval(~F, O.neg(F, O.sub(~F, O.sub(~F, a, M.dot(~F, w, f)), a)), M.dot(~F, w, f), O.zero(F), FR.fring_eq(~F, [a, M.dot(~F, w, f)], E.ZNeg{E.ZSub{E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{0n}}}, E.ZVar{1n}, {==}), FM.bnd_neg(~F, O.sub(~F, O.sub(~F, a, M.dot(~F, w, f)), a), O.zero(F), h0)), fix_yf(~F, as, ws, f, succ_inj(M.len(~F, as), rows(~F, ws), hl), hs))
 
-def vall0_rbnd(~F: O.OField, g: M.Vec(~F), h: M.vbnd.all(~F, g, O.zero(F))) -> C.rbnd(~F, g, Nil{}):
+def vall0_rbnd(~F: O.OField, g: M.Vec(~F), h: M.vbnd.all(~F, g, O.zero(F))) -> BX.rbnd(~F, g, Nil{}):
   match g:
     case Nil{}:
       Unit{}
@@ -887,7 +888,7 @@ def mtl(~F: O.OField, b: M.Mat(~F)) -> M.Mat(~F):
     case Con{r, rs}:
       rs
 
-def mbnd_head(~F: O.OField, +w: M.Vec(~F), +ws: M.Mat(~F), b: M.Mat(~F), h: mbnd(~F, Con{w, ws}, b)) -> C.rbnd(~F, w, mhd(~F, b)):
+def mbnd_head(~F: O.OField, +w: M.Vec(~F), +ws: M.Mat(~F), b: M.Mat(~F), h: mbnd(~F, Con{w, ws}, b)) -> BX.rbnd(~F, w, mhd(~F, b)):
   match b:
     case Nil{}:
       (hw, hs) = h
@@ -922,24 +923,24 @@ def mnn_tail(~F: O.OField, b: M.Mat(~F), h: mnn(~F, b)) -> mnn(~F, mtl(~F, b)):
       hs
 
 # |f| <= r, for |f - J g| <= r and g = 0 (J bounded by B >= 0)
-def fix_rows(~F: O.OField, f: M.Vec(~F), jm: M.Mat(~F), +g: M.Vec(~F), +b: M.Mat(~F), +r: M.Vec(~F), hl: {M.len(~F, f) == rows(~F, jm) : Nat}, +h: C.rbnd(~F, C.vsub(~F, f, M.matvec(~F, jm, g)), r), +hg: C.rbnd(~F, g, Nil{}), +hb: mbnd(~F, jm, b), +hbn: mnn(~F, b)) -> C.rbnd(~F, f, r):
+def fix_rows(~F: O.OField, f: M.Vec(~F), jm: M.Mat(~F), +g: M.Vec(~F), +b: M.Mat(~F), +r: M.Vec(~F), hl: {M.len(~F, f) == rows(~F, jm) : Nat}, +h: BX.rbnd(~F, BX.vsub(~F, f, M.matvec(~F, jm, g)), r), +hg: BX.rbnd(~F, g, Nil{}), +hb: mbnd(~F, jm, b), +hbn: mnn(~F, b)) -> BX.rbnd(~F, f, r):
   match f jm:
     case Nil{} Nil{}:
       Unit{}
     case Nil{} Con{+w, +ws}:
-      FO.absurd(C.rbnd(~F, Nil{}, r), zero_ne(rows(~F, ws), hl))
+      FO.absurd(BX.rbnd(~F, Nil{}, r), zero_ne(rows(~F, ws), hl))
     case Con{+x, +xs} Nil{}:
-      FO.absurd(C.rbnd(~F, Con{x, xs}, r), succ_ne(M.len(~F, xs), hl))
+      FO.absurd(BX.rbnd(~F, Con{x, xs}, r), succ_ne(M.len(~F, xs), hl))
     case Con{+x, +xs} Con{+w, +ws}:
       +hd0 = FM.bnd_eq(~F, M.dot(~F, w, g), M.dot(~F, mhd(~F, b), Nil{}), O.zero(F), Equal.sym(O.C(F), O.zero(F), M.dot(~F, mhd(~F, b), Nil{}), dot_nil_r(~F, mhd(~F, b))), dot_bnd(~F, w, mhd(~F, b), g, Nil{}, mbnd_head(~F, w, ws, b, hb), hg, mnn_head(~F, b, hbn), Unit{}))
       rbnd_mk(~F, x, xs, r,
         FM.bnd_eq(~F, x, O.add(F, vhd(~F, r), O.zero(F)), vhd(~F, r), O.add_zero(F)(vhd(~F, r)),
           bval(~F, O.add(F, O.sub(~F, x, M.dot(~F, w, g)), M.dot(~F, w, g)), x, O.add(F, vhd(~F, r), O.zero(F)), FR.fring_eq(~F, [x, M.dot(~F, w, g)], E.ZAdd{E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{1n}}, E.ZVar{0n}, {==}),
-            FM.bnd_add(~F, O.sub(~F, x, M.dot(~F, w, g)), vhd(~F, r), M.dot(~F, w, g), O.zero(F), rbnd_head(~F, O.sub(~F, x, M.dot(~F, w, g)), C.vsub(~F, xs, M.matvec(~F, ws, g)), r, h), hd0))),
-        fix_rows(~F, xs, ws, g, mtl(~F, b), vtl(~F, r), succ_inj(M.len(~F, xs), rows(~F, ws), hl), rbnd_tail(~F, O.sub(~F, x, M.dot(~F, w, g)), C.vsub(~F, xs, M.matvec(~F, ws, g)), r, h), hg, mbnd_tail(~F, w, ws, b, hb), mnn_tail(~F, b, hbn)))
+            FM.bnd_add(~F, O.sub(~F, x, M.dot(~F, w, g)), vhd(~F, r), M.dot(~F, w, g), O.zero(F), rbnd_head(~F, O.sub(~F, x, M.dot(~F, w, g)), BX.vsub(~F, xs, M.matvec(~F, ws, g)), r, h), hd0))),
+        fix_rows(~F, xs, ws, g, mtl(~F, b), vtl(~F, r), succ_inj(M.len(~F, xs), rows(~F, ws), hl), rbnd_tail(~F, O.sub(~F, x, M.dot(~F, w, g)), BX.vsub(~F, xs, M.matvec(~F, ws, g)), r, h), hg, mbnd_tail(~F, w, ws, b, hb), mnn_tail(~F, b, hbn)))
 
-def rbnd_rw2(~F: O.OField, +d: M.Vec(~F), +r: M.Vec(~F), +r2: M.Vec(~F), e: {r == r2 : M.Vec(~F)}, h: C.rbnd(~F, d, r)) -> C.rbnd(~F, d, r2):
-  %e : C.rbnd(~F, d, _)
+def rbnd_rw2(~F: O.OField, +d: M.Vec(~F), +r: M.Vec(~F), +r2: M.Vec(~F), e: {r == r2 : M.Vec(~F)}, h: BX.rbnd(~F, d, r)) -> BX.rbnd(~F, d, r2):
+  %e : BX.rbnd(~F, d, _)
   h
 
 def rnn_rw(~F: O.OField, +r: M.Vec(~F), +r2: M.Vec(~F), e: {r == r2 : M.Vec(~F)}, h: rnn(~F, r)) -> rnn(~F, r2):
@@ -950,7 +951,7 @@ def rnn_rw(~F: O.OField, +r: M.Vec(~F), +r2: M.Vec(~F), e: {r == r2 : M.Vec(~F)}
 # ---------------------------
 
 # Y f = 0, for f = 0 (Y bounded by B >= 0)
-def mv_zero(~F: O.OField, ym: M.Mat(~F), +f: M.Vec(~F), +b: M.Mat(~F), +h: C.rbnd(~F, f, Nil{}), +hb: mbnd(~F, ym, b), +hbn: mnn(~F, b)) -> C.rbnd(~F, M.matvec(~F, ym, f), Nil{}):
+def mv_zero(~F: O.OField, ym: M.Mat(~F), +f: M.Vec(~F), +b: M.Mat(~F), +h: BX.rbnd(~F, f, Nil{}), +hb: mbnd(~F, ym, b), +hbn: mnn(~F, b)) -> BX.rbnd(~F, M.matvec(~F, ym, f), Nil{}):
   match ym:
     case Nil{}:
       Unit{}
@@ -964,30 +965,30 @@ def add00(~F: O.OField, +x: O.C(F)) -> {O.add(F, O.add(F, x, O.zero(F)), O.zero(
   FR.fring_eq(~F, [x], E.ZAdd{E.ZAdd{E.ZVar{0n}, E.ZCst{S.Z0{}}}, E.ZCst{S.Z0{}}}, E.ZVar{0n}, {==})
 
 # (y1 - Y f1) - (y2 - Y f2) bounds y1 - y2, for Y f1 = Y f2 = 0
-def unfix2(~F: O.OField, y1: M.Vec(~F), y2: M.Vec(~F), ym: M.Mat(~F), +f1: M.Vec(~F), +f2: M.Vec(~F), +r: M.Vec(~F), hl1: {M.len(~F, y1) == M.len(~F, y2) : Nat}, hl2: {M.len(~F, y2) == rows(~F, ym) : Nat}, +h: C.rbnd(~F, C.vsub(~F, C.vsub(~F, y1, M.matvec(~F, ym, f1)), C.vsub(~F, y2, M.matvec(~F, ym, f2))), r), +h1: C.rbnd(~F, M.matvec(~F, ym, f1), Nil{}), +h2: C.rbnd(~F, M.matvec(~F, ym, f2), Nil{})) -> C.rbnd(~F, C.vsub(~F, y1, y2), r):
+def unfix2(~F: O.OField, y1: M.Vec(~F), y2: M.Vec(~F), ym: M.Mat(~F), +f1: M.Vec(~F), +f2: M.Vec(~F), +r: M.Vec(~F), hl1: {M.len(~F, y1) == M.len(~F, y2) : Nat}, hl2: {M.len(~F, y2) == rows(~F, ym) : Nat}, +h: BX.rbnd(~F, BX.vsub(~F, BX.vsub(~F, y1, M.matvec(~F, ym, f1)), BX.vsub(~F, y2, M.matvec(~F, ym, f2))), r), +h1: BX.rbnd(~F, M.matvec(~F, ym, f1), Nil{}), +h2: BX.rbnd(~F, M.matvec(~F, ym, f2), Nil{})) -> BX.rbnd(~F, BX.vsub(~F, y1, y2), r):
   match y1 y2 ym:
     case Nil{} Nil{} Nil{}:
       Unit{}
     case Nil{} Nil{} Con{+w, +ws}:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, Nil{}, Nil{}), r), zero_ne(rows(~F, ws), hl2))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, Nil{}, Nil{}), r), zero_ne(rows(~F, ws), hl2))
     case Nil{} Con{+b, +bs} ym:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, Nil{}, Con{b, bs}), r), zero_ne(M.len(~F, bs), hl1))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, Nil{}, Con{b, bs}), r), zero_ne(M.len(~F, bs), hl1))
     case Con{+a, +as} Nil{} ym:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, Con{a, as}, Nil{}), r), succ_ne(M.len(~F, as), hl1))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, Con{a, as}, Nil{}), r), succ_ne(M.len(~F, as), hl1))
     case Con{+a, +as} Con{+b, +bs} Nil{}:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, Con{a, as}, Con{b, bs}), r), succ_ne(M.len(~F, bs), hl2))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, Con{a, as}, Con{b, bs}), r), succ_ne(M.len(~F, bs), hl2))
     case Con{+a, +as} Con{+b, +bs} Con{+w, +ws}:
       (hp1, hp1s) = h1
       (hp2, hp2s) = h2
       +p1 = M.dot(~F, w, f1)
       +p2 = M.dot(~F, w, f2)
-      rbnd_mk(~F, O.sub(~F, a, b), C.vsub(~F, as, bs), r,
+      rbnd_mk(~F, O.sub(~F, a, b), BX.vsub(~F, as, bs), r,
         FM.bnd_eq(~F, O.sub(~F, a, b), O.add(F, O.add(F, vhd(~F, r), O.zero(F)), O.zero(F)), vhd(~F, r), add00(~F, vhd(~F, r)),
           bval(~F, O.add(F, O.add(F, O.sub(~F, O.sub(~F, a, p1), O.sub(~F, b, p2)), p1), O.neg(F, p2)), O.sub(~F, a, b), O.add(F, O.add(F, vhd(~F, r), O.zero(F)), O.zero(F)), unfix_eq(~F, a, b, p1, p2),
             FM.bnd_add(~F, O.add(F, O.sub(~F, O.sub(~F, a, p1), O.sub(~F, b, p2)), p1), O.add(F, vhd(~F, r), O.zero(F)), O.neg(F, p2), O.zero(F),
-              FM.bnd_add(~F, O.sub(~F, O.sub(~F, a, p1), O.sub(~F, b, p2)), vhd(~F, r), p1, O.zero(F), rbnd_head(~F, O.sub(~F, O.sub(~F, a, p1), O.sub(~F, b, p2)), C.vsub(~F, C.vsub(~F, as, M.matvec(~F, ws, f1)), C.vsub(~F, bs, M.matvec(~F, ws, f2))), r, h), hp1),
+              FM.bnd_add(~F, O.sub(~F, O.sub(~F, a, p1), O.sub(~F, b, p2)), vhd(~F, r), p1, O.zero(F), rbnd_head(~F, O.sub(~F, O.sub(~F, a, p1), O.sub(~F, b, p2)), BX.vsub(~F, BX.vsub(~F, as, M.matvec(~F, ws, f1)), BX.vsub(~F, bs, M.matvec(~F, ws, f2))), r, h), hp1),
               FM.bnd_neg(~F, p2, O.zero(F), hp2)))),
-        unfix2(~F, as, bs, ws, f1, f2, vtl(~F, r), succ_inj(M.len(~F, as), M.len(~F, bs), hl1), succ_inj(M.len(~F, bs), rows(~F, ws), hl2), rbnd_tail(~F, O.sub(~F, O.sub(~F, a, p1), O.sub(~F, b, p2)), C.vsub(~F, C.vsub(~F, as, M.matvec(~F, ws, f1)), C.vsub(~F, bs, M.matvec(~F, ws, f2))), r, h), hp1s, hp2s))
+        unfix2(~F, as, bs, ws, f1, f2, vtl(~F, r), succ_inj(M.len(~F, as), M.len(~F, bs), hl1), succ_inj(M.len(~F, bs), rows(~F, ws), hl2), rbnd_tail(~F, O.sub(~F, O.sub(~F, a, p1), O.sub(~F, b, p2)), BX.vsub(~F, BX.vsub(~F, as, M.matvec(~F, ws, f1)), BX.vsub(~F, bs, M.matvec(~F, ws, f2))), r, h), hp1s, hp2s))
 
 def vhd_vscale(~F: O.OField, +s: O.C(F), r: M.Vec(~F)) -> {O.mul(F, s, vhd(~F, r)) == vhd(~F, M.vscale(~F, s, r)) : O.C(F)}:
   match r:
@@ -1003,30 +1004,30 @@ def vtl_vscale(~F: O.OField, +s: O.C(F), r: M.Vec(~F)) -> {M.vscale(~F, s, vtl(~
     case Con{x, xs}:
       {==}
 
-def rbnd_vtl_vscale(~F: O.OField, +d: M.Vec(~F), +s: O.C(F), +r: M.Vec(~F), h: C.rbnd(~F, d, M.vscale(~F, s, vtl(~F, r)))) -> C.rbnd(~F, d, vtl(~F, M.vscale(~F, s, r))):
-  %vtl_vscale(~F, s, r) : C.rbnd(~F, d, _)
+def rbnd_vtl_vscale(~F: O.OField, +d: M.Vec(~F), +s: O.C(F), +r: M.Vec(~F), h: BX.rbnd(~F, d, M.vscale(~F, s, vtl(~F, r)))) -> BX.rbnd(~F, d, vtl(~F, M.vscale(~F, s, r))):
+  %vtl_vscale(~F, s, r) : BX.rbnd(~F, d, _)
   h
 
 # y1 - y2 within 2 r, for y1 and y2 within r of c
-def two_ball(~F: O.OField, y1: M.Vec(~F), y2: M.Vec(~F), c: M.Vec(~F), +r: M.Vec(~F), hl1: {M.len(~F, y1) == M.len(~F, c) : Nat}, hl2: {M.len(~F, y2) == M.len(~F, c) : Nat}, +h1: C.rbnd(~F, C.vsub(~F, y1, c), r), +h2: C.rbnd(~F, C.vsub(~F, y2, c), r)) -> C.rbnd(~F, C.vsub(~F, y1, y2), M.vscale(~F, O.two(~F), r)):
+def two_ball(~F: O.OField, y1: M.Vec(~F), y2: M.Vec(~F), c: M.Vec(~F), +r: M.Vec(~F), hl1: {M.len(~F, y1) == M.len(~F, c) : Nat}, hl2: {M.len(~F, y2) == M.len(~F, c) : Nat}, +h1: BX.rbnd(~F, BX.vsub(~F, y1, c), r), +h2: BX.rbnd(~F, BX.vsub(~F, y2, c), r)) -> BX.rbnd(~F, BX.vsub(~F, y1, y2), M.vscale(~F, O.two(~F), r)):
   match y1 y2 c:
     case Nil{} Nil{} Nil{}:
       Unit{}
     case Nil{} Nil{} Con{+x, +xs}:
       Unit{}
     case Nil{} Con{+b, +bs} c:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, Nil{}, Con{b, bs}), M.vscale(~F, O.two(~F), r)), zero_ne(M.len(~F, bs), Equal.trans(Nat, 0n, M.len(~F, c), 1n+M.len(~F, bs), hl1, Equal.sym(Nat, 1n+M.len(~F, bs), M.len(~F, c), hl2))))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, Nil{}, Con{b, bs}), M.vscale(~F, O.two(~F), r)), zero_ne(M.len(~F, bs), Equal.trans(Nat, 0n, M.len(~F, c), 1n+M.len(~F, bs), hl1, Equal.sym(Nat, 1n+M.len(~F, bs), M.len(~F, c), hl2))))
     case Con{+a, +as} Nil{} c:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, Con{a, as}, Nil{}), M.vscale(~F, O.two(~F), r)), succ_ne(M.len(~F, as), Equal.trans(Nat, 1n+M.len(~F, as), M.len(~F, c), 0n, hl1, Equal.sym(Nat, 0n, M.len(~F, c), hl2))))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, Con{a, as}, Nil{}), M.vscale(~F, O.two(~F), r)), succ_ne(M.len(~F, as), Equal.trans(Nat, 1n+M.len(~F, as), M.len(~F, c), 0n, hl1, Equal.sym(Nat, 0n, M.len(~F, c), hl2))))
     case Con{+a, +as} Con{+b, +bs} Nil{}:
-      FO.absurd(C.rbnd(~F, C.vsub(~F, Con{a, as}, Con{b, bs}), M.vscale(~F, O.two(~F), r)), succ_ne(M.len(~F, as), hl1))
+      FO.absurd(BX.rbnd(~F, BX.vsub(~F, Con{a, as}, Con{b, bs}), M.vscale(~F, O.two(~F), r)), succ_ne(M.len(~F, as), hl1))
     case Con{+a, +as} Con{+b, +bs} Con{+x, +xs}:
-      rbnd_mk(~F, O.sub(~F, a, b), C.vsub(~F, as, bs), M.vscale(~F, O.two(~F), r),
+      rbnd_mk(~F, O.sub(~F, a, b), BX.vsub(~F, as, bs), M.vscale(~F, O.two(~F), r),
         FM.bnd_eq(~F, O.sub(~F, a, b), O.mul(F, O.two(~F), vhd(~F, r)), vhd(~F, M.vscale(~F, O.two(~F), r)), vhd_vscale(~F, O.two(~F), r),
           FM.bnd_eq(~F, O.sub(~F, a, b), O.add(F, vhd(~F, r), vhd(~F, r)), O.mul(F, O.two(~F), vhd(~F, r)), FR.fring_eq(~F, [vhd(~F, r)], E.ZAdd{E.ZVar{0n}, E.ZVar{0n}}, E.ZMul{E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZVar{0n}}, {==}),
             bval(~F, O.add(F, O.sub(~F, a, x), O.neg(F, O.sub(~F, b, x))), O.sub(~F, a, b), O.add(F, vhd(~F, r), vhd(~F, r)), FR.fring_eq(~F, [a, b, x], E.ZAdd{E.ZSub{E.ZVar{0n}, E.ZVar{2n}}, E.ZNeg{E.ZSub{E.ZVar{1n}, E.ZVar{2n}}}}, E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, {==}),
-              FM.bnd_add(~F, O.sub(~F, a, x), vhd(~F, r), O.neg(F, O.sub(~F, b, x)), vhd(~F, r), rbnd_head(~F, O.sub(~F, a, x), C.vsub(~F, as, xs), r, h1), FM.bnd_neg(~F, O.sub(~F, b, x), vhd(~F, r), rbnd_head(~F, O.sub(~F, b, x), C.vsub(~F, bs, xs), r, h2)))))),
-        rbnd_vtl_vscale(~F, C.vsub(~F, as, bs), O.two(~F), r, two_ball(~F, as, bs, xs, vtl(~F, r), succ_inj(M.len(~F, as), M.len(~F, xs), hl1), succ_inj(M.len(~F, bs), M.len(~F, xs), hl2), rbnd_tail(~F, O.sub(~F, a, x), C.vsub(~F, as, xs), r, h1), rbnd_tail(~F, O.sub(~F, b, x), C.vsub(~F, bs, xs), r, h2))))
+              FM.bnd_add(~F, O.sub(~F, a, x), vhd(~F, r), O.neg(F, O.sub(~F, b, x)), vhd(~F, r), rbnd_head(~F, O.sub(~F, a, x), BX.vsub(~F, as, xs), r, h1), FM.bnd_neg(~F, O.sub(~F, b, x), vhd(~F, r), rbnd_head(~F, O.sub(~F, b, x), BX.vsub(~F, bs, xs), r, h2)))))),
+        rbnd_vtl_vscale(~F, BX.vsub(~F, as, bs), O.two(~F), r, two_ball(~F, as, bs, xs, vtl(~F, r), succ_inj(M.len(~F, as), M.len(~F, xs), hl1), succ_inj(M.len(~F, bs), M.len(~F, xs), hl2), rbnd_tail(~F, O.sub(~F, a, x), BX.vsub(~F, as, xs), r, h1), rbnd_tail(~F, O.sub(~F, b, x), BX.vsub(~F, bs, xs), r, h2))))
 
 # x s <= y s, for x <= y and s >= 0
 def mul_le_r(~F: O.OField, +x: O.C(F), +y: O.C(F), +s: O.C(F), hs: O.le(~F, O.zero(F), s), h: O.le(~F, x, y)) -> O.le(~F, O.mul(F, x, s), O.mul(F, y, s)):
@@ -1116,12 +1117,12 @@ def bnd_vhd_scale(~F: O.OField, +a: O.C(F), +s: O.C(F), +r: M.Vec(~F), h: M.bnd(
   %Equal.sym(O.C(F), O.mul(F, s, vhd(~F, r)), vhd(~F, M.vscale(~F, s, r)), vhd_vscale(~F, s, r)) : M.bnd(~F, a, _)
   h
 
-def rbnd_tail_scale(~F: O.OField, +ds: M.Vec(~F), +s: O.C(F), +r: M.Vec(~F), h: C.rbnd(~F, ds, vtl(~F, M.vscale(~F, s, r)))) -> C.rbnd(~F, ds, M.vscale(~F, s, vtl(~F, r))):
-  %Equal.sym(M.Vec(~F), M.vscale(~F, s, vtl(~F, r)), vtl(~F, M.vscale(~F, s, r)), vtl_vscale(~F, s, r)) : C.rbnd(~F, ds, _)
+def rbnd_tail_scale(~F: O.OField, +ds: M.Vec(~F), +s: O.C(F), +r: M.Vec(~F), h: BX.rbnd(~F, ds, vtl(~F, M.vscale(~F, s, r)))) -> BX.rbnd(~F, ds, M.vscale(~F, s, vtl(~F, r))):
+  %Equal.sym(M.Vec(~F), M.vscale(~F, s, vtl(~F, r)), vtl(~F, M.vscale(~F, s, r)), vtl_vscale(~F, s, r)) : BX.rbnd(~F, ds, _)
   h
 
 # |d| <= s r, for |d| <= 2 r and every ratio at most s
-def wr_near(~F: O.OField, d: M.Vec(~F), +r: M.Vec(~F), +s: O.C(F), +h2: C.rbnd(~F, d, M.vscale(~F, O.two(~F), r)), hw: M.vbnd.all(~F, wr(~F, d, r), s), +hr: rnn(~F, r)) -> C.rbnd(~F, d, M.vscale(~F, s, r)):
+def wr_near(~F: O.OField, d: M.Vec(~F), +r: M.Vec(~F), +s: O.C(F), +h2: BX.rbnd(~F, d, M.vscale(~F, O.two(~F), r)), hw: M.vbnd.all(~F, wr(~F, d, r), s), +hr: rnn(~F, r)) -> BX.rbnd(~F, d, M.vscale(~F, s, r)):
   match d:
     case Nil{}:
       Unit{}
@@ -1136,7 +1137,7 @@ def wr_near(~F: O.OField, d: M.Vec(~F), +r: M.Vec(~F), +s: O.C(F), +h2: C.rbnd(~
         rbnd_vtl_vscale(~F, ds, s, r, wr_near(~F, ds, vtl(~F, r), s, rbnd_tail_scale(~F, ds, O.two(~F), r, rbnd_tail(~F, a, ds, M.vscale(~F, O.two(~F), r), h2)), hws, rnn_tail(~F, r, hr))))
 
 # every ratio is at most t, for |d| <= t r
-def wr_bound(~F: O.OField, d: M.Vec(~F), +r: M.Vec(~F), +t: O.C(F), +h: C.rbnd(~F, d, M.vscale(~F, t, r)), +ht: O.le(~F, O.zero(F), t), +hr: rnn(~F, r)) -> M.vbnd.all(~F, wr(~F, d, r), t):
+def wr_bound(~F: O.OField, d: M.Vec(~F), +r: M.Vec(~F), +t: O.C(F), +h: BX.rbnd(~F, d, M.vscale(~F, t, r)), +ht: O.le(~F, O.zero(F), t), +hr: rnn(~F, r)) -> M.vbnd.all(~F, wr(~F, d, r), t):
   match d:
     case Nil{}:
       Unit{}
@@ -1147,7 +1148,7 @@ def wr_bound(~F: O.OField, d: M.Vec(~F), +r: M.Vec(~F), +t: O.C(F), +h: C.rbnd(~
        wr_bound(~F, ds, vtl(~F, r), t, rbnd_tail_scale(~F, ds, t, r, rbnd_tail(~F, a, ds, M.vscale(~F, t, r), h)), ht, rnn_tail(~F, r, hr)))
 
 # |d| <= s r with s <= 0 and r >= 0: d = 0
-def vall_zero(~F: O.OField, d: M.Vec(~F), +s: O.C(F), +r: M.Vec(~F), +h: C.rbnd(~F, d, M.vscale(~F, s, r)), +hs: O.le(~F, s, O.zero(F)), +hr: rnn(~F, r)) -> M.vbnd.all(~F, d, O.zero(F)):
+def vall_zero(~F: O.OField, d: M.Vec(~F), +s: O.C(F), +r: M.Vec(~F), +h: BX.rbnd(~F, d, M.vscale(~F, s, r)), +hs: O.le(~F, s, O.zero(F)), +hr: rnn(~F, r)) -> M.vbnd.all(~F, d, O.zero(F)):
   match d:
     case Nil{}:
       Unit{}

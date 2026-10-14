@@ -16,12 +16,31 @@ import Base
 import ./field.bend as O
 import ./mat.bend as M
 import ./knum.bend as N
-import ./cert.bend as C
 import ./ring.bend as E
 import ./sketch.bend as SK
 
+# Vectors
+# -------
+
+# u - w
+def vsub(~F: O.OField, u: M.Vec(~F), w: M.Vec(~F)) -> M.Vec(~F):
+  M.vadd(~F, u, M.vneg(~F, w))
+
+# |d_i| <= r_i for every i, with r_i = 0 past r's end
+def rbnd(~F: O.OField, d: M.Vec(~F), r: M.Vec(~F)) -> Data:
+  match d r:
+    case Nil{} r:
+      Unit
+    case Con{a, ds} Nil{}:
+      M.Both(M.bnd(~F, a, O.zero(F)), rbnd(~F, ds, Nil{}))
+    case Con{a, ds} Con{s, rs}:
+      M.Both(M.bnd(~F, a, s), rbnd(~F, ds, rs))
+
+# The box
+# -------
+
 def inbox(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +gc: N.KVec(~K), +gr: N.KVec(~K), +x: M.Vec(~F)) -> Data:
-  M.Both({M.len(~F, x) == M.len(~F, N.ofkv(~K, ~F, ~H, gc)) : Nat}, C.rbnd(~F, C.vsub(~F, x, N.ofkv(~K, ~F, ~H, gc)), N.ofkv(~K, ~F, ~H, gr)))
+  M.Both({M.len(~F, x) == M.len(~F, N.ofkv(~K, ~F, ~H, gc)) : Nat}, rbnd(~F, vsub(~F, x, N.ofkv(~K, ~F, ~H, gc)), N.ofkv(~K, ~F, ~H, gr)))
 
 # Variables a sketch names
 # ------------------------

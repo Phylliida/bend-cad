@@ -9,7 +9,8 @@ import ../spec/num.bend as S
 import ../spec/ring.bend as E
 import ../spec/field.bend as O
 import ../spec/mat.bend as M
-import ../spec/cert.bend as C
+import ../spec/box.bend as BX
+import ./certdef.bend as C
 import ./karith.bend as KA
 import ./nat.bend as LN
 import ./fring.bend as FR
@@ -156,7 +157,7 @@ def lookup_vneg(~F: O.OField, w: M.Vec(~F), i: Nat) -> {O.neg(F, O.lookup(~F, w,
     case Con{b, ws} 1n+j:
       lookup_vneg(~F, ws, j)
 
-def lookup_vsub(~F: O.OField, u: M.Vec(~F), +w: M.Vec(~F), +i: Nat) -> {O.sub(~F, O.lookup(~F, u, i), O.lookup(~F, w, i)) == O.lookup(~F, C.vsub(~F, u, w), i) : O.C(F)}:
+def lookup_vsub(~F: O.OField, u: M.Vec(~F), +w: M.Vec(~F), +i: Nat) -> {O.sub(~F, O.lookup(~F, u, i), O.lookup(~F, w, i)) == O.lookup(~F, BX.vsub(~F, u, w), i) : O.C(F)}:
   match u w i:
     case Nil{} w i:
       %lookup_vneg(~F, w, i) : {O.sub(~F, O.zero(F), O.lookup(~F, w, i)) == _ : O.C(F)}
@@ -206,40 +207,40 @@ def srange_mul(~F: O.OField, +x1: M.Vec(~F), +x2: M.Vec(~F), +a: E.QExpr, +b: E.
 # The slope identity
 # ------------------
 
-def slope_ok.var(~F: O.OField, +x1: M.Vec(~F), +x2: M.Vec(~F), +j: Nat, m: Nat, h: {KA.natle(1n+j, m) == True{} : Bool}) -> {O.lookup(~F, C.vsub(~F, x1, x2), j) == M.dot(~F, srange(~F, x1, x2, E.QVar{j}, m, 0n), C.vsub(~F, x1, x2)) : O.C(F)}:
-  %Equal.sym(Nat, j, Nat.add(j, 0n), LN.add_zero(j)) : {O.lookup(~F, C.vsub(~F, x1, x2), j) == M.dot(~F, srange(~F, x1, x2, E.QVar{_}, m, 0n), C.vsub(~F, x1, x2)) : O.C(F)}
-  unit_dot(~F, x1, x2, j, m, 0n, C.vsub(~F, x1, x2), h)
+def slope_ok.var(~F: O.OField, +x1: M.Vec(~F), +x2: M.Vec(~F), +j: Nat, m: Nat, h: {KA.natle(1n+j, m) == True{} : Bool}) -> {O.lookup(~F, BX.vsub(~F, x1, x2), j) == M.dot(~F, srange(~F, x1, x2, E.QVar{j}, m, 0n), BX.vsub(~F, x1, x2)) : O.C(F)}:
+  %Equal.sym(Nat, j, Nat.add(j, 0n), LN.add_zero(j)) : {O.lookup(~F, BX.vsub(~F, x1, x2), j) == M.dot(~F, srange(~F, x1, x2, E.QVar{_}, m, 0n), BX.vsub(~F, x1, x2)) : O.C(F)}
+  unit_dot(~F, x1, x2, j, m, 0n, BX.vsub(~F, x1, x2), h)
 
 # e(X1) - e(X2) = sum over i < m of sl_i (X1_i - X2_i), for e's variables < m
-def slope_ok(~F: O.OField, +x1: M.Vec(~F), +x2: M.Vec(~F), e: E.QExpr, +m: Nat, +hb: {below(m, e) == True{} : Bool}) -> {O.sub(~F, O.eval(~F, x1, e), O.eval(~F, x2, e)) == M.dot(~F, srange(~F, x1, x2, e, m, 0n), C.vsub(~F, x1, x2)) : O.C(F)}:
+def slope_ok(~F: O.OField, +x1: M.Vec(~F), +x2: M.Vec(~F), e: E.QExpr, +m: Nat, +hb: {below(m, e) == True{} : Bool}) -> {O.sub(~F, O.eval(~F, x1, e), O.eval(~F, x2, e)) == M.dot(~F, srange(~F, x1, x2, e, m, 0n), BX.vsub(~F, x1, x2)) : O.C(F)}:
   match e:
     case E.QVar{+j}:
-      Equal.trans(O.C(F), O.sub(~F, O.lookup(~F, x1, j), O.lookup(~F, x2, j)), O.lookup(~F, C.vsub(~F, x1, x2), j), M.dot(~F, srange(~F, x1, x2, E.QVar{j}, m, 0n), C.vsub(~F, x1, x2)), lookup_vsub(~F, x1, x2, j), slope_ok.var(~F, x1, x2, j, m, hb))
+      Equal.trans(O.C(F), O.sub(~F, O.lookup(~F, x1, j), O.lookup(~F, x2, j)), O.lookup(~F, BX.vsub(~F, x1, x2), j), M.dot(~F, srange(~F, x1, x2, E.QVar{j}, m, 0n), BX.vsub(~F, x1, x2)), lookup_vsub(~F, x1, x2, j), slope_ok.var(~F, x1, x2, j, m, hb))
     case E.QCst{+q}:
-      Equal.trans(O.C(F), O.sub(~F, O.ofq(~F, q), O.ofq(~F, q)), O.zero(F), M.dot(~F, srange(~F, x1, x2, E.QCst{q}, m, 0n), C.vsub(~F, x1, x2)), O.add_neg(F)(O.ofq(~F, q)), czero_dot(~F, x1, x2, q, m, 0n, C.vsub(~F, x1, x2)))
+      Equal.trans(O.C(F), O.sub(~F, O.ofq(~F, q), O.ofq(~F, q)), O.zero(F), M.dot(~F, srange(~F, x1, x2, E.QCst{q}, m, 0n), BX.vsub(~F, x1, x2)), O.add_neg(F)(O.ofq(~F, q)), czero_dot(~F, x1, x2, q, m, 0n, BX.vsub(~F, x1, x2)))
     case E.QAdd{+a, +b}:
-      %srange_add(~F, x1, x2, a, b, m, 0n) : {O.sub(~F, O.eval(~F, x1, E.QAdd{a, b}), O.eval(~F, x2, E.QAdd{a, b})) == M.dot(~F, _, C.vsub(~F, x1, x2)) : O.C(F)}
-      %FM.dot_vadd(~F, srange(~F, x1, x2, a, m, 0n), srange(~F, x1, x2, b, m, 0n), C.vsub(~F, x1, x2)) : {O.sub(~F, O.eval(~F, x1, E.QAdd{a, b}), O.eval(~F, x2, E.QAdd{a, b})) == _ : O.C(F)}
-      %slope_ok(~F, x1, x2, a, m, KA.band_l(below(m, a), below(m, b), hb)) : {O.sub(~F, O.eval(~F, x1, E.QAdd{a, b}), O.eval(~F, x2, E.QAdd{a, b})) == O.add(F, _, M.dot(~F, srange(~F, x1, x2, b, m, 0n), C.vsub(~F, x1, x2))) : O.C(F)}
+      %srange_add(~F, x1, x2, a, b, m, 0n) : {O.sub(~F, O.eval(~F, x1, E.QAdd{a, b}), O.eval(~F, x2, E.QAdd{a, b})) == M.dot(~F, _, BX.vsub(~F, x1, x2)) : O.C(F)}
+      %FM.dot_vadd(~F, srange(~F, x1, x2, a, m, 0n), srange(~F, x1, x2, b, m, 0n), BX.vsub(~F, x1, x2)) : {O.sub(~F, O.eval(~F, x1, E.QAdd{a, b}), O.eval(~F, x2, E.QAdd{a, b})) == _ : O.C(F)}
+      %slope_ok(~F, x1, x2, a, m, KA.band_l(below(m, a), below(m, b), hb)) : {O.sub(~F, O.eval(~F, x1, E.QAdd{a, b}), O.eval(~F, x2, E.QAdd{a, b})) == O.add(F, _, M.dot(~F, srange(~F, x1, x2, b, m, 0n), BX.vsub(~F, x1, x2))) : O.C(F)}
       %slope_ok(~F, x1, x2, b, m, KA.band_r(below(m, a), below(m, b), hb)) : {O.sub(~F, O.eval(~F, x1, E.QAdd{a, b}), O.eval(~F, x2, E.QAdd{a, b})) == O.add(F, O.sub(~F, O.eval(~F, x1, a), O.eval(~F, x2, a)), _) : O.C(F)}
       FR.fring_eq(~F, [O.eval(~F, x1, a), O.eval(~F, x1, b), O.eval(~F, x2, a), O.eval(~F, x2, b)], E.ZSub{E.ZAdd{E.ZVar{0n}, E.ZVar{1n}}, E.ZAdd{E.ZVar{2n}, E.ZVar{3n}}}, E.ZAdd{E.ZSub{E.ZVar{0n}, E.ZVar{2n}}, E.ZSub{E.ZVar{1n}, E.ZVar{3n}}}, {==})
     case E.QSub{+a, +b}:
-      %srange_sub(~F, x1, x2, a, b, m, 0n) : {O.sub(~F, O.eval(~F, x1, E.QSub{a, b}), O.eval(~F, x2, E.QSub{a, b})) == M.dot(~F, _, C.vsub(~F, x1, x2)) : O.C(F)}
-      %FM.dot_vadd(~F, srange(~F, x1, x2, a, m, 0n), M.vneg(~F, srange(~F, x1, x2, b, m, 0n)), C.vsub(~F, x1, x2)) : {O.sub(~F, O.eval(~F, x1, E.QSub{a, b}), O.eval(~F, x2, E.QSub{a, b})) == _ : O.C(F)}
-      %FM.dot_vneg(~F, srange(~F, x1, x2, b, m, 0n), C.vsub(~F, x1, x2)) : {O.sub(~F, O.eval(~F, x1, E.QSub{a, b}), O.eval(~F, x2, E.QSub{a, b})) == O.add(F, M.dot(~F, srange(~F, x1, x2, a, m, 0n), C.vsub(~F, x1, x2)), _) : O.C(F)}
-      %slope_ok(~F, x1, x2, a, m, KA.band_l(below(m, a), below(m, b), hb)) : {O.sub(~F, O.eval(~F, x1, E.QSub{a, b}), O.eval(~F, x2, E.QSub{a, b})) == O.add(F, _, O.neg(F, M.dot(~F, srange(~F, x1, x2, b, m, 0n), C.vsub(~F, x1, x2)))) : O.C(F)}
+      %srange_sub(~F, x1, x2, a, b, m, 0n) : {O.sub(~F, O.eval(~F, x1, E.QSub{a, b}), O.eval(~F, x2, E.QSub{a, b})) == M.dot(~F, _, BX.vsub(~F, x1, x2)) : O.C(F)}
+      %FM.dot_vadd(~F, srange(~F, x1, x2, a, m, 0n), M.vneg(~F, srange(~F, x1, x2, b, m, 0n)), BX.vsub(~F, x1, x2)) : {O.sub(~F, O.eval(~F, x1, E.QSub{a, b}), O.eval(~F, x2, E.QSub{a, b})) == _ : O.C(F)}
+      %FM.dot_vneg(~F, srange(~F, x1, x2, b, m, 0n), BX.vsub(~F, x1, x2)) : {O.sub(~F, O.eval(~F, x1, E.QSub{a, b}), O.eval(~F, x2, E.QSub{a, b})) == O.add(F, M.dot(~F, srange(~F, x1, x2, a, m, 0n), BX.vsub(~F, x1, x2)), _) : O.C(F)}
+      %slope_ok(~F, x1, x2, a, m, KA.band_l(below(m, a), below(m, b), hb)) : {O.sub(~F, O.eval(~F, x1, E.QSub{a, b}), O.eval(~F, x2, E.QSub{a, b})) == O.add(F, _, O.neg(F, M.dot(~F, srange(~F, x1, x2, b, m, 0n), BX.vsub(~F, x1, x2)))) : O.C(F)}
       %slope_ok(~F, x1, x2, b, m, KA.band_r(below(m, a), below(m, b), hb)) : {O.sub(~F, O.eval(~F, x1, E.QSub{a, b}), O.eval(~F, x2, E.QSub{a, b})) == O.add(F, O.sub(~F, O.eval(~F, x1, a), O.eval(~F, x2, a)), O.neg(F, _)) : O.C(F)}
       FR.fring_eq(~F, [O.eval(~F, x1, a), O.eval(~F, x1, b), O.eval(~F, x2, a), O.eval(~F, x2, b)], E.ZSub{E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, E.ZSub{E.ZVar{2n}, E.ZVar{3n}}}, E.ZAdd{E.ZSub{E.ZVar{0n}, E.ZVar{2n}}, E.ZNeg{E.ZSub{E.ZVar{1n}, E.ZVar{3n}}}}, {==})
     case E.QMul{+a, +b}:
-      %srange_mul(~F, x1, x2, a, b, m, 0n) : {O.sub(~F, O.eval(~F, x1, E.QMul{a, b}), O.eval(~F, x2, E.QMul{a, b})) == M.dot(~F, _, C.vsub(~F, x1, x2)) : O.C(F)}
-      %FM.dot_vadd(~F, M.vscale(~F, O.eval(~F, x1, a), srange(~F, x1, x2, b, m, 0n)), M.vscale(~F, O.eval(~F, x2, b), srange(~F, x1, x2, a, m, 0n)), C.vsub(~F, x1, x2)) : {O.sub(~F, O.eval(~F, x1, E.QMul{a, b}), O.eval(~F, x2, E.QMul{a, b})) == _ : O.C(F)}
-      %FM.dot_vscale(~F, O.eval(~F, x1, a), srange(~F, x1, x2, b, m, 0n), C.vsub(~F, x1, x2)) : {O.sub(~F, O.eval(~F, x1, E.QMul{a, b}), O.eval(~F, x2, E.QMul{a, b})) == O.add(F, _, M.dot(~F, M.vscale(~F, O.eval(~F, x2, b), srange(~F, x1, x2, a, m, 0n)), C.vsub(~F, x1, x2))) : O.C(F)}
-      %FM.dot_vscale(~F, O.eval(~F, x2, b), srange(~F, x1, x2, a, m, 0n), C.vsub(~F, x1, x2)) : {O.sub(~F, O.eval(~F, x1, E.QMul{a, b}), O.eval(~F, x2, E.QMul{a, b})) == O.add(F, O.mul(F, O.eval(~F, x1, a), M.dot(~F, srange(~F, x1, x2, b, m, 0n), C.vsub(~F, x1, x2))), _) : O.C(F)}
-      %slope_ok(~F, x1, x2, b, m, KA.band_r(below(m, a), below(m, b), hb)) : {O.sub(~F, O.eval(~F, x1, E.QMul{a, b}), O.eval(~F, x2, E.QMul{a, b})) == O.add(F, O.mul(F, O.eval(~F, x1, a), _), O.mul(F, O.eval(~F, x2, b), M.dot(~F, srange(~F, x1, x2, a, m, 0n), C.vsub(~F, x1, x2)))) : O.C(F)}
+      %srange_mul(~F, x1, x2, a, b, m, 0n) : {O.sub(~F, O.eval(~F, x1, E.QMul{a, b}), O.eval(~F, x2, E.QMul{a, b})) == M.dot(~F, _, BX.vsub(~F, x1, x2)) : O.C(F)}
+      %FM.dot_vadd(~F, M.vscale(~F, O.eval(~F, x1, a), srange(~F, x1, x2, b, m, 0n)), M.vscale(~F, O.eval(~F, x2, b), srange(~F, x1, x2, a, m, 0n)), BX.vsub(~F, x1, x2)) : {O.sub(~F, O.eval(~F, x1, E.QMul{a, b}), O.eval(~F, x2, E.QMul{a, b})) == _ : O.C(F)}
+      %FM.dot_vscale(~F, O.eval(~F, x1, a), srange(~F, x1, x2, b, m, 0n), BX.vsub(~F, x1, x2)) : {O.sub(~F, O.eval(~F, x1, E.QMul{a, b}), O.eval(~F, x2, E.QMul{a, b})) == O.add(F, _, M.dot(~F, M.vscale(~F, O.eval(~F, x2, b), srange(~F, x1, x2, a, m, 0n)), BX.vsub(~F, x1, x2))) : O.C(F)}
+      %FM.dot_vscale(~F, O.eval(~F, x2, b), srange(~F, x1, x2, a, m, 0n), BX.vsub(~F, x1, x2)) : {O.sub(~F, O.eval(~F, x1, E.QMul{a, b}), O.eval(~F, x2, E.QMul{a, b})) == O.add(F, O.mul(F, O.eval(~F, x1, a), M.dot(~F, srange(~F, x1, x2, b, m, 0n), BX.vsub(~F, x1, x2))), _) : O.C(F)}
+      %slope_ok(~F, x1, x2, b, m, KA.band_r(below(m, a), below(m, b), hb)) : {O.sub(~F, O.eval(~F, x1, E.QMul{a, b}), O.eval(~F, x2, E.QMul{a, b})) == O.add(F, O.mul(F, O.eval(~F, x1, a), _), O.mul(F, O.eval(~F, x2, b), M.dot(~F, srange(~F, x1, x2, a, m, 0n), BX.vsub(~F, x1, x2)))) : O.C(F)}
       %slope_ok(~F, x1, x2, a, m, KA.band_l(below(m, a), below(m, b), hb)) : {O.sub(~F, O.eval(~F, x1, E.QMul{a, b}), O.eval(~F, x2, E.QMul{a, b})) == O.add(F, O.mul(F, O.eval(~F, x1, a), O.sub(~F, O.eval(~F, x1, b), O.eval(~F, x2, b))), O.mul(F, O.eval(~F, x2, b), _)) : O.C(F)}
       FR.fring_eq(~F, [O.eval(~F, x1, a), O.eval(~F, x1, b), O.eval(~F, x2, a), O.eval(~F, x2, b)], E.ZSub{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZMul{E.ZVar{2n}, E.ZVar{3n}}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZSub{E.ZVar{1n}, E.ZVar{3n}}}, E.ZMul{E.ZVar{3n}, E.ZSub{E.ZVar{0n}, E.ZVar{2n}}}}, {==})
     case E.QNeg{+a}:
-      %srange_neg(~F, x1, x2, a, m, 0n) : {O.sub(~F, O.eval(~F, x1, E.QNeg{a}), O.eval(~F, x2, E.QNeg{a})) == M.dot(~F, _, C.vsub(~F, x1, x2)) : O.C(F)}
-      %FM.dot_vneg(~F, srange(~F, x1, x2, a, m, 0n), C.vsub(~F, x1, x2)) : {O.sub(~F, O.eval(~F, x1, E.QNeg{a}), O.eval(~F, x2, E.QNeg{a})) == _ : O.C(F)}
+      %srange_neg(~F, x1, x2, a, m, 0n) : {O.sub(~F, O.eval(~F, x1, E.QNeg{a}), O.eval(~F, x2, E.QNeg{a})) == M.dot(~F, _, BX.vsub(~F, x1, x2)) : O.C(F)}
+      %FM.dot_vneg(~F, srange(~F, x1, x2, a, m, 0n), BX.vsub(~F, x1, x2)) : {O.sub(~F, O.eval(~F, x1, E.QNeg{a}), O.eval(~F, x2, E.QNeg{a})) == _ : O.C(F)}
       %slope_ok(~F, x1, x2, a, m, hb) : {O.sub(~F, O.eval(~F, x1, E.QNeg{a}), O.eval(~F, x2, E.QNeg{a})) == O.neg(F, _) : O.C(F)}
       FR.fring_eq(~F, [O.eval(~F, x1, a), O.eval(~F, x2, a)], E.ZSub{E.ZNeg{E.ZVar{0n}}, E.ZNeg{E.ZVar{1n}}}, E.ZNeg{E.ZSub{E.ZVar{0n}, E.ZVar{1n}}}, {==})

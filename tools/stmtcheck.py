@@ -16,7 +16,7 @@ import ../ROADMAP.bend as Laws
 import ../spec/field.bend as O
 import ../spec/mat.bend as M
 import ../spec/knum.bend as N
-import ../spec/cert.bend as C
+import ../lib/certdef.bend as C
 
 def pick(b: Bool, P: Type) -> Type:
   match b:

@@ -1,4 +1,7 @@
-# bend-cad spec: what a block certificate claims (DESIGN §8.3). Trusted.
+# bend-cad: what a block certificate claims (DESIGN §8.3). Library, not
+# trusted: the block laws about it (lib/certpf.bend, lib/banach.bend) are
+# lemmas on the way to the sketch laws, which do not mention it. Its vsub
+# and rbnd live in spec/box.bend, which the laws use.
 #
 # A block is a square system of polynomial equations f(y; z) = 0 in its n
 # unknowns y, with parameters z (earlier blocks' variables, pinned values,
@@ -21,10 +24,11 @@
 # a radius list is 0 (a parameter past the last radius is fixed at 0).
 
 import Base
-import ./ring.bend as E
-import ./field.bend as O
-import ./mat.bend as M
-import ./knum.bend as N
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ../spec/mat.bend as M
+import ../spec/knum.bend as N
+import ../spec/box.bend as BX
 
 # Blocks and certificates
 # -----------------------
@@ -102,9 +106,6 @@ def pradii(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, c: Cert<K>) -> M.Vec(~F):
 # The block in F
 # --------------
 
-def vsub(~F: O.OField, u: M.Vec(~F), w: M.Vec(~F)) -> M.Vec(~F):
-  M.vadd(~F, u, M.vneg(~F, w))
-
 # y's first n entries (zeros past its end)
 def fit(~F: O.OField, n: Nat, y: M.Vec(~F)) -> M.Vec(~F):
   match n y:
@@ -137,29 +138,19 @@ def bfun(~F: O.OField, +b: Block, y: M.Vec(~F), z: M.Vec(~F)) -> M.Vec(~F):
 # What the certificate says
 # -------------------------
 
-# |d_i| <= r_i for every i, with r_i = 0 past r's end
-def rbnd(~F: O.OField, d: M.Vec(~F), r: M.Vec(~F)) -> Data:
-  match d r:
-    case Nil{} r:
-      Unit
-    case Con{a, ds} Nil{}:
-      M.Both(M.bnd(~F, a, O.zero(F)), rbnd(~F, ds, Nil{}))
-    case Con{a, ds} Con{s, rs}:
-      M.Both(M.bnd(~F, a, s), rbnd(~F, ds, rs))
-
 # y lies in the box B: y has as many entries as the center ỹ, and
 # |y_i - ỹ_i| <= r_i
 def ball(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +c: Cert<K>, +y: M.Vec(~F)) -> Data:
-  M.Both({M.len(~F, y) == M.len(~F, center(~K, ~F, ~H, c)) : Nat}, rbnd(~F, vsub(~F, y, center(~K, ~F, ~H, c)), radii(~K, ~F, ~H, c)))
+  M.Both({M.len(~F, y) == M.len(~F, center(~K, ~F, ~H, c)) : Nat}, BX.rbnd(~F, BX.vsub(~F, y, center(~K, ~F, ~H, c)), radii(~K, ~F, ~H, c)))
 
 # u and v are within s radii of each other: |u_i - v_i| <= s r_i
 def near(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, c: Cert<K>, +s: O.C(F), u: M.Vec(~F), v: M.Vec(~F)) -> Data:
-  rbnd(~F, vsub(~F, u, v), M.vscale(~F, s, radii(~K, ~F, ~H, c)))
+  BX.rbnd(~F, BX.vsub(~F, u, v), M.vscale(~F, s, radii(~K, ~F, ~H, c)))
 
 # z lies in the parameters' box: |z_k - c_k| <= rho_k
 def pinned(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +c: Cert<K>, z: M.Vec(~F)) -> Data:
-  rbnd(~F, vsub(~F, z, pcenter(~K, ~F, ~H, c)), pradii(~K, ~F, ~H, c))
+  BX.rbnd(~F, BX.vsub(~F, z, pcenter(~K, ~F, ~H, c)), pradii(~K, ~F, ~H, c))
 
 # the Newton map y - Y f(y; z)
 def newton(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, b: Block, c: Cert<K>, z: M.Vec(~F), +y: M.Vec(~F)) -> M.Vec(~F):
-  vsub(~F, y, M.matvec(~F, ymat(~K, ~F, ~H, c), bfun(~F, b, y, z)))
+  BX.vsub(~F, y, M.matvec(~F, ymat(~K, ~F, ~H, c), bfun(~F, b, y, z)))

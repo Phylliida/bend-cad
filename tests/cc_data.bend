@@ -5,7 +5,7 @@
 import Base
 import ../spec/num.bend as S
 import ../spec/ring.bend as E
-import ../spec/cert.bend as C
+import ../lib/certdef.bend as C
 import ../lib/kinst.bend as KI
 import ../lib/cert.bend as CK
 
