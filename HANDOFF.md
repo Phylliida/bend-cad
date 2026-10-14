@@ -275,5 +275,8 @@ step that needs it.
   "-G: error while loading shared libraries"; use `command grep`.
 
 sk-07's remaining items: line–line / point–circle / circle–circle distances
-(new kinds: spec arms, rerun `tools/mforms.py`, add per-kind lemmas), §8.6
-for the vocabulary.
+(new kinds: spec arms, rerun `tools/mforms.py`, add per-kind lemmas). §8.6
+for the vocabulary is covered by `box_sides` + `check_sides`:
+`tests/sides_demo.bend` certifies every kind's sides over a box around
+sketch_demo's rational solution (K = ℚ) and refuses boxes where the aux
+length or the circle's radius may vanish.
