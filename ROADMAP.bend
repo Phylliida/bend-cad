@@ -64,7 +64,8 @@ law cert_self:
   C.ball(~K, ~F, ~H, c, C.newton(~K, ~F, ~H, b, c, z, y))
 
 # LAW: the Newton map contracts the box by q: points within s radii of
-# each other go to points within q s radii
+# each other go to points within q s radii (s >= 0: with s < 0 and two
+# empty lists the hypothesis holds vacuously and the conclusion is false)
 law cert_contract:
   for ~K: N.Num
   for ~F: O.OField
@@ -79,6 +80,7 @@ law cert_contract:
   for +y2: M.Vec(~F)
   for  h2: C.ball(~K, ~F, ~H, c, y2)
   for +s: O.C(F)
+  for  hs0: O.le(~F, O.zero(F), s)
   for  hs: C.near(~K, ~F, ~H, c, s, y1, y2)
   C.near(~K, ~F, ~H, c, O.mul(F, C.factor(~K, ~F, ~H, c), s), C.newton(~K, ~F, ~H, b, c, z, y1), C.newton(~K, ~F, ~H, b, c, z, y2))
 

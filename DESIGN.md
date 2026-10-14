@@ -511,7 +511,7 @@ B = {|yᵢ − ỹᵢ| ≤ rᵢ} (all certificate numbers sent through H):
 - `cert_factor`: 0 ≤ q < 1;
 - `cert_center`: ỹ ∈ B (B is not empty);
 - `cert_self`: N maps B into itself;
-- `cert_contract`: if |y₁ᵢ − y₂ᵢ| ≤ s·rᵢ for all i, then
+- `cert_contract`: if s ≥ 0 and |y₁ᵢ − y₂ᵢ| ≤ s·rᵢ for all i, then
   |N(y₁)ᵢ − N(y₂)ᵢ| ≤ q·s·rᵢ for all i (contraction in the r-weighted
   infinity norm, stated without division);
 - `cert_fix`: a fixed point of N is a zero of f;
