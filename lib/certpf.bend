@@ -527,3 +527,59 @@ def cert_contract(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, b: C.Block, c: C.Cer
   match b:
     case C.Block{+eqs, +n}:
       cert_contract.c(~K, ~F, ~H, eqs, n, c, ok, z, hz, y1, h1, y2, h2, s, hs0, hs)
+
+# The equations evaluated in K
+# ----------------------------
+
+def klook_ofk(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, env: N.KVec(~K), i: Nat) -> {N.emap(K, F, H, KB.klook(~K, env, i)) == O.lookup(~F, N.ofkv(~K, ~F, ~H, env), i) : O.C(F)}:
+  match env i:
+    case Nil{} j:
+      N.e_zero(K, F, H)
+    case Con{h, t} 0n:
+      {==}
+    case Con{h, t} 1n+j:
+      klook_ofk(~K, ~F, ~H, t, j)
+
+# K's value of a held expression is its value in F
+def keval_ok(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +env: N.KVec(~K), e: E.QExpr, +hh: {KB.held(~K, e) == True{} : Bool}) -> {N.emap(K, F, H, KB.keval(~K, env, e)) == O.eval(~F, N.ofkv(~K, ~F, ~H, env), e) : O.C(F)}:
+  match e:
+    case E.QVar{i}:
+      klook_ofk(~K, ~F, ~H, env, i)
+    case E.QCst{+q}:
+      KB.kcst_ok(~K, ~F, ~H, q, hh)
+    case E.QAdd{+a, +b}:
+      %KA.ea(~K, ~F, ~H, KB.keval(~K, env, a), KB.keval(~K, env, b)) : {_ == O.add(F, O.eval(~F, N.ofkv(~K, ~F, ~H, env), a), O.eval(~F, N.ofkv(~K, ~F, ~H, env), b)) : O.C(F)}
+      %Equal.sym(O.C(F), N.emap(K, F, H, KB.keval(~K, env, a)), O.eval(~F, N.ofkv(~K, ~F, ~H, env), a), keval_ok(~K, ~F, ~H, env, a, KA.band_l(KB.held(~K, a), KB.held(~K, b), hh))) : {O.add(F, _, N.emap(K, F, H, KB.keval(~K, env, b))) == O.add(F, O.eval(~F, N.ofkv(~K, ~F, ~H, env), a), O.eval(~F, N.ofkv(~K, ~F, ~H, env), b)) : O.C(F)}
+      %Equal.sym(O.C(F), N.emap(K, F, H, KB.keval(~K, env, b)), O.eval(~F, N.ofkv(~K, ~F, ~H, env), b), keval_ok(~K, ~F, ~H, env, b, KA.band_r(KB.held(~K, a), KB.held(~K, b), hh))) : {O.add(F, O.eval(~F, N.ofkv(~K, ~F, ~H, env), a), _) == O.add(F, O.eval(~F, N.ofkv(~K, ~F, ~H, env), a), O.eval(~F, N.ofkv(~K, ~F, ~H, env), b)) : O.C(F)}
+      {==}
+    case E.QSub{+a, +b}:
+      %KA.es(~K, ~F, ~H, KB.keval(~K, env, a), KB.keval(~K, env, b)) : {_ == O.sub(~F, O.eval(~F, N.ofkv(~K, ~F, ~H, env), a), O.eval(~F, N.ofkv(~K, ~F, ~H, env), b)) : O.C(F)}
+      %Equal.sym(O.C(F), N.emap(K, F, H, KB.keval(~K, env, a)), O.eval(~F, N.ofkv(~K, ~F, ~H, env), a), keval_ok(~K, ~F, ~H, env, a, KA.band_l(KB.held(~K, a), KB.held(~K, b), hh))) : {O.sub(~F, _, N.emap(K, F, H, KB.keval(~K, env, b))) == O.sub(~F, O.eval(~F, N.ofkv(~K, ~F, ~H, env), a), O.eval(~F, N.ofkv(~K, ~F, ~H, env), b)) : O.C(F)}
+      %Equal.sym(O.C(F), N.emap(K, F, H, KB.keval(~K, env, b)), O.eval(~F, N.ofkv(~K, ~F, ~H, env), b), keval_ok(~K, ~F, ~H, env, b, KA.band_r(KB.held(~K, a), KB.held(~K, b), hh))) : {O.sub(~F, O.eval(~F, N.ofkv(~K, ~F, ~H, env), a), _) == O.sub(~F, O.eval(~F, N.ofkv(~K, ~F, ~H, env), a), O.eval(~F, N.ofkv(~K, ~F, ~H, env), b)) : O.C(F)}
+      {==}
+    case E.QMul{+a, +b}:
+      %KA.em(~K, ~F, ~H, KB.keval(~K, env, a), KB.keval(~K, env, b)) : {_ == O.mul(F, O.eval(~F, N.ofkv(~K, ~F, ~H, env), a), O.eval(~F, N.ofkv(~K, ~F, ~H, env), b)) : O.C(F)}
+      %Equal.sym(O.C(F), N.emap(K, F, H, KB.keval(~K, env, a)), O.eval(~F, N.ofkv(~K, ~F, ~H, env), a), keval_ok(~K, ~F, ~H, env, a, KA.band_l(KB.held(~K, a), KB.held(~K, b), hh))) : {O.mul(F, _, N.emap(K, F, H, KB.keval(~K, env, b))) == O.mul(F, O.eval(~F, N.ofkv(~K, ~F, ~H, env), a), O.eval(~F, N.ofkv(~K, ~F, ~H, env), b)) : O.C(F)}
+      %Equal.sym(O.C(F), N.emap(K, F, H, KB.keval(~K, env, b)), O.eval(~F, N.ofkv(~K, ~F, ~H, env), b), keval_ok(~K, ~F, ~H, env, b, KA.band_r(KB.held(~K, a), KB.held(~K, b), hh))) : {O.mul(F, O.eval(~F, N.ofkv(~K, ~F, ~H, env), a), _) == O.mul(F, O.eval(~F, N.ofkv(~K, ~F, ~H, env), a), O.eval(~F, N.ofkv(~K, ~F, ~H, env), b)) : O.C(F)}
+      {==}
+    case E.QNeg{+a}:
+      %KA.en(~K, ~F, ~H, KB.keval(~K, env, a)) : {_ == O.neg(F, O.eval(~F, N.ofkv(~K, ~F, ~H, env), a)) : O.C(F)}
+      %Equal.sym(O.C(F), N.emap(K, F, H, KB.keval(~K, env, a)), O.eval(~F, N.ofkv(~K, ~F, ~H, env), a), keval_ok(~K, ~F, ~H, env, a, hh)) : {O.neg(F, _) == O.neg(F, O.eval(~F, N.ofkv(~K, ~F, ~H, env), a)) : O.C(F)}
+      {==}
+
+def kvals_ofk(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +env: N.KVec(~K), eqs: List<&2, E.QExpr>, +hh: {CK.allheld(~K, eqs) == True{} : Bool}) -> {N.ofkv(~K, ~F, ~H, CK.kvals(~K, env, eqs)) == C.fvals(~F, eqs, N.ofkv(~K, ~F, ~H, env)) : M.Vec(~F)}:
+  match eqs:
+    case Nil{}:
+      {==}
+    case Con{+e, +es}:
+      %Equal.sym(O.C(F), N.emap(K, F, H, KB.keval(~K, env, e)), O.eval(~F, N.ofkv(~K, ~F, ~H, env), e), keval_ok(~K, ~F, ~H, env, e, KA.band_l(KB.held(~K, e), CK.allheld(~K, es), hh))) : {Con{_, N.ofkv(~K, ~F, ~H, CK.kvals(~K, env, es))} == C.fvals(~F, Con{e, es}, N.ofkv(~K, ~F, ~H, env)) : M.Vec(~F)}
+      %Equal.sym(M.Vec(~F), N.ofkv(~K, ~F, ~H, CK.kvals(~K, env, es)), C.fvals(~F, es, N.ofkv(~K, ~F, ~H, env)), kvals_ofk(~K, ~F, ~H, env, es, KA.band_r(KB.held(~K, e), CK.allheld(~K, es), hh))) : {Con{O.eval(~F, N.ofkv(~K, ~F, ~H, env), e), _} == C.fvals(~F, Con{e, es}, N.ofkv(~K, ~F, ~H, env)) : M.Vec(~F)}
+      {==}
+
+def kapp_ofk(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: N.KVec(~K), +w: N.KVec(~K)) -> {N.ofkv(~K, ~F, ~H, KA.kapp(~K, u, w)) == C.app(~F, N.ofkv(~K, ~F, ~H, u), N.ofkv(~K, ~F, ~H, w)) : M.Vec(~F)}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{+a, +us}:
+      %Equal.sym(M.Vec(~F), N.ofkv(~K, ~F, ~H, KA.kapp(~K, us, w)), C.app(~F, N.ofkv(~K, ~F, ~H, us), N.ofkv(~K, ~F, ~H, w)), kapp_ofk(~K, ~F, ~H, us, w)) : {Con{N.emap(K, F, H, a), _} == Con{N.emap(K, F, H, a), C.app(~F, N.ofkv(~K, ~F, ~H, us), N.ofkv(~K, ~F, ~H, w))} : M.Vec(~F)}
+      {==}
