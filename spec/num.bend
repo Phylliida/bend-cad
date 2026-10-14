@@ -362,3 +362,63 @@ def Q.div(+x: Q, +y: Q) -> Q:
 
 def Q.cmp(+x: Q, +y: Q) -> Cmp:
   Z.cmp(Z.mul(Q.num(x), Zpos{Q.den(y)}), Z.mul(Q.num(y), Zpos{Q.den(x)}))
+
+# Dyadics
+# -------
+# A dyadic m/2^e, the certificates' working numbers. Its meaning is the
+# rational D.toq(x). D.mul adds exponents; D.add aligns them.
+
+# 2^e
+def Pos.pow2(e: Nat) -> Pos:
+  match e:
+    case 0n:
+      XH{}
+    case 1n+k:
+      XO{Pos.pow2(k)}
+
+type D is Data:
+  D{m: Z, e: Nat}
+
+def D.man(x: D) -> Z:
+  match x:
+    case D{m, e}:
+      m
+
+def D.exp(x: D) -> Nat:
+  match x:
+    case D{m, e}:
+      e
+
+def D.toq(+x: D) -> Q:
+  Q{D.man(x), Pos.pow2(D.exp(x))}
+
+def D.of_z(z: Z) -> D:
+  D{z, 0n}
+
+def D.neg(+x: D) -> D:
+  D{Z.neg(D.man(x)), D.exp(x)}
+
+def D.mul(+x: D, +y: D) -> D:
+  D{Z.mul(D.man(x), D.man(y)), Nat.add(D.exp(x), D.exp(y))}
+
+# x with its exponent one higher (same mantissa: half the value)
+def D.inc(+x: D) -> D:
+  D{D.man(x), 1n+D.exp(x)}
+
+# m1/2^e1 + m2/2^e2: peel common exponent steps, add, restore them
+def D.add.go(e1: Nat, e2: Nat, m1: Z, m2: Z) -> D:
+  match e1 e2:
+    case 0n 0n:
+      D{Z.add(m1, m2), 0n}
+    case 1n++i 0n:
+      D{Z.add(m1, Z.mul(m2, Zpos{Pos.pow2(1n+i)})), 1n+i}
+    case 0n 1n++j:
+      D{Z.add(Z.mul(m1, Zpos{Pos.pow2(1n+j)}), m2), 1n+j}
+    case 1n+i 1n+j:
+      D.inc(D.add.go(i, j, m1, m2))
+
+def D.add(+x: D, +y: D) -> D:
+  D.add.go(D.exp(x), D.exp(y), D.man(x), D.man(y))
+
+def D.sub(+x: D, +y: D) -> D:
+  D.add(x, D.neg(y))

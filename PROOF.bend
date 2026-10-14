@@ -9,6 +9,9 @@ import ./spec/ring.bend as E
 import ./lib/pos.bend as P
 import ./lib/z.bend as LZ
 import ./lib/zring.bend as R
+import ./lib/qring.bend as QR
+import ./lib/q.bend as LQ
+import ./lib/dyadic.bend as LD
 
 # Positives
 # ---------
@@ -46,6 +49,12 @@ def Laws.z_mul(a, b, c, d):
 def Laws.z_neg(a, b):
   Equal.sym(S.Z, S.Z.of_diff(b, a), S.Z.neg(S.Z.of_diff(a, b)), LZ.neg_diff(a, b))
 
+def Laws.pos_cmp(a, b):
+  P.cmp_nat(a, b)
+
+def Laws.z_cmp(x, y):
+  LZ.cmp_nat(x, y)
+
 # Ring identities
 # ---------------
 
@@ -77,3 +86,68 @@ def Laws.z_mul_one(x):
 
 def Laws.z_mul_add(x, y, z):
   Laws.ring_eq([x, y, z], E.ZMul{E.ZVar{0n}, E.ZAdd{E.ZVar{1n}, E.ZVar{2n}}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZMul{E.ZVar{0n}, E.ZVar{2n}}}, {==})
+
+# Rationals
+# ---------
+
+def Laws.q_refl(x):
+  LQ.q_refl(x)
+
+def Laws.q_sym(x, y, h):
+  LQ.q_sym(x, y, h)
+
+def Laws.q_trans(x, y, z, h1, h2):
+  LQ.q_trans(x, y, z, h1, h2)
+
+def Laws.q_add_cong(x, x2, y, y2, h1, h2):
+  LQ.q_trans(S.Q.add(x, y), S.Q.add(x2, y), S.Q.add(x2, y2), LQ.q_add_cong_l(x, x2, y, h1), LQ.q_add_cong_r(x2, y, y2, h2))
+
+def Laws.q_mul_cong(x, x2, y, y2, h1, h2):
+  LQ.q_trans(S.Q.mul(x, y), S.Q.mul(x2, y), S.Q.mul(x2, y2), LQ.q_mul_cong_l(x, x2, y, h1), LQ.q_mul_cong_r(x2, y, y2, h2))
+
+def Laws.q_neg_cong(x, x2, h):
+  LQ.q_neg_cong(x, x2, h)
+
+def Laws.qring_eq(env, e1, e2, h):
+  QR.qring_eq(env, e1, e2, h)
+
+# The field laws, each one rational-normalizer call.
+
+def Laws.q_add_comm(x, y):
+  Laws.qring_eq([x, y], E.QAdd{E.QVar{0n}, E.QVar{1n}}, E.QAdd{E.QVar{1n}, E.QVar{0n}}, {==})
+
+def Laws.q_add_assoc(x, y, z):
+  Laws.qring_eq([x, y, z], E.QAdd{E.QAdd{E.QVar{0n}, E.QVar{1n}}, E.QVar{2n}}, E.QAdd{E.QVar{0n}, E.QAdd{E.QVar{1n}, E.QVar{2n}}}, {==})
+
+def Laws.q_add_zero(x):
+  Laws.qring_eq([x], E.QAdd{E.QVar{0n}, E.QCst{S.Q{S.Z0{}, S.XH{}}}}, E.QVar{0n}, {==})
+
+def Laws.q_add_neg(x):
+  Laws.qring_eq([x], E.QAdd{E.QVar{0n}, E.QNeg{E.QVar{0n}}}, E.QCst{S.Q{S.Z0{}, S.XH{}}}, {==})
+
+def Laws.q_mul_comm(x, y):
+  Laws.qring_eq([x, y], E.QMul{E.QVar{0n}, E.QVar{1n}}, E.QMul{E.QVar{1n}, E.QVar{0n}}, {==})
+
+def Laws.q_mul_assoc(x, y, z):
+  Laws.qring_eq([x, y, z], E.QMul{E.QMul{E.QVar{0n}, E.QVar{1n}}, E.QVar{2n}}, E.QMul{E.QVar{0n}, E.QMul{E.QVar{1n}, E.QVar{2n}}}, {==})
+
+def Laws.q_mul_one(x):
+  Laws.qring_eq([x], E.QMul{E.QVar{0n}, E.QCst{S.Q{S.Zpos{S.XH{}}, S.XH{}}}}, E.QVar{0n}, {==})
+
+def Laws.q_mul_add(x, y, z):
+  Laws.qring_eq([x, y, z], E.QMul{E.QVar{0n}, E.QAdd{E.QVar{1n}, E.QVar{2n}}}, E.QAdd{E.QMul{E.QVar{0n}, E.QVar{1n}}, E.QMul{E.QVar{0n}, E.QVar{2n}}}, {==})
+
+def Laws.q_mul_inv(x, h):
+  LQ.q_mul_inv(x, h)
+
+# Dyadics
+# -------
+
+def Laws.d_add(x, y):
+  LD.toq_add(x, y)
+
+def Laws.d_mul(x, y):
+  LD.toq_mul(x, y)
+
+def Laws.d_neg(x):
+  LD.toq_neg(x)
