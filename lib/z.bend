@@ -335,3 +335,56 @@ def cmp_nat(x: S.Z, y: S.Z) -> {S.Z.cmp(x, y) == Nat.cmp(Nat.add(S.Z.pnat(x), S.
           {==}
         case S.Zneg{+q}:
           P.cmp_nat(q, p)
+
+# of_diff respects equal differences: a + d = b + c gives a - b = c - d
+def od_eq.mid(+a: Nat, +b: Nat, -c: Nat, +d: Nat, h: {Nat.add(a, d) == Nat.add(b, c) : Nat})
+  -> {S.Z.of_diff(Nat.add(d, a), Nat.add(d, b)) == S.Z.of_diff(Nat.add(b, c), Nat.add(b, d)) : S.Z}:
+  %h : {S.Z.of_diff(Nat.add(d, a), Nat.add(d, b)) == S.Z.of_diff(_, Nat.add(b, d)) : S.Z}
+  %N.add_comm(d, a) : {S.Z.of_diff(Nat.add(d, a), Nat.add(d, b)) == S.Z.of_diff(_, Nat.add(b, d)) : S.Z}
+  %N.add_comm(d, b) : {S.Z.of_diff(Nat.add(d, a), Nat.add(d, b)) == S.Z.of_diff(Nat.add(d, a), _) : S.Z}
+  {==}
+
+def od_eq(+a: Nat, +b: Nat, +c: Nat, +d: Nat, h: {Nat.add(a, d) == Nat.add(b, c) : Nat}) -> {S.Z.of_diff(a, b) == S.Z.of_diff(c, d) : S.Z}:
+  Equal.trans(S.Z, S.Z.of_diff(a, b), S.Z.of_diff(Nat.add(d, a), Nat.add(d, b)), S.Z.of_diff(c, d), shift(d, a, b),
+    Equal.trans(S.Z, S.Z.of_diff(Nat.add(d, a), Nat.add(d, b)), S.Z.of_diff(Nat.add(b, c), Nat.add(b, d)), S.Z.of_diff(c, d), od_eq.mid(a, b, c, d, h),
+      Equal.sym(S.Z, S.Z.of_diff(c, d), S.Z.of_diff(Nat.add(b, c), Nat.add(b, d)), shift(b, c, d))))
+
+def sub_zero(v: Nat) -> {Nat.sub(v, 0n) == v : Nat}:
+  match v:
+    case 0n:
+      {==}
+    case 1n+k:
+      {==}
+
+def zero_sub(v: Nat) -> {Nat.sub(0n, v) == 0n : Nat}:
+  match v:
+    case 0n:
+      {==}
+    case 1n+k:
+      {==}
+
+# the parts of v - 0 and 0 - v
+def pnat_pos(+v: Nat) -> {S.Z.pnat(S.Z.of_diff(v, 0n)) == v : Nat}:
+  %sub_pnat(v, 0n) : {_ == v : Nat}
+  sub_zero(v)
+
+def nnat_pos(+v: Nat) -> {S.Z.nnat(S.Z.of_diff(v, 0n)) == 0n : Nat}:
+  %sub_nnat(v, 0n) : {_ == 0n : Nat}
+  zero_sub(v)
+
+def pnat_neg(+v: Nat) -> {S.Z.pnat(S.Z.of_diff(0n, v)) == 0n : Nat}:
+  %sub_pnat(0n, v) : {_ == 0n : Nat}
+  zero_sub(v)
+
+def nnat_neg(+v: Nat) -> {S.Z.nnat(S.Z.of_diff(0n, v)) == v : Nat}:
+  %sub_nnat(0n, v) : {_ == v : Nat}
+  sub_zero(v)
+
+# Z.cmp through known parts
+def cmp_parts(+x: S.Z, +y: S.Z, -px: Nat, -nx: Nat, -py: Nat, -ny: Nat, hpx: {S.Z.pnat(x) == px : Nat}, hnx: {S.Z.nnat(x) == nx : Nat}, hpy: {S.Z.pnat(y) == py : Nat}, hny: {S.Z.nnat(y) == ny : Nat})
+  -> {Nat.cmp(Nat.add(px, ny), Nat.add(py, nx)) == S.Z.cmp(x, y) : Cmp}:
+  %hpx : {Nat.cmp(Nat.add(_, ny), Nat.add(py, nx)) == S.Z.cmp(x, y) : Cmp}
+  %hny : {Nat.cmp(Nat.add(S.Z.pnat(x), _), Nat.add(py, nx)) == S.Z.cmp(x, y) : Cmp}
+  %hpy : {Nat.cmp(Nat.add(S.Z.pnat(x), S.Z.nnat(y)), Nat.add(_, nx)) == S.Z.cmp(x, y) : Cmp}
+  %hnx : {Nat.cmp(Nat.add(S.Z.pnat(x), S.Z.nnat(y)), Nat.add(S.Z.pnat(y), _)) == S.Z.cmp(x, y) : Cmp}
+  Equal.sym(Cmp, S.Z.cmp(x, y), Nat.cmp(Nat.add(S.Z.pnat(x), S.Z.nnat(y)), Nat.add(S.Z.pnat(y), S.Z.nnat(x))), cmp_nat(x, y))

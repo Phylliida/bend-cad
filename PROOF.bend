@@ -12,6 +12,7 @@ import ./lib/zring.bend as R
 import ./lib/qring.bend as QR
 import ./lib/q.bend as LQ
 import ./lib/dyadic.bend as LD
+import ./lib/big.bend as LB
 
 # Positives
 # ---------
@@ -151,3 +152,33 @@ def Laws.d_mul(x, y):
 
 def Laws.d_neg(x):
   LD.toq_neg(x)
+
+# Big integers
+# ------------
+
+def Laws.big_add(bp, a, b, wa, wb):
+  LB.add_ok(bp, a, b, wa, wb)
+
+def Laws.big_sub(bp, a, b, wa, wb):
+  LB.sub_ok(bp, a, b, wa, wb)
+
+def Laws.big_neg(bp, a):
+  LB.neg_ok(bp, a)
+
+def Laws.big_mul(bp, a, b):
+  LB.mul_ok(bp, a, b)
+
+def Laws.big_cmp(bp, a, b, hb, wa, wb):
+  LB.cmp_ok(bp, a, b, hb, wa, wb)
+
+def Laws.big_add_wf(bp, a, b, hb, wa, wb):
+  LB.add_wf(bp, a, b, hb, wa, wb)
+
+def Laws.big_sub_wf(bp, a, b, hb, wa, wb):
+  LB.sub_wf(bp, a, b, hb, wa, wb)
+
+def Laws.big_neg_wf(bp, a, wa):
+  LB.neg_wf(bp, a, wa)
+
+def Laws.big_mul_wf(bp, a, b, hb, wa, wb):
+  LB.mul_wf(bp, a, b, hb, wa, wb)

@@ -11,6 +11,8 @@ import ./spec/num.bend as S
 import ./spec/ring.bend as E
 import ./lib/zring.bend as R
 import ./lib/qring.bend as QR
+import ./spec/big.bend as SB
+import ./rt/big.bend as RB
 
 # Positives
 # ---------
@@ -305,3 +307,90 @@ law d_mul:
 law d_neg:
   for +x: S.D
   S.Q.eq(S.D.toq(S.D.neg(x)), S.Q.neg(S.D.toq(x)))
+
+# Big integers (sk-02)
+# --------------------
+# A runtime big integer is a signed list of limbs in base 1 + bp (65536 at
+# runtime), least significant first; SB.Big.val is the integer it means, and
+# SB.Big.wf says every limb is below the base. The laws hold for every base
+# (the checker would unfold a literal 65536n to unary). With well-formed
+# inputs every intermediate stays below B * B + B, far under the runtime's
+# 2^48 Nat cap.
+
+# LAW: runtime addition is integer addition
+law big_add:
+  for +bp: Nat
+  for +a: SB.Big
+  for +b: SB.Big
+  for  wa: SB.Big.wf(bp, a)
+  for  wb: SB.Big.wf(bp, b)
+  {SB.Big.val(bp, RB.Big.add(bp, a, b)) == S.Z.add(SB.Big.val(bp, a), SB.Big.val(bp, b)) : S.Z}
+
+# LAW: runtime subtraction is integer subtraction
+law big_sub:
+  for +bp: Nat
+  for +a: SB.Big
+  for +b: SB.Big
+  for  wa: SB.Big.wf(bp, a)
+  for  wb: SB.Big.wf(bp, b)
+  {SB.Big.val(bp, RB.Big.sub(bp, a, b)) == S.Z.sub(SB.Big.val(bp, a), SB.Big.val(bp, b)) : S.Z}
+
+# LAW: runtime negation is integer negation
+law big_neg:
+  for +bp: Nat
+  for +a: SB.Big
+  {SB.Big.val(bp, RB.Big.neg(a)) == S.Z.neg(SB.Big.val(bp, a)) : S.Z}
+
+# LAW: runtime multiplication is integer multiplication
+law big_mul:
+  for +bp: Nat
+  for +a: SB.Big
+  for +b: SB.Big
+  {SB.Big.val(bp, RB.Big.mul(bp, a, b)) == S.Z.mul(SB.Big.val(bp, a), SB.Big.val(bp, b)) : S.Z}
+
+# LAW: runtime comparison is integer comparison (base at least 2)
+law big_cmp:
+  for +bp: Nat
+  for +a: SB.Big
+  for +b: SB.Big
+  for  hb: SB.Le(1n, bp)
+  for  wa: SB.Big.wf(bp, a)
+  for  wb: SB.Big.wf(bp, b)
+  {RB.Big.cmp(bp, a, b) == S.Z.cmp(SB.Big.val(bp, a), SB.Big.val(bp, b)) : Cmp}
+
+# LAW: sums of well-formed big integers are well-formed (base at least 2)
+law big_add_wf:
+  for +bp: Nat
+  for +a: SB.Big
+  for +b: SB.Big
+  for  hb: SB.Le(1n, bp)
+  for  wa: SB.Big.wf(bp, a)
+  for  wb: SB.Big.wf(bp, b)
+  SB.Big.wf(bp, RB.Big.add(bp, a, b))
+
+# LAW: differences of well-formed big integers are well-formed
+law big_sub_wf:
+  for +bp: Nat
+  for +a: SB.Big
+  for +b: SB.Big
+  for  hb: SB.Le(1n, bp)
+  for  wa: SB.Big.wf(bp, a)
+  for  wb: SB.Big.wf(bp, b)
+  SB.Big.wf(bp, RB.Big.sub(bp, a, b))
+
+# LAW: negations of well-formed big integers are well-formed
+law big_neg_wf:
+  for +bp: Nat
+  for +a: SB.Big
+  for  wa: SB.Big.wf(bp, a)
+  SB.Big.wf(bp, RB.Big.neg(a))
+
+# LAW: products of well-formed big integers are well-formed
+law big_mul_wf:
+  for +bp: Nat
+  for +a: SB.Big
+  for +b: SB.Big
+  for  hb: SB.Le(1n, bp)
+  for  wa: SB.Big.wf(bp, a)
+  for  wb: SB.Big.wf(bp, b)
+  SB.Big.wf(bp, RB.Big.mul(bp, a, b))
