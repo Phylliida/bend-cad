@@ -13,6 +13,8 @@ import ./flaws.bend as FL
 import ./fring.bend as FR
 import ./ford.bend as FO
 import ./fmat.bend as FM
+import ./fvec.bend as FV
+import ../spec/cert.bend as C
 
 # The map's laws, turned to rewrite F's operations into K's
 # --------------------------------------------------------
@@ -482,3 +484,55 @@ def natle(a: Nat, b: Nat) -> Bool:
       False{}
     case 1n+i 1n+j:
       natle(i, j)
+
+# Vector verdicts in F
+# --------------------
+
+def kle0_ok(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +b: N.NC(K), h: {kle(~K, N.nzero(K), b) == True{} : Bool}) -> O.le(~F, O.zero(F), N.emap(K, F, H, b)):
+  %N.e_zero(K, F, H) : O.le(~F, _, N.emap(K, F, H, b))
+  kle_ok(~K, ~F, ~H, N.nzero(K), b, h)
+
+def kle0r_ok(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.NC(K), h: {kle(~K, a, N.nzero(K)) == True{} : Bool}) -> O.le(~F, N.emap(K, F, H, a), O.zero(F)):
+  %N.e_zero(K, F, H) : O.le(~F, N.emap(K, F, H, a), _)
+  kle_ok(~K, ~F, ~H, a, N.nzero(K), h)
+
+# K says u <= w entrywise, so H u <= H w entrywise
+def kvle_ok(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: N.KVec(~K), w: N.KVec(~K), +h: {kvle(~K, u, w) == True{} : Bool}) -> FV.rle(~F, N.ofkv(~K, ~F, ~H, u), N.ofkv(~K, ~F, ~H, w)):
+  match u w:
+    case Nil{} Nil{}:
+      Unit{}
+    case Nil{} Con{+b, +ws}:
+      (kle0_ok(~K, ~F, ~H, b, band_l(kle(~K, N.nzero(K), b), kvle(~K, Nil{}, ws), h)), kvle_ok(~K, ~F, ~H, Nil{}, ws, band_r(kle(~K, N.nzero(K), b), kvle(~K, Nil{}, ws), h)))
+    case Con{+a, +us} Nil{}:
+      (kle0r_ok(~K, ~F, ~H, a, band_l(kle(~K, a, N.nzero(K)), kvle(~K, us, Nil{}), h)), kvle_ok(~K, ~F, ~H, us, Nil{}, band_r(kle(~K, a, N.nzero(K)), kvle(~K, us, Nil{}), h)))
+    case Con{+a, +us} Con{+b, +ws}:
+      (kle_ok(~K, ~F, ~H, a, b, band_l(kle(~K, a, b), kvle(~K, us, ws), h)), kvle_ok(~K, ~F, ~H, us, ws, band_r(kle(~K, a, b), kvle(~K, us, ws), h)))
+
+# |H a| <= H |a|, entrywise
+def kvabs_bnd(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: N.KVec(~K)) -> C.rbnd(~F, N.ofkv(~K, ~F, ~H, u), N.ofkv(~K, ~F, ~H, kvabs(~K, u))):
+  match u:
+    case Nil{}:
+      Unit{}
+    case Con{+a, us}:
+      (kabs_bnd(~K, ~F, ~H, a), kvabs_bnd(~K, ~F, ~H, us))
+
+def kvabs_nn(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: N.KVec(~K)) -> FV.rnn(~F, N.ofkv(~K, ~F, ~H, kvabs(~K, u))):
+  match u:
+    case Nil{}:
+      Unit{}
+    case Con{+a, us}:
+      (kabs_nonneg(~K, ~F, ~H, a), kvabs_nn(~K, ~F, ~H, us))
+
+def kmabs_bnd(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, a: N.KMat(~K)) -> FV.mbnd(~F, N.ofkm(~K, ~F, ~H, a), N.ofkm(~K, ~F, ~H, kmabs(~K, a))):
+  match a:
+    case Nil{}:
+      Unit{}
+    case Con{r, rs}:
+      (kvabs_bnd(~K, ~F, ~H, r), kmabs_bnd(~K, ~F, ~H, rs))
+
+def kmabs_nn(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, a: N.KMat(~K)) -> FV.mnn(~F, N.ofkm(~K, ~F, ~H, kmabs(~K, a))):
+  match a:
+    case Nil{}:
+      Unit{}
+    case Con{r, rs}:
+      (kvabs_nn(~K, ~F, ~H, r), kmabs_nn(~K, ~F, ~H, rs))

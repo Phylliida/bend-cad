@@ -230,3 +230,16 @@ def rbnd_neg(~F: O.OField, u: M.Vec(~F), +r: M.Vec(~F), +h: C.rbnd(~F, u, r)) ->
       Unit{}
     case Con{+a, +us}:
       rbnd_mk(~F, O.neg(F, a), M.vneg(~F, us), r, FM.bnd_neg(~F, a, vhd(~F, r), rbnd_head(~F, a, us, r, h)), rbnd_neg(~F, us, vtl(~F, r), rbnd_tail(~F, a, us, r, h)))
+
+# |a - a| <= s, for 0 <= s
+def bnd_sself(~F: O.OField, +a: O.C(F), +s: O.C(F), +hs: O.le(~F, O.zero(F), s)) -> M.bnd(~F, O.sub(~F, a, a), s):
+  %Equal.sym(O.C(F), O.sub(~F, a, a), O.zero(F), O.add_neg(F)(a)) : M.bnd(~F, _, s)
+  FM.bnd_zero(~F, s, hs)
+
+# |u_i - u_i| <= r_i, for r not negative
+def rbnd_self(~F: O.OField, u: M.Vec(~F), +r: M.Vec(~F), +h: rnn(~F, r)) -> C.rbnd(~F, C.vsub(~F, u, u), r):
+  match u:
+    case Nil{}:
+      Unit{}
+    case Con{+a, +us}:
+      rbnd_mk(~F, O.sub(~F, a, a), C.vsub(~F, us, us), r, bnd_sself(~F, a, vhd(~F, r), rnn_head(~F, r, h)), rbnd_self(~F, us, vtl(~F, r), rnn_tail(~F, r, h)))
