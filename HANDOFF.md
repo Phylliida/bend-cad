@@ -198,32 +198,28 @@ wrong; she restated it after the roll.)
   nice part is that the runtime refinement then becomes just another
   `Emb`, with no separate checker-refinement proof.
 
-**sk-05 draft revised after an independent audit, awaiting Danielle's
-review** (DESIGN §8.3, §8.4, §16 Q18/Q19): `spec/knum.bend`,
-`spec/cert.bend` (per-unknown radii, 0 past the last unknown; parameters as
-`Par` triples in the certificate; `rbnd`, `ball`, `near`, `pinned`,
-`agree`, `newton`), `lib/cert.bend` (signature; stub rejecting everything,
-against which every law is trivially provable), seven draft laws in
-`ROADMAP.bend`: `cert_factor`, `cert_center`, `cert_self`,
-`cert_contract`, `cert_fix`, `cert_unique`, `cert_local`.
-- The audit's blocker (checker-verified): the first `cert_contract` was
-  false for vectors longer than the block. Fixed by the radii.
-- `bend ROADMAP.bend` stops at the TODO count before type-checking. To
-  type-check statements, prove them against the stub in a throwaway file
-  (fill each with `absurd(<goal>, ok)`, goal written out) and plant an
-  error to confirm the fills are checked. Done for all seven; file deleted.
-- Q19 decided (2026-10-14): `Num.ofq : Q -> Maybe<&2, C>` + `Emb.e_ofq`.
-  Instances in `lib/kinst.bend` (`qnum`/`qemb`, `dnum`/`demb`; three
-  planted bugs each refused), gated by `tests/kinst_demo.bend`. Still open
-  for Danielle, at sk-06: the trusted-base option (only the composed
-  theorem trusted).
-- Irrationals (DESIGN §16): √2 exactly needs named constants in QExpr +
-  K = Q(sqrt d) (later milestone), or a parameter ball (works now); π only
-  as a parameter ball with a proven radius, π defined in the Q18 template.
-- Next after approval: generic K matrix library (dmat as D instance),
-  slopes, ball arithmetic, the real checker (a conjunction of small Bool
-  tests with soundness lemmas), proofs; then sk-05b (complete ordered
-  fields, Banach, Lean cross-check).
+**sk-05 in progress (2026-10-14): 4 of 6 laws proven** (`lib/certpf.bend`:
+`cert_factor`, `cert_center`, `cert_contract`, `cert_self`; each fills its
+ROADMAP statement exactly, checked by a throwaway fill file). Left:
+`cert_fix` (needs a max-of-|f_i| argument in F: fabs/fmax via lt_total,
+then injectivity from the checker's row sums of |I - J0y Y| < 1) and
+`cert_unique` (weighted max of |d_i|/r_i, contraction gives s* <= q s*).
+Then move the six laws to LAWS.bend/PROOF.bend (gated test
+tests/cert_demo.bend already runs the checker on a real block).
+- Since the draft: blocks number their own variables (unknowns, then
+  parameters); box points have the center's length; cert_contract needs
+  s >= 0 (it was false for s < 0); Q19 partial ofq in Num (built).
+- Libraries: `lib/karith.bend` (K arithmetic + laws in F), `lib/fvec.bend`
+  (entrywise bounds; newton_diff, split_bnd, self3, shift),
+  `lib/kball.bend` (ball arithmetic + soundness), `lib/slope.bend`
+  (telescoping slopes per variable, slope_ok), `lib/cert.bend` (the
+  checker; named conjuncts), `lib/certpf.bend` (block lemmas + laws),
+  `lib/kinst.bend` (D and Q instances).
+- Checker: native run proto/cc_run.bend (tests/cc_data.bend from
+  tools/gen_cc.py) accepts the circle-circle certificate and rejects 7 bad
+  ones; `tools/stmtcheck.py` type-checks open statements.
+- Bend rewrite rule (I kept tripping): `%E : P` with E : {L == R} needs the
+  goal to be P[R] and continues with P[L].
 
 sk-07's remaining items: line–line / point–circle / circle–circle distances
 (new kinds: spec arms, rerun `tools/mforms.py`, add per-kind lemmas), §8.6
