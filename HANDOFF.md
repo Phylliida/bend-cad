@@ -177,6 +177,27 @@ every F with a map K → F that carries all the laws (ring map, comparison
 sound), as `ofd` already does for D. (My first reading, fixed dyadics, was
 wrong; she restated it after the roll.)
 
+**sk-05 probe done** (`proto/kprobe.bend`, untrusted, not gated;
+`proto/kprobe_run.bend` timing): both risks cleared.
+- Bend accepts the shape: `type Num` (carrier, zero, one, add, mul, neg,
+  `cmp -> Cmp`; no laws), `type Emb<-K: Num, -F: O.OField>` (map `e` plus
+  e_zero/one/add/mul/neg and `e_cmp : cmeans(F, cmp(a, b), e a, e b)`),
+  template params `~K, ~F, ~E: Emb<K, F>`, an instance passed as
+  `~demb(~F)`. Generic `kdot_ofk` proven once, used at K = D; `klt_ofk`
+  (K says LT, so e a < e b in F); closed computation at K = D checks by
+  {==}. Four deliberate breakages were all refused.
+- The D instance is free: `dnum()`, and `demb(~F)` from the existing
+  `ofd_*` laws plus `dcmp_sound` (via `ofq_lt`, `q_cmp_eq/gt`).
+- Native: generic kdot at K = D gives the same answers as `ddot`, ~10%
+  slower (2.2-2.3 s vs 2.05 s, 20000 x 64-term dots), probably the record
+  match per operation; acceptable, maybe removable.
+- Open for the runtime instance: `big_add`/`big_sub`/`big_cmp` need
+  `Big.wf`, but `Emb`'s laws are unconditional. Either the carrier carries
+  wf (cost at runtime?) or `Emb` gets an `ok` predicate preserved by the
+  ops, with laws under it. Decide when building the bigint instance; the
+  nice part is that the runtime refinement then becomes just another
+  `Emb`, with no separate checker-refinement proof.
+
 First sk-05 step: draft the block-certificate law statement (every F, every
 map K → F, certificate data in K, polynomial system f(y, z)), the K record
 and the map record, and the checker shape, for Danielle's review before
