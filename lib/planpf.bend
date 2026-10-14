@@ -242,3 +242,214 @@ def subst(~F: O.OField, +o: Nat, +n: Nat, +pars: List<&2, Nat>, +p: M.Vec(~F), +
       cmul(~F, O.eval(~F, C.app(~F, y, zmap(~F, p, pars)), PL.rename(o, n, pars, a)), O.eval(~F, C.app(~F, p, y), a), O.eval(~F, C.app(~F, y, zmap(~F, p, pars)), PL.rename(o, n, pars, b)), O.eval(~F, C.app(~F, p, y), b), subst(~F, o, n, pars, p, y, a, hp, hy, KA.band_l(SL.below(Nat.add(o, n), a), SL.below(Nat.add(o, n), b), hb), KA.band_l(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, a)), SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, b)), hl)), subst(~F, o, n, pars, p, y, b, hp, hy, KA.band_r(SL.below(Nat.add(o, n), a), SL.below(Nat.add(o, n), b), hb), KA.band_r(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, a)), SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, b)), hl)))
     case E.QNeg{+a}:
       cneg(~F, O.eval(~F, C.app(~F, y, zmap(~F, p, pars)), PL.rename(o, n, pars, a)), O.eval(~F, C.app(~F, p, y), a), subst(~F, o, n, pars, p, y, a, hp, hy, hb, hl))
+
+# Lists of K
+# ----------
+
+def ktake_nil(~K: N.Num, n: Nat) -> {PL.ktake(~K, n, Nil{}) == Nil{} : N.KVec(~K)}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+k:
+      {==}
+
+def keq_ok.go(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.NC(K), +b: N.NC(K), c: Cmp, e: {N.ncmp(K, a, b) == c : Cmp}, h: {PL.keq.go(c) == True{} : Bool}) -> {N.emap(K, F, H, a) == N.emap(K, F, H, b) : O.C(F)}:
+  match c:
+    case LT{}:
+      FO.absurd({N.emap(K, F, H, a) == N.emap(K, F, H, b) : O.C(F)}, KA.ft(h))
+    case EQ{}:
+      KA.kcmp_ok(~K, ~F, ~H, a, b, EQ{}, e)
+    case GT{}:
+      FO.absurd({N.emap(K, F, H, a) == N.emap(K, F, H, b) : O.C(F)}, KA.ft(h))
+
+# K says a = b, so H a = H b
+def keq_ok(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.NC(K), +b: N.NC(K), h: {PL.keq(~K, a, b) == True{} : Bool}) -> {N.emap(K, F, H, a) == N.emap(K, F, H, b) : O.C(F)}:
+  keq_ok.go(~K, ~F, ~H, a, b, N.ncmp(K, a, b), {==}, h)
+
+def klen_ktake(~K: N.Num, n: Nat, u: N.KVec(~K), h: {KA.natle(n, KA.klen(~K, u)) == True{} : Bool}) -> {KA.klen(~K, PL.ktake(~K, n, u)) == n : Nat}:
+  match n u:
+    case 0n u:
+      {==}
+    case 1n+k Nil{}:
+      FO.absurd({0n == 1n+k : Nat}, KA.ft(h))
+    case 1n++k Con{a, t}:
+      %Equal.sym(Nat, KA.klen(~K, PL.ktake(~K, k, t)), k, klen_ktake(~K, k, t, h)) : {1n+_ == 1n+k : Nat}
+      {==}
+
+def ktake_split(~K: N.Num, o: Nat, +n: Nat, u: N.KVec(~K)) -> {PL.ktake(~K, Nat.add(o, n), u) == KA.kapp(~K, PL.ktake(~K, o, u), PL.ktake(~K, n, PL.kdrop(~K, o, u))) : N.KVec(~K)}:
+  match o u:
+    case 0n u:
+      {==}
+    case 1n+k Nil{}:
+      Equal.sym(N.KVec(~K), PL.ktake(~K, n, Nil{}), Nil{}, ktake_nil(~K, n))
+    case 1n+k Con{+a, +t}:
+      %ktake_split(~K, k, n, t) : {Con{a, PL.ktake(~K, Nat.add(k, n), t)} == Con{a, _} : N.KVec(~K)}
+      {==}
+
+def ktake_all(~K: N.Num, u: N.KVec(~K)) -> {PL.ktake(~K, KA.klen(~K, u), u) == u : N.KVec(~K)}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{+a, +t}:
+      %Equal.sym(N.KVec(~K), PL.ktake(~K, KA.klen(~K, t), t), t, ktake_all(~K, t)) : {Con{a, _} == Con{a, t} : N.KVec(~K)}
+      {==}
+
+def klook_ktake(~K: N.Num, o: Nat, u: N.KVec(~K), v: Nat, h: {KA.natle(1n+v, o) == True{} : Bool}) -> {KB.klook(~K, PL.ktake(~K, o, u), v) == KB.klook(~K, u, v) : N.NC(K)}:
+  match o u v:
+    case 0n u v:
+      FO.absurd({KB.klook(~K, Nil{}, v) == KB.klook(~K, u, v) : N.NC(K)}, KA.ft(h))
+    case 1n+k Nil{} v:
+      {==}
+    case 1n+k Con{a, t} 0n:
+      {==}
+    case 1n+k Con{a, t} 1n+w:
+      klook_ktake(~K, k, t, w, h)
+
+# K says two lists agree, so they agree in F
+def kveq_ok(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: N.KVec(~K), w: N.KVec(~K), +h: {PL.kveq(~K, u, w) == True{} : Bool}) -> {N.ofkv(~K, ~F, ~H, u) == N.ofkv(~K, ~F, ~H, w) : M.Vec(~F)}:
+  match u w:
+    case Nil{} Nil{}:
+      {==}
+    case Nil{} Con{b, ws}:
+      FO.absurd({Nil{} == N.ofkv(~K, ~F, ~H, Con{b, ws}) : M.Vec(~F)}, KA.ft(h))
+    case Con{a, us} Nil{}:
+      FO.absurd({N.ofkv(~K, ~F, ~H, Con{a, us}) == Nil{} : M.Vec(~F)}, KA.ft(h))
+    case Con{+a, +us} Con{+b, +ws}:
+      +e1 = keq_ok(~K, ~F, ~H, a, b, KA.band_l(PL.keq(~K, a, b), PL.kveq(~K, us, ws), h))
+      %e1 : {Con{N.emap(K, F, H, a), N.ofkv(~K, ~F, ~H, us)} == Con{_, N.ofkv(~K, ~F, ~H, ws)} : M.Vec(~F)}
+      %kveq_ok(~K, ~F, ~H, us, ws, KA.band_r(PL.keq(~K, a, b), PL.kveq(~K, us, ws), h)) : {Con{N.emap(K, F, H, a), N.ofkv(~K, ~F, ~H, us)} == Con{N.emap(K, F, H, a), _} : M.Vec(~F)}
+      {==}
+
+# Appended vectors
+# ----------------
+
+def app_nil(~F: O.OField, p: M.Vec(~F)) -> {C.app(~F, p, Nil{}) == p : M.Vec(~F)}:
+  match p:
+    case Nil{}:
+      {==}
+    case Con{+a, +t}:
+      %Equal.sym(M.Vec(~F), C.app(~F, t, Nil{}), t, app_nil(~F, t)) : {Con{a, _} == Con{a, t} : M.Vec(~F)}
+      {==}
+
+def app_assoc(~F: O.OField, p: M.Vec(~F), +y: M.Vec(~F), +r: M.Vec(~F)) -> {C.app(~F, C.app(~F, p, y), r) == C.app(~F, p, C.app(~F, y, r)) : M.Vec(~F)}:
+  match p:
+    case Nil{}:
+      {==}
+    case Con{+a, +t}:
+      %app_assoc(~F, t, y, r) : {Con{a, C.app(~F, C.app(~F, t, y), r)} == Con{a, _} : M.Vec(~F)}
+      {==}
+
+def len_app(~F: O.OField, p: M.Vec(~F), +y: M.Vec(~F)) -> {M.len(~F, C.app(~F, p, y)) == Nat.add(M.len(~F, p), M.len(~F, y)) : Nat}:
+  match p:
+    case Nil{}:
+      {==}
+    case Con{+a, +t}:
+      %Equal.sym(Nat, M.len(~F, C.app(~F, t, y)), Nat.add(M.len(~F, t), M.len(~F, y)), len_app(~F, t, y)) : {1n+_ == 1n+Nat.add(M.len(~F, t), M.len(~F, y)) : Nat}
+      {==}
+
+# bounds on two pieces bound the appended vector, when the first piece's
+# bound is as long as it
+def rbnd_app(~F: O.OField, d1: M.Vec(~F), +d2: M.Vec(~F), r1: M.Vec(~F), +r2: M.Vec(~F), h1: C.rbnd(~F, d1, r1), +h2: C.rbnd(~F, d2, r2), hl: {M.len(~F, d1) == M.len(~F, r1) : Nat}) -> C.rbnd(~F, C.app(~F, d1, d2), C.app(~F, r1, r2)):
+  match d1 r1:
+    case Nil{} Nil{}:
+      h2
+    case Nil{} Con{+s, +rs}:
+      FO.absurd(C.rbnd(~F, d2, Con{s, C.app(~F, rs, r2)}), FV.zero_ne(M.len(~F, rs), hl))
+    case Con{+a, +ds} Nil{}:
+      FO.absurd(C.rbnd(~F, Con{a, C.app(~F, ds, d2)}, r2), FV.succ_ne(M.len(~F, ds), hl))
+    case Con{+a, +ds} Con{+s, +rs}:
+      (ha, hs) = h1
+      (ha, rbnd_app(~F, ds, d2, rs, r2, hs, h2, FV.succ_inj(M.len(~F, ds), M.len(~F, rs), hl)))
+
+# and back
+def rbnd_l(~F: O.OField, d1: M.Vec(~F), +d2: M.Vec(~F), r1: M.Vec(~F), +r2: M.Vec(~F), +h: C.rbnd(~F, C.app(~F, d1, d2), C.app(~F, r1, r2)), hl: {M.len(~F, d1) == M.len(~F, r1) : Nat}) -> C.rbnd(~F, d1, r1):
+  match d1 r1:
+    case Nil{} Nil{}:
+      Unit{}
+    case Nil{} Con{+s, +rs}:
+      Unit{}
+    case Con{+a, +ds} Nil{}:
+      FO.absurd(C.rbnd(~F, Con{a, ds}, Nil{}), FV.succ_ne(M.len(~F, ds), hl))
+    case Con{+a, +ds} Con{+s, +rs}:
+      (ha, hs) = h
+      (ha, rbnd_l(~F, ds, d2, rs, r2, hs, FV.succ_inj(M.len(~F, ds), M.len(~F, rs), hl)))
+
+def rbnd_r(~F: O.OField, d1: M.Vec(~F), +d2: M.Vec(~F), r1: M.Vec(~F), +r2: M.Vec(~F), +h: C.rbnd(~F, C.app(~F, d1, d2), C.app(~F, r1, r2)), hl: {M.len(~F, d1) == M.len(~F, r1) : Nat}) -> C.rbnd(~F, d2, r2):
+  match d1 r1:
+    case Nil{} Nil{}:
+      h
+    case Nil{} Con{+s, +rs}:
+      FO.absurd(C.rbnd(~F, d2, r2), FV.zero_ne(M.len(~F, rs), hl))
+    case Con{+a, +ds} Nil{}:
+      FO.absurd(C.rbnd(~F, d2, r2), FV.succ_ne(M.len(~F, ds), hl))
+    case Con{+a, +ds} Con{+s, +rs}:
+      (ha, hs) = h
+      rbnd_r(~F, ds, d2, rs, r2, hs, FV.succ_inj(M.len(~F, ds), M.len(~F, rs), hl))
+
+# Equations at appended assignments
+# ---------------------------------
+
+# an equation below the length of p reads only p
+def eval_prefix(~F: O.OField, +p: M.Vec(~F), +r: M.Vec(~F), e: E.QExpr, +hb: {SL.below(M.len(~F, p), e) == True{} : Bool}) -> {O.eval(~F, C.app(~F, p, r), e) == O.eval(~F, p, e) : O.C(F)}:
+  match e:
+    case E.QVar{+v}:
+      la_l(~F, p, r, v, hb)
+    case E.QCst{q}:
+      {==}
+    case E.QAdd{+a, +b}:
+      cadd(~F, O.eval(~F, C.app(~F, p, r), a), O.eval(~F, p, a), O.eval(~F, C.app(~F, p, r), b), O.eval(~F, p, b), eval_prefix(~F, p, r, a, KA.band_l(SL.below(M.len(~F, p), a), SL.below(M.len(~F, p), b), hb)), eval_prefix(~F, p, r, b, KA.band_r(SL.below(M.len(~F, p), a), SL.below(M.len(~F, p), b), hb)))
+    case E.QSub{+a, +b}:
+      csub(~F, O.eval(~F, C.app(~F, p, r), a), O.eval(~F, p, a), O.eval(~F, C.app(~F, p, r), b), O.eval(~F, p, b), eval_prefix(~F, p, r, a, KA.band_l(SL.below(M.len(~F, p), a), SL.below(M.len(~F, p), b), hb)), eval_prefix(~F, p, r, b, KA.band_r(SL.below(M.len(~F, p), a), SL.below(M.len(~F, p), b), hb)))
+    case E.QMul{+a, +b}:
+      cmul(~F, O.eval(~F, C.app(~F, p, r), a), O.eval(~F, p, a), O.eval(~F, C.app(~F, p, r), b), O.eval(~F, p, b), eval_prefix(~F, p, r, a, KA.band_l(SL.below(M.len(~F, p), a), SL.below(M.len(~F, p), b), hb)), eval_prefix(~F, p, r, b, KA.band_r(SL.below(M.len(~F, p), a), SL.below(M.len(~F, p), b), hb)))
+    case E.QNeg{+a}:
+      cneg(~F, O.eval(~F, C.app(~F, p, r), a), O.eval(~F, p, a), eval_prefix(~F, p, r, a, hb))
+
+def zero_rw(~F: O.OField, +a: O.C(F), +b: O.C(F), e: {a == b : O.C(F)}, h: {b == O.zero(F) : O.C(F)}) -> {a == O.zero(F) : O.C(F)}:
+  Equal.trans(O.C(F), a, b, O.zero(F), e, h)
+
+def zeros_prefix(~F: O.OField, +p: M.Vec(~F), +r: M.Vec(~F), es: List<&2, E.QExpr>, +hb: {PL.eqs_below(M.len(~F, p), es) == True{} : Bool}, h: SK.Zeros(~F, p, es)) -> SK.Zeros(~F, C.app(~F, p, r), es):
+  match es:
+    case Nil{}:
+      Unit{}
+    case Con{+e, +t}:
+      (h0, ht) = h
+      (zero_rw(~F, O.eval(~F, C.app(~F, p, r), e), O.eval(~F, p, e), eval_prefix(~F, p, r, e, KA.band_l(SL.below(M.len(~F, p), e), PL.eqs_below(M.len(~F, p), t), hb)), h0), zeros_prefix(~F, p, r, t, KA.band_r(SL.below(M.len(~F, p), e), PL.eqs_below(M.len(~F, p), t), hb), ht))
+
+def zeros_unprefix(~F: O.OField, +p: M.Vec(~F), +r: M.Vec(~F), es: List<&2, E.QExpr>, +hb: {PL.eqs_below(M.len(~F, p), es) == True{} : Bool}, h: SK.Zeros(~F, C.app(~F, p, r), es)) -> SK.Zeros(~F, p, es):
+  match es:
+    case Nil{}:
+      Unit{}
+    case Con{+e, +t}:
+      (h0, ht) = h
+      (zero_rw(~F, O.eval(~F, p, e), O.eval(~F, C.app(~F, p, r), e), Equal.sym(O.C(F), O.eval(~F, C.app(~F, p, r), e), O.eval(~F, p, e), eval_prefix(~F, p, r, e, KA.band_l(SL.below(M.len(~F, p), e), PL.eqs_below(M.len(~F, p), t), hb))), h0), zeros_unprefix(~F, p, r, t, KA.band_r(SL.below(M.len(~F, p), e), PL.eqs_below(M.len(~F, p), t), hb), ht))
+
+def zeros_split(~F: O.OField, +x: M.Vec(~F), n: Nat, es: List<&2, E.QExpr>, h1: SK.Zeros(~F, x, PL.takeq(n, es)), h2: SK.Zeros(~F, x, PL.dropq(n, es))) -> SK.Zeros(~F, x, es):
+  match n es:
+    case 0n es:
+      h2
+    case 1n+k Nil{}:
+      Unit{}
+    case 1n+k Con{+e, +t}:
+      (h0, ht) = h1
+      (h0, zeros_split(~F, x, k, t, ht, h2))
+
+def zeros_take(~F: O.OField, +x: M.Vec(~F), n: Nat, es: List<&2, E.QExpr>, +h: SK.Zeros(~F, x, es)) -> SK.Zeros(~F, x, PL.takeq(n, es)):
+  match n es:
+    case 0n es:
+      Unit{}
+    case 1n+k Nil{}:
+      Unit{}
+    case 1n+k Con{+e, +t}:
+      (h0, ht) = h
+      (h0, zeros_take(~F, x, k, t, ht))
+
+def zeros_drop(~F: O.OField, +x: M.Vec(~F), n: Nat, es: List<&2, E.QExpr>, +h: SK.Zeros(~F, x, es)) -> SK.Zeros(~F, x, PL.dropq(n, es)):
+  match n es:
+    case 0n es:
+      h
+    case 1n+k Nil{}:
+      Unit{}
+    case 1n+k Con{+e, +t}:
+      (h0, ht) = h
+      zeros_drop(~F, x, k, t, ht)

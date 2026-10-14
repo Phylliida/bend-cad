@@ -212,12 +212,13 @@ def pcont(~K: N.Num, +gc: N.KVec(~K), +gr: N.KVec(~K), pars: List<&2, Nat>, pc: 
 def block_ok(~K: N.Num, +gc: N.KVec(~K), +gr: N.KVec(~K), +es: List<&2, E.QExpr>, +o: Nat, +n: Nat, +pars: List<&2, Nat>, +c: C.Cert<K>) -> Bool:
   +e1 = takeq(n, es)
   KA.band(KA.natle(n, CK.eqlen(es)),
+  KA.band(KA.natle(Nat.add(o, n), KA.klen(~K, gc)),
   KA.band(pars_ok(o, pars),
   KA.band(eqs_below(Nat.add(o, n), e1),
   KA.band(CK.check(~K, C.Block{renames(o, n, pars, e1), n}, c),
   KA.band(kveq(~K, C.Cert.yc(K, c), ktake(~K, n, kdrop(~K, o, gc))),
   KA.band(kveq(~K, KA.kfit(~K, n, C.Cert.yr(K, c)), ktake(~K, n, kdrop(~K, o, gr))),
-  pcont(~K, gc, gr, pars, C.Cert.pc(K, c), C.Cert.pr(K, c))))))))
+  pcont(~K, gc, gr, pars, C.Cert.pc(K, c), C.Cert.pr(K, c)))))))))
 
 def walk(~K: N.Num, +gc: N.KVec(~K), +gr: N.KVec(~K), bs: List<&2, PBlock<K>>, +es: List<&2, E.QExpr>, +o: Nat) -> Bool:
   match bs:
