@@ -1056,7 +1056,7 @@ solver as it stands, and both are provable.)
 | C2d | lib/permpf.bend | **done 2026-10-15** (`regular_blocks`: InvN of jac(x, full picked at alleqs bs, allvars bs)): Regular in block order: a kernel vector of the Jacobian with permuted rows and columns gives one of the original (sums reindexed over a permutation), so with C1 the block-order Jacobian has an inverse |
 | C3a | lib/bndpf.bend | **done 2026-10-15** (`mcen_jac`, `kball_grade`, `ksl_grade`, `eval_lip`, `sl_lip`, `deriv_rnv`, `deriv_rename`; gated via tests/bnd_laws.bend): balls: centers are values (slope at equal points = deriv), ball tightness, Lipschitz bounds for expressions and slopes; renaming commutes with deriv (plan below) |
 | C3b | lib/roundpf.bend | **done 2026-10-15** (`div_ok`, `zfloor_ok`, `dround_err`, `dsig_err`, `qsig_err`, `dsigup_ok`; gated via tests/round_laws.bend): rounding in F: dround, dsig, qsig, dsigup (plan below) |
-| C3c | lib/normpf.bend | norms and the perturbation lemma (plan below) |
+| C3c | lib/normpf.bend | **done 2026-10-15** (`mv_n`, `InvB`, `lowb`, `pert`; gated via tests/norm_laws.bend): norms and the perturbation lemma (plan below) |
 | C4 | lib/dgjpf.bend | the rounded elimination (5): Newton's and Y's inverses are good |
 | C5 | lib/blockpf.bend | one block at P (3) |
 | C6 | lib/completepf.bend | the blocks in turn, the verdict, local uniqueness, choosing l and d: `solve_complete` |
@@ -1095,11 +1095,15 @@ in K, and serves both the checker's dyadic balls and the Newton analysis.
   - From integer facts: Euclid's division (QRD.div), the size bounds
     2^(size p − 1) ≤ p < 2^(size p), and pshr as a floor.
 - C3c, lib/normpf.bend:
-  - An operator bound Nm(A, a): ‖A v‖ ≤ a ‖v‖ for every v (max norm),
-    from entrywise majorants (row sums), closed under sums and products.
-  - Perturbation: with Z an inverse of J, Nm(Z, β) and Nm(J' − J, δ),
-    β δ ≤ 1/2, J' is injective with ‖v‖ ≤ 2β ‖J' v‖, so by C1 it has an
-    inverse Z' with Nm(Z', 2β).
+  - Norms as F values: ‖v‖ the largest |entry|, ‖A‖ (over n columns) the
+    largest row sum of |entries| among the first n columns, so
+    ‖A v‖ ≤ ‖A‖ ‖v‖ for v of length n (`mv_n`).
+  - "J has an inverse of norm at most c" is Data (`InvB`: the inverse, its
+    n rows, the bound), reusable as ‖v‖ ≤ c ‖J v‖ (`lowb`).
+  - Perturbation (`pert`): with InvB(J, n, β), ‖J' − J‖ ≤ δ and 2βδ ≤ 1,
+    ‖v‖ ≤ 2β ‖J' v‖, so J' is injective, so by C1 invertible; each row of
+    its inverse, read against the signs of its own entries, sums to at
+    most 2β (rows walked as `mdrop(k, Z')`), so InvB(J', n, 2β).
 
 **Risks.** Size: several thousand lines over several sessions (C4 is the
 largest single piece). Checker time on long inequality proofs: keep the
