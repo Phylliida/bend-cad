@@ -182,3 +182,112 @@ def daxpy_err(~F: O.OField, +w: Nat, xs: List<&2, S.D>, +c: S.D, ys: List<&2, S.
     case Con{+x, +xt} Con{+y, +yt}:
       (axpy_ent(~F, w, x, c, y, xx, cc, yy, NP.vh(~F, M.ofd(~F, x), M.ofdv(~F, xt), xx, hx), hc, NP.vh(~F, M.ofd(~F, y), M.ofdv(~F, yt), yy, hy), hu),
        daxpy_err(~F, w, xt, c, yt, xx, cc, yy, NP.vt(~F, M.ofd(~F, x), M.ofdv(~F, xt), xx, hx), hc, NP.vt(~F, M.ofd(~F, y), M.ofdv(~F, yt), yy, hy), FV.succ_inj(M.len(~F, M.ofdv(~F, xt)), M.len(~F, M.ofdv(~F, yt)), hl), hu))
+
+# Lookups, drops and columns
+# --------------------------
+
+def lnil(~F: O.OField, k: Nat) -> {O.lookup(~F, Nil{}, k) == O.zero(F) : O.C(F)}:
+  match k:
+    case 0n:
+      {==}
+    case 1n+j:
+      {==}
+
+def vadd_nil_l(~F: O.OField, x: M.Vec(~F)) -> {M.vadd(~F, Nil{}, x) == x : M.Vec(~F)}:
+  match x:
+    case Nil{}:
+      {==}
+    case Con{a, t}:
+      {==}
+
+# entry k of a B is a read against column k of B
+def look_vecmat(~F: O.OField, a: M.Vec(~F), b: M.Mat(~F), +k: Nat) -> {O.lookup(~F, M.vecmat(~F, a, b), k) == M.dot(~F, a, GJ.mcol(~F, b, k)) : O.C(F)}:
+  match a b:
+    case Nil{} Nil{}:
+      lnil(~F, k)
+    case Nil{} Con{+r, +rs}:
+      lnil(~F, k)
+    case Con{+x, +xs} Nil{}:
+      lnil(~F, k)
+    case Con{+x, +xs} Con{+r, +rs}:
+      %GJ.look_vadd(~F, M.vscale(~F, x, r), M.vecmat(~F, xs, rs), k) : {_ == O.add(F, O.mul(F, x, O.lookup(~F, r, k)), M.dot(~F, xs, GJ.mcol(~F, rs, k))) : O.C(F)}
+      %GJ.look_vscale(~F, x, r, k) : {O.add(F, _, O.lookup(~F, M.vecmat(~F, xs, rs), k)) == O.add(F, O.mul(F, x, O.lookup(~F, r, k)), M.dot(~F, xs, GJ.mcol(~F, rs, k))) : O.C(F)}
+      %Equal.sym(O.C(F), O.lookup(~F, M.vecmat(~F, xs, rs), k), M.dot(~F, xs, GJ.mcol(~F, rs, k)), look_vecmat(~F, xs, rs, k)) : {O.add(F, O.mul(F, x, O.lookup(~F, r, k)), _) == O.add(F, O.mul(F, x, O.lookup(~F, r, k)), M.dot(~F, xs, GJ.mcol(~F, rs, k))) : O.C(F)}
+      {==}
+
+def drop_vadd(~F: O.OField, k: Nat, u: M.Vec(~F), w: M.Vec(~F)) -> {M.vadd(~F, GJ.vdrop(~F, k, u), GJ.vdrop(~F, k, w)) == GJ.vdrop(~F, k, M.vadd(~F, u, w)) : M.Vec(~F)}:
+  match k u w:
+    case 0n Nil{} Nil{}:
+      {==}
+    case 0n Nil{} Con{b, bs}:
+      {==}
+    case 0n Con{a, as} Nil{}:
+      {==}
+    case 0n Con{a, as} Con{b, bs}:
+      {==}
+    case 1n+j Nil{} Nil{}:
+      {==}
+    case 1n+j Nil{} Con{b, bs}:
+      vadd_nil_l(~F, GJ.vdrop(~F, j, bs))
+    case 1n+j Con{a, as} Nil{}:
+      Equal.sym(M.Vec(~F), GJ.vdrop(~F, j, as), M.vadd(~F, GJ.vdrop(~F, j, as), Nil{}), FV.vadd_nil_r(~F, GJ.vdrop(~F, j, as)))
+    case 1n+j Con{a, as} Con{b, bs}:
+      drop_vadd(~F, j, as, bs)
+
+def drop_vneg(~F: O.OField, k: Nat, u: M.Vec(~F)) -> {M.vneg(~F, GJ.vdrop(~F, k, u)) == GJ.vdrop(~F, k, M.vneg(~F, u)) : M.Vec(~F)}:
+  match k u:
+    case 0n Nil{}:
+      {==}
+    case 0n Con{a, as}:
+      {==}
+    case 1n+j Nil{}:
+      {==}
+    case 1n+j Con{a, as}:
+      drop_vneg(~F, j, as)
+
+def drop_vscale(~F: O.OField, k: Nat, +s: O.C(F), u: M.Vec(~F)) -> {M.vscale(~F, s, GJ.vdrop(~F, k, u)) == GJ.vdrop(~F, k, M.vscale(~F, s, u)) : M.Vec(~F)}:
+  match k u:
+    case 0n Nil{}:
+      {==}
+    case 0n Con{a, as}:
+      {==}
+    case 1n+j Nil{}:
+      {==}
+    case 1n+j Con{a, as}:
+      drop_vscale(~F, j, s, as)
+
+# Row defects
+# -----------
+# A row x of [L | R] (n entries each) has defect L - R J; its entry k is
+# x_k minus x's right part read against column k of J.
+
+def dk(~F: O.OField, +n: Nat, +j: M.Mat(~F), +x: M.Vec(~F), +k: Nat) -> O.C(F):
+  O.sub(~F, O.lookup(~F, x, k), M.dot(~F, GJ.vdrop(~F, n, x), GJ.mcol(~F, j, k)))
+
+
+# the defect of x - y
+def dk_sub(~F: O.OField, +n: Nat, +j: M.Mat(~F), +x: M.Vec(~F), +y: M.Vec(~F), +k: Nat) -> {dk(~F, n, j, M.vadd(~F, x, M.vneg(~F, y)), k) == O.sub(~F, dk(~F, n, j, x, k), dk(~F, n, j, y, k)) : O.C(F)}:
+  %GJ.look_vadd(~F, x, M.vneg(~F, y), k) : {O.sub(~F, _, M.dot(~F, GJ.vdrop(~F, n, M.vadd(~F, x, M.vneg(~F, y))), GJ.mcol(~F, j, k))) == O.sub(~F, dk(~F, n, j, x, k), dk(~F, n, j, y, k)) : O.C(F)}
+  %GJ.look_vneg(~F, y, k) : {O.sub(~F, O.add(F, O.lookup(~F, x, k), _), M.dot(~F, GJ.vdrop(~F, n, M.vadd(~F, x, M.vneg(~F, y))), GJ.mcol(~F, j, k))) == O.sub(~F, dk(~F, n, j, x, k), dk(~F, n, j, y, k)) : O.C(F)}
+  %drop_vadd(~F, n, x, M.vneg(~F, y)) : {O.sub(~F, O.add(F, O.lookup(~F, x, k), O.neg(F, O.lookup(~F, y, k))), M.dot(~F, _, GJ.mcol(~F, j, k))) == O.sub(~F, dk(~F, n, j, x, k), dk(~F, n, j, y, k)) : O.C(F)}
+  %drop_vneg(~F, n, y) : {O.sub(~F, O.add(F, O.lookup(~F, x, k), O.neg(F, O.lookup(~F, y, k))), M.dot(~F, M.vadd(~F, GJ.vdrop(~F, n, x), _), GJ.mcol(~F, j, k))) == O.sub(~F, dk(~F, n, j, x, k), dk(~F, n, j, y, k)) : O.C(F)}
+  %FM.dot_vadd(~F, GJ.vdrop(~F, n, x), M.vneg(~F, GJ.vdrop(~F, n, y)), GJ.mcol(~F, j, k)) : {O.sub(~F, O.add(F, O.lookup(~F, x, k), O.neg(F, O.lookup(~F, y, k))), _) == O.sub(~F, dk(~F, n, j, x, k), dk(~F, n, j, y, k)) : O.C(F)}
+  %FM.dot_vneg(~F, GJ.vdrop(~F, n, y), GJ.mcol(~F, j, k)) : {O.sub(~F, O.add(F, O.lookup(~F, x, k), O.neg(F, O.lookup(~F, y, k))), O.add(F, M.dot(~F, GJ.vdrop(~F, n, x), GJ.mcol(~F, j, k)), _)) == O.sub(~F, dk(~F, n, j, x, k), dk(~F, n, j, y, k)) : O.C(F)}
+  FR.fring_eq(~F, [O.lookup(~F, x, k), O.lookup(~F, y, k), M.dot(~F, GJ.vdrop(~F, n, x), GJ.mcol(~F, j, k)), M.dot(~F, GJ.vdrop(~F, n, y), GJ.mcol(~F, j, k))], E.ZSub{E.ZAdd{E.ZVar{0n}, E.ZNeg{E.ZVar{1n}}}, E.ZAdd{E.ZVar{2n}, E.ZNeg{E.ZVar{3n}}}}, E.ZSub{E.ZSub{E.ZVar{0n}, E.ZVar{2n}}, E.ZSub{E.ZVar{1n}, E.ZVar{3n}}}, {==})
+
+# the defect of s x
+def dk_scale(~F: O.OField, +n: Nat, +j: M.Mat(~F), +s: O.C(F), +x: M.Vec(~F), +k: Nat) -> {dk(~F, n, j, M.vscale(~F, s, x), k) == O.mul(F, s, dk(~F, n, j, x, k)) : O.C(F)}:
+  %GJ.look_vscale(~F, s, x, k) : {O.sub(~F, _, M.dot(~F, GJ.vdrop(~F, n, M.vscale(~F, s, x)), GJ.mcol(~F, j, k))) == O.mul(F, s, dk(~F, n, j, x, k)) : O.C(F)}
+  %drop_vscale(~F, n, s, x) : {O.sub(~F, O.mul(F, s, O.lookup(~F, x, k)), M.dot(~F, _, GJ.mcol(~F, j, k))) == O.mul(F, s, dk(~F, n, j, x, k)) : O.C(F)}
+  %FM.dot_vscale(~F, s, GJ.vdrop(~F, n, x), GJ.mcol(~F, j, k)) : {O.sub(~F, O.mul(F, s, O.lookup(~F, x, k)), _) == O.mul(F, s, dk(~F, n, j, x, k)) : O.C(F)}
+  FR.fring_eq(~F, [O.lookup(~F, x, k), M.dot(~F, GJ.vdrop(~F, n, x), GJ.mcol(~F, j, k)), s], E.ZSub{E.ZMul{E.ZVar{2n}, E.ZVar{0n}}, E.ZMul{E.ZVar{2n}, E.ZVar{1n}}}, E.ZMul{E.ZVar{2n}, E.ZSub{E.ZVar{0n}, E.ZVar{1n}}}, {==})
+
+# the defect of x + (-m) p
+def dk_axpy(~F: O.OField, +n: Nat, +j: M.Mat(~F), +x: M.Vec(~F), +m: O.C(F), +p: M.Vec(~F), +k: Nat) -> {dk(~F, n, j, M.vadd(~F, x, M.vscale(~F, O.neg(F, m), p)), k) == O.add(F, dk(~F, n, j, x, k), O.mul(F, O.neg(F, m), dk(~F, n, j, p, k))) : O.C(F)}:
+  %GJ.look_vadd(~F, x, M.vscale(~F, O.neg(F, m), p), k) : {O.sub(~F, _, M.dot(~F, GJ.vdrop(~F, n, M.vadd(~F, x, M.vscale(~F, O.neg(F, m), p))), GJ.mcol(~F, j, k))) == O.add(F, dk(~F, n, j, x, k), O.mul(F, O.neg(F, m), dk(~F, n, j, p, k))) : O.C(F)}
+  %GJ.look_vscale(~F, O.neg(F, m), p, k) : {O.sub(~F, O.add(F, O.lookup(~F, x, k), _), M.dot(~F, GJ.vdrop(~F, n, M.vadd(~F, x, M.vscale(~F, O.neg(F, m), p))), GJ.mcol(~F, j, k))) == O.add(F, dk(~F, n, j, x, k), O.mul(F, O.neg(F, m), dk(~F, n, j, p, k))) : O.C(F)}
+  %drop_vadd(~F, n, x, M.vscale(~F, O.neg(F, m), p)) : {O.sub(~F, O.add(F, O.lookup(~F, x, k), O.mul(F, O.neg(F, m), O.lookup(~F, p, k))), M.dot(~F, _, GJ.mcol(~F, j, k))) == O.add(F, dk(~F, n, j, x, k), O.mul(F, O.neg(F, m), dk(~F, n, j, p, k))) : O.C(F)}
+  %drop_vscale(~F, n, O.neg(F, m), p) : {O.sub(~F, O.add(F, O.lookup(~F, x, k), O.mul(F, O.neg(F, m), O.lookup(~F, p, k))), M.dot(~F, M.vadd(~F, GJ.vdrop(~F, n, x), _), GJ.mcol(~F, j, k))) == O.add(F, dk(~F, n, j, x, k), O.mul(F, O.neg(F, m), dk(~F, n, j, p, k))) : O.C(F)}
+  %FM.dot_vadd(~F, GJ.vdrop(~F, n, x), M.vscale(~F, O.neg(F, m), GJ.vdrop(~F, n, p)), GJ.mcol(~F, j, k)) : {O.sub(~F, O.add(F, O.lookup(~F, x, k), O.mul(F, O.neg(F, m), O.lookup(~F, p, k))), _) == O.add(F, dk(~F, n, j, x, k), O.mul(F, O.neg(F, m), dk(~F, n, j, p, k))) : O.C(F)}
+  %FM.dot_vscale(~F, O.neg(F, m), GJ.vdrop(~F, n, p), GJ.mcol(~F, j, k)) : {O.sub(~F, O.add(F, O.lookup(~F, x, k), O.mul(F, O.neg(F, m), O.lookup(~F, p, k))), O.add(F, M.dot(~F, GJ.vdrop(~F, n, x), GJ.mcol(~F, j, k)), _)) == O.add(F, dk(~F, n, j, x, k), O.mul(F, O.neg(F, m), dk(~F, n, j, p, k))) : O.C(F)}
+  FR.fring_eq(~F, [O.lookup(~F, x, k), O.lookup(~F, p, k), M.dot(~F, GJ.vdrop(~F, n, x), GJ.mcol(~F, j, k)), M.dot(~F, GJ.vdrop(~F, n, p), GJ.mcol(~F, j, k)), m], E.ZSub{E.ZAdd{E.ZVar{0n}, E.ZMul{E.ZNeg{E.ZVar{4n}}, E.ZVar{1n}}}, E.ZAdd{E.ZVar{2n}, E.ZMul{E.ZNeg{E.ZVar{4n}}, E.ZVar{3n}}}}, E.ZAdd{E.ZSub{E.ZVar{0n}, E.ZVar{2n}}, E.ZMul{E.ZNeg{E.ZVar{4n}}, E.ZSub{E.ZVar{1n}, E.ZVar{3n}}}}, {==})
