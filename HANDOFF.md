@@ -430,6 +430,36 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
   Jacobian's upper-right entries are 0 only propositionally (deriv of an
   unused variable evaluates to 0), so InvN must transfer along entrywise
   equality (MEq) first, or block_inv be restated for MEq.
+- **C3 DONE (2026-10-15), gate green.** Three files, proofs only.
+  - C3a lib/bndpf.bend (tests/bnd_laws.bend): F is its own computing
+    numbers (`fnum`, `femb`: compare by lt_total, every rational held, the
+    identity map), so kball.bend's K-generic ball lemmas cover balls
+    centered at points of F. Ball centers are values (`kball_c`, `ksl_c`,
+    `sl_deriv`; `mcen_jac`: the checker's slope centers are the Jacobian
+    at the box's center, whatever the radii). Ball tightness by grades
+    (`gf`: 0 <= r, |c| <= m - r, r <= l rho; `kball_grade` with mj/lp,
+    `ksl_grade` with ms/ls), proved once generically in K. Lipschitz
+    (`eval_lip`, `sl_lip`, `eval_maj`, `sl_maj`). `deriv_rnv` (v in vp),
+    `deriv_rename` (v an unknown).
+  - C3b lib/roundpf.bend (tests/round_laws.bend): Euclid for QRD.div (it
+    was never proven; reduce checks its answer) and zfloor as a floor;
+    `dround_err` (2^-(p+1)), `dsig_err` (|x| 2^-b), `qsig_err` (|q| 2^-b),
+    `dsigup_ok` (x <= . <= x + |x| 2^(1-b)). Integers enter F through
+    ofz/ofp, an integer a < b as a + 1 <= b; identities with inverses by
+    @CERTEQ with QE.ofp_rel relations; `qbound` handles the exponent both
+    exact and truncated to 0.
+  - C3c lib/normpf.bend (tests/norm_laws.bend): norms (`vn`, `rowabs`,
+    `mnorm` over n columns), `mv_n`, `InvB` (an inverse of norm <= c, as
+    Data) with `lowb` (|v| <= c |J v|), and `pert` (InvB(J, n, b),
+    |J' - J| <= d, 2bd <= 1 give InvB(J', n, 2b): lower bound, injective,
+    C1 inverse, rows read against their own signs, walked as mdrop(k, Z')).
+  Next: C4, the rounded dyadic Gauss-Jordan analysis (DESIGN §10.4 (5)).
+- Bend lessons (C3): termination needs the shrinking argument before any
+  argument that grows (put a walked list first, before an index). Nat.sub
+  only reduces with both arguments constructors (keep sub0/sub_succ/
+  add_sub/sub_add_le helpers). Inline rewrites in tuple components work
+  when the tuple's type is known. When a Pi hypothesis would be needed
+  several times, find Data that implies it at each use (InvB, mdrop).
 - Bend lessons (C2): a def whose match has a variable pattern in one
   column does not reduce on an abstract value there even when other
   columns are concrete (split that column into constructors in the
