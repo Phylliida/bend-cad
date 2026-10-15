@@ -460,6 +460,19 @@ def invb_low(~F: O.OField, ~a: M.Mat(~F), ~n: Nat, ~c: O.C(F), ~lb: @u: M.Vec(~F
         case (hinv, hz):
           invb_low.fin(~F, ~a, ~n, ~c, ~lb, hc, ha, z, hinv, hz)
 
+# |u| <= c |A u| makes A injective
+def inj_low(~F: O.OField, ~a: M.Mat(~F), ~n: Nat, ~c: O.C(F), ~lb: @u: M.Vec(~F) -> {M.len(~F, u) == n : Nat} -> O.le(~F, vn(~F, u), O.mul(F, c, vn(~F, M.matvec(~F, a, u)))), +hc: O.le(~F, O.zero(F), c), +w: M.Vec(~F), +lw: {M.len(~F, w) == n : Nat}, e: {M.matvec(~F, a, w) == GJ.zeros(~F, n) : M.Vec(~F)}) -> {w == GJ.zeros(~F, n) : M.Vec(~F)}:
+  %lw : {w == GJ.zeros(~F, _) : M.Vec(~F)}
+  vzero(~F, w, FM.vall_mono(~F, w, vn(~F, w), O.zero(F), FV.vmax_all(~F, w), FM.sub_nonneg(~F, vn(~F, w), O.zero(F), DM.le_trans(~F, vn(~F, w), O.mul(F, c, vn(~F, GJ.zeros(~F, n))), O.zero(F),
+    (%e : O.le(~F, vn(~F, w), O.mul(F, c, vn(~F, _)))
+      lb(w, lw)),
+    FV.sle0(~F, c, vn(~F, GJ.zeros(~F, n)), hc, vn_z(~F, n))))))
+
+# a square A (n rows of n entries) with |u| <= c |A u| has an inverse of
+# norm at most c
+def invb_of_low(~F: O.OField, ~a: M.Mat(~F), ~n: Nat, ~c: O.C(F), ~lb: @u: M.Vec(~F) -> {M.len(~F, u) == n : Nat} -> O.le(~F, vn(~F, u), O.mul(F, c, vn(~F, M.matvec(~F, a, u)))), +hc: O.le(~F, O.zero(F), c), +ha: {GJ.nrows(~F, a) == n : Nat}, hw: GJ.All(~(i => GJ.roww(~F, a, n, i)), n)) -> InvB(~F, a, n, c):
+  invb_low(~F, ~a, ~n, ~c, ~lb, hc, ha, GJ.inv_of_inj(~F, a, n, ha, hw, w => lw => e => inj_low(~F, ~a, ~n, ~c, ~lb, hc, w, lw, e)))
+
 # Perturbation: J has an inverse of norm <= b and |J' - J| <= d with
 # 2 b d <= 1: J' has an inverse of norm <= 2b
 def pert(~F: O.OField, +j: M.Mat(~F), +j2: M.Mat(~F), +n: Nat, +b: O.C(F), +d: O.C(F), +h: InvB(~F, j, n, b), +hj: {GJ.nrows(~F, j) == n : Nat}, +hj2: {GJ.nrows(~F, j2) == n : Nat}, hw2: GJ.All(~(i => GJ.roww(~F, j2, n, i)), n), +hd: O.le(~F, mnorm(~F, M.madd(~F, j2, M.mneg(~F, j)), n), d), +hbd: O.le(~F, O.add(F, O.mul(F, b, d), O.mul(F, b, d)), O.one(F))) -> InvB(~F, j2, n, O.add(F, b, b)):

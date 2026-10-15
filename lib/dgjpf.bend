@@ -845,3 +845,105 @@ def piv_low(~F: O.OField, +z: O.C(F), +s: O.C(F), +q: O.C(F), +pi: O.C(F), +gg: 
   FM.bnd_mono(~F, z, FV.fabs(~F, z), O.mul(F, O.add(F, gg, gg), y), FV.fabs_bnd(~F, z), FM.sub_nonneg(~F, FV.fabs(~F, z), O.mul(F, O.add(F, gg, gg), y),
     FV.le_of_sub(~F, FV.fabs(~F, z), O.mul(F, O.add(F, gg, gg), y), FM.nn_eq(~F, O.sub(~F, O.mul(F, O.add(F, gg, gg), y), FV.fabs(~F, z)), O.add(F, O.add(F, O.sub(~F, O.mul(F, gg, O.add(F, y, O.mul(F, O.mul(F, FV.fabs(~F, q), u), FV.fabs(~F, z)))), FV.fabs(~F, z)), O.sub(~F, O.mul(F, gg, O.add(F, y, O.mul(F, O.mul(F, FV.fabs(~F, q), u), FV.fabs(~F, z)))), FV.fabs(~F, z))), O.mul(F, FV.fabs(~F, z), O.sub(~F, O.one(F), O.add(F, O.mul(F, gg, O.mul(F, FV.fabs(~F, q), u)), O.mul(F, gg, O.mul(F, FV.fabs(~F, q), u)))))), FR.fring_eq(~F, [z, s, q, pi, gg, u, y, FV.fabs(~F, z), FV.fabs(~F, q)], E.ZAdd{E.ZAdd{E.ZSub{E.ZMul{E.ZVar{4n}, E.ZAdd{E.ZVar{6n}, E.ZMul{E.ZMul{E.ZVar{8n}, E.ZVar{5n}}, E.ZVar{7n}}}}, E.ZVar{7n}}, E.ZSub{E.ZMul{E.ZVar{4n}, E.ZAdd{E.ZVar{6n}, E.ZMul{E.ZMul{E.ZVar{8n}, E.ZVar{5n}}, E.ZVar{7n}}}}, E.ZVar{7n}}}, E.ZMul{E.ZVar{7n}, E.ZSub{E.ZCst{S.Zpos{S.XH{}}}, E.ZAdd{E.ZMul{E.ZVar{4n}, E.ZMul{E.ZVar{8n}, E.ZVar{5n}}}, E.ZMul{E.ZVar{4n}, E.ZMul{E.ZVar{8n}, E.ZVar{5n}}}}}}}, E.ZSub{E.ZMul{E.ZAdd{E.ZVar{4n}, E.ZVar{4n}}, E.ZVar{6n}}, E.ZVar{7n}}, {==}),
       FO.nonneg_add(~F, O.add(F, O.sub(~F, O.mul(F, gg, O.add(F, y, O.mul(F, O.mul(F, FV.fabs(~F, q), u), FV.fabs(~F, z)))), FV.fabs(~F, z)), O.sub(~F, O.mul(F, gg, O.add(F, y, O.mul(F, O.mul(F, FV.fabs(~F, q), u), FV.fabs(~F, z)))), FV.fabs(~F, z))), O.mul(F, FV.fabs(~F, z), O.sub(~F, O.one(F), O.add(F, O.mul(F, gg, O.mul(F, FV.fabs(~F, q), u)), O.mul(F, gg, O.mul(F, FV.fabs(~F, q), u))))), FO.nonneg_add(~F, O.sub(~F, O.mul(F, gg, O.add(F, y, O.mul(F, O.mul(F, FV.fabs(~F, q), u), FV.fabs(~F, z)))), FV.fabs(~F, z)), O.sub(~F, O.mul(F, gg, O.add(F, y, O.mul(F, O.mul(F, FV.fabs(~F, q), u), FV.fabs(~F, z)))), FV.fabs(~F, z)), s1, s1), FO.mul_nonneg(~F, FV.fabs(~F, z), O.sub(~F, O.one(F), O.add(F, O.mul(F, gg, O.mul(F, FV.fabs(~F, q), u)), O.mul(F, gg, O.mul(F, FV.fabs(~F, q), u)))), FV.fabs_nn(~F, z), s3))))))
+
+# the right parts of a matrix's rows
+def rmat(~F: O.OField, +n: Nat, a: M.Mat(~F)) -> M.Mat(~F):
+  match a:
+    case Nil{}:
+      Nil{}
+    case Con{r, t}:
+      Con{GJ.vdrop(~F, n, r), rmat(~F, n, t)}
+
+def vdrop_nil(~F: O.OField, n: Nat) -> {Nil{} == GJ.vdrop(~F, n, Nil{}) : M.Vec(~F)}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+j:
+      {==}
+
+def mrow_rmat(~F: O.OField, +n: Nat, a: M.Mat(~F), k: Nat) -> {DV.mrow(~F, rmat(~F, n, a), k) == GJ.vdrop(~F, n, DV.mrow(~F, a, k)) : M.Vec(~F)}:
+  match a k:
+    case Nil{} k:
+      vdrop_nil(~F, n)
+    case Con{r, t} 0n:
+      {==}
+    case Con{r, t} 1n+j:
+      mrow_rmat(~F, n, t, j)
+
+def nrows_rmat(~F: O.OField, +n: Nat, a: M.Mat(~F)) -> {GJ.nrows(~F, rmat(~F, n, a)) == GJ.nrows(~F, a) : Nat}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{r, t}:
+      %Equal.sym(Nat, GJ.nrows(~F, rmat(~F, n, t)), GJ.nrows(~F, t), nrows_rmat(~F, n, t)) : {1n+_ == 1n+GJ.nrows(~F, t) : Nat}
+      {==}
+
+# entry k of R u reads row k's right part against u
+def look_rmv(~F: O.OField, +n: Nat, +a: M.Mat(~F), +u: M.Vec(~F), +k: Nat) -> {O.lookup(~F, M.matvec(~F, rmat(~F, n, a), u), k) == zr(~F, n, DV.mrow(~F, a, k), u) : O.C(F)}:
+  %mrow_rmat(~F, n, a, k) : {O.lookup(~F, M.matvec(~F, rmat(~F, n, a), u), k) == M.dot(~F, _, u) : O.C(F)}
+  GJ.look_matvec(~F, rmat(~F, n, a), u, k)
+
+def len_rmv(~F: O.OField, +n: Nat, +a: M.Mat(~F), +u: M.Vec(~F)) -> {M.len(~F, M.matvec(~F, rmat(~F, n, a), u)) == GJ.nrows(~F, a) : Nat}:
+  Equal.trans(Nat, M.len(~F, M.matvec(~F, rmat(~F, n, a), u)), GJ.nrows(~F, rmat(~F, n, a)), GJ.nrows(~F, a), Equal.sym(Nat, GJ.nrows(~F, rmat(~F, n, a)), M.len(~F, M.matvec(~F, rmat(~F, n, a), u)), GJ.len_matvec(~F, rmat(~F, n, a), u)), nrows_rmat(~F, n, a))
+
+def len_vdrop(~F: O.OField, k: Nat, x: M.Vec(~F), +m: Nat, h: {M.len(~F, x) == Nat.add(k, m) : Nat}) -> {M.len(~F, GJ.vdrop(~F, k, x)) == m : Nat}:
+  match k x:
+    case 0n x:
+      h
+    case 1n+j Nil{}:
+      FO.absurd({0n == m : Nat}, GJ.zero_ne(Nat.add(j, m), h))
+    case 1n++j Con{a, +xs}:
+      len_vdrop(~F, j, xs, m, GJ.succ_inj(M.len(~F, xs), Nat.add(j, m), h))
+
+# the rows of R have n entries
+def rw_all(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +s: M.Mat(~F), +c: Nat, +gg: O.C(F), +dd: O.C(F), +ph: O.C(F), +h: rinv(~F, n, jm, s, 0n, c, gg, dd, ph), +hn: {GJ.nrows(~F, s) == n : Nat}) -> GJ.All(~(i => GJ.roww(~F, rmat(~F, n, s), n, i)), n):
+  GJ.all_mk(~n, ~(i => GJ.roww(~F, rmat(~F, n, s), n, i)), ~(i => hi =>
+    (%Equal.sym(M.Vec(~F), DV.mrow(~F, rmat(~F, n, s), i), GJ.vdrop(~F, n, DV.mrow(~F, s, i)), mrow_rmat(~F, n, s, i)) : {M.len(~F, _) == n : Nat}
+      len_vdrop(~F, n, DV.mrow(~F, s, i), n, ri_len(~F, n, jm, DV.mrow(~F, s, i), Nat.add(i, 0n), c, gg, dd, ph, ri_at(~F, n, jm, s, 0n, c, gg, dd, ph, i, h, (%Equal.sym(Nat, GJ.nrows(~F, s), n, hn) : {KA.natle(1n+i, _) == True{} : Bool} hi)))))), n, GJ.le_refl(n))
+
+# row k of the cleared rows is the pivot row (k = c) or row k less a
+# multiple of it
+def drow_dclear(~F: O.OField, rows: List<&2, List<&2, S.D>>, +w: Nat, +p: List<&2, S.D>, +c: Nat, +i: Nat, k: Nat, hk: {KA.natle(1n+k, GJ.nrows(~F, M.ofdm(~F, rows))) == True{} : Bool}) -> {NU.drow(NU.dclear(rows, w, p, c, i), k) == NU.dclear.go(KA.nateq(Nat.add(k, i), c), w, NU.drow(rows, k), p, c) : List<&2, S.D>}:
+  match rows k:
+    case Nil{} 0n:
+      FO.absurd({NU.drow(Nil{}, 0n) == NU.dclear.go(KA.nateq(i, c), w, NU.drow(Nil{}, 0n), p, c) : List<&2, S.D>}, KA.ft(hk))
+    case Nil{} 1n++j:
+      FO.absurd({NU.drow(Nil{}, 1n+j) == NU.dclear.go(KA.nateq(1n+Nat.add(j, i), c), w, NU.drow(Nil{}, 1n+j), p, c) : List<&2, S.D>}, KA.ft(hk))
+    case Con{r, t} 0n:
+      {==}
+    case Con{r, t} 1n++j:
+      %Equal.sym(Nat, 1n+Nat.add(j, i), Nat.add(j, 1n+i), LN.add_succ(j, i)) : {NU.drow(NU.dclear(t, w, p, c, 1n+i), j) == NU.dclear.go(KA.nateq(_, c), w, NU.drow(t, j), p, c) : List<&2, S.D>}
+      drow_dclear(~F, t, w, p, c, 1n+i, j, hk)
+
+# row k's invariant, read from the rows' invariant
+def row_at(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +rows: List<&2, List<&2, S.D>>, +c: Nat, +gg: O.C(F), +dd: O.C(F), +ph: O.C(F), +k: Nat, +hs: rinv(~F, n, jm, M.ofdm(~F, rows), 0n, c, gg, dd, ph), +hk: {KA.natle(1n+k, GJ.nrows(~F, M.ofdm(~F, rows))) == True{} : Bool}) -> rowinv(~F, n, jm, M.ofdv(~F, NU.drow(rows, k)), k, c, gg, dd, ph):
+  (%Equal.sym(M.Vec(~F), M.ofdv(~F, NU.drow(rows, k)), DV.mrow(~F, M.ofdm(~F, rows), k), drow_ofd(~F, rows, k)) : rowinv(~F, n, jm, _, k, c, gg, dd, ph)
+    (%Equal.sym(Nat, k, Nat.add(k, 0n), LN.add_zero(k)) : rowinv(~F, n, jm, DV.mrow(~F, M.ofdm(~F, rows), k), _, c, gg, dd, ph)
+      ri_at(~F, n, jm, M.ofdm(~F, rows), 0n, c, gg, dd, ph, k, hs, hk)))
+
+# a per-index bound below the length
+def vall_lt(~F: O.OField, ~v: M.Vec(~F), ~t: O.C(F), ~f: @k: Nat -> {KA.natle(1n+k, M.len(~F, v)) == True{} : Bool} -> M.bnd(~F, O.lookup(~F, v, k), t)) -> M.vbnd.all(~F, v, t):
+  vall_of_all(~F, v, t, GJ.all_mk(~M.len(~F, v), ~(k => M.bnd(~F, O.lookup(~F, v, k), t)), ~f, M.len(~F, v), GJ.le_refl(M.len(~F, v))))
+
+# |R u|: the size of rows2's right parts read against u
+def yv(~F: O.OField, +n: Nat, +rows2: List<&2, List<&2, S.D>>, +u: M.Vec(~F)) -> O.C(F):
+  NP.vn(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, rows2)), u))
+
+def zat(~F: O.OField, +n: Nat, +rows2: List<&2, List<&2, S.D>>, +u: M.Vec(~F), +k: Nat) -> {O.lookup(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, rows2)), u), k) == zr(~F, n, M.ofdv(~F, NU.drow(rows2, k)), u) : O.C(F)}:
+  %Equal.sym(M.Vec(~F), M.ofdv(~F, NU.drow(rows2, k)), DV.mrow(~F, M.ofdm(~F, rows2), k), drow_ofd(~F, rows2, k)) : {O.lookup(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, rows2)), u), k) == zr(~F, n, _, u) : O.C(F)}
+  look_rmv(~F, n, M.ofdm(~F, rows2), u, k)
+
+def yat(~F: O.OField, +n: Nat, +rows2: List<&2, List<&2, S.D>>, +u: M.Vec(~F), +k: Nat) -> M.bnd(~F, zr(~F, n, M.ofdv(~F, NU.drow(rows2, k)), u), yv(~F, n, rows2, u)):
+  %zat(~F, n, rows2, u, k) : M.bnd(~F, _, yv(~F, n, rows2, u))
+  look_bnd(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, rows2)), u), k, yv(~F, n, rows2, u), FV.vmax_all(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, rows2)), u)), FV.vmax_nn(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, rows2)), u)))
+
+# the cleared row k against the new |R' u|
+def ynew(~F: O.OField, +n: Nat, +tr: List<&2, List<&2, S.D>>, +w: Nat, +p: List<&2, S.D>, +c: Nat, +u: M.Vec(~F), +k: Nat, +hk: {KA.natle(1n+k, GJ.nrows(~F, M.ofdm(~F, tr))) == True{} : Bool}) -> M.bnd(~F, zr(~F, n, M.ofdv(~F, NU.dclear.go(KA.nateq(k, c), w, NU.drow(tr, k), p, c)), u), yv(~F, n, NU.dclear(tr, w, p, c, 0n), u)):
+  %Equal.sym(Nat, k, Nat.add(k, 0n), LN.add_zero(k)) : M.bnd(~F, zr(~F, n, M.ofdv(~F, NU.dclear.go(KA.nateq(_, c), w, NU.drow(tr, k), p, c)), u), yv(~F, n, NU.dclear(tr, w, p, c, 0n), u))
+  %drow_dclear(~F, tr, w, p, c, 0n, k, hk) : M.bnd(~F, zr(~F, n, M.ofdv(~F, _), u), yv(~F, n, NU.dclear(tr, w, p, c, 0n), u))
+  yat(~F, n, NU.dclear(tr, w, p, c, 0n), u, k)
+
+# the new pivot row against |R' u|
+def ypiv(~F: O.OField, +n: Nat, +tr: List<&2, List<&2, S.D>>, +w: Nat, +p: List<&2, S.D>, +c: Nat, +u: M.Vec(~F), +hc: {KA.natle(1n+c, GJ.nrows(~F, M.ofdm(~F, tr))) == True{} : Bool}) -> M.bnd(~F, zr(~F, n, M.ofdv(~F, p), u), yv(~F, n, NU.dclear(tr, w, p, c, 0n), u)):
+  %GJ.nateq_refl(c) : M.bnd(~F, zr(~F, n, M.ofdv(~F, NU.dclear.go(_, w, NU.drow(tr, c), p, c)), u), yv(~F, n, NU.dclear(tr, w, p, c, 0n), u))
+  ynew(~F, n, tr, w, p, c, u, c, hc)
