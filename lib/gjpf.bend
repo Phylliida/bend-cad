@@ -1959,3 +1959,386 @@ def inv_of_gjr(~F: O.OField, +a: M.Mat(~F), +n: Nat, +hA: {nrows(~F, a) == n : N
 # injective square matrices are invertible
 def inv_of_inj(~F: O.OField, +a: M.Mat(~F), +n: Nat, +hA: {nrows(~F, a) == n : Nat}, hw: All(~(j => roww(~F, a, n, j)), n), inj: @w: M.Vec(~F) -> {M.len(~F, w) == n : Nat} -> {M.matvec(~F, a, w) == zeros(~F, n) : M.Vec(~F)} -> {w == zeros(~F, n) : M.Vec(~F)}) -> InvN(~F, a, n):
   inv_of_gjr(~F, a, n, hA, gj_thm(~F, a, n, hA, hw), inj)
+
+# Using an Inverse on vectors
+# ---------------------------
+
+def dot_nil(~F: O.OField, r: M.Vec(~F)) -> {O.zero(F) == M.dot(~F, r, Nil{}) : O.C(F)}:
+  match r:
+    case Nil{}:
+      {==}
+    case Con{a, t}:
+      {==}
+
+def dot_cons(~F: O.OField, r: M.Vec(~F), +y: O.C(F), +ws: M.Vec(~F)) -> {O.add(F, O.mul(F, vhd(~F, r), y), M.dot(~F, vtl(~F, r), ws)) == M.dot(~F, r, Con{y, ws}) : O.C(F)}:
+  match r:
+    case Nil{}:
+      %Equal.sym(O.C(F), O.zero(F), M.dot(~F, Nil{}, ws), dot_nil(~F, Nil{})) : {O.add(F, O.mul(F, O.zero(F), y), _) == O.zero(F) : O.C(F)}
+      FR.fring_eq(~F, [y], E.ZAdd{E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{0n}}, E.ZCst{S.Z0{}}}, E.ZCst{S.Z0{}}, {==})
+    case Con{a, t}:
+      {==}
+
+def ve_vtl1(~F: O.OField, +r: M.Vec(~F), +s: M.Vec(~F), +j: Nat, e: {O.lookup(~F, r, 1n+j) == O.lookup(~F, s, 1n+j) : O.C(F)}) -> {O.lookup(~F, vtl(~F, r), j) == O.lookup(~F, vtl(~F, s), j) : O.C(F)}:
+  %Equal.sym(O.C(F), O.lookup(~F, vtl(~F, r), j), O.lookup(~F, r, 1n+j), look_vtl(~F, r, j)) : {_ == O.lookup(~F, vtl(~F, s), j) : O.C(F)}
+  %Equal.sym(O.C(F), O.lookup(~F, vtl(~F, s), j), O.lookup(~F, s, 1n+j), look_vtl(~F, s, j)) : {O.lookup(~F, r, 1n+j) == _ : O.C(F)}
+  e
+
+# agreement below 1 + k moves to the tails
+def ve_vtl(~F: O.OField, +r: M.Vec(~F), +s: M.Vec(~F), k: Nat, h: VE(~F, r, s, 1n+k)) -> VE(~F, vtl(~F, r), vtl(~F, s), k):
+  match k:
+    case 0n:
+      Unit{}
+    case 1n++j:
+      match h:
+        case (h1, e):
+          (ve_vtl(~F, r, s, j, h1), ve_vtl1(~F, r, s, j, e))
+
+def ve_hd(~F: O.OField, +r: M.Vec(~F), +s: M.Vec(~F), +k: Nat, h: VE(~F, r, s, 1n+k)) -> {vhd(~F, r) == vhd(~F, s) : O.C(F)}:
+  %Equal.sym(O.C(F), vhd(~F, r), O.lookup(~F, r, 0n), look0_vhd(~F, r)) : {_ == vhd(~F, s) : O.C(F)}
+  %Equal.sym(O.C(F), vhd(~F, s), O.lookup(~F, s, 0n), look0_vhd(~F, s)) : {O.lookup(~F, r, 0n) == _ : O.C(F)}
+  ve_head(~F, r, s, k, h)
+
+# rows agreeing below n have the same product with a vector of length n
+def dot_ve(~F: O.OField, w: M.Vec(~F), n: Nat, +r: M.Vec(~F), +s: M.Vec(~F), +h: VE(~F, r, s, n), lw: {M.len(~F, w) == n : Nat}) -> {M.dot(~F, r, w) == M.dot(~F, s, w) : O.C(F)}:
+  match w n:
+    case Nil{} n:
+      Equal.trans(O.C(F), M.dot(~F, r, Nil{}), O.zero(F), M.dot(~F, s, Nil{}), Equal.sym(O.C(F), O.zero(F), M.dot(~F, r, Nil{}), dot_nil(~F, r)), dot_nil(~F, s))
+    case Con{+y, +ws} 0n:
+      absurd({M.dot(~F, r, Con{y, ws}) == M.dot(~F, s, Con{y, ws}) : O.C(F)}, zero_ne(M.len(~F, ws), Equal.sym(Nat, 1n+M.len(~F, ws), 0n, lw)))
+    case Con{+y, +ws} 1n++k:
+      %dot_cons(~F, r, y, ws) : {_ == M.dot(~F, s, Con{y, ws}) : O.C(F)}
+      %dot_cons(~F, s, y, ws) : {O.add(F, O.mul(F, vhd(~F, r), y), M.dot(~F, vtl(~F, r), ws)) == _ : O.C(F)}
+      %ve_hd(~F, r, s, k, h) : {O.add(F, O.mul(F, vhd(~F, r), y), M.dot(~F, vtl(~F, r), ws)) == O.add(F, O.mul(F, _, y), M.dot(~F, vtl(~F, s), ws)) : O.C(F)}
+      %dot_ve(~F, ws, k, vtl(~F, r), vtl(~F, s), ve_vtl(~F, r, s, k, h), succ_inj(M.len(~F, ws), k, lw)) : {O.add(F, O.mul(F, vhd(~F, r), y), M.dot(~F, vtl(~F, r), ws)) == O.add(F, O.mul(F, vhd(~F, r), y), _) : O.C(F)}
+      {==}
+
+def dl_sym(~F: O.OField, +i: Nat, +j: Nat) -> {dl(~F, KA.nateq(i, j)) == dl(~F, KA.nateq(j, i)) : O.C(F)}:
+  %nateq_sym(i, j) : {dl(~F, KA.nateq(i, j)) == dl(~F, _) : O.C(F)}
+  {==}
+
+# a matrix agreeing with I below n acts as I at each entry below n
+def meq_e2(~F: O.OField, +x: M.Mat(~F), +n: Nat, +h: DV.MEq(~F, x, M.ident(~F, n), n, 0n, n), +i: Nat, +j: Nat, +hi: {KA.natle(1n+i, n) == True{} : Bool}, +hj: {KA.natle(1n+j, n) == True{} : Bool}) -> {O.lookup(~F, DV.mrow(~F, x, i), j) == O.lookup(~F, unit(~F, n, i), j) : O.C(F)}:
+  Equal.trans(O.C(F), DV.ment(~F, x, i, j), DV.ment(~F, M.ident(~F, n), i, j), O.lookup(~F, unit(~F, n, i), j), meq_at(~F, x, M.ident(~F, n), n, 0n, n, h, i, j, {==}, hi, hj), Equal.trans(O.C(F), DV.ment(~F, M.ident(~F, n), i, j), dl(~F, KA.nateq(i, j)), O.lookup(~F, unit(~F, n, i), j), Equal.sym(O.C(F), dl(~F, KA.nateq(i, j)), DV.ment(~F, M.ident(~F, n), i, j), ment_ident(~F, n, i, j, hi)), Equal.trans(O.C(F), dl(~F, KA.nateq(i, j)), dl(~F, KA.nateq(j, i)), O.lookup(~F, unit(~F, n, i), j), dl_sym(~F, i, j), look_unit(~F, n, i, j, hj))))
+
+def meq_look(~F: O.OField, +x: M.Mat(~F), +n: Nat, +h: DV.MEq(~F, x, M.ident(~F, n), n, 0n, n), +w: M.Vec(~F), +lw: {M.len(~F, w) == n : Nat}, +i: Nat, +hi: {KA.natle(1n+i, n) == True{} : Bool}) -> {O.lookup(~F, M.matvec(~F, x, w), i) == O.lookup(~F, w, i) : O.C(F)}:
+  %Equal.sym(O.C(F), O.lookup(~F, M.matvec(~F, x, w), i), M.dot(~F, DV.mrow(~F, x, i), w), look_matvec(~F, x, w, i)) : {_ == O.lookup(~F, w, i) : O.C(F)}
+  %Equal.sym(O.C(F), M.dot(~F, DV.mrow(~F, x, i), w), M.dot(~F, unit(~F, n, i), w), dot_ve(~F, w, n, DV.mrow(~F, x, i), unit(~F, n, i), ve_mk(~F, ~n, ~DV.mrow(~F, x, i), ~unit(~F, n, i), ~(j => hj => meq_e2(~F, x, n, h, i, j, hi, hj)), n, le_refl(n)), lw)) : {_ == O.lookup(~F, w, i) : O.C(F)}
+  Equal.sym(O.C(F), O.lookup(~F, w, i), M.dot(~F, unit(~F, n, i), w), dot_unit(~F, n, i, w, (%Equal.sym(Nat, M.len(~F, w), n, lw) : {KA.natle(_, n) == True{} : Bool}
+    le_refl(n))))
+
+def nrows_matmul(~F: O.OField, a: M.Mat(~F), +b: M.Mat(~F)) -> {nrows(~F, a) == nrows(~F, M.matmul(~F, a, b)) : Nat}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{r, t}:
+      %nrows_matmul(~F, t, b) : {1n+nrows(~F, t) == 1n+_ : Nat}
+      {==}
+
+def meq_id(~F: O.OField, +x: M.Mat(~F), +n: Nat, +h: DV.MEq(~F, x, M.ident(~F, n), n, 0n, n), hx: {nrows(~F, x) == n : Nat}, +w: M.Vec(~F), +lw: {M.len(~F, w) == n : Nat}) -> {M.matvec(~F, x, w) == w : M.Vec(~F)}:
+  veq_ext(~F, M.matvec(~F, x, w), w, n, ve_mk(~F, ~n, ~M.matvec(~F, x, w), ~w, ~(i => hi => meq_look(~F, x, n, h, w, lw, i, hi)), n, le_refl(n)), len_mv(~F, x, n, w, hx), lw)
+
+# Z (A w) = w and A (Z w) = w
+def inv_l(~F: O.OField, +a: M.Mat(~F), +z: M.Mat(~F), +n: Nat, hinv: DV.Inverse(~F, a, z, n), hz: {nrows(~F, z) == n : Nat}, +w: M.Vec(~F), +lw: {M.len(~F, w) == n : Nat}) -> {M.matvec(~F, z, M.matvec(~F, a, w)) == w : M.Vec(~F)}:
+  match hinv:
+    case (h1, h2):
+      %Equal.sym(M.Vec(~F), M.matvec(~F, z, M.matvec(~F, a, w)), M.matvec(~F, M.matmul(~F, z, a), w), FM.mat_assoc(~F, z, a, w)) : {_ == w : M.Vec(~F)}
+      meq_id(~F, M.matmul(~F, z, a), n, h2, Equal.trans(Nat, nrows(~F, M.matmul(~F, z, a)), nrows(~F, z), n, Equal.sym(Nat, nrows(~F, z), nrows(~F, M.matmul(~F, z, a)), nrows_matmul(~F, z, a)), hz), w, lw)
+
+def inv_r(~F: O.OField, +a: M.Mat(~F), +z: M.Mat(~F), +n: Nat, hinv: DV.Inverse(~F, a, z, n), hA: {nrows(~F, a) == n : Nat}, +w: M.Vec(~F), +lw: {M.len(~F, w) == n : Nat}) -> {M.matvec(~F, a, M.matvec(~F, z, w)) == w : M.Vec(~F)}:
+  match hinv:
+    case (h1, h2):
+      %Equal.sym(M.Vec(~F), M.matvec(~F, a, M.matvec(~F, z, w)), M.matvec(~F, M.matmul(~F, a, z), w), FM.mat_assoc(~F, a, z, w)) : {_ == w : M.Vec(~F)}
+      meq_id(~F, M.matmul(~F, a, z), n, h1, Equal.trans(Nat, nrows(~F, M.matmul(~F, a, z)), nrows(~F, a), n, Equal.sym(Nat, nrows(~F, a), nrows(~F, M.matmul(~F, a, z)), nrows_matmul(~F, a, z)), hA), w, lw)
+
+def matvec_zeros(~F: O.OField, w: M.Mat(~F), +k: Nat) -> {zeros(~F, nrows(~F, w)) == M.matvec(~F, w, zeros(~F, k)) : M.Vec(~F)}:
+  match w:
+    case Nil{}:
+      {==}
+    case Con{+r, t}:
+      %dot_zeros_r(~F, r, k) : {Con{O.zero(F), zeros(~F, nrows(~F, t))} == Con{_, M.matvec(~F, t, zeros(~F, k))} : M.Vec(~F)}
+      %matvec_zeros(~F, t, k) : {Con{O.zero(F), zeros(~F, nrows(~F, t))} == Con{O.zero(F), _} : M.Vec(~F)}
+      {==}
+
+# a left inverse, of any shape, makes A injective
+def inj_ent(~F: O.OField, +a: M.Mat(~F), +z: M.Mat(~F), +n: Nat, +h: DV.MEq(~F, M.matmul(~F, z, a), M.ident(~F, n), n, 0n, n), +v: M.Vec(~F), +lv: {M.len(~F, v) == n : Nat}, +e: {M.matvec(~F, a, v) == zeros(~F, n) : M.Vec(~F)}, +i: Nat, +hi: {KA.natle(1n+i, n) == True{} : Bool}) -> {O.lookup(~F, v, i) == O.lookup(~F, zeros(~F, n), i) : O.C(F)}:
+  %meq_look(~F, M.matmul(~F, z, a), n, h, v, lv, i, hi) : {_ == O.lookup(~F, zeros(~F, n), i) : O.C(F)}
+  %FM.mat_assoc(~F, z, a, v) : {O.lookup(~F, _, i) == O.lookup(~F, zeros(~F, n), i) : O.C(F)}
+  %Equal.sym(M.Vec(~F), M.matvec(~F, a, v), zeros(~F, n), e) : {O.lookup(~F, M.matvec(~F, z, _), i) == O.lookup(~F, zeros(~F, n), i) : O.C(F)}
+  %matvec_zeros(~F, z, n) : {O.lookup(~F, _, i) == O.lookup(~F, zeros(~F, n), i) : O.C(F)}
+  %look_zeros(~F, nrows(~F, z), i) : {_ == O.lookup(~F, zeros(~F, n), i) : O.C(F)}
+  look_zeros(~F, n, i)
+
+def inj_of_left(~F: O.OField, +a: M.Mat(~F), +z: M.Mat(~F), +n: Nat, +h: DV.MEq(~F, M.matmul(~F, z, a), M.ident(~F, n), n, 0n, n), +v: M.Vec(~F), +lv: {M.len(~F, v) == n : Nat}, +e: {M.matvec(~F, a, v) == zeros(~F, n) : M.Vec(~F)}) -> {v == zeros(~F, n) : M.Vec(~F)}:
+  veq_ext(~F, v, zeros(~F, n), n, ve_mk(~F, ~n, ~v, ~zeros(~F, n), ~(i => hi => inj_ent(~F, a, z, n, h, v, lv, e, i, hi)), n, le_refl(n)), lv, Equal.sym(Nat, n, M.len(~F, zeros(~F, n)), len_zeros(~F, n)))
+
+# Regular's kind of inverse (any shape) gives an inverse with n rows
+def invn_of_inverse(~F: O.OField, +a: M.Mat(~F), +z: M.Mat(~F), +n: Nat, +hA: {nrows(~F, a) == n : Nat}, hw: All(~(j => roww(~F, a, n, j)), n), hinv: DV.Inverse(~F, a, z, n)) -> InvN(~F, a, n):
+  match hinv:
+    case (h1, +h2):
+      inv_of_inj(~F, a, n, hA, hw, v => lv => e => inj_of_left(~F, a, z, n, h2, v, lv, e))
+
+# Block triangular matrices
+# -------------------------
+# If [[A, 0], [C, D]] is invertible, so are D (a kernel vector v of D gives
+# (0, v) for the whole) and A (a kernel vector v of A gives (v, -D^-1 C v)).
+
+# the rows of p beside the rows of q
+def hcat(~F: O.OField, p: M.Mat(~F), q: M.Mat(~F)) -> M.Mat(~F):
+  match p q:
+    case Nil{} q:
+      Nil{}
+    case Con{r, rs} Nil{}:
+      Nil{}
+    case Con{r, rs} Con{s, ss}:
+      Con{vapp(~F, r, s), hcat(~F, rs, ss)}
+
+# the rows of t above the rows of b
+def vcat(~F: O.OField, t: M.Mat(~F), +b: M.Mat(~F)) -> M.Mat(~F):
+  match t:
+    case Nil{}:
+      b
+    case Con{r, rs}:
+      Con{r, vcat(~F, rs, b)}
+
+def zmat(~F: O.OField, r: Nat, +c: Nat) -> M.Mat(~F):
+  match r:
+    case 0n:
+      Nil{}
+    case 1n+k:
+      Con{zeros(~F, c), zmat(~F, k, c)}
+
+# every row of a has n entries
+def rl(~F: O.OField, a: M.Mat(~F), +n: Nat) -> Data:
+  match a:
+    case Nil{}:
+      Unit
+    case Con{r, t}:
+      M.Both({M.len(~F, r) == n : Nat}, rl(~F, t, n))
+
+def rl_hd(~F: O.OField, +r: M.Vec(~F), +t: M.Mat(~F), +n: Nat, h: rl(~F, Con{r, t}, n)) -> {M.len(~F, r) == n : Nat}:
+  match h:
+    case (h1, h2):
+      h1
+
+def rl_tl(~F: O.OField, +r: M.Vec(~F), +t: M.Mat(~F), +n: Nat, h: rl(~F, Con{r, t}, n)) -> rl(~F, t, n):
+  match h:
+    case (h1, h2):
+      h2
+
+def rl_at(~F: O.OField, a: M.Mat(~F), +n: Nat, h: rl(~F, a, n), i: Nat, hi: {KA.natle(1n+i, nrows(~F, a)) == True{} : Bool}) -> roww(~F, a, n, i):
+  match a i:
+    case Nil{} i:
+      absurd(roww(~F, Nil{}, n, i), ft(hi))
+    case Con{+r, +t} 0n:
+      rl_hd(~F, r, t, n, h)
+    case Con{+r, +t} 1n+k:
+      rl_at(~F, t, n, rl_tl(~F, r, t, n, h), k, hi)
+
+def rl_all(~F: O.OField, +a: M.Mat(~F), +n: Nat, +hn: {nrows(~F, a) == n : Nat}, +h: rl(~F, a, n)) -> All(~(j => roww(~F, a, n, j)), n):
+  all_mk(~n, ~(j => roww(~F, a, n, j)), ~(j => hj => rl_at(~F, a, n, h, j, lt_n(~F, a, n, j, hn, hj))), n, le_refl(n))
+
+def matvec_vcat(~F: O.OField, t: M.Mat(~F), +b: M.Mat(~F), +u: M.Vec(~F)) -> {vapp(~F, M.matvec(~F, t, u), M.matvec(~F, b, u)) == M.matvec(~F, vcat(~F, t, b), u) : M.Vec(~F)}:
+  match t:
+    case Nil{}:
+      {==}
+    case Con{+r, +rs}:
+      %matvec_vcat(~F, rs, b, u) : {Con{M.dot(~F, r, u), vapp(~F, M.matvec(~F, rs, u), M.matvec(~F, b, u))} == Con{M.dot(~F, r, u), _} : M.Vec(~F)}
+      {==}
+
+def dot_app2(~F: O.OField, p: M.Vec(~F), +q: M.Vec(~F), u1: M.Vec(~F), +u2: M.Vec(~F), h: {M.len(~F, p) == M.len(~F, u1) : Nat}) -> {O.add(F, M.dot(~F, p, u1), M.dot(~F, q, u2)) == M.dot(~F, vapp(~F, p, q), vapp(~F, u1, u2)) : O.C(F)}:
+  match p u1:
+    case Nil{} Nil{}:
+      FL.zero_add(~F, M.dot(~F, q, u2))
+    case Nil{} Con{y, ys}:
+      absurd({O.add(F, O.zero(F), M.dot(~F, q, u2)) == M.dot(~F, q, Con{y, vapp(~F, ys, u2)}) : O.C(F)}, zero_ne(M.len(~F, ys), h))
+    case Con{a, ps} Nil{}:
+      absurd({O.add(F, O.zero(F), M.dot(~F, q, u2)) == M.dot(~F, Con{a, vapp(~F, ps, q)}, u2) : O.C(F)}, zero_ne(M.len(~F, ps), Equal.sym(Nat, 1n+M.len(~F, ps), 0n, h)))
+    case Con{+a, +ps} Con{+y, +ys}:
+      %dot_app2(~F, ps, q, ys, u2, succ_inj(M.len(~F, ps), M.len(~F, ys), h)) : {O.add(F, O.add(F, O.mul(F, a, y), M.dot(~F, ps, ys)), M.dot(~F, q, u2)) == O.add(F, O.mul(F, a, y), _) : O.C(F)}
+      O.add_assoc(F)(O.mul(F, a, y), M.dot(~F, ps, ys), M.dot(~F, q, u2))
+
+def matvec_hcat(~F: O.OField, p: M.Mat(~F), q: M.Mat(~F), +u1: M.Vec(~F), +u2: M.Vec(~F), +n1: Nat, hp: rl(~F, p, n1), +hl: {M.len(~F, u1) == n1 : Nat}, hr: {nrows(~F, p) == nrows(~F, q) : Nat}) -> {M.vadd(~F, M.matvec(~F, p, u1), M.matvec(~F, q, u2)) == M.matvec(~F, hcat(~F, p, q), vapp(~F, u1, u2)) : M.Vec(~F)}:
+  match p q:
+    case Nil{} Nil{}:
+      {==}
+    case Nil{} Con{s, ss}:
+      absurd({M.matvec(~F, Con{s, ss}, u2) == Nil{} : M.Vec(~F)}, zero_ne(nrows(~F, ss), hr))
+    case Con{r, rs} Nil{}:
+      absurd({M.matvec(~F, Con{r, rs}, u1) == Nil{} : M.Vec(~F)}, zero_ne(nrows(~F, rs), Equal.sym(Nat, 1n+nrows(~F, rs), 0n, hr)))
+    case Con{+r, +rs} Con{+s, +ss}:
+      match hp:
+        case (h1, h2):
+          %dot_app2(~F, r, s, u1, u2, Equal.trans(Nat, M.len(~F, r), n1, M.len(~F, u1), h1, Equal.sym(Nat, M.len(~F, u1), n1, hl))) : {Con{O.add(F, M.dot(~F, r, u1), M.dot(~F, s, u2)), M.vadd(~F, M.matvec(~F, rs, u1), M.matvec(~F, ss, u2))} == Con{_, M.matvec(~F, hcat(~F, rs, ss), vapp(~F, u1, u2))} : M.Vec(~F)}
+          %matvec_hcat(~F, rs, ss, u1, u2, n1, h2, hl, succ_inj(nrows(~F, rs), nrows(~F, ss), hr)) : {Con{O.add(F, M.dot(~F, r, u1), M.dot(~F, s, u2)), M.vadd(~F, M.matvec(~F, rs, u1), M.matvec(~F, ss, u2))} == Con{O.add(F, M.dot(~F, r, u1), M.dot(~F, s, u2)), _} : M.Vec(~F)}
+          {==}
+
+def matvec_zmat(~F: O.OField, r: Nat, +c: Nat, +w: M.Vec(~F)) -> {zeros(~F, r) == M.matvec(~F, zmat(~F, r, c), w) : M.Vec(~F)}:
+  match r:
+    case 0n:
+      {==}
+    case 1n+k:
+      %dot_zeros(~F, c, w) : {Con{O.zero(F), zeros(~F, k)} == Con{_, M.matvec(~F, zmat(~F, k, c), w)} : M.Vec(~F)}
+      %matvec_zmat(~F, k, c, w) : {Con{O.zero(F), zeros(~F, k)} == Con{O.zero(F), _} : M.Vec(~F)}
+      {==}
+
+def vadd_zz(~F: O.OField, n: Nat) -> {zeros(~F, n) == M.vadd(~F, zeros(~F, n), zeros(~F, n)) : M.Vec(~F)}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+k:
+      %vadd_zz(~F, k) : {Con{O.zero(F), zeros(~F, k)} == Con{O.add(F, O.zero(F), O.zero(F)), _} : M.Vec(~F)}
+      %FL.add_zero(~F, O.zero(F)) : {Con{O.zero(F), zeros(~F, k)} == Con{_, zeros(~F, k)} : M.Vec(~F)}
+      {==}
+
+def vapp_zz(~F: O.OField, a: Nat, +b: Nat) -> {zeros(~F, Nat.add(a, b)) == vapp(~F, zeros(~F, a), zeros(~F, b)) : M.Vec(~F)}:
+  match a:
+    case 0n:
+      {==}
+    case 1n+k:
+      %vapp_zz(~F, k, b) : {Con{O.zero(F), zeros(~F, Nat.add(k, b))} == Con{O.zero(F), _} : M.Vec(~F)}
+      {==}
+
+def cons_hd(~F: O.OField, +a: O.C(F), +t: M.Vec(~F), +b: O.C(F), +s: M.Vec(~F), e: {Con{a, t} == Con{b, s} : M.Vec(~F)}) -> {a == b : O.C(F)}:
+  %e : {a == vhd(~F, _) : O.C(F)}
+  {==}
+
+def cons_tl(~F: O.OField, +a: O.C(F), +t: M.Vec(~F), +b: O.C(F), +s: M.Vec(~F), e: {Con{a, t} == Con{b, s} : M.Vec(~F)}) -> {t == s : M.Vec(~F)}:
+  %e : {t == vtl(~F, _) : M.Vec(~F)}
+  {==}
+
+# (u1, u2) = 0 with u1 of length n1: u2 = 0
+def vapp_z2(~F: O.OField, u1: M.Vec(~F), +u2: M.Vec(~F), n1: Nat, +n2: Nat, hl: {M.len(~F, u1) == n1 : Nat}, e: {vapp(~F, u1, u2) == zeros(~F, Nat.add(n1, n2)) : M.Vec(~F)}) -> {u2 == zeros(~F, n2) : M.Vec(~F)}:
+  match u1 n1:
+    case Nil{} 0n:
+      e
+    case Nil{} 1n+k:
+      absurd({u2 == zeros(~F, n2) : M.Vec(~F)}, zero_ne(k, hl))
+    case Con{a, t} 0n:
+      absurd({u2 == zeros(~F, n2) : M.Vec(~F)}, zero_ne(M.len(~F, t), Equal.sym(Nat, 1n+M.len(~F, t), 0n, hl)))
+    case Con{+a, +t} 1n++k:
+      vapp_z2(~F, t, u2, k, n2, succ_inj(M.len(~F, t), k, hl), cons_tl(~F, a, vapp(~F, t, u2), O.zero(F), zeros(~F, Nat.add(k, n2)), e))
+
+# (u1, u2) = 0 with u1 of length n1: u1 = 0
+def vapp_z1(~F: O.OField, u1: M.Vec(~F), +u2: M.Vec(~F), n1: Nat, +n2: Nat, +hl: {M.len(~F, u1) == n1 : Nat}, +e: {vapp(~F, u1, u2) == zeros(~F, Nat.add(n1, n2)) : M.Vec(~F)}) -> {u1 == zeros(~F, n1) : M.Vec(~F)}:
+  match u1 n1:
+    case Nil{} 0n:
+      {==}
+    case Nil{} 1n+k:
+      absurd({Nil{} == zeros(~F, 1n+k) : M.Vec(~F)}, zero_ne(k, hl))
+    case Con{a, t} 0n:
+      absurd({Con{a, t} == Nil{} : M.Vec(~F)}, zero_ne(M.len(~F, t), Equal.sym(Nat, 1n+M.len(~F, t), 0n, hl)))
+    case Con{+a, +t} 1n++k:
+      %cons_hd(~F, a, vapp(~F, t, u2), O.zero(F), zeros(~F, Nat.add(k, n2)), e) : {Con{a, t} == Con{_, zeros(~F, k)} : M.Vec(~F)}
+      %vapp_z1(~F, t, u2, k, n2, succ_inj(M.len(~F, t), k, hl), cons_tl(~F, a, vapp(~F, t, u2), O.zero(F), zeros(~F, Nat.add(k, n2)), e)) : {Con{a, t} == Con{a, _} : M.Vec(~F)}
+      {==}
+
+def dot_vneg_r(~F: O.OField, r: M.Vec(~F), y: M.Vec(~F)) -> {O.neg(F, M.dot(~F, r, y)) == M.dot(~F, r, M.vneg(~F, y)) : O.C(F)}:
+  match r y:
+    case Nil{} y:
+      Equal.sym(O.C(F), O.zero(F), O.neg(F, O.zero(F)), FL.neg_zero(~F))
+    case Con{a, t} Nil{}:
+      Equal.sym(O.C(F), O.zero(F), O.neg(F, O.zero(F)), FL.neg_zero(~F))
+    case Con{+a, +t} Con{+b, +s}:
+      %dot_vneg_r(~F, t, s) : {O.neg(F, O.add(F, O.mul(F, a, b), M.dot(~F, t, s))) == O.add(F, O.mul(F, a, O.neg(F, b)), _) : O.C(F)}
+      FR.fring_eq(~F, [a, b, M.dot(~F, t, s)], E.ZNeg{E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{2n}}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZNeg{E.ZVar{1n}}}, E.ZNeg{E.ZVar{2n}}}, {==})
+
+def matvec_vneg(~F: O.OField, d: M.Mat(~F), +y: M.Vec(~F)) -> {M.vneg(~F, M.matvec(~F, d, y)) == M.matvec(~F, d, M.vneg(~F, y)) : M.Vec(~F)}:
+  match d:
+    case Nil{}:
+      {==}
+    case Con{+r, +t}:
+      %dot_vneg_r(~F, r, y) : {Con{O.neg(F, M.dot(~F, r, y)), M.vneg(~F, M.matvec(~F, t, y))} == Con{_, M.matvec(~F, t, M.vneg(~F, y))} : M.Vec(~F)}
+      %matvec_vneg(~F, t, y) : {Con{O.neg(F, M.dot(~F, r, y)), M.vneg(~F, M.matvec(~F, t, y))} == Con{O.neg(F, M.dot(~F, r, y)), _} : M.Vec(~F)}
+      {==}
+
+def vadd_vneg(~F: O.OField, y: M.Vec(~F), n: Nat, h: {M.len(~F, y) == n : Nat}) -> {zeros(~F, n) == M.vadd(~F, y, M.vneg(~F, y)) : M.Vec(~F)}:
+  match y n:
+    case Nil{} 0n:
+      {==}
+    case Nil{} 1n+k:
+      absurd({zeros(~F, 1n+k) == Nil{} : M.Vec(~F)}, zero_ne(k, h))
+    case Con{a, t} 0n:
+      absurd({Nil{} == Con{O.add(F, a, O.neg(F, a)), M.vadd(~F, t, M.vneg(~F, t))} : M.Vec(~F)}, zero_ne(M.len(~F, t), Equal.sym(Nat, 1n+M.len(~F, t), 0n, h)))
+    case Con{+a, +t} 1n++k:
+      %vadd_vneg(~F, t, k, succ_inj(M.len(~F, t), k, h)) : {Con{O.zero(F), zeros(~F, k)} == Con{O.add(F, a, O.neg(F, a)), _} : M.Vec(~F)}
+      %Equal.sym(O.C(F), O.add(F, a, O.neg(F, a)), O.zero(F), O.add_neg(F)(a)) : {Con{O.zero(F), zeros(~F, k)} == Con{_, zeros(~F, k)} : M.Vec(~F)}
+      {==}
+
+def nrows_zmat(~F: O.OField, r: Nat, +c: Nat) -> {r == nrows(~F, zmat(~F, r, c)) : Nat}:
+  match r:
+    case 0n:
+      {==}
+    case 1n+k:
+      %nrows_zmat(~F, k, c) : {1n+k == 1n+_ : Nat}
+      {==}
+
+def bm(~F: O.OField, +a: M.Mat(~F), +c: M.Mat(~F), +d: M.Mat(~F), +n1: Nat, +n2: Nat) -> M.Mat(~F):
+  vcat(~F, hcat(~F, a, zmat(~F, n1, n2)), hcat(~F, c, d))
+
+# the block matrix times (u1, u2)
+def mv_block(~F: O.OField, +a: M.Mat(~F), +c: M.Mat(~F), +d: M.Mat(~F), +n1: Nat, +n2: Nat, +sa: {nrows(~F, a) == n1 : Nat}, +ra: rl(~F, a, n1), +sc: {nrows(~F, c) == n2 : Nat}, +rc: rl(~F, c, n1), +sd: {nrows(~F, d) == n2 : Nat}, +u1: M.Vec(~F), +u2: M.Vec(~F), +l1: {M.len(~F, u1) == n1 : Nat}) -> {vapp(~F, M.vadd(~F, M.matvec(~F, a, u1), zeros(~F, n1)), M.vadd(~F, M.matvec(~F, c, u1), M.matvec(~F, d, u2))) == M.matvec(~F, bm(~F, a, c, d, n1, n2), vapp(~F, u1, u2)) : M.Vec(~F)}:
+  %matvec_vcat(~F, hcat(~F, a, zmat(~F, n1, n2)), hcat(~F, c, d), vapp(~F, u1, u2)) : {vapp(~F, M.vadd(~F, M.matvec(~F, a, u1), zeros(~F, n1)), M.vadd(~F, M.matvec(~F, c, u1), M.matvec(~F, d, u2))) == _ : M.Vec(~F)}
+  %matvec_hcat(~F, a, zmat(~F, n1, n2), u1, u2, n1, ra, l1, Equal.trans(Nat, nrows(~F, a), n1, nrows(~F, zmat(~F, n1, n2)), sa, nrows_zmat(~F, n1, n2))) : {vapp(~F, M.vadd(~F, M.matvec(~F, a, u1), zeros(~F, n1)), M.vadd(~F, M.matvec(~F, c, u1), M.matvec(~F, d, u2))) == vapp(~F, _, M.matvec(~F, hcat(~F, c, d), vapp(~F, u1, u2))) : M.Vec(~F)}
+  %matvec_hcat(~F, c, d, u1, u2, n1, rc, l1, Equal.trans(Nat, nrows(~F, c), n2, nrows(~F, d), sc, Equal.sym(Nat, nrows(~F, d), n2, sd))) : {vapp(~F, M.vadd(~F, M.matvec(~F, a, u1), zeros(~F, n1)), M.vadd(~F, M.matvec(~F, c, u1), M.matvec(~F, d, u2))) == vapp(~F, M.vadd(~F, M.matvec(~F, a, u1), M.matvec(~F, zmat(~F, n1, n2), u2)), _) : M.Vec(~F)}
+  %matvec_zmat(~F, n1, n2, u2) : {vapp(~F, M.vadd(~F, M.matvec(~F, a, u1), zeros(~F, n1)), M.vadd(~F, M.matvec(~F, c, u1), M.matvec(~F, d, u2))) == vapp(~F, M.vadd(~F, M.matvec(~F, a, u1), _), M.vadd(~F, M.matvec(~F, c, u1), M.matvec(~F, d, u2))) : M.Vec(~F)}
+  {==}
+
+# an invertible matrix is injective
+def minj.go(~F: O.OField, +m: M.Mat(~F), +n: Nat, +w: M.Mat(~F), hinv: DV.Inverse(~F, m, w, n), +hw: {nrows(~F, w) == n : Nat}, +u: M.Vec(~F), +lu: {M.len(~F, u) == n : Nat}, e: {M.matvec(~F, m, u) == zeros(~F, n) : M.Vec(~F)}) -> {u == zeros(~F, n) : M.Vec(~F)}:
+  %inv_l(~F, m, w, n, hinv, hw, u, lu) : {_ == zeros(~F, n) : M.Vec(~F)}
+  %Equal.sym(M.Vec(~F), M.matvec(~F, m, u), zeros(~F, n), e) : {M.matvec(~F, w, _) == zeros(~F, n) : M.Vec(~F)}
+  %matvec_zeros(~F, w, n) : {_ == zeros(~F, n) : M.Vec(~F)}
+  %hw : {zeros(~F, nrows(~F, w)) == zeros(~F, _) : M.Vec(~F)}
+  {==}
+
+def minj(~F: O.OField, +m: M.Mat(~F), +n: Nat, hm: InvN(~F, m, n), +u: M.Vec(~F), +lu: {M.len(~F, u) == n : Nat}, e: {M.matvec(~F, m, u) == zeros(~F, n) : M.Vec(~F)}) -> {u == zeros(~F, n) : M.Vec(~F)}:
+  match hm:
+    case (+w, p):
+      match p:
+        case (hinv, hw):
+          minj.go(~F, m, n, w, hinv, hw, u, lu, e)
+
+def len_vapp_n(~F: O.OField, +u1: M.Vec(~F), +u2: M.Vec(~F), +n1: Nat, +n2: Nat, l1: {M.len(~F, u1) == n1 : Nat}, l2: {M.len(~F, u2) == n2 : Nat}) -> {M.len(~F, vapp(~F, u1, u2)) == Nat.add(n1, n2) : Nat}:
+  %len_vapp(~F, u1, u2) : {_ == Nat.add(n1, n2) : Nat}
+  %Equal.sym(Nat, M.len(~F, u1), n1, l1) : {Nat.add(_, M.len(~F, u2)) == Nat.add(n1, n2) : Nat}
+  %Equal.sym(Nat, M.len(~F, u2), n2, l2) : {Nat.add(n1, _) == Nat.add(n1, n2) : Nat}
+  {==}
+
+def len_zeros_eq(~F: O.OField, +n: Nat) -> {M.len(~F, zeros(~F, n)) == n : Nat}:
+  Equal.sym(Nat, n, M.len(~F, zeros(~F, n)), len_zeros(~F, n))
+
+# D v = 0 gives v = 0
+def blk_dinj(~F: O.OField, +a: M.Mat(~F), +c: M.Mat(~F), +d: M.Mat(~F), +n1: Nat, +n2: Nat, +sa: {nrows(~F, a) == n1 : Nat}, +ra: rl(~F, a, n1), +sc: {nrows(~F, c) == n2 : Nat}, +rc: rl(~F, c, n1), +sd: {nrows(~F, d) == n2 : Nat}, +hm: InvN(~F, bm(~F, a, c, d, n1, n2), Nat.add(n1, n2)), +v: M.Vec(~F), +lv: {M.len(~F, v) == n2 : Nat}, e: {M.matvec(~F, d, v) == zeros(~F, n2) : M.Vec(~F)}) -> {v == zeros(~F, n2) : M.Vec(~F)}:
+  vapp_z2(~F, zeros(~F, n1), v, n1, n2, len_zeros_eq(~F, n1), minj(~F, bm(~F, a, c, d, n1, n2), Nat.add(n1, n2), hm, vapp(~F, zeros(~F, n1), v), len_vapp_n(~F, zeros(~F, n1), v, n1, n2, len_zeros_eq(~F, n1), lv), (%mv_block(~F, a, c, d, n1, n2, sa, ra, sc, rc, sd, zeros(~F, n1), v, len_zeros_eq(~F, n1)) : {_ == zeros(~F, Nat.add(n1, n2)) : M.Vec(~F)}
+    %Equal.sym(M.Vec(~F), M.matvec(~F, d, v), zeros(~F, n2), e) : {vapp(~F, M.vadd(~F, M.matvec(~F, a, zeros(~F, n1)), zeros(~F, n1)), M.vadd(~F, M.matvec(~F, c, zeros(~F, n1)), _)) == zeros(~F, Nat.add(n1, n2)) : M.Vec(~F)}
+    %matvec_zeros(~F, a, n1) : {vapp(~F, M.vadd(~F, _, zeros(~F, n1)), M.vadd(~F, M.matvec(~F, c, zeros(~F, n1)), zeros(~F, n2))) == zeros(~F, Nat.add(n1, n2)) : M.Vec(~F)}
+    %matvec_zeros(~F, c, n1) : {vapp(~F, M.vadd(~F, zeros(~F, nrows(~F, a)), zeros(~F, n1)), M.vadd(~F, _, zeros(~F, n2))) == zeros(~F, Nat.add(n1, n2)) : M.Vec(~F)}
+    %Equal.sym(Nat, nrows(~F, a), n1, sa) : {vapp(~F, M.vadd(~F, zeros(~F, _), zeros(~F, n1)), M.vadd(~F, zeros(~F, nrows(~F, c)), zeros(~F, n2))) == zeros(~F, Nat.add(n1, n2)) : M.Vec(~F)}
+    %Equal.sym(Nat, nrows(~F, c), n2, sc) : {vapp(~F, M.vadd(~F, zeros(~F, n1), zeros(~F, n1)), M.vadd(~F, zeros(~F, _), zeros(~F, n2))) == zeros(~F, Nat.add(n1, n2)) : M.Vec(~F)}
+    %vadd_zz(~F, n1) : {vapp(~F, _, M.vadd(~F, zeros(~F, n2), zeros(~F, n2))) == zeros(~F, Nat.add(n1, n2)) : M.Vec(~F)}
+    %vadd_zz(~F, n2) : {vapp(~F, zeros(~F, n1), _) == zeros(~F, Nat.add(n1, n2)) : M.Vec(~F)}
+    Equal.sym(M.Vec(~F), zeros(~F, Nat.add(n1, n2)), vapp(~F, zeros(~F, n1), zeros(~F, n2)), vapp_zz(~F, n1, n2)))))
+
+# A v = 0 gives v = 0, with z the inverse of D
+def blk_ainj(~F: O.OField, +a: M.Mat(~F), +c: M.Mat(~F), +d: M.Mat(~F), +n1: Nat, +n2: Nat, +sa: {nrows(~F, a) == n1 : Nat}, +ra: rl(~F, a, n1), +sc: {nrows(~F, c) == n2 : Nat}, +rc: rl(~F, c, n1), +sd: {nrows(~F, d) == n2 : Nat}, +hm: InvN(~F, bm(~F, a, c, d, n1, n2), Nat.add(n1, n2)), +z: M.Mat(~F), +dinv: DV.Inverse(~F, d, z, n2), +zr: {nrows(~F, z) == n2 : Nat}, +v: M.Vec(~F), +lv: {M.len(~F, v) == n1 : Nat}, e: {M.matvec(~F, a, v) == zeros(~F, n1) : M.Vec(~F)}) -> {v == zeros(~F, n1) : M.Vec(~F)}:
+  vapp_z1(~F, v, M.vneg(~F, M.matvec(~F, z, M.matvec(~F, c, v))), n1, n2, lv, minj(~F, bm(~F, a, c, d, n1, n2), Nat.add(n1, n2), hm, vapp(~F, v, M.vneg(~F, M.matvec(~F, z, M.matvec(~F, c, v)))), len_vapp_n(~F, v, M.vneg(~F, M.matvec(~F, z, M.matvec(~F, c, v))), n1, n2, lv, Equal.trans(Nat, M.len(~F, M.vneg(~F, M.matvec(~F, z, M.matvec(~F, c, v)))), M.len(~F, M.matvec(~F, z, M.matvec(~F, c, v))), n2, Equal.sym(Nat, M.len(~F, M.matvec(~F, z, M.matvec(~F, c, v))), M.len(~F, M.vneg(~F, M.matvec(~F, z, M.matvec(~F, c, v)))), len_vneg(~F, M.matvec(~F, z, M.matvec(~F, c, v)))), len_mv(~F, z, n2, M.matvec(~F, c, v), zr))), (%mv_block(~F, a, c, d, n1, n2, sa, ra, sc, rc, sd, v, M.vneg(~F, M.matvec(~F, z, M.matvec(~F, c, v))), lv) : {_ == zeros(~F, Nat.add(n1, n2)) : M.Vec(~F)}
+    %Equal.sym(M.Vec(~F), M.matvec(~F, a, v), zeros(~F, n1), e) : {vapp(~F, M.vadd(~F, _, zeros(~F, n1)), M.vadd(~F, M.matvec(~F, c, v), M.matvec(~F, d, M.vneg(~F, M.matvec(~F, z, M.matvec(~F, c, v)))))) == zeros(~F, Nat.add(n1, n2)) : M.Vec(~F)}
+    %matvec_vneg(~F, d, M.matvec(~F, z, M.matvec(~F, c, v))) : {vapp(~F, M.vadd(~F, zeros(~F, n1), zeros(~F, n1)), M.vadd(~F, M.matvec(~F, c, v), _)) == zeros(~F, Nat.add(n1, n2)) : M.Vec(~F)}
+    %Equal.sym(M.Vec(~F), M.matvec(~F, d, M.matvec(~F, z, M.matvec(~F, c, v))), M.matvec(~F, c, v), inv_r(~F, d, z, n2, dinv, sd, M.matvec(~F, c, v), len_mv(~F, c, n2, v, sc))) : {vapp(~F, M.vadd(~F, zeros(~F, n1), zeros(~F, n1)), M.vadd(~F, M.matvec(~F, c, v), M.vneg(~F, _))) == zeros(~F, Nat.add(n1, n2)) : M.Vec(~F)}
+    %vadd_vneg(~F, M.matvec(~F, c, v), n2, len_mv(~F, c, n2, v, sc)) : {vapp(~F, M.vadd(~F, zeros(~F, n1), zeros(~F, n1)), _) == zeros(~F, Nat.add(n1, n2)) : M.Vec(~F)}
+    %vadd_zz(~F, n1) : {vapp(~F, _, zeros(~F, n2)) == zeros(~F, Nat.add(n1, n2)) : M.Vec(~F)}
+    Equal.sym(M.Vec(~F), zeros(~F, Nat.add(n1, n2)), vapp(~F, zeros(~F, n1), zeros(~F, n2)), vapp_zz(~F, n1, n2)))))
+
+def blk_a(~F: O.OField, +a: M.Mat(~F), +c: M.Mat(~F), +d: M.Mat(~F), +n1: Nat, +n2: Nat, +sa: {nrows(~F, a) == n1 : Nat}, +ra: rl(~F, a, n1), +sc: {nrows(~F, c) == n2 : Nat}, +rc: rl(~F, c, n1), +sd: {nrows(~F, d) == n2 : Nat}, +hm: InvN(~F, bm(~F, a, c, d, n1, n2), Nat.add(n1, n2)), di: InvN(~F, d, n2)) -> InvN(~F, a, n1):
+  match di:
+    case (+z, p):
+      match p:
+        case (+dinv, +zr):
+          inv_of_inj(~F, a, n1, sa, rl_all(~F, a, n1, sa, ra), v => lv => e => blk_ainj(~F, a, c, d, n1, n2, sa, ra, sc, rc, sd, hm, z, dinv, zr, v, lv, e))
+
+def block_inv.go(~F: O.OField, +a: M.Mat(~F), +c: M.Mat(~F), +d: M.Mat(~F), +n1: Nat, +n2: Nat, +sa: {nrows(~F, a) == n1 : Nat}, +ra: rl(~F, a, n1), +sc: {nrows(~F, c) == n2 : Nat}, +rc: rl(~F, c, n1), +sd: {nrows(~F, d) == n2 : Nat}, +hm: InvN(~F, bm(~F, a, c, d, n1, n2), Nat.add(n1, n2)), +di: InvN(~F, d, n2)) -> M.Both(InvN(~F, a, n1), InvN(~F, d, n2)):
+  (blk_a(~F, a, c, d, n1, n2, sa, ra, sc, rc, sd, hm, di), di)
+
+# both diagonal blocks of an invertible block lower triangular matrix are invertible
+def block_inv(~F: O.OField, +a: M.Mat(~F), +c: M.Mat(~F), +d: M.Mat(~F), +n1: Nat, +n2: Nat, +sa: {nrows(~F, a) == n1 : Nat}, +ra: rl(~F, a, n1), +sc: {nrows(~F, c) == n2 : Nat}, +rc: rl(~F, c, n1), +sd: {nrows(~F, d) == n2 : Nat}, +rd: rl(~F, d, n2), +hm: InvN(~F, bm(~F, a, c, d, n1, n2), Nat.add(n1, n2))) -> M.Both(InvN(~F, a, n1), InvN(~F, d, n2)):
+  block_inv.go(~F, a, c, d, n1, n2, sa, ra, sc, rc, sd, hm, inv_of_inj(~F, d, n2, sd, rl_all(~F, d, n2, sd, rd), v => lv => e => blk_dinj(~F, a, c, d, n1, n2, sa, ra, sc, rc, sd, hm, v, lv, e)))

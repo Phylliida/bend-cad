@@ -1049,7 +1049,7 @@ solver as it stands, and both are provable.)
 
 | | file | contents |
 |---|---|---|
-| C1 | lib/gjpf.bend | finite sums, matrices as functions, Gauss–Jordan over F (the dichotomy), permutation, block triangular, perturbation |
+| C1 | lib/gjpf.bend | **done 2026-10-14**: Gauss–Jordan over F (the dichotomy), injective ⇒ invertible, Regular's inverse of any shape ⇒ one with n rows, block triangular; on lists of rows, with the row operations kept as a history so injectivity is a lemma (permutation moves to C2, perturbation to C3) |
 | C2 | lib/tarjanpf.bend, lib/structpf.bend | Tarjan partitions (6); the variable side saturates the kept equations; blocks partition them; vp/ep permutations; kept vs good; PL.check's structural parts |
 | C3 | lib/bndpf.bend | majorants and Lipschitz bounds for expressions and slopes; slope at equal points = deriv; renaming commutes with deriv; ball tightness; rounding (dround, dsig, dsigup, qsig) |
 | C4 | lib/dgjpf.bend | the rounded elimination (5): Newton's and Y's inverses are good |
@@ -1057,10 +1057,10 @@ solver as it stands, and both are provable.)
 | C6 | lib/completepf.bend | the blocks in turn, the verdict, local uniqueness, choosing l and d: `solve_complete` |
 
 **Risks.** Size: several thousand lines over several sessions (C4 is the
-largest single piece). Checker time
-on long inequality proofs: keep the files small. Rounding lemmas on binary
-positives. Lists read with trailing zeros in the matrix plumbing (C1 works
-with matrices as functions and converts only at the edges).
+largest single piece). Checker time on long inequality proofs: keep the
+files small. Rounding lemmas on binary positives. (Lists read with
+trailing zeros turned out manageable in C1: index facts as Data
+predicates over "every row below k", list equality by extensionality.)
 
 ---
 

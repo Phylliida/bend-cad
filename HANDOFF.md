@@ -391,6 +391,27 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
   changes: Danielle preferred proving the rounded elimination and Tarjan
   as they are; milestones C1-C6); pin witnesses; ink-metric KKT (§10.3);
   speed.
+- **solve_complete C1 done** (2026-10-14, late): lib/gjpf.bend (from
+  tools/drafts/gjpf.draft, ~2400 lines, checks in ~1.5 s; gated through
+  tests/gj_laws.bend). Gauss–Jordan over every ordered field as a proof:
+  the state is a history of row operations (swap, scale with its inverse
+  kept, clear a column), the matrix being the history applied to A; each
+  operation is undone by another on vectors, so the transform is injective
+  by a lemma (no Pi-typed hypothesis to reuse). Pivot search by lt_total.
+  Results: gj_thm (finish or a kernel vector with an entry 1), inv_of_inj,
+  invn_of_inverse (Regular's inverse of any shape gives one with n rows),
+  inv_l/inv_r (an Inverse on vectors), block_inv ([[A,0],[C,D]]
+  invertible gives A and D invertible). Next: C2 (structure, Tarjan
+  partition, permutation of Regular to block order).
+- Bend lessons (C1): `All(~Q, k)` with a template `~Q: Nat -> Data` and
+  `all_mk(~n, ~Q, ~f, ...)` with a template lemma `~f` are the reusable
+  "for every index below k" (the lambdas may capture locals); recursion
+  through a computed case split: pass `ih` as a lambda calling the
+  recursive def (`hj => all_at(~Q, j, h1, i, hj)`); match scrutinees in
+  declaration order; termination reads arguments left to right, so put
+  the shrinking list first; destructuring a Sigma with `+` binders can't
+  be inferred: destructure plainly and pass to a helper with `+` params.
+  tools/expand.py now lets `@x:` (Bend's dependent binder) through.
 - Bend proof lessons (solve_total): `%E : P` with E : {L == R} turns R
   into L in the goal, so to replace X by Y use E : {Y == X} (I got this
   backwards about half the time; read the error's expected/observed and
