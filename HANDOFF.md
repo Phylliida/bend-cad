@@ -469,6 +469,22 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
     `rinv0`/`invb0`; end `agood_of`.
   Next: C5 (one block at P): Newton and Y through dinverse_ok, the
   radius search, the vector form |v − A J v| <= n e |v|.
+- **GUI (2026-10-15):** `python3 gui/serve.py` → http://localhost:8480/
+  (gui/README.md). The page draws, constrains and dimensions; every
+  verdict comes from the verified SO.solve through gui/solve_cli.bend
+  (untrusted parse/print). Untrusted helpers that only shape the input:
+  merges as shared variables, an optional drawing relaxation
+  (least-squares, minimal displacement), and an optional variable order.
+  Findings while testing, both already in DESIGN / solve_complete's
+  hypotheses:
+  - non-dyadic constants (3.6, most angles) never certify (Q19); the
+    page can send nearest dyadics;
+  - the structural pin choice can make a regular sketch singular (a
+    horizontal segment's length with x held); the page's variable order
+    avoids most of these.
+  v1 also needs the drawing near a solution, which the relaxation
+  provides; D13's least-ink KKT solve (§10.3) is the verified
+  replacement.
 - Bend lessons (C4):
   - A `let` can't hold an inline rewrite, and neither can a let-bound pair
     be destructured: move either into a helper def, or carry the pair as
