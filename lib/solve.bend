@@ -296,23 +296,24 @@ def why_of(+sk: SK.Sketch) -> List<&2, SV.Why>:
 def kept(+sk: SK.Sketch) -> List<&2, E.QExpr>:
   SK.Sketch.eqs(SV.mark(red_of(sk), sk))
 
+# the kept equations in the sketch's numbering: those the red stage
+# matched, in order
+def good_of(+sk: SK.Sketch) -> List<&2, Nat>:
+  ST.inter(ST.iota(ST.len.q(SK.Sketch.eqs(sk)), 0n), ST.somes(CS.vm(rs_of(sk))))
+
+def skel.from(+sk: SK.Sketch, +good: List<&2, Nat>) -> ST.Skel:
+  ST.renum(ST.skel.kept(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), nvars(sk), good), good)
+
+# the structure of the kept system, worked out in the sketch's numbering
+# (the red stage's matching is there) and renumbered
 def skel_of(+sk: SK.Sketch) -> ST.Skel:
-  ST.structure(kept(sk), nvars(sk))
+  skel.from(sk, good_of(sk))
 
-def pick(b: Bool, +p: List<&2, Nat>, +q: List<&2, Nat>) -> List<&2, Nat>:
-  match b:
-    case True{}:
-      p
-    case False{}:
-      q
-
-# the pins: the structure's (the earliest variables it can leave over),
-# when with them the kept system is square, as it always is (the matching
-# of the red stage saturates the kept equations, and the variable side's
-# greedy matching is then maximum: Kuhn). Otherwise the variables the red
-# stage's matching leaves free, which are provably as many as needed.
+# the pins: the earliest variables the kept system can leave over (with
+# them it is square: the red stage's matching saturates its equations, and
+# the variable side's greedy matching is then maximum)
 def pins_of(+sk: SK.Sketch) -> List<&2, Nat>:
-  pick(KA.nateq(Nat.add(SV.neqs(kept(sk)), SV.len(skel.pins(skel_of(sk)))), nvars(sk)), skel.pins(skel_of(sk)), ST.holes(CS.vm(rs_of(sk)), 0n))
+  skel.pins(skel_of(sk))
 
 # the loop from its first precision's answer (starting it with a literal
 # "not yet" would let the checker unfold the whole verdict symbolically

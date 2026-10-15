@@ -362,10 +362,30 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
   witness overdet, wit_ok), lib/redpf.bend (kuhnc_ok: good records +
   count; shape of the red list; explained_of), lib/wfcpf.bend (wf ⇒
   wf_dec, also marked), lib/covpf.bend (within + wf_dec ⇒ adjacency below
-  nvars; per-kind via VE builders), lib/totalpf.bend (pins, solve_total).
+  nvars; per-kind via VE builders), lib/totalpf.bend (solve_total).
+- **Pins fallback removed** (2026-10-14, night; gate green, regression
+  unchanged). The structure of the kept system is now worked out in the
+  sketch's numbering over the equations the red stage matched
+  (lib/solve.bend: good_of, skel_of; lib/struct.bend: skel.kept, renum),
+  with no equation side, and the variable side (kuhnd) starts each search
+  with the dead equations (every earlier failed search's visited ones)
+  already visited: same answers (tools/regress.sh now also builds
+  proto/skel_cmp.bend and checks the new structure equals
+  structure(kept, nv) field by field), and maximality becomes provable
+  without the classical "a failure stays a failure" theorem. Proof:
+  lib/maxpf.bend (from tools/drafts/maxpf.draft; the new @CONJ macro,
+  tools/conj.py, writes the 14-part walk invariant's accessors): the
+  frame (a search never changes an entry it began with visited, and keeps
+  the matching valid: each matched entry in its mate's list); the walk
+  (failed variables F and the mates of the dead set D are |F| + |D|
+  distinct variables using only equations of D); the red stage's matching
+  is valid and its matched equations distinct (redpf kres now carries
+  distinct); counting: those variables are free in the red stage's
+  matching or matched into D, so |F| <= its free ones = nv - kept, and
+  the variable side matches at most the kept equations, so |F| >= that.
+  pins_of is simply the structure's pins.
 - Next: Danielle's review of all six; then solve_complete (Kantorovich
-  with rounding); optionally prove Kuhn's maximality to drop the pins
-  fallback; pin witnesses; ink-metric KKT (§10.3); speed.
+  with rounding); pin witnesses; ink-metric KKT (§10.3); speed.
 - Bend proof lessons (solve_total): `%E : P` with E : {L == R} turns R
   into L in the goal, so to replace X by Y use E : {Y == X} (I got this
   backwards about half the time; read the error's expected/observed and

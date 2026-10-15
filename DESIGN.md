@@ -812,9 +812,12 @@ believed without proof.
    red stage walks the constraint records as `Sketch.eqs` and `owners`
    do, matching each constraint's equations as a unit; the pins are the
    variable side's failed searches (latest variables first, so the
-   earliest are pinned) when they make the kept system square, which
-   Kuhn's theorem says they always do; as that theorem is not proven, the
-   red stage's free variables (provably square) stand in otherwise.
+   earliest are pinned) over the equations the red stage matched, worked
+   out in the sketch's numbering and renumbered for the kept system. Each
+   failed search's visited equations stay visited in every later search
+   (dead: no augmenting path passes through them), which changes no
+   answer and makes the variable side's maximality provable: its pins
+   always make the kept system square (`lib/maxpf.bend`).
    Blocks are the strongly connected
    components of the matched dependency graph, in dependency order. Each
    block is validated as it is emitted (its equations use only earlier
@@ -859,7 +862,9 @@ in a shorter list; `explained`; `held`).
 - `solve_pins`: each pin has radius 0 and its center is its drawn value.
 - `solve_total` (**proven 2026-10-14**, `lib/totalpf.bend` over
   `lib/dfspf.bend`, `lib/redpf.bend`, `lib/wfcpf.bend`, `lib/covpf.bend`,
-  `lib/listpf.bend`; restated in `tests/solve_laws.bend`): for a well-formed, covered
+  `lib/maxpf.bend`, `lib/listpf.bend`; restated in `tests/solve_laws.bend`;
+  the pins fallback removed the same night, once `lib/maxpf.bend` proved the
+  variable side's matching maximum): for a well-formed, covered
   sketch, whatever the drawing and budget, the reported red constraints,
   reasons and pins are the sketch's own (`red_of`, `why_of`, `pins_of`
   depend on the sketch alone); the red ones are explained; the marked

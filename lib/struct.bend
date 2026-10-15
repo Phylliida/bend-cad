@@ -384,6 +384,54 @@ def kuhn(js: List<&2, Nat>, +adj: List<&2, List<&2, Nat>>, +f: Nat, +st: KS) -> 
     case Con{+j, t}:
       kuhn(t, adj, f, kstep(j, search(f, adj, KS.vm(st), j), st))
 
+# Dead variables
+# --------------
+# The variables W a failed search visited are dead: all matched, and what
+# the searched equation and the mates of W use is in W. No later search
+# finds a path through W (one that enters W stays among the mates of W,
+# which use only W, all matched), so a search may begin with W visited: it
+# finds what it would have found, sooner, and a path it finds leaves the
+# mates of W as they were. The variable side (below) searches so, with the
+# roles swapped: from variables, through equations.
+
+# a search from the unmatched equation e, the variables vis visited already
+def search.from(+f: Nat, +adj: List<&2, List<&2, Nat>>, +vm: List<&2, Maybe<&2, Nat>>, +e: Nat, +vis: List<&2, Nat>) -> DS:
+  dfs(f, nthl(adj, e), cls(vm, vis, nthl(adj, e)), e, adj, vm, DS{False{}, vm, vis})
+
+# the matching, the failed searches (newest first) and the dead variables
+type KD is Data:
+  KD{vm: List<&2, Maybe<&2, Nat>>, red: List<&2, Nat>, dead: List<&2, Nat>}
+
+def KD.vm(st: KD) -> List<&2, Maybe<&2, Nat>>:
+  match st:
+    case KD{vm, red, dead}:
+      vm
+
+def KD.red(st: KD) -> List<&2, Nat>:
+  match st:
+    case KD{vm, red, dead}:
+      red
+
+def KD.dead(st: KD) -> List<&2, Nat>:
+  match st:
+    case KD{vm, red, dead}:
+      dead
+
+def kdstep(+j: Nat, a: DS, st: KD) -> KD:
+  match a st:
+    case DS{True{}, vm2, vis} KD{vm, red, dead}:
+      KD{vm2, red, dead}
+    case DS{False{}, vm2, vis} KD{vm, red, dead}:
+      KD{vm, Con{j, red}, vis}
+
+# search from each equation in turn, past the dead variables
+def kuhnd(js: List<&2, Nat>, +adj: List<&2, List<&2, Nat>>, +f: Nat, +st: KD) -> KD:
+  match js:
+    case Nil{}:
+      st
+    case Con{+j, t}:
+      kuhnd(t, adj, f, kdstep(j, search.from(f, adj, KD.vm(st), j, KD.dead(st)), st))
+
 # Constraints as units
 # --------------------
 # A constraint's equations are matched together: if one of them fails,
@@ -645,6 +693,14 @@ def minus(xs: List<&2, Nat>, +ys: List<&2, Nat>) -> List<&2, Nat>:
     case Con{+h, t}:
       minus.go(mem(h, ys), h, minus(t, ys))
 
+# the entries of xs that are in ys
+def inter(xs: List<&2, Nat>, +ys: List<&2, Nat>) -> List<&2, Nat>:
+  match xs:
+    case Nil{}:
+      Nil{}
+    case Con{+h, t}:
+      minus.go(bnot(mem(h, ys)), h, inter(t, ys))
+
 # The skeleton of a plan
 # ----------------------
 # vp: the variables in block order (pins first), ep: the equations in
@@ -762,3 +818,29 @@ def skel.go(+adj: List<&2, List<&2, Nat>>, +ne: Nat, +nv: Nat, +st: KS) -> Skel:
 # The structure of a system: es over variables 0 .. nv - 1
 def structure(+es: List<&2, E.QExpr>, +nv: Nat) -> Skel:
   skel.go(adj(es), len.q(es), nv, kuhn(iota(len.q(es), 0n), adj(es), 1n+nv, KS{nones(nv), Nil{}}))
+
+# The structure of part of a system
+# ---------------------------------
+# The equations good (in order) of a system with adjacency adj, nq
+# equations over nv variables, good being matchable (lib/solve.bend: the
+# red stage's matched equations): no equation side, the variable side past
+# its dead equations, then the blocks, all in the system's numbering; and
+# then each equation renumbered to its position in good.
+
+def skel.kd(+adj: List<&2, List<&2, Nat>>, +nq: Nat, +nv: Nat, +good: List<&2, Nat>, +st: KD) -> Skel:
+  skel.fin(adj, Nil{}, KD.red(st), blocks.of(adj, KD.vm(st), KD.red(st), comps(adj, invert(KD.vm(st), 0n, nones(nv)), good, nq)))
+
+def skel.kept(+adj: List<&2, List<&2, Nat>>, +nq: Nat, +nv: Nat, +good: List<&2, Nat>) -> Skel:
+  skel.kd(adj, nq, nv, good, kuhnd(down(nv), transpose(nv, 0n, good, adj), 1n+nq, KD{nones(nq), Nil{}, Nil{}}))
+
+def renum.bs(bs: List<&2, SkB>, +good: List<&2, Nat>) -> List<&2, SkB>:
+  match bs:
+    case Nil{}:
+      Nil{}
+    case Con{SkB{es, vs, ps}, t}:
+      Con{SkB{positions(es, good), vs, ps}, renum.bs(t, good)}
+
+def renum(s: Skel, +good: List<&2, Nat>) -> Skel:
+  match s:
+    case Skel{vp, ep, np, bs, red}:
+      Skel{vp, positions(ep, good), np, renum.bs(bs, good), red}

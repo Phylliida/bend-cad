@@ -1,4 +1,5 @@
-# Expands a draft into Bend: certificate macros first (zexpr.py), then the
+# Expands a draft into Bend: conjunction predicates (conj.py) and
+# certificate macros (zexpr.py) first, then the
 # shorthand @A( @M( @N( @S( (field add, mul, neg, sub), @0 @1 @T (zero, one,
 # carrier), @LK( @EM( @EP( @OZ( @ON( @ZE( (lookups and evaluations).
 # Usage: python3 tools/expand.py tools/drafts/X.draft lib/X.bend
@@ -7,6 +8,8 @@ src = open(sys.argv[1]).read()
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import zexpr
+import conj
+src = conj.expand(src)
 src = zexpr.expand(src)
 for k, v in [("@LK(", "O.lookup(~F, env, "), ("@EM(", "femono(~F, env, "), ("@EP(", "fepoly(~F, env, "),
              ("@OZ(", "O.ofz(~F, "), ("@ON(", "ofn(~F, "), ("@ZE(", "zeval(~F, env, "),

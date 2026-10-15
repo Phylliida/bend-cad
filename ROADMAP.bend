@@ -115,11 +115,9 @@ law solve_pins:
 # and with the pins held the kept system is square (as many equations as
 # free variables). (Proof: lib/dfspf.bend, the augmenting-path search and
 # its witness; lib/redpf.bend, the red stage; lib/wfcpf.bend and
-# lib/covpf.bend, well-formedness and coverage; lib/totalpf.bend, the
-# pins. The pins are the structure's when they make the kept system
-# square, which Kuhn's theorem says they always do; that theorem is not
-# proven, so otherwise they are the red stage's free variables, which
-# provably do.)
+# lib/covpf.bend, well-formedness and coverage; lib/maxpf.bend, the
+# pins: the variable side's matching is maximum, so the variables it
+# leaves over make the kept system square; lib/totalpf.bend, the law.)
 law solve_total:
   for +sk: SK.Sketch
   for  w: SK.Sketch.wf(sk)
