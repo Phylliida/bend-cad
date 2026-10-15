@@ -104,3 +104,43 @@ def sadd_err(~F: O.OField, +w: Nat, +a: S.D, +b: S.D, +aa: @T, +bb: @T, ha: M.bn
   %Equal.sym(@T, @A(M.ofd(~F, a), M.ofd(~F, b)), M.ofd(~F, S.D.add(a, b)), DM.ofd_add(~F, a, b)) : M.bnd(~F, @S(M.ofd(~F, NU.dsadd(w, a, b)), _), @M(@A(aa, bb), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})))
   dsig_t(~F, S.D.add(a, b), w, @A(aa, bb), (%DM.ofd_add(~F, a, b) : M.bnd(~F, _, @A(aa, bb))
     FM.bnd_add(~F, M.ofd(~F, a), aa, M.ofd(~F, b), bb, ha, hb)))
+
+# 2^-w <= 1
+def u_le1(~F: O.OField, +w: Nat) -> O.le(~F, M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}), @1):
+  +r = QE.ofp_rel(~F, S.Pos.pow2(w))
+  FV.le_of_sub(~F, @M(@1, O.inv(F, O.ofp(~F, S.Pos.pow2(w)))), @1, FM.nn_eq(~F, @S(@1, @M(@1, O.inv(F, O.ofp(~F, S.Pos.pow2(w))))), @M(@S(O.ofp(~F, S.Pos.pow2(w)), @1), O.inv(F, O.ofp(~F, S.Pos.pow2(w)))),
+    @CERTEQ[t=O.ofp(~F, S.Pos.pow2(w)),, i=O.inv(F, O.ofp(~F, S.Pos.pow2(w))) | (t - 1)*i | 1 - 1*i | 1 ; t*i - 1 || r],
+    FO.mul_nonneg(~F, @S(O.ofp(~F, S.Pos.pow2(w)), @1), O.inv(F, O.ofp(~F, S.Pos.pow2(w))), FM.sub_nonneg(~F, @1, O.ofp(~F, S.Pos.pow2(w)), RP.ofp_ge1(~F, S.Pos.pow2(w))), RP.inv_nn(~F, S.Pos.pow2(w)))))
+
+@ATOMS dv = t=O.ofp(~F, S.Pos.pow2(e)),, p=O.ofp(~F, p),, it=O.inv(F, O.ofp(~F, S.Pos.pow2(e))),, ip=O.inv(F, O.ofp(~F, p))
+
+# q = 1/x as the solver divides: q x = 1, for x not 0
+def div_rel(~F: O.OField, x: S.D, hz: {M.ofd(~F, x) == @0 : @T} -> Empty) -> {@M(O.ofq(~F, S.Q.div(S.D.toq(NU.done()), S.D.toq(x))), M.ofd(~F, x)) == @1 : @T}:
+  match x:
+    case S.D{S.Z0{}, +e}:
+      FO.absurd({@M(O.ofq(~F, S.Q.div(S.D.toq(NU.done()), S.D.toq(S.D{S.Z0{}, e}))), M.ofd(~F, S.D{S.Z0{}, e})) == @1 : @T}, hz(@ZEQ[i=O.inv(F, O.ofp(~F, S.Pos.pow2(e))) | 0*i | 0]))
+    case S.D{S.Zpos{+p}, +e}:
+      @CERTEQ[dv | (t*ip)*(p*it) | 1 | p*ip ; t*it - 1 | 1 ; p*ip - 1 || QE.ofp_rel(~F, S.Pos.pow2(e)), QE.ofp_rel(~F, p)]
+    case S.D{S.Zneg{+p}, +e}:
+      @CERTEQ[dv | ((-t)*ip)*((-p)*it) | 1 | p*ip ; t*it - 1 | 1 ; p*ip - 1 || QE.ofp_rel(~F, S.Pos.pow2(e)), QE.ofp_rel(~F, p)]
+
+# the rounded reciprocal: |s - 1/x| <= |1/x| 2^-w
+def s_err(~F: O.OField, +w: Nat, +x: S.D) -> M.bnd(~F, @S(M.ofd(~F, NU.dsdiv(w, NU.done(), x)), O.ofq(~F, S.Q.div(S.D.toq(NU.done()), S.D.toq(x)))), @M(FV.fabs(~F, O.ofq(~F, S.Q.div(S.D.toq(NU.done()), S.D.toq(x)))), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))):
+  RP.qsig_err(~F, S.Q.div(S.D.toq(NU.done()), S.D.toq(x)), w)
+
+@ATOMS ax = x=M.ofd(~F, x),, c=M.ofd(~F, c),, y=M.ofd(~F, y),, t=M.ofd(~F, NU.dsmul(w, c, y)),, r=M.ofd(~F, NU.dsadd(w, x, S.D.neg(NU.dsmul(w, c, y)))),, xx,, cc,, yy,, u=M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})
+
+# one entry of x - c y, rounded twice: within (X + 3 C Y) 2^-w
+def axpy_ent(~F: O.OField, +w: Nat, +x: S.D, +c: S.D, +y: S.D, +xx: @T, +cc: @T, +yy: @T, hx: M.bnd(~F, M.ofd(~F, x), xx), +hc: M.bnd(~F, M.ofd(~F, c), cc), +hy: M.bnd(~F, M.ofd(~F, y), yy), +hu: O.le(~F, M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}), @1)) -> M.bnd(~F, @S(M.ofd(~F, NU.dsadd(w, x, S.D.neg(NU.dsmul(w, c, y)))), @A(M.ofd(~F, x), @M(@N(M.ofd(~F, c)), M.ofd(~F, y)))), @M(@A(xx, @A(@A(@M(cc, yy), @M(cc, yy)), @M(cc, yy))), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))):
+  +ht = smul_err(~F, w, c, y, cc, yy, hc, hy)
+  +hcy = FM.bnd_mul(~F, M.ofd(~F, c), cc, M.ofd(~F, y), yy, hc, hy)
+  +h0 = FO.mul_nonneg(~F, cc, yy, FM.bnd_nonneg(~F, M.ofd(~F, c), cc, hc), FM.bnd_nonneg(~F, M.ofd(~F, y), yy, hy))
+  +htb = FM.bnd_mono(~F, @FT[ax | t], @FT[ax | cc*yy + (cc*yy)*u], @FT[ax | cc*yy + cc*yy],
+    KB.bnd_val(~F, @FT[ax | c*y + (t - c*y)], @FT[ax | t], @FT[ax | cc*yy + (cc*yy)*u], @ZEQ[ax | c*y + (t - c*y) | t], FM.bnd_add(~F, @FT[ax | c*y], @FT[ax | cc*yy], @FT[ax | t - c*y], @FT[ax | (cc*yy)*u], hcy, ht)),
+    FM.nn_eq(~F, @FT[ax | (cc*yy + cc*yy) - (cc*yy + (cc*yy)*u)], @FT[ax | (cc*yy)*(1 - u)], @ZEQ[ax | (cc*yy)*(1 - u) | (cc*yy + cc*yy) - (cc*yy + (cc*yy)*u)], FO.mul_nonneg(~F, @FT[ax | cc*yy], @FT[ax | 1 - u], h0, FM.sub_nonneg(~F, @FT[ax | u], @1, hu))))
+  +hs = sadd_err(~F, w, x, S.D.neg(NU.dsmul(w, c, y)), xx, @FT[ax | cc*yy + cc*yy], hx, (%DM.ofd_neg(~F, NU.dsmul(w, c, y)) : M.bnd(~F, _, @FT[ax | cc*yy + cc*yy])
+    FM.bnd_neg(~F, @FT[ax | t], @FT[ax | cc*yy + cc*yy], htb)))
+  KB.bnd_val(~F, @FT[ax | (r - (x + (-t))) + -(t - c*y)], @FT[ax | r - (x + (-c)*y)], @FT[ax | (xx + ((cc*yy + cc*yy) + cc*yy))*u], @ZEQ[ax | (r - (x + (-t))) + -(t - c*y) | r - (x + (-c)*y)],
+    FM.bnd_eq(~F, @FT[ax | (r - (x + (-t))) + -(t - c*y)], @FT[ax | (xx + (cc*yy + cc*yy))*u + (cc*yy)*u], @FT[ax | (xx + ((cc*yy + cc*yy) + cc*yy))*u], @ZEQ[ax | (xx + (cc*yy + cc*yy))*u + (cc*yy)*u | (xx + ((cc*yy + cc*yy) + cc*yy))*u],
+      FM.bnd_add(~F, @FT[ax | r - (x + (-t))], @FT[ax | (xx + (cc*yy + cc*yy))*u], @FT[ax | -(t - c*y)], @FT[ax | (cc*yy)*u], (%Equal.sym(@T, @N(M.ofd(~F, NU.dsmul(w, c, y))), M.ofd(~F, S.D.neg(NU.dsmul(w, c, y))), DM.ofd_neg(~F, NU.dsmul(w, c, y))) : M.bnd(~F, @S(M.ofd(~F, NU.dsadd(w, x, S.D.neg(NU.dsmul(w, c, y)))), @A(M.ofd(~F, x), _)), @FT[ax | (xx + (cc*yy + cc*yy))*u])
+        hs), FM.bnd_neg(~F, @FT[ax | t - c*y], @FT[ax | (cc*yy)*u], ht))))
