@@ -1055,7 +1055,7 @@ solver as it stands, and both are provable.)
 | C2c | lib/keptpf.bend | **done 2026-10-15** (`kept_good`, `kept_len`, `kept_reorder`; lib/redpf.bend's end result now also says no matched equation is owned by a red constraint, and all are below the equation count): kept vs good: the kept system is the full system at the indices good (the red stage matched exactly the equations whose constraint is not red: `pre` at the end plus the count) |
 | C2d | lib/permpf.bend | **done 2026-10-15** (`regular_blocks`: InvN of jac(x, full picked at alleqs bs, allvars bs)): Regular in block order: a kernel vector of the Jacobian with permuted rows and columns gives one of the original (sums reindexed over a permutation), so with C1 the block-order Jacobian has an inverse |
 | C3a | lib/bndpf.bend | **done 2026-10-15** (`mcen_jac`, `kball_grade`, `ksl_grade`, `eval_lip`, `sl_lip`, `deriv_rnv`, `deriv_rename`; gated via tests/bnd_laws.bend): balls: centers are values (slope at equal points = deriv), ball tightness, Lipschitz bounds for expressions and slopes; renaming commutes with deriv (plan below) |
-| C3b | lib/roundpf.bend | rounding in F: dround, dsig, qsig, dsigup (plan below) |
+| C3b | lib/roundpf.bend | **done 2026-10-15** (`div_ok`, `zfloor_ok`, `dround_err`, `dsig_err`, `qsig_err`, `dsigup_ok`; gated via tests/round_laws.bend): rounding in F: dround, dsig, qsig, dsigup (plan below) |
 | C3c | lib/normpf.bend | norms and the perturbation lemma (plan below) |
 | C4 | lib/dgjpf.bend | the rounded elimination (5): Newton's and Y's inverses are good |
 | C5 | lib/blockpf.bend | one block at P (3) |
@@ -1091,7 +1091,7 @@ in K, and serves both the checker's dyadic balls and the Newton analysis.
   - |dround(x, p) − x| ≤ 2^-(p+1).
   - |dsig(x, b) − x| ≤ 2^-b |x|.
   - |qsig(q, b) − q| ≤ 2^-b |q| (so dsdiv too).
-  - x ≤ dsigup(x, b) ≤ x + 2^(1−b) x for x ≥ 0.
+  - x ≤ dsigup(x, b) ≤ x + 2^(1−b) |x| (any sign).
   - From integer facts: Euclid's division (QRD.div), the size bounds
     2^(size p − 1) ≤ p < 2^(size p), and pshr as a floor.
 - C3c, lib/normpf.bend:

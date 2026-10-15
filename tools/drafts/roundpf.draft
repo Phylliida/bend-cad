@@ -708,3 +708,73 @@ def qsig_err(~F: O.OField, x: S.Q, +b: Nat) -> M.bnd(~F, @S(M.ofd(~F, NU.qsig(x,
       qsig_fin(~F, S.Zpos{p}, p, d, b, bnd_lo(~F, @M(O.ofp(~F, p), O.inv(F, O.ofp(~F, d))), FV.fabs(~F, O.ofq(~F, S.Q{S.Zpos{p}, d})), FV.fabs_bnd(~F, O.ofq(~F, S.Q{S.Zpos{p}, d}))))
     case S.Q{S.Zneg{+p}, +d}:
       qsig_fin(~F, S.Zneg{p}, p, d, b, neg_le(~F, p, d))
+
+# Rounding up
+# -----------
+
+@ATOMS qc = g,, nv,, te,, tt,, ie,, it
+
+# c = -floor(-n 2^E / 2^e): 0 <= c / 2^E - n / 2^e <= 2^-E
+def qc_core(~F: O.OField, +g: @T, +nv: @T, +te: @T, +tt: @T, +ie: @T, +it: @T, h1: O.le(~F, @M(g, te), @N(@M(nv, tt))), h2: O.le(~F, @A(@N(@M(nv, tt)), @1), @M(@A(g, @1), te)), +re: {@S(@M(te, ie), @1) == @0 : @T}, +rt: {@S(@M(tt, it), @1) == @0 : @T}, +hie: O.le(~F, @0, ie), +hit: O.le(~F, @0, it)) -> M.Both(O.le(~F, @M(nv, ie), @M(@N(g), it)), O.le(~F, @S(@M(@N(g), it), @M(nv, ie)), @M(@1, it))):
+  (FV.le_of_sub(~F, @M(nv, ie), @M(@N(g), it), FM.nn_eq(~F, @S(@M(@N(g), it), @M(nv, ie)), @M(@M(@S(@N(@M(nv, tt)), @M(g, te)), ie), it), @CERTEQ[qc | (((-(nv*tt)) - g*te)*ie)*it | (-g)*it - nv*ie | -(g*it) ; te*ie - 1 | -(nv*ie) ; tt*it - 1 || re, rt], FO.mul_nonneg(~F, @M(@S(@N(@M(nv, tt)), @M(g, te)), ie), it, FO.mul_nonneg(~F, @S(@N(@M(nv, tt)), @M(g, te)), ie, FM.sub_nonneg(~F, @M(g, te), @N(@M(nv, tt)), h1), hie), hit))),
+   FV.le_of_sub(~F, @S(@M(@N(g), it), @M(nv, ie)), @M(@1, it), FM.nn_eq(~F, @S(@M(@1, it), @S(@M(@N(g), it), @M(nv, ie))), @M(@M(@S(te, @S(@N(@M(nv, tt)), @M(g, te))), ie), it), @CERTEQ[qc | ((te - ((-(nv*tt)) - g*te))*ie)*it | 1*it - ((-g)*it - nv*ie) | (1 + g)*it ; te*ie - 1 | nv*ie ; tt*it - 1 || re, rt],
+     FO.mul_nonneg(~F, @M(@S(te, @S(@N(@M(nv, tt)), @M(g, te))), ie), it, FO.mul_nonneg(~F, @S(te, @S(@N(@M(nv, tt)), @M(g, te))), ie, FM.nn_eq(~F, @S(te, @S(@N(@M(nv, tt)), @M(g, te))), @A(@S(@M(@A(g, @1), te), @A(@N(@M(nv, tt)), @1)), @1), @ZEQ[qc | ((g + 1)*te - ((-(nv*tt)) + 1)) + 1 | te - ((-(nv*tt)) - g*te)], FO.nonneg_add(~F, @S(@M(@A(g, @1), te), @A(@N(@M(nv, tt)), @1)), @1, FM.sub_nonneg(~F, @A(@N(@M(nv, tt)), @1), @M(@A(g, @1), te), h2), one_nn(~F))), hie), hit))))
+
+def qc_1(~F: O.OField, +g: @T, +nv: @T, +ie: @T, +it: @T, h: M.Both(O.le(~F, @M(nv, ie), @M(@N(g), it)), O.le(~F, @S(@M(@N(g), it), @M(nv, ie)), @M(@1, it)))) -> O.le(~F, @M(nv, ie), @M(@N(g), it)):
+  (a, b) = h
+  a
+
+def qc_2(~F: O.OField, +g: @T, +nv: @T, +ie: @T, +it: @T, h: M.Both(O.le(~F, @M(nv, ie), @M(@N(g), it)), O.le(~F, @S(@M(@N(g), it), @M(nv, ie)), @M(@1, it)))) -> O.le(~F, @S(@M(@N(g), it), @M(nv, ie)), @M(@1, it)):
+  (a, b) = h
+  b
+
+def nm_eq(~F: O.OField, +m: S.Z, +k: Nat) -> {O.ofz(~F, S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(k)}))) == @N(@M(O.ofz(~F, m), t2(~F, k))) : @T}:
+  %FR.ofz_neg(~F, S.Z.mul(m, S.Zpos{S.Pos.pow2(k)})) : {_ == @N(@M(O.ofz(~F, m), t2(~F, k))) : @T}
+  %FR.ofz_mul(~F, m, S.Zpos{S.Pos.pow2(k)}) : {@N(_) == @N(@M(O.ofz(~F, m), t2(~F, k))) : @T}
+  {==}
+
+@ATOMS du = a=O.ofp(~F, p),, te=t2(~F, e),, tb=t2(~F, b),, tt=t2(~F, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p))),, ie=O.inv(F, t2(~F, e)),, ib=O.inv(F, t2(~F, b)),, it=O.inv(F, t2(~F, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p))))
+
+# 2^-E <= (p / 2^e) 2^(1-b) at the exponent E dsigup rounds p / 2^e at
+def dur(~F: O.OField, +p: S.Pos, +e: Nat, +b: Nat) -> O.le(~F, @FT[du | 1*it], @FT[du | (a*ie)*((1 + 1)*ib)]):
+  FV.le_of_sub(~F, @FT[du | 1*it], @FT[du | (a*ie)*((1 + 1)*ib)], FM.nn_eq(~F, @FT[du | (a*ie)*((1 + 1)*ib) - 1*it], @FT[du | ((ie*ib)*it)*((a + a)*tt - te*tb)],
+    @CERTEQ[du | ((ie*ib)*it)*((a + a)*tt - te*tb) | (a*ie)*((1 + 1)*ib) - 1*it | (a + a)*ie*ib ; tt*it - 1 | -(it*tb*ib) ; te*ie - 1 | -it ; tb*ib - 1 || QE.ofp_rel(~F, S.Pos.pow2(Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))), QE.ofp_rel(~F, S.Pos.pow2(e)), QE.ofp_rel(~F, S.Pos.pow2(b))],
+    FO.mul_nonneg(~F, @FT[du | (ie*ib)*it], @FT[du | (a + a)*tt - te*tb], FO.mul_nonneg(~F, @FT[du | ie*ib], @FT[du | it], FO.mul_nonneg(~F, @FT[du | ie], @FT[du | ib], inv_nn(~F, S.Pos.pow2(e)), inv_nn(~F, S.Pos.pow2(b))), inv_nn(~F, S.Pos.pow2(Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p))))), FM.sub_nonneg(~F, @FT[du | te*tb], @FT[du | (a + a)*tt], qbound(~F, p, S.Pos.pow2(e), b)))))
+
+@ATOMS gz = g=O.ofz(~F, NU.zfloor(S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(k)})), S.Pos.pow2(e)))
+
+def dsu_h1(~F: O.OField, +m: S.Z, +e: Nat, +k: Nat, h: zfl(~F, S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(k)})), S.Pos.pow2(e), NU.zfloor(S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(k)})), S.Pos.pow2(e)))) -> O.le(~F, @M(O.ofz(~F, NU.zfloor(S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(k)})), S.Pos.pow2(e))), t2(~F, e)), @N(@M(O.ofz(~F, m), t2(~F, k)))):
+  %nm_eq(~F, m, k) : O.le(~F, @M(O.ofz(~F, NU.zfloor(S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(k)})), S.Pos.pow2(e))), t2(~F, e)), _)
+  zfl_1(~F, S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(k)})), S.Pos.pow2(e), NU.zfloor(S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(k)})), S.Pos.pow2(e)), h)
+
+def dsu_h2(~F: O.OField, +m: S.Z, +e: Nat, +k: Nat, h: zfl(~F, S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(k)})), S.Pos.pow2(e), NU.zfloor(S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(k)})), S.Pos.pow2(e)))) -> O.le(~F, @A(@N(@M(O.ofz(~F, m), t2(~F, k))), @1), @M(@A(O.ofz(~F, NU.zfloor(S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(k)})), S.Pos.pow2(e))), @1), t2(~F, e))):
+  %nm_eq(~F, m, k) : O.le(~F, @A(_, @1), @M(@A(O.ofz(~F, NU.zfloor(S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(k)})), S.Pos.pow2(e))), @1), t2(~F, e)))
+  zfl_2(~F, S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(k)})), S.Pos.pow2(e), NU.zfloor(S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(k)})), S.Pos.pow2(e)), h)
+
+def dsu_fin(~F: O.OField, +m: S.Z, +p: S.Pos, +e: Nat, +b: Nat, ea: {O.ofz(~F, M.zabs(m)) == O.ofp(~F, p) : @T}, +cc: M.Both(O.le(~F, @M(O.ofz(~F, m), O.inv(F, t2(~F, e))), @M(@N(O.ofz(~F, NU.zfloor(S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))})), S.Pos.pow2(e)))), O.inv(F, t2(~F, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))))), O.le(~F, @S(@M(@N(O.ofz(~F, NU.zfloor(S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))})), S.Pos.pow2(e)))), O.inv(F, t2(~F, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p))))), @M(O.ofz(~F, m), O.inv(F, t2(~F, e)))), @M(@1, O.inv(F, t2(~F, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))))))) -> M.Both(O.le(~F, M.ofd(~F, S.D{m, e}), M.ofd(~F, NU.qceil(S.Q{m, S.Pos.pow2(e)}, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p))))), O.le(~F, @S(M.ofd(~F, NU.qceil(S.Q{m, S.Pos.pow2(e)}, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))), M.ofd(~F, S.D{m, e})), @M(M.ofd(~F, S.D{M.zabs(m), e}), M.ofd(~F, S.D{S.Zpos{S.XO{S.XH{}}}, b})))):
+  ((%FR.ofz_neg(~F, NU.zfloor(S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))})), S.Pos.pow2(e))) : O.le(~F, @M(O.ofz(~F, m), O.inv(F, t2(~F, e))), @M(_, O.inv(F, t2(~F, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p))))))
+     qc_1(~F, O.ofz(~F, NU.zfloor(S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))})), S.Pos.pow2(e))), O.ofz(~F, m), O.inv(F, t2(~F, e)), O.inv(F, t2(~F, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))), cc)),
+   (%FR.ofz_neg(~F, NU.zfloor(S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))})), S.Pos.pow2(e))) : O.le(~F, @S(@M(_, O.inv(F, t2(~F, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p))))), @M(O.ofz(~F, m), O.inv(F, t2(~F, e)))), @M(@M(O.ofz(~F, M.zabs(m)), O.inv(F, t2(~F, e))), @M(@A(@1, @1), O.inv(F, t2(~F, b)))))
+     DM.le_trans(~F, @S(@M(@N(O.ofz(~F, NU.zfloor(S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))})), S.Pos.pow2(e)))), O.inv(F, t2(~F, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p))))), @M(O.ofz(~F, m), O.inv(F, t2(~F, e)))), @M(@1, O.inv(F, t2(~F, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p))))), @M(@M(O.ofz(~F, M.zabs(m)), O.inv(F, t2(~F, e))), @M(@A(@1, @1), O.inv(F, t2(~F, b)))),
+       qc_2(~F, O.ofz(~F, NU.zfloor(S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))})), S.Pos.pow2(e))), O.ofz(~F, m), O.inv(F, t2(~F, e)), O.inv(F, t2(~F, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))), cc),
+       (%Equal.sym(@T, O.ofz(~F, M.zabs(m)), O.ofp(~F, p), ea) : O.le(~F, @M(@1, O.inv(F, t2(~F, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p))))), @M(@M(_, O.inv(F, t2(~F, e))), @M(@A(@1, @1), O.inv(F, t2(~F, b)))))
+         dur(~F, p, e, b)))))
+
+# m nonzero with |m| = p
+def dsu_go(~F: O.OField, +m: S.Z, +p: S.Pos, +e: Nat, +b: Nat, ea: {O.ofz(~F, M.zabs(m)) == O.ofp(~F, p) : @T}) -> M.Both(O.le(~F, M.ofd(~F, S.D{m, e}), M.ofd(~F, NU.qceil(S.Q{m, S.Pos.pow2(e)}, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p))))), O.le(~F, @S(M.ofd(~F, NU.qceil(S.Q{m, S.Pos.pow2(e)}, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))), M.ofd(~F, S.D{m, e})), @M(M.ofd(~F, S.D{M.zabs(m), e}), M.ofd(~F, S.D{S.Zpos{S.XO{S.XH{}}}, b})))):
+  +h = zfloor_ok(~F, S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))})), S.Pos.pow2(e))
+  +cc = qc_core(~F, O.ofz(~F, NU.zfloor(S.Z.neg(S.Z.mul(m, S.Zpos{S.Pos.pow2(Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))})), S.Pos.pow2(e))), O.ofz(~F, m), t2(~F, e), t2(~F, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p))), O.inv(F, t2(~F, e)), O.inv(F, t2(~F, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))),
+    dsu_h1(~F, m, e, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)), h), dsu_h2(~F, m, e, Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)), h),
+    QE.ofp_rel(~F, S.Pos.pow2(e)), QE.ofp_rel(~F, S.Pos.pow2(Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))), inv_nn(~F, S.Pos.pow2(e)), inv_nn(~F, S.Pos.pow2(Nat.sub(Nat.add(b, QRD.size(S.Pos.pow2(e))), QRD.size(p)))))
+  dsu_fin(~F, m, p, e, b, ea, cc)
+
+# x <= dsigup(x, b) <= x + |x| 2^(1-b)
+def dsigup_ok(~F: O.OField, x: S.D, +b: Nat) -> M.Both(O.le(~F, M.ofd(~F, x), M.ofd(~F, NU.dsigup(x, b))), O.le(~F, @S(M.ofd(~F, NU.dsigup(x, b)), M.ofd(~F, x)), @M(M.ofd(~F, M.dabs(x)), M.ofd(~F, S.D{S.Zpos{S.XO{S.XH{}}}, b})))):
+  match x:
+    case S.D{S.Z0{}, +e}:
+      (Inr{@ZEQ[x=O.inv(F, t2(~F, e)),, y=O.inv(F, @1) | 0*x | 0*y]},
+       FV.le_of_sub(~F, @S(@M(@0, O.inv(F, @1)), @M(@0, O.inv(F, t2(~F, e)))), @M(@M(@0, O.inv(F, t2(~F, e))), @M(@A(@1, @1), O.inv(F, t2(~F, b)))), FM.nn_eq(~F, @S(@M(@M(@0, O.inv(F, t2(~F, e))), @M(@A(@1, @1), O.inv(F, t2(~F, b)))), @S(@M(@0, O.inv(F, @1)), @M(@0, O.inv(F, t2(~F, e))))), @0, @ZEQ[x=O.inv(F, t2(~F, e)),, y=O.inv(F, @1),, z=O.inv(F, t2(~F, b)) | 0 | (0*x)*((1 + 1)*z) - (0*y - 0*x)], FO.le_refl(~F, @0))))
+    case S.D{S.Zpos{+p}, +e}:
+      dsu_go(~F, S.Zpos{p}, p, e, b, {==})
+    case S.D{S.Zneg{+p}, +e}:
+      dsu_go(~F, S.Zneg{p}, p, e, b, {==})

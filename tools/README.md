@@ -13,6 +13,8 @@ the checker verifies the output.
 | `lib/structpf.bend` | `python3 tools/expand.py tools/drafts/structpf.draft lib/structpf.bend` |
 | `lib/keptpf.bend` | `python3 tools/expand.py tools/drafts/keptpf.draft lib/keptpf.bend` |
 | `lib/permpf.bend` | `python3 tools/expand.py tools/drafts/permpf.draft lib/permpf.bend` |
+| `lib/bndpf.bend` | `python3 tools/expand.py tools/drafts/bndpf.draft lib/bndpf.bend` |
+| `lib/roundpf.bend` | `python3 tools/expand.py tools/drafts/roundpf.draft lib/roundpf.bend` |
 
 `@CONJ name` / `params: ...` / `- tag: expr` lines / `@END` (`tools/conj.py`)
 defines `name(params)` as the conjunction (`SV.band`) of the exprs, with
