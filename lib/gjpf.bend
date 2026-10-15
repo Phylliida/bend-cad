@@ -1,0 +1,1674 @@
+# Gauss–Jordan elimination over every ordered field, as a proof (DESIGN
+# §10.4, C1). A square matrix A (n rows of n entries) either has a
+# two-sided inverse or sends some vector with an entry 1 to zero: the
+# finite-dimensional dichotomy the completeness proof stands on. Untrusted:
+# proofs only.
+#
+# The elimination keeps the row operations it has done (a history, newest
+# first), not the matrices: the current matrix is the history applied to
+# A, and the accumulated transform R is the history applied to I. Every
+# operation is undone by another one on vectors, so R x = R y gives x = y
+# by a lemma, usable any number of times. Pivots are decided with
+# lt_total. Matrices are lists of rows and vectors lists (spec/mat.bend);
+# indices are absolute, a recursion over a list carrying the index of its
+# head.
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ../spec/mat.bend as M
+import ../spec/deriv.bend as DV
+import ./karith.bend as KA
+import ./nat.bend as LN
+import ./flaws.bend as FL
+import ./fring.bend as FR
+import ./ford.bend as FO
+import ./fmat.bend as FM
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+def ft(e: {False{} == True{} : Bool}) -> Empty:
+  KA.ft(e)
+
+def tf(e: {True{} == False{} : Bool}) -> Empty:
+  KA.ft(Equal.sym(Bool, True{}, False{}, e))
+
+# Numbers
+# -------
+
+def nateq_ok(a: Nat, b: Nat, h: {KA.nateq(a, b) == True{} : Bool}) -> {a == b : Nat}:
+  match a b:
+    case 0n 0n:
+      {==}
+    case 0n 1n+j:
+      absurd({0n == 1n+j : Nat}, ft(h))
+    case 1n+i 0n:
+      absurd({1n+i == 0n : Nat}, ft(h))
+    case 1n+i 1n+j:
+      %nateq_ok(i, j, h) : {1n+i == 1n+_ : Nat}
+      {==}
+
+def nateq_refl(a: Nat) -> {KA.nateq(a, a) == True{} : Bool}:
+  match a:
+    case 0n:
+      {==}
+    case 1n+b:
+      nateq_refl(b)
+
+# a = b gives nateq(a, b)
+def nateq_of(+a: Nat, +b: Nat, e: {a == b : Nat}) -> {KA.nateq(a, b) == True{} : Bool}:
+  %e : {KA.nateq(a, _) == True{} : Bool}
+  nateq_refl(a)
+
+def nateq_sym(a: Nat, b: Nat) -> {KA.nateq(a, b) == KA.nateq(b, a) : Bool}:
+  match a b:
+    case 0n 0n:
+      {==}
+    case 0n 1n+j:
+      {==}
+    case 1n+i 0n:
+      {==}
+    case 1n+i 1n+j:
+      nateq_sym(i, j)
+
+# a + 1 <= a + k + 1 fails only for k = 0: nateq(a, b) false and a <= b give a + 1 <= b
+def le_ne(a: Nat, b: Nat, h: {KA.natle(a, b) == True{} : Bool}, hn: {KA.nateq(a, b) == False{} : Bool}) -> {KA.natle(1n+a, b) == True{} : Bool}:
+  match a b:
+    case 0n 0n:
+      absurd({KA.natle(1n, 0n) == True{} : Bool}, tf(hn))
+    case 0n 1n+j:
+      {==}
+    case 1n+i 0n:
+      absurd({KA.natle(2n+i, 0n) == True{} : Bool}, ft(h))
+    case 1n+i 1n+j:
+      le_ne(i, j, h, hn)
+
+def le_refl(a: Nat) -> {KA.natle(a, a) == True{} : Bool}:
+  match a:
+    case 0n:
+      {==}
+    case 1n+b:
+      le_refl(b)
+
+def le_succ(a: Nat, +b: Nat, h: {KA.natle(a, b) == True{} : Bool}) -> {KA.natle(a, 1n+b) == True{} : Bool}:
+  match a b:
+    case 0n b:
+      {==}
+    case 1n+i 0n:
+      absurd({KA.natle(i, 0n) == True{} : Bool}, ft(h))
+    case 1n+i 1n+j:
+      le_succ(i, j, h)
+
+def le_trans(a: Nat, b: Nat, +c: Nat, h1: {KA.natle(a, b) == True{} : Bool}, h2: {KA.natle(b, c) == True{} : Bool}) -> {KA.natle(a, c) == True{} : Bool}:
+  match a b c:
+    case 0n b c:
+      {==}
+    case 1n+i 0n c:
+      absurd({KA.natle(1n+i, c) == True{} : Bool}, ft(h1))
+    case 1n+i 1n+j 0n:
+      absurd({False{} == True{} : Bool}, ft(h2))
+    case 1n+i 1n+j 1n+k:
+      le_trans(i, j, k, h1, h2)
+
+# a + 1 <= b gives nateq(a, b) false
+def ne_of_lt(a: Nat, b: Nat, h: {KA.natle(1n+a, b) == True{} : Bool}) -> {KA.nateq(a, b) == False{} : Bool}:
+  match a b:
+    case 0n 0n:
+      absurd({True{} == False{} : Bool}, ft(h))
+    case 0n 1n+j:
+      {==}
+    case 1n+i 0n:
+      {==}
+    case 1n+i 1n+j:
+      ne_of_lt(i, j, h)
+
+def succ_inj(+a: Nat, +b: Nat, e: {1n+a == 1n+b : Nat}) -> {a == b : Nat}:
+  %e : {a == LN.pred(_) : Nat}
+  {==}
+
+def natp(n: Nat) -> Type:
+  match n:
+    case 0n:
+      Unit
+    case 1n+k:
+      Empty
+
+# 0 is not 1 + k
+def zero_ne(+k: Nat, e: {0n == 1n+k : Nat}) -> Empty:
+  %e : natp(_)
+  Unit{}
+
+# Vectors: one entry replaced
+# ---------------------------
+
+# y with entry i replaced by x (unchanged when i is past its end)
+def vset(~F: O.OField, y: M.Vec(~F), i: Nat, +x: O.C(F)) -> M.Vec(~F):
+  match y i:
+    case Nil{} i:
+      Nil{}
+    case Con{a, t} 0n:
+      Con{x, t}
+    case Con{a, t} 1n+k:
+      Con{a, vset(~F, t, k, x)}
+
+def len_vset(~F: O.OField, y: M.Vec(~F), i: Nat, +x: O.C(F)) -> {M.len(~F, y) == M.len(~F, vset(~F, y, i, x)) : Nat}:
+  match y i:
+    case Nil{} i:
+      {==}
+    case Con{a, t} 0n:
+      {==}
+    case Con{a, t} 1n+k:
+      %len_vset(~F, t, k, x) : {1n+M.len(~F, t) == 1n+_ : Nat}
+      {==}
+
+# k is below y's length after a set
+def lt_len_vset(~F: O.OField, +y: M.Vec(~F), +i: Nat, +x: O.C(F), +k: Nat, h: {KA.natle(1n+k, M.len(~F, y)) == True{} : Bool}) -> {KA.natle(1n+k, M.len(~F, vset(~F, y, i, x))) == True{} : Bool}:
+  %len_vset(~F, y, i, x) : {KA.natle(1n+k, _) == True{} : Bool}
+  h
+
+def look_vset_eq(~F: O.OField, y: M.Vec(~F), i: Nat, +x: O.C(F), h: {KA.natle(1n+i, M.len(~F, y)) == True{} : Bool}) -> {x == O.lookup(~F, vset(~F, y, i, x), i) : O.C(F)}:
+  match y i:
+    case Nil{} i:
+      absurd({x == O.lookup(~F, Nil{}, i) : O.C(F)}, ft(h))
+    case Con{a, t} 0n:
+      {==}
+    case Con{a, t} 1n+k:
+      look_vset_eq(~F, t, k, x, h)
+
+def look_vset_ne(~F: O.OField, y: M.Vec(~F), i: Nat, j: Nat, +x: O.C(F), h: {KA.nateq(i, j) == False{} : Bool}) -> {O.lookup(~F, y, j) == O.lookup(~F, vset(~F, y, i, x), j) : O.C(F)}:
+  match y i j:
+    case Nil{} i j:
+      {==}
+    case Con{a, t} 0n 0n:
+      absurd({a == x : O.C(F)}, tf(h))
+    case Con{a, t} 0n 1n+m:
+      {==}
+    case Con{a, t} 1n+k 0n:
+      {==}
+    case Con{a, t} 1n+k 1n+m:
+      look_vset_ne(~F, t, k, m, x, h)
+
+# setting twice keeps the second
+def vset_vset(~F: O.OField, y: M.Vec(~F), i: Nat, +x1: O.C(F), +x2: O.C(F)) -> {vset(~F, y, i, x2) == vset(~F, vset(~F, y, i, x1), i, x2) : M.Vec(~F)}:
+  match y i:
+    case Nil{} i:
+      {==}
+    case Con{a, t} 0n:
+      {==}
+    case Con{+a, t} 1n+k:
+      %vset_vset(~F, t, k, x1, x2) : {Con{a, vset(~F, t, k, x2)} == Con{a, _} : M.Vec(~F)}
+      {==}
+
+# setting an entry to itself changes nothing
+def vset_look(~F: O.OField, y: M.Vec(~F), i: Nat) -> {y == vset(~F, y, i, O.lookup(~F, y, i)) : M.Vec(~F)}:
+  match y i:
+    case Nil{} i:
+      {==}
+    case Con{a, t} 0n:
+      {==}
+    case Con{+a, +t} 1n+k:
+      %vset_look(~F, t, k) : {Con{a, t} == Con{a, _} : M.Vec(~F)}
+      {==}
+
+# sets at different places commute
+def vset_comm(~F: O.OField, y: M.Vec(~F), i: Nat, j: Nat, +x: O.C(F), +z: O.C(F), h: {KA.nateq(i, j) == False{} : Bool}) -> {vset(~F, vset(~F, y, i, x), j, z) == vset(~F, vset(~F, y, j, z), i, x) : M.Vec(~F)}:
+  match y i j:
+    case Nil{} i j:
+      {==}
+    case Con{a, t} 0n 0n:
+      absurd({vset(~F, Con{x, t}, 0n, z) == vset(~F, Con{z, t}, 0n, x) : M.Vec(~F)}, tf(h))
+    case Con{a, t} 0n 1n+m:
+      {==}
+    case Con{a, t} 1n+k 0n:
+      {==}
+    case Con{+a, t} 1n+k 1n+m:
+      %vset_comm(~F, t, k, m, x, z, h) : {Con{a, vset(~F, vset(~F, t, k, x), m, z)} == Con{a, _} : M.Vec(~F)}
+      {==}
+
+# Matrices: one row replaced
+# --------------------------
+
+def nrows(~F: O.OField, a: M.Mat(~F)) -> Nat:
+  match a:
+    case Nil{}:
+      0n
+    case Con{r, t}:
+      1n+nrows(~F, t)
+
+# a with row i replaced by r (unchanged when i is past its end)
+def mset(~F: O.OField, a: M.Mat(~F), i: Nat, +r: M.Vec(~F)) -> M.Mat(~F):
+  match a i:
+    case Nil{} i:
+      Nil{}
+    case Con{b, t} 0n:
+      Con{r, t}
+    case Con{b, t} 1n+k:
+      Con{b, mset(~F, t, k, r)}
+
+def nrows_mset(~F: O.OField, a: M.Mat(~F), i: Nat, +r: M.Vec(~F)) -> {nrows(~F, a) == nrows(~F, mset(~F, a, i, r)) : Nat}:
+  match a i:
+    case Nil{} i:
+      {==}
+    case Con{b, t} 0n:
+      {==}
+    case Con{b, t} 1n+k:
+      %nrows_mset(~F, t, k, r) : {1n+nrows(~F, t) == 1n+_ : Nat}
+      {==}
+
+def row_mset_eq(~F: O.OField, a: M.Mat(~F), i: Nat, +r: M.Vec(~F), h: {KA.natle(1n+i, nrows(~F, a)) == True{} : Bool}) -> {r == DV.mrow(~F, mset(~F, a, i, r), i) : M.Vec(~F)}:
+  match a i:
+    case Nil{} i:
+      absurd({r == DV.mrow(~F, Nil{}, i) : M.Vec(~F)}, ft(h))
+    case Con{b, t} 0n:
+      {==}
+    case Con{b, t} 1n+k:
+      row_mset_eq(~F, t, k, r, h)
+
+def row_mset_ne(~F: O.OField, a: M.Mat(~F), i: Nat, j: Nat, +r: M.Vec(~F), h: {KA.nateq(i, j) == False{} : Bool}) -> {DV.mrow(~F, a, j) == DV.mrow(~F, mset(~F, a, i, r), j) : M.Vec(~F)}:
+  match a i j:
+    case Nil{} i j:
+      {==}
+    case Con{b, t} 0n 0n:
+      absurd({b == r : M.Vec(~F)}, tf(h))
+    case Con{b, t} 0n 1n+m:
+      {==}
+    case Con{b, t} 1n+k 0n:
+      {==}
+    case Con{b, t} 1n+k 1n+m:
+      row_mset_ne(~F, t, k, m, r, h)
+
+def len_matvec(~F: O.OField, a: M.Mat(~F), +u: M.Vec(~F)) -> {nrows(~F, a) == M.len(~F, M.matvec(~F, a, u)) : Nat}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{r, t}:
+      %len_matvec(~F, t, u) : {1n+nrows(~F, t) == 1n+_ : Nat}
+      {==}
+
+# entry i of A u is row i of A times u
+def look_matvec(~F: O.OField, a: M.Mat(~F), +u: M.Vec(~F), i: Nat) -> {O.lookup(~F, M.matvec(~F, a, u), i) == M.dot(~F, DV.mrow(~F, a, i), u) : O.C(F)}:
+  match a i:
+    case Nil{} i:
+      {==}
+    case Con{r, t} 0n:
+      {==}
+    case Con{r, t} 1n+k:
+      look_matvec(~F, t, u, k)
+
+def matvec_mset(~F: O.OField, a: M.Mat(~F), i: Nat, +r: M.Vec(~F), +u: M.Vec(~F)) -> {vset(~F, M.matvec(~F, a, u), i, M.dot(~F, r, u)) == M.matvec(~F, mset(~F, a, i, r), u) : M.Vec(~F)}:
+  match a i:
+    case Nil{} i:
+      {==}
+    case Con{b, t} 0n:
+      {==}
+    case Con{+b, t} 1n+k:
+      %matvec_mset(~F, t, k, r, u) : {Con{M.dot(~F, b, u), vset(~F, M.matvec(~F, t, u), k, M.dot(~F, r, u))} == Con{M.dot(~F, b, u), _} : M.Vec(~F)}
+      {==}
+
+# Row operations
+# --------------
+# Swap rows x and y; scale row c by s (t its inverse, kept for undoing);
+# clear column c: every row u other than c loses ms_u times row c.
+
+type GOp<-F: O.OField> is Data:
+  GSwap{x: Nat, y: Nat}
+  GScl{c: Nat, s: O.C(F), t: O.C(F)}
+  GClr{c: Nat, ms: List<&2, O.C(F)>}
+
+def vhd(~F: O.OField, v: M.Vec(~F)) -> O.C(F):
+  match v:
+    case Nil{}:
+      O.zero(F)
+    case Con{a, t}:
+      a
+
+def vtl(~F: O.OField, v: M.Vec(~F)) -> M.Vec(~F):
+  match v:
+    case Nil{}:
+      Nil{}
+    case Con{a, t}:
+      t
+
+def mswap(~F: O.OField, +a: M.Mat(~F), +x: Nat, +y: Nat) -> M.Mat(~F):
+  mset(~F, mset(~F, a, x, DV.mrow(~F, a, y)), y, DV.mrow(~F, a, x))
+
+def mscl(~F: O.OField, +a: M.Mat(~F), +c: Nat, +s: O.C(F)) -> M.Mat(~F):
+  mset(~F, a, c, M.vscale(~F, s, DV.mrow(~F, a, c)))
+
+def mclr.row(~F: O.OField, b: Bool, +r: M.Vec(~F), +p: M.Vec(~F), +m: O.C(F)) -> M.Vec(~F):
+  match b:
+    case True{}:
+      r
+    case False{}:
+      M.vadd(~F, r, M.vscale(~F, O.neg(F, m), p))
+
+# the rows of a from index u, p being row c
+def mclr.go(~F: O.OField, a: M.Mat(~F), +p: M.Vec(~F), +c: Nat, +ms: M.Vec(~F), +u: Nat) -> M.Mat(~F):
+  match a:
+    case Nil{}:
+      Nil{}
+    case Con{r, t}:
+      Con{mclr.row(~F, KA.nateq(u, c), r, p, vhd(~F, ms)), mclr.go(~F, t, p, c, vtl(~F, ms), 1n+u)}
+
+def mclr(~F: O.OField, +a: M.Mat(~F), +c: Nat, +ms: M.Vec(~F)) -> M.Mat(~F):
+  mclr.go(~F, a, DV.mrow(~F, a, c), c, ms, 0n)
+
+def vswap(~F: O.OField, +y: M.Vec(~F), +x: Nat, +z: Nat) -> M.Vec(~F):
+  vset(~F, vset(~F, y, x, O.lookup(~F, y, z)), z, O.lookup(~F, y, x))
+
+def vscl(~F: O.OField, +y: M.Vec(~F), +c: Nat, +s: O.C(F)) -> M.Vec(~F):
+  vset(~F, y, c, O.mul(F, s, O.lookup(~F, y, c)))
+
+def vclr.ent(~F: O.OField, b: Bool, +h: O.C(F), +yc: O.C(F), +m: O.C(F)) -> O.C(F):
+  match b:
+    case True{}:
+      h
+    case False{}:
+      O.add(F, h, O.mul(F, O.neg(F, m), yc))
+
+def vclr.go(~F: O.OField, y: M.Vec(~F), +yc: O.C(F), +c: Nat, +ms: M.Vec(~F), +u: Nat) -> M.Vec(~F):
+  match y:
+    case Nil{}:
+      Nil{}
+    case Con{h, t}:
+      Con{vclr.ent(~F, KA.nateq(u, c), h, yc, vhd(~F, ms)), vclr.go(~F, t, yc, c, vtl(~F, ms), 1n+u)}
+
+def vclr(~F: O.OField, +y: M.Vec(~F), +c: Nat, +ms: M.Vec(~F)) -> M.Vec(~F):
+  vclr.go(~F, y, O.lookup(~F, y, c), c, ms, 0n)
+
+def apply(~F: O.OField, +a: M.Mat(~F), op: GOp<F>) -> M.Mat(~F):
+  match op:
+    case GSwap{x, y}:
+      mswap(~F, a, x, y)
+    case GScl{c, s, t}:
+      mscl(~F, a, c, s)
+    case GClr{c, ms}:
+      mclr(~F, a, c, ms)
+
+def vapply(~F: O.OField, +y: M.Vec(~F), op: GOp<F>) -> M.Vec(~F):
+  match op:
+    case GSwap{x, z}:
+      vswap(~F, y, x, z)
+    case GScl{c, s, t}:
+      vscl(~F, y, c, s)
+    case GClr{c, ms}:
+      vclr(~F, y, c, ms)
+
+# the operation that undoes op
+def vundo(~F: O.OField, +y: M.Vec(~F), op: GOp<F>) -> M.Vec(~F):
+  match op:
+    case GSwap{x, z}:
+      vswap(~F, y, x, z)
+    case GScl{c, s, t}:
+      vscl(~F, y, c, t)
+    case GClr{c, ms}:
+      vclr(~F, y, c, M.vneg(~F, ms))
+
+# a history, newest first
+def applies(~F: O.OField, +a: M.Mat(~F), h: List<&2, GOp<F>>) -> M.Mat(~F):
+  match h:
+    case Nil{}:
+      a
+    case Con{op, t}:
+      apply(~F, applies(~F, a, t), op)
+
+def vapplies(~F: O.OField, +y: M.Vec(~F), h: List<&2, GOp<F>>) -> M.Vec(~F):
+  match h:
+    case Nil{}:
+      y
+    case Con{op, t}:
+      vapply(~F, vapplies(~F, y, t), op)
+
+def vundos(~F: O.OField, h: List<&2, GOp<F>>, +y: M.Vec(~F)) -> M.Vec(~F):
+  match h:
+    case Nil{}:
+      y
+    case Con{op, t}:
+      vundos(~F, t, vundo(~F, y, op))
+
+# Row operations act on products
+# ------------------------------
+
+def matvec_swap(~F: O.OField, +a: M.Mat(~F), +x: Nat, +y: Nat, +u: M.Vec(~F)) -> {vswap(~F, M.matvec(~F, a, u), x, y) == M.matvec(~F, mswap(~F, a, x, y), u) : M.Vec(~F)}:
+  %matvec_mset(~F, mset(~F, a, x, DV.mrow(~F, a, y)), y, DV.mrow(~F, a, x), u) : {vswap(~F, M.matvec(~F, a, u), x, y) == _ : M.Vec(~F)}
+  %matvec_mset(~F, a, x, DV.mrow(~F, a, y), u) : {vswap(~F, M.matvec(~F, a, u), x, y) == vset(~F, _, y, M.dot(~F, DV.mrow(~F, a, x), u)) : M.Vec(~F)}
+  %look_matvec(~F, a, u, y) : {vswap(~F, M.matvec(~F, a, u), x, y) == vset(~F, vset(~F, M.matvec(~F, a, u), x, _), y, M.dot(~F, DV.mrow(~F, a, x), u)) : M.Vec(~F)}
+  %look_matvec(~F, a, u, x) : {vswap(~F, M.matvec(~F, a, u), x, y) == vset(~F, vset(~F, M.matvec(~F, a, u), x, O.lookup(~F, M.matvec(~F, a, u), y)), y, _) : M.Vec(~F)}
+  {==}
+
+def matvec_scl(~F: O.OField, +a: M.Mat(~F), +c: Nat, +s: O.C(F), +u: M.Vec(~F)) -> {vscl(~F, M.matvec(~F, a, u), c, s) == M.matvec(~F, mscl(~F, a, c, s), u) : M.Vec(~F)}:
+  %matvec_mset(~F, a, c, M.vscale(~F, s, DV.mrow(~F, a, c)), u) : {vscl(~F, M.matvec(~F, a, u), c, s) == _ : M.Vec(~F)}
+  %FM.dot_vscale(~F, s, DV.mrow(~F, a, c), u) : {vscl(~F, M.matvec(~F, a, u), c, s) == vset(~F, M.matvec(~F, a, u), c, _) : M.Vec(~F)}
+  %look_matvec(~F, a, u, c) : {vscl(~F, M.matvec(~F, a, u), c, s) == vset(~F, M.matvec(~F, a, u), c, O.mul(F, s, _)) : M.Vec(~F)}
+  {==}
+
+# a cleared row times v, p's product being yc
+def clr_dot(~F: O.OField, b: Bool, +r: M.Vec(~F), +p: M.Vec(~F), +m: O.C(F), +v: M.Vec(~F), +yc: O.C(F), e: {yc == M.dot(~F, p, v) : O.C(F)}) -> {vclr.ent(~F, b, M.dot(~F, r, v), yc, m) == M.dot(~F, mclr.row(~F, b, r, p, m), v) : O.C(F)}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      %FM.dot_vadd(~F, r, M.vscale(~F, O.neg(F, m), p), v) : {O.add(F, M.dot(~F, r, v), O.mul(F, O.neg(F, m), yc)) == _ : O.C(F)}
+      %FM.dot_vscale(~F, O.neg(F, m), p, v) : {O.add(F, M.dot(~F, r, v), O.mul(F, O.neg(F, m), yc)) == O.add(F, M.dot(~F, r, v), _) : O.C(F)}
+      %e : {O.add(F, M.dot(~F, r, v), O.mul(F, O.neg(F, m), yc)) == O.add(F, M.dot(~F, r, v), O.mul(F, O.neg(F, m), _)) : O.C(F)}
+      {==}
+
+def matvec_clr.go(~F: O.OField, a: M.Mat(~F), +p: M.Vec(~F), +c: Nat, +ms: M.Vec(~F), +u: Nat, +v: M.Vec(~F), +yc: O.C(F), +e: {yc == M.dot(~F, p, v) : O.C(F)}) -> {vclr.go(~F, M.matvec(~F, a, v), yc, c, ms, u) == M.matvec(~F, mclr.go(~F, a, p, c, ms, u), v) : M.Vec(~F)}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +t}:
+      %clr_dot(~F, KA.nateq(u, c), r, p, vhd(~F, ms), v, yc, e) : {vclr.go(~F, M.matvec(~F, Con{r, t}, v), yc, c, ms, u) == Con{_, M.matvec(~F, mclr.go(~F, t, p, c, vtl(~F, ms), 1n+u), v)} : M.Vec(~F)}
+      %matvec_clr.go(~F, t, p, c, vtl(~F, ms), 1n+u, v, yc, e) : {vclr.go(~F, M.matvec(~F, Con{r, t}, v), yc, c, ms, u) == Con{vclr.ent(~F, KA.nateq(u, c), M.dot(~F, r, v), yc, vhd(~F, ms)), _} : M.Vec(~F)}
+      {==}
+
+def matvec_clr(~F: O.OField, +a: M.Mat(~F), +c: Nat, +ms: M.Vec(~F), +v: M.Vec(~F)) -> {vclr(~F, M.matvec(~F, a, v), c, ms) == M.matvec(~F, mclr(~F, a, c, ms), v) : M.Vec(~F)}:
+  matvec_clr.go(~F, a, DV.mrow(~F, a, c), c, ms, 0n, v, O.lookup(~F, M.matvec(~F, a, v), c), look_matvec(~F, a, v, c))
+
+def matvec_apply(~F: O.OField, +a: M.Mat(~F), op: GOp<F>, +v: M.Vec(~F)) -> {vapply(~F, M.matvec(~F, a, v), op) == M.matvec(~F, apply(~F, a, op), v) : M.Vec(~F)}:
+  match op:
+    case GSwap{x, y}:
+      matvec_swap(~F, a, x, y, v)
+    case GScl{c, s, t}:
+      matvec_scl(~F, a, c, s, v)
+    case GClr{c, ms}:
+      matvec_clr(~F, a, c, ms, v)
+
+# H's operations on A act on every product A v
+def matvec_applies(~F: O.OField, +a: M.Mat(~F), h: List<&2, GOp<F>>, +v: M.Vec(~F)) -> {vapplies(~F, M.matvec(~F, a, v), h) == M.matvec(~F, applies(~F, a, h), v) : M.Vec(~F)}:
+  match h:
+    case Nil{}:
+      {==}
+    case Con{+op, +t}:
+      %matvec_apply(~F, applies(~F, a, t), op, v) : {vapply(~F, vapplies(~F, M.matvec(~F, a, v), t), op) == _ : M.Vec(~F)}
+      %matvec_applies(~F, a, t, v) : {vapply(~F, vapplies(~F, M.matvec(~F, a, v), t), op) == vapply(~F, _, op) : M.Vec(~F)}
+      {==}
+
+# Undoing the operations on vectors
+# ---------------------------------
+
+def len_vswap(~F: O.OField, +y: M.Vec(~F), +x: Nat, +z: Nat) -> {M.len(~F, y) == M.len(~F, vswap(~F, y, x, z)) : Nat}:
+  %len_vset(~F, vset(~F, y, x, O.lookup(~F, y, z)), z, O.lookup(~F, y, x)) : {M.len(~F, y) == _ : Nat}
+  len_vset(~F, y, x, O.lookup(~F, y, z))
+
+def len_vscl(~F: O.OField, +y: M.Vec(~F), +c: Nat, +s: O.C(F)) -> {M.len(~F, y) == M.len(~F, vscl(~F, y, c, s)) : Nat}:
+  len_vset(~F, y, c, O.mul(F, s, O.lookup(~F, y, c)))
+
+def len_vclr.go(~F: O.OField, y: M.Vec(~F), +yc: O.C(F), +c: Nat, +ms: M.Vec(~F), +u: Nat) -> {M.len(~F, y) == M.len(~F, vclr.go(~F, y, yc, c, ms, u)) : Nat}:
+  match y:
+    case Nil{}:
+      {==}
+    case Con{h, t}:
+      %len_vclr.go(~F, t, yc, c, vtl(~F, ms), 1n+u) : {1n+M.len(~F, t) == 1n+_ : Nat}
+      {==}
+
+def len_vapply(~F: O.OField, +y: M.Vec(~F), op: GOp<F>) -> {M.len(~F, y) == M.len(~F, vapply(~F, y, op)) : Nat}:
+  match op:
+    case GSwap{x, z}:
+      len_vswap(~F, y, x, z)
+    case GScl{c, s, t}:
+      len_vscl(~F, y, c, s)
+    case GClr{+c, ms}:
+      len_vclr.go(~F, y, O.lookup(~F, y, c), c, ms, 0n)
+
+def len_vapplies(~F: O.OField, +y: M.Vec(~F), h: List<&2, GOp<F>>) -> {M.len(~F, y) == M.len(~F, vapplies(~F, y, h)) : Nat}:
+  match h:
+    case Nil{}:
+      {==}
+    case Con{+op, +t}:
+      %len_vapply(~F, vapplies(~F, y, t), op) : {M.len(~F, y) == _ : Nat}
+      len_vapplies(~F, y, t)
+
+# swapping an entry with itself
+def vswap_same(~F: O.OField, +y: M.Vec(~F), +x: Nat) -> {y == vswap(~F, y, x, x) : M.Vec(~F)}:
+  %vset_vset(~F, y, x, O.lookup(~F, y, x), O.lookup(~F, y, x)) : {y == _ : M.Vec(~F)}
+  vset_look(~F, y, x)
+
+def undo_swap.go(~F: O.OField, +y: M.Vec(~F), +x: Nat, +z: Nat, hx: {KA.natle(1n+x, M.len(~F, y)) == True{} : Bool}, hz: {KA.natle(1n+z, M.len(~F, y)) == True{} : Bool}, b: Bool, +e: {KA.nateq(x, z) == b : Bool}) -> {y == vswap(~F, vswap(~F, y, x, z), x, z) : M.Vec(~F)}:
+  match b:
+    case True{}:
+      %nateq_ok(x, z, e) : {y == vswap(~F, vswap(~F, y, x, _), x, _) : M.Vec(~F)}
+      %vswap_same(~F, y, x) : {y == vswap(~F, _, x, x) : M.Vec(~F)}
+      vswap_same(~F, y, x)
+    case False{}:
+      %look_vset_eq(~F, vset(~F, y, x, O.lookup(~F, y, z)), z, O.lookup(~F, y, x), lt_len_vset(~F, y, x, O.lookup(~F, y, z), z, hz)) : {y == vset(~F, vset(~F, vswap(~F, y, x, z), x, _), z, O.lookup(~F, vswap(~F, y, x, z), x)) : M.Vec(~F)}
+      %look_vset_ne(~F, vset(~F, y, x, O.lookup(~F, y, z)), z, x, O.lookup(~F, y, x), Equal.trans(Bool, KA.nateq(z, x), KA.nateq(x, z), False{}, nateq_sym(z, x), e)) : {y == vset(~F, vset(~F, vswap(~F, y, x, z), x, O.lookup(~F, y, x)), z, _) : M.Vec(~F)}
+      %look_vset_eq(~F, y, x, O.lookup(~F, y, z), hx) : {y == vset(~F, vset(~F, vswap(~F, y, x, z), x, O.lookup(~F, y, x)), z, _) : M.Vec(~F)}
+      %vset_comm(~F, vset(~F, y, x, O.lookup(~F, y, z)), x, z, O.lookup(~F, y, x), O.lookup(~F, y, x), e) : {y == vset(~F, _, z, O.lookup(~F, y, z)) : M.Vec(~F)}
+      %vset_vset(~F, vset(~F, vset(~F, y, x, O.lookup(~F, y, z)), x, O.lookup(~F, y, x)), z, O.lookup(~F, y, x), O.lookup(~F, y, z)) : {y == _ : M.Vec(~F)}
+      %vset_vset(~F, y, x, O.lookup(~F, y, z), O.lookup(~F, y, x)) : {y == vset(~F, _, z, O.lookup(~F, y, z)) : M.Vec(~F)}
+      %vset_look(~F, y, x) : {y == vset(~F, _, z, O.lookup(~F, y, z)) : M.Vec(~F)}
+      vset_look(~F, y, z)
+
+def undo_swap(~F: O.OField, +y: M.Vec(~F), +x: Nat, +z: Nat, hx: {KA.natle(1n+x, M.len(~F, y)) == True{} : Bool}, hz: {KA.natle(1n+z, M.len(~F, y)) == True{} : Bool}) -> {y == vswap(~F, vswap(~F, y, x, z), x, z) : M.Vec(~F)}:
+  undo_swap.go(~F, y, x, z, hx, hz, KA.nateq(x, z), {==})
+
+# t (s x) = x when s t = 1
+def cancel(~F: O.OField, +s: O.C(F), +t: O.C(F), +x: O.C(F), h: {O.mul(F, s, t) == O.one(F) : O.C(F)}) -> {x == O.mul(F, t, O.mul(F, s, x)) : O.C(F)}:
+  %O.mul_assoc(F)(t, s, x) : {x == _ : O.C(F)}
+  %FL.mul_comm(~F, s, t) : {x == O.mul(F, _, x) : O.C(F)}
+  %Equal.sym(O.C(F), O.mul(F, s, t), O.one(F), h) : {x == O.mul(F, _, x) : O.C(F)}
+  FL.one_mul(~F, x)
+
+def undo_scl(~F: O.OField, +y: M.Vec(~F), +c: Nat, +s: O.C(F), +t: O.C(F), hc: {KA.natle(1n+c, M.len(~F, y)) == True{} : Bool}, hst: {O.mul(F, s, t) == O.one(F) : O.C(F)}) -> {y == vscl(~F, vscl(~F, y, c, s), c, t) : M.Vec(~F)}:
+  %look_vset_eq(~F, y, c, O.mul(F, s, O.lookup(~F, y, c)), hc) : {y == vset(~F, vscl(~F, y, c, s), c, O.mul(F, t, _)) : M.Vec(~F)}
+  %vset_vset(~F, y, c, O.mul(F, s, O.lookup(~F, y, c)), O.mul(F, t, O.mul(F, s, O.lookup(~F, y, c)))) : {y == _ : M.Vec(~F)}
+  %cancel(~F, s, t, O.lookup(~F, y, c), hst) : {y == vset(~F, y, c, _) : M.Vec(~F)}
+  vset_look(~F, y, c)
+
+def ent_true(~F: O.OField, +b: Bool, e: {b == True{} : Bool}, +h: O.C(F), +yc: O.C(F), +m: O.C(F)) -> {h == vclr.ent(~F, b, h, yc, m) : O.C(F)}:
+  %Equal.sym(Bool, b, True{}, e) : {h == vclr.ent(~F, _, h, yc, m) : O.C(F)}
+  {==}
+
+def succ_add(+u: Nat, +k: Nat, +c: Nat, e: {Nat.add(u, 1n+k) == c : Nat}) -> {Nat.add(1n+u, k) == c : Nat}:
+  %Equal.sym(Nat, 1n+Nat.add(u, k), Nat.add(u, 1n+k), LN.add_succ(u, k)) : {_ == c : Nat}
+  e
+
+# a clear leaves entry c as it is
+def look_clr_c(~F: O.OField, y: M.Vec(~F), +yc: O.C(F), +c: Nat, +ms: M.Vec(~F), +u: Nat, j: Nat, e: {Nat.add(u, j) == c : Nat}) -> {O.lookup(~F, y, j) == O.lookup(~F, vclr.go(~F, y, yc, c, ms, u), j) : O.C(F)}:
+  match y j:
+    case Nil{} j:
+      {==}
+    case Con{h, t} 0n:
+      ent_true(~F, KA.nateq(u, c), nateq_of(u, c, Equal.trans(Nat, u, Nat.add(u, 0n), c, LN.add_zero(u), e)), h, yc, vhd(~F, ms))
+    case Con{h, t} 1n++k:
+      look_clr_c(~F, t, yc, c, vtl(~F, ms), 1n+u, k, succ_add(u, k, c, e))
+
+def hd_vneg(~F: O.OField, ms: M.Vec(~F)) -> {O.neg(F, vhd(~F, ms)) == vhd(~F, M.vneg(~F, ms)) : O.C(F)}:
+  match ms:
+    case Nil{}:
+      Equal.sym(O.C(F), O.zero(F), O.neg(F, O.zero(F)), FL.neg_zero(~F))
+    case Con{a, t}:
+      {==}
+
+def tl_vneg(~F: O.OField, ms: M.Vec(~F)) -> {M.vneg(~F, vtl(~F, ms)) == vtl(~F, M.vneg(~F, ms)) : M.Vec(~F)}:
+  match ms:
+    case Nil{}:
+      {==}
+    case Con{a, t}:
+      {==}
+
+def ent_ent(~F: O.OField, b: Bool, +h: O.C(F), +yc: O.C(F), +m: O.C(F)) -> {h == vclr.ent(~F, b, vclr.ent(~F, b, h, yc, m), yc, O.neg(F, m)) : O.C(F)}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      FR.fring_eq(~F, [h, yc, m], E.ZVar{0n}, E.ZAdd{E.ZAdd{E.ZVar{0n}, E.ZMul{E.ZNeg{E.ZVar{2n}}, E.ZVar{1n}}}, E.ZMul{E.ZNeg{E.ZNeg{E.ZVar{2n}}}, E.ZVar{1n}}}, {==})
+
+def clr_clr.go(~F: O.OField, y: M.Vec(~F), +yc: O.C(F), +c: Nat, +ms: M.Vec(~F), +u: Nat) -> {y == vclr.go(~F, vclr.go(~F, y, yc, c, ms, u), yc, c, M.vneg(~F, ms), u) : M.Vec(~F)}:
+  match y:
+    case Nil{}:
+      {==}
+    case Con{+h, +t}:
+      %hd_vneg(~F, ms) : {Con{h, t} == Con{vclr.ent(~F, KA.nateq(u, c), vclr.ent(~F, KA.nateq(u, c), h, yc, vhd(~F, ms)), yc, _), vclr.go(~F, vclr.go(~F, t, yc, c, vtl(~F, ms), 1n+u), yc, c, vtl(~F, M.vneg(~F, ms)), 1n+u)} : M.Vec(~F)}
+      %tl_vneg(~F, ms) : {Con{h, t} == Con{vclr.ent(~F, KA.nateq(u, c), vclr.ent(~F, KA.nateq(u, c), h, yc, vhd(~F, ms)), yc, O.neg(F, vhd(~F, ms))), vclr.go(~F, vclr.go(~F, t, yc, c, vtl(~F, ms), 1n+u), yc, c, _, 1n+u)} : M.Vec(~F)}
+      %ent_ent(~F, KA.nateq(u, c), h, yc, vhd(~F, ms)) : {Con{h, t} == Con{_, vclr.go(~F, vclr.go(~F, t, yc, c, vtl(~F, ms), 1n+u), yc, c, M.vneg(~F, vtl(~F, ms)), 1n+u)} : M.Vec(~F)}
+      %clr_clr.go(~F, t, yc, c, vtl(~F, ms), 1n+u) : {Con{h, t} == Con{h, _} : M.Vec(~F)}
+      {==}
+
+def undo_clr(~F: O.OField, +y: M.Vec(~F), +c: Nat, +ms: M.Vec(~F)) -> {y == vclr(~F, vclr(~F, y, c, ms), c, M.vneg(~F, ms)) : M.Vec(~F)}:
+  %look_clr_c(~F, y, O.lookup(~F, y, c), c, ms, 0n, c, {==}) : {y == vclr.go(~F, vclr(~F, y, c, ms), _, c, M.vneg(~F, ms), 0n) : M.Vec(~F)}
+  clr_clr.go(~F, y, O.lookup(~F, y, c), c, ms, 0n)
+
+# Valid histories
+# ---------------
+
+# op's rows are below n, and a scale has its inverse
+def opok(~F: O.OField, op: GOp<F>, +n: Nat) -> Data:
+  match op:
+    case GSwap{x, y}:
+      M.Both({KA.natle(1n+x, n) == True{} : Bool}, {KA.natle(1n+y, n) == True{} : Bool})
+    case GScl{c, s, t}:
+      M.Both({KA.natle(1n+c, n) == True{} : Bool}, {O.mul(F, s, t) == O.one(F) : O.C(F)})
+    case GClr{c, ms}:
+      Unit
+
+def hok(~F: O.OField, h: List<&2, GOp<F>>, +n: Nat) -> Data:
+  match h:
+    case Nil{}:
+      Unit
+    case Con{op, t}:
+      M.Both(opok(~F, op, n), hok(~F, t, n))
+
+# k < n = len y gives k < len y
+def lt_len(~F: O.OField, +y: M.Vec(~F), +n: Nat, +k: Nat, hl: {M.len(~F, y) == n : Nat}, h: {KA.natle(1n+k, n) == True{} : Bool}) -> {KA.natle(1n+k, M.len(~F, y)) == True{} : Bool}:
+  %Equal.sym(Nat, M.len(~F, y), n, hl) : {KA.natle(1n+k, _) == True{} : Bool}
+  h
+
+def undo_apply(~F: O.OField, +y: M.Vec(~F), op: GOp<F>, +n: Nat, ok: opok(~F, op, n), +hl: {M.len(~F, y) == n : Nat}) -> {y == vundo(~F, vapply(~F, y, op), op) : M.Vec(~F)}:
+  match op:
+    case GSwap{+x, +z}:
+      match ok:
+        case (hx, hz):
+          undo_swap(~F, y, x, z, lt_len(~F, y, n, x, hl, hx), lt_len(~F, y, n, z, hl, hz))
+    case GScl{+c, +s, +t}:
+      match ok:
+        case (hc, hst):
+          undo_scl(~F, y, c, s, t, lt_len(~F, y, n, c, hl, hc), hst)
+    case GClr{+c, +ms}:
+      undo_clr(~F, y, c, ms)
+
+def undos_applies(~F: O.OField, h: List<&2, GOp<F>>, +y: M.Vec(~F), +n: Nat, ok: hok(~F, h, n), +hl: {M.len(~F, y) == n : Nat}) -> {y == vundos(~F, h, vapplies(~F, y, h)) : M.Vec(~F)}:
+  match h:
+    case Nil{}:
+      {==}
+    case Con{+op, +t}:
+      match ok:
+        case (okop, okt):
+          %undo_apply(~F, vapplies(~F, y, t), op, n, okop, Equal.trans(Nat, M.len(~F, vapplies(~F, y, t)), M.len(~F, y), n, Equal.sym(Nat, M.len(~F, y), M.len(~F, vapplies(~F, y, t)), len_vapplies(~F, y, t)), hl)) : {y == vundos(~F, t, _) : M.Vec(~F)}
+          undos_applies(~F, t, y, n, okt, hl)
+
+# the history's transform is injective
+def inj(~F: O.OField, +h: List<&2, GOp<F>>, +p: M.Vec(~F), +q: M.Vec(~F), +n: Nat, +ok: hok(~F, h, n), hp: {M.len(~F, p) == n : Nat}, hq: {M.len(~F, q) == n : Nat}, e: {vapplies(~F, p, h) == vapplies(~F, q, h) : M.Vec(~F)}) -> {p == q : M.Vec(~F)}:
+  %Equal.sym(M.Vec(~F), p, vundos(~F, h, vapplies(~F, p, h)), undos_applies(~F, h, p, n, ok, hp)) : {_ == q : M.Vec(~F)}
+  %Equal.sym(M.Vec(~F), vapplies(~F, p, h), vapplies(~F, q, h), e) : {vundos(~F, h, _) == q : M.Vec(~F)}
+  Equal.sym(M.Vec(~F), q, vundos(~F, h, vapplies(~F, q, h)), undos_applies(~F, h, q, n, ok, hq))
+
+# Special vectors
+# ---------------
+
+def zeros(~F: O.OField, n: Nat) -> M.Vec(~F):
+  match n:
+    case 0n:
+      Nil{}
+    case 1n+k:
+      Con{O.zero(F), zeros(~F, k)}
+
+# the n entries with a 1 at i (all 0 when i >= n)
+def unit(~F: O.OField, n: Nat, i: Nat) -> M.Vec(~F):
+  match n i:
+    case 0n i:
+      Nil{}
+    case 1n+k 0n:
+      Con{O.one(F), zeros(~F, k)}
+    case 1n+k 1n+j:
+      Con{O.zero(F), unit(~F, k, j)}
+
+# the first k entries
+def vtake(~F: O.OField, k: Nat, y: M.Vec(~F)) -> M.Vec(~F):
+  match k y:
+    case 0n y:
+      Nil{}
+    case 1n+j Nil{}:
+      Nil{}
+    case 1n+j Con{a, t}:
+      Con{a, vtake(~F, j, t)}
+
+def len_zeros(~F: O.OField, n: Nat) -> {n == M.len(~F, zeros(~F, n)) : Nat}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+k:
+      %len_zeros(~F, k) : {1n+k == 1n+_ : Nat}
+      {==}
+
+def len_unit(~F: O.OField, n: Nat, i: Nat) -> {n == M.len(~F, unit(~F, n, i)) : Nat}:
+  match n i:
+    case 0n i:
+      {==}
+    case 1n+k 0n:
+      %len_zeros(~F, k) : {1n+k == 1n+_ : Nat}
+      {==}
+    case 1n+k 1n+j:
+      %len_unit(~F, k, j) : {1n+k == 1n+_ : Nat}
+      {==}
+
+def look_zeros(~F: O.OField, n: Nat, i: Nat) -> {O.zero(F) == O.lookup(~F, zeros(~F, n), i) : O.C(F)}:
+  match n i:
+    case 0n i:
+      {==}
+    case 1n+k 0n:
+      {==}
+    case 1n+k 1n+j:
+      look_zeros(~F, k, j)
+
+# 0 . w = 0
+def dot_zeros(~F: O.OField, n: Nat, w: M.Vec(~F)) -> {O.zero(F) == M.dot(~F, zeros(~F, n), w) : O.C(F)}:
+  match n w:
+    case 0n w:
+      {==}
+    case 1n+k Nil{}:
+      {==}
+    case 1n+k Con{+a, +t}:
+      %dot_zeros(~F, k, t) : {O.zero(F) == O.add(F, O.mul(F, O.zero(F), a), _) : O.C(F)}
+      FR.fring_eq(~F, [a], E.ZCst{S.Z0{}}, E.ZAdd{E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{0n}}, E.ZCst{S.Z0{}}}, {==})
+
+# e_i . w = w_i (w no longer than e_i)
+def dot_unit(~F: O.OField, n: Nat, i: Nat, w: M.Vec(~F), h: {KA.natle(M.len(~F, w), n) == True{} : Bool}) -> {O.lookup(~F, w, i) == M.dot(~F, unit(~F, n, i), w) : O.C(F)}:
+  match n i w:
+    case 0n i Nil{}:
+      {==}
+    case 0n i Con{a, t}:
+      absurd({O.lookup(~F, Con{a, t}, i) == M.dot(~F, Nil{}, Con{a, t}) : O.C(F)}, ft(h))
+    case 1n+k 0n Nil{}:
+      {==}
+    case 1n+k 0n Con{+a, +t}:
+      %dot_zeros(~F, k, t) : {a == O.add(F, O.mul(F, O.one(F), a), _) : O.C(F)}
+      FR.fring_eq(~F, [a], E.ZVar{0n}, E.ZAdd{E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{0n}}, E.ZCst{S.Z0{}}}, {==})
+    case 1n+k 1n++j Nil{}:
+      {==}
+    case 1n+k 1n++j Con{+a, +t}:
+      %dot_unit(~F, k, j, t, h) : {O.lookup(~F, t, j) == O.add(F, O.mul(F, O.zero(F), a), _) : O.C(F)}
+      FR.fring_eq(~F, [a, O.lookup(~F, t, j)], E.ZVar{1n}, E.ZAdd{E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{0n}}, E.ZVar{1n}}, {==})
+
+# Agreement and extensionality
+# ----------------------------
+
+# u and v agree at the entries below k
+def VE(~F: O.OField, +u: M.Vec(~F), +v: M.Vec(~F), k: Nat) -> Data:
+  match k:
+    case 0n:
+      Unit
+    case 1n+j:
+      M.Both(VE(~F, u, v, j), {O.lookup(~F, u, j) == O.lookup(~F, v, j) : O.C(F)})
+
+# agreement below 1 + k moves to the tails
+def ve_tail(~F: O.OField, +a: O.C(F), +u: M.Vec(~F), +b: O.C(F), +v: M.Vec(~F), k: Nat, h: VE(~F, Con{a, u}, Con{b, v}, 1n+k)) -> VE(~F, u, v, k):
+  match k:
+    case 0n:
+      Unit{}
+    case 1n+j:
+      match h:
+        case (h1, e):
+          (ve_tail(~F, a, u, b, v, j, h1), e)
+
+def ve_head(~F: O.OField, +u: M.Vec(~F), +v: M.Vec(~F), k: Nat, h: VE(~F, u, v, 1n+k)) -> {O.lookup(~F, u, 0n) == O.lookup(~F, v, 0n) : O.C(F)}:
+  match k:
+    case 0n:
+      match h:
+        case (h1, e):
+          e
+    case 1n+j:
+      match h:
+        case (h1, e):
+          ve_head(~F, u, v, j, h1)
+
+# vectors of length n agreeing below n are equal
+def veq_ext(~F: O.OField, u: M.Vec(~F), v: M.Vec(~F), n: Nat, +h: VE(~F, u, v, n), hu: {M.len(~F, u) == n : Nat}, hv: {M.len(~F, v) == n : Nat}) -> {u == v : M.Vec(~F)}:
+  match u v n:
+    case Nil{} Nil{} n:
+      {==}
+    case Nil{} Con{b, t} n:
+      absurd({Nil{} == Con{b, t} : M.Vec(~F)}, zero_ne(M.len(~F, t), Equal.trans(Nat, 0n, n, 1n+M.len(~F, t), hu, Equal.sym(Nat, 1n+M.len(~F, t), n, hv))))
+    case Con{a, s} Nil{} n:
+      absurd({Con{a, s} == Nil{} : M.Vec(~F)}, zero_ne(M.len(~F, s), Equal.trans(Nat, 0n, n, 1n+M.len(~F, s), hv, Equal.sym(Nat, 1n+M.len(~F, s), n, hu))))
+    case Con{+a, +s} Con{+b, +t} 0n:
+      absurd({Con{a, s} == Con{b, t} : M.Vec(~F)}, zero_ne(M.len(~F, s), Equal.sym(Nat, 1n+M.len(~F, s), 0n, hu)))
+    case Con{+a, +s} Con{+b, +t} 1n++k:
+      %ve_head(~F, Con{a, s}, Con{b, t}, k, h) : {Con{a, s} == Con{_, t} : M.Vec(~F)}
+      %veq_ext(~F, s, t, k, ve_tail(~F, a, s, b, t, k, h), succ_inj(M.len(~F, s), k, hu), succ_inj(M.len(~F, t), k, hv)) : {Con{a, s} == Con{a, _} : M.Vec(~F)}
+      {==}
+
+# Facts about every row below k
+# -----------------------------
+
+def All(~Q: Nat -> Data, k: Nat) -> Data:
+  match k:
+    case 0n:
+      Unit
+    case 1n++j:
+      M.Both(All(~Q, j), Q(j))
+
+def all_at.go(~Q: Nat -> Data, +j: Nat, q: Q(j), +i: Nat, b: Bool, e: {KA.nateq(i, j) == b : Bool}, hi: {KA.natle(1n+i, 1n+j) == True{} : Bool}, ih: {KA.natle(1n+i, j) == True{} : Bool} -> Q(i)) -> Q(i):
+  match b:
+    case True{}:
+      %Equal.sym(Nat, i, j, nateq_ok(i, j, e)) : Q(_)
+      q
+    case False{}:
+      ih(le_ne(i, j, hi, e))
+
+def all_at(~Q: Nat -> Data, k: Nat, h: All(~Q, k), +i: Nat, hi: {KA.natle(1n+i, k) == True{} : Bool}) -> Q(i):
+  match k:
+    case 0n:
+      absurd(Q(i), ft(hi))
+    case 1n++j:
+      match h:
+        case (h1, q):
+          all_at.go(~Q, j, q, i, KA.nateq(i, j), {==}, hi, hj => all_at(~Q, j, h1, i, hj))
+
+def all_mk(~n: Nat, ~Q: Nat -> Data, ~f: @i: Nat -> {KA.natle(1n+i, n) == True{} : Bool} -> Q(i), k: Nat, +hk: {KA.natle(k, n) == True{} : Bool}) -> All(~Q, k):
+  match k:
+    case 0n:
+      Unit{}
+    case 1n++j:
+      (all_mk(~n, ~Q, ~f, j, le_trans(j, 1n+j, n, le_succ(j, j, le_refl(j)), hk)), f(j, hk))
+
+# More about vectors
+# ------------------
+
+def vapp(~F: O.OField, u: M.Vec(~F), w: M.Vec(~F)) -> M.Vec(~F):
+  match u:
+    case Nil{}:
+      w
+    case Con{a, t}:
+      Con{a, vapp(~F, t, w)}
+
+def vdrop(~F: O.OField, k: Nat, y: M.Vec(~F)) -> M.Vec(~F):
+  match k y:
+    case 0n y:
+      y
+    case 1n+j Nil{}:
+      Nil{}
+    case 1n+j Con{a, t}:
+      vdrop(~F, j, t)
+
+# 1 for True, 0 for False
+def dl(~F: O.OField, b: Bool) -> O.C(F):
+  match b:
+    case True{}:
+      O.one(F)
+    case False{}:
+      O.zero(F)
+
+# column c
+def mcol(~F: O.OField, a: M.Mat(~F), +c: Nat) -> M.Vec(~F):
+  match a:
+    case Nil{}:
+      Nil{}
+    case Con{r, t}:
+      Con{O.lookup(~F, r, c), mcol(~F, t, c)}
+
+def len_vscale(~F: O.OField, +s: O.C(F), y: M.Vec(~F)) -> {M.len(~F, y) == M.len(~F, M.vscale(~F, s, y)) : Nat}:
+  match y:
+    case Nil{}:
+      {==}
+    case Con{a, t}:
+      %len_vscale(~F, s, t) : {1n+M.len(~F, t) == 1n+_ : Nat}
+      {==}
+
+def len_vneg(~F: O.OField, y: M.Vec(~F)) -> {M.len(~F, y) == M.len(~F, M.vneg(~F, y)) : Nat}:
+  match y:
+    case Nil{}:
+      {==}
+    case Con{a, t}:
+      %len_vneg(~F, t) : {1n+M.len(~F, t) == 1n+_ : Nat}
+      {==}
+
+# vectors of length n add to one of length n
+def len_vadd(~F: O.OField, u: M.Vec(~F), w: M.Vec(~F), +n: Nat, hu: {M.len(~F, u) == n : Nat}, hw: {M.len(~F, w) == n : Nat}) -> {M.len(~F, M.vadd(~F, u, w)) == n : Nat}:
+  match u w n:
+    case Nil{} w n:
+      hw
+    case Con{+a, +s} Nil{} n:
+      hu
+    case Con{+a, +s} Con{+b, +t} 0n:
+      absurd({1n+M.len(~F, M.vadd(~F, s, t)) == 0n : Nat}, zero_ne(M.len(~F, s), Equal.sym(Nat, 1n+M.len(~F, s), 0n, hu)))
+    case Con{+a, +s} Con{+b, +t} 1n++k:
+      %len_vadd(~F, s, t, k, succ_inj(M.len(~F, s), k, hu), succ_inj(M.len(~F, t), k, hw)) : {1n+M.len(~F, M.vadd(~F, s, t)) == 1n+_ : Nat}
+      {==}
+
+def len_vtake(~F: O.OField, k: Nat, y: M.Vec(~F), h: {KA.natle(k, M.len(~F, y)) == True{} : Bool}) -> {k == M.len(~F, vtake(~F, k, y)) : Nat}:
+  match k y:
+    case 0n y:
+      {==}
+    case 1n+j Nil{}:
+      absurd({1n+j == 0n : Nat}, ft(h))
+    case 1n+j Con{a, t}:
+      %len_vtake(~F, j, t, h) : {1n+j == 1n+_ : Nat}
+      {==}
+
+def len_vapp(~F: O.OField, u: M.Vec(~F), +w: M.Vec(~F)) -> {Nat.add(M.len(~F, u), M.len(~F, w)) == M.len(~F, vapp(~F, u, w)) : Nat}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{a, t}:
+      %len_vapp(~F, t, w) : {1n+Nat.add(M.len(~F, t), M.len(~F, w)) == 1n+_ : Nat}
+      {==}
+
+def len_mcol(~F: O.OField, a: M.Mat(~F), +c: Nat) -> {nrows(~F, a) == M.len(~F, mcol(~F, a, c)) : Nat}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{r, t}:
+      %len_mcol(~F, t, c) : {1n+nrows(~F, t) == 1n+_ : Nat}
+      {==}
+
+def look_vscale(~F: O.OField, +s: O.C(F), y: M.Vec(~F), i: Nat) -> {O.mul(F, s, O.lookup(~F, y, i)) == O.lookup(~F, M.vscale(~F, s, y), i) : O.C(F)}:
+  match y i:
+    case Nil{} i:
+      Equal.sym(O.C(F), O.zero(F), O.mul(F, s, O.zero(F)), FL.mul_zero(~F, s))
+    case Con{a, t} 0n:
+      {==}
+    case Con{a, t} 1n+k:
+      look_vscale(~F, s, t, k)
+
+def look_vneg(~F: O.OField, y: M.Vec(~F), i: Nat) -> {O.neg(F, O.lookup(~F, y, i)) == O.lookup(~F, M.vneg(~F, y), i) : O.C(F)}:
+  match y i:
+    case Nil{} i:
+      Equal.sym(O.C(F), O.zero(F), O.neg(F, O.zero(F)), FL.neg_zero(~F))
+    case Con{a, t} 0n:
+      {==}
+    case Con{a, t} 1n+k:
+      look_vneg(~F, t, k)
+
+def look_vadd(~F: O.OField, u: M.Vec(~F), w: M.Vec(~F), i: Nat) -> {O.add(F, O.lookup(~F, u, i), O.lookup(~F, w, i)) == O.lookup(~F, M.vadd(~F, u, w), i) : O.C(F)}:
+  match u w i:
+    case Nil{} w i:
+      FL.zero_add(~F, O.lookup(~F, w, i))
+    case Con{a, s} Nil{} i:
+      O.add_zero(F)(O.lookup(~F, Con{a, s}, i))
+    case Con{a, s} Con{b, t} 0n:
+      {==}
+    case Con{a, s} Con{b, t} 1n+k:
+      look_vadd(~F, s, t, k)
+
+def look_mcol(~F: O.OField, a: M.Mat(~F), +c: Nat, i: Nat) -> {O.lookup(~F, DV.mrow(~F, a, i), c) == O.lookup(~F, mcol(~F, a, c), i) : O.C(F)}:
+  match a i:
+    case Nil{} i:
+      {==}
+    case Con{r, t} 0n:
+      {==}
+    case Con{r, t} 1n+k:
+      look_mcol(~F, t, c, k)
+
+def look0_vhd(~F: O.OField, ms: M.Vec(~F)) -> {vhd(~F, ms) == O.lookup(~F, ms, 0n) : O.C(F)}:
+  match ms:
+    case Nil{}:
+      {==}
+    case Con{a, t}:
+      {==}
+
+def look_vtl(~F: O.OField, ms: M.Vec(~F), +k: Nat) -> {O.lookup(~F, vtl(~F, ms), k) == O.lookup(~F, ms, 1n+k) : O.C(F)}:
+  match ms:
+    case Nil{}:
+      {==}
+    case Con{a, t}:
+      {==}
+
+# entries of a prefix
+def look_take_lo(~F: O.OField, c: Nat, y: M.Vec(~F), i: Nat, h: {KA.natle(1n+i, c) == True{} : Bool}) -> {O.lookup(~F, y, i) == O.lookup(~F, vtake(~F, c, y), i) : O.C(F)}:
+  match c y i:
+    case 0n y i:
+      absurd({O.lookup(~F, y, i) == O.lookup(~F, Nil{}, i) : O.C(F)}, ft(h))
+    case 1n+j Nil{} i:
+      {==}
+    case 1n+j Con{a, t} 0n:
+      {==}
+    case 1n+j Con{a, t} 1n+k:
+      look_take_lo(~F, j, t, k, h)
+
+def look_take_hi(~F: O.OField, c: Nat, y: M.Vec(~F), i: Nat, h: {KA.natle(c, i) == True{} : Bool}) -> {O.zero(F) == O.lookup(~F, vtake(~F, c, y), i) : O.C(F)}:
+  match c y i:
+    case 0n y i:
+      {==}
+    case 1n+j Nil{} i:
+      {==}
+    case 1n+j Con{a, t} 0n:
+      absurd({O.zero(F) == a : O.C(F)}, ft(h))
+    case 1n+j Con{a, t} 1n+k:
+      look_take_hi(~F, j, t, k, h)
+
+# the prefixes of a sum and of a multiple
+def take_vadd(~F: O.OField, c: Nat, u: M.Vec(~F), w: M.Vec(~F)) -> {M.vadd(~F, vtake(~F, c, u), vtake(~F, c, w)) == vtake(~F, c, M.vadd(~F, u, w)) : M.Vec(~F)}:
+  match c u w:
+    case 0n u w:
+      {==}
+    case 1n+j Nil{} w:
+      {==}
+    case 1n+j Con{a, s} Nil{}:
+      {==}
+    case 1n+j Con{+a, s} Con{+b, t}:
+      %take_vadd(~F, j, s, t) : {Con{O.add(F, a, b), M.vadd(~F, vtake(~F, j, s), vtake(~F, j, t))} == Con{O.add(F, a, b), _} : M.Vec(~F)}
+      {==}
+
+def take_vscale(~F: O.OField, c: Nat, +s: O.C(F), y: M.Vec(~F)) -> {M.vscale(~F, s, vtake(~F, c, y)) == vtake(~F, c, M.vscale(~F, s, y)) : M.Vec(~F)}:
+  match c y:
+    case 0n y:
+      {==}
+    case 1n+j Nil{}:
+      {==}
+    case 1n+j Con{+a, t}:
+      %take_vscale(~F, j, s, t) : {Con{O.mul(F, s, a), M.vscale(~F, s, vtake(~F, j, t))} == Con{O.mul(F, s, a), _} : M.Vec(~F)}
+      {==}
+
+def scale_zeros(~F: O.OField, +s: O.C(F), n: Nat) -> {zeros(~F, n) == M.vscale(~F, s, zeros(~F, n)) : M.Vec(~F)}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+k:
+      %scale_zeros(~F, s, k) : {Con{O.zero(F), zeros(~F, k)} == Con{O.mul(F, s, O.zero(F)), _} : M.Vec(~F)}
+      %FL.mul_zero(~F, s) : {Con{O.zero(F), zeros(~F, k)} == Con{_, zeros(~F, k)} : M.Vec(~F)}
+      {==}
+
+def vadd_zeros(~F: O.OField, u: M.Vec(~F), n: Nat, h: {M.len(~F, u) == n : Nat}) -> {u == M.vadd(~F, u, zeros(~F, n)) : M.Vec(~F)}:
+  match u n:
+    case Nil{} 0n:
+      {==}
+    case Nil{} 1n++k:
+      absurd({Nil{} == zeros(~F, 1n+k) : M.Vec(~F)}, zero_ne(k, h))
+    case Con{a, t} 0n:
+      absurd({Con{a, t} == Con{a, t} : M.Vec(~F)}, zero_ne(M.len(~F, t), Equal.sym(Nat, 1n+M.len(~F, t), 0n, h)))
+    case Con{+a, +t} 1n++k:
+      %vadd_zeros(~F, t, k, succ_inj(M.len(~F, t), k, h)) : {Con{a, t} == Con{O.add(F, a, O.zero(F)), _} : M.Vec(~F)}
+      %FL.add_zero(~F, a) : {Con{a, t} == Con{_, t} : M.Vec(~F)}
+      {==}
+
+# a prefix grows by the next entry
+def take_snoc(~F: O.OField, c: Nat, y: M.Vec(~F), h: {KA.natle(1n+c, M.len(~F, y)) == True{} : Bool}) -> {vapp(~F, vtake(~F, c, y), Con{O.lookup(~F, y, c), Nil{}}) == vtake(~F, 1n+c, y) : M.Vec(~F)}:
+  match c y:
+    case 0n Nil{}:
+      absurd({Con{O.zero(F), Nil{}} == Nil{} : M.Vec(~F)}, ft(h))
+    case 0n Con{a, t}:
+      {==}
+    case 1n+j Nil{}:
+      absurd({Con{O.zero(F), Nil{}} == Nil{} : M.Vec(~F)}, ft(h))
+    case 1n+j Con{+a, +t}:
+      %take_snoc(~F, j, t, h) : {Con{a, vapp(~F, vtake(~F, j, t), Con{O.lookup(~F, t, j), Nil{}})} == Con{a, _} : M.Vec(~F)}
+      {==}
+
+def zeros_snoc(~F: O.OField, k: Nat) -> {vapp(~F, zeros(~F, k), Con{O.zero(F), Nil{}}) == zeros(~F, 1n+k) : M.Vec(~F)}:
+  match k:
+    case 0n:
+      {==}
+    case 1n+j:
+      %zeros_snoc(~F, j) : {Con{O.zero(F), vapp(~F, zeros(~F, j), Con{O.zero(F), Nil{}})} == Con{O.zero(F), _} : M.Vec(~F)}
+      {==}
+
+def unit_snoc(~F: O.OField, c: Nat, i: Nat) -> {vapp(~F, unit(~F, c, i), Con{dl(~F, KA.nateq(i, c)), Nil{}}) == unit(~F, 1n+c, i) : M.Vec(~F)}:
+  match c i:
+    case 0n 0n:
+      {==}
+    case 0n 1n+j:
+      {==}
+    case 1n+k 0n:
+      %zeros_snoc(~F, k) : {Con{O.one(F), vapp(~F, zeros(~F, k), Con{O.zero(F), Nil{}})} == Con{O.one(F), _} : M.Vec(~F)}
+      {==}
+    case 1n+k 1n+j:
+      %unit_snoc(~F, k, j) : {Con{O.zero(F), vapp(~F, unit(~F, k, j), Con{dl(~F, KA.nateq(j, k)), Nil{}})} == Con{O.zero(F), _} : M.Vec(~F)}
+      {==}
+
+# the unit vector at i >= n of length n is zero
+def unit_hi(~F: O.OField, c: Nat, i: Nat, h: {KA.natle(c, i) == True{} : Bool}) -> {zeros(~F, c) == unit(~F, c, i) : M.Vec(~F)}:
+  match c i:
+    case 0n i:
+      {==}
+    case 1n+k 0n:
+      absurd({zeros(~F, 1n+k) == unit(~F, 1n+k, 0n) : M.Vec(~F)}, ft(h))
+    case 1n+k 1n+j:
+      %unit_hi(~F, k, j, h) : {Con{O.zero(F), zeros(~F, k)} == Con{O.zero(F), _} : M.Vec(~F)}
+      {==}
+
+# Rows after each operation
+# -------------------------
+
+def sw.go2(b: Bool, +y: Nat, +i: Nat) -> Nat:
+  match b:
+    case True{}:
+      y
+    case False{}:
+      i
+
+def sw.go(b: Bool, +b2: Bool, +x: Nat, +y: Nat, +i: Nat) -> Nat:
+  match b:
+    case True{}:
+      x
+    case False{}:
+      sw.go2(b2, y, i)
+
+# where row i of the swapped matrix comes from
+def sw(+x: Nat, +y: Nat, +i: Nat) -> Nat:
+  sw.go(KA.nateq(i, y), KA.nateq(i, x), x, y, i)
+
+def lt_nrows_mset(~F: O.OField, +a: M.Mat(~F), +i: Nat, +r: M.Vec(~F), +k: Nat, h: {KA.natle(1n+k, nrows(~F, a)) == True{} : Bool}) -> {KA.natle(1n+k, nrows(~F, mset(~F, a, i, r))) == True{} : Bool}:
+  %nrows_mset(~F, a, i, r) : {KA.natle(1n+k, _) == True{} : Bool}
+  h
+
+def row_swap.go(~F: O.OField, +a: M.Mat(~F), +x: Nat, +y: Nat, +i: Nat, hx: {KA.natle(1n+x, nrows(~F, a)) == True{} : Bool}, hy: {KA.natle(1n+y, nrows(~F, a)) == True{} : Bool}, b: Bool, +e: {KA.nateq(i, y) == b : Bool}, b2: Bool, e2: {KA.nateq(i, x) == b2 : Bool}) -> {DV.mrow(~F, a, sw.go(b, b2, x, y, i)) == DV.mrow(~F, mswap(~F, a, x, y), i) : M.Vec(~F)}:
+  match b b2:
+    case True{} b2:
+      %Equal.sym(Nat, i, y, nateq_ok(i, y, e)) : {DV.mrow(~F, a, x) == DV.mrow(~F, mswap(~F, a, x, y), _) : M.Vec(~F)}
+      row_mset_eq(~F, mset(~F, a, x, DV.mrow(~F, a, y)), y, DV.mrow(~F, a, x), lt_nrows_mset(~F, a, x, DV.mrow(~F, a, y), y, hy))
+    case False{} True{}:
+      %row_mset_ne(~F, mset(~F, a, x, DV.mrow(~F, a, y)), y, i, DV.mrow(~F, a, x), Equal.trans(Bool, KA.nateq(y, i), KA.nateq(i, y), False{}, nateq_sym(y, i), e)) : {DV.mrow(~F, a, y) == _ : M.Vec(~F)}
+      %Equal.sym(Nat, i, x, nateq_ok(i, x, e2)) : {DV.mrow(~F, a, y) == DV.mrow(~F, mset(~F, a, x, DV.mrow(~F, a, y)), _) : M.Vec(~F)}
+      row_mset_eq(~F, a, x, DV.mrow(~F, a, y), hx)
+    case False{} False{}:
+      %row_mset_ne(~F, mset(~F, a, x, DV.mrow(~F, a, y)), y, i, DV.mrow(~F, a, x), Equal.trans(Bool, KA.nateq(y, i), KA.nateq(i, y), False{}, nateq_sym(y, i), e)) : {DV.mrow(~F, a, i) == _ : M.Vec(~F)}
+      row_mset_ne(~F, a, x, i, DV.mrow(~F, a, y), Equal.trans(Bool, KA.nateq(x, i), KA.nateq(i, x), False{}, nateq_sym(x, i), e2))
+
+def row_swap(~F: O.OField, +a: M.Mat(~F), +x: Nat, +y: Nat, +i: Nat, hx: {KA.natle(1n+x, nrows(~F, a)) == True{} : Bool}, hy: {KA.natle(1n+y, nrows(~F, a)) == True{} : Bool}) -> {DV.mrow(~F, a, sw(x, y, i)) == DV.mrow(~F, mswap(~F, a, x, y), i) : M.Vec(~F)}:
+  row_swap.go(~F, a, x, y, i, hx, hy, KA.nateq(i, y), {==}, KA.nateq(i, x), {==})
+
+def sw_lt.go(+x: Nat, +y: Nat, +i: Nat, +n: Nat, hx: {KA.natle(1n+x, n) == True{} : Bool}, hy: {KA.natle(1n+y, n) == True{} : Bool}, hi: {KA.natle(1n+i, n) == True{} : Bool}, b: Bool, b2: Bool) -> {KA.natle(1n+sw.go(b, b2, x, y, i), n) == True{} : Bool}:
+  match b b2:
+    case True{} b2:
+      hx
+    case False{} True{}:
+      hy
+    case False{} False{}:
+      hi
+
+def sw_lt(+x: Nat, +y: Nat, +i: Nat, +n: Nat, hx: {KA.natle(1n+x, n) == True{} : Bool}, hy: {KA.natle(1n+y, n) == True{} : Bool}, hi: {KA.natle(1n+i, n) == True{} : Bool}) -> {KA.natle(1n+sw(x, y, i), n) == True{} : Bool}:
+  sw_lt.go(x, y, i, n, hx, hy, hi, KA.nateq(i, y), KA.nateq(i, x))
+
+# row c of the swapped matrix is row r
+def sw_cc.go(+c: Nat, +r: Nat, b: Bool, e: {KA.nateq(c, r) == b : Bool}) -> {r == sw.go(b, KA.nateq(c, c), c, r, c) : Nat}:
+  match b:
+    case True{}:
+      Equal.sym(Nat, c, r, nateq_ok(c, r, e))
+    case False{}:
+      %Equal.sym(Bool, KA.nateq(c, c), True{}, nateq_refl(c)) : {r == sw.go2(_, r, c) : Nat}
+      {==}
+
+def sw_cc(+c: Nat, +r: Nat) -> {r == sw(c, r, c) : Nat}:
+  sw_cc.go(c, r, KA.nateq(c, r), {==})
+
+# i = j with c <= j gives c <= i
+def le_eq(+c: Nat, +i: Nat, +j: Nat, e: {i == j : Nat}, h: {KA.natle(c, j) == True{} : Bool}) -> {KA.natle(c, i) == True{} : Bool}:
+  %Equal.sym(Nat, i, j, e) : {KA.natle(c, _) == True{} : Bool}
+  h
+
+# swapping rows c <= r leaves the unit prefixes of length c in place
+def unit_sw.go(~F: O.OField, +c: Nat, +r: Nat, +i: Nat, hcr: {KA.natle(c, r) == True{} : Bool}, b: Bool, e: {KA.nateq(i, r) == b : Bool}, b2: Bool, e2: {KA.nateq(i, c) == b2 : Bool}) -> {unit(~F, c, sw.go(b, b2, c, r, i)) == unit(~F, c, i) : M.Vec(~F)}:
+  match b b2:
+    case True{} b2:
+      %unit_hi(~F, c, c, le_refl(c)) : {_ == unit(~F, c, i) : M.Vec(~F)}
+      unit_hi(~F, c, i, le_eq(c, i, r, nateq_ok(i, r, e), hcr))
+    case False{} True{}:
+      %unit_hi(~F, c, r, hcr) : {_ == unit(~F, c, i) : M.Vec(~F)}
+      unit_hi(~F, c, i, le_eq(c, i, c, nateq_ok(i, c, e2), le_refl(c)))
+    case False{} False{}:
+      {==}
+
+def unit_sw(~F: O.OField, +c: Nat, +r: Nat, +i: Nat, hcr: {KA.natle(c, r) == True{} : Bool}) -> {unit(~F, c, sw(c, r, i)) == unit(~F, c, i) : M.Vec(~F)}:
+  unit_sw.go(~F, c, r, i, hcr, KA.nateq(i, r), {==}, KA.nateq(i, c), {==})
+
+def nrows_mswap(~F: O.OField, +a: M.Mat(~F), +x: Nat, +y: Nat) -> {nrows(~F, a) == nrows(~F, mswap(~F, a, x, y)) : Nat}:
+  %nrows_mset(~F, mset(~F, a, x, DV.mrow(~F, a, y)), y, DV.mrow(~F, a, x)) : {nrows(~F, a) == _ : Nat}
+  nrows_mset(~F, a, x, DV.mrow(~F, a, y))
+
+def nrows_mclr.go(~F: O.OField, a: M.Mat(~F), +p: M.Vec(~F), +c: Nat, +ms: M.Vec(~F), +u: Nat) -> {nrows(~F, a) == nrows(~F, mclr.go(~F, a, p, c, ms, u)) : Nat}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{r, t}:
+      %nrows_mclr.go(~F, t, p, c, vtl(~F, ms), 1n+u) : {1n+nrows(~F, t) == 1n+_ : Nat}
+      {==}
+
+# row j of a clear from index u
+def row_clr.go(~F: O.OField, a: M.Mat(~F), +p: M.Vec(~F), +c: Nat, +ms: M.Vec(~F), +u: Nat, j: Nat, hj: {KA.natle(1n+j, nrows(~F, a)) == True{} : Bool}) -> {mclr.row(~F, KA.nateq(Nat.add(u, j), c), DV.mrow(~F, a, j), p, O.lookup(~F, ms, j)) == DV.mrow(~F, mclr.go(~F, a, p, c, ms, u), j) : M.Vec(~F)}:
+  match a j:
+    case Nil{} j:
+      absurd({mclr.row(~F, KA.nateq(Nat.add(u, j), c), Nil{}, p, O.lookup(~F, ms, j)) == Nil{} : M.Vec(~F)}, ft(hj))
+    case Con{+r, +t} 0n:
+      %LN.add_zero(u) : {mclr.row(~F, KA.nateq(_, c), r, p, O.lookup(~F, ms, 0n)) == mclr.row(~F, KA.nateq(u, c), r, p, vhd(~F, ms)) : M.Vec(~F)}
+      %look0_vhd(~F, ms) : {mclr.row(~F, KA.nateq(u, c), r, p, _) == mclr.row(~F, KA.nateq(u, c), r, p, vhd(~F, ms)) : M.Vec(~F)}
+      {==}
+    case Con{+r, +t} 1n++k:
+      %LN.add_succ(u, k) : {mclr.row(~F, KA.nateq(_, c), DV.mrow(~F, t, k), p, O.lookup(~F, ms, 1n+k)) == DV.mrow(~F, mclr.go(~F, t, p, c, vtl(~F, ms), 1n+u), k) : M.Vec(~F)}
+      %look_vtl(~F, ms, k) : {mclr.row(~F, KA.nateq(1n+Nat.add(u, k), c), DV.mrow(~F, t, k), p, _) == DV.mrow(~F, mclr.go(~F, t, p, c, vtl(~F, ms), 1n+u), k) : M.Vec(~F)}
+      row_clr.go(~F, t, p, c, vtl(~F, ms), 1n+u, k, hj)
+
+def row_clr(~F: O.OField, +a: M.Mat(~F), +c: Nat, +ms: M.Vec(~F), +i: Nat, hi: {KA.natle(1n+i, nrows(~F, a)) == True{} : Bool}) -> {mclr.row(~F, KA.nateq(i, c), DV.mrow(~F, a, i), DV.mrow(~F, a, c), O.lookup(~F, ms, i)) == DV.mrow(~F, mclr(~F, a, c, ms), i) : M.Vec(~F)}:
+  row_clr.go(~F, a, DV.mrow(~F, a, c), c, ms, 0n, i, hi)
+
+# One elimination step
+# --------------------
+# With the first c columns of a unit (row i starts as e_i) and a pivot
+# at (r, c), r >= c, with inverse t: swap rows c and r, scale row c by t,
+# and clear column c. Then the first c + 1 columns are unit.
+
+def roww(~F: O.OField, +a: M.Mat(~F), +n: Nat, +i: Nat) -> Data:
+  {M.len(~F, DV.mrow(~F, a, i)) == n : Nat}
+
+def rowpre(~F: O.OField, +a: M.Mat(~F), +c: Nat, +i: Nat) -> Data:
+  {vtake(~F, c, DV.mrow(~F, a, i)) == unit(~F, c, i) : M.Vec(~F)}
+
+def l1(~F: O.OField, +a: M.Mat(~F), +c: Nat, +r: Nat) -> M.Mat(~F):
+  mswap(~F, a, c, r)
+
+def l2(~F: O.OField, +a: M.Mat(~F), +c: Nat, +r: Nat, +t: O.C(F)) -> M.Mat(~F):
+  mscl(~F, l1(~F, a, c, r), c, t)
+
+def l3(~F: O.OField, +a: M.Mat(~F), +c: Nat, +r: Nat, +t: O.C(F)) -> M.Mat(~F):
+  mclr(~F, l2(~F, a, c, r, t), c, mcol(~F, l2(~F, a, c, r, t), c))
+
+def lt_n(~F: O.OField, +a: M.Mat(~F), +n: Nat, +i: Nat, hn: {nrows(~F, a) == n : Nat}, hi: {KA.natle(1n+i, n) == True{} : Bool}) -> {KA.natle(1n+i, nrows(~F, a)) == True{} : Bool}:
+  %Equal.sym(Nat, nrows(~F, a), n, hn) : {KA.natle(1n+i, _) == True{} : Bool}
+  hi
+
+# general facts about a cleared row
+def clr_len(~F: O.OField, +n: Nat, +ri: M.Vec(~F), +p: M.Vec(~F), +nm: O.C(F), h1: {M.len(~F, ri) == n : Nat}, h2: {M.len(~F, p) == n : Nat}) -> {M.len(~F, M.vadd(~F, ri, M.vscale(~F, nm, p))) == n : Nat}:
+  len_vadd(~F, ri, M.vscale(~F, nm, p), n, h1, Equal.trans(Nat, M.len(~F, M.vscale(~F, nm, p)), M.len(~F, p), n, Equal.sym(Nat, M.len(~F, p), M.len(~F, M.vscale(~F, nm, p)), len_vscale(~F, nm, p)), h2))
+
+def clr_take(~F: O.OField, +c: Nat, +i: Nat, +ri: M.Vec(~F), +p: M.Vec(~F), +nm: O.C(F), hri: {vtake(~F, c, ri) == unit(~F, c, i) : M.Vec(~F)}, hp: {vtake(~F, c, p) == zeros(~F, c) : M.Vec(~F)}) -> {vtake(~F, c, M.vadd(~F, ri, M.vscale(~F, nm, p))) == unit(~F, c, i) : M.Vec(~F)}:
+  %take_vadd(~F, c, ri, M.vscale(~F, nm, p)) : {_ == unit(~F, c, i) : M.Vec(~F)}
+  %take_vscale(~F, c, nm, p) : {M.vadd(~F, vtake(~F, c, ri), _) == unit(~F, c, i) : M.Vec(~F)}
+  %Equal.sym(M.Vec(~F), vtake(~F, c, ri), unit(~F, c, i), hri) : {M.vadd(~F, _, M.vscale(~F, nm, vtake(~F, c, p))) == unit(~F, c, i) : M.Vec(~F)}
+  %Equal.sym(M.Vec(~F), vtake(~F, c, p), zeros(~F, c), hp) : {M.vadd(~F, unit(~F, c, i), M.vscale(~F, nm, _)) == unit(~F, c, i) : M.Vec(~F)}
+  %scale_zeros(~F, nm, c) : {M.vadd(~F, unit(~F, c, i), _) == unit(~F, c, i) : M.Vec(~F)}
+  %vadd_zeros(~F, unit(~F, c, i), c, Equal.sym(Nat, c, M.len(~F, unit(~F, c, i)), len_unit(~F, c, i))) : {_ == unit(~F, c, i) : M.Vec(~F)}
+  {==}
+
+def clr_look(~F: O.OField, +c: Nat, +ri: M.Vec(~F), +p: M.Vec(~F), hp: {O.lookup(~F, p, c) == O.one(F) : O.C(F)}) -> {O.lookup(~F, M.vadd(~F, ri, M.vscale(~F, O.neg(F, O.lookup(~F, ri, c)), p)), c) == O.zero(F) : O.C(F)}:
+  %look_vadd(~F, ri, M.vscale(~F, O.neg(F, O.lookup(~F, ri, c)), p), c) : {_ == O.zero(F) : O.C(F)}
+  %look_vscale(~F, O.neg(F, O.lookup(~F, ri, c)), p, c) : {O.add(F, O.lookup(~F, ri, c), _) == O.zero(F) : O.C(F)}
+  %Equal.sym(O.C(F), O.lookup(~F, p, c), O.one(F), hp) : {O.add(F, O.lookup(~F, ri, c), O.mul(F, O.neg(F, O.lookup(~F, ri, c)), _)) == O.zero(F) : O.C(F)}
+  FR.fring_eq(~F, [O.lookup(~F, ri, c)], E.ZAdd{E.ZVar{0n}, E.ZMul{E.ZNeg{E.ZVar{0n}}, E.ZCst{S.Zpos{S.XH{}}}}}, E.ZCst{S.Z0{}}, {==})
+
+# a row whose first c entries are e_i and whose entry c is [i = c] starts with e_i of length c + 1
+def snoc_row(~F: O.OField, +c: Nat, +i: Nat, +n: Nat, +y: M.Vec(~F), hn: {M.len(~F, y) == n : Nat}, hc: {KA.natle(1n+c, n) == True{} : Bool}, htake: {vtake(~F, c, y) == unit(~F, c, i) : M.Vec(~F)}, hlook: {O.lookup(~F, y, c) == dl(~F, KA.nateq(i, c)) : O.C(F)}) -> {vtake(~F, 1n+c, y) == unit(~F, 1n+c, i) : M.Vec(~F)}:
+  %take_snoc(~F, c, y, lt_len(~F, y, n, c, hn, hc)) : {_ == unit(~F, 1n+c, i) : M.Vec(~F)}
+  %Equal.sym(M.Vec(~F), vtake(~F, c, y), unit(~F, c, i), htake) : {vapp(~F, _, Con{O.lookup(~F, y, c), Nil{}}) == unit(~F, 1n+c, i) : M.Vec(~F)}
+  %Equal.sym(O.C(F), O.lookup(~F, y, c), dl(~F, KA.nateq(i, c)), hlook) : {vapp(~F, unit(~F, c, i), Con{_, Nil{}}) == unit(~F, 1n+c, i) : M.Vec(~F)}
+  unit_snoc(~F, c, i)
+
+def dl_of(~F: O.OField, +i: Nat, +c: Nat, +x: O.C(F), b: Bool, e: {KA.nateq(i, c) == b : Bool}, h: {x == dl(~F, b) : O.C(F)}) -> {x == dl(~F, KA.nateq(i, c)) : O.C(F)}:
+  %Equal.sym(Bool, KA.nateq(i, c), b, e) : {x == dl(~F, _) : O.C(F)}
+  h
+
+# the step's facts, for a: n rows of n entries whose first c columns are unit
+def n1(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +r: Nat, hn: {nrows(~F, a) == n : Nat}) -> {nrows(~F, l1(~F, a, c, r)) == n : Nat}:
+  Equal.trans(Nat, nrows(~F, l1(~F, a, c, r)), nrows(~F, a), n, Equal.sym(Nat, nrows(~F, a), nrows(~F, l1(~F, a, c, r)), nrows_mswap(~F, a, c, r)), hn)
+
+def n2(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +r: Nat, +t: O.C(F), hn: {nrows(~F, a) == n : Nat}) -> {nrows(~F, l2(~F, a, c, r, t)) == n : Nat}:
+  Equal.trans(Nat, nrows(~F, l2(~F, a, c, r, t)), nrows(~F, l1(~F, a, c, r)), n, Equal.sym(Nat, nrows(~F, l1(~F, a, c, r)), nrows(~F, l2(~F, a, c, r, t)), nrows_mset(~F, l1(~F, a, c, r), c, M.vscale(~F, t, DV.mrow(~F, l1(~F, a, c, r), c)))), n1(~F, a, n, c, r, hn))
+
+def n3(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +r: Nat, +t: O.C(F), hn: {nrows(~F, a) == n : Nat}) -> {nrows(~F, l3(~F, a, c, r, t)) == n : Nat}:
+  Equal.trans(Nat, nrows(~F, l3(~F, a, c, r, t)), nrows(~F, l2(~F, a, c, r, t)), n, Equal.sym(Nat, nrows(~F, l2(~F, a, c, r, t)), nrows(~F, l3(~F, a, c, r, t)), nrows_mclr.go(~F, l2(~F, a, c, r, t), DV.mrow(~F, l2(~F, a, c, r, t), c), c, mcol(~F, l2(~F, a, c, r, t), c), 0n)), n2(~F, a, n, c, r, t, hn))
+
+def w1(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +r: Nat, +hn: {nrows(~F, a) == n : Nat}, +hw: All(~(j => roww(~F, a, n, j)), n), +hc: {KA.natle(1n+c, n) == True{} : Bool}, +hr: {KA.natle(1n+r, n) == True{} : Bool}, +i: Nat, hi: {KA.natle(1n+i, n) == True{} : Bool}) -> roww(~F, l1(~F, a, c, r), n, i):
+  %row_swap(~F, a, c, r, i, lt_n(~F, a, n, c, hn, hc), lt_n(~F, a, n, r, hn, hr)) : {M.len(~F, _) == n : Nat}
+  all_at(~(j => roww(~F, a, n, j)), n, hw, sw(c, r, i), sw_lt(c, r, i, n, hc, hr, hi))
+
+def p1(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +r: Nat, +hn: {nrows(~F, a) == n : Nat}, +hp: All(~(j => rowpre(~F, a, c, j)), n), +hc: {KA.natle(1n+c, n) == True{} : Bool}, +hcr: {KA.natle(c, r) == True{} : Bool}, +hr: {KA.natle(1n+r, n) == True{} : Bool}, +i: Nat, hi: {KA.natle(1n+i, n) == True{} : Bool}) -> rowpre(~F, l1(~F, a, c, r), c, i):
+  %row_swap(~F, a, c, r, i, lt_n(~F, a, n, c, hn, hc), lt_n(~F, a, n, r, hn, hr)) : {vtake(~F, c, _) == unit(~F, c, i) : M.Vec(~F)}
+  %unit_sw(~F, c, r, i, hcr) : {vtake(~F, c, DV.mrow(~F, a, sw(c, r, i))) == _ : M.Vec(~F)}
+  all_at(~(j => rowpre(~F, a, c, j)), n, hp, sw(c, r, i), sw_lt(c, r, i, n, hc, hr, hi))
+
+# row c after the swap is row r
+def piv1(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +r: Nat, +hn: {nrows(~F, a) == n : Nat}, +hc: {KA.natle(1n+c, n) == True{} : Bool}, +hr: {KA.natle(1n+r, n) == True{} : Bool}) -> {DV.mrow(~F, a, r) == DV.mrow(~F, l1(~F, a, c, r), c) : M.Vec(~F)}:
+  %row_swap(~F, a, c, r, c, lt_n(~F, a, n, c, hn, hc), lt_n(~F, a, n, r, hn, hr)) : {DV.mrow(~F, a, r) == _ : M.Vec(~F)}
+  %sw_cc(c, r) : {DV.mrow(~F, a, r) == DV.mrow(~F, a, _) : M.Vec(~F)}
+  {==}
+
+def w2.go(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +r: Nat, +t: O.C(F), +hn: {nrows(~F, a) == n : Nat}, +hw: All(~(j => roww(~F, a, n, j)), n), +hc: {KA.natle(1n+c, n) == True{} : Bool}, +hr: {KA.natle(1n+r, n) == True{} : Bool}, +i: Nat, +hi: {KA.natle(1n+i, n) == True{} : Bool}, b: Bool, e: {KA.nateq(c, i) == b : Bool}) -> roww(~F, l2(~F, a, c, r, t), n, i):
+  match b:
+    case True{}:
+      %nateq_ok(c, i, e) : {M.len(~F, DV.mrow(~F, l2(~F, a, c, r, t), _)) == n : Nat}
+      %row_mset_eq(~F, l1(~F, a, c, r), c, M.vscale(~F, t, DV.mrow(~F, l1(~F, a, c, r), c)), lt_n(~F, l1(~F, a, c, r), n, c, n1(~F, a, n, c, r, hn), hc)) : {M.len(~F, _) == n : Nat}
+      %len_vscale(~F, t, DV.mrow(~F, l1(~F, a, c, r), c)) : {_ == n : Nat}
+      w1(~F, a, n, c, r, hn, hw, hc, hr, c, hc)
+    case False{}:
+      %row_mset_ne(~F, l1(~F, a, c, r), c, i, M.vscale(~F, t, DV.mrow(~F, l1(~F, a, c, r), c)), e) : {M.len(~F, _) == n : Nat}
+      w1(~F, a, n, c, r, hn, hw, hc, hr, i, hi)
+
+def w2(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +r: Nat, +t: O.C(F), +hn: {nrows(~F, a) == n : Nat}, +hw: All(~(j => roww(~F, a, n, j)), n), +hc: {KA.natle(1n+c, n) == True{} : Bool}, +hr: {KA.natle(1n+r, n) == True{} : Bool}, +i: Nat, +hi: {KA.natle(1n+i, n) == True{} : Bool}) -> roww(~F, l2(~F, a, c, r, t), n, i):
+  w2.go(~F, a, n, c, r, t, hn, hw, hc, hr, i, hi, KA.nateq(c, i), {==})
+
+def p2.go(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +r: Nat, +t: O.C(F), +hn: {nrows(~F, a) == n : Nat}, +hp: All(~(j => rowpre(~F, a, c, j)), n), +hc: {KA.natle(1n+c, n) == True{} : Bool}, +hcr: {KA.natle(c, r) == True{} : Bool}, +hr: {KA.natle(1n+r, n) == True{} : Bool}, +i: Nat, +hi: {KA.natle(1n+i, n) == True{} : Bool}, b: Bool, e: {KA.nateq(c, i) == b : Bool}) -> rowpre(~F, l2(~F, a, c, r, t), c, i):
+  match b:
+    case True{}:
+      %nateq_ok(c, i, e) : {vtake(~F, c, DV.mrow(~F, l2(~F, a, c, r, t), _)) == unit(~F, c, _) : M.Vec(~F)}
+      %row_mset_eq(~F, l1(~F, a, c, r), c, M.vscale(~F, t, DV.mrow(~F, l1(~F, a, c, r), c)), lt_n(~F, l1(~F, a, c, r), n, c, n1(~F, a, n, c, r, hn), hc)) : {vtake(~F, c, _) == unit(~F, c, c) : M.Vec(~F)}
+      %take_vscale(~F, c, t, DV.mrow(~F, l1(~F, a, c, r), c)) : {_ == unit(~F, c, c) : M.Vec(~F)}
+      %Equal.sym(M.Vec(~F), vtake(~F, c, DV.mrow(~F, l1(~F, a, c, r), c)), unit(~F, c, c), p1(~F, a, n, c, r, hn, hp, hc, hcr, hr, c, hc)) : {M.vscale(~F, t, _) == unit(~F, c, c) : M.Vec(~F)}
+      %unit_hi(~F, c, c, le_refl(c)) : {M.vscale(~F, t, _) == _ : M.Vec(~F)}
+      Equal.sym(M.Vec(~F), zeros(~F, c), M.vscale(~F, t, zeros(~F, c)), scale_zeros(~F, t, c))
+    case False{}:
+      %row_mset_ne(~F, l1(~F, a, c, r), c, i, M.vscale(~F, t, DV.mrow(~F, l1(~F, a, c, r), c)), e) : {vtake(~F, c, _) == unit(~F, c, i) : M.Vec(~F)}
+      p1(~F, a, n, c, r, hn, hp, hc, hcr, hr, i, hi)
+
+def p2(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +r: Nat, +t: O.C(F), +hn: {nrows(~F, a) == n : Nat}, +hp: All(~(j => rowpre(~F, a, c, j)), n), +hc: {KA.natle(1n+c, n) == True{} : Bool}, +hcr: {KA.natle(c, r) == True{} : Bool}, +hr: {KA.natle(1n+r, n) == True{} : Bool}, +i: Nat, +hi: {KA.natle(1n+i, n) == True{} : Bool}) -> rowpre(~F, l2(~F, a, c, r, t), c, i):
+  p2.go(~F, a, n, c, r, t, hn, hp, hc, hcr, hr, i, hi, KA.nateq(c, i), {==})
+
+# the pivot is 1 after scaling
+def piv2(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +r: Nat, +t: O.C(F), +hn: {nrows(~F, a) == n : Nat}, +hc: {KA.natle(1n+c, n) == True{} : Bool}, +hr: {KA.natle(1n+r, n) == True{} : Bool}, ht: {O.mul(F, O.lookup(~F, DV.mrow(~F, a, r), c), t) == O.one(F) : O.C(F)}) -> {O.lookup(~F, DV.mrow(~F, l2(~F, a, c, r, t), c), c) == O.one(F) : O.C(F)}:
+  %row_mset_eq(~F, l1(~F, a, c, r), c, M.vscale(~F, t, DV.mrow(~F, l1(~F, a, c, r), c)), lt_n(~F, l1(~F, a, c, r), n, c, n1(~F, a, n, c, r, hn), hc)) : {O.lookup(~F, _, c) == O.one(F) : O.C(F)}
+  %look_vscale(~F, t, DV.mrow(~F, l1(~F, a, c, r), c), c) : {_ == O.one(F) : O.C(F)}
+  %piv1(~F, a, n, c, r, hn, hc, hr) : {O.mul(F, t, O.lookup(~F, _, c)) == O.one(F) : O.C(F)}
+  %FL.mul_comm(~F, O.lookup(~F, DV.mrow(~F, a, r), c), t) : {_ == O.one(F) : O.C(F)}
+  ht
+
+def pz2(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +r: Nat, +t: O.C(F), +hn: {nrows(~F, a) == n : Nat}, +hp: All(~(j => rowpre(~F, a, c, j)), n), +hc: {KA.natle(1n+c, n) == True{} : Bool}, +hcr: {KA.natle(c, r) == True{} : Bool}, +hr: {KA.natle(1n+r, n) == True{} : Bool}) -> {vtake(~F, c, DV.mrow(~F, l2(~F, a, c, r, t), c)) == zeros(~F, c) : M.Vec(~F)}:
+  Equal.trans(M.Vec(~F), vtake(~F, c, DV.mrow(~F, l2(~F, a, c, r, t), c)), unit(~F, c, c), zeros(~F, c), p2(~F, a, n, c, r, t, hn, hp, hc, hcr, hr, c, hc), Equal.sym(M.Vec(~F), zeros(~F, c), unit(~F, c, c), unit_hi(~F, c, c, le_refl(c))))
+
+def w3.go(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +r: Nat, +t: O.C(F), +hn: {nrows(~F, a) == n : Nat}, +hw: All(~(j => roww(~F, a, n, j)), n), +hc: {KA.natle(1n+c, n) == True{} : Bool}, +hr: {KA.natle(1n+r, n) == True{} : Bool}, +i: Nat, +hi: {KA.natle(1n+i, n) == True{} : Bool}, b: Bool) -> {M.len(~F, mclr.row(~F, b, DV.mrow(~F, l2(~F, a, c, r, t), i), DV.mrow(~F, l2(~F, a, c, r, t), c), O.lookup(~F, mcol(~F, l2(~F, a, c, r, t), c), i))) == n : Nat}:
+  match b:
+    case True{}:
+      w2(~F, a, n, c, r, t, hn, hw, hc, hr, i, hi)
+    case False{}:
+      clr_len(~F, n, DV.mrow(~F, l2(~F, a, c, r, t), i), DV.mrow(~F, l2(~F, a, c, r, t), c), O.neg(F, O.lookup(~F, mcol(~F, l2(~F, a, c, r, t), c), i)), w2(~F, a, n, c, r, t, hn, hw, hc, hr, i, hi), w2(~F, a, n, c, r, t, hn, hw, hc, hr, c, hc))
+
+def w3(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +r: Nat, +t: O.C(F), +hn: {nrows(~F, a) == n : Nat}, +hw: All(~(j => roww(~F, a, n, j)), n), +hc: {KA.natle(1n+c, n) == True{} : Bool}, +hr: {KA.natle(1n+r, n) == True{} : Bool}, +i: Nat, +hi: {KA.natle(1n+i, n) == True{} : Bool}) -> roww(~F, l3(~F, a, c, r, t), n, i):
+  %row_clr(~F, l2(~F, a, c, r, t), c, mcol(~F, l2(~F, a, c, r, t), c), i, lt_n(~F, l2(~F, a, c, r, t), n, i, n2(~F, a, n, c, r, t, hn), hi)) : {M.len(~F, _) == n : Nat}
+  w3.go(~F, a, n, c, r, t, hn, hw, hc, hr, i, hi, KA.nateq(i, c))
+
+def p3.go(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +r: Nat, +t: O.C(F), +hn: {nrows(~F, a) == n : Nat}, +hw: All(~(j => roww(~F, a, n, j)), n), +hp: All(~(j => rowpre(~F, a, c, j)), n), +hc: {KA.natle(1n+c, n) == True{} : Bool}, +hcr: {KA.natle(c, r) == True{} : Bool}, +hr: {KA.natle(1n+r, n) == True{} : Bool}, +ht: {O.mul(F, O.lookup(~F, DV.mrow(~F, a, r), c), t) == O.one(F) : O.C(F)}, +i: Nat, +hi: {KA.natle(1n+i, n) == True{} : Bool}, b: Bool, +e: {KA.nateq(i, c) == b : Bool}) -> {vtake(~F, 1n+c, mclr.row(~F, b, DV.mrow(~F, l2(~F, a, c, r, t), i), DV.mrow(~F, l2(~F, a, c, r, t), c), O.lookup(~F, mcol(~F, l2(~F, a, c, r, t), c), i))) == unit(~F, 1n+c, i) : M.Vec(~F)}:
+  match b:
+    case True{}:
+      snoc_row(~F, c, i, n, DV.mrow(~F, l2(~F, a, c, r, t), i), w2(~F, a, n, c, r, t, hn, hw, hc, hr, i, hi), hc, p2(~F, a, n, c, r, t, hn, hp, hc, hcr, hr, i, hi), dl_of(~F, i, c, O.lookup(~F, DV.mrow(~F, l2(~F, a, c, r, t), i), c), True{}, e, (%Equal.sym(Nat, i, c, nateq_ok(i, c, e)) : {O.lookup(~F, DV.mrow(~F, l2(~F, a, c, r, t), _), c) == O.one(F) : O.C(F)}
+        piv2(~F, a, n, c, r, t, hn, hc, hr, ht))))
+    case False{}:
+      %look_mcol(~F, l2(~F, a, c, r, t), c, i) : {vtake(~F, 1n+c, M.vadd(~F, DV.mrow(~F, l2(~F, a, c, r, t), i), M.vscale(~F, O.neg(F, _), DV.mrow(~F, l2(~F, a, c, r, t), c)))) == unit(~F, 1n+c, i) : M.Vec(~F)}
+      snoc_row(~F, c, i, n, M.vadd(~F, DV.mrow(~F, l2(~F, a, c, r, t), i), M.vscale(~F, O.neg(F, O.lookup(~F, DV.mrow(~F, l2(~F, a, c, r, t), i), c)), DV.mrow(~F, l2(~F, a, c, r, t), c))), clr_len(~F, n, DV.mrow(~F, l2(~F, a, c, r, t), i), DV.mrow(~F, l2(~F, a, c, r, t), c), O.neg(F, O.lookup(~F, DV.mrow(~F, l2(~F, a, c, r, t), i), c)), w2(~F, a, n, c, r, t, hn, hw, hc, hr, i, hi), w2(~F, a, n, c, r, t, hn, hw, hc, hr, c, hc)), hc, clr_take(~F, c, i, DV.mrow(~F, l2(~F, a, c, r, t), i), DV.mrow(~F, l2(~F, a, c, r, t), c), O.neg(F, O.lookup(~F, DV.mrow(~F, l2(~F, a, c, r, t), i), c)), p2(~F, a, n, c, r, t, hn, hp, hc, hcr, hr, i, hi), pz2(~F, a, n, c, r, t, hn, hp, hc, hcr, hr)), dl_of(~F, i, c, O.lookup(~F, M.vadd(~F, DV.mrow(~F, l2(~F, a, c, r, t), i), M.vscale(~F, O.neg(F, O.lookup(~F, DV.mrow(~F, l2(~F, a, c, r, t), i), c)), DV.mrow(~F, l2(~F, a, c, r, t), c))), c), False{}, e, clr_look(~F, c, DV.mrow(~F, l2(~F, a, c, r, t), i), DV.mrow(~F, l2(~F, a, c, r, t), c), piv2(~F, a, n, c, r, t, hn, hc, hr, ht))))
+
+def p3(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +r: Nat, +t: O.C(F), +hn: {nrows(~F, a) == n : Nat}, +hw: All(~(j => roww(~F, a, n, j)), n), +hp: All(~(j => rowpre(~F, a, c, j)), n), +hc: {KA.natle(1n+c, n) == True{} : Bool}, +hcr: {KA.natle(c, r) == True{} : Bool}, +hr: {KA.natle(1n+r, n) == True{} : Bool}, +ht: {O.mul(F, O.lookup(~F, DV.mrow(~F, a, r), c), t) == O.one(F) : O.C(F)}, +i: Nat, +hi: {KA.natle(1n+i, n) == True{} : Bool}) -> rowpre(~F, l3(~F, a, c, r, t), 1n+c, i):
+  %row_clr(~F, l2(~F, a, c, r, t), c, mcol(~F, l2(~F, a, c, r, t), c), i, lt_n(~F, l2(~F, a, c, r, t), n, i, n2(~F, a, n, c, r, t, hn), hi)) : {vtake(~F, 1n+c, _) == unit(~F, 1n+c, i) : M.Vec(~F)}
+  p3.go(~F, a, n, c, r, t, hn, hw, hp, hc, hcr, hr, ht, i, hi, KA.nateq(i, c), {==})
+
+# The pivot search
+# ----------------
+# Rows below k at or after c: one with a nonzero entry in column c (with
+# its inverse), or none.
+
+def zc.at(~F: O.OField, b: Bool, +a: M.Mat(~F), +c: Nat, +j: Nat) -> Data:
+  match b:
+    case True{}:
+      {O.lookup(~F, DV.mrow(~F, a, j), c) == O.zero(F) : O.C(F)}
+    case False{}:
+      Unit
+
+def zc(~F: O.OField, +a: M.Mat(~F), +c: Nat, +j: Nat) -> Data:
+  zc.at(~F, KA.natle(c, j), a, c, j)
+
+def pivp(~F: O.OField, +a: M.Mat(~F), +c: Nat, +k: Nat, +r: Nat) -> Data:
+  M.Both({KA.natle(c, r) == True{} : Bool}, M.Both({KA.natle(1n+r, k) == True{} : Bool}, {O.mul(F, O.lookup(~F, DV.mrow(~F, a, r), c), O.inv(F, O.lookup(~F, DV.mrow(~F, a, r), c))) == O.one(F) : O.C(F)}))
+
+def SR(~F: O.OField, +a: M.Mat(~F), +c: Nat, +k: Nat) -> Data:
+  Either<&2, &2, Sigma<&2, &2, Nat, r => pivp(~F, a, c, k, r)>, All(~(j => zc(~F, a, c, j)), k)>
+
+def piv_lift(~F: O.OField, +a: M.Mat(~F), +c: Nat, +j: Nat, +r: Nat, p: pivp(~F, a, c, j, r)) -> pivp(~F, a, c, 1n+j, r):
+  match p:
+    case (h1, h23):
+      match h23:
+        case (h2, h3):
+          (h1, (le_succ(1n+r, j, h2), h3))
+
+def sr_lift(~F: O.OField, +a: M.Mat(~F), +c: Nat, +j: Nat, s: Sigma<&2, &2, Nat, r => pivp(~F, a, c, j, r)>) -> Sigma<&2, &2, Nat, r => pivp(~F, a, c, 1n+j, r)>:
+  match s:
+    case (+r, p):
+      (r, piv_lift(~F, a, c, j, r, p))
+
+def zc_f(~F: O.OField, +a: M.Mat(~F), +c: Nat, +j: Nat, e: {KA.natle(c, j) == False{} : Bool}) -> zc(~F, a, c, j):
+  %Equal.sym(Bool, KA.natle(c, j), False{}, e) : zc.at(~F, _, a, c, j)
+  Unit{}
+
+def zc_t(~F: O.OField, +a: M.Mat(~F), +c: Nat, +j: Nat, e: {KA.natle(c, j) == True{} : Bool}, h: {O.lookup(~F, DV.mrow(~F, a, j), c) == O.zero(F) : O.C(F)}) -> zc(~F, a, c, j):
+  %Equal.sym(Bool, KA.natle(c, j), True{}, e) : zc.at(~F, _, a, c, j)
+  h
+
+def found(~F: O.OField, +a: M.Mat(~F), +c: Nat, +j: Nat, e: {KA.natle(c, j) == True{} : Bool}, ne: {O.lookup(~F, DV.mrow(~F, a, j), c) == O.zero(F) : O.C(F)} -> Empty) -> SR(~F, a, c, 1n+j):
+  Inl{(j, (e, (le_refl(j), O.mul_inv(F)(O.lookup(~F, DV.mrow(~F, a, j), c))(ne))))}
+
+def search.eq(~F: O.OField, +a: M.Mat(~F), +c: Nat, +j: Nat, z: All(~(i => zc(~F, a, c, i)), j), +e: {KA.natle(c, j) == True{} : Bool}, o: Or({O.lookup(~F, DV.mrow(~F, a, j), c) == O.zero(F) : O.C(F)}, O.lt(F, O.zero(F), O.lookup(~F, DV.mrow(~F, a, j), c)))) -> SR(~F, a, c, 1n+j):
+  match o:
+    case Inl{eq}:
+      Inr{(z, zc_t(~F, a, c, j, e, eq))}
+    case Inr{g}:
+      found(~F, a, c, j, e, FO.ne_of_gt(~F, O.lookup(~F, DV.mrow(~F, a, j), c), O.zero(F), g))
+
+def search.tot(~F: O.OField, +a: M.Mat(~F), +c: Nat, +j: Nat, z: All(~(i => zc(~F, a, c, i)), j), +e: {KA.natle(c, j) == True{} : Bool}, tot: Or(O.lt(F, O.lookup(~F, DV.mrow(~F, a, j), c), O.zero(F)), Or({O.lookup(~F, DV.mrow(~F, a, j), c) == O.zero(F) : O.C(F)}, O.lt(F, O.zero(F), O.lookup(~F, DV.mrow(~F, a, j), c))))) -> SR(~F, a, c, 1n+j):
+  match tot:
+    case Inl{l}:
+      found(~F, a, c, j, e, FO.ne_of_lt(~F, O.lookup(~F, DV.mrow(~F, a, j), c), O.zero(F), l))
+    case Inr{o}:
+      search.eq(~F, a, c, j, z, e, o)
+
+def search.row(~F: O.OField, +a: M.Mat(~F), +c: Nat, +j: Nat, z: All(~(i => zc(~F, a, c, i)), j), b: Bool, e: {KA.natle(c, j) == b : Bool}, tot: Or(O.lt(F, O.lookup(~F, DV.mrow(~F, a, j), c), O.zero(F)), Or({O.lookup(~F, DV.mrow(~F, a, j), c) == O.zero(F) : O.C(F)}, O.lt(F, O.zero(F), O.lookup(~F, DV.mrow(~F, a, j), c))))) -> SR(~F, a, c, 1n+j):
+  match b:
+    case True{}:
+      search.tot(~F, a, c, j, z, e, tot)
+    case False{}:
+      Inr{(z, zc_f(~F, a, c, j, e))}
+
+def search.go(~F: O.OField, +a: M.Mat(~F), +c: Nat, +j: Nat, rest: SR(~F, a, c, j), tot: Or(O.lt(F, O.lookup(~F, DV.mrow(~F, a, j), c), O.zero(F)), Or({O.lookup(~F, DV.mrow(~F, a, j), c) == O.zero(F) : O.C(F)}, O.lt(F, O.zero(F), O.lookup(~F, DV.mrow(~F, a, j), c))))) -> SR(~F, a, c, 1n+j):
+  match rest:
+    case Inl{s}:
+      Inl{sr_lift(~F, a, c, j, s)}
+    case Inr{z}:
+      search.row(~F, a, c, j, z, KA.natle(c, j), {==}, tot)
+
+def search(~F: O.OField, +a: M.Mat(~F), +c: Nat, k: Nat) -> SR(~F, a, c, k):
+  match k:
+    case 0n:
+      Inr{Unit{}}
+    case 1n++j:
+      search.go(~F, a, c, j, search(~F, a, c, j), O.lt_total(F)(O.lookup(~F, DV.mrow(~F, a, j), c), O.zero(F)))
+
+# No pivot: a kernel vector
+# -------------------------
+# Column c has no nonzero entry at or below row c, and the first c columns
+# are unit, so v = (-a_0c, ..., -a_(c-1)c, 1, 0, ..., 0) has a v = 0.
+
+def le_add_r(a: Nat, +b: Nat) -> {KA.natle(a, Nat.add(a, b)) == True{} : Bool}:
+  match a:
+    case 0n:
+      {==}
+    case 1n+i:
+      le_add_r(i, b)
+
+def le_of_add(+c: Nat, +m: Nat, +n: Nat, hk: {Nat.add(c, m) == n : Nat}) -> {KA.natle(c, n) == True{} : Bool}:
+  %hk : {KA.natle(c, _) == True{} : Bool}
+  le_add_r(c, m)
+
+def lt_of_add(+c: Nat, +k: Nat, +n: Nat, hk: {Nat.add(c, 1n+k) == n : Nat}) -> {KA.natle(1n+c, n) == True{} : Bool}:
+  %hk : {KA.natle(1n+c, _) == True{} : Bool}
+  %LN.add_succ(c, k) : {KA.natle(1n+c, _) == True{} : Bool}
+  le_add_r(c, k)
+
+# not i < c gives c <= i
+def not_lt(i: Nat, c: Nat, e: {KA.natle(1n+i, c) == False{} : Bool}) -> {KA.natle(c, i) == True{} : Bool}:
+  match i c:
+    case i 0n:
+      {==}
+    case 0n 1n+k:
+      absurd({KA.natle(1n+k, 0n) == True{} : Bool}, tf(e))
+    case 1n+j 1n+k:
+      not_lt(j, k, e)
+
+def ve_mk(~F: O.OField, ~n: Nat, ~u: M.Vec(~F), ~v: M.Vec(~F), ~f: @i: Nat -> {KA.natle(1n+i, n) == True{} : Bool} -> {O.lookup(~F, u, i) == O.lookup(~F, v, i) : O.C(F)}, k: Nat, +hk: {KA.natle(k, n) == True{} : Bool}) -> VE(~F, u, v, k):
+  match k:
+    case 0n:
+      Unit{}
+    case 1n++j:
+      (ve_mk(~F, ~n, ~u, ~v, ~f, j, le_trans(j, 1n+j, n, le_succ(j, j, le_refl(j)), hk)), f(j, hk))
+
+def dot_zeros_r(~F: O.OField, w: M.Vec(~F), n: Nat) -> {O.zero(F) == M.dot(~F, w, zeros(~F, n)) : O.C(F)}:
+  match w n:
+    case Nil{} n:
+      {==}
+    case Con{a, t} 0n:
+      {==}
+    case Con{+a, +t} 1n+k:
+      %dot_zeros_r(~F, t, k) : {O.zero(F) == O.add(F, O.mul(F, a, O.zero(F)), _) : O.C(F)}
+      FR.fring_eq(~F, [a], E.ZCst{S.Z0{}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZCst{S.Z0{}}}, E.ZCst{S.Z0{}}}, {==})
+
+# split a product at the end of p
+def dot_app(~F: O.OField, r: M.Vec(~F), p: M.Vec(~F), +q: M.Vec(~F)) -> {O.add(F, M.dot(~F, vtake(~F, M.len(~F, p), r), p), M.dot(~F, vdrop(~F, M.len(~F, p), r), q)) == M.dot(~F, r, vapp(~F, p, q)) : O.C(F)}:
+  match r p:
+    case r Nil{}:
+      FL.zero_add(~F, M.dot(~F, r, q))
+    case Nil{} Con{x, ps}:
+      O.add_zero(F)(O.zero(F))
+    case Con{+a, +rs} Con{+x, +ps}:
+      %dot_app(~F, rs, ps, q) : {O.add(F, O.add(F, O.mul(F, a, x), M.dot(~F, vtake(~F, M.len(~F, ps), rs), ps)), M.dot(~F, vdrop(~F, M.len(~F, ps), rs), q)) == O.add(F, O.mul(F, a, x), _) : O.C(F)}
+      O.add_assoc(F)(O.mul(F, a, x), M.dot(~F, vtake(~F, M.len(~F, ps), rs), ps), M.dot(~F, vdrop(~F, M.len(~F, ps), rs), q))
+
+def dot_e0(~F: O.OField, y: M.Vec(~F), +k: Nat) -> {O.lookup(~F, y, 0n) == M.dot(~F, y, Con{O.one(F), zeros(~F, k)}) : O.C(F)}:
+  match y:
+    case Nil{}:
+      {==}
+    case Con{+a, +t}:
+      %dot_zeros_r(~F, t, k) : {a == O.add(F, O.mul(F, a, O.one(F)), _) : O.C(F)}
+      FR.fring_eq(~F, [a], E.ZVar{0n}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZCst{S.Z0{}}}, {==})
+
+def look_drop(~F: O.OField, c: Nat, r: M.Vec(~F)) -> {O.lookup(~F, r, c) == O.lookup(~F, vdrop(~F, c, r), 0n) : O.C(F)}:
+  match c r:
+    case 0n r:
+      {==}
+    case 1n+j Nil{}:
+      {==}
+    case 1n+j Con{a, t}:
+      look_drop(~F, j, t)
+
+def look_app_len(~F: O.OField, p: M.Vec(~F), +q: M.Vec(~F)) -> {O.lookup(~F, q, 0n) == O.lookup(~F, vapp(~F, p, q), M.len(~F, p)) : O.C(F)}:
+  match p:
+    case Nil{}:
+      {==}
+    case Con{a, ps}:
+      look_app_len(~F, ps, q)
+
+# zero vectors stay zero
+def vset_zeros(~F: O.OField, n: Nat, i: Nat) -> {zeros(~F, n) == vset(~F, zeros(~F, n), i, O.zero(F)) : M.Vec(~F)}:
+  match n i:
+    case 0n i:
+      {==}
+    case 1n+k 0n:
+      {==}
+    case 1n+k 1n+j:
+      %vset_zeros(~F, k, j) : {Con{O.zero(F), zeros(~F, k)} == Con{O.zero(F), _} : M.Vec(~F)}
+      {==}
+
+def ent_zero(~F: O.OField, b: Bool, +m: O.C(F)) -> {O.zero(F) == vclr.ent(~F, b, O.zero(F), O.zero(F), m) : O.C(F)}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      FR.fring_eq(~F, [m], E.ZCst{S.Z0{}}, E.ZAdd{E.ZCst{S.Z0{}}, E.ZMul{E.ZNeg{E.ZVar{0n}}, E.ZCst{S.Z0{}}}}, {==})
+
+def clr_zeros(~F: O.OField, n: Nat, +c: Nat, +ms: M.Vec(~F), +u: Nat) -> {zeros(~F, n) == vclr.go(~F, zeros(~F, n), O.zero(F), c, ms, u) : M.Vec(~F)}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+k:
+      %ent_zero(~F, KA.nateq(u, c), vhd(~F, ms)) : {Con{O.zero(F), zeros(~F, k)} == Con{_, vclr.go(~F, zeros(~F, k), O.zero(F), c, vtl(~F, ms), 1n+u)} : M.Vec(~F)}
+      %clr_zeros(~F, k, c, vtl(~F, ms), 1n+u) : {Con{O.zero(F), zeros(~F, k)} == Con{O.zero(F), _} : M.Vec(~F)}
+      {==}
+
+def vapply_zeros(~F: O.OField, +n: Nat, op: GOp<F>) -> {zeros(~F, n) == vapply(~F, zeros(~F, n), op) : M.Vec(~F)}:
+  match op:
+    case GSwap{+x, +y}:
+      %look_zeros(~F, n, y) : {zeros(~F, n) == vset(~F, vset(~F, zeros(~F, n), x, _), y, O.lookup(~F, zeros(~F, n), x)) : M.Vec(~F)}
+      %look_zeros(~F, n, x) : {zeros(~F, n) == vset(~F, vset(~F, zeros(~F, n), x, O.zero(F)), y, _) : M.Vec(~F)}
+      %vset_zeros(~F, n, x) : {zeros(~F, n) == vset(~F, _, y, O.zero(F)) : M.Vec(~F)}
+      vset_zeros(~F, n, y)
+    case GScl{+c, +s, t}:
+      %look_zeros(~F, n, c) : {zeros(~F, n) == vset(~F, zeros(~F, n), c, O.mul(F, s, _)) : M.Vec(~F)}
+      %FL.mul_zero(~F, s) : {zeros(~F, n) == vset(~F, zeros(~F, n), c, _) : M.Vec(~F)}
+      vset_zeros(~F, n, c)
+    case GClr{+c, +ms}:
+      %look_zeros(~F, n, c) : {zeros(~F, n) == vclr.go(~F, zeros(~F, n), _, c, ms, 0n) : M.Vec(~F)}
+      clr_zeros(~F, n, c, ms, 0n)
+
+def vapplies_zeros(~F: O.OField, +n: Nat, h: List<&2, GOp<F>>) -> {zeros(~F, n) == vapplies(~F, zeros(~F, n), h) : M.Vec(~F)}:
+  match h:
+    case Nil{}:
+      {==}
+    case Con{+op, +t}:
+      %vapplies_zeros(~F, n, t) : {zeros(~F, n) == vapply(~F, _, op) : M.Vec(~F)}
+      vapply_zeros(~F, n, op)
+
+# the kernel vector: its first c entries, then 1, then k zeros
+def kp(~F: O.OField, +a: M.Mat(~F), +c: Nat) -> M.Vec(~F):
+  M.vneg(~F, vtake(~F, c, mcol(~F, a, c)))
+
+def kv(~F: O.OField, +a: M.Mat(~F), +c: Nat, +k: Nat) -> M.Vec(~F):
+  vapp(~F, kp(~F, a, c), Con{O.one(F), zeros(~F, k)})
+
+def kp_len(~F: O.OField, +a: M.Mat(~F), +c: Nat, +n: Nat, hn: {nrows(~F, a) == n : Nat}, hc: {KA.natle(c, n) == True{} : Bool}) -> {M.len(~F, kp(~F, a, c)) == c : Nat}:
+  %len_vneg(~F, vtake(~F, c, mcol(~F, a, c))) : {_ == c : Nat}
+  Equal.sym(Nat, c, M.len(~F, vtake(~F, c, mcol(~F, a, c))), len_vtake(~F, c, mcol(~F, a, c), (%len_mcol(~F, a, c) : {KA.natle(c, _) == True{} : Bool}
+    %Equal.sym(Nat, nrows(~F, a), n, hn) : {KA.natle(c, _) == True{} : Bool}
+    hc)))
+
+def kv_len(~F: O.OField, +a: M.Mat(~F), +c: Nat, +k: Nat, +n: Nat, hn: {nrows(~F, a) == n : Nat}, +hk: {Nat.add(c, 1n+k) == n : Nat}) -> {M.len(~F, kv(~F, a, c, k)) == n : Nat}:
+  %len_vapp(~F, kp(~F, a, c), Con{O.one(F), zeros(~F, k)}) : {_ == n : Nat}
+  %len_zeros(~F, k) : {Nat.add(M.len(~F, kp(~F, a, c)), 1n+_) == n : Nat}
+  %Equal.sym(Nat, M.len(~F, kp(~F, a, c)), c, kp_len(~F, a, c, n, hn, le_of_add(c, 1n+k, n, hk))) : {Nat.add(_, 1n+k) == n : Nat}
+  hk
+
+def kv_look(~F: O.OField, +a: M.Mat(~F), +c: Nat, +k: Nat, +n: Nat, hn: {nrows(~F, a) == n : Nat}, hc: {KA.natle(c, n) == True{} : Bool}) -> {O.lookup(~F, kv(~F, a, c, k), c) == O.one(F) : O.C(F)}:
+  %kp_len(~F, a, c, n, hn, hc) : {O.lookup(~F, vapp(~F, kp(~F, a, c), Con{O.one(F), zeros(~F, k)}), _) == O.one(F) : O.C(F)}
+  %look_app_len(~F, kp(~F, a, c), Con{O.one(F), zeros(~F, k)}) : {_ == O.one(F) : O.C(F)}
+  {==}
+
+def zc_get(~F: O.OField, +a: M.Mat(~F), +c: Nat, +i: Nat, b: Bool, e: {KA.natle(c, i) == b : Bool}, h: zc.at(~F, b, a, c, i), ht: {KA.natle(c, i) == True{} : Bool}) -> {O.lookup(~F, DV.mrow(~F, a, i), c) == O.zero(F) : O.C(F)}:
+  match b:
+    case True{}:
+      h
+    case False{}:
+      absurd({O.lookup(~F, DV.mrow(~F, a, i), c) == O.zero(F) : O.C(F)}, ft(Equal.trans(Bool, False{}, KA.natle(c, i), True{}, Equal.sym(Bool, KA.natle(c, i), False{}, e), ht)))
+
+def ker_ent.go(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +z: All(~(j => zc(~F, a, c, j)), n), +i: Nat, +hi: {KA.natle(1n+i, n) == True{} : Bool}, b: Bool, +e: {KA.natle(1n+i, c) == b : Bool}) -> {O.add(F, O.neg(F, O.lookup(~F, vtake(~F, c, mcol(~F, a, c)), i)), O.lookup(~F, DV.mrow(~F, a, i), c)) == O.zero(F) : O.C(F)}:
+  match b:
+    case True{}:
+      %look_take_lo(~F, c, mcol(~F, a, c), i, e) : {O.add(F, O.neg(F, _), O.lookup(~F, DV.mrow(~F, a, i), c)) == O.zero(F) : O.C(F)}
+      %look_mcol(~F, a, c, i) : {O.add(F, O.neg(F, _), O.lookup(~F, DV.mrow(~F, a, i), c)) == O.zero(F) : O.C(F)}
+      FL.neg_add_l(~F, O.lookup(~F, DV.mrow(~F, a, i), c))
+    case False{}:
+      %look_take_hi(~F, c, mcol(~F, a, c), i, not_lt(i, c, e)) : {O.add(F, O.neg(F, _), O.lookup(~F, DV.mrow(~F, a, i), c)) == O.zero(F) : O.C(F)}
+      %Equal.sym(O.C(F), O.lookup(~F, DV.mrow(~F, a, i), c), O.zero(F), zc_get(~F, a, c, i, KA.natle(c, i), {==}, all_at(~(j => zc(~F, a, c, j)), n, z, i, hi), not_lt(i, c, e))) : {O.add(F, O.neg(F, O.zero(F)), _) == O.zero(F) : O.C(F)}
+      %FL.neg_zero(~F) : {O.add(F, _, O.zero(F)) == O.zero(F) : O.C(F)}
+      O.add_zero(F)(O.zero(F))
+
+def ker_ent(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +k: Nat, +hn: {nrows(~F, a) == n : Nat}, +hp: All(~(j => rowpre(~F, a, c, j)), n), +z: All(~(j => zc(~F, a, c, j)), n), +hk: {Nat.add(c, 1n+k) == n : Nat}, +i: Nat, +hi: {KA.natle(1n+i, n) == True{} : Bool}) -> {O.lookup(~F, M.matvec(~F, a, kv(~F, a, c, k)), i) == O.lookup(~F, zeros(~F, n), i) : O.C(F)}:
+  %Equal.sym(O.C(F), O.lookup(~F, M.matvec(~F, a, kv(~F, a, c, k)), i), M.dot(~F, DV.mrow(~F, a, i), kv(~F, a, c, k)), look_matvec(~F, a, kv(~F, a, c, k), i)) : {_ == O.lookup(~F, zeros(~F, n), i) : O.C(F)}
+  %look_zeros(~F, n, i) : {M.dot(~F, DV.mrow(~F, a, i), kv(~F, a, c, k)) == _ : O.C(F)}
+  %dot_app(~F, DV.mrow(~F, a, i), kp(~F, a, c), Con{O.one(F), zeros(~F, k)}) : {_ == O.zero(F) : O.C(F)}
+  %Equal.sym(Nat, M.len(~F, kp(~F, a, c)), c, kp_len(~F, a, c, n, hn, le_of_add(c, 1n+k, n, hk))) : {O.add(F, M.dot(~F, vtake(~F, _, DV.mrow(~F, a, i)), kp(~F, a, c)), M.dot(~F, vdrop(~F, _, DV.mrow(~F, a, i)), Con{O.one(F), zeros(~F, k)})) == O.zero(F) : O.C(F)}
+  %Equal.sym(M.Vec(~F), vtake(~F, c, DV.mrow(~F, a, i)), unit(~F, c, i), all_at(~(j => rowpre(~F, a, c, j)), n, hp, i, hi)) : {O.add(F, M.dot(~F, _, kp(~F, a, c)), M.dot(~F, vdrop(~F, c, DV.mrow(~F, a, i)), Con{O.one(F), zeros(~F, k)})) == O.zero(F) : O.C(F)}
+  %dot_unit(~F, c, i, kp(~F, a, c), (%Equal.sym(Nat, M.len(~F, kp(~F, a, c)), c, kp_len(~F, a, c, n, hn, le_of_add(c, 1n+k, n, hk))) : {KA.natle(_, c) == True{} : Bool}
+    le_refl(c))) : {O.add(F, _, M.dot(~F, vdrop(~F, c, DV.mrow(~F, a, i)), Con{O.one(F), zeros(~F, k)})) == O.zero(F) : O.C(F)}
+  %dot_e0(~F, vdrop(~F, c, DV.mrow(~F, a, i)), k) : {O.add(F, O.lookup(~F, kp(~F, a, c), i), _) == O.zero(F) : O.C(F)}
+  %look_drop(~F, c, DV.mrow(~F, a, i)) : {O.add(F, O.lookup(~F, kp(~F, a, c), i), _) == O.zero(F) : O.C(F)}
+  %look_vneg(~F, vtake(~F, c, mcol(~F, a, c)), i) : {O.add(F, _, O.lookup(~F, DV.mrow(~F, a, i), c)) == O.zero(F) : O.C(F)}
+  ker_ent.go(~F, a, n, c, z, i, hi, KA.natle(1n+i, c), {==})
+
+# column c without a pivot gives a vector with an entry 1 that a sends to 0
+def ker_zero(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +k: Nat, +hn: {nrows(~F, a) == n : Nat}, +hp: All(~(j => rowpre(~F, a, c, j)), n), +z: All(~(j => zc(~F, a, c, j)), n), +hk: {Nat.add(c, 1n+k) == n : Nat}) -> {M.matvec(~F, a, kv(~F, a, c, k)) == zeros(~F, n) : M.Vec(~F)}:
+  veq_ext(~F, M.matvec(~F, a, kv(~F, a, c, k)), zeros(~F, n), n, ve_mk(~F, ~n, ~M.matvec(~F, a, kv(~F, a, c, k)), ~zeros(~F, n), ~(i => hi => ker_ent(~F, a, n, c, k, hn, hp, z, hk, i, hi)), n, le_refl(n)), Equal.trans(Nat, M.len(~F, M.matvec(~F, a, kv(~F, a, c, k))), nrows(~F, a), n, Equal.sym(Nat, nrows(~F, a), M.len(~F, M.matvec(~F, a, kv(~F, a, c, k))), len_matvec(~F, a, kv(~F, a, c, k))), hn), Equal.sym(Nat, n, M.len(~F, zeros(~F, n)), len_zeros(~F, n)))
+
+# The elimination
+# ---------------
+
+# finished: a history whose matrix has n rows of n entries, each e_i
+def GJOK(~F: O.OField, +a: M.Mat(~F), +n: Nat, +h: List<&2, GOp<F>>) -> Data:
+  M.Both(hok(~F, h, n), M.Both({nrows(~F, applies(~F, a, h)) == n : Nat}, M.Both(All(~(j => roww(~F, applies(~F, a, h), n, j)), n), All(~(j => rowpre(~F, applies(~F, a, h), n, j)), n))))
+
+# stuck: a vector of length n with an entry 1 that a sends to 0
+def GJKER(~F: O.OField, +a: M.Mat(~F), +n: Nat, +v: M.Vec(~F)) -> Data:
+  M.Both({M.len(~F, v) == n : Nat}, M.Both({M.matvec(~F, a, v) == zeros(~F, n) : M.Vec(~F)}, Sigma<&2, &2, Nat, c => {O.lookup(~F, v, c) == O.one(F) : O.C(F)}>))
+
+def GJR(~F: O.OField, +a: M.Mat(~F), +n: Nat) -> Data:
+  Either<&2, &2, Sigma<&2, &2, List<&2, GOp<F>>, h => GJOK(~F, a, n, h)>, Sigma<&2, &2, M.Vec(~F), v => GJKER(~F, a, n, v)>>
+
+def ker_a(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +k: Nat, +h: List<&2, GOp<F>>, +hk: {Nat.add(c, 1n+k) == n : Nat}, +ok: hok(~F, h, n), +hn: {nrows(~F, applies(~F, a, h)) == n : Nat}, +hp: All(~(j => rowpre(~F, applies(~F, a, h), c, j)), n), +z: All(~(j => zc(~F, applies(~F, a, h), c, j)), n), +hA: {nrows(~F, a) == n : Nat}) -> GJKER(~F, a, n, kv(~F, applies(~F, a, h), c, k)):
+  (kv_len(~F, applies(~F, a, h), c, k, n, hn, hk), (inj(~F, h, M.matvec(~F, a, kv(~F, applies(~F, a, h), c, k)), zeros(~F, n), n, ok, Equal.trans(Nat, M.len(~F, M.matvec(~F, a, kv(~F, applies(~F, a, h), c, k))), nrows(~F, a), n, Equal.sym(Nat, nrows(~F, a), M.len(~F, M.matvec(~F, a, kv(~F, applies(~F, a, h), c, k))), len_matvec(~F, a, kv(~F, applies(~F, a, h), c, k))), hA), Equal.sym(Nat, n, M.len(~F, zeros(~F, n)), len_zeros(~F, n)), Equal.trans(M.Vec(~F), vapplies(~F, M.matvec(~F, a, kv(~F, applies(~F, a, h), c, k)), h), M.matvec(~F, applies(~F, a, h), kv(~F, applies(~F, a, h), c, k)), vapplies(~F, zeros(~F, n), h), matvec_applies(~F, a, h, kv(~F, applies(~F, a, h), c, k)), Equal.trans(M.Vec(~F), M.matvec(~F, applies(~F, a, h), kv(~F, applies(~F, a, h), c, k)), zeros(~F, n), vapplies(~F, zeros(~F, n), h), ker_zero(~F, applies(~F, a, h), n, c, k, hn, hp, z, hk), vapplies_zeros(~F, n, h)))), (c, kv_look(~F, applies(~F, a, h), c, k, n, hn, le_of_add(c, 1n+k, n, hk)))))
+
+def gj.found2(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +k: Nat, +h: List<&2, GOp<F>>, +hk: {Nat.add(c, 1n+k) == n : Nat}, +ok: hok(~F, h, n), +hn: {nrows(~F, applies(~F, a, h)) == n : Nat}, +hw: All(~(j => roww(~F, applies(~F, a, h), n, j)), n), +hp: All(~(j => rowpre(~F, applies(~F, a, h), c, j)), n), +r: Nat, +hcr: {KA.natle(c, r) == True{} : Bool}, +hr: {KA.natle(1n+r, n) == True{} : Bool}, +hinv: {O.mul(F, O.lookup(~F, DV.mrow(~F, applies(~F, a, h), r), c), O.inv(F, O.lookup(~F, DV.mrow(~F, applies(~F, a, h), r), c))) == O.one(F) : O.C(F)}, rec: @h2: List<&2, GOp<F>> -> hok(~F, h2, n) -> {nrows(~F, applies(~F, a, h2)) == n : Nat} -> All(~(j => roww(~F, applies(~F, a, h2), n, j)), n) -> All(~(j => rowpre(~F, applies(~F, a, h2), 1n+c, j)), n) -> GJR(~F, a, n)) -> GJR(~F, a, n):
+  rec(Con{GClr{c, mcol(~F, l2(~F, applies(~F, a, h), c, r, O.inv(F, O.lookup(~F, DV.mrow(~F, applies(~F, a, h), r), c))), c)}, Con{GScl{c, O.inv(F, O.lookup(~F, DV.mrow(~F, applies(~F, a, h), r), c)), O.lookup(~F, DV.mrow(~F, applies(~F, a, h), r), c)}, Con{GSwap{c, r}, h}}}, (Unit{}, ((lt_of_add(c, k, n, hk), Equal.trans(O.C(F), O.mul(F, O.inv(F, O.lookup(~F, DV.mrow(~F, applies(~F, a, h), r), c)), O.lookup(~F, DV.mrow(~F, applies(~F, a, h), r), c)), O.mul(F, O.lookup(~F, DV.mrow(~F, applies(~F, a, h), r), c), O.inv(F, O.lookup(~F, DV.mrow(~F, applies(~F, a, h), r), c))), O.one(F), FL.mul_comm(~F, O.inv(F, O.lookup(~F, DV.mrow(~F, applies(~F, a, h), r), c)), O.lookup(~F, DV.mrow(~F, applies(~F, a, h), r), c)), hinv)), ((lt_of_add(c, k, n, hk), hr), ok))), n3(~F, applies(~F, a, h), n, c, r, O.inv(F, O.lookup(~F, DV.mrow(~F, applies(~F, a, h), r), c)), hn), all_mk(~n, ~(j => roww(~F, l3(~F, applies(~F, a, h), c, r, O.inv(F, O.lookup(~F, DV.mrow(~F, applies(~F, a, h), r), c))), n, j)), ~(j => hj => w3(~F, applies(~F, a, h), n, c, r, O.inv(F, O.lookup(~F, DV.mrow(~F, applies(~F, a, h), r), c)), hn, hw, lt_of_add(c, k, n, hk), hr, j, hj)), n, le_refl(n)), all_mk(~n, ~(j => rowpre(~F, l3(~F, applies(~F, a, h), c, r, O.inv(F, O.lookup(~F, DV.mrow(~F, applies(~F, a, h), r), c))), 1n+c, j)), ~(j => hj => p3(~F, applies(~F, a, h), n, c, r, O.inv(F, O.lookup(~F, DV.mrow(~F, applies(~F, a, h), r), c)), hn, hw, hp, lt_of_add(c, k, n, hk), hcr, hr, hinv, j, hj)), n, le_refl(n)))
+
+def gj.found(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +k: Nat, +h: List<&2, GOp<F>>, +hk: {Nat.add(c, 1n+k) == n : Nat}, +ok: hok(~F, h, n), +hn: {nrows(~F, applies(~F, a, h)) == n : Nat}, +hw: All(~(j => roww(~F, applies(~F, a, h), n, j)), n), +hp: All(~(j => rowpre(~F, applies(~F, a, h), c, j)), n), +r: Nat, p: pivp(~F, applies(~F, a, h), c, n, r), rec: @h2: List<&2, GOp<F>> -> hok(~F, h2, n) -> {nrows(~F, applies(~F, a, h2)) == n : Nat} -> All(~(j => roww(~F, applies(~F, a, h2), n, j)), n) -> All(~(j => rowpre(~F, applies(~F, a, h2), 1n+c, j)), n) -> GJR(~F, a, n)) -> GJR(~F, a, n):
+  match p:
+    case (hcr, hri):
+      match hri:
+        case (hr, hinv):
+          gj.found2(~F, a, n, c, k, h, hk, ok, hn, hw, hp, r, hcr, hr, hinv, rec)
+
+def gj.go(~F: O.OField, +a: M.Mat(~F), +n: Nat, +c: Nat, +k: Nat, +h: List<&2, GOp<F>>, +hk: {Nat.add(c, 1n+k) == n : Nat}, +ok: hok(~F, h, n), +hn: {nrows(~F, applies(~F, a, h)) == n : Nat}, +hw: All(~(j => roww(~F, applies(~F, a, h), n, j)), n), +hp: All(~(j => rowpre(~F, applies(~F, a, h), c, j)), n), +hA: {nrows(~F, a) == n : Nat}, sr: SR(~F, applies(~F, a, h), c, n), rec: @h2: List<&2, GOp<F>> -> hok(~F, h2, n) -> {nrows(~F, applies(~F, a, h2)) == n : Nat} -> All(~(j => roww(~F, applies(~F, a, h2), n, j)), n) -> All(~(j => rowpre(~F, applies(~F, a, h2), 1n+c, j)), n) -> GJR(~F, a, n)) -> GJR(~F, a, n):
+  match sr:
+    case Inl{s}:
+      match s:
+        case (+r, p):
+          gj.found(~F, a, n, c, k, h, hk, ok, hn, hw, hp, r, p, rec)
+    case Inr{z}:
+      Inr{(kv(~F, applies(~F, a, h), c, k), ker_a(~F, a, n, c, k, h, hk, ok, hn, hp, z, hA))}
+
+def gj_fin(~F: O.OField, +l: M.Mat(~F), +n: Nat, +c: Nat, e: {c == n : Nat}, hp: All(~(j => rowpre(~F, l, c, j)), n)) -> All(~(j => rowpre(~F, l, n, j)), n):
+  %e : All(~(j => rowpre(~F, l, _, j)), n)
+  hp
+
+# k columns left (c + k = n)
+def gj(~F: O.OField, k: Nat, +a: M.Mat(~F), +n: Nat, +c: Nat, +h: List<&2, GOp<F>>, +hk: {Nat.add(c, k) == n : Nat}, +ok: hok(~F, h, n), +hn: {nrows(~F, applies(~F, a, h)) == n : Nat}, +hw: All(~(j => roww(~F, applies(~F, a, h), n, j)), n), +hp: All(~(j => rowpre(~F, applies(~F, a, h), c, j)), n), +hA: {nrows(~F, a) == n : Nat}) -> GJR(~F, a, n):
+  match k:
+    case 0n:
+      Inl{(h, (ok, (hn, (hw, gj_fin(~F, applies(~F, a, h), n, c, Equal.trans(Nat, c, Nat.add(c, 0n), n, LN.add_zero(c), hk), hp)))))}
+    case 1n++k2:
+      gj.go(~F, a, n, c, k2, h, hk, ok, hn, hw, hp, hA, search(~F, applies(~F, a, h), c, n), h2 => ok2 => hn2 => hw2 => hp2 => gj(~F, k2, a, n, 1n+c, h2, succ_add(c, k2, n, hk), ok2, hn2, hw2, hp2, hA))
+
+# Gauss-Jordan on a square matrix: n rows of n entries
+def gj_thm(~F: O.OField, +a: M.Mat(~F), +n: Nat, +hA: {nrows(~F, a) == n : Nat}, hw: All(~(j => roww(~F, a, n, j)), n)) -> GJR(~F, a, n):
+  gj(~F, n, a, n, 0n, Nil{}, {==}, Unit{}, hA, hw, all_mk(~n, ~(j => rowpre(~F, a, 0n, j)), ~(j => hj => {==}), n, le_refl(n)), hA)

@@ -16,5 +16,8 @@ for k, v in [("@LK(", "O.lookup(~F, env, "), ("@EM(", "femono(~F, env, "), ("@EP
              ("@A(", "O.add(F, "), ("@M(", "O.mul(F, "), ("@N(", "O.neg(F, "),
              ("@S(", "O.sub(~F, "), ("@0", "O.zero(F)"), ("@1", "O.one(F)"), ("@T", "O.C(F)")]:
     src = src.replace(k, v)
-assert "@" not in src, [l for l in src.splitlines() if "@" in l][:3]
+import re
+# what is left of "@" must be Bend's own (a dependent binder "@x: T")
+left = re.sub(r'@[a-z_][A-Za-z_0-9]*:', '', src)
+assert "@" not in left, [l for l in left.splitlines() if "@" in l][:3]
 open(sys.argv[2], "w").write(src)
