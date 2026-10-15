@@ -1300,3 +1300,99 @@ def pivot_ok(~F: O.OField, +t: List<&2, List<&2, S.D>>, +c: Nat) -> pfin(~F, t, 
   dp_ok(~F, t, t, c, c, 0n, None{}, NU.dzero(), rdrop0(t), Equal.sym(Nat, GJ.nrows(~F, M.ofdm(~F, t)), Nat.add(GJ.nrows(~F, M.ofdm(~F, t)), 0n), LN.add_zero(GJ.nrows(~F, M.ofdm(~F, t)))), Unit{},
     (%DM.ofd_zero(~F) : O.le(~F, _, @0)
       FO.le_refl(~F, @0)))
+
+# The pivot bound
+# ---------------
+# If every candidate in column c were small, the vector
+# v = (-L_0c, ..., -L_(c-1)c, 1, 0, ...) would nearly be in the kernel of
+# the rows' left parts L, since the finished columns are nearly unit; but
+# R J v = L v - (L - R J) v and J, R have bounded inverses, so |v| >= 1
+# forces some candidate to be large.
+
+def vall_app(~F: O.OField, p: M.Vec(~F), +q: M.Vec(~F), +t: @T, hp: M.vbnd.all(~F, p, t), +hq: M.vbnd.all(~F, q, t)) -> M.vbnd.all(~F, GJ.vapp(~F, p, q), t):
+  match p:
+    case Nil{}:
+      hq
+    case Con{a, xs}:
+      (h1, h2) = hp
+      (h1, vall_app(~F, xs, q, t, h2, hq))
+
+def vall_take(~F: O.OField, k: Nat, v: M.Vec(~F), +t: @T, h: M.vbnd.all(~F, v, t)) -> M.vbnd.all(~F, GJ.vtake(~F, k, v), t):
+  match k v:
+    case 0n v:
+      Unit{}
+    case 1n+j Nil{}:
+      Unit{}
+    case 1n+j Con{a, xs}:
+      (h1, h2) = h
+      (h1, vall_take(~F, j, xs, t, h2))
+
+def lt_take(~F: O.OField, k: Nat, y: M.Vec(~F), i: Nat, h: {KA.natle(1n+i, M.len(~F, GJ.vtake(~F, k, y))) == True{} : Bool}) -> {KA.natle(1n+i, k) == True{} : Bool}:
+  match k y i:
+    case 0n y i:
+      h
+    case 1n+j Nil{} i:
+      FO.absurd({KA.natle(1n+i, 1n+j) == True{} : Bool}, KA.ft(h))
+    case 1n+j Con{a, t} 0n:
+      {==}
+    case 1n+j Con{a, t} 1n+i2:
+      lt_take(~F, j, t, i2, h)
+
+def dot_app_k(~F: O.OField, +r: M.Vec(~F), +p: M.Vec(~F), +q: M.Vec(~F), +k: Nat, hk: {M.len(~F, p) == k : Nat}) -> {@A(M.dot(~F, GJ.vtake(~F, k, r), p), M.dot(~F, GJ.vdrop(~F, k, r), q)) == M.dot(~F, r, GJ.vapp(~F, p, q)) : @T}:
+  %hk : {@A(M.dot(~F, GJ.vtake(~F, _, r), p), M.dot(~F, GJ.vdrop(~F, _, r), q)) == M.dot(~F, r, GJ.vapp(~F, p, q)) : @T}
+  GJ.dot_app(~F, r, p, q)
+
+def look0_vhd(~F: O.OField, v: M.Vec(~F)) -> {O.lookup(~F, v, 0n) == GJ.vhd(~F, v) : @T}:
+  match v:
+    case Nil{}:
+      {==}
+    case Con{a, t}:
+      {==}
+
+def rinv_mall(~F: O.OField, +n: Nat, +jm: M.Mat(~F), s: M.Mat(~F), +i: Nat, +c: Nat, +gg: @T, +dd: @T, +ph: @T, h: rinv(~F, n, jm, s, i, c, gg, dd, ph)) -> mall(~F, s, gg):
+  match s:
+    case Nil{}:
+      Unit{}
+    case Con{x, t}:
+      (h1, h2) = h
+      (ri_e(~F, n, jm, x, i, c, gg, dd, ph, h1), rinv_mall(~F, n, jm, t, 1n+i, c, gg, dd, ph, h2))
+
+# row k's invariant in an F matrix
+def ri_atf(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +s: M.Mat(~F), +c: Nat, +gg: @T, +dd: @T, +ph: @T, +k: Nat, +h: rinv(~F, n, jm, s, 0n, c, gg, dd, ph), +hk: {KA.natle(1n+k, GJ.nrows(~F, s)) == True{} : Bool}) -> rowinv(~F, n, jm, DV.mrow(~F, s, k), k, c, gg, dd, ph):
+  %Equal.sym(Nat, k, Nat.add(k, 0n), LN.add_zero(k)) : rowinv(~F, n, jm, DV.mrow(~F, s, k), _, c, gg, dd, ph)
+  ri_at(~F, n, jm, s, 0n, c, gg, dd, ph, k, h, hk)
+
+# column c above row c, and the near-kernel vector
+def pcol(~F: O.OField, +s: M.Mat(~F), +c: Nat) -> M.Vec(~F):
+  GJ.vtake(~F, c, GJ.mcol(~F, s, c))
+
+def vk(~F: O.OField, +s: M.Mat(~F), +c: Nat, +rest: Nat) -> M.Vec(~F):
+  GJ.vapp(~F, M.vneg(~F, pcol(~F, s, c)), Con{@1, GJ.zeros(~F, rest)})
+
+def len_pcol(~F: O.OField, +s: M.Mat(~F), +c: Nat, +hc: {KA.natle(c, GJ.nrows(~F, s)) == True{} : Bool}) -> {M.len(~F, pcol(~F, s, c)) == c : Nat}:
+  Equal.sym(Nat, c, M.len(~F, pcol(~F, s, c)), GJ.len_vtake(~F, c, GJ.mcol(~F, s, c), (%GJ.len_mcol(~F, s, c) : {KA.natle(c, _) == True{} : Bool} hc)))
+
+def len_pv(~F: O.OField, +s: M.Mat(~F), +c: Nat, +hc: {KA.natle(c, GJ.nrows(~F, s)) == True{} : Bool}) -> {M.len(~F, M.vneg(~F, pcol(~F, s, c))) == c : Nat}:
+  Equal.trans(Nat, M.len(~F, M.vneg(~F, pcol(~F, s, c))), M.len(~F, pcol(~F, s, c)), c, Equal.sym(Nat, M.len(~F, pcol(~F, s, c)), M.len(~F, M.vneg(~F, pcol(~F, s, c))), GJ.len_vneg(~F, pcol(~F, s, c))), len_pcol(~F, s, c, hc))
+
+def len_vk(~F: O.OField, +s: M.Mat(~F), +c: Nat, +rest: Nat, +hc: {KA.natle(c, GJ.nrows(~F, s)) == True{} : Bool}) -> {M.len(~F, vk(~F, s, c, rest)) == Nat.add(c, 1n+rest) : Nat}:
+  %GJ.len_vapp(~F, M.vneg(~F, pcol(~F, s, c)), Con{@1, GJ.zeros(~F, rest)}) : {_ == Nat.add(c, 1n+rest) : Nat}
+  %Equal.sym(Nat, M.len(~F, M.vneg(~F, pcol(~F, s, c))), c, len_pv(~F, s, c, hc)) : {Nat.add(_, M.len(~F, Con{@1, GJ.zeros(~F, rest)})) == Nat.add(c, 1n+rest) : Nat}
+  %GJ.len_zeros(~F, rest) : {Nat.add(c, 1n+_) == Nat.add(c, 1n+rest) : Nat}
+  {==}
+
+def look_vk(~F: O.OField, +s: M.Mat(~F), +c: Nat, +rest: Nat, +hc: {KA.natle(c, GJ.nrows(~F, s)) == True{} : Bool}) -> {O.lookup(~F, vk(~F, s, c, rest), c) == @1 : @T}:
+  %len_pv(~F, s, c, hc) : {O.lookup(~F, vk(~F, s, c, rest), _) == @1 : @T}
+  Equal.sym(@T, @1, O.lookup(~F, vk(~F, s, c, rest), M.len(~F, M.vneg(~F, pcol(~F, s, c)))), GJ.look_app_len(~F, M.vneg(~F, pcol(~F, s, c)), Con{@1, GJ.zeros(~F, rest)}))
+
+# 1 <= |v| <= 1 + G
+def one_le_vk(~F: O.OField, +s: M.Mat(~F), +c: Nat, +rest: Nat, +hc: {KA.natle(c, GJ.nrows(~F, s)) == True{} : Bool}) -> O.le(~F, @1, NP.vn(~F, vk(~F, s, c, rest))):
+  NP.bnd_lo(~F, @1, NP.vn(~F, vk(~F, s, c, rest)), (%look_vk(~F, s, c, rest, hc) : M.bnd(~F, _, NP.vn(~F, vk(~F, s, c, rest)))
+    look_bnd(~F, vk(~F, s, c, rest), c, NP.vn(~F, vk(~F, s, c, rest)), FV.vmax_all(~F, vk(~F, s, c, rest)), FV.vmax_nn(~F, vk(~F, s, c, rest)))))
+
+def vk_le(~F: O.OField, +s: M.Mat(~F), +c: Nat, +rest: Nat, +gg: @T, hs: mall(~F, s, gg), +hgg: O.le(~F, @0, gg)) -> O.le(~F, NP.vn(~F, vk(~F, s, c, rest)), @A(@1, gg)):
+  FV.vmax_lub(~F, vk(~F, s, c, rest), @A(@1, gg), vall_app(~F, M.vneg(~F, pcol(~F, s, c)), Con{@1, GJ.zeros(~F, rest)}, @A(@1, gg),
+      FM.vall_mono(~F, M.vneg(~F, pcol(~F, s, c)), gg, @A(@1, gg), FM.vall_neg(~F, pcol(~F, s, c), gg, vall_take(~F, c, GJ.mcol(~F, s, c), gg, vall_mcol(~F, s, c, gg, hs, hgg))), FM.sub_nonneg(~F, gg, @A(@1, gg), le_addl(~F, @1, gg, NP.one_nn(~F)))),
+      (FM.bnd_mono(~F, @1, @1, @A(@1, gg), FV.bnd_self(~F, @1, NP.one_nn(~F)), FM.sub_nonneg(~F, @1, @A(@1, gg), le_addr(~F, @1, gg, hgg))),
+        FM.vall_mono(~F, GJ.zeros(~F, rest), @0, @A(@1, gg), NP.vall_zeros(~F, rest), FM.sub_nonneg(~F, @0, @A(@1, gg), FO.nonneg_add(~F, @1, gg, NP.one_nn(~F), hgg))))),
+    FO.nonneg_add(~F, @1, gg, NP.one_nn(~F), hgg))
