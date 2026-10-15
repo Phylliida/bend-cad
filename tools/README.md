@@ -8,6 +8,8 @@ the checker verifies the output.
 | `lib/flaws.bend`, `lib/fring.bend`, `lib/ford.bend`, `lib/meaning.bend`, `lib/qord.bend`, `lib/qemb.bend`, `lib/fmat.bend`, `lib/dmat.bend`, `lib/sb.bend`, `tests/fring_demo.bend` | `tools/drafts/*.draft` via `python3 tools/expand.py tools/drafts/X.draft <output>` |
 | `lib/mforms.bend` | `python3 tools/mforms.py` (from `spec/sketch.bend`) |
 | `lib/maxpf.bend` | `python3 tools/expand.py tools/drafts/maxpf.draft lib/maxpf.bend` |
+| `lib/gjpf.bend` | `python3 tools/expand.py tools/drafts/gjpf.draft lib/gjpf.bend` |
+| `lib/tarjanpf.bend` | `python3 tools/expand.py tools/drafts/tarjanpf.draft lib/tarjanpf.bend` |
 
 `@CONJ name` / `params: ...` / `- tag: expr` lines / `@END` (`tools/conj.py`)
 defines `name(params)` as the conjunction (`SV.band`) of the exprs, with
