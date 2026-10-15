@@ -1042,3 +1042,39 @@ def col_low(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +w: Nat, +tr: List<&2, List<&
     FO.mul_nonneg(~F, @A(hh, hh), aco(~F, gg), FO.nonneg_add(~F, hh, hh, NP.invb_nn(~F, rmat(~F, n, M.ofdm(~F, tr)), n, hh, hH), NP.invb_nn(~F, rmat(~F, n, M.ofdm(~F, tr)), n, hh, hH)), FO.nonneg_add(~F, @A(@1, gg), @A(gg, gg), FO.nonneg_add(~F, @1, gg, NP.one_nn(~F), hgg), FO.nonneg_add(~F, gg, gg, hgg, hgg))),
     Equal.trans(Nat, GJ.nrows(~F, rmat(~F, n, M.ofdm(~F, NU.dclear(tr, w, p, c, 0n)))), GJ.nrows(~F, M.ofdm(~F, NU.dclear(tr, w, p, c, 0n))), n, nrows_rmat(~F, n, M.ofdm(~F, NU.dclear(tr, w, p, c, 0n))), hn2),
     rw_all(~F, n, jm, M.ofdm(~F, NU.dclear(tr, w, p, c, 0n)), 1n+c, gg2, dd2, ph2, h2, hn2))
+
+# row j of a, against u: at most |R_a u|
+def zb(~F: O.OField, +n: Nat, +a: M.Mat(~F), +u: M.Vec(~F), +j: Nat) -> M.bnd(~F, zr(~F, n, DV.mrow(~F, a, j), u), NP.vn(~F, M.matvec(~F, rmat(~F, n, a), u))):
+  %look_rmv(~F, n, a, u, j) : M.bnd(~F, _, NP.vn(~F, M.matvec(~F, rmat(~F, n, a), u)))
+  look_bnd(~F, M.matvec(~F, rmat(~F, n, a), u), j, NP.vn(~F, M.matvec(~F, rmat(~F, n, a), u)), FV.vmax_all(~F, M.matvec(~F, rmat(~F, n, a), u)), FV.vmax_nn(~F, M.matvec(~F, rmat(~F, n, a), u)))
+
+# every row of a is a row of a with rows c and r swapped
+def swp_go(~F: O.OField, +n: Nat, +a: M.Mat(~F), +c: Nat, +r: Nat, +u: M.Vec(~F), +k: Nat, +hc: {KA.natle(1n+c, GJ.nrows(~F, a)) == True{} : Bool}, +hr: {KA.natle(1n+r, GJ.nrows(~F, a)) == True{} : Bool}, b1: Bool, +e1: {KA.nateq(k, c) == b1 : Bool}, b2: Bool, +e2: {KA.nateq(k, r) == b2 : Bool}) -> M.bnd(~F, zr(~F, n, DV.mrow(~F, a, k), u), NP.vn(~F, M.matvec(~F, rmat(~F, n, GJ.mswap(~F, a, c, r)), u))):
+  match b1:
+    case True{}:
+      %Equal.sym(Nat, k, c, GJ.nateq_ok(k, c, e1)) : M.bnd(~F, zr(~F, n, DV.mrow(~F, a, _), u), NP.vn(~F, M.matvec(~F, rmat(~F, n, GJ.mswap(~F, a, c, r)), u)))
+      %Equal.sym(M.Vec(~F), DV.mrow(~F, a, c), DV.mrow(~F, GJ.mswap(~F, a, c, r), r), GJ.row_mset_eq(~F, GJ.mset(~F, a, c, DV.mrow(~F, a, r)), r, DV.mrow(~F, a, c), GJ.lt_nrows_mset(~F, a, c, DV.mrow(~F, a, r), r, hr))) : M.bnd(~F, zr(~F, n, _, u), NP.vn(~F, M.matvec(~F, rmat(~F, n, GJ.mswap(~F, a, c, r)), u)))
+      zb(~F, n, GJ.mswap(~F, a, c, r), u, r)
+    case False{}:
+      match b2:
+        case True{}:
+          %Equal.sym(Nat, k, r, GJ.nateq_ok(k, r, e2)) : M.bnd(~F, zr(~F, n, DV.mrow(~F, a, _), u), NP.vn(~F, M.matvec(~F, rmat(~F, n, GJ.mswap(~F, a, c, r)), u)))
+          %Equal.sym(M.Vec(~F), DV.mrow(~F, a, r), DV.mrow(~F, GJ.mswap(~F, a, c, r), c), Equal.trans(M.Vec(~F), DV.mrow(~F, a, r), DV.mrow(~F, GJ.mset(~F, a, c, DV.mrow(~F, a, r)), c), DV.mrow(~F, GJ.mswap(~F, a, c, r), c), GJ.row_mset_eq(~F, a, c, DV.mrow(~F, a, r), hc), GJ.row_mset_ne(~F, GJ.mset(~F, a, c, DV.mrow(~F, a, r)), r, c, DV.mrow(~F, a, c), (%GJ.nateq_ok(k, r, e2) : {KA.nateq(_, c) == False{} : Bool} e1)))) : M.bnd(~F, zr(~F, n, _, u), NP.vn(~F, M.matvec(~F, rmat(~F, n, GJ.mswap(~F, a, c, r)), u)))
+          zb(~F, n, GJ.mswap(~F, a, c, r), u, c)
+        case False{}:
+          %Equal.sym(M.Vec(~F), DV.mrow(~F, a, k), DV.mrow(~F, GJ.mswap(~F, a, c, r), k), Equal.trans(M.Vec(~F), DV.mrow(~F, a, k), DV.mrow(~F, GJ.mset(~F, a, c, DV.mrow(~F, a, r)), k), DV.mrow(~F, GJ.mswap(~F, a, c, r), k), GJ.row_mset_ne(~F, a, c, k, DV.mrow(~F, a, r), Equal.trans(Bool, KA.nateq(c, k), KA.nateq(k, c), False{}, GJ.nateq_sym(c, k), e1)), GJ.row_mset_ne(~F, GJ.mset(~F, a, c, DV.mrow(~F, a, r)), r, k, DV.mrow(~F, a, c), Equal.trans(Bool, KA.nateq(r, k), KA.nateq(k, r), False{}, GJ.nateq_sym(r, k), e2)))) : M.bnd(~F, zr(~F, n, _, u), NP.vn(~F, M.matvec(~F, rmat(~F, n, GJ.mswap(~F, a, c, r)), u)))
+          zb(~F, n, GJ.mswap(~F, a, c, r), u, k)
+
+# |u| <= H |R u| <= H |R_swapped u|
+def sw_low(~F: O.OField, +n: Nat, +a: M.Mat(~F), +c: Nat, +r: Nat, +hh: @T, +hH: NP.InvB(~F, rmat(~F, n, a), n, hh), +hna: {GJ.nrows(~F, a) == n : Nat}, +hc: {KA.natle(1n+c, GJ.nrows(~F, a)) == True{} : Bool}, +hr: {KA.natle(1n+r, GJ.nrows(~F, a)) == True{} : Bool}, +u: M.Vec(~F), +lu: {M.len(~F, u) == n : Nat}) -> O.le(~F, NP.vn(~F, u), @M(hh, NP.vn(~F, M.matvec(~F, rmat(~F, n, GJ.mswap(~F, a, c, r)), u)))):
+  DM.le_trans(~F, NP.vn(~F, u), @M(hh, NP.vn(~F, M.matvec(~F, rmat(~F, n, a), u))), @M(hh, NP.vn(~F, M.matvec(~F, rmat(~F, n, GJ.mswap(~F, a, c, r)), u))),
+    NP.lowb(~F, rmat(~F, n, a), n, hh, hH, Equal.trans(Nat, GJ.nrows(~F, rmat(~F, n, a)), GJ.nrows(~F, a), n, nrows_rmat(~F, n, a), hna), u, lu),
+    FV.mul_le(~F, hh, NP.vn(~F, M.matvec(~F, rmat(~F, n, a), u)), NP.vn(~F, M.matvec(~F, rmat(~F, n, GJ.mswap(~F, a, c, r)), u)), NP.invb_nn(~F, rmat(~F, n, a), n, hh, hH),
+      FV.vmax_lub(~F, M.matvec(~F, rmat(~F, n, a), u), NP.vn(~F, M.matvec(~F, rmat(~F, n, GJ.mswap(~F, a, c, r)), u)), vall_lt(~F, ~M.matvec(~F, rmat(~F, n, a), u), ~NP.vn(~F, M.matvec(~F, rmat(~F, n, GJ.mswap(~F, a, c, r)), u)), ~(k => hk =>
+        (%Equal.sym(@T, O.lookup(~F, M.matvec(~F, rmat(~F, n, a), u), k), zr(~F, n, DV.mrow(~F, a, k), u), look_rmv(~F, n, a, u, k)) : M.bnd(~F, _, NP.vn(~F, M.matvec(~F, rmat(~F, n, GJ.mswap(~F, a, c, r)), u)))
+          swp_go(~F, n, a, c, r, u, k, hc, hr, KA.nateq(k, c), {==}, KA.nateq(k, r), {==})))), FV.vmax_nn(~F, M.matvec(~F, rmat(~F, n, GJ.mswap(~F, a, c, r)), u)))))
+
+# swapping two rows keeps an inverse of the right halves, same norm
+def swap_invb(~F: O.OField, +n: Nat, +a: M.Mat(~F), +c: Nat, +r: Nat, +hh: @T, +hH: NP.InvB(~F, rmat(~F, n, a), n, hh), +hna: {GJ.nrows(~F, a) == n : Nat}, +hc: {KA.natle(1n+c, GJ.nrows(~F, a)) == True{} : Bool}, +hr: {KA.natle(1n+r, GJ.nrows(~F, a)) == True{} : Bool}, hw: GJ.All(~(i => GJ.roww(~F, rmat(~F, n, GJ.mswap(~F, a, c, r)), n, i)), n)) -> NP.InvB(~F, rmat(~F, n, GJ.mswap(~F, a, c, r)), n, hh):
+  NP.invb_of_low(~F, ~rmat(~F, n, GJ.mswap(~F, a, c, r)), ~n, ~hh, ~(u => lu => sw_low(~F, n, a, c, r, hh, hH, hna, hc, hr, u, lu)), NP.invb_nn(~F, rmat(~F, n, a), n, hh, hH),
+    Equal.trans(Nat, GJ.nrows(~F, rmat(~F, n, GJ.mswap(~F, a, c, r))), GJ.nrows(~F, GJ.mswap(~F, a, c, r)), n, nrows_rmat(~F, n, GJ.mswap(~F, a, c, r)), Equal.trans(Nat, GJ.nrows(~F, GJ.mswap(~F, a, c, r)), GJ.nrows(~F, a), n, Equal.sym(Nat, GJ.nrows(~F, a), GJ.nrows(~F, GJ.mswap(~F, a, c, r)), GJ.nrows_mswap(~F, a, c, r)), hna)), hw)
