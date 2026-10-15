@@ -31,6 +31,7 @@ import ./fvec.bend as FV
 import ./qemb.bend as QE
 import ./kball.bend as KB
 import ./dmat.bend as DM
+import ./nat.bend as LN
 
 # Order helpers
 # -------------
@@ -466,3 +467,115 @@ def dround_err(~F: O.OField, x: S.D, +p: Nat) -> M.bnd(~F, @S(M.ofd(~F, NU.droun
   match x:
     case S.D{+m, +e}:
       dround_go(~F, KA.natle(e, p), m, e, p, {==})
+
+# Rounding to b significant bits
+# ------------------------------
+
+def le_flip(a: Nat, b: Nat, h: {KA.natle(a, b) == False{} : Bool}) -> {KA.natle(b, a) == True{} : Bool}:
+  match a b:
+    case 0n 0n:
+      FO.absurd({KA.natle(0n, 0n) == True{} : Bool}, KA.ft(Equal.sym(Bool, True{}, False{}, h)))
+    case 0n 1n+j:
+      FO.absurd({KA.natle(1n+j, 0n) == True{} : Bool}, KA.ft(Equal.sym(Bool, True{}, False{}, h)))
+    case 1n+i 0n:
+      {==}
+    case 1n+i 1n+j:
+      le_flip(i, j, h)
+
+def sub_add_le(x: Nat, y: Nat, h: {KA.natle(y, x) == True{} : Bool}) -> {Nat.add(Nat.sub(x, y), y) == x : Nat}:
+  match x y:
+    case 0n 0n:
+      {==}
+    case 0n 1n++j:
+      FO.absurd({Nat.add(Nat.sub(0n, 1n+j), 1n+j) == 0n : Nat}, KA.ft(h))
+    case 1n++i 0n:
+      Equal.cong(Nat, Nat, z => 1n+z, Nat.add(i, 0n), i, Equal.sym(Nat, i, Nat.add(i, 0n), LN.add_zero(i)))
+    case 1n++i 1n++j:
+      %LN.add_succ(Nat.sub(i, j), j) : {_ == 1n+i : Nat}
+      Equal.cong(Nat, Nat, z => 1n+z, Nat.add(Nat.sub(i, j), j), i, sub_add_le(i, j, h))
+
+@ATOMS va = r=O.ofz(~F, z),, tc=t2(~F, c),, tk=t2(~F, k),, tck=t2(~F, Nat.add(c, k)),, ic=O.inv(F, t2(~F, c)),, ick=O.inv(F, t2(~F, Nat.add(c, k)))
+
+# z / 2^c is (z 2^k) / 2^(c + k)
+def valA(~F: O.OField, +z: S.Z, +c: Nat, +k: Nat) -> {M.ofd(~F, S.D{z, c}) == @M(@M(O.ofz(~F, z), t2(~F, k)), O.inv(F, t2(~F, Nat.add(c, k)))) : @T}:
+  @CERTEQ[va | r*ic | (r*tk)*ick | r*ick*tk ; tc*ic - 1 | -(r*ic) ; tck*ick - 1 | r*ick*ic ; tck - tc*tk || QE.ofp_rel(~F, S.Pos.pow2(c)), QE.ofp_rel(~F, S.Pos.pow2(Nat.add(c, k))), FO.sub_of_eq(~F, t2(~F, Nat.add(c, k)), @M(t2(~F, c), t2(~F, k)), Equal.sym(@T, @M(t2(~F, c), t2(~F, k)), t2(~F, Nat.add(c, k)), t2_add(~F, c, k)))]
+
+@ATOMS vb = r=O.ofz(~F, z),, tc=t2(~F, c),, te=t2(~F, e),, tce=t2(~F, Nat.add(c, e)),, i0=O.inv(F, @1),, ie=O.inv(F, t2(~F, e))
+
+# (z 2^c) / 1 is (z 2^(c + e)) / 2^e
+def valB(~F: O.OField, +z: S.Z, +c: Nat, +e: Nat) -> {M.ofd(~F, S.D{S.Z.mul(z, S.Zpos{S.Pos.pow2(c)}), 0n}) == @M(@M(O.ofz(~F, z), t2(~F, Nat.add(c, e))), O.inv(F, t2(~F, e))) : @T}:
+  %FR.ofz_mul(~F, z, S.Zpos{S.Pos.pow2(c)}) : {@M(_, O.inv(F, @1)) == @M(@M(O.ofz(~F, z), t2(~F, Nat.add(c, e))), O.inv(F, t2(~F, e))) : @T}
+  @CERTEQ[vb | (r*tc)*i0 | (r*tce)*ie | r*tc ; 1*i0 - 1 | -(r*tc) ; te*ie - 1 | -(r*ie) ; tce - tc*te || QE.ofp_rel(~F, S.XH{}), QE.ofp_rel(~F, S.Pos.pow2(e)), FO.sub_of_eq(~F, t2(~F, Nat.add(c, e)), @M(t2(~F, c), t2(~F, e)), Equal.sym(@T, @M(t2(~F, c), t2(~F, e)), t2(~F, Nat.add(c, e)), t2_add(~F, c, e)))]
+
+@ATOMS dc = v,, r,, mv,, tt,, tj,, tb,, a,, ie,, ib
+
+# a rounding's error from its floor: with v = (r T) / 2^e, |r T - m| <= 2^j,
+# T = 2 2^j and 2^b T <= 2 a, |v - m / 2^e| <= (a / 2^e) 2^-b
+def dsig_core(~F: O.OField, +v: @T, +r: @T, +mv: @T, +tt: @T, +tj: @T, +tb: @T, +a: @T, +ie: @T, +ib: @T, +ev: {v == @M(@M(r, tt), ie) : @T}, +et: {tt == @A(tj, tj) : @T}, hz: M.bnd(~F, @S(@M(r, tt), mv), tj), hs: O.le(~F, @M(tb, tt), @A(a, a)), +hie: O.le(~F, @0, ie), +hib: O.le(~F, @0, ib), +rb: {@S(@M(tb, ib), @1) == @0 : @T}) -> M.bnd(~F, @S(v, @M(mv, ie)), @M(@M(a, ie), @M(@1, ib))):
+  KB.bnd_val(~F, @M(@S(@M(r, tt), mv), ie), @S(v, @M(mv, ie)), @M(@M(a, ie), @M(@1, ib)),
+    @CERTEQ[dc | (r*tt - mv)*ie | v - mv*ie | -1 ; v - (r*tt)*ie || FO.sub_of_eq(~F, v, @M(@M(r, tt), ie), ev)],
+    FM.bnd_mono(~F, @M(@S(@M(r, tt), mv), ie), @M(tj, ie), @M(@M(a, ie), @M(@1, ib)), bnd_scale(~F, @S(@M(r, tt), mv), tj, ie, hie, hz),
+      FM.nn_eq(~F, @S(@M(@M(a, ie), @M(@1, ib)), @M(tj, ie)), @M(@M(ie, ib), @S(a, @M(tb, tj))), @CERTEQ[dc | (ie*ib)*(a - tb*tj) | (a*ie)*(1*ib) - tj*ie | -(tj*ie) ; tb*ib - 1 || rb],
+        FO.mul_nonneg(~F, @M(ie, ib), @S(a, @M(tb, tj)), FO.mul_nonneg(~F, ie, ib, hie, hib), FM.twice_nonneg(~F, @S(a, @M(tb, tj)), FM.nn_eq(~F, @A(@S(a, @M(tb, tj)), @S(a, @M(tb, tj))), @S(@A(a, a), @M(tb, tt)), @CERTEQ[dc | (a + a) - tb*tt | (a - tb*tj) + (a - tb*tj) | -tb ; tt - (tj + tj) || FO.sub_of_eq(~F, tt, @A(tj, tj), et)], FM.sub_nonneg(~F, @M(tb, tt), @A(a, a), hs)))))))
+
+# the value dsig's shift produces: (round(m / 2^k) 2^k) / 2^e
+def dsh_val(~F: O.OField, le: Bool, +m: S.Z, +e: Nat, +k: Nat, h: {KA.natle(k, e) == le : Bool}) -> {M.ofd(~F, NU.dsig.sh(le, m, e, k)) == @M(@M(O.ofz(~F, NU.zshr_round(m, k)), t2(~F, k)), O.inv(F, t2(~F, e))) : @T}:
+  match le:
+    case True{}:
+      %sub_add_le(e, k, h) : {M.ofd(~F, S.D{NU.zshr_round(m, k), Nat.sub(e, k)}) == @M(@M(O.ofz(~F, NU.zshr_round(m, k)), t2(~F, k)), O.inv(F, t2(~F, _))) : @T}
+      valA(~F, NU.zshr_round(m, k), Nat.sub(e, k), k)
+    case False{}:
+      %sub_add_le(k, e, le_flip(k, e, h)) : {M.ofd(~F, S.D{S.Z.mul(NU.zshr_round(m, k), S.Zpos{S.Pos.pow2(Nat.sub(k, e))}), 0n}) == @M(@M(O.ofz(~F, NU.zshr_round(m, k)), t2(~F, _)), O.inv(F, t2(~F, e))) : @T}
+      valB(~F, NU.zshr_round(m, k), Nat.sub(k, e), e)
+
+# zsr at k = j + 1
+def zsr_k(~F: O.OField, +m: S.Z, +k: Nat, +j: Nat, +hk: {k == 1n+j : Nat}) -> M.bnd(~F, @S(@M(O.ofz(~F, NU.zshr_round(m, k)), t2(~F, k)), O.ofz(~F, m)), t2(~F, j)):
+  %Equal.sym(Nat, k, 1n+j, hk) : M.bnd(~F, @S(@M(O.ofz(~F, NU.zshr_round(m, _)), t2(~F, k)), O.ofz(~F, m)), t2(~F, j))
+  %Equal.sym(Nat, k, 1n+j, hk) : M.bnd(~F, @S(@M(O.ofz(~F, NU.zshr_round(m, 1n+j)), t2(~F, _)), O.ofz(~F, m)), t2(~F, j))
+  zsr(~F, m, j)
+
+# 2^b 2^(size p - b) <= 2 p
+def size_k(~F: O.OField, +p: S.Pos, +b: Nat, +h: {KA.natle(QRD.size(p), b) == False{} : Bool}) -> O.le(~F, @M(t2(~F, b), t2(~F, Nat.sub(QRD.size(p), b))), @A(O.ofp(~F, p), O.ofp(~F, p))):
+  %Equal.sym(@T, @M(t2(~F, b), t2(~F, Nat.sub(QRD.size(p), b))), t2(~F, Nat.add(b, Nat.sub(QRD.size(p), b))), t2_add(~F, b, Nat.sub(QRD.size(p), b))) : O.le(~F, _, @A(O.ofp(~F, p), O.ofp(~F, p)))
+  %Equal.sym(Nat, Nat.add(b, Nat.sub(QRD.size(p), b)), QRD.size(p), add_sub(QRD.size(p), b, h)) : O.le(~F, t2(~F, _), @A(O.ofp(~F, p), O.ofp(~F, p)))
+  size_lo(~F, p)
+
+def bound_nn(~F: O.OField, +m: S.Z, +e: Nat, +b: Nat) -> O.le(~F, @0, @M(M.ofd(~F, S.D{M.zabs(m), e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b}))):
+  FO.mul_nonneg(~F, M.ofd(~F, S.D{M.zabs(m), e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b}), DM.dabs_nonneg(~F, S.D{m, e}), FO.lt_le(~F, @0, M.ofd(~F, S.D{S.Zpos{S.XH{}}, b}), DM.dpos(~F, S.XH{}, b)))
+
+# m nonzero with |m| = p
+def dsig_go(~F: O.OField, le: Bool, +m: S.Z, +p: S.Pos, +e: Nat, +b: Nat, +h: {KA.natle(QRD.size(p), b) == le : Bool}, ea: {O.ofz(~F, M.zabs(m)) == O.ofp(~F, p) : @T}) -> M.bnd(~F, @S(M.ofd(~F, NU.dsig.go(le, S.D{m, e}, Nat.sub(QRD.size(p), b))), M.ofd(~F, S.D{m, e})), @M(M.ofd(~F, S.D{M.zabs(m), e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b}))):
+  match le:
+    case True{}:
+      KB.bnd_subself(~F, M.ofd(~F, S.D{m, e}), @M(M.ofd(~F, S.D{M.zabs(m), e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b})), bound_nn(~F, m, e, b))
+    case False{}:
+      +k = Nat.sub(QRD.size(p), b)
+      +j = Nat.sub(QRD.size(p), 1n+b)
+      +hk = sub_succ(QRD.size(p), b, h)
+      %Equal.sym(@T, O.ofz(~F, M.zabs(m)), O.ofp(~F, p), ea) : M.bnd(~F, @S(M.ofd(~F, NU.dsig.sh(KA.natle(k, e), m, e, k)), M.ofd(~F, S.D{m, e})), @M(@M(_, O.inv(F, t2(~F, e))), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b})))
+      dsig_core(~F, M.ofd(~F, NU.dsig.sh(KA.natle(k, e), m, e, k)), O.ofz(~F, NU.zshr_round(m, k)), O.ofz(~F, m), t2(~F, k), t2(~F, j), t2(~F, b), O.ofp(~F, p), O.inv(F, t2(~F, e)), O.inv(F, t2(~F, b)),
+        dsh_val(~F, KA.natle(k, e), m, e, k, {==}), Equal.cong(Nat, @T, z => t2(~F, z), k, 1n+j, hk), zsr_k(~F, m, k, j, hk), size_k(~F, p, b, h), inv_nn(~F, S.Pos.pow2(e)), inv_nn(~F, S.Pos.pow2(b)), QE.ofp_rel(~F, S.Pos.pow2(b)))
+
+def dsig_z2(~F: O.OField, le: Bool, +e: Nat, +k: Nat, +b: Nat) -> M.bnd(~F, @S(M.ofd(~F, NU.dsig.sh(le, S.Z0{}, e, k)), M.ofd(~F, S.D{S.Z0{}, e})), @M(M.ofd(~F, S.D{S.Z0{}, e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b}))):
+  match le:
+    case True{}:
+      KB.bnd_val(~F, @0, @S(M.ofd(~F, S.D{S.Z0{}, Nat.sub(e, k)}), M.ofd(~F, S.D{S.Z0{}, e})), @M(M.ofd(~F, S.D{S.Z0{}, e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b})), @ZEQ[x=O.inv(F, t2(~F, Nat.sub(e, k))),, y=O.inv(F, t2(~F, e)) | 0 | 0*x - 0*y], FM.bnd_zero(~F, @M(M.ofd(~F, S.D{S.Z0{}, e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b})), bound_nn(~F, S.Z0{}, e, b)))
+    case False{}:
+      KB.bnd_val(~F, @0, @S(M.ofd(~F, S.D{S.Z0{}, 0n}), M.ofd(~F, S.D{S.Z0{}, e})), @M(M.ofd(~F, S.D{S.Z0{}, e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b})), @ZEQ[x=O.inv(F, @1),, y=O.inv(F, t2(~F, e)) | 0 | 0*x - 0*y], FM.bnd_zero(~F, @M(M.ofd(~F, S.D{S.Z0{}, e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b})), bound_nn(~F, S.Z0{}, e, b)))
+
+def dsig_z(~F: O.OField, le: Bool, +e: Nat, +b: Nat) -> M.bnd(~F, @S(M.ofd(~F, NU.dsig.go(le, S.D{S.Z0{}, e}, Nat.sub(1n, b))), M.ofd(~F, S.D{S.Z0{}, e})), @M(M.ofd(~F, S.D{S.Z0{}, e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b}))):
+  match le:
+    case True{}:
+      KB.bnd_subself(~F, M.ofd(~F, S.D{S.Z0{}, e}), @M(M.ofd(~F, S.D{S.Z0{}, e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b})), bound_nn(~F, S.Z0{}, e, b))
+    case False{}:
+      dsig_z2(~F, KA.natle(Nat.sub(1n, b), e), e, Nat.sub(1n, b), b)
+
+# |dsig(x, b) - x| <= |x| 2^-b
+def dsig_err(~F: O.OField, x: S.D, +b: Nat) -> M.bnd(~F, @S(M.ofd(~F, NU.dsig(x, b)), M.ofd(~F, x)), @M(M.ofd(~F, M.dabs(x)), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b}))):
+  match x:
+    case S.D{S.Z0{}, +e}:
+      dsig_z(~F, KA.natle(1n, b), e, b)
+    case S.D{S.Zpos{+p}, +e}:
+      dsig_go(~F, KA.natle(QRD.size(p), b), S.Zpos{p}, p, e, b, {==}, {==})
+    case S.D{S.Zneg{+p}, +e}:
+      dsig_go(~F, KA.natle(QRD.size(p), b), S.Zneg{p}, p, e, b, {==}, {==})
