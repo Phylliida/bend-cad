@@ -23,6 +23,8 @@ import ./kball.bend as KB
 import ./cert.bend as CK
 import ./slope.bend as SL
 import ./struct.bend as ST
+import ./plan.bend as PL
+import ../spec/solve.bend as SV
 import ./flaws.bend as FL
 import ./fring.bend as FR
 import ./ford.bend as FO
@@ -586,3 +588,224 @@ def sl_lip(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, +bb: @T, +hr: O.l
 # and is at most ms
 def sl_maj(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, +bb: @T, +hr: O.le(~F, @0, rho), +hb: O.le(~F, @0, bb), +box: List<&2, KB.KB<K>>, +hg: gbox(~K, ~F, ~H, rho, bb, box), +i: Nat, +x1: M.Vec(~F), +x2: M.Vec(~F), +h1: KB.inbox(~K, ~F, ~H, x1, box), +h2: KB.inbox(~K, ~F, ~H, x2, box), +e: E.QExpr, +hh: {KB.held(~K, e) == True{} : Bool}) -> M.bnd(~F, SL.sl(~F, i, x1, x2, e), ms(~F, bb, e)):
   bin_maj(~K, ~F, ~H, rho, SL.sl(~F, i, x1, x2, e), KB.ksl(~K, i, box, e), ms(~F, bb, e), ls(~F, bb, e), KB.sl_ok(~K, ~F, ~H, i, x1, x2, box, e, hh, h1, h2), ksl_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, i, e, hh))
+
+# Renaming commutes with derivatives
+# ----------------------------------
+
+def sveq_nateq(a: Nat, b: Nat) -> {SV.eq(a, b) == KA.nateq(a, b) : Bool}:
+  match a b:
+    case 0n 0n:
+      {==}
+    case 0n 1n+j:
+      {==}
+    case 1n+i 0n:
+      {==}
+    case 1n+i 1n+j:
+      sveq_nateq(i, j)
+
+def deq_nateq(a: Nat, b: Nat) -> {DV.eq(a, b) == KA.nateq(a, b) : Bool}:
+  match a b:
+    case 0n 0n:
+      {==}
+    case 0n 1n+j:
+      {==}
+    case 1n+i 0n:
+      {==}
+    case 1n+i 1n+j:
+      deq_nateq(i, j)
+
+def deq_refl(a: Nat) -> {DV.eq(a, a) == True{} : Bool}:
+  match a:
+    case 0n:
+      {==}
+    case 1n+i:
+      deq_refl(i)
+
+def nateq_ok(a: Nat, b: Nat, h: {KA.nateq(a, b) == True{} : Bool}) -> {a == b : Nat}:
+  match a b:
+    case 0n 0n:
+      {==}
+    case 0n 1n+j:
+      FO.absurd({0n == 1n+j : Nat}, KA.ft(h))
+    case 1n+i 0n:
+      FO.absurd({1n+i == 0n : Nat}, KA.ft(h))
+    case 1n+i 1n+j:
+      Equal.cong(Nat, Nat, x => 1n+x, i, j, nateq_ok(i, j, h))
+
+# w < a: w is not a, a is not w
+def deq_lt(w: Nat, a: Nat, h: {KA.natle(1n+w, a) == True{} : Bool}) -> {DV.eq(w, a) == False{} : Bool}:
+  match w a:
+    case 0n 0n:
+      FO.absurd({DV.eq(0n, 0n) == False{} : Bool}, KA.ft(h))
+    case 0n 1n+j:
+      {==}
+    case 1n+i 0n:
+      FO.absurd({DV.eq(1n+i, 0n) == False{} : Bool}, KA.ft(h))
+    case 1n+i 1n+j:
+      deq_lt(i, j, h)
+
+def deq_gt(w: Nat, a: Nat, h: {KA.natle(1n+w, a) == True{} : Bool}) -> {DV.eq(a, w) == False{} : Bool}:
+  match w a:
+    case 0n 0n:
+      FO.absurd({DV.eq(0n, 0n) == False{} : Bool}, KA.ft(h))
+    case 0n 1n+j:
+      {==}
+    case 1n+i 0n:
+      FO.absurd({DV.eq(0n, 1n+i) == False{} : Bool}, KA.ft(h))
+    case 1n+i 1n+j:
+      deq_gt(i, j, h)
+
+def natle_trans(a: Nat, b: Nat, +c: Nat, h1: {KA.natle(a, b) == True{} : Bool}, h2: {KA.natle(b, c) == True{} : Bool}) -> {KA.natle(a, c) == True{} : Bool}:
+  match a b c:
+    case 0n b c:
+      {==}
+    case 1n+i 0n c:
+      FO.absurd({KA.natle(1n+i, c) == True{} : Bool}, KA.ft(h1))
+    case 1n+i 1n+j 0n:
+      FO.absurd({KA.natle(1n+i, 0n) == True{} : Bool}, KA.ft(h2))
+    case 1n+i 1n+j 1n+k:
+      natle_trans(i, j, k, h1, h2)
+
+def natle_add_r(a: Nat, +b: Nat) -> {KA.natle(a, Nat.add(a, b)) == True{} : Bool}:
+  match a:
+    case 0n:
+      {==}
+    case 1n+i:
+      natle_add_r(i, b)
+
+# v not below o: o <= v
+def nle_ge(v: Nat, o: Nat, h: {KA.natle(1n+v, o) == False{} : Bool}) -> {KA.natle(o, v) == True{} : Bool}:
+  match v o:
+    case v 0n:
+      {==}
+    case 0n 1n+k:
+      FO.absurd({KA.natle(1n+k, 0n) == True{} : Bool}, KA.ft(Equal.sym(Bool, KA.natle(0n, k), False{}, h)))
+    case 1n+w 1n+k:
+      nle_ge(w, k, h)
+
+# v - o < n, for v < o + n and v not below o
+def natle_minus(o: Nat, v: Nat, +n: Nat, h1: {KA.natle(1n+v, Nat.add(o, n)) == True{} : Bool}, h2: {KA.natle(1n+v, o) == False{} : Bool}) -> {KA.natle(1n+PL.minus(o, v), n) == True{} : Bool}:
+  match o v:
+    case 0n v:
+      h1
+    case 1n+k 0n:
+      FO.absurd({KA.natle(1n+PL.minus(1n+k, 0n), n) == True{} : Bool}, KA.ft(Equal.sym(Bool, KA.natle(0n, k), False{}, h2)))
+    case 1n+k 1n+w:
+      natle_minus(k, w, n, h1, h2)
+
+# for u and v not below o, u - o and v - o are equal when u and v are
+def minus_eq(o: Nat, u: Nat, v: Nat, hu: {KA.natle(1n+u, o) == False{} : Bool}, hv: {KA.natle(1n+v, o) == False{} : Bool}) -> {DV.eq(PL.minus(o, u), PL.minus(o, v)) == DV.eq(u, v) : Bool}:
+  match o u v:
+    case 0n u v:
+      {==}
+    case 1n+k 0n v:
+      FO.absurd({DV.eq(PL.minus(1n+k, 0n), PL.minus(1n+k, v)) == DV.eq(0n, v) : Bool}, KA.ft(Equal.sym(Bool, KA.natle(0n, k), False{}, hu)))
+    case 1n+k 1n+u 0n:
+      FO.absurd({DV.eq(PL.minus(1n+k, 1n+u), PL.minus(1n+k, 0n)) == DV.eq(1n+u, 0n) : Bool}, KA.ft(Equal.sym(Bool, KA.natle(0n, k), False{}, hv)))
+    case 1n+k 1n+u 1n+v:
+      minus_eq(k, u, v, hu, hv)
+
+# Positions in vp
+
+def pos_eq.go(+u: Nat, +v: Nat, +h: Nat, +t: List<&2, Nat>, bu: Bool, eu: {KA.nateq(u, h) == bu : Bool}, bv: Bool, ev: {KA.nateq(v, h) == bv : Bool}, hv: {SV.bor(bv, SV.mem(v, t)) == True{} : Bool}, ih: {SV.mem(v, t) == True{} : Bool} -> {DV.eq(PL.pos(u, t), PL.pos(v, t)) == DV.eq(u, v) : Bool}) -> {DV.eq(PL.pos.go(bu, PL.pos(u, t)), PL.pos.go(bv, PL.pos(v, t))) == DV.eq(u, v) : Bool}:
+  match bu bv:
+    case True{} True{}:
+      %Equal.sym(Nat, u, h, nateq_ok(u, h, eu)) : {True{} == DV.eq(_, v) : Bool}
+      %Equal.sym(Nat, v, h, nateq_ok(v, h, ev)) : {True{} == DV.eq(h, _) : Bool}
+      Equal.sym(Bool, DV.eq(h, h), True{}, deq_refl(h))
+    case True{} False{}:
+      %Equal.sym(Nat, u, h, nateq_ok(u, h, eu)) : {False{} == DV.eq(_, v) : Bool}
+      Equal.trans(Bool, False{}, KA.nateq(v, h), DV.eq(h, v), Equal.sym(Bool, KA.nateq(v, h), False{}, ev), nateq_flip(v, h))
+    case False{} True{}:
+      %Equal.sym(Nat, v, h, nateq_ok(v, h, ev)) : {False{} == DV.eq(u, _) : Bool}
+      Equal.trans(Bool, False{}, KA.nateq(u, h), DV.eq(u, h), Equal.sym(Bool, KA.nateq(u, h), False{}, eu), Equal.sym(Bool, DV.eq(u, h), KA.nateq(u, h), deq_nateq(u, h)))
+    case False{} False{}:
+      ih(hv)
+
+# v in vp: u and v have equal positions in vp when they are equal
+def pos_eq(+u: Nat, +v: Nat, vp: List<&2, Nat>, hv: {SV.mem(v, vp) == True{} : Bool}) -> {DV.eq(PL.pos(u, vp), PL.pos(v, vp)) == DV.eq(u, v) : Bool}:
+  match vp:
+    case Nil{}:
+      FO.absurd({DV.eq(PL.pos(u, Nil{}), PL.pos(v, Nil{})) == DV.eq(u, v) : Bool}, KA.ft(hv))
+    case Con{+h, +t}:
+      pos_eq.go(u, v, h, t, KA.nateq(u, h), {==}, KA.nateq(v, h), {==}, (%sveq_nateq(v, h) : {SV.bor(_, SV.mem(v, t)) == True{} : Bool}
+        hv), p => pos_eq(u, v, t, p))
+
+def rnv_dvar(+vp: List<&2, Nat>, b: Bool) -> {PL.rnv(vp, DV.dvar(b)) == DV.dvar(b) : E.QExpr}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# renumbering by positions in vp (v in vp) commutes with d/dv
+def deriv_rnv(+vp: List<&2, Nat>, +v: Nat, +hv: {SV.mem(v, vp) == True{} : Bool}, e: E.QExpr) -> {DV.deriv(PL.rnv(vp, e), PL.pos(v, vp)) == PL.rnv(vp, DV.deriv(e, v)) : E.QExpr}:
+  match e:
+    case E.QVar{+u}:
+      %Equal.sym(Bool, DV.eq(PL.pos(u, vp), PL.pos(v, vp)), DV.eq(u, v), pos_eq(u, v, vp, hv)) : {DV.dvar(_) == PL.rnv(vp, DV.dvar(DV.eq(u, v))) : E.QExpr}
+      Equal.sym(E.QExpr, PL.rnv(vp, DV.dvar(DV.eq(u, v))), DV.dvar(DV.eq(u, v)), rnv_dvar(vp, DV.eq(u, v)))
+    case E.QCst{q}:
+      {==}
+    case E.QAdd{+a, +b}:
+      %Equal.sym(E.QExpr, DV.deriv(PL.rnv(vp, a), PL.pos(v, vp)), PL.rnv(vp, DV.deriv(a, v)), deriv_rnv(vp, v, hv, a)) : {E.QAdd{_, DV.deriv(PL.rnv(vp, b), PL.pos(v, vp))} == E.QAdd{PL.rnv(vp, DV.deriv(a, v)), PL.rnv(vp, DV.deriv(b, v))} : E.QExpr}
+      %Equal.sym(E.QExpr, DV.deriv(PL.rnv(vp, b), PL.pos(v, vp)), PL.rnv(vp, DV.deriv(b, v)), deriv_rnv(vp, v, hv, b)) : {E.QAdd{PL.rnv(vp, DV.deriv(a, v)), _} == E.QAdd{PL.rnv(vp, DV.deriv(a, v)), PL.rnv(vp, DV.deriv(b, v))} : E.QExpr}
+      {==}
+    case E.QSub{+a, +b}:
+      %Equal.sym(E.QExpr, DV.deriv(PL.rnv(vp, a), PL.pos(v, vp)), PL.rnv(vp, DV.deriv(a, v)), deriv_rnv(vp, v, hv, a)) : {E.QSub{_, DV.deriv(PL.rnv(vp, b), PL.pos(v, vp))} == E.QSub{PL.rnv(vp, DV.deriv(a, v)), PL.rnv(vp, DV.deriv(b, v))} : E.QExpr}
+      %Equal.sym(E.QExpr, DV.deriv(PL.rnv(vp, b), PL.pos(v, vp)), PL.rnv(vp, DV.deriv(b, v)), deriv_rnv(vp, v, hv, b)) : {E.QSub{PL.rnv(vp, DV.deriv(a, v)), _} == E.QSub{PL.rnv(vp, DV.deriv(a, v)), PL.rnv(vp, DV.deriv(b, v))} : E.QExpr}
+      {==}
+    case E.QMul{+a, +b}:
+      %Equal.sym(E.QExpr, DV.deriv(PL.rnv(vp, a), PL.pos(v, vp)), PL.rnv(vp, DV.deriv(a, v)), deriv_rnv(vp, v, hv, a)) : {E.QAdd{E.QMul{_, PL.rnv(vp, b)}, E.QMul{PL.rnv(vp, a), DV.deriv(PL.rnv(vp, b), PL.pos(v, vp))}} == E.QAdd{E.QMul{PL.rnv(vp, DV.deriv(a, v)), PL.rnv(vp, b)}, E.QMul{PL.rnv(vp, a), PL.rnv(vp, DV.deriv(b, v))}} : E.QExpr}
+      %Equal.sym(E.QExpr, DV.deriv(PL.rnv(vp, b), PL.pos(v, vp)), PL.rnv(vp, DV.deriv(b, v)), deriv_rnv(vp, v, hv, b)) : {E.QAdd{E.QMul{PL.rnv(vp, DV.deriv(a, v)), PL.rnv(vp, b)}, E.QMul{PL.rnv(vp, a), _}} == E.QAdd{E.QMul{PL.rnv(vp, DV.deriv(a, v)), PL.rnv(vp, b)}, E.QMul{PL.rnv(vp, a), PL.rnv(vp, DV.deriv(b, v))}} : E.QExpr}
+      {==}
+    case E.QNeg{+a}:
+      %Equal.sym(E.QExpr, DV.deriv(PL.rnv(vp, a), PL.pos(v, vp)), PL.rnv(vp, DV.deriv(a, v)), deriv_rnv(vp, v, hv, a)) : {E.QNeg{_} == E.QNeg{PL.rnv(vp, DV.deriv(a, v))} : E.QExpr}
+      {==}
+
+# Local numbers in a block
+
+def loc_eq.go(+o: Nat, +n: Nat, +pars: List<&2, Nat>, +u: Nat, +v: Nat, b: Bool, eb: {KA.natle(1n+u, o) == b : Bool}, +hv1: {KA.natle(1n+v, o) == False{} : Bool}, +hv2: {KA.natle(1n+v, Nat.add(o, n)) == True{} : Bool}) -> {DV.eq(PL.loc.go(b, o, n, pars, u), PL.minus(o, v)) == DV.eq(u, v) : Bool}:
+  match b:
+    case True{}:
+      Equal.trans(Bool, DV.eq(Nat.add(n, PL.pos(u, pars)), PL.minus(o, v)), False{}, DV.eq(u, v),
+        deq_gt(PL.minus(o, v), Nat.add(n, PL.pos(u, pars)), natle_trans(1n+PL.minus(o, v), n, Nat.add(n, PL.pos(u, pars)), natle_minus(o, v, n, hv2, hv1), natle_add_r(n, PL.pos(u, pars)))),
+        Equal.sym(Bool, DV.eq(u, v), False{}, deq_lt(u, v, natle_trans(1n+u, o, v, eb, nle_ge(v, o, hv1)))))
+    case False{}:
+      minus_eq(o, u, v, eb, hv1)
+
+# for an unknown v (o <= v < o + n): local numbers are equal when the
+# variables are
+def loc_eq(+o: Nat, +n: Nat, +pars: List<&2, Nat>, +u: Nat, +v: Nat, +hv1: {KA.natle(1n+v, o) == False{} : Bool}, +hv2: {KA.natle(1n+v, Nat.add(o, n)) == True{} : Bool}) -> {DV.eq(PL.loc(o, n, pars, u), PL.loc(o, n, pars, v)) == DV.eq(u, v) : Bool}:
+  %Equal.sym(Bool, KA.natle(1n+v, o), False{}, hv1) : {DV.eq(PL.loc(o, n, pars, u), PL.loc.go(_, o, n, pars, v)) == DV.eq(u, v) : Bool}
+  loc_eq.go(o, n, pars, u, v, KA.natle(1n+u, o), {==}, hv1, hv2)
+
+def rename_dvar(+o: Nat, +n: Nat, +pars: List<&2, Nat>, b: Bool) -> {PL.rename(o, n, pars, DV.dvar(b)) == DV.dvar(b) : E.QExpr}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# a block's renumbering commutes with d/dv for each unknown v
+def deriv_rename(+o: Nat, +n: Nat, +pars: List<&2, Nat>, +v: Nat, +hv1: {KA.natle(1n+v, o) == False{} : Bool}, +hv2: {KA.natle(1n+v, Nat.add(o, n)) == True{} : Bool}, e: E.QExpr) -> {DV.deriv(PL.rename(o, n, pars, e), PL.loc(o, n, pars, v)) == PL.rename(o, n, pars, DV.deriv(e, v)) : E.QExpr}:
+  match e:
+    case E.QVar{+u}:
+      %Equal.sym(Bool, DV.eq(PL.loc(o, n, pars, u), PL.loc(o, n, pars, v)), DV.eq(u, v), loc_eq(o, n, pars, u, v, hv1, hv2)) : {DV.dvar(_) == PL.rename(o, n, pars, DV.dvar(DV.eq(u, v))) : E.QExpr}
+      Equal.sym(E.QExpr, PL.rename(o, n, pars, DV.dvar(DV.eq(u, v))), DV.dvar(DV.eq(u, v)), rename_dvar(o, n, pars, DV.eq(u, v)))
+    case E.QCst{q}:
+      {==}
+    case E.QAdd{+a, +b}:
+      %Equal.sym(E.QExpr, DV.deriv(PL.rename(o, n, pars, a), PL.loc(o, n, pars, v)), PL.rename(o, n, pars, DV.deriv(a, v)), deriv_rename(o, n, pars, v, hv1, hv2, a)) : {E.QAdd{_, DV.deriv(PL.rename(o, n, pars, b), PL.loc(o, n, pars, v))} == E.QAdd{PL.rename(o, n, pars, DV.deriv(a, v)), PL.rename(o, n, pars, DV.deriv(b, v))} : E.QExpr}
+      %Equal.sym(E.QExpr, DV.deriv(PL.rename(o, n, pars, b), PL.loc(o, n, pars, v)), PL.rename(o, n, pars, DV.deriv(b, v)), deriv_rename(o, n, pars, v, hv1, hv2, b)) : {E.QAdd{PL.rename(o, n, pars, DV.deriv(a, v)), _} == E.QAdd{PL.rename(o, n, pars, DV.deriv(a, v)), PL.rename(o, n, pars, DV.deriv(b, v))} : E.QExpr}
+      {==}
+    case E.QSub{+a, +b}:
+      %Equal.sym(E.QExpr, DV.deriv(PL.rename(o, n, pars, a), PL.loc(o, n, pars, v)), PL.rename(o, n, pars, DV.deriv(a, v)), deriv_rename(o, n, pars, v, hv1, hv2, a)) : {E.QSub{_, DV.deriv(PL.rename(o, n, pars, b), PL.loc(o, n, pars, v))} == E.QSub{PL.rename(o, n, pars, DV.deriv(a, v)), PL.rename(o, n, pars, DV.deriv(b, v))} : E.QExpr}
+      %Equal.sym(E.QExpr, DV.deriv(PL.rename(o, n, pars, b), PL.loc(o, n, pars, v)), PL.rename(o, n, pars, DV.deriv(b, v)), deriv_rename(o, n, pars, v, hv1, hv2, b)) : {E.QSub{PL.rename(o, n, pars, DV.deriv(a, v)), _} == E.QSub{PL.rename(o, n, pars, DV.deriv(a, v)), PL.rename(o, n, pars, DV.deriv(b, v))} : E.QExpr}
+      {==}
+    case E.QMul{+a, +b}:
+      %Equal.sym(E.QExpr, DV.deriv(PL.rename(o, n, pars, a), PL.loc(o, n, pars, v)), PL.rename(o, n, pars, DV.deriv(a, v)), deriv_rename(o, n, pars, v, hv1, hv2, a)) : {E.QAdd{E.QMul{_, PL.rename(o, n, pars, b)}, E.QMul{PL.rename(o, n, pars, a), DV.deriv(PL.rename(o, n, pars, b), PL.loc(o, n, pars, v))}} == E.QAdd{E.QMul{PL.rename(o, n, pars, DV.deriv(a, v)), PL.rename(o, n, pars, b)}, E.QMul{PL.rename(o, n, pars, a), PL.rename(o, n, pars, DV.deriv(b, v))}} : E.QExpr}
+      %Equal.sym(E.QExpr, DV.deriv(PL.rename(o, n, pars, b), PL.loc(o, n, pars, v)), PL.rename(o, n, pars, DV.deriv(b, v)), deriv_rename(o, n, pars, v, hv1, hv2, b)) : {E.QAdd{E.QMul{PL.rename(o, n, pars, DV.deriv(a, v)), PL.rename(o, n, pars, b)}, E.QMul{PL.rename(o, n, pars, a), _}} == E.QAdd{E.QMul{PL.rename(o, n, pars, DV.deriv(a, v)), PL.rename(o, n, pars, b)}, E.QMul{PL.rename(o, n, pars, a), PL.rename(o, n, pars, DV.deriv(b, v))}} : E.QExpr}
+      {==}
+    case E.QNeg{+a}:
+      %Equal.sym(E.QExpr, DV.deriv(PL.rename(o, n, pars, a), PL.loc(o, n, pars, v)), PL.rename(o, n, pars, DV.deriv(a, v)), deriv_rename(o, n, pars, v, hv1, hv2, a)) : {E.QNeg{_} == E.QNeg{PL.rename(o, n, pars, DV.deriv(a, v))} : E.QExpr}
+      {==}
