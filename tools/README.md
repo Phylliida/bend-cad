@@ -16,6 +16,7 @@ the checker verifies the output.
 | `lib/bndpf.bend` | `python3 tools/expand.py tools/drafts/bndpf.draft lib/bndpf.bend` |
 | `lib/roundpf.bend` | `python3 tools/expand.py tools/drafts/roundpf.draft lib/roundpf.bend` |
 | `lib/normpf.bend` | `python3 tools/expand.py tools/drafts/normpf.draft lib/normpf.bend` |
+| `lib/dgjpf.bend` | `python3 tools/expand.py tools/drafts/dgjpf.draft lib/dgjpf.bend` |
 
 `@CONJ name` / `params: ...` / `- tag: expr` lines / `@END` (`tools/conj.py`)
 defines `name(params)` as the conjunction (`SV.band`) of the exprs, with

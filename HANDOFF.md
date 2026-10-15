@@ -454,6 +454,36 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
     |J' - J| <= d, 2bd <= 1 give InvB(J', n, 2b): lower bound, injective,
     C1 inverse, rows read against their own signs, walked as mdrop(k, Z')).
   Next: C4, the rounded dyadic Gauss-Jordan analysis (DESIGN §10.4 (5)).
+- **C4 DONE (2026-10-15), gate green.** lib/dgjpf.bend
+  (tests/dgj_laws.bend), proofs only, the solver unchanged.
+  - `dinverse_ok`: for J = a dyadic n × n matrix with |J_ij| <= g and
+    InvB(J, n, β), once 2^-w A_c <= 1 for every column c, dinverse
+    returns A with n rows and every entry of I − A J at most
+    (KD_n + KP_n) 2^-w. Constants `kst`, smallness `acoef`, both explicit
+    in n, g, β (DESIGN §10.4 "C4 as built").
+  - Pieces: per-row invariant `rowinv`/`rinv`; `col_step` (swap, scale,
+    clear, with rounding through dsig/qsig); right halves `rmat` with
+    InvB through `swap_invb` and `col_low`; pivot search `pivot_ok`;
+    pivot bound `kern` (near-kernel vector); `col_full` (one column
+    under nice constants); `dgj_ok` (the columns in turn); start
+    `rinv0`/`invb0`; end `agood_of`.
+  Next: C5 (one block at P): Newton and Y through dinverse_ok, the
+  radius search, the vector form |v − A J v| <= n e |v|.
+- Bend lessons (C4):
+  - A `let` can't hold an inline rewrite, and neither can a let-bound pair
+    be destructured: move either into a helper def, or carry the pair as
+    one parameter (dgj_ok's `hs`).
+  - A rewrite inside another rewrite's equation position, or
+    `{type} (%...` on one line, misparses (`{T} (` reads as an
+    application). Put the inner rewrite on its own line or in a helper.
+  - Several `_` holes in one motive all abstract the same position
+    (dot_app_k, rinv at c → n).
+  - Atom sets for @ZEQ/@FT must name only variables in scope: a stray
+    atom resolves to a global def of that name (`kd`).
+  - Python generators with a longest-first \b-bounded abbreviation
+    fixpoint, sympy to verify certificates first, and a nonneg-proof
+    generator (an expression of +, * over nonnegative atoms →
+    nonneg_add/mul_nonneg) made the 2000 lines tractable.
 - Bend lessons (C3): termination needs the shrinking argument before any
   argument that grows (put a walked list first, before an index). Nat.sub
   only reduces with both arguments constructors (keep sub0/sub_succ/

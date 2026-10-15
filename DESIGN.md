@@ -1057,7 +1057,7 @@ solver as it stands, and both are provable.)
 | C3a | lib/bndpf.bend | **done 2026-10-15** (`mcen_jac`, `kball_grade`, `ksl_grade`, `eval_lip`, `sl_lip`, `deriv_rnv`, `deriv_rename`; gated via tests/bnd_laws.bend): balls: centers are values (slope at equal points = deriv), ball tightness, Lipschitz bounds for expressions and slopes; renaming commutes with deriv (plan below) |
 | C3b | lib/roundpf.bend | **done 2026-10-15** (`div_ok`, `zfloor_ok`, `dround_err`, `dsig_err`, `qsig_err`, `dsigup_ok`; gated via tests/round_laws.bend): rounding in F: dround, dsig, qsig, dsigup (plan below) |
 | C3c | lib/normpf.bend | **done 2026-10-15** (`mv_n`, `InvB`, `lowb`, `pert`; gated via tests/norm_laws.bend): norms and the perturbation lemma (plan below) |
-| C4 | lib/dgjpf.bend | the rounded elimination (5): Newton's and Y's inverses are good (plan below; C4a–C4d) |
+| C4 | lib/dgjpf.bend | **done 2026-10-15** (`dinverse_ok`, `pivot_ok`, `kern`, `col_full`, `dgj_ok`; gated via tests/dgj_laws.bend): the rounded elimination (5), the solver's dinverse as it runs: Newton's and Y's inverses are good (plan below) |
 | C5 | lib/blockpf.bend | one block at P (3) |
 | C6 | lib/completepf.bend | the blocks in turn, the verdict, local uniqueness, choosing l and d: `solve_complete` |
 
@@ -1144,6 +1144,27 @@ explicit K from n, g and β, once 2^-w ≤ ε for an explicit ε > 0.
     and qsig).
   - C4c: the pivot bound.
   - C4d: the induction over columns and the end bound for dinverse.
+
+**C4 as built** (2026-10-15, lib/dgjpf.bend, ~2200 lines, ~3 s).
+- Rows carry `rowinv(x, i, c, G, Δ, φ)`: length 2n, entries ≤ G, the
+  defect x_k − R_x · J_col k ≤ Δ for k < n, and |x_j − [i = j]| ≤ φ for
+  j < c. `rinv` holds it for every row (running index).
+- The right halves R = `rmat(n, ·)` keep `InvB(R, n, H)`. The swap is
+  `swap_invb`. The elimination step is `col_low`: inverting the step by
+  hand gives |u| ≤ H |R u| ≤ H (A |R' u| + B |u|), where the pivot row
+  needs |z| ≤ 2G |s z| (`piv_low`). A lower bound alone then gives InvB
+  (normpf's `invb_of_low`).
+- Pivot: `pivot_ok` shows dpivot returns a row bounding every
+  candidate, or None only if all are 0. `kern` gives
+  1 ≤ βH((cφG + m) + nΔ(1 + G)) from the near-kernel vector
+  v = (−L_0c, …, 1, 0, …). So the pivot is ≥ 1/(2βH), |q| ≤ 2βH and
+  σ = 4βH bounds the rounded reciprocal.
+- Constants: `kst(n, g, β, c)` = (G_c, H_c, KD_c, KP_c), u-free, with
+  Δ = KD u and φ = KP u. Each column needs u A_c ≤ 1 (`acoef`: the
+  pivot, 2G|q|u ≤ 1, 2HB ≤ 1, u ≤ 1).
+- `dinverse_ok`: dinverse(n, w, a) = Some A with n rows and every entry
+  of I − A J at most (KD_n + KP_n) 2^-w (`dinv_res`/`agood`). The
+  vector form |v − A J v| ≤ n(KD_n + KP_n) u |v| is left to C5.
 
 **Risks.** Size: several thousand lines over several sessions (C4 is the
 largest single piece). Checker time on long inequality proofs: keep the
