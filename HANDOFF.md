@@ -1,4 +1,4 @@
-# HANDOFF — bend-cad (2026-10-14, sk-06 done; sk-09 verified solver built, drafts awaiting review)
+# HANDOFF — bend-cad (2026-10-14, sk-06 done; sk-09 verified solver built, solve_total proven, drafts awaiting review)
 
 Read first: `DESIGN.md` (v0.9: the plan, Danielle's decisions, §3 spec
 numbers, §4–§5 typed IR, forms and meanings as built), `proto/RESULTS.md`
@@ -348,10 +348,33 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
   still normalized, so a big body passed as an argument (the verdict, in
   the loop) blows up every law that mentions solve; guard such bodies
   behind a match on the stuck value (accept matches the plan first).
-- Next: Danielle's review of all six; then prove solve_total (Kuhn/König, constraint-atomic
-  rollback, fuel bounds, wf_dec completeness), then solve_complete
-  (Kantorovich with rounding); pin witnesses; ink-metric KKT (§10.3);
-  speed.
+- **solve_total proven** (2026-10-14, evening; gate green). Solver
+  restructured first, same answers (regression and chains unchanged):
+  the augmenting-path search is depth-first recursion (lib/struct.bend:
+  dfs; root-down tentative assignment, so every intermediate matching is
+  injective; fuel = depth, 1 + nv); the red stage walks constraint
+  records (lib/solve.bend: kuhnc, run); pins_of is the structure's pins
+  when they make the kept system square, else the red stage's free
+  variables (provably square; Kuhn's maximality is what says the first
+  branch always holds, and it is not proven). Proof files:
+  lib/listpf.bend (lists, pigeonhole, the matching's map), lib/dfspf.bend
+  (dfs_ok: found path grows the matching by one; failed search's
+  witness overdet, wit_ok), lib/redpf.bend (kuhnc_ok: good records +
+  count; shape of the red list; explained_of), lib/wfcpf.bend (wf ⇒
+  wf_dec, also marked), lib/covpf.bend (within + wf_dec ⇒ adjacency below
+  nvars; per-kind via VE builders), lib/totalpf.bend (pins, solve_total).
+- Next: Danielle's review of all six; then solve_complete (Kantorovich
+  with rounding); optionally prove Kuhn's maximality to drop the pins
+  fallback; pin witnesses; ink-metric KKT (§10.3); speed.
+- Bend proof lessons (solve_total): `%E : P` with E : {L == R} turns R
+  into L in the goal, so to replace X by Y use E : {Y == X} (I got this
+  backwards about half the time; read the error's expected/observed and
+  flip). A let can't hold a rewrite (`+h = %E : P ...` "cannot infer"):
+  put it inline as an argument (expected type known) or in a helper def.
+  Multi-scrutinee matches share binder names per column across cases:
+  use one name per field in every case, and `+` if any case reuses it.
+  Mark proof hypotheses `+` freely. Plant an error after a fast "All
+  terms check" (the checker is fast: 1-3 s per proof file).
 - Bend lessons: constructor names are global (Done clashed: NMore/NDone);
   `match` cannot scrutinize a computed value (helper def or pass it as a
   parameter of the recursive def: the "cur" idiom used for every loop

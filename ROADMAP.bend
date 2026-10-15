@@ -94,9 +94,10 @@ law solve_pins:
   for +ok: {SO.Out.ok(SO.solve(sk, g0)) == True{} : Bool}
   {SV.held(SO.Out.pins(SO.solve(sk, g0)), g0, SO.Out.gc(SO.solve(sk, g0)), SO.Out.gr(SO.solve(sk, g0))) == True{} : Bool}
 
-# Completeness (sk-09, DESIGN §10.2). DRAFTS FOR REVIEW, open (not proven
-# yet), with spec/deriv.bend and the "for completeness" part of
-# spec/solve.bend.
+# Completeness (sk-09, DESIGN §10.2). DRAFTS FOR REVIEW, with
+# spec/deriv.bend and the "for completeness" part of spec/solve.bend.
+# solve_total is proven (lib/totalpf.bend; restated with its proof in
+# tests/solve_laws.bend); solve_complete is open.
 # --------------------------------------------------------------------
 # solve_l(sk, g, l) is the solver at level l: it tries seven precisions
 # of 64, 96, 128, 192, ... (doubling every two), starting at the l-th, and
@@ -106,13 +107,19 @@ law solve_pins:
 # why_of(sk) and pins_of(sk) are its red constraints, their reasons and
 # its pins, computed from the sketch alone (lib/solve.bend).
 
-# LAW (open): the structure stage never fails. For a well-formed sketch
+# LAW: the structure stage never fails. For a well-formed sketch
 # whose variables cover it, whatever the drawing and the level: the red
 # constraints, reasons and pins solve reports are those of the sketch
 # alone; every red constraint is explained; the sketch less them passes
 # the solver's well-formedness check; the pins are distinct variables;
 # and with the pins held the kept system is square (as many equations as
-# free variables).
+# free variables). (Proof: lib/dfspf.bend, the augmenting-path search and
+# its witness; lib/redpf.bend, the red stage; lib/wfcpf.bend and
+# lib/covpf.bend, well-formedness and coverage; lib/totalpf.bend, the
+# pins. The pins are the structure's when they make the kept system
+# square, which Kuhn's theorem says they always do; that theorem is not
+# proven, so otherwise they are the red stage's free variables, which
+# provably do.)
 law solve_total:
   for +sk: SK.Sketch
   for  w: SK.Sketch.wf(sk)

@@ -806,7 +806,16 @@ believed without proof.
    the matching changes afterwards: the equations S_j constrain fewer
    unknowns than they have equations. Each unmatched equation's constraint
    is flagged red (made driven) with its S_j; unmatched variables are
-   pinned at their displayed values. Blocks are the strongly connected
+   pinned at their displayed values. *As built:* the search is
+   depth-first recursion whose fuel bounds only its depth (each level
+   visits a new matched variable, so 1 + nv suffices, by pigeonhole); the
+   red stage walks the constraint records as `Sketch.eqs` and `owners`
+   do, matching each constraint's equations as a unit; the pins are the
+   variable side's failed searches (latest variables first, so the
+   earliest are pinned) when they make the kept system square, which
+   Kuhn's theorem says they always do; as that theorem is not proven, the
+   red stage's free variables (provably square) stand in otherwise.
+   Blocks are the strongly connected
    components of the matched dependency graph, in dependency order. Each
    block is validated as it is emitted (its equations use only earlier
    variables and its own unknowns, as many as its equations), and
@@ -848,7 +857,9 @@ in a shorter list; `explained`; `held`).
   any one red constraint over-determines what was kept: no red flag is
   spare.
 - `solve_pins`: each pin has radius 0 and its center is its drawn value.
-- `solve_total` (open, drafted 2026-10-14): for a well-formed, covered
+- `solve_total` (**proven 2026-10-14**, `lib/totalpf.bend` over
+  `lib/dfspf.bend`, `lib/redpf.bend`, `lib/wfcpf.bend`, `lib/covpf.bend`,
+  `lib/listpf.bend`; restated in `tests/solve_laws.bend`): for a well-formed, covered
   sketch, whatever the drawing and budget, the reported red constraints,
   reasons and pins are the sketch's own (`red_of`, `why_of`, `pins_of`
   depend on the sketch alone); the red ones are explained; the marked
@@ -1067,7 +1078,7 @@ random sketches.
 | sk-06 | Composition theorem (§8.4, exactly one solution in a complete ordered field), side conditions (§8.6), optional denominator clearing for D (Q19) | sk-05, sk-05b | **done (2026-10-14, reviewed)**: plan_exists, plan_unique, box_sides, sketch_exists, sketch_unique in LAWS (97 laws; the block laws became lemmas); denominator clearing optional (Q19) |
 | sk-07 | Core vocabulary §5.1 + meaning lemmas | sk-03, sk-06 | laws closed — **meaning lemmas proven** in every ordered field (2026-10-13); §8.6 for the vocabulary covered by `box_sides` + `check_sides` (`tests/sides_demo.bend`, every kind, 2026-10-14); remaining: line–line / point–circle / circle–circle distances |
 | sk-08 | `accept_sound`: certified, untouched, flips, diagnostics | sk-07 | law closed |
-| sk-09 | Proposer v1, verified (§10): front end, structure (pins, red flags with Hall witnesses, blocks), exact numerics and the precision loop, all in Bend | sk-P1, sk-07, sk-06 | `solve_exists`/`solve_unique`/`solve_red`/`solve_pins` proven, **drafts awaiting review (2026-10-14)**; `solve_total` and `solve_complete` to draft and prove in that order; the depth-30 chains and the demos certify end to end in Bend (no Python in the path) |
+| sk-09 | Proposer v1, verified (§10): front end, structure (pins, red flags with Hall witnesses, blocks), exact numerics and the precision loop, all in Bend | sk-P1, sk-07, sk-06 | `solve_exists`/`solve_unique`/`solve_red`/`solve_pins`/`solve_total` proven, **drafts awaiting review (2026-10-14)**; `solve_complete` drafted, open; the depth-30 chains and the demos certify end to end in Bend (no Python in the path) |
 | sk-10 | Bulge arcs, tangency, joins, trim/split (§5.2–5.3) | sk-07 | laws closed |
 | sk-11 | Exact constants: algebraic roots, constructive π / cos / sin / tan (§7.1–7.3) | sk-06 | laws closed; typed angles exact |
 | sk-12 | Guaranteed-digit queries (§9) | sk-09, sk-11 | demo |
