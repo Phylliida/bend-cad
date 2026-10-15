@@ -547,3 +547,56 @@ def prow(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x: M.Vec(~F), +c: Nat, +gg: @T,
     GJ.all_mk(~n, ~(k => M.bnd(~F, dk(~F, n, jm, p, k), @A(@M(sg, dd), @M(ep, @A(@1, @M(FR.ofn(~F, n), g)))))), ~(k => hk => prow_d(~F, n, jm, x, c, gg, dd, ph, hx, s, sg, hsg, p, ep, hp, hep, g, hj, hg, hn, k, hk)), n, GJ.le_refl(n)),
     (GJ.all_mk(~c, ~(j => M.bnd(~F, @S(O.lookup(~F, p, j), GJ.dl(~F, KA.nateq(c, j))), @A(@A(@M(sg, ph), u), ep))), ~(j => hj => pf_lt(~F, n, jm, x, c, gg, dd, ph, hx, s, sg, hsg, p, ep, hp, hep, u, hu, j, hj)), c, GJ.le_refl(c)),
      pf_c(~F, x, c, ph, s, sg, q, u, hsg, hph, hq, hs, p, ep, hp, hep)))
+
+# The other rows
+# --------------
+# x' = x - m p rounded, m = x_c: entries, defect and finished columns.
+
+# y near a + mm b: |y| <= A + M B + E
+def three(~F: O.OField, +y: @T, +a: @T, +mm: @T, +b: @T, +aa: @T, +mb: @T, +bb: @T, +ee: @T, ha: M.bnd(~F, a, aa), hm: M.bnd(~F, mm, mb), hb: M.bnd(~F, b, bb), hd: M.bnd(~F, @S(y, @A(a, @M(mm, b))), ee)) -> M.bnd(~F, y, @A(@A(aa, @M(mb, bb)), ee)):
+  KB.bnd_val(~F, @A(@A(a, @M(mm, b)), @S(y, @A(a, @M(mm, b)))), y, @A(@A(aa, @M(mb, bb)), ee), @ZEQ[y,, a,, mm,, b | (a + mm*b) + (y - (a + mm*b)) | y],
+    FM.bnd_add(~F, @A(a, @M(mm, b)), @A(aa, @M(mb, bb)), @S(y, @A(a, @M(mm, b))), ee, FM.bnd_add(~F, a, aa, @M(mm, b), @M(mb, bb), ha, FM.bnd_mul(~F, mm, mb, b, bb, hm, hb)), hd))
+
+# |x'_k - (x_k - m p_k)| <= eps
+def oent(~F: O.OField, +x2: M.Vec(~F), +x: M.Vec(~F), +m: @T, +p: M.Vec(~F), +k: Nat, +ep: @T, +he: M.vbnd.all(~F, M.vadd(~F, x2, M.vneg(~F, M.vadd(~F, x, M.vscale(~F, @N(m), p)))), ep), +hep: O.le(~F, @0, ep)) -> M.bnd(~F, @S(O.lookup(~F, x2, k), @A(O.lookup(~F, x, k), @M(@N(m), O.lookup(~F, p, k)))), ep):
+  %Equal.sym(@T, @M(@N(m), O.lookup(~F, p, k)), O.lookup(~F, M.vscale(~F, @N(m), p), k), GJ.look_vscale(~F, @N(m), p, k)) : M.bnd(~F, @S(O.lookup(~F, x2, k), @A(O.lookup(~F, x, k), _)), ep)
+  %Equal.sym(@T, @A(O.lookup(~F, x, k), O.lookup(~F, M.vscale(~F, @N(m), p), k)), O.lookup(~F, M.vadd(~F, x, M.vscale(~F, @N(m), p)), k), GJ.look_vadd(~F, x, M.vscale(~F, @N(m), p), k)) : M.bnd(~F, @S(O.lookup(~F, x2, k), _), ep)
+  %look_diff(~F, x2, M.vadd(~F, x, M.vscale(~F, @N(m), p)), k) : M.bnd(~F, _, ep)
+  look_bnd(~F, M.vadd(~F, x2, M.vneg(~F, M.vadd(~F, x, M.vscale(~F, @N(m), p)))), k, ep, he, hep)
+
+# |dk(x') - (dk(x) - m dk(p))| <= eps (1 + n g)
+def odk(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x2: M.Vec(~F), +x: M.Vec(~F), +m: @T, +p: M.Vec(~F), +k: Nat, +ep: @T, +g: @T, +he: M.vbnd.all(~F, M.vadd(~F, x2, M.vneg(~F, M.vadd(~F, x, M.vscale(~F, @N(m), p)))), ep), +hep: O.le(~F, @0, ep), +hj: mall(~F, jm, g), +hg: O.le(~F, @0, g), +hn: {GJ.nrows(~F, jm) == n : Nat}) -> M.bnd(~F, @S(dk(~F, n, jm, x2, k), @A(dk(~F, n, jm, x, k), @M(@N(m), dk(~F, n, jm, p, k)))), @M(ep, @A(@1, @M(FR.ofn(~F, n), g)))):
+  %dk_axpy(~F, n, jm, x, m, p, k) : M.bnd(~F, @S(dk(~F, n, jm, x2, k), _), @M(ep, @A(@1, @M(FR.ofn(~F, n), g))))
+  %dk_sub(~F, n, jm, x2, M.vadd(~F, x, M.vscale(~F, @N(m), p)), k) : M.bnd(~F, _, @M(ep, @A(@1, @M(FR.ofn(~F, n), g))))
+  dk_err(~F, n, jm, M.vadd(~F, x2, M.vneg(~F, M.vadd(~F, x, M.vscale(~F, @N(m), p)))), k, ep, g, he, hep, hj, hg, hn)
+
+def orow_e(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x2: M.Vec(~F), +x: M.Vec(~F), +i: Nat, +c: Nat, +p: M.Vec(~F), +gg: @T, +dd: @T, +ph: @T, +gp: @T, +dp: @T, +pp: @T, +ep: @T, +g: @T, +hx: rowinv(~F, n, jm, x, i, c, gg, dd, ph), +hp: rowinv(~F, n, jm, p, c, 1n+c, gp, dp, pp), +he: M.vbnd.all(~F, M.vadd(~F, x2, M.vneg(~F, M.vadd(~F, x, M.vscale(~F, @N(O.lookup(~F, x, c)), p)))), ep), +hgg: O.le(~F, @0, gg), +hgp: O.le(~F, @0, gp), +hph: O.le(~F, @0, ph), +hep: O.le(~F, @0, ep), +hj: mall(~F, jm, g), +hg: O.le(~F, @0, g), +hn: {GJ.nrows(~F, jm) == n : Nat}, +k: Nat) -> M.bnd(~F, O.lookup(~F, x2, k), @A(@A(gg, @M(gg, gp)), ep)):
+  three(~F, O.lookup(~F, x2, k), O.lookup(~F, x, k), @N(O.lookup(~F, x, c)), O.lookup(~F, p, k), gg, gg, gp, ep, look_bnd(~F, x, k, gg, ri_e(~F, n, jm, x, i, c, gg, dd, ph, hx), hgg), FM.bnd_neg(~F, O.lookup(~F, x, c), gg, look_bnd(~F, x, c, gg, ri_e(~F, n, jm, x, i, c, gg, dd, ph, hx), hgg)), look_bnd(~F, p, k, gp, ri_e(~F, n, jm, p, c, 1n+c, gp, dp, pp, hp), hgp), oent(~F, x2, x, O.lookup(~F, x, c), p, k, ep, he, hep))
+
+def orow_d(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x2: M.Vec(~F), +x: M.Vec(~F), +i: Nat, +c: Nat, +p: M.Vec(~F), +gg: @T, +dd: @T, +ph: @T, +gp: @T, +dp: @T, +pp: @T, +ep: @T, +g: @T, +hx: rowinv(~F, n, jm, x, i, c, gg, dd, ph), +hp: rowinv(~F, n, jm, p, c, 1n+c, gp, dp, pp), +he: M.vbnd.all(~F, M.vadd(~F, x2, M.vneg(~F, M.vadd(~F, x, M.vscale(~F, @N(O.lookup(~F, x, c)), p)))), ep), +hgg: O.le(~F, @0, gg), +hgp: O.le(~F, @0, gp), +hph: O.le(~F, @0, ph), +hep: O.le(~F, @0, ep), +hj: mall(~F, jm, g), +hg: O.le(~F, @0, g), +hn: {GJ.nrows(~F, jm) == n : Nat}, +k: Nat, +hk: {KA.natle(1n+k, n) == True{} : Bool}) -> M.bnd(~F, dk(~F, n, jm, x2, k), @A(@A(dd, @M(gg, dp)), @M(ep, @A(@1, @M(FR.ofn(~F, n), g))))):
+  three(~F, dk(~F, n, jm, x2, k), dk(~F, n, jm, x, k), @N(O.lookup(~F, x, c)), dk(~F, n, jm, p, k), dd, gg, dp, @M(ep, @A(@1, @M(FR.ofn(~F, n), g))), GJ.all_at(~(z => M.bnd(~F, dk(~F, n, jm, x, z), dd)), n, ri_d(~F, n, jm, x, i, c, gg, dd, ph, hx), k, hk), FM.bnd_neg(~F, O.lookup(~F, x, c), gg, look_bnd(~F, x, c, gg, ri_e(~F, n, jm, x, i, c, gg, dd, ph, hx), hgg)), GJ.all_at(~(z => M.bnd(~F, dk(~F, n, jm, p, z), dp)), n, ri_d(~F, n, jm, p, c, 1n+c, gp, dp, pp, hp), k, hk), odk(~F, n, jm, x2, x, O.lookup(~F, x, c), p, k, ep, g, he, hep, hj, hg, hn))
+
+# an earlier column j < c
+def orow_flt(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x2: M.Vec(~F), +x: M.Vec(~F), +i: Nat, +c: Nat, +p: M.Vec(~F), +gg: @T, +dd: @T, +ph: @T, +gp: @T, +dp: @T, +pp: @T, +ep: @T, +g: @T, +hx: rowinv(~F, n, jm, x, i, c, gg, dd, ph), +hp: rowinv(~F, n, jm, p, c, 1n+c, gp, dp, pp), +he: M.vbnd.all(~F, M.vadd(~F, x2, M.vneg(~F, M.vadd(~F, x, M.vscale(~F, @N(O.lookup(~F, x, c)), p)))), ep), +hgg: O.le(~F, @0, gg), +hgp: O.le(~F, @0, gp), +hph: O.le(~F, @0, ph), +hep: O.le(~F, @0, ep), +hj: mall(~F, jm, g), +hg: O.le(~F, @0, g), +hn: {GJ.nrows(~F, jm) == n : Nat}, +j: Nat, +hjc: {KA.natle(1n+j, c) == True{} : Bool}) -> M.bnd(~F, @S(O.lookup(~F, x2, j), GJ.dl(~F, KA.nateq(i, j))), @A(@A(ph, @M(gg, pp)), ep)):
+  three(~F, @S(O.lookup(~F, x2, j), GJ.dl(~F, KA.nateq(i, j))), @S(O.lookup(~F, x, j), GJ.dl(~F, KA.nateq(i, j))), @N(O.lookup(~F, x, c)), @S(O.lookup(~F, p, j), @0), ph, gg, pp, ep,
+    GJ.all_at(~(z => M.bnd(~F, @S(O.lookup(~F, x, z), GJ.dl(~F, KA.nateq(i, z))), ph)), c, ri_f(~F, n, jm, x, i, c, gg, dd, ph, hx), j, hjc),
+    FM.bnd_neg(~F, O.lookup(~F, x, c), gg, look_bnd(~F, x, c, gg, ri_e(~F, n, jm, x, i, c, gg, dd, ph, hx), hgg)),
+    (%ne_lt(j, c, hjc) : M.bnd(~F, @S(O.lookup(~F, p, j), GJ.dl(~F, _)), pp)
+      GJ.all_at(~(z => M.bnd(~F, @S(O.lookup(~F, p, z), GJ.dl(~F, KA.nateq(c, z))), pp)), 1n+c, ri_f(~F, n, jm, p, c, 1n+c, gp, dp, pp, hp), j, GJ.le_succ(1n+j, c, hjc))),
+    KB.bnd_val(~F, @S(O.lookup(~F, x2, j), @A(O.lookup(~F, x, j), @M(@N(O.lookup(~F, x, c)), O.lookup(~F, p, j)))), @S(@S(O.lookup(~F, x2, j), GJ.dl(~F, KA.nateq(i, j))), @A(@S(O.lookup(~F, x, j), GJ.dl(~F, KA.nateq(i, j))), @M(@N(O.lookup(~F, x, c)), @S(O.lookup(~F, p, j), @0)))), ep, @ZEQ[y=O.lookup(~F, x2, j),, a=O.lookup(~F, x, j),, m=O.lookup(~F, x, c),, b=O.lookup(~F, p, j),, d=GJ.dl(~F, KA.nateq(i, j)) | y - (a + (-m)*b) | (y - d) - ((a - d) + (-m)*(b - 0))], oent(~F, x2, x, O.lookup(~F, x, c), p, j, ep, he, hep)))
+
+# column c itself (i is not c)
+def orow_fc(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x2: M.Vec(~F), +x: M.Vec(~F), +i: Nat, +c: Nat, +p: M.Vec(~F), +gg: @T, +dd: @T, +ph: @T, +gp: @T, +dp: @T, +pp: @T, +ep: @T, +g: @T, +hx: rowinv(~F, n, jm, x, i, c, gg, dd, ph), +hp: rowinv(~F, n, jm, p, c, 1n+c, gp, dp, pp), +he: M.vbnd.all(~F, M.vadd(~F, x2, M.vneg(~F, M.vadd(~F, x, M.vscale(~F, @N(O.lookup(~F, x, c)), p)))), ep), +hgg: O.le(~F, @0, gg), +hgp: O.le(~F, @0, gp), +hph: O.le(~F, @0, ph), +hep: O.le(~F, @0, ep), +hj: mall(~F, jm, g), +hg: O.le(~F, @0, g), +hn: {GJ.nrows(~F, jm) == n : Nat}, +hic: {KA.nateq(i, c) == False{} : Bool}) -> M.bnd(~F, @S(O.lookup(~F, x2, c), GJ.dl(~F, KA.nateq(i, c))), @A(@A(ph, @M(gg, pp)), ep)):
+  %Equal.sym(Bool, KA.nateq(i, c), False{}, hic) : M.bnd(~F, @S(O.lookup(~F, x2, c), GJ.dl(~F, _)), @A(@A(ph, @M(gg, pp)), ep))
+  three(~F, @S(O.lookup(~F, x2, c), @0), @0, @N(O.lookup(~F, x, c)), @S(O.lookup(~F, p, c), @1), ph, gg, pp, ep, FM.bnd_zero(~F, ph, hph), FM.bnd_neg(~F, O.lookup(~F, x, c), gg, look_bnd(~F, x, c, gg, ri_e(~F, n, jm, x, i, c, gg, dd, ph, hx), hgg)),
+    (%SL.nateq_refl(c) : M.bnd(~F, @S(O.lookup(~F, p, c), GJ.dl(~F, _)), pp)
+      GJ.all_at(~(z => M.bnd(~F, @S(O.lookup(~F, p, z), GJ.dl(~F, KA.nateq(c, z))), pp)), 1n+c, ri_f(~F, n, jm, p, c, 1n+c, gp, dp, pp, hp), c, GJ.le_refl(c))),
+    KB.bnd_val(~F, @S(O.lookup(~F, x2, c), @A(O.lookup(~F, x, c), @M(@N(O.lookup(~F, x, c)), O.lookup(~F, p, c)))), @S(@S(O.lookup(~F, x2, c), @0), @A(@0, @M(@N(O.lookup(~F, x, c)), @S(O.lookup(~F, p, c), @1)))), ep, @ZEQ[y=O.lookup(~F, x2, c),, m=O.lookup(~F, x, c),, b=O.lookup(~F, p, c) | y - (m + (-m)*b) | (y - 0) - (0 + (-m)*(b - 1))], oent(~F, x2, x, O.lookup(~F, x, c), p, c, ep, he, hep)))
+
+# another row x' = x - x_c p rounded keeps the invariant after column c
+def orow(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x2: M.Vec(~F), +x: M.Vec(~F), +i: Nat, +c: Nat, +p: M.Vec(~F), +gg: @T, +dd: @T, +ph: @T, +gp: @T, +dp: @T, +pp: @T, +ep: @T, +g: @T, +hx: rowinv(~F, n, jm, x, i, c, gg, dd, ph), +hp: rowinv(~F, n, jm, p, c, 1n+c, gp, dp, pp), +he: M.vbnd.all(~F, M.vadd(~F, x2, M.vneg(~F, M.vadd(~F, x, M.vscale(~F, @N(O.lookup(~F, x, c)), p)))), ep), +hgg: O.le(~F, @0, gg), +hgp: O.le(~F, @0, gp), +hph: O.le(~F, @0, ph), +hep: O.le(~F, @0, ep), +hj: mall(~F, jm, g), +hg: O.le(~F, @0, g), +hn: {GJ.nrows(~F, jm) == n : Nat}, +lx2: {M.len(~F, x2) == Nat.add(n, n) : Nat}, +hic: {KA.nateq(i, c) == False{} : Bool}) -> rowinv(~F, n, jm, x2, i, 1n+c, @A(@A(gg, @M(gg, gp)), ep), @A(@A(dd, @M(gg, dp)), @M(ep, @A(@1, @M(FR.ofn(~F, n), g)))), @A(@A(ph, @M(gg, pp)), ep)):
+  ri_mk(~F, n, jm, x2, i, 1n+c, @A(@A(gg, @M(gg, gp)), ep), @A(@A(dd, @M(gg, dp)), @M(ep, @A(@1, @M(FR.ofn(~F, n), g)))), @A(@A(ph, @M(gg, pp)), ep), lx2,
+    vall_by(~F, ~x2, ~@A(@A(gg, @M(gg, gp)), ep), ~(k => orow_e(~F, n, jm, x2, x, i, c, p, gg, dd, ph, gp, dp, pp, ep, g, hx, hp, he, hgg, hgp, hph, hep, hj, hg, hn, k))),
+    GJ.all_mk(~n, ~(k => M.bnd(~F, dk(~F, n, jm, x2, k), @A(@A(dd, @M(gg, dp)), @M(ep, @A(@1, @M(FR.ofn(~F, n), g)))))), ~(k => hk => orow_d(~F, n, jm, x2, x, i, c, p, gg, dd, ph, gp, dp, pp, ep, g, hx, hp, he, hgg, hgp, hph, hep, hj, hg, hn, k, hk)), n, GJ.le_refl(n)),
+    (GJ.all_mk(~c, ~(z => M.bnd(~F, @S(O.lookup(~F, x2, z), GJ.dl(~F, KA.nateq(i, z))), @A(@A(ph, @M(gg, pp)), ep))), ~(z => hz => orow_flt(~F, n, jm, x2, x, i, c, p, gg, dd, ph, gp, dp, pp, ep, g, hx, hp, he, hgg, hgp, hph, hep, hj, hg, hn, z, hz)), c, GJ.le_refl(c)),
+     orow_fc(~F, n, jm, x2, x, i, c, p, gg, dd, ph, gp, dp, pp, ep, g, hx, hp, he, hgg, hgp, hph, hep, hj, hg, hn, hic)))
