@@ -418,44 +418,50 @@ def mnorm_lub(~F: O.OField, a: M.Mat(~F), +n: Nat, +c: O.C(F), h: rowsle(~F, a, 
       (h1, h2) = h
       FV.fmax_lub(~F, rowabs(~F, r, n), mnorm(~F, t, n), c, h1, mnorm_lub(~F, t, n, c, h2, hc))
 
-# |Z' s| <= 2b for |s| <= 1, Z' an inverse of J'
-def zs_le(~F: O.OField, +j: M.Mat(~F), +j2: M.Mat(~F), +n: Nat, +b: O.C(F), +d: O.C(F), +h: InvB(~F, j, n, b), +hj: {GJ.nrows(~F, j) == n : Nat}, +hd: O.le(~F, mnorm(~F, M.madd(~F, j2, M.mneg(~F, j)), n), d), +hbd: O.le(~F, O.add(F, O.mul(F, b, d), O.mul(F, b, d)), O.one(F)), +hj2: {GJ.nrows(~F, j2) == n : Nat}, +z2: M.Mat(~F), +hinv2: DV.Inverse(~F, j2, z2, n), +hz2: {GJ.nrows(~F, z2) == n : Nat}, +s: M.Vec(~F), +ls: {M.len(~F, s) == n : Nat}, +hs1: O.le(~F, vn(~F, s), O.one(F))) -> O.le(~F, vn(~F, M.matvec(~F, z2, s)), O.add(F, b, b)):
-  +hb = invb_nn(~F, j, n, b, h)
-  DM.le_trans(~F, vn(~F, M.matvec(~F, z2, s)), O.mul(F, O.add(F, b, b), vn(~F, s)), O.add(F, b, b),
-    (%GJ.inv_r(~F, j2, z2, n, hinv2, hj2, s, ls) : O.le(~F, vn(~F, M.matvec(~F, z2, s)), O.mul(F, O.add(F, b, b), vn(~F, _)))
-      low2(~F, j, j2, n, b, d, h, hj, hd, hbd, M.matvec(~F, z2, s), GJ.len_mv(~F, z2, n, s, hz2))),
-    FV.le_rw_r(~F, O.mul(F, O.add(F, b, b), vn(~F, s)), O.mul(F, O.add(F, b, b), O.one(F)), O.add(F, b, b), FR.fring_eq(~F, [b], E.ZMul{E.ZAdd{E.ZVar{0n}, E.ZVar{0n}}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZAdd{E.ZVar{0n}, E.ZVar{0n}}, {==}), FV.mul_le(~F, O.add(F, b, b), vn(~F, s), O.one(F), FO.nonneg_add(~F, b, b, hb, hb), hs1)))
+# An inverse from a lower bound
+# ------------------------------
+# A has an inverse with n rows and |u| <= c |A u| for every u of length n
+# (lb, a lemma passed as a template so that it can be used for every row):
+# the inverse has norm at most c, read row by row against each row's signs.
 
-# the row r of Z' (r leads its rows from k on) has rowabs <= 2b
-def row_bound(~F: O.OField, +j: M.Mat(~F), +j2: M.Mat(~F), +n: Nat, +b: O.C(F), +d: O.C(F), +h: InvB(~F, j, n, b), +hj: {GJ.nrows(~F, j) == n : Nat}, +hd: O.le(~F, mnorm(~F, M.madd(~F, j2, M.mneg(~F, j)), n), d), +hbd: O.le(~F, O.add(F, O.mul(F, b, d), O.mul(F, b, d)), O.one(F)), +hj2: {GJ.nrows(~F, j2) == n : Nat}, +z2: M.Mat(~F), +hinv2: DV.Inverse(~F, j2, z2, n), +hz2: {GJ.nrows(~F, z2) == n : Nat}, +k: Nat, +r: M.Vec(~F), +t: M.Mat(~F), e: {mdrop(~F, k, z2) == Con{r, t} : M.Mat(~F)}) -> O.le(~F, rowabs(~F, r, n), O.add(F, b, b)):
-  %sgnv_dot(~F, r, n) : O.le(~F, _, O.add(F, b, b))
-  DM.le_trans(~F, M.dot(~F, r, sgnv(~F, r, n)), vn(~F, M.matvec(~F, Con{r, t}, sgnv(~F, r, n))), O.add(F, b, b),
+# |Z s| <= c for |s| <= 1, Z an inverse of A
+def zs_gen(~F: O.OField, ~a: M.Mat(~F), ~n: Nat, ~c: O.C(F), ~lb: @u: M.Vec(~F) -> {M.len(~F, u) == n : Nat} -> O.le(~F, vn(~F, u), O.mul(F, c, vn(~F, M.matvec(~F, a, u)))), +hc: O.le(~F, O.zero(F), c), +ha: {GJ.nrows(~F, a) == n : Nat}, +z: M.Mat(~F), +hinv: DV.Inverse(~F, a, z, n), +hz: {GJ.nrows(~F, z) == n : Nat}, +s: M.Vec(~F), +ls: {M.len(~F, s) == n : Nat}, +hs1: O.le(~F, vn(~F, s), O.one(F))) -> O.le(~F, vn(~F, M.matvec(~F, z, s)), c):
+  DM.le_trans(~F, vn(~F, M.matvec(~F, z, s)), O.mul(F, c, vn(~F, s)), c,
+    (%GJ.inv_r(~F, a, z, n, hinv, ha, s, ls) : O.le(~F, vn(~F, M.matvec(~F, z, s)), O.mul(F, c, vn(~F, _)))
+      lb(M.matvec(~F, z, s), GJ.len_mv(~F, z, n, s, hz))),
+    FV.le_rw_r(~F, O.mul(F, c, vn(~F, s)), O.mul(F, c, O.one(F)), c, FR.fring_eq(~F, [c], E.ZMul{E.ZVar{0n}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZVar{0n}, {==}), FV.mul_le(~F, c, vn(~F, s), O.one(F), hc, hs1)))
+
+# the row r of Z (r leads its rows from k on) has rowabs <= c
+def row_gen(~F: O.OField, ~a: M.Mat(~F), ~n: Nat, ~c: O.C(F), ~lb: @u: M.Vec(~F) -> {M.len(~F, u) == n : Nat} -> O.le(~F, vn(~F, u), O.mul(F, c, vn(~F, M.matvec(~F, a, u)))), +hc: O.le(~F, O.zero(F), c), +ha: {GJ.nrows(~F, a) == n : Nat}, +z: M.Mat(~F), +hinv: DV.Inverse(~F, a, z, n), +hz: {GJ.nrows(~F, z) == n : Nat}, +k: Nat, +r: M.Vec(~F), +t: M.Mat(~F), e: {mdrop(~F, k, z) == Con{r, t} : M.Mat(~F)}) -> O.le(~F, rowabs(~F, r, n), c):
+  %sgnv_dot(~F, r, n) : O.le(~F, _, c)
+  DM.le_trans(~F, M.dot(~F, r, sgnv(~F, r, n)), vn(~F, M.matvec(~F, Con{r, t}, sgnv(~F, r, n))), c,
     DM.le_trans(~F, M.dot(~F, r, sgnv(~F, r, n)), FV.fabs(~F, M.dot(~F, r, sgnv(~F, r, n))), vn(~F, M.matvec(~F, Con{r, t}, sgnv(~F, r, n))), bnd_lo(~F, M.dot(~F, r, sgnv(~F, r, n)), FV.fabs(~F, M.dot(~F, r, sgnv(~F, r, n))), FV.fabs_bnd(~F, M.dot(~F, r, sgnv(~F, r, n)))), FV.fmax_l(~F, FV.fabs(~F, M.dot(~F, r, sgnv(~F, r, n))), vn(~F, M.matvec(~F, t, sgnv(~F, r, n))))),
-    DM.le_trans(~F, vn(~F, M.matvec(~F, Con{r, t}, sgnv(~F, r, n))), vn(~F, M.matvec(~F, z2, sgnv(~F, r, n))), O.add(F, b, b),
-      (%e : O.le(~F, vn(~F, M.matvec(~F, _, sgnv(~F, r, n))), vn(~F, M.matvec(~F, z2, sgnv(~F, r, n))))
-        drop_mv(~F, k, z2, sgnv(~F, r, n))),
-      zs_le(~F, j, j2, n, b, d, h, hj, hd, hbd, hj2, z2, hinv2, hz2, sgnv(~F, r, n), sgnv_len(~F, r, n), sgnv_vn(~F, r, n))))
+    DM.le_trans(~F, vn(~F, M.matvec(~F, Con{r, t}, sgnv(~F, r, n))), vn(~F, M.matvec(~F, z, sgnv(~F, r, n))), c,
+      (%e : O.le(~F, vn(~F, M.matvec(~F, _, sgnv(~F, r, n))), vn(~F, M.matvec(~F, z, sgnv(~F, r, n))))
+        drop_mv(~F, k, z, sgnv(~F, r, n))),
+      zs_gen(~F, ~a, ~n, ~c, ~lb, hc, ha, z, hinv, hz, sgnv(~F, r, n), sgnv_len(~F, r, n), sgnv_vn(~F, r, n))))
 
-# the rows of Z' from k on
-def rows_go(~F: O.OField, rest: M.Mat(~F), +j: M.Mat(~F), +j2: M.Mat(~F), +n: Nat, +b: O.C(F), +d: O.C(F), +h: InvB(~F, j, n, b), +hj: {GJ.nrows(~F, j) == n : Nat}, +hd: O.le(~F, mnorm(~F, M.madd(~F, j2, M.mneg(~F, j)), n), d), +hbd: O.le(~F, O.add(F, O.mul(F, b, d), O.mul(F, b, d)), O.one(F)), +hj2: {GJ.nrows(~F, j2) == n : Nat}, +z2: M.Mat(~F), +hinv2: DV.Inverse(~F, j2, z2, n), +hz2: {GJ.nrows(~F, z2) == n : Nat}, +k: Nat, +e: {mdrop(~F, k, z2) == rest : M.Mat(~F)}) -> rowsle(~F, rest, n, O.add(F, b, b)):
+# the rows of Z from k on
+def rows_gen(~F: O.OField, ~a: M.Mat(~F), ~n: Nat, ~c: O.C(F), ~lb: @u: M.Vec(~F) -> {M.len(~F, u) == n : Nat} -> O.le(~F, vn(~F, u), O.mul(F, c, vn(~F, M.matvec(~F, a, u)))), rest: M.Mat(~F), +hc: O.le(~F, O.zero(F), c), +ha: {GJ.nrows(~F, a) == n : Nat}, +z: M.Mat(~F), +hinv: DV.Inverse(~F, a, z, n), +hz: {GJ.nrows(~F, z) == n : Nat}, +k: Nat, +e: {mdrop(~F, k, z) == rest : M.Mat(~F)}) -> rowsle(~F, rest, n, c):
   match rest:
     case Nil{}:
       Unit{}
     case Con{+r, +t}:
-      (row_bound(~F, j, j2, n, b, d, h, hj, hd, hbd, hj2, z2, hinv2, hz2, k, r, t, e), rows_go(~F, t, j, j2, n, b, d, h, hj, hd, hbd, hj2, z2, hinv2, hz2, 1n+k, drop_succ(~F, k, z2, r, t, e)))
+      (row_gen(~F, ~a, ~n, ~c, ~lb, hc, ha, z, hinv, hz, k, r, t, e), rows_gen(~F, ~a, ~n, ~c, ~lb, t, hc, ha, z, hinv, hz, 1n+k, drop_succ(~F, k, z, r, t, e)))
 
-def pert.fin(~F: O.OField, +j: M.Mat(~F), +j2: M.Mat(~F), +n: Nat, +b: O.C(F), +d: O.C(F), +h: InvB(~F, j, n, b), +hj: {GJ.nrows(~F, j) == n : Nat}, +hd: O.le(~F, mnorm(~F, M.madd(~F, j2, M.mneg(~F, j)), n), d), +hbd: O.le(~F, O.add(F, O.mul(F, b, d), O.mul(F, b, d)), O.one(F)), +hj2: {GJ.nrows(~F, j2) == n : Nat}, +z2: M.Mat(~F), +hinv2: DV.Inverse(~F, j2, z2, n), +hz2: {GJ.nrows(~F, z2) == n : Nat}) -> InvB(~F, j2, n, O.add(F, b, b)):
-  +hb = invb_nn(~F, j, n, b, h)
-  (z2, (hinv2, (hz2, mnorm_lub(~F, z2, n, O.add(F, b, b), rows_go(~F, z2, j, j2, n, b, d, h, hj, hd, hbd, hj2, z2, hinv2, hz2, 0n, mdrop0(~F, z2)), FO.nonneg_add(~F, b, b, hb, hb)))))
+def invb_low.fin(~F: O.OField, ~a: M.Mat(~F), ~n: Nat, ~c: O.C(F), ~lb: @u: M.Vec(~F) -> {M.len(~F, u) == n : Nat} -> O.le(~F, vn(~F, u), O.mul(F, c, vn(~F, M.matvec(~F, a, u)))), +hc: O.le(~F, O.zero(F), c), +ha: {GJ.nrows(~F, a) == n : Nat}, +z: M.Mat(~F), +hinv: DV.Inverse(~F, a, z, n), +hz: {GJ.nrows(~F, z) == n : Nat}) -> InvB(~F, a, n, c):
+  (z, (hinv, (hz, mnorm_lub(~F, z, n, c, rows_gen(~F, ~a, ~n, ~c, ~lb, z, hc, ha, z, hinv, hz, 0n, mdrop0(~F, z)), hc))))
 
-def pert.go(~F: O.OField, +j: M.Mat(~F), +j2: M.Mat(~F), +n: Nat, +b: O.C(F), +d: O.C(F), +h: InvB(~F, j, n, b), +hj: {GJ.nrows(~F, j) == n : Nat}, +hd: O.le(~F, mnorm(~F, M.madd(~F, j2, M.mneg(~F, j)), n), d), +hbd: O.le(~F, O.add(F, O.mul(F, b, d), O.mul(F, b, d)), O.one(F)), +hj2: {GJ.nrows(~F, j2) == n : Nat}, inv2: GJ.InvN(~F, j2, n)) -> InvB(~F, j2, n, O.add(F, b, b)):
-  match inv2:
-    case (z2, p):
+# an inverse and |u| <= c |A u| give an inverse of norm at most c
+def invb_low(~F: O.OField, ~a: M.Mat(~F), ~n: Nat, ~c: O.C(F), ~lb: @u: M.Vec(~F) -> {M.len(~F, u) == n : Nat} -> O.le(~F, vn(~F, u), O.mul(F, c, vn(~F, M.matvec(~F, a, u)))), +hc: O.le(~F, O.zero(F), c), +ha: {GJ.nrows(~F, a) == n : Nat}, inv: GJ.InvN(~F, a, n)) -> InvB(~F, a, n, c):
+  match inv:
+    case (z, p):
       match p:
-        case (hinv2, hz2):
-          pert.fin(~F, j, j2, n, b, d, h, hj, hd, hbd, hj2, z2, hinv2, hz2)
+        case (hinv, hz):
+          invb_low.fin(~F, ~a, ~n, ~c, ~lb, hc, ha, z, hinv, hz)
 
 # Perturbation: J has an inverse of norm <= b and |J' - J| <= d with
 # 2 b d <= 1: J' has an inverse of norm <= 2b
 def pert(~F: O.OField, +j: M.Mat(~F), +j2: M.Mat(~F), +n: Nat, +b: O.C(F), +d: O.C(F), +h: InvB(~F, j, n, b), +hj: {GJ.nrows(~F, j) == n : Nat}, +hj2: {GJ.nrows(~F, j2) == n : Nat}, hw2: GJ.All(~(i => GJ.roww(~F, j2, n, i)), n), +hd: O.le(~F, mnorm(~F, M.madd(~F, j2, M.mneg(~F, j)), n), d), +hbd: O.le(~F, O.add(F, O.mul(F, b, d), O.mul(F, b, d)), O.one(F))) -> InvB(~F, j2, n, O.add(F, b, b)):
-  pert.go(~F, j, j2, n, b, d, h, hj, hd, hbd, hj2, GJ.inv_of_inj(~F, j2, n, hj2, hw2, w => lw => e => inj2(~F, j, j2, n, b, d, h, hj, hd, hbd, w, lw, e)))
+  +hb = invb_nn(~F, j, n, b, h)
+  invb_low(~F, ~j2, ~n, ~O.add(F, b, b), ~(u => lu => low2(~F, j, j2, n, b, d, h, hj, hd, hbd, u, lu)), FO.nonneg_add(~F, b, b, hb, hb), hj2, GJ.inv_of_inj(~F, j2, n, hj2, hw2, w => lw => e => inj2(~F, j, j2, n, b, d, h, hj, hd, hbd, w, lw, e)))
