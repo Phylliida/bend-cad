@@ -1702,3 +1702,55 @@ def pw(~F: O.OField, +sg: @T, +gg: @T, +kp: @T, +w: Nat, +hs0: O.le(~F, @0, sg),
   FV.le_of_sub(~F, pnew(~F, gg, @M(kp, M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), @A(@A(@M(sg, @M(kp, M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), @M(@M(sg, gg), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))), @M(@A(gg, @A(@A(@M(gg, @A(@M(sg, gg), @M(@M(sg, gg), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})))), @M(gg, @A(@M(sg, gg), @M(@M(sg, gg), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))))), @M(gg, @A(@M(sg, gg), @M(@M(sg, gg), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})))))), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))), @M(pnew(~F, gg, kp, kppc(~F, sg, gg, kp), ekc(~F, gg, gpc(~F, sg, gg))), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), FM.nn_eq(~F, @S(@M(pnew(~F, gg, kp, kppc(~F, sg, gg, kp), ekc(~F, gg, gpc(~F, sg, gg))), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), pnew(~F, gg, @M(kp, M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), @A(@A(@M(sg, @M(kp, M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), @M(@M(sg, gg), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))), @M(@A(gg, @A(@A(@M(gg, @A(@M(sg, gg), @M(@M(sg, gg), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})))), @M(gg, @A(@M(sg, gg), @M(@M(sg, gg), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))))), @M(gg, @A(@M(sg, gg), @M(@M(sg, gg), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})))))), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})))), @FT[wkp | ((G + G + G)*((s*G)*(1 - u)))*u],
     @ZEQ[wkp | ((G + G + G)*((s*G)*(1 - u)))*u | ((((s*P + 1) + s*G) + ((P + G*((s*P + 1) + s*G)) + (G + ((G*(s*G + s*G) + G*(s*G + s*G)) + G*(s*G + s*G)))))*u) - (((s*(P*u) + u) + (s*G)*u) + (((P*u) + G*((s*(P*u) + u) + (s*G)*u)) + (G + ((G*(s*G + (s*G)*u) + G*(s*G + (s*G)*u)) + G*(s*G + (s*G)*u)))*u))],
     FO.mul_nonneg(~F, @FT[wkp | (((G + G) + G) * ((s * G) * (1 - u)))], @FT[wkp | u], FO.mul_nonneg(~F, @FT[wkp | ((G + G) + G)], @FT[wkp | ((s * G) * (1 - u))], FO.nonneg_add(~F, @FT[wkp | (G + G)], @FT[wkp | G], FO.nonneg_add(~F, @FT[wkp | G], @FT[wkp | G], hg0, hg0), hg0), FO.mul_nonneg(~F, @FT[wkp | (s * G)], @FT[wkp | (1 - u)], FO.mul_nonneg(~F, @FT[wkp | s], @FT[wkp | G], hs0, hg0), FM.sub_nonneg(~F, M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}), @1, hu))), u_nn(~F, w))))
+
+# Column step glue
+# ----------------
+
+def rinv_mono(~F: O.OField, +n: Nat, +jm: M.Mat(~F), s: M.Mat(~F), +i: Nat, +c: Nat, +g1: @T, +d1: @T, +p1: @T, +g2: @T, +d2: @T, +p2: @T, h: rinv(~F, n, jm, s, i, c, g1, d1, p1), +eg: O.le(~F, g1, g2), +ed: O.le(~F, d1, d2), +ep: O.le(~F, p1, p2)) -> rinv(~F, n, jm, s, i, c, g2, d2, p2):
+  match s:
+    case Nil{}:
+      Unit{}
+    case Con{x, t}:
+      (h1, h2) = h
+      (ri_mono(~F, n, jm, x, i, c, g1, d1, p1, g2, d2, p2, h1, eg, ed, ep), rinv_mono(~F, n, jm, t, 1n+i, c, g1, d1, p1, g2, d2, p2, h2, eg, ed, ep))
+
+# after swapping rows c and r, row c is the old row r
+def mrow_swap_c(~F: O.OField, +a: M.Mat(~F), +c: Nat, +r: Nat, +hc: {KA.natle(1n+c, GJ.nrows(~F, a)) == True{} : Bool}, b: Bool, +e: {KA.nateq(r, c) == b : Bool}) -> {DV.mrow(~F, GJ.mswap(~F, a, c, r), c) == DV.mrow(~F, a, r) : M.Vec(~F)}:
+  match b:
+    case True{}:
+      %Equal.sym(Nat, r, c, GJ.nateq_ok(r, c, e)) : {DV.mrow(~F, GJ.mswap(~F, a, c, _), c) == DV.mrow(~F, a, _) : M.Vec(~F)}
+      Equal.sym(M.Vec(~F), DV.mrow(~F, a, c), DV.mrow(~F, GJ.mswap(~F, a, c, c), c), GJ.row_mset_eq(~F, GJ.mset(~F, a, c, DV.mrow(~F, a, c)), c, DV.mrow(~F, a, c), GJ.lt_nrows_mset(~F, a, c, DV.mrow(~F, a, c), c, hc)))
+    case False{}:
+      Equal.sym(M.Vec(~F), DV.mrow(~F, a, r), DV.mrow(~F, GJ.mswap(~F, a, c, r), c), Equal.trans(M.Vec(~F), DV.mrow(~F, a, r), DV.mrow(~F, GJ.mset(~F, a, c, DV.mrow(~F, a, r)), c), DV.mrow(~F, GJ.mswap(~F, a, c, r), c), GJ.row_mset_eq(~F, a, c, DV.mrow(~F, a, r), hc), GJ.row_mset_ne(~F, GJ.mset(~F, a, c, DV.mrow(~F, a, r)), r, c, DV.mrow(~F, a, c), e)))
+
+# the pivot in F: entry c of row c after the swap is entry c of row r
+def piv_swap(~F: O.OField, +rows: List<&2, List<&2, S.D>>, +c: Nat, +r: Nat, +hc: {KA.natle(1n+c, GJ.nrows(~F, M.ofdm(~F, rows))) == True{} : Bool}) -> {M.ofd(~F, NU.dget(NU.drow(NU.dswap(rows, c, r), c), c)) == M.ofd(~F, NU.dget(NU.drow(rows, r), c)) : @T}:
+  %Equal.sym(@T, M.ofd(~F, NU.dget(NU.drow(NU.dswap(rows, c, r), c), c)), O.lookup(~F, M.ofdv(~F, NU.drow(NU.dswap(rows, c, r), c)), c), dget_ofd(~F, NU.drow(NU.dswap(rows, c, r), c), c)) : {_ == M.ofd(~F, NU.dget(NU.drow(rows, r), c)) : @T}
+  %Equal.sym(@T, M.ofd(~F, NU.dget(NU.drow(rows, r), c)), O.lookup(~F, M.ofdv(~F, NU.drow(rows, r)), c), dget_ofd(~F, NU.drow(rows, r), c)) : {O.lookup(~F, M.ofdv(~F, NU.drow(NU.dswap(rows, c, r), c)), c) == _ : @T}
+  %Equal.sym(M.Vec(~F), M.ofdv(~F, NU.drow(NU.dswap(rows, c, r), c)), DV.mrow(~F, M.ofdm(~F, NU.dswap(rows, c, r)), c), drow_ofd(~F, NU.dswap(rows, c, r), c)) : {O.lookup(~F, _, c) == O.lookup(~F, M.ofdv(~F, NU.drow(rows, r)), c) : @T}
+  %Equal.sym(M.Vec(~F), M.ofdv(~F, NU.drow(rows, r)), DV.mrow(~F, M.ofdm(~F, rows), r), drow_ofd(~F, rows, r)) : {O.lookup(~F, DV.mrow(~F, M.ofdm(~F, NU.dswap(rows, c, r)), c), c) == O.lookup(~F, _, c) : @T}
+  %Equal.sym(M.Mat(~F), M.ofdm(~F, NU.dswap(rows, c, r)), GJ.mswap(~F, M.ofdm(~F, rows), c, r), dswap_ofd(~F, rows, c, r)) : {O.lookup(~F, DV.mrow(~F, _, c), c) == O.lookup(~F, DV.mrow(~F, M.ofdm(~F, rows), r), c) : @T}
+  Equal.cong(M.Vec(~F), @T, x => O.lookup(~F, x, c), DV.mrow(~F, GJ.mswap(~F, M.ofdm(~F, rows), c, r), c), DV.mrow(~F, M.ofdm(~F, rows), r), mrow_swap_c(~F, M.ofdm(~F, rows), c, r, hc, KA.nateq(r, c), {==}))
+
+def nrows_dswap(~F: O.OField, +rows: List<&2, List<&2, S.D>>, +c: Nat, +r: Nat) -> {GJ.nrows(~F, M.ofdm(~F, NU.dswap(rows, c, r))) == GJ.nrows(~F, M.ofdm(~F, rows)) : Nat}:
+  %Equal.sym(M.Mat(~F), M.ofdm(~F, NU.dswap(rows, c, r)), GJ.mswap(~F, M.ofdm(~F, rows), c, r), dswap_ofd(~F, rows, c, r)) : {GJ.nrows(~F, _) == GJ.nrows(~F, M.ofdm(~F, rows)) : Nat}
+  Equal.sym(Nat, GJ.nrows(~F, M.ofdm(~F, rows)), GJ.nrows(~F, GJ.mswap(~F, M.ofdm(~F, rows), c, r)), GJ.nrows_mswap(~F, M.ofdm(~F, rows), c, r))
+
+def nrows_dclear(~F: O.OField, rows: List<&2, List<&2, S.D>>, +w: Nat, +p: List<&2, S.D>, +c: Nat, +i: Nat) -> {GJ.nrows(~F, M.ofdm(~F, NU.dclear(rows, w, p, c, i))) == GJ.nrows(~F, M.ofdm(~F, rows)) : Nat}:
+  match rows:
+    case Nil{}:
+      {==}
+    case Con{h, t}:
+      %Equal.sym(Nat, GJ.nrows(~F, M.ofdm(~F, NU.dclear(t, w, p, c, 1n+i))), GJ.nrows(~F, M.ofdm(~F, t)), nrows_dclear(~F, t, w, p, c, 1n+i)) : {1n+_ == 1n+GJ.nrows(~F, M.ofdm(~F, t)) : Nat}
+      {==}
+
+# u (a + b) <= 1 with u, a, b >= 0: each part alone
+def upart_l(~F: O.OField, +u: @T, +a: @T, +b: @T, +h: O.le(~F, @M(u, @A(a, b)), @1), +hu: O.le(~F, @0, u), +hb: O.le(~F, @0, b)) -> O.le(~F, @M(u, a), @1):
+  DM.le_trans(~F, @M(u, a), @M(u, @A(a, b)), @1, FV.mul_le(~F, u, a, @A(a, b), hu, le_addr(~F, a, b, hb)), h)
+
+def upart_r(~F: O.OField, +u: @T, +a: @T, +b: @T, +h: O.le(~F, @M(u, @A(a, b)), @1), +hu: O.le(~F, @0, u), +ha: O.le(~F, @0, a)) -> O.le(~F, @M(u, b), @1):
+  DM.le_trans(~F, @M(u, b), @M(u, @A(a, b)), @1, FV.mul_le(~F, u, b, @A(a, b), hu, le_addl(~F, a, b, ha)), h)
+
+def u_le1_of(~F: O.OField, +u: @T, +h: O.le(~F, @M(u, @1), @1)) -> O.le(~F, u, @1):
+  %@ZEQ[u | u*1 | u] : O.le(~F, _, @1)
+  h
