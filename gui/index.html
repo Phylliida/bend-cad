@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>bend-cad sketcher</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #1d2430; --muted: #6b7484; --line: #dfe3ea;
+  --accent: #2f6fde; --accent-soft: #e6eefc; --ok: #1f8a4c; --warn: #b7791f; --bad: #c53030;
+  --canvas: #fbfcfd; --grid: #eef1f5; --grid-major: #e1e6ee; --geom: #1d2430; --construct: #8a94a6;
+  --sel: #2f6fde; --hover: #6c9bf0; --pinned: #b7791f; --dim: #5b4bb7;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171c; --panel: #1b1f26; --ink: #e4e8ef; --muted: #8d96a6; --line: #2c323c;
+    --accent: #6c9bf0; --accent-soft: #233350; --ok: #49c27f; --warn: #e2a84b; --bad: #f07070;
+    --canvas: #171b21; --grid: #1e232b; --grid-major: #262c36; --geom: #e4e8ef; --construct: #7d8798;
+    --sel: #6c9bf0; --hover: #8fb3f5; --pinned: #e2a84b; --dim: #a99cf0;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+#app { display: grid; grid-template-columns: 252px 1fr 310px; grid-template-rows: 44px 1fr 28px; height: 100vh; }
+header { grid-column: 1 / 4; display: flex; align-items: center; gap: 12px; padding: 0 12px;
+  background: var(--panel); border-bottom: 1px solid var(--line); }
+header h1 { font-size: 14px; font-weight: 600; margin: 0 8px 0 0; }
+header .sp { flex: 1; }
+.status { display: flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 999px;
+  background: var(--bg); border: 1px solid var(--line); white-space: nowrap; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+.status.ok .dot { background: var(--ok); } .status.warn .dot { background: var(--warn); }
+.status.bad .dot { background: var(--bad); } .status.busy .dot { background: var(--accent); animation: pulse 0.8s infinite alternate; }
+@keyframes pulse { from { opacity: 0.35; } to { opacity: 1; } }
+button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 4px 9px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:disabled { opacity: 0.4; cursor: default; }
+button.on { background: var(--accent-soft); border-color: var(--accent); }
+aside { background: var(--panel); overflow-y: auto; }
+#left { border-right: 1px solid var(--line); padding: 10px; }
+#right { border-left: 1px solid var(--line); padding: 10px; }
+.sec { margin-bottom: 14px; }
+.sec h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
+  margin: 0 0 6px; font-weight: 600; }
+.tools { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.tools button { display: flex; align-items: center; gap: 6px; padding: 5px 6px; text-align: left; }
+.tools button svg { width: 18px; height: 18px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.6;
+  stroke-linecap: round; stroke-linejoin: round; }
+.tools button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tools button kbd { margin-left: auto; color: var(--muted); font: 10px ui-monospace, monospace; }
+main { position: relative; overflow: hidden; background: var(--canvas); }
+canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+#pop { position: absolute; display: none; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px; box-shadow: 0 6px 24px rgba(0,0,0,0.15); z-index: 5; min-width: 220px; }
+#pop label { display: block; color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+#pop .row { display: flex; gap: 6px; margin-top: 8px; }
+#pop input, #pop select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 5px; padding: 4px 6px; width: 100%; }
+#cons { list-style: none; margin: 0; padding: 0; }
+#cons li { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 6px; border: 1px solid transparent; }
+#cons li:hover { background: var(--bg); }
+#cons li.red { border-color: var(--bad); color: var(--bad); }
+#cons li.sel { background: var(--accent-soft); }
+#cons li .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#cons li input { width: 72px; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+  border-radius: 4px; padding: 1px 4px; }
+#cons li .x { border: none; background: none; color: var(--muted); padding: 0 4px; }
+#cons li .x:hover { color: var(--bad); }
+.empty { color: var(--muted); font-style: italic; }
+.check { display: flex; align-items: flex-start; gap: 6px; margin: 5px 0; cursor: pointer; }
+.check small { display: block; color: var(--muted); }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; color: var(--muted); }
+.kv b { color: var(--ink); font-weight: 500; }
+footer { grid-column: 1 / 4; display: flex; align-items: center; gap: 16px; padding: 0 12px;
+  background: var(--panel); border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+footer .sp { flex: 1; }
+details pre { white-space: pre-wrap; word-break: break-all; font: 11px ui-monospace, monospace; color: var(--muted);
+  max-height: 200px; overflow: auto; background: var(--bg); padding: 6px; border-radius: 6px; }
+.note { color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>bend-cad sketcher</h1>
+    <button id="b-new" title="Start an empty sketch">New</button>
+    <button id="b-example" title="Load an example sketch">Example</button>
+    <button id="b-undo" title="Undo (Ctrl+Z)">Undo</button>
+    <button id="b-redo" title="Redo (Ctrl+Shift+Z)">Redo</button>
+    <button id="b-export" title="Download the sketch as JSON">Export</button>
+    <button id="b-import" title="Load a sketch from JSON">Import</button>
+    <input id="f-import" type="file" accept=".json,application/json" hidden>
+    <span class="sp"></span>
+    <button id="b-solve" title="Relax and certify now (Enter)">Solve</button>
+    <div id="status" class="status"><span class="dot"></span><span id="status-text">Ready</span></div>
+  </header>
+
+  <aside id="left">
+    <div class="sec">
+      <h2>Draw</h2>
+      <div class="tools" id="tools"></div>
+    </div>
+    <div class="sec">
+      <h2>Constrain</h2>
+      <div class="tools" id="ctools"></div>
+    </div>
+    <div class="sec">
+      <h2>Selection</h2>
+      <div id="selinfo" class="note">Nothing selected</div>
+    </div>
+  </aside>
+
+  <main id="stage">
+    <canvas id="cv"></canvas>
+    <div id="pop"></div>
+  </main>
+
+  <aside id="right">
+    <div class="sec">
+      <h2>Certificate</h2>
+      <div class="kv" id="cert"></div>
+    </div>
+    <div class="sec">
+      <h2>Constraints</h2>
+      <ul id="cons"></ul>
+    </div>
+    <div class="sec">
+      <h2>Settings</h2>
+      <label class="check"><input type="checkbox" id="o-relax" checked>
+        <span>Relax the drawing first<small>Untrusted least-squares pass that moves the drawing as little as it can toward the constraints, so the verified solver starts near a solution. Off: the solver gets the drawing as drawn.</small></span></label>
+      <label class="check"><input type="checkbox" id="o-order" checked>
+        <span>Choose the variable order<small>Orders variables so the solver's pins (the earliest variables) leave a well-conditioned set to solve for. Only the order changes.</small></span></label>
+      <label class="check"><input type="checkbox" id="o-dyadic" checked>
+        <span>Dimensions as dyadics<small>Sends each value as the nearest multiple of 2<sup>-40</sup>. The certifying arithmetic holds only dyadic constants (DESIGN Q19), so 3.6 exactly never certifies.</small></span></label>
+      <label class="check"><input type="checkbox" id="o-auto" checked>
+        <span>Certify on every change<small>Also while dragging.</small></span></label>
+    </div>
+    <div class="sec">
+      <details><summary class="note">Last solver input</summary><pre id="last-in"></pre></details>
+    </div>
+  </aside>
+
+  <footer>
+    <span id="hint">Select: click to select, drag points to move them.</span>
+    <span class="sp"></span>
+    <span id="coords">0, 0</span>
+  </footer>
+</div>
+<script type="module" src="ui.js"></script>
+</body>
+</html>
