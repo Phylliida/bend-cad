@@ -1950,3 +1950,102 @@ def dgj_ok(~F: O.OField, k: Nat, +w: Nat, +c: Nat, piv: Maybe<&2, Nat>, +rows: L
         Equal.trans(Nat, GJ.nrows(~F, M.ofdm(~F, NU.delim(w, NU.dswap(rows, c, r), c))), GJ.nrows(~F, M.ofdm(~F, NU.dswap(rows, c, r))), n, nrows_dclear(~F, NU.dswap(rows, c, r), w, NU.dscale(w, NU.dsdiv(w, NU.done(), NU.dget(NU.drow(NU.dswap(rows, c, r), c), c)), NU.drow(NU.dswap(rows, c, r), c)), c, 0n), Equal.trans(Nat, GJ.nrows(~F, M.ofdm(~F, NU.dswap(rows, c, r))), GJ.nrows(~F, M.ofdm(~F, rows)), n, nrows_dswap(~F, rows, c, r), hns)),
         col_full(~F, n, jm, w, rows, c, kk, r, g, bb, kst(~F, n, g, bb, c), hns, bfst(rinv(~F, n, jm, M.ofdm(~F, rows), 0n, c, kg(~F, kst(~F, n, g, bb, c)), @M(kd(~F, kst(~F, n, g, bb, c)), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), @M(kp(~F, kst(~F, n, g, bb, c)), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))), NP.InvB(~F, rmat(~F, n, M.ofdm(~F, rows)), n, kh(~F, kst(~F, n, g, bb, c))), hs), bsnd(rinv(~F, n, jm, M.ofdm(~F, rows), 0n, c, kg(~F, kst(~F, n, g, bb, c)), @M(kd(~F, kst(~F, n, g, bb, c)), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), @M(kp(~F, kst(~F, n, g, bb, c)), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))), NP.InvB(~F, rmat(~F, n, M.ofdm(~F, rows)), n, kh(~F, kst(~F, n, g, bb, c))), hs), hkc, hr1, hr2, hcand, hJ, hjn, hj, hg, hb, kst_nn(~F, n, g, bb, hg, hb, c), GJ.all_at(~(q => O.le(~F, @M(M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}), acoef(~F, n, bb, q, kst(~F, n, g, bb, q))), @1)), n, hsm, c, hc1(c, kk, n, hkc))),
         pivot_ok(~F, NU.delim(w, NU.dswap(rows, c, r), c), 1n+c), hJ, hjn, hj, hg, hb, hsm)
+
+# The start: rows [J | I]
+# -----------------------
+
+def ofdv_app(~F: O.OField, xs: List<&2, S.D>, +ys: List<&2, S.D>) -> {M.ofdv(~F, NU.dapp(xs, ys)) == GJ.vapp(~F, M.ofdv(~F, xs), M.ofdv(~F, ys)) : M.Vec(~F)}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+h, t}:
+      %Equal.sym(M.Vec(~F), M.ofdv(~F, NU.dapp(t, ys)), GJ.vapp(~F, M.ofdv(~F, t), M.ofdv(~F, ys)), ofdv_app(~F, t, ys)) : {Con{M.ofd(~F, h), _} == Con{M.ofd(~F, h), GJ.vapp(~F, M.ofdv(~F, t), M.ofdv(~F, ys))} : M.Vec(~F)}
+      {==}
+
+def ofdv_zeros(~F: O.OField, m: Nat) -> {M.ofdv(~F, NU.dzeros(m)) == GJ.zeros(~F, m) : M.Vec(~F)}:
+  match m:
+    case 0n:
+      {==}
+    case 1n++j:
+      %DM.ofd_zero(~F) : {Con{_, M.ofdv(~F, NU.dzeros(j))} == Con{@0, GJ.zeros(~F, j)} : M.Vec(~F)}
+      %Equal.sym(M.Vec(~F), M.ofdv(~F, NU.dzeros(j)), GJ.zeros(~F, j), ofdv_zeros(~F, j)) : {Con{@0, _} == Con{@0, GJ.zeros(~F, j)} : M.Vec(~F)}
+      {==}
+
+def ofdv_unit(~F: O.OField, n: Nat, k: Nat) -> {M.ofdv(~F, NU.dunit(n, k)) == GJ.unit(~F, n, k) : M.Vec(~F)}:
+  match n k:
+    case 0n k:
+      {==}
+    case 1n++m 0n:
+      %DM.ofd_one(~F) : {Con{_, M.ofdv(~F, NU.dzeros(m))} == Con{@1, GJ.zeros(~F, m)} : M.Vec(~F)}
+      %Equal.sym(M.Vec(~F), M.ofdv(~F, NU.dzeros(m)), GJ.zeros(~F, m), ofdv_zeros(~F, m)) : {Con{@1, _} == Con{@1, GJ.zeros(~F, m)} : M.Vec(~F)}
+      {==}
+    case 1n++m 1n++j:
+      %DM.ofd_zero(~F) : {Con{_, M.ofdv(~F, NU.dunit(m, j))} == Con{@0, GJ.unit(~F, m, j)} : M.Vec(~F)}
+      %Equal.sym(M.Vec(~F), M.ofdv(~F, NU.dunit(m, j)), GJ.unit(~F, m, j), ofdv_unit(~F, m, j)) : {Con{@0, _} == Con{@0, GJ.unit(~F, m, j)} : M.Vec(~F)}
+      {==}
+
+# row i of the augmented rows is J_i followed by e_i
+def aug_row(~F: O.OField, a: List<&2, List<&2, S.D>>, +n: Nat, +k: Nat, i: Nat, hi: {KA.natle(1n+i, GJ.nrows(~F, M.ofdm(~F, a))) == True{} : Bool}) -> {DV.mrow(~F, M.ofdm(~F, NU.daugment(a, n, k)), i) == GJ.vapp(~F, DV.mrow(~F, M.ofdm(~F, a), i), GJ.unit(~F, n, Nat.add(i, k))) : M.Vec(~F)}:
+  match a i:
+    case Nil{} 0n:
+      FO.absurd({Nil{} == GJ.vapp(~F, Nil{}, GJ.unit(~F, n, k)) : M.Vec(~F)}, KA.ft(hi))
+    case Nil{} 1n++j:
+      FO.absurd({Nil{} == GJ.vapp(~F, Nil{}, GJ.unit(~F, n, 1n+Nat.add(j, k))) : M.Vec(~F)}, KA.ft(hi))
+    case Con{+r, t} 0n:
+      %ofdv_unit(~F, n, k) : {M.ofdv(~F, NU.dapp(r, NU.dunit(n, k))) == GJ.vapp(~F, M.ofdv(~F, r), _) : M.Vec(~F)}
+      ofdv_app(~F, r, NU.dunit(n, k))
+    case Con{r, t} 1n++j:
+      %Equal.sym(Nat, 1n+Nat.add(j, k), Nat.add(j, 1n+k), LN.add_succ(j, k)) : {DV.mrow(~F, M.ofdm(~F, NU.daugment(t, n, 1n+k)), j) == GJ.vapp(~F, DV.mrow(~F, M.ofdm(~F, t), j), GJ.unit(~F, n, _)) : M.Vec(~F)}
+      aug_row(~F, t, n, 1n+k, j, hi)
+
+def look_app_lo(~F: O.OField, p: M.Vec(~F), +q: M.Vec(~F), k: Nat, h: {KA.natle(1n+k, M.len(~F, p)) == True{} : Bool}) -> {O.lookup(~F, p, k) == O.lookup(~F, GJ.vapp(~F, p, q), k) : @T}:
+  match p k:
+    case Nil{} k:
+      FO.absurd({O.lookup(~F, Nil{}, k) == O.lookup(~F, q, k) : @T}, KA.ft(h))
+    case Con{a, t} 0n:
+      {==}
+    case Con{a, t} 1n+j:
+      look_app_lo(~F, t, q, j, h)
+
+def drop_app(~F: O.OField, p: M.Vec(~F), +q: M.Vec(~F)) -> {GJ.vdrop(~F, M.len(~F, p), GJ.vapp(~F, p, q)) == q : M.Vec(~F)}:
+  match p:
+    case Nil{}:
+      match q:
+        case Nil{}:
+          {==}
+        case Con{x, xs}:
+          {==}
+    case Con{a, t}:
+      drop_app(~F, t, q)
+
+def vall_unit(~F: O.OField, n: Nat, i: Nat) -> M.vbnd.all(~F, GJ.unit(~F, n, i), @1):
+  match n i:
+    case 0n i:
+      Unit{}
+    case 1n++k 0n:
+      (FV.bnd_self(~F, @1, NP.one_nn(~F)), FM.vall_mono(~F, GJ.zeros(~F, k), @0, @1, NP.vall_zeros(~F, k), FM.sub_nonneg(~F, @0, @1, NP.one_nn(~F))))
+    case 1n++k 1n+j:
+      (FM.bnd_zero(~F, @1, NP.one_nn(~F)), vall_unit(~F, k, j))
+
+def mall_row(~F: O.OField, a: M.Mat(~F), +g: @T, i: Nat, h: mall(~F, a, g)) -> M.vbnd.all(~F, DV.mrow(~F, a, i), g):
+  match a i:
+    case Nil{} i:
+      Unit{}
+    case Con{r, t} 0n:
+      (h1, h2) = h
+      h1
+    case Con{r, t} 1n+j:
+      (h1, h2) = h
+      mall_row(~F, t, g, j, h2)
+
+# the start row J_i e_i: entries <= g + 1, no defect
+def dk0(~F: O.OField, +n: Nat, +a: List<&2, List<&2, S.D>>, +i: Nat, +k: Nat, +hw: GJ.roww(~F, M.ofdm(~F, a), n, i), +hjn: {GJ.nrows(~F, M.ofdm(~F, a)) == n : Nat}, +hk: {KA.natle(1n+k, n) == True{} : Bool}) -> {@0 == dk(~F, n, M.ofdm(~F, a), GJ.vapp(~F, DV.mrow(~F, M.ofdm(~F, a), i), GJ.unit(~F, n, i)), k) : @T}:
+  %look_app_lo(~F, DV.mrow(~F, M.ofdm(~F, a), i), GJ.unit(~F, n, i), k, (%Equal.sym(Nat, M.len(~F, DV.mrow(~F, M.ofdm(~F, a), i)), n, hw) : {KA.natle(1n+k, _) == True{} : Bool}
+      hk)) : {@0 == @S(_, M.dot(~F, GJ.vdrop(~F, n, GJ.vapp(~F, DV.mrow(~F, M.ofdm(~F, a), i), GJ.unit(~F, n, i))), GJ.mcol(~F, M.ofdm(~F, a), k))) : @T}
+  %hw : {@0 == @S(O.lookup(~F, DV.mrow(~F, M.ofdm(~F, a), i), k), M.dot(~F, GJ.vdrop(~F, _, GJ.vapp(~F, DV.mrow(~F, M.ofdm(~F, a), i), GJ.unit(~F, n, i))), GJ.mcol(~F, M.ofdm(~F, a), k))) : @T}
+  %Equal.sym(M.Vec(~F), GJ.vdrop(~F, M.len(~F, DV.mrow(~F, M.ofdm(~F, a), i)), GJ.vapp(~F, DV.mrow(~F, M.ofdm(~F, a), i), GJ.unit(~F, n, i))), GJ.unit(~F, n, i), drop_app(~F, DV.mrow(~F, M.ofdm(~F, a), i), GJ.unit(~F, n, i))) : {@0 == @S(O.lookup(~F, DV.mrow(~F, M.ofdm(~F, a), i), k), M.dot(~F, _, GJ.mcol(~F, M.ofdm(~F, a), k))) : @T}
+  %GJ.dot_unit(~F, n, i, GJ.mcol(~F, M.ofdm(~F, a), k), (%GJ.len_mcol(~F, M.ofdm(~F, a), k) : {KA.natle(_, n) == True{} : Bool}
+      (%hjn : {KA.natle(GJ.nrows(~F, M.ofdm(~F, a)), _) == True{} : Bool}
+        GJ.le_refl(GJ.nrows(~F, M.ofdm(~F, a)))))) : {@0 == @S(O.lookup(~F, DV.mrow(~F, M.ofdm(~F, a), i), k), _) : @T}
+  %GJ.look_mcol(~F, M.ofdm(~F, a), k, i) : {@0 == @S(O.lookup(~F, DV.mrow(~F, M.ofdm(~F, a), i), k), _) : @T}
+  @ZEQ[x=O.lookup(~F, DV.mrow(~F, M.ofdm(~F, a), i), k) | 0 | x - x]
