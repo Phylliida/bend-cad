@@ -294,3 +294,57 @@ def dk_axpy(~F: O.OField, +n: Nat, +j: M.Mat(~F), +x: M.Vec(~F), +m: @T, +p: M.V
   %FM.dot_vadd(~F, GJ.vdrop(~F, n, x), M.vscale(~F, @N(m), GJ.vdrop(~F, n, p)), GJ.mcol(~F, j, k)) : {@S(@A(O.lookup(~F, x, k), @M(@N(m), O.lookup(~F, p, k))), _) == @A(dk(~F, n, j, x, k), @M(@N(m), dk(~F, n, j, p, k))) : @T}
   %FM.dot_vscale(~F, @N(m), GJ.vdrop(~F, n, p), GJ.mcol(~F, j, k)) : {@S(@A(O.lookup(~F, x, k), @M(@N(m), O.lookup(~F, p, k))), @A(M.dot(~F, GJ.vdrop(~F, n, x), GJ.mcol(~F, j, k)), _)) == @A(dk(~F, n, j, x, k), @M(@N(m), dk(~F, n, j, p, k))) : @T}
   @ZEQ[lx=O.lookup(~F, x, k),, lp=O.lookup(~F, p, k),, dx=M.dot(~F, GJ.vdrop(~F, n, x), GJ.mcol(~F, j, k)),, dp=M.dot(~F, GJ.vdrop(~F, n, p), GJ.mcol(~F, j, k)),, m | (lx + (-m)*lp) - (dx + (-m)*dp) | (lx - dx) + (-m)*(lp - dp)]
+
+# Entry bounds
+# ------------
+
+def look_bnd(~F: O.OField, v: M.Vec(~F), k: Nat, +t: @T, h: M.vbnd.all(~F, v, t), +ht: O.le(~F, @0, t)) -> M.bnd(~F, O.lookup(~F, v, k), t):
+  match v k:
+    case Nil{} 0n:
+      FM.bnd_zero(~F, t, ht)
+    case Nil{} 1n+j:
+      FM.bnd_zero(~F, t, ht)
+    case Con{a, xs} 0n:
+      (h1, h2) = h
+      h1
+    case Con{a, xs} 1n+j:
+      (h1, h2) = h
+      look_bnd(~F, xs, j, t, h2, ht)
+
+def all_shift(~Q: Nat -> Data, m: Nat, h: GJ.All(~Q, 1n+m)) -> GJ.All(~(k => Q(1n+k)), m):
+  match m:
+    case 0n:
+      Unit{}
+    case 1n++j:
+      match h:
+        case (h1, q):
+          (all_shift(~Q, j, h1), q)
+
+# bounds on every entry by index give the bound on the list
+def vall_of_all(~F: O.OField, v: M.Vec(~F), +t: @T, +h: GJ.All(~(k => M.bnd(~F, O.lookup(~F, v, k), t)), M.len(~F, v))) -> M.vbnd.all(~F, v, t):
+  match v:
+    case Nil{}:
+      Unit{}
+    case Con{+a, +xs}:
+      (GJ.all_at(~(k => M.bnd(~F, O.lookup(~F, Con{a, xs}, k), t)), 1n+M.len(~F, xs), h, 0n, {==}),
+       vall_of_all(~F, xs, t, all_shift(~(k => M.bnd(~F, O.lookup(~F, Con{a, xs}, k), t)), M.len(~F, xs), h)))
+
+def ofn_nn(~F: O.OField, m: Nat) -> O.le(~F, @0, FR.ofn(~F, m)):
+  match m:
+    case 0n:
+      FO.le_refl(~F, @0)
+    case 1n++k:
+      FO.nonneg_add(~F, @1, FR.ofn(~F, k), NP.one_nn(~F), ofn_nn(~F, k))
+
+# m entries of size at most t sum to at most m t
+def rowabs_le(~F: O.OField, r: M.Vec(~F), m: Nat, +t: @T, h: M.vbnd.all(~F, r, t), +ht: O.le(~F, @0, t)) -> O.le(~F, NP.rowabs(~F, r, m), @M(FR.ofn(~F, m), t)):
+  match r m:
+    case Nil{} 0n:
+      FV.le_rw_r(~F, @0, @0, @M(@0, t), Equal.sym(@T, @M(@0, t), @0, FL.zero_mul(~F, t)), FO.le_refl(~F, @0))
+    case Nil{} 1n++k:
+      FO.mul_nonneg(~F, FR.ofn(~F, 1n+k), t, ofn_nn(~F, 1n+k), ht)
+    case Con{+a, +xs} 0n:
+      FV.le_rw_r(~F, @0, @0, @M(@0, t), Equal.sym(@T, @M(@0, t), @0, FL.zero_mul(~F, t)), FO.le_refl(~F, @0))
+    case Con{+a, +xs} 1n++k:
+      (h1, h2) = h
+      FV.le_rw_r(~F, NP.rowabs(~F, Con{a, xs}, 1n+k), @A(t, @M(FR.ofn(~F, k), t)), @M(FR.ofn(~F, 1n+k), t), @ZEQ[t,, q=FR.ofn(~F, k) | t + q*t | (1 + q)*t], RP.le_add2(~F, FV.fabs(~F, a), t, NP.rowabs(~F, xs, k), @M(FR.ofn(~F, k), t), FV.fabs_le(~F, a, t, h1), rowabs_le(~F, xs, k, t, h2, ht)))
