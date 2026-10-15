@@ -1054,10 +1054,52 @@ solver as it stands, and both are provable.)
 | C2b | lib/structpf.bend | **done 2026-10-15** (`struct_ok`): the variable side's end: it saturates the kept equations, and pins and matched variables are all the variables, disjoint; blocks: their equations are the components' (`alleqs = cats`), each block valid (checked ones by the check, the rest by the partition); vp and ep permutations; `swalk`: PL.walk's structural conjuncts for the solver's skeleton (sizes, `pars_ok`, `eqs_below`, every variable a block uses is its own unknown or a par, the end at nv) |
 | C2c | lib/keptpf.bend | **done 2026-10-15** (`kept_good`, `kept_len`, `kept_reorder`; lib/redpf.bend's end result now also says no matched equation is owned by a red constraint, and all are below the equation count): kept vs good: the kept system is the full system at the indices good (the red stage matched exactly the equations whose constraint is not red: `pre` at the end plus the count) |
 | C2d | lib/permpf.bend | **done 2026-10-15** (`regular_blocks`: InvN of jac(x, full picked at alleqs bs, allvars bs)): Regular in block order: a kernel vector of the Jacobian with permuted rows and columns gives one of the original (sums reindexed over a permutation), so with C1 the block-order Jacobian has an inverse |
-| C3 | lib/bndpf.bend | majorants and Lipschitz bounds for expressions and slopes; slope at equal points = deriv; renaming commutes with deriv; ball tightness; rounding (dround, dsig, dsigup, qsig) |
+| C3a | lib/bndpf.bend | balls: centers are values (slope at equal points = deriv), ball tightness, Lipschitz bounds for expressions and slopes; renaming commutes with deriv (plan below) |
+| C3b | lib/roundpf.bend | rounding in F: dround, dsig, qsig, dsigup (plan below) |
+| C3c | lib/normpf.bend | norms and the perturbation lemma (plan below) |
 | C4 | lib/dgjpf.bend | the rounded elimination (5): Newton's and Y's inverses are good |
 | C5 | lib/blockpf.bend | one block at P (3) |
 | C6 | lib/completepf.bend | the blocks in turn, the verdict, local uniqueness, choosing l and d: `solve_complete` |
+
+**C3 plan** (2026-10-15). One idea carries C3a: F is its own computing
+numbers. `fnum(F)` compares by `lt_total` and holds every rational, and
+the identity is an `Emb<fnum(F), F>`, so every K-generic ball lemma
+(kball.bend's `ball_ok`, `sl_ok`) also holds for balls centered at points
+of F, such as the solution x. Tightness is then proved once, generically
+in K, and serves both the checker's dyadic balls and the Newton analysis.
+
+- C3a, lib/bndpf.bend:
+  - `fnum`, `femb`, `held_f` (every expression's constants are held in F).
+  - Centers: `kball_c` (H of kball's center is e at the box's centers),
+    `ksl_c` (H of ksl's center is sl(i, X, X, e)), `sl_deriv`
+    (sl(i, X, X, e) = eval(X, deriv(e, i))). So the checker's slope
+    centers are exactly the Jacobian at the box's center, whatever the
+    radii; numer's `jac` is the radius-0 case.
+  - Grades: F values mj(B, e), lp(B, e) (an expression's magnitude and
+    Lipschitz constant) and ms(B, e), ls(B, e) (its slopes'). A ball (c, r)
+    has grade (M, L) at ρ when 0 ≤ r, |c| + r ≤ M and r ≤ L ρ. badd, bneg
+    and bmul combine grades. A box whose balls have |c| + r ≤ B and r ≤ ρ
+    gives kball(e) grade (mj, lp) and every ksl(i, e) grade (ms, ls)
+    (`kball_grade`, `ksl_grade`: ball tightness).
+  - Lipschitz, in fnum(F): for X1 and X2 in an F-box of grade (B, ρ) with
+    centers X*, |e(X1) − e(X*)| ≤ lp ρ and
+    |sl(i, X1, X2, e) − sl(i, X*, X*, e)| ≤ ls ρ, with |e(X1)| ≤ mj and
+    |sl| ≤ ms.
+  - Renaming: deriv commutes with PL.rnv (vp distinct, v in vp) and with
+    PL.rename (v an unknown, pars distinct).
+- C3b, lib/roundpf.bend, in F through ofd:
+  - |dround(x, p) − x| ≤ 2^-(p+1).
+  - |dsig(x, b) − x| ≤ 2^-b |x|.
+  - |qsig(q, b) − q| ≤ 2^-b |q| (so dsdiv too).
+  - x ≤ dsigup(x, b) ≤ x + 2^(1−b) x for x ≥ 0.
+  - From integer facts: Euclid's division (QRD.div), the size bounds
+    2^(size p − 1) ≤ p < 2^(size p), and pshr as a floor.
+- C3c, lib/normpf.bend:
+  - An operator bound Nm(A, a): ‖A v‖ ≤ a ‖v‖ for every v (max norm),
+    from entrywise majorants (row sums), closed under sums and products.
+  - Perturbation: with Z an inverse of J, Nm(Z, β) and Nm(J' − J, δ),
+    β δ ≤ 1/2, J' is injective with ‖v‖ ≤ 2β ‖J' v‖, so by C1 it has an
+    inverse Z' with Nm(Z', 2β).
 
 **Risks.** Size: several thousand lines over several sessions (C4 is the
 largest single piece). Checker time on long inequality proofs: keep the

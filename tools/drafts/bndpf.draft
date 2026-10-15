@@ -1,0 +1,588 @@
+# bend-cad: balls, for solve_complete (DESIGN §10.4, C3a). Proofs only.
+#
+# F is its own computing numbers (fnum: compared by lt_total, every
+# rational held; femb: the identity map), so the K-generic ball lemmas of
+# lib/kball.bend also hold for balls centered at points of F. A ball's
+# center is the value at the box's centers (kball_c), and a slope ball's
+# center is the slope between the centers and themselves, which is the
+# derivative there (ksl_c, sl_deriv), whatever the radii. A ball's radius
+# is at most a Lipschitz constant times the box's radius (kball_grade,
+# ksl_grade: ball tightness), so in fnum(F) values and slopes move by at
+# most that much across a box (eval_lip, sl_lip). Renaming variables
+# commutes with derivatives (deriv_rnv, deriv_rename).
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ../spec/mat.bend as M
+import ../spec/knum.bend as N
+import ../spec/deriv.bend as DV
+import ./karith.bend as KA
+import ./kball.bend as KB
+import ./cert.bend as CK
+import ./slope.bend as SL
+import ./struct.bend as ST
+import ./flaws.bend as FL
+import ./fring.bend as FR
+import ./ford.bend as FO
+import ./fmat.bend as FM
+import ./fvec.bend as FV
+import ./qemb.bend as QE
+
+# Equations in F
+# --------------
+
+def cadd(~F: O.OField, +a1: @T, +a2: @T, +b1: @T, +b2: @T, ea: {a1 == a2 : @T}, eb: {b1 == b2 : @T}) -> {@A(a1, b1) == @A(a2, b2) : @T}:
+  %ea : {@A(a1, b1) == @A(_, b2) : @T}
+  %eb : {@A(a1, b1) == @A(a1, _) : @T}
+  {==}
+
+def csub(~F: O.OField, +a1: @T, +a2: @T, +b1: @T, +b2: @T, ea: {a1 == a2 : @T}, eb: {b1 == b2 : @T}) -> {@S(a1, b1) == @S(a2, b2) : @T}:
+  %ea : {@S(a1, b1) == @S(_, b2) : @T}
+  %eb : {@S(a1, b1) == @S(a1, _) : @T}
+  {==}
+
+def cmul(~F: O.OField, +a1: @T, +a2: @T, +b1: @T, +b2: @T, ea: {a1 == a2 : @T}, eb: {b1 == b2 : @T}) -> {@M(a1, b1) == @M(a2, b2) : @T}:
+  %ea : {@M(a1, b1) == @M(_, b2) : @T}
+  %eb : {@M(a1, b1) == @M(a1, _) : @T}
+  {==}
+
+def cneg(~F: O.OField, +a1: @T, +a2: @T, ea: {a1 == a2 : @T}) -> {@N(a1) == @N(a2) : @T}:
+  %ea : {@N(a1) == @N(_) : @T}
+  {==}
+
+# F as computing numbers
+# ----------------------
+
+def fcmp.go(~F: O.OField, +a: @T, +b: @T, t: Or(O.lt(F, a, b), Or({a == b : @T}, O.lt(F, b, a)))) -> Cmp:
+  match t:
+    case Inl{l}:
+      LT{}
+    case Inr{Inl{e}}:
+      EQ{}
+    case Inr{Inr{g}}:
+      GT{}
+
+def fcmp(~F: O.OField, +a: @T, +b: @T) -> Cmp:
+  fcmp.go(~F, a, b, O.lt_total(F)(a, b))
+
+# F's own numbers: every rational is held
+def fnum(~F: O.OField) -> N.Num:
+  N.Num{@T, @0, @1, a => b => @A(a, b), a => b => @M(a, b), a => @N(a), a => b => fcmp(~F, a, b), q => Some{O.ofq(~F, q)}}
+
+def fcmp_ok.go(~F: O.OField, +a: @T, +b: @T, t: Or(O.lt(F, a, b), Or({a == b : @T}, O.lt(F, b, a)))) -> N.cmeans(F, fcmp.go(~F, a, b, t), a, b):
+  match t:
+    case Inl{l}:
+      l
+    case Inr{Inl{e}}:
+      e
+    case Inr{Inr{g}}:
+      g
+
+def fcmp_ok(~F: O.OField, +a: @T, +b: @T) -> N.cmeans(F, fcmp(~F, a, b), a, b):
+  fcmp_ok.go(~F, a, b, O.lt_total(F)(a, b))
+
+def mget(~F: O.OField, m: Maybe<&2, @T>) -> @T:
+  match m:
+    case None{}:
+      @0
+    case Some{k}:
+      k
+
+def fofq_ok(~F: O.OField, +q: S.Q, +k: @T, h: {Some{O.ofq(~F, q)} == Some{k} : Maybe<&2, @T>}) -> {k == O.ofq(~F, q) : @T}:
+  Equal.sym(@T, O.ofq(~F, q), k, Equal.cong(Maybe<&2, @T>, @T, m => mget(~F, m), Some{O.ofq(~F, q)}, Some{k}, h))
+
+# the identity map
+def femb(~F: O.OField) -> N.Emb<fnum(~F), F>:
+  N.Emb{x => x, {==}, {==}, a => b => {==}, a => b => {==}, a => {==}, a => b => fcmp_ok(~F, a, b), q => k => h => fofq_ok(~F, q, k, h)}
+
+# every constant is held
+def held_f(~F: O.OField, e: E.QExpr) -> {KB.held(~fnum(~F), e) == True{} : Bool}:
+  match e:
+    case E.QVar{i}:
+      {==}
+    case E.QCst{q}:
+      {==}
+    case E.QAdd{+a, +b}:
+      %Equal.sym(Bool, KB.held(~fnum(~F), a), True{}, held_f(~F, a)) : {KA.band(_, KB.held(~fnum(~F), b)) == True{} : Bool}
+      held_f(~F, b)
+    case E.QSub{+a, +b}:
+      %Equal.sym(Bool, KB.held(~fnum(~F), a), True{}, held_f(~F, a)) : {KA.band(_, KB.held(~fnum(~F), b)) == True{} : Bool}
+      held_f(~F, b)
+    case E.QMul{+a, +b}:
+      %Equal.sym(Bool, KB.held(~fnum(~F), a), True{}, held_f(~F, a)) : {KA.band(_, KB.held(~fnum(~F), b)) == True{} : Bool}
+      held_f(~F, b)
+    case E.QNeg{a}:
+      held_f(~F, a)
+
+def ofkv_id(~F: O.OField, v: M.Vec(~F)) -> {N.ofkv(~fnum(~F), ~F, ~femb(~F), v) == v : M.Vec(~F)}:
+  match v:
+    case Nil{}:
+      {==}
+    case Con{+x, +xs}:
+      %Equal.sym(M.Vec(~F), N.ofkv(~fnum(~F), ~F, ~femb(~F), xs), xs, ofkv_id(~F, xs)) : {Con{x, _} == Con{x, xs} : M.Vec(~F)}
+      {==}
+
+# Ball centers
+# ------------
+
+# the box's centers in F
+def cen(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, box: List<&2, KB.KB<K>>) -> M.Vec(~F):
+  N.ofkv(~K, ~F, ~H, KB.bcenters(~K, box))
+
+def cadd_c(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, x: KB.KB<K>, y: KB.KB<K>, +va: @T, +vb: @T, ea: {@H(KB.KB.c(K, x)) == va : @T}, eb: {@H(KB.KB.c(K, y)) == vb : @T}) -> {@H(KB.KB.c(K, KB.badd(~K, x, y))) == @A(va, vb) : @T}:
+  match x y:
+    case KB.KB{+c1, +r1} KB.KB{+c2, +r2}:
+      %KA.ea(~K, ~F, ~H, c1, c2) : {_ == @A(va, vb) : @T}
+      cadd(~F, @H(c1), va, @H(c2), vb, ea, eb)
+
+def cneg_c(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, x: KB.KB<K>, +va: @T, ea: {@H(KB.KB.c(K, x)) == va : @T}) -> {@H(KB.KB.c(K, KB.bneg(~K, x))) == @N(va) : @T}:
+  match x:
+    case KB.KB{+c, +r}:
+      %KA.en(~K, ~F, ~H, c) : {_ == @N(va) : @T}
+      cneg(~F, @H(c), va, ea)
+
+def cmul_c(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, x: KB.KB<K>, y: KB.KB<K>, +va: @T, +vb: @T, ea: {@H(KB.KB.c(K, x)) == va : @T}, eb: {@H(KB.KB.c(K, y)) == vb : @T}) -> {@H(KB.KB.c(K, KB.bmul(~K, x, y))) == @M(va, vb) : @T}:
+  match x y:
+    case KB.KB{+c1, +r1} KB.KB{+c2, +r2}:
+      %KA.em(~K, ~F, ~H, c1, c2) : {_ == @M(va, vb) : @T}
+      cmul(~F, @H(c1), va, @H(c2), vb, ea, eb)
+
+def blook_c(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, box: List<&2, KB.KB<K>>, i: Nat) -> {@H(KB.KB.c(K, KB.blook(~K, box, i))) == O.lookup(~F, cen(~K, ~F, ~H, box), i) : @T}:
+  match box i:
+    case Nil{} 0n:
+      N.e_zero(K, F, H)
+    case Nil{} 1n+j:
+      N.e_zero(K, F, H)
+    case Con{b, bs} 0n:
+      {==}
+    case Con{b, bs} 1n+j:
+      blook_c(~K, ~F, ~H, bs, j)
+
+def kind_c(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, b: Bool) -> {@H(KB.KB.c(K, KB.kind(~K, b))) == SL.find(~F, b) : @T}:
+  match b:
+    case True{}:
+      N.e_one(K, F, H)
+    case False{}:
+      N.e_zero(K, F, H)
+
+# the center of e's ball is e at the box's centers
+def kball_c(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +box: List<&2, KB.KB<K>>, e: E.QExpr, +hh: {KB.held(~K, e) == True{} : Bool}) -> {@H(KB.KB.c(K, KB.kball(~K, box, e))) == O.eval(~F, cen(~K, ~F, ~H, box), e) : @T}:
+  match e:
+    case E.QVar{i}:
+      blook_c(~K, ~F, ~H, box, i)
+    case E.QCst{+q}:
+      KB.kcst_ok(~K, ~F, ~H, q, hh)
+    case E.QAdd{+a, +b}:
+      cadd_c(~K, ~F, ~H, KB.kball(~K, box, a), KB.kball(~K, box, b), O.eval(~F, cen(~K, ~F, ~H, box), a), O.eval(~F, cen(~K, ~F, ~H, box), b), kball_c(~K, ~F, ~H, box, a, KA.band_l(KB.held(~K, a), KB.held(~K, b), hh)), kball_c(~K, ~F, ~H, box, b, KA.band_r(KB.held(~K, a), KB.held(~K, b), hh)))
+    case E.QSub{+a, +b}:
+      cadd_c(~K, ~F, ~H, KB.kball(~K, box, a), KB.bneg(~K, KB.kball(~K, box, b)), O.eval(~F, cen(~K, ~F, ~H, box), a), @N(O.eval(~F, cen(~K, ~F, ~H, box), b)), kball_c(~K, ~F, ~H, box, a, KA.band_l(KB.held(~K, a), KB.held(~K, b), hh)), cneg_c(~K, ~F, ~H, KB.kball(~K, box, b), O.eval(~F, cen(~K, ~F, ~H, box), b), kball_c(~K, ~F, ~H, box, b, KA.band_r(KB.held(~K, a), KB.held(~K, b), hh))))
+    case E.QMul{+a, +b}:
+      cmul_c(~K, ~F, ~H, KB.kball(~K, box, a), KB.kball(~K, box, b), O.eval(~F, cen(~K, ~F, ~H, box), a), O.eval(~F, cen(~K, ~F, ~H, box), b), kball_c(~K, ~F, ~H, box, a, KA.band_l(KB.held(~K, a), KB.held(~K, b), hh)), kball_c(~K, ~F, ~H, box, b, KA.band_r(KB.held(~K, a), KB.held(~K, b), hh)))
+    case E.QNeg{+a}:
+      cneg_c(~K, ~F, ~H, KB.kball(~K, box, a), O.eval(~F, cen(~K, ~F, ~H, box), a), kball_c(~K, ~F, ~H, box, a, hh))
+
+# the center of e's slope ball is e's slope between the centers and
+# themselves
+def ksl_c(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +i: Nat, +box: List<&2, KB.KB<K>>, e: E.QExpr, +hh: {KB.held(~K, e) == True{} : Bool}) -> {@H(KB.KB.c(K, KB.ksl(~K, i, box, e))) == SL.sl(~F, i, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), e) : @T}:
+  match e:
+    case E.QVar{j}:
+      kind_c(~K, ~F, ~H, KA.nateq(i, j))
+    case E.QCst{q}:
+      N.e_zero(K, F, H)
+    case E.QAdd{+a, +b}:
+      cadd_c(~K, ~F, ~H, KB.ksl(~K, i, box, a), KB.ksl(~K, i, box, b), SL.sl(~F, i, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), a), SL.sl(~F, i, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), b), ksl_c(~K, ~F, ~H, i, box, a, KA.band_l(KB.held(~K, a), KB.held(~K, b), hh)), ksl_c(~K, ~F, ~H, i, box, b, KA.band_r(KB.held(~K, a), KB.held(~K, b), hh)))
+    case E.QSub{+a, +b}:
+      cadd_c(~K, ~F, ~H, KB.ksl(~K, i, box, a), KB.bneg(~K, KB.ksl(~K, i, box, b)), SL.sl(~F, i, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), a), @N(SL.sl(~F, i, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), b)), ksl_c(~K, ~F, ~H, i, box, a, KA.band_l(KB.held(~K, a), KB.held(~K, b), hh)), cneg_c(~K, ~F, ~H, KB.ksl(~K, i, box, b), SL.sl(~F, i, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), b), ksl_c(~K, ~F, ~H, i, box, b, KA.band_r(KB.held(~K, a), KB.held(~K, b), hh))))
+    case E.QMul{+a, +b}:
+      +ha = KA.band_l(KB.held(~K, a), KB.held(~K, b), hh)
+      +hb = KA.band_r(KB.held(~K, a), KB.held(~K, b), hh)
+      cadd_c(~K, ~F, ~H, KB.bmul(~K, KB.kball(~K, box, a), KB.ksl(~K, i, box, b)), KB.bmul(~K, KB.kball(~K, box, b), KB.ksl(~K, i, box, a)), @M(O.eval(~F, cen(~K, ~F, ~H, box), a), SL.sl(~F, i, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), b)), @M(O.eval(~F, cen(~K, ~F, ~H, box), b), SL.sl(~F, i, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), a)),
+        cmul_c(~K, ~F, ~H, KB.kball(~K, box, a), KB.ksl(~K, i, box, b), O.eval(~F, cen(~K, ~F, ~H, box), a), SL.sl(~F, i, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), b), kball_c(~K, ~F, ~H, box, a, ha), ksl_c(~K, ~F, ~H, i, box, b, hb)),
+        cmul_c(~K, ~F, ~H, KB.kball(~K, box, b), KB.ksl(~K, i, box, a), O.eval(~F, cen(~K, ~F, ~H, box), b), SL.sl(~F, i, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), a), kball_c(~K, ~F, ~H, box, b, hb), ksl_c(~K, ~F, ~H, i, box, a, ha)))
+    case E.QNeg{+a}:
+      cneg_c(~K, ~F, ~H, KB.ksl(~K, i, box, a), SL.sl(~F, i, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), a), ksl_c(~K, ~F, ~H, i, box, a, hh))
+
+# Slopes at equal points
+# ----------------------
+
+def nateq_flip(a: Nat, b: Nat) -> {KA.nateq(a, b) == DV.eq(b, a) : Bool}:
+  match a b:
+    case 0n 0n:
+      {==}
+    case 0n 1n+j:
+      {==}
+    case 1n+i 0n:
+      {==}
+    case 1n+i 1n+j:
+      nateq_flip(i, j)
+
+def dvar_ok(~F: O.OField, +x: M.Vec(~F), b: Bool) -> {SL.find(~F, b) == O.eval(~F, x, DV.dvar(b)) : @T}:
+  match b:
+    case True{}:
+      Equal.sym(@T, O.ofq(~F, S.Q{S.Zpos{S.XH{}}, S.XH{}}), @1, QE.ofq_one(~F))
+    case False{}:
+      Equal.sym(@T, O.ofq(~F, S.Q{S.Z0{}, S.XH{}}), @0, QE.ofq_zero(~F))
+
+# the slope between a point and itself is the derivative there
+def sl_deriv(~F: O.OField, +i: Nat, +x: M.Vec(~F), e: E.QExpr) -> {SL.sl(~F, i, x, x, e) == O.eval(~F, x, DV.deriv(e, i)) : @T}:
+  match e:
+    case E.QVar{+j}:
+      %Equal.sym(Bool, KA.nateq(i, j), DV.eq(j, i), nateq_flip(i, j)) : {SL.find(~F, _) == O.eval(~F, x, DV.dvar(DV.eq(j, i))) : @T}
+      dvar_ok(~F, x, DV.eq(j, i))
+    case E.QCst{q}:
+      Equal.sym(@T, O.ofq(~F, S.Q{S.Z0{}, S.XH{}}), @0, QE.ofq_zero(~F))
+    case E.QAdd{+a, +b}:
+      cadd(~F, SL.sl(~F, i, x, x, a), O.eval(~F, x, DV.deriv(a, i)), SL.sl(~F, i, x, x, b), O.eval(~F, x, DV.deriv(b, i)), sl_deriv(~F, i, x, a), sl_deriv(~F, i, x, b))
+    case E.QSub{+a, +b}:
+      csub(~F, SL.sl(~F, i, x, x, a), O.eval(~F, x, DV.deriv(a, i)), SL.sl(~F, i, x, x, b), O.eval(~F, x, DV.deriv(b, i)), sl_deriv(~F, i, x, a), sl_deriv(~F, i, x, b))
+    case E.QMul{+a, +b}:
+      %Equal.sym(@T, SL.sl(~F, i, x, x, b), O.eval(~F, x, DV.deriv(b, i)), sl_deriv(~F, i, x, b)) : {@A(@M(O.eval(~F, x, a), _), @M(O.eval(~F, x, b), SL.sl(~F, i, x, x, a))) == @A(@M(O.eval(~F, x, DV.deriv(a, i)), O.eval(~F, x, b)), @M(O.eval(~F, x, a), O.eval(~F, x, DV.deriv(b, i)))) : @T}
+      %Equal.sym(@T, SL.sl(~F, i, x, x, a), O.eval(~F, x, DV.deriv(a, i)), sl_deriv(~F, i, x, a)) : {@A(@M(O.eval(~F, x, a), O.eval(~F, x, DV.deriv(b, i))), @M(O.eval(~F, x, b), _)) == @A(@M(O.eval(~F, x, DV.deriv(a, i)), O.eval(~F, x, b)), @M(O.eval(~F, x, a), O.eval(~F, x, DV.deriv(b, i)))) : @T}
+      @ZEQ[p=O.eval(~F, x, a),, q=O.eval(~F, x, b),, da=O.eval(~F, x, DV.deriv(a, i)),, db=O.eval(~F, x, DV.deriv(b, i)) | p*db + q*da | da*q + p*db]
+    case E.QNeg{+a}:
+      cneg(~F, SL.sl(~F, i, x, x, a), O.eval(~F, x, DV.deriv(a, i)), sl_deriv(~F, i, x, a))
+
+# the centers of e's slope balls in cnt variables from lo
+def krange_c(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +box: List<&2, KB.KB<K>>, +e: E.QExpr, +hh: {KB.held(~K, e) == True{} : Bool}, cnt: Nat, +lo: Nat) -> {N.ofkv(~K, ~F, ~H, KB.bcenters(~K, KB.krange(~K, box, e, cnt, lo))) == SL.srange(~F, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), e, cnt, lo) : M.Vec(~F)}:
+  match cnt:
+    case 0n:
+      {==}
+    case 1n+k:
+      %Equal.sym(@T, @H(KB.KB.c(K, KB.ksl(~K, lo, box, e))), SL.sl(~F, lo, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), e), ksl_c(~K, ~F, ~H, lo, box, e, hh)) : {Con{_, N.ofkv(~K, ~F, ~H, KB.bcenters(~K, KB.krange(~K, box, e, k, 1n+lo)))} == Con{SL.sl(~F, lo, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), e), SL.srange(~F, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), e, k, 1n+lo)} : M.Vec(~F)}
+      %Equal.sym(M.Vec(~F), N.ofkv(~K, ~F, ~H, KB.bcenters(~K, KB.krange(~K, box, e, k, 1n+lo))), SL.srange(~F, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), e, k, 1n+lo), krange_c(~K, ~F, ~H, box, e, hh, k, 1n+lo)) : {Con{SL.sl(~F, lo, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), e), _} == Con{SL.sl(~F, lo, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), e), SL.srange(~F, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), e, k, 1n+lo)} : M.Vec(~F)}
+      {==}
+
+# slopes at equal points, in cnt variables from lo, are a Jacobian row
+def srange_jrow(~F: O.OField, +x: M.Vec(~F), +e: E.QExpr, cnt: Nat, +lo: Nat) -> {SL.srange(~F, x, x, e, cnt, lo) == DV.jrow(~F, x, e, ST.iota(cnt, lo)) : M.Vec(~F)}:
+  match cnt:
+    case 0n:
+      {==}
+    case 1n+k:
+      %Equal.sym(@T, SL.sl(~F, lo, x, x, e), O.eval(~F, x, DV.deriv(e, lo)), sl_deriv(~F, lo, x, e)) : {Con{_, SL.srange(~F, x, x, e, k, 1n+lo)} == Con{O.eval(~F, x, DV.deriv(e, lo)), DV.jrow(~F, x, e, ST.iota(k, 1n+lo))} : M.Vec(~F)}
+      %Equal.sym(M.Vec(~F), SL.srange(~F, x, x, e, k, 1n+lo), DV.jrow(~F, x, e, ST.iota(k, 1n+lo)), srange_jrow(~F, x, e, k, 1n+lo)) : {Con{O.eval(~F, x, DV.deriv(e, lo)), _} == Con{O.eval(~F, x, DV.deriv(e, lo)), DV.jrow(~F, x, e, ST.iota(k, 1n+lo))} : M.Vec(~F)}
+      {==}
+
+# the checker's slope centers are the Jacobian at the box's centers
+def mcen_jac(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +box: List<&2, KB.KB<K>>, +cnt: Nat, +lo: Nat, eqs: List<&2, E.QExpr>, +hh: {CK.allheld(~K, eqs) == True{} : Bool}) -> {N.ofkm(~K, ~F, ~H, CK.mcenters(~K, CK.srows(~K, box, cnt, lo, eqs))) == DV.jac(~F, cen(~K, ~F, ~H, box), eqs, ST.iota(cnt, lo)) : M.Mat(~F)}:
+  match eqs:
+    case Nil{}:
+      {==}
+    case Con{+e, +es}:
+      +he = KA.band_l(KB.held(~K, e), CK.allheld(~K, es), hh)
+      %Equal.sym(M.Vec(~F), N.ofkv(~K, ~F, ~H, KB.bcenters(~K, KB.krange(~K, box, e, cnt, lo))), SL.srange(~F, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), e, cnt, lo), krange_c(~K, ~F, ~H, box, e, he, cnt, lo)) : {Con{_, N.ofkm(~K, ~F, ~H, CK.mcenters(~K, CK.srows(~K, box, cnt, lo, es)))} == Con{DV.jrow(~F, cen(~K, ~F, ~H, box), e, ST.iota(cnt, lo)), DV.jac(~F, cen(~K, ~F, ~H, box), es, ST.iota(cnt, lo))} : M.Mat(~F)}
+      %Equal.sym(M.Vec(~F), SL.srange(~F, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), e, cnt, lo), DV.jrow(~F, cen(~K, ~F, ~H, box), e, ST.iota(cnt, lo)), srange_jrow(~F, cen(~K, ~F, ~H, box), e, cnt, lo)) : {Con{_, N.ofkm(~K, ~F, ~H, CK.mcenters(~K, CK.srows(~K, box, cnt, lo, es)))} == Con{DV.jrow(~F, cen(~K, ~F, ~H, box), e, ST.iota(cnt, lo)), DV.jac(~F, cen(~K, ~F, ~H, box), es, ST.iota(cnt, lo))} : M.Mat(~F)}
+      %Equal.sym(M.Mat(~F), N.ofkm(~K, ~F, ~H, CK.mcenters(~K, CK.srows(~K, box, cnt, lo, es))), DV.jac(~F, cen(~K, ~F, ~H, box), es, ST.iota(cnt, lo)), mcen_jac(~K, ~F, ~H, box, cnt, lo, es, KA.band_r(KB.held(~K, e), CK.allheld(~K, es), hh))) : {Con{DV.jrow(~F, cen(~K, ~F, ~H, box), e, ST.iota(cnt, lo)), _} == Con{DV.jrow(~F, cen(~K, ~F, ~H, box), e, ST.iota(cnt, lo)), DV.jac(~F, cen(~K, ~F, ~H, box), es, ST.iota(cnt, lo))} : M.Mat(~F)}
+      {==}
+
+# Order helpers
+# -------------
+
+# a <= b and c <= d give a + c <= b + d
+def le_add2(~F: O.OField, +a: @T, +b: @T, +c: @T, +d: @T, h1: O.le(~F, a, b), h2: O.le(~F, c, d)) -> O.le(~F, @A(a, c), @A(b, d)):
+  FV.le_of_sub(~F, @A(a, c), @A(b, d), FM.nn_eq(~F, @S(@A(b, d), @A(a, c)), @A(@S(b, a), @S(d, c)), @ZEQ[a,, b,, c,, d | (b - a) + (d - c) | (b + d) - (a + c)], FO.nonneg_add(~F, @S(b, a), @S(d, c), FM.sub_nonneg(~F, a, b, h1), FM.sub_nonneg(~F, c, d, h2))))
+
+# 0 <= 0 rho
+def zl(~F: O.OField, +rho: @T) -> O.le(~F, @0, @M(@0, rho)):
+  FM.nn_eq(~F, @M(@0, rho), @0, Equal.sym(@T, @M(@0, rho), @0, FL.zero_mul(~F, rho)), FO.le_refl(~F, @0))
+
+# 0 <= 1 rho, for 0 <= rho
+def ol(~F: O.OField, +rho: @T, h: O.le(~F, @0, rho)) -> O.le(~F, @0, @M(@1, rho)):
+  FM.nn_eq(~F, @M(@1, rho), rho, @ZEQ[rho | rho | 1*rho], h)
+
+def kabs_le.go(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, c: Cmp, +a: N.NC(K), +s: @T, h: M.bnd(~F, @H(a), s)) -> O.le(~F, @H(KA.kabs.go(~K, c, a)), s):
+  match c:
+    case LT{}:
+      (h1, h2) = h
+      %KA.en(~K, ~F, ~H, a) : O.le(~F, _, s)
+      FV.le_of_sub(~F, @N(@H(a)), s, FM.nn_eq(~F, @S(s, @N(@H(a))), @A(s, @H(a)), @ZEQ[s,, x=@H(a) | s + x | s - (-x)], h2))
+    case EQ{}:
+      (h1, h2) = h
+      FV.le_of_sub(~F, @H(a), s, h1)
+    case GT{}:
+      (h1, h2) = h
+      FV.le_of_sub(~F, @H(a), s, h1)
+
+# |H a| <= s gives H |a| <= s
+def kabs_le(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.NC(K), +s: @T, h: M.bnd(~F, @H(a), s)) -> O.le(~F, @H(KA.kabs(~K, a)), s):
+  kabs_le.go(~K, ~F, ~H, N.ncmp(K, a, N.nzero(K)), a, s, h)
+
+# Grades
+# ------
+# With bb a bound on |c| + r over the box's balls: an expression's
+# magnitude mj and Lipschitz constant lp, and its slopes' ms and ls.
+
+def mj(~F: O.OField, +bb: @T, e: E.QExpr) -> @T:
+  match e:
+    case E.QVar{i}:
+      bb
+    case E.QCst{q}:
+      FV.fabs(~F, O.ofq(~F, q))
+    case E.QAdd{a, b}:
+      @A(mj(~F, bb, a), mj(~F, bb, b))
+    case E.QSub{a, b}:
+      @A(mj(~F, bb, a), mj(~F, bb, b))
+    case E.QMul{a, b}:
+      @M(mj(~F, bb, a), mj(~F, bb, b))
+    case E.QNeg{a}:
+      mj(~F, bb, a)
+
+def lp(~F: O.OField, +bb: @T, e: E.QExpr) -> @T:
+  match e:
+    case E.QVar{i}:
+      @1
+    case E.QCst{q}:
+      @0
+    case E.QAdd{a, b}:
+      @A(lp(~F, bb, a), lp(~F, bb, b))
+    case E.QSub{a, b}:
+      @A(lp(~F, bb, a), lp(~F, bb, b))
+    case E.QMul{+a, +b}:
+      @A(@M(mj(~F, bb, a), lp(~F, bb, b)), @M(mj(~F, bb, b), lp(~F, bb, a)))
+    case E.QNeg{a}:
+      lp(~F, bb, a)
+
+def ms(~F: O.OField, +bb: @T, e: E.QExpr) -> @T:
+  match e:
+    case E.QVar{i}:
+      @1
+    case E.QCst{q}:
+      @0
+    case E.QAdd{a, b}:
+      @A(ms(~F, bb, a), ms(~F, bb, b))
+    case E.QSub{a, b}:
+      @A(ms(~F, bb, a), ms(~F, bb, b))
+    case E.QMul{+a, +b}:
+      @A(@M(mj(~F, bb, a), ms(~F, bb, b)), @M(mj(~F, bb, b), ms(~F, bb, a)))
+    case E.QNeg{a}:
+      ms(~F, bb, a)
+
+def ls(~F: O.OField, +bb: @T, e: E.QExpr) -> @T:
+  match e:
+    case E.QVar{i}:
+      @0
+    case E.QCst{q}:
+      @0
+    case E.QAdd{a, b}:
+      @A(ls(~F, bb, a), ls(~F, bb, b))
+    case E.QSub{a, b}:
+      @A(ls(~F, bb, a), ls(~F, bb, b))
+    case E.QMul{+a, +b}:
+      @A(@A(@M(mj(~F, bb, a), ls(~F, bb, b)), @M(ms(~F, bb, b), lp(~F, bb, a))), @A(@M(mj(~F, bb, b), ls(~F, bb, a)), @M(ms(~F, bb, a), lp(~F, bb, b))))
+    case E.QNeg{a}:
+      ls(~F, bb, a)
+
+# a value cv with radius rv has grade (m, l) at rho: 0 <= rv,
+# |cv| <= m - rv and rv <= l rho
+def gf(~F: O.OField, +rho: @T, +cv: @T, +rv: @T, +m: @T, +l: @T) -> Data:
+  M.Both(O.le(~F, @0, rv), M.Both(M.bnd(~F, cv, @S(m, rv)), O.le(~F, rv, @M(l, rho))))
+
+def gf_0(~F: O.OField, +rho: @T, +cv: @T, +rv: @T, +m: @T, +l: @T, g: gf(~F, rho, cv, rv, m, l)) -> O.le(~F, @0, rv):
+  (h0, h) = g
+  h0
+
+def gf_cl(~F: O.OField, +rho: @T, +cv: @T, +rv: @T, +m: @T, +l: @T, g: gf(~F, rho, cv, rv, m, l)) -> M.Both(M.bnd(~F, cv, @S(m, rv)), O.le(~F, rv, @M(l, rho))):
+  (h0, h) = g
+  h
+
+def gf_c.go(~F: O.OField, +rho: @T, +cv: @T, +rv: @T, +m: @T, +l: @T, h: M.Both(M.bnd(~F, cv, @S(m, rv)), O.le(~F, rv, @M(l, rho)))) -> M.bnd(~F, cv, @S(m, rv)):
+  (hc, hl) = h
+  hc
+
+def gf_l.go(~F: O.OField, +rho: @T, +cv: @T, +rv: @T, +m: @T, +l: @T, h: M.Both(M.bnd(~F, cv, @S(m, rv)), O.le(~F, rv, @M(l, rho)))) -> O.le(~F, rv, @M(l, rho)):
+  (hc, hl) = h
+  hl
+
+def gf_c(~F: O.OField, +rho: @T, +cv: @T, +rv: @T, +m: @T, +l: @T, g: gf(~F, rho, cv, rv, m, l)) -> M.bnd(~F, cv, @S(m, rv)):
+  gf_c.go(~F, rho, cv, rv, m, l, gf_cl(~F, rho, cv, rv, m, l, g))
+
+def gf_l(~F: O.OField, +rho: @T, +cv: @T, +rv: @T, +m: @T, +l: @T, g: gf(~F, rho, cv, rv, m, l)) -> O.le(~F, rv, @M(l, rho)):
+  gf_l.go(~F, rho, cv, rv, m, l, gf_cl(~F, rho, cv, rv, m, l, g))
+
+# a point: radius 0
+def gf_pt(~F: O.OField, +rho: @T, +cv: @T, +m: @T, +l: @T, hm: M.bnd(~F, cv, m), hl: O.le(~F, @0, @M(l, rho))) -> gf(~F, rho, cv, @0, m, l):
+  (FO.le_refl(~F, @0), (FM.bnd_eq(~F, cv, m, @S(m, @0), @ZEQ[m | m | m - 0], hm), hl))
+
+def gf_add(~F: O.OField, +rho: @T, +c1: @T, +r1: @T, +c2: @T, +r2: @T, +m1: @T, +l1: @T, +m2: @T, +l2: @T, +g1: gf(~F, rho, c1, r1, m1, l1), +g2: gf(~F, rho, c2, r2, m2, l2)) -> gf(~F, rho, @A(c1, c2), @A(r1, r2), @A(m1, m2), @A(l1, l2)):
+  (FO.nonneg_add(~F, r1, r2, gf_0(~F, rho, c1, r1, m1, l1, g1), gf_0(~F, rho, c2, r2, m2, l2, g2)),
+   (FM.bnd_eq(~F, @A(c1, c2), @A(@S(m1, r1), @S(m2, r2)), @S(@A(m1, m2), @A(r1, r2)), @ZEQ[m1,, r1,, m2,, r2 | (m1 - r1) + (m2 - r2) | (m1 + m2) - (r1 + r2)], FM.bnd_add(~F, c1, @S(m1, r1), c2, @S(m2, r2), gf_c(~F, rho, c1, r1, m1, l1, g1), gf_c(~F, rho, c2, r2, m2, l2, g2))),
+    FV.le_rw_r(~F, @A(r1, r2), @A(@M(l1, rho), @M(l2, rho)), @M(@A(l1, l2), rho), @ZEQ[l1,, l2,, rho | l1*rho + l2*rho | (l1 + l2)*rho], le_add2(~F, r1, @M(l1, rho), r2, @M(l2, rho), gf_l(~F, rho, c1, r1, m1, l1, g1), gf_l(~F, rho, c2, r2, m2, l2, g2)))))
+
+def gf_neg(~F: O.OField, +rho: @T, +c: @T, +r: @T, +m: @T, +l: @T, +g: gf(~F, rho, c, r, m, l)) -> gf(~F, rho, @N(c), r, m, l):
+  (gf_0(~F, rho, c, r, m, l, g), (FM.bnd_neg(~F, c, @S(m, r), gf_c(~F, rho, c, r, m, l, g)), gf_l(~F, rho, c, r, m, l, g)))
+
+@ATOMS gm = m1,, m2,, l1,, l2,, rho,, r1,, r2,, k1,, k2
+
+# a product, with 0 <= k1 <= m1 - r1 and 0 <= k2 <= m2 - r2 (the factors'
+# sizes as K computes them)
+def gf_mul(~F: O.OField, +rho: @T, +c1: @T, +r1: @T, +c2: @T, +r2: @T, +m1: @T, +l1: @T, +m2: @T, +l2: @T, +k1: @T, +k2: @T, +g1: gf(~F, rho, c1, r1, m1, l1), +g2: gf(~F, rho, c2, r2, m2, l2), +hk1: O.le(~F, @0, k1), +hk1m: O.le(~F, k1, @S(m1, r1)), +hk2: O.le(~F, @0, k2), +hk2m: O.le(~F, k2, @S(m2, r2))) -> gf(~F, rho, @M(c1, c2), @A(@A(@M(k1, r2), @M(k2, r1)), @M(r1, r2)), @M(m1, m2), @A(@M(m1, l2), @M(m2, l1))):
+  +h01 = gf_0(~F, rho, c1, r1, m1, l1, g1)
+  +h02 = gf_0(~F, rho, c2, r2, m2, l2, g2)
+  +gc1 = gf_c(~F, rho, c1, r1, m1, l1, g1)
+  +gc2 = gf_c(~F, rho, c2, r2, m2, l2, g2)
+  +a1 = FM.bnd_nonneg(~F, c1, @S(m1, r1), gc1)
+  +a2 = FM.bnd_nonneg(~F, c2, @S(m2, r2), gc2)
+  +q1 = FM.sub_nonneg(~F, r1, @M(l1, rho), gf_l(~F, rho, c1, r1, m1, l1, g1))
+  +q2 = FM.sub_nonneg(~F, r2, @M(l2, rho), gf_l(~F, rho, c2, r2, m2, l2, g2))
+  +s1 = FM.sub_nonneg(~F, k1, @S(m1, r1), hk1m)
+  +s2 = FM.sub_nonneg(~F, k2, @S(m2, r2), hk2m)
+  +rr = @A(@A(@M(k1, r2), @M(k2, r1)), @M(r1, r2))
+  +t5 = @M(@S(@S(m1, r1), k1), r2)
+  +t6 = @M(@S(@S(m2, r2), k2), r1)
+  +n5 = FO.mul_nonneg(~F, @S(@S(m1, r1), k1), r2, s1, h02)
+  +n6 = FO.mul_nonneg(~F, @S(@S(m2, r2), k2), r1, s2, h01)
+  +t1 = @M(@S(m1, r1), @S(@M(l2, rho), r2))
+  +t2 = @M(r1, @S(@M(l2, rho), r2))
+  +t3 = @M(@S(m2, r2), @S(@M(l1, rho), r1))
+  +t4 = @M(r2, @S(@M(l1, rho), r1))
+  +t7 = @M(r1, r2)
+  +xx = @M(@A(@M(m1, l2), @M(m2, l1)), rho)
+  (FO.nonneg_add(~F, @A(@M(k1, r2), @M(k2, r1)), @M(r1, r2), FO.nonneg_add(~F, @M(k1, r2), @M(k2, r1), FO.mul_nonneg(~F, k1, r2, hk1, h02), FO.mul_nonneg(~F, k2, r1, hk2, h01)), FO.mul_nonneg(~F, r1, r2, h01, h02)),
+   (FM.bnd_mono(~F, @M(c1, c2), @M(@S(m1, r1), @S(m2, r2)), @S(@M(m1, m2), rr), FM.bnd_mul(~F, c1, @S(m1, r1), c2, @S(m2, r2), gc1, gc2),
+      FM.nn_eq(~F, @S(@S(@M(m1, m2), rr), @M(@S(m1, r1), @S(m2, r2))), @A(t5, t6), @ZEQ[gm | ((m1 - r1) - k1)*r2 + ((m2 - r2) - k2)*r1 | (m1*m2 - ((k1*r2 + k2*r1) + r1*r2)) - (m1 - r1)*(m2 - r2)], FO.nonneg_add(~F, t5, t6, n5, n6))),
+    FV.le_of_sub(~F, rr, xx, FM.nn_eq(~F, @S(xx, rr), @A(@A(@A(@A(@A(@A(t1, t2), t3), t4), t5), t6), t7),
+      @ZEQ[gm | (m1 - r1)*(l2*rho - r2) + r1*(l2*rho - r2) + (m2 - r2)*(l1*rho - r1) + r2*(l1*rho - r1) + ((m1 - r1) - k1)*r2 + ((m2 - r2) - k2)*r1 + r1*r2 | (m1*l2 + m2*l1)*rho - ((k1*r2 + k2*r1) + r1*r2)],
+      FO.nonneg_add(~F, @A(@A(@A(@A(@A(t1, t2), t3), t4), t5), t6), t7, FO.nonneg_add(~F, @A(@A(@A(@A(t1, t2), t3), t4), t5), t6, FO.nonneg_add(~F, @A(@A(@A(t1, t2), t3), t4), t5, FO.nonneg_add(~F, @A(@A(t1, t2), t3), t4, FO.nonneg_add(~F, @A(t1, t2), t3, FO.nonneg_add(~F, t1, t2, FO.mul_nonneg(~F, @S(m1, r1), @S(@M(l2, rho), r2), a1, q2), FO.mul_nonneg(~F, r1, @S(@M(l2, rho), r2), h01, q2)), FO.mul_nonneg(~F, @S(m2, r2), @S(@M(l1, rho), r1), a2, q1)), FO.mul_nonneg(~F, r2, @S(@M(l1, rho), r1), h02, q1)), n5), n6), FO.mul_nonneg(~F, r1, r2, h01, h02))))))
+
+# Grades of balls
+# ---------------
+
+def grade(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, +b: KB.KB<K>, +m: @T, +l: @T) -> Data:
+  gf(~F, rho, @H(KB.KB.c(K, b)), @H(KB.KB.r(K, b)), m, l)
+
+def grade_of(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, +c: N.NC(K), +r: N.NC(K), +cv: @T, +rv: @T, +m: @T, +l: @T, ec: {@H(c) == cv : @T}, er: {@H(r) == rv : @T}, g: gf(~F, rho, cv, rv, m, l)) -> grade(~K, ~F, ~H, rho, KB.KB{c, r}, m, l):
+  %Equal.sym(@T, @H(c), cv, ec) : gf(~F, rho, _, @H(r), m, l)
+  %Equal.sym(@T, @H(r), rv, er) : gf(~F, rho, cv, _, m, l)
+  g
+
+def g_add(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, x: KB.KB<K>, y: KB.KB<K>, +m1: @T, +l1: @T, +m2: @T, +l2: @T, gx: grade(~K, ~F, ~H, rho, x, m1, l1), gy: grade(~K, ~F, ~H, rho, y, m2, l2)) -> grade(~K, ~F, ~H, rho, KB.badd(~K, x, y), @A(m1, m2), @A(l1, l2)):
+  match x y:
+    case KB.KB{+c1, +r1} KB.KB{+c2, +r2}:
+      grade_of(~K, ~F, ~H, rho, N.nadd(K, c1, c2), N.nadd(K, r1, r2), @A(@H(c1), @H(c2)), @A(@H(r1), @H(r2)), @A(m1, m2), @A(l1, l2), Equal.sym(@T, @A(@H(c1), @H(c2)), @H(N.nadd(K, c1, c2)), KA.ea(~K, ~F, ~H, c1, c2)), Equal.sym(@T, @A(@H(r1), @H(r2)), @H(N.nadd(K, r1, r2)), KA.ea(~K, ~F, ~H, r1, r2)), gf_add(~F, rho, @H(c1), @H(r1), @H(c2), @H(r2), m1, l1, m2, l2, gx, gy))
+
+def g_neg(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, x: KB.KB<K>, +m: @T, +l: @T, gx: grade(~K, ~F, ~H, rho, x, m, l)) -> grade(~K, ~F, ~H, rho, KB.bneg(~K, x), m, l):
+  match x:
+    case KB.KB{+c, +r}:
+      grade_of(~K, ~F, ~H, rho, N.nneg(K, c), r, @N(@H(c)), @H(r), m, l, Equal.sym(@T, @N(@H(c)), @H(N.nneg(K, c)), KA.en(~K, ~F, ~H, c)), {==}, gf_neg(~F, rho, @H(c), @H(r), m, l, gx))
+
+def bmul_r(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +c1: N.NC(K), +r1: N.NC(K), +c2: N.NC(K), +r2: N.NC(K)) -> {@H(N.nadd(K, N.nadd(K, N.nmul(K, KA.kabs(~K, c1), r2), N.nmul(K, KA.kabs(~K, c2), r1)), N.nmul(K, r1, r2))) == @A(@A(@M(@H(KA.kabs(~K, c1)), @H(r2)), @M(@H(KA.kabs(~K, c2)), @H(r1))), @M(@H(r1), @H(r2))) : @T}:
+  %KA.ea(~K, ~F, ~H, N.nadd(K, N.nmul(K, KA.kabs(~K, c1), r2), N.nmul(K, KA.kabs(~K, c2), r1)), N.nmul(K, r1, r2)) : {_ == @A(@A(@M(@H(KA.kabs(~K, c1)), @H(r2)), @M(@H(KA.kabs(~K, c2)), @H(r1))), @M(@H(r1), @H(r2))) : @T}
+  %KA.ea(~K, ~F, ~H, N.nmul(K, KA.kabs(~K, c1), r2), N.nmul(K, KA.kabs(~K, c2), r1)) : {@A(_, @H(N.nmul(K, r1, r2))) == @A(@A(@M(@H(KA.kabs(~K, c1)), @H(r2)), @M(@H(KA.kabs(~K, c2)), @H(r1))), @M(@H(r1), @H(r2))) : @T}
+  %KA.em(~K, ~F, ~H, KA.kabs(~K, c1), r2) : {@A(@A(_, @H(N.nmul(K, KA.kabs(~K, c2), r1))), @H(N.nmul(K, r1, r2))) == @A(@A(@M(@H(KA.kabs(~K, c1)), @H(r2)), @M(@H(KA.kabs(~K, c2)), @H(r1))), @M(@H(r1), @H(r2))) : @T}
+  %KA.em(~K, ~F, ~H, KA.kabs(~K, c2), r1) : {@A(@A(@M(@H(KA.kabs(~K, c1)), @H(r2)), _), @H(N.nmul(K, r1, r2))) == @A(@A(@M(@H(KA.kabs(~K, c1)), @H(r2)), @M(@H(KA.kabs(~K, c2)), @H(r1))), @M(@H(r1), @H(r2))) : @T}
+  %KA.em(~K, ~F, ~H, r1, r2) : {@A(@A(@M(@H(KA.kabs(~K, c1)), @H(r2)), @M(@H(KA.kabs(~K, c2)), @H(r1))), _) == @A(@A(@M(@H(KA.kabs(~K, c1)), @H(r2)), @M(@H(KA.kabs(~K, c2)), @H(r1))), @M(@H(r1), @H(r2))) : @T}
+  {==}
+
+def g_mul(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, x: KB.KB<K>, y: KB.KB<K>, +m1: @T, +l1: @T, +m2: @T, +l2: @T, +gx: grade(~K, ~F, ~H, rho, x, m1, l1), +gy: grade(~K, ~F, ~H, rho, y, m2, l2)) -> grade(~K, ~F, ~H, rho, KB.bmul(~K, x, y), @M(m1, m2), @A(@M(m1, l2), @M(m2, l1))):
+  match x y:
+    case KB.KB{+c1, +r1} KB.KB{+c2, +r2}:
+      grade_of(~K, ~F, ~H, rho, N.nmul(K, c1, c2), N.nadd(K, N.nadd(K, N.nmul(K, KA.kabs(~K, c1), r2), N.nmul(K, KA.kabs(~K, c2), r1)), N.nmul(K, r1, r2)), @M(@H(c1), @H(c2)), @A(@A(@M(@H(KA.kabs(~K, c1)), @H(r2)), @M(@H(KA.kabs(~K, c2)), @H(r1))), @M(@H(r1), @H(r2))), @M(m1, m2), @A(@M(m1, l2), @M(m2, l1)), Equal.sym(@T, @M(@H(c1), @H(c2)), @H(N.nmul(K, c1, c2)), KA.em(~K, ~F, ~H, c1, c2)), bmul_r(~K, ~F, ~H, c1, r1, c2, r2),
+        gf_mul(~F, rho, @H(c1), @H(r1), @H(c2), @H(r2), m1, l1, m2, l2, @H(KA.kabs(~K, c1)), @H(KA.kabs(~K, c2)), gx, gy, KA.kabs_nonneg(~K, ~F, ~H, c1), kabs_le(~K, ~F, ~H, c1, @S(m1, @H(r1)), gf_c(~F, rho, @H(c1), @H(r1), m1, l1, gx)), KA.kabs_nonneg(~K, ~F, ~H, c2), kabs_le(~K, ~F, ~H, c2, @S(m2, @H(r2)), gf_c(~F, rho, @H(c2), @H(r2), m2, l2, gy))))
+
+def bzero_grade(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, +m: @T, +l: @T, +hm: O.le(~F, @0, m), hl: O.le(~F, @0, @M(l, rho))) -> grade(~K, ~F, ~H, rho, KB.bzero(~K), m, l):
+  grade_of(~K, ~F, ~H, rho, N.nzero(K), N.nzero(K), @0, @0, m, l, N.e_zero(K, F, H), N.e_zero(K, F, H), gf_pt(~F, rho, @0, m, l, FM.bnd_zero(~F, m, hm), hl))
+
+def kind_grade(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, b: Bool) -> grade(~K, ~F, ~H, rho, KB.kind(~K, b), @1, @0):
+  match b:
+    case True{}:
+      grade_of(~K, ~F, ~H, rho, N.none(K), N.nzero(K), @1, @0, @1, @0, N.e_one(K, F, H), N.e_zero(K, F, H), gf_pt(~F, rho, @1, @1, @0, FV.bnd_self(~F, @1, Inl{O.zero_lt_one(F)}), zl(~F, rho)))
+    case False{}:
+      bzero_grade(~K, ~F, ~H, rho, @1, @0, Inl{O.zero_lt_one(F)}, zl(~F, rho))
+
+# every ball of the box has grade (bb, 1)
+def gbox(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, +bb: @T, box: List<&2, KB.KB<K>>) -> Data:
+  match box:
+    case Nil{}:
+      Unit
+    case Con{b, bs}:
+      M.Both(grade(~K, ~F, ~H, rho, b, bb, @1), gbox(~K, ~F, ~H, rho, bb, bs))
+
+def blook_grade(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, +bb: @T, +hr: O.le(~F, @0, rho), +hb: O.le(~F, @0, bb), box: List<&2, KB.KB<K>>, i: Nat, hg: gbox(~K, ~F, ~H, rho, bb, box)) -> grade(~K, ~F, ~H, rho, KB.blook(~K, box, i), bb, @1):
+  match box i:
+    case Nil{} 0n:
+      bzero_grade(~K, ~F, ~H, rho, bb, @1, hb, ol(~F, rho, hr))
+    case Nil{} 1n+j:
+      bzero_grade(~K, ~F, ~H, rho, bb, @1, hb, ol(~F, rho, hr))
+    case Con{b, bs} 0n:
+      (g, gs) = hg
+      g
+    case Con{b, bs} 1n+j:
+      (g, gs) = hg
+      blook_grade(~K, ~F, ~H, rho, bb, hr, hb, bs, j, gs)
+
+# ball tightness: e's ball has grade (mj, lp)
+def kball_grade(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, +bb: @T, +hr: O.le(~F, @0, rho), +hb: O.le(~F, @0, bb), +box: List<&2, KB.KB<K>>, +hg: gbox(~K, ~F, ~H, rho, bb, box), e: E.QExpr, +hh: {KB.held(~K, e) == True{} : Bool}) -> grade(~K, ~F, ~H, rho, KB.kball(~K, box, e), mj(~F, bb, e), lp(~F, bb, e)):
+  match e:
+    case E.QVar{i}:
+      blook_grade(~K, ~F, ~H, rho, bb, hr, hb, box, i, hg)
+    case E.QCst{+q}:
+      grade_of(~K, ~F, ~H, rho, KB.kcst(~K, q), N.nzero(K), O.ofq(~F, q), @0, FV.fabs(~F, O.ofq(~F, q)), @0, KB.kcst_ok(~K, ~F, ~H, q, hh), N.e_zero(K, F, H), gf_pt(~F, rho, O.ofq(~F, q), FV.fabs(~F, O.ofq(~F, q)), @0, FV.fabs_bnd(~F, O.ofq(~F, q)), zl(~F, rho)))
+    case E.QAdd{+a, +b}:
+      g_add(~K, ~F, ~H, rho, KB.kball(~K, box, a), KB.kball(~K, box, b), mj(~F, bb, a), lp(~F, bb, a), mj(~F, bb, b), lp(~F, bb, b), kball_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, a, KA.band_l(KB.held(~K, a), KB.held(~K, b), hh)), kball_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, b, KA.band_r(KB.held(~K, a), KB.held(~K, b), hh)))
+    case E.QSub{+a, +b}:
+      g_add(~K, ~F, ~H, rho, KB.kball(~K, box, a), KB.bneg(~K, KB.kball(~K, box, b)), mj(~F, bb, a), lp(~F, bb, a), mj(~F, bb, b), lp(~F, bb, b), kball_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, a, KA.band_l(KB.held(~K, a), KB.held(~K, b), hh)), g_neg(~K, ~F, ~H, rho, KB.kball(~K, box, b), mj(~F, bb, b), lp(~F, bb, b), kball_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, b, KA.band_r(KB.held(~K, a), KB.held(~K, b), hh))))
+    case E.QMul{+a, +b}:
+      g_mul(~K, ~F, ~H, rho, KB.kball(~K, box, a), KB.kball(~K, box, b), mj(~F, bb, a), lp(~F, bb, a), mj(~F, bb, b), lp(~F, bb, b), kball_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, a, KA.band_l(KB.held(~K, a), KB.held(~K, b), hh)), kball_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, b, KA.band_r(KB.held(~K, a), KB.held(~K, b), hh)))
+    case E.QNeg{+a}:
+      g_neg(~K, ~F, ~H, rho, KB.kball(~K, box, a), mj(~F, bb, a), lp(~F, bb, a), kball_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, a, hh))
+
+# ball tightness: e's slope ball in variable i has grade (ms, ls)
+def ksl_grade(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, +bb: @T, +hr: O.le(~F, @0, rho), +hb: O.le(~F, @0, bb), +box: List<&2, KB.KB<K>>, +hg: gbox(~K, ~F, ~H, rho, bb, box), +i: Nat, e: E.QExpr, +hh: {KB.held(~K, e) == True{} : Bool}) -> grade(~K, ~F, ~H, rho, KB.ksl(~K, i, box, e), ms(~F, bb, e), ls(~F, bb, e)):
+  match e:
+    case E.QVar{j}:
+      kind_grade(~K, ~F, ~H, rho, KA.nateq(i, j))
+    case E.QCst{q}:
+      bzero_grade(~K, ~F, ~H, rho, @0, @0, FO.le_refl(~F, @0), zl(~F, rho))
+    case E.QAdd{+a, +b}:
+      g_add(~K, ~F, ~H, rho, KB.ksl(~K, i, box, a), KB.ksl(~K, i, box, b), ms(~F, bb, a), ls(~F, bb, a), ms(~F, bb, b), ls(~F, bb, b), ksl_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, i, a, KA.band_l(KB.held(~K, a), KB.held(~K, b), hh)), ksl_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, i, b, KA.band_r(KB.held(~K, a), KB.held(~K, b), hh)))
+    case E.QSub{+a, +b}:
+      g_add(~K, ~F, ~H, rho, KB.ksl(~K, i, box, a), KB.bneg(~K, KB.ksl(~K, i, box, b)), ms(~F, bb, a), ls(~F, bb, a), ms(~F, bb, b), ls(~F, bb, b), ksl_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, i, a, KA.band_l(KB.held(~K, a), KB.held(~K, b), hh)), g_neg(~K, ~F, ~H, rho, KB.ksl(~K, i, box, b), ms(~F, bb, b), ls(~F, bb, b), ksl_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, i, b, KA.band_r(KB.held(~K, a), KB.held(~K, b), hh))))
+    case E.QMul{+a, +b}:
+      +ha = KA.band_l(KB.held(~K, a), KB.held(~K, b), hh)
+      +hb2 = KA.band_r(KB.held(~K, a), KB.held(~K, b), hh)
+      g_add(~K, ~F, ~H, rho, KB.bmul(~K, KB.kball(~K, box, a), KB.ksl(~K, i, box, b)), KB.bmul(~K, KB.kball(~K, box, b), KB.ksl(~K, i, box, a)), @M(mj(~F, bb, a), ms(~F, bb, b)), @A(@M(mj(~F, bb, a), ls(~F, bb, b)), @M(ms(~F, bb, b), lp(~F, bb, a))), @M(mj(~F, bb, b), ms(~F, bb, a)), @A(@M(mj(~F, bb, b), ls(~F, bb, a)), @M(ms(~F, bb, a), lp(~F, bb, b))),
+        g_mul(~K, ~F, ~H, rho, KB.kball(~K, box, a), KB.ksl(~K, i, box, b), mj(~F, bb, a), lp(~F, bb, a), ms(~F, bb, b), ls(~F, bb, b), kball_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, a, ha), ksl_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, i, b, hb2)),
+        g_mul(~K, ~F, ~H, rho, KB.kball(~K, box, b), KB.ksl(~K, i, box, a), mj(~F, bb, b), lp(~F, bb, b), ms(~F, bb, a), ls(~F, bb, a), kball_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, b, hb2), ksl_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, i, a, ha)))
+    case E.QNeg{+a}:
+      g_neg(~K, ~F, ~H, rho, KB.ksl(~K, i, box, a), ms(~F, bb, a), ls(~F, bb, a), ksl_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, i, a, hh))
+
+# Lipschitz bounds
+# ----------------
+
+def bin_cr(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +x: @T, b: KB.KB<K>, h: KB.bin(~K, ~F, ~H, x, b)) -> M.bnd(~F, @S(x, @H(KB.KB.c(K, b))), @H(KB.KB.r(K, b))):
+  match b:
+    case KB.KB{c, r}:
+      h
+
+# |x - c| <= r and |c| <= m - r give |x| <= m
+def bnd_join(~F: O.OField, +x: @T, +c: @T, +r: @T, +m: @T, h1: M.bnd(~F, @S(x, c), r), h2: M.bnd(~F, c, @S(m, r))) -> M.bnd(~F, x, m):
+  KB.bnd_val(~F, @A(@S(x, c), c), x, m, @ZEQ[x,, c | (x - c) + c | x], FM.bnd_eq(~F, @A(@S(x, c), c), @A(r, @S(m, r)), m, @ZEQ[r,, m | r + (m - r) | m], FM.bnd_add(~F, @S(x, c), r, c, @S(m, r), h1, h2)))
+
+# in a ball of grade (m, l): within l rho of its center
+def bin_lip(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, +x: @T, +b: KB.KB<K>, +m: @T, +l: @T, h: KB.bin(~K, ~F, ~H, x, b), g: grade(~K, ~F, ~H, rho, b, m, l)) -> M.bnd(~F, @S(x, @H(KB.KB.c(K, b))), @M(l, rho)):
+  FM.bnd_mono(~F, @S(x, @H(KB.KB.c(K, b))), @H(KB.KB.r(K, b)), @M(l, rho), bin_cr(~K, ~F, ~H, x, b, h), FM.sub_nonneg(~F, @H(KB.KB.r(K, b)), @M(l, rho), gf_l(~F, rho, @H(KB.KB.c(K, b)), @H(KB.KB.r(K, b)), m, l, g)))
+
+# in a ball of grade (m, l): at most m
+def bin_maj(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, +x: @T, +b: KB.KB<K>, +m: @T, +l: @T, h: KB.bin(~K, ~F, ~H, x, b), g: grade(~K, ~F, ~H, rho, b, m, l)) -> M.bnd(~F, x, m):
+  bnd_join(~F, x, @H(KB.KB.c(K, b)), @H(KB.KB.r(K, b)), m, bin_cr(~K, ~F, ~H, x, b, h), gf_c(~F, rho, @H(KB.KB.c(K, b)), @H(KB.KB.r(K, b)), m, l, g))
+
+# at a point of a box of grade (bb, rho), e is within lp rho of its value
+# at the centers
+def eval_lip(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, +bb: @T, +hr: O.le(~F, @0, rho), +hb: O.le(~F, @0, bb), +box: List<&2, KB.KB<K>>, +hg: gbox(~K, ~F, ~H, rho, bb, box), +x: M.Vec(~F), +hx: KB.inbox(~K, ~F, ~H, x, box), +e: E.QExpr, +hh: {KB.held(~K, e) == True{} : Bool}) -> M.bnd(~F, @S(O.eval(~F, x, e), O.eval(~F, cen(~K, ~F, ~H, box), e)), @M(lp(~F, bb, e), rho)):
+  %kball_c(~K, ~F, ~H, box, e, hh) : M.bnd(~F, @S(O.eval(~F, x, e), _), @M(lp(~F, bb, e), rho))
+  bin_lip(~K, ~F, ~H, rho, O.eval(~F, x, e), KB.kball(~K, box, e), mj(~F, bb, e), lp(~F, bb, e), KB.ball_ok(~K, ~F, ~H, x, box, e, hh, hx), kball_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, e, hh))
+
+# and is at most mj
+def eval_maj(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, +bb: @T, +hr: O.le(~F, @0, rho), +hb: O.le(~F, @0, bb), +box: List<&2, KB.KB<K>>, +hg: gbox(~K, ~F, ~H, rho, bb, box), +x: M.Vec(~F), +hx: KB.inbox(~K, ~F, ~H, x, box), +e: E.QExpr, +hh: {KB.held(~K, e) == True{} : Bool}) -> M.bnd(~F, O.eval(~F, x, e), mj(~F, bb, e)):
+  bin_maj(~K, ~F, ~H, rho, O.eval(~F, x, e), KB.kball(~K, box, e), mj(~F, bb, e), lp(~F, bb, e), KB.ball_ok(~K, ~F, ~H, x, box, e, hh, hx), kball_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, e, hh))
+
+# between two points of the box, e's slope in variable i is within ls rho
+# of its slope at the centers (the derivative there, sl_deriv)
+def sl_lip(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, +bb: @T, +hr: O.le(~F, @0, rho), +hb: O.le(~F, @0, bb), +box: List<&2, KB.KB<K>>, +hg: gbox(~K, ~F, ~H, rho, bb, box), +i: Nat, +x1: M.Vec(~F), +x2: M.Vec(~F), +h1: KB.inbox(~K, ~F, ~H, x1, box), +h2: KB.inbox(~K, ~F, ~H, x2, box), +e: E.QExpr, +hh: {KB.held(~K, e) == True{} : Bool}) -> M.bnd(~F, @S(SL.sl(~F, i, x1, x2, e), SL.sl(~F, i, cen(~K, ~F, ~H, box), cen(~K, ~F, ~H, box), e)), @M(ls(~F, bb, e), rho)):
+  %ksl_c(~K, ~F, ~H, i, box, e, hh) : M.bnd(~F, @S(SL.sl(~F, i, x1, x2, e), _), @M(ls(~F, bb, e), rho))
+  bin_lip(~K, ~F, ~H, rho, SL.sl(~F, i, x1, x2, e), KB.ksl(~K, i, box, e), ms(~F, bb, e), ls(~F, bb, e), KB.sl_ok(~K, ~F, ~H, i, x1, x2, box, e, hh, h1, h2), ksl_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, i, e, hh))
+
+# and is at most ms
+def sl_maj(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: @T, +bb: @T, +hr: O.le(~F, @0, rho), +hb: O.le(~F, @0, bb), +box: List<&2, KB.KB<K>>, +hg: gbox(~K, ~F, ~H, rho, bb, box), +i: Nat, +x1: M.Vec(~F), +x2: M.Vec(~F), +h1: KB.inbox(~K, ~F, ~H, x1, box), +h2: KB.inbox(~K, ~F, ~H, x2, box), +e: E.QExpr, +hh: {KB.held(~K, e) == True{} : Bool}) -> M.bnd(~F, SL.sl(~F, i, x1, x2, e), ms(~F, bb, e)):
+  bin_maj(~K, ~F, ~H, rho, SL.sl(~F, i, x1, x2, e), KB.ksl(~K, i, box, e), ms(~F, bb, e), ls(~F, bb, e), KB.sl_ok(~K, ~F, ~H, i, x1, x2, box, e, hh, h1, h2), ksl_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, i, e, hh))
