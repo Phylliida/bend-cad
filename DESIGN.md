@@ -963,6 +963,92 @@ optional nearest-ness certificate of §8.10:
 - **Projected continuation** for large edits; flips detected by anchor signs.
 - **Reference (not a dependency):** neoscad/sketch-solver.
 
+### 10.4 Proving `solve_complete` (plan, 2026-10-14)
+
+**Shape.** Choose the level l first, so that its first precision P is
+large, then d ≤ 2^-P. At P the plan succeeds and the whole verdict passes,
+so the loop stops at its first precision and the answer is P's. x is then in
+the box by local uniqueness: `lib/solvepf.bend`'s `exists_of` gives a
+solution x' in the box, the box agrees with x at the pins and lies within
+O(2^-P) of it elsewhere, and a solution that close to a regular one with the
+same pins is that one (with Z the Jacobian's inverse,
+0 = f(x') − f(x) = S (x' − x) gives |x' − x| ≤ |Z| |S − J| |x' − x|, at most
+half of |x' − x|). `Complete` is used twice: `exists_of` (Banach) and
+`arch` (to choose P).
+
+**Ingredients.**
+1. *Structure (the sketch alone).* vp lists the pins and then each block's
+   unknowns, a permutation of the variables; ep lists the kept equations
+   block by block, a permutation; a block's equations use only pins,
+   earlier unknowns and its own (blocks are checked as they are emitted,
+   and what is left becomes one block); a block's pars are exactly the
+   earlier variables it uses. So every non-numeric part of `PL.check`
+   holds by construction, as do `held`, `within` and the shape checks;
+   `explained` and `wf_dec` are solve_total's.
+2. *Linear algebra in F.* Gauss–Jordan over F, deciding pivots with
+   `lt_total`, proves the finite-dimensional dichotomy: a square matrix is
+   either invertible on both sides or has a nonzero kernel vector. From it:
+   the Jacobian in block order is invertible (Regular permuted; injectivity
+   does not see the order); a block lower triangular invertible matrix has
+   invertible diagonal blocks (the last one is injective directly; for the
+   first, a kernel vector extends to one of the whole by solving the rest);
+   a matrix near an invertible one is invertible, with at most twice its
+   inverse's norm.
+3. *One block at P.* Let x_b be the block's unknowns at x, which solve its
+   equations at x's parameters x_z, and let Z_b be its Jacobian's inverse
+   there. The parameters' centers pc are earlier centers, within τ of x_z.
+   Write θ = 2^-P/2.
+   - Newton: every inverse A it uses has |I − A J| ≤ θ (solver change 1).
+     From the drawing (within 2^-P), one step lands within
+     O(τ) + 2^-P-1 + O(θ 2^-P) of x_b. The next step moves at most
+     2^-P + O(θ (τ + 2^-P)), so Newton has settled by its second step,
+     never singular and never far.
+   - Y is J at the center, inverted the same way and rounded to P/2 bits:
+     |I − Y J| = O(θ).
+   - Radius: the checker's Jacobian centers are exactly J at the box's
+     center (a ball product multiplies the centers), and its radii are
+     O(r + ρ). So any small r ≥ 2 s0 (s0: the self-map bound at radius 0)
+     passes contraction, self-map and injectivity. The twelfth radius
+     tried, ≥ r0 (17/16)^12 > 2 s0, is one, so the search returns a radius
+     no larger, and the block's center error and radius are both
+     O(τ + 2^-P).
+   - Blocks in turn: τ for a block is the largest earlier center error, so
+     after the last block everything is within C 2^-P for a C fixed by x
+     and the sketch, and `arch` gives a P that makes every "small" true.
+4. *Side conditions.* Each holds strictly at x (Strict). A side
+   condition's ball is its value at the box's center, give or take
+   O(radius), so it passes once the box is small; a variable-free ≥ 0 is
+   computed exactly.
+
+**Solver changes, so the proof needs less (answers unchanged in normal runs).**
+- *Checked inverse.* After the dyadic Gauss–Jordan (Newton's steps and Y),
+  compute I − A J exactly and require its largest row sum ≤ 2^-P/2.
+  Otherwise, or when elimination meets a zero column, invert exactly over ℚ
+  (`qinverse`) and round to P + 32 bits. Rounded elimination with partial
+  pivoting then never needs an error analysis: the fast path's quality is
+  checked, and the exact path is proven by simulating (2)'s Gauss–Jordan.
+  Cost: one exact product per inversion, to be measured.
+- *Checked components.* If Tarjan's components do not partition the kept
+  equations, use one block. Tarjan then needs no proof, since validity is
+  already checked as blocks are emitted.
+
+**Milestones** (each one a checked file with the gate green):
+
+| | file | contents |
+|---|---|---|
+| C0 | lib/numer.bend, lib/struct.bend | the two solver changes; regression and chains unchanged; timing |
+| C1 | lib/gjpf.bend | finite sums, matrices as functions, Gauss–Jordan over F (the dichotomy), permutation, block triangular, perturbation |
+| C2 | lib/structpf.bend | the variable side saturates the kept equations; blocks partition them; vp/ep permutations; kept vs good; PL.check's structural parts |
+| C3 | lib/bndpf.bend | majorants and Lipschitz bounds for expressions and slopes; slope at equal points = deriv; renaming commutes with deriv; ball tightness; rounding (dround, dsig, dsigup, qsig) |
+| C4 | lib/qgjpf.bend | the exact fallback is the image of F's Gauss–Jordan, so a left inverse |
+| C5 | lib/blockpf.bend | one block at P (3) |
+| C6 | lib/completepf.bend | the blocks in turn, the verdict, local uniqueness, choosing l and d: `solve_complete` |
+
+**Risks.** Size: several thousand lines over several sessions. Checker time
+on long inequality proofs: keep the files small. Rounding lemmas on binary
+positives. Lists read with trailing zeros in the matrix plumbing (C1 works
+with matrices as functions and converts only at the edges).
+
 ---
 
 ## 11. Acceptance: the core theorem

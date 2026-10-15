@@ -384,8 +384,13 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
   matching or matched into D, so |F| <= its free ones = nv - kept, and
   the variable side matches at most the kept equations, so |F| >= that.
   pins_of is simply the structure's pins.
-- Next: Danielle's review of all six; then solve_complete (Kantorovich
-  with rounding); pin witnesses; ink-metric KKT (§10.3); speed.
+- Next: Danielle's review of all six; solve_complete, planned in DESIGN
+  §10.4 (2026-10-14: choose the level first and d ≤ 2^-P, so Newton
+  settles in two steps; Gauss–Jordan over F for the finite-dimensional
+  facts; x in the box by exists_of plus local uniqueness; two solver
+  changes, a checked inverse with an exact fallback and checked
+  components; milestones C0-C6); pin witnesses; ink-metric KKT (§10.3);
+  speed.
 - Bend proof lessons (solve_total): `%E : P` with E : {L == R} turns R
   into L in the goal, so to replace X by Y use E : {Y == X} (I got this
   backwards about half the time; read the error's expected/observed and
