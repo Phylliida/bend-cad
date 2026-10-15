@@ -144,3 +144,43 @@ def axpy_ent(~F: O.OField, +w: Nat, +x: S.D, +c: S.D, +y: S.D, +xx: @T, +cc: @T,
     FM.bnd_eq(~F, @FT[ax | (r - (x + (-t))) + -(t - c*y)], @FT[ax | (xx + (cc*yy + cc*yy))*u + (cc*yy)*u], @FT[ax | (xx + ((cc*yy + cc*yy) + cc*yy))*u], @ZEQ[ax | (xx + (cc*yy + cc*yy))*u + (cc*yy)*u | (xx + ((cc*yy + cc*yy) + cc*yy))*u],
       FM.bnd_add(~F, @FT[ax | r - (x + (-t))], @FT[ax | (xx + (cc*yy + cc*yy))*u], @FT[ax | -(t - c*y)], @FT[ax | (cc*yy)*u], (%Equal.sym(@T, @N(M.ofd(~F, NU.dsmul(w, c, y))), M.ofd(~F, S.D.neg(NU.dsmul(w, c, y))), DM.ofd_neg(~F, NU.dsmul(w, c, y))) : M.bnd(~F, @S(M.ofd(~F, NU.dsadd(w, x, S.D.neg(NU.dsmul(w, c, y)))), @A(M.ofd(~F, x), _)), @FT[ax | (xx + (cc*yy + cc*yy))*u])
         hs), FM.bnd_neg(~F, @FT[ax | t - c*y], @FT[ax | (cc*yy)*u], ht))))
+
+# Rounded rows
+# ------------
+
+def natz(m: Nat) -> Type:
+  match m:
+    case 0n:
+      Unit
+    case 1n+j:
+      Empty
+
+def zs_ne(+k: Nat, e: {0n == 1n+k : Nat}) -> Empty:
+  %e : natz(_)
+  Unit{}
+
+def sz_ne(+k: Nat, e: {1n+k == 0n : Nat}) -> Empty:
+  zs_ne(k, Equal.sym(Nat, 1n+k, 0n, e))
+
+# the scaled row s xs, rounded: within S X 2^-w of the exact one
+def dscale_err(~F: O.OField, +w: Nat, +s: S.D, xs: List<&2, S.D>, +ss: @T, +xx: @T, +hs: M.bnd(~F, M.ofd(~F, s), ss), hx: M.vbnd.all(~F, M.ofdv(~F, xs), xx)) -> M.vbnd.all(~F, M.vadd(~F, M.ofdv(~F, NU.dscale(w, s, xs)), M.vneg(~F, M.vscale(~F, M.ofd(~F, s), M.ofdv(~F, xs)))), @M(@M(ss, xx), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))):
+  match xs:
+    case Nil{}:
+      Unit{}
+    case Con{+x, +t}:
+      (h1, h2) = hx
+      (smul_err(~F, w, s, x, ss, xx, hs, h1), dscale_err(~F, w, s, t, ss, xx, hs, h2))
+
+# the row xs - c ys, rounded: within (X + 3 C Y) 2^-w of the exact one,
+# for rows of one length
+def daxpy_err(~F: O.OField, +w: Nat, xs: List<&2, S.D>, +c: S.D, ys: List<&2, S.D>, +xx: @T, +cc: @T, +yy: @T, +hx: M.vbnd.all(~F, M.ofdv(~F, xs), xx), +hc: M.bnd(~F, M.ofd(~F, c), cc), +hy: M.vbnd.all(~F, M.ofdv(~F, ys), yy), hl: {M.len(~F, M.ofdv(~F, xs)) == M.len(~F, M.ofdv(~F, ys)) : Nat}, +hu: O.le(~F, M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}), @1)) -> M.vbnd.all(~F, M.vadd(~F, M.ofdv(~F, NU.daxpy(w, xs, c, ys)), M.vneg(~F, M.vadd(~F, M.ofdv(~F, xs), M.vscale(~F, @N(M.ofd(~F, c)), M.ofdv(~F, ys))))), @M(@A(xx, @A(@A(@M(cc, yy), @M(cc, yy)), @M(cc, yy))), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))):
+  match xs ys:
+    case Nil{} Nil{}:
+      Unit{}
+    case Nil{} Con{+y, +yt}:
+      FO.absurd(M.vbnd.all(~F, M.vadd(~F, M.ofdv(~F, NU.daxpy(w, Nil{}, c, Con{y, yt})), M.vneg(~F, M.vadd(~F, M.ofdv(~F, Nil{}), M.vscale(~F, @N(M.ofd(~F, c)), M.ofdv(~F, Con{y, yt}))))), @M(@A(xx, @A(@A(@M(cc, yy), @M(cc, yy)), @M(cc, yy))), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))), zs_ne(M.len(~F, M.ofdv(~F, yt)), hl))
+    case Con{+x, +xt} Nil{}:
+      FO.absurd(M.vbnd.all(~F, M.vadd(~F, M.ofdv(~F, NU.daxpy(w, Con{x, xt}, c, Nil{})), M.vneg(~F, M.vadd(~F, M.ofdv(~F, Con{x, xt}), M.vscale(~F, @N(M.ofd(~F, c)), Nil{})))), @M(@A(xx, @A(@A(@M(cc, yy), @M(cc, yy)), @M(cc, yy))), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))), sz_ne(M.len(~F, M.ofdv(~F, xt)), hl))
+    case Con{+x, +xt} Con{+y, +yt}:
+      (axpy_ent(~F, w, x, c, y, xx, cc, yy, NP.vh(~F, M.ofd(~F, x), M.ofdv(~F, xt), xx, hx), hc, NP.vh(~F, M.ofd(~F, y), M.ofdv(~F, yt), yy, hy), hu),
+       daxpy_err(~F, w, xt, c, yt, xx, cc, yy, NP.vt(~F, M.ofd(~F, x), M.ofdv(~F, xt), xx, hx), hc, NP.vt(~F, M.ofd(~F, y), M.ofdv(~F, yt), yy, hy), FV.succ_inj(M.len(~F, M.ofdv(~F, xt)), M.len(~F, M.ofdv(~F, yt)), hl), hu))
