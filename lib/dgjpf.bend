@@ -30,6 +30,8 @@ import ./normpf.bend as NP
 import ./real.bend as RL
 import ./slope.bend as SL
 import ./nat.bend as LN
+import ./kinst.bend as KI
+import ../spec/knum.bend as N
 
 # Dyadic rows in F
 # ----------------
@@ -1068,3 +1070,223 @@ def sw_low(~F: O.OField, +n: Nat, +a: M.Mat(~F), +c: Nat, +r: Nat, +hh: O.C(F), 
 def swap_invb(~F: O.OField, +n: Nat, +a: M.Mat(~F), +c: Nat, +r: Nat, +hh: O.C(F), +hH: NP.InvB(~F, rmat(~F, n, a), n, hh), +hna: {GJ.nrows(~F, a) == n : Nat}, +hc: {KA.natle(1n+c, GJ.nrows(~F, a)) == True{} : Bool}, +hr: {KA.natle(1n+r, GJ.nrows(~F, a)) == True{} : Bool}, hw: GJ.All(~(i => GJ.roww(~F, rmat(~F, n, GJ.mswap(~F, a, c, r)), n, i)), n)) -> NP.InvB(~F, rmat(~F, n, GJ.mswap(~F, a, c, r)), n, hh):
   NP.invb_of_low(~F, ~rmat(~F, n, GJ.mswap(~F, a, c, r)), ~n, ~hh, ~(u => lu => sw_low(~F, n, a, c, r, hh, hH, hna, hc, hr, u, lu)), NP.invb_nn(~F, rmat(~F, n, a), n, hh, hH),
     Equal.trans(Nat, GJ.nrows(~F, rmat(~F, n, GJ.mswap(~F, a, c, r))), GJ.nrows(~F, GJ.mswap(~F, a, c, r)), n, nrows_rmat(~F, n, GJ.mswap(~F, a, c, r)), Equal.trans(Nat, GJ.nrows(~F, GJ.mswap(~F, a, c, r)), GJ.nrows(~F, a), n, Equal.sym(Nat, GJ.nrows(~F, a), GJ.nrows(~F, GJ.mswap(~F, a, c, r)), GJ.nrows_mswap(~F, a, c, r)), hna)), hw)
+
+# The pivot search
+# ----------------
+# dpivot scans rows k.. of column c and keeps the first strictly largest
+# |entry|: it returns a row whose |entry| bounds every candidate, or None
+# only when every candidate is 0. Tracked over the full list T, scanned
+# up to index i, with the rest of the scan rdrop(i, T).
+
+def rdrop(i: Nat, xs: List<&2, List<&2, S.D>>) -> List<&2, List<&2, S.D>>:
+  match i xs:
+    case 0n Nil{}:
+      Nil{}
+    case 0n Con{r, t}:
+      Con{r, t}
+    case 1n+j Nil{}:
+      Nil{}
+    case 1n+j Con{r, t}:
+      rdrop(j, t)
+
+def rdrop0(xs: List<&2, List<&2, S.D>>) -> {rdrop(0n, xs) == xs : List<&2, List<&2, S.D>>}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{r, t}:
+      {==}
+
+def dnilp(xs: List<&2, List<&2, S.D>>) -> Type:
+  match xs:
+    case Nil{}:
+      Unit
+    case Con{r, t}:
+      Empty
+
+def dnil_con(+h: List<&2, S.D>, +t: List<&2, List<&2, S.D>>, e: {Nil{} == Con{h, t} : List<&2, List<&2, S.D>>}) -> Empty:
+  %e : dnilp(_)
+  Unit{}
+
+def dhd(xs: List<&2, List<&2, S.D>>) -> List<&2, S.D>:
+  match xs:
+    case Nil{}:
+      Nil{}
+    case Con{r, t}:
+      r
+
+def dtl(xs: List<&2, List<&2, S.D>>) -> List<&2, List<&2, S.D>>:
+  match xs:
+    case Nil{}:
+      Nil{}
+    case Con{r, t}:
+      t
+
+def rdrop_hd(i: Nat, xs: List<&2, List<&2, S.D>>, +h: List<&2, S.D>, +t: List<&2, List<&2, S.D>>, e: {rdrop(i, xs) == Con{h, t} : List<&2, List<&2, S.D>>}) -> {NU.drow(xs, i) == h : List<&2, S.D>}:
+  match i xs:
+    case 0n Nil{}:
+      FO.absurd({NU.drow(Nil{}, 0n) == h : List<&2, S.D>}, dnil_con(h, t, e))
+    case 0n Con{+r2, +t2}:
+      Equal.cong(List<&2, List<&2, S.D>>, List<&2, S.D>, m => dhd(m), Con{r2, t2}, Con{h, t}, e)
+    case 1n+j Nil{}:
+      FO.absurd({NU.drow(Nil{}, 1n+j) == h : List<&2, S.D>}, dnil_con(h, t, e))
+    case 1n+j Con{+r2, +t2}:
+      rdrop_hd(j, t2, h, t, e)
+
+def rdrop_tl(i: Nat, xs: List<&2, List<&2, S.D>>, +h: List<&2, S.D>, +t: List<&2, List<&2, S.D>>, e: {rdrop(i, xs) == Con{h, t} : List<&2, List<&2, S.D>>}) -> {rdrop(1n+i, xs) == t : List<&2, List<&2, S.D>>}:
+  match i xs:
+    case 0n Nil{}:
+      FO.absurd({Nil{} == t : List<&2, List<&2, S.D>>}, dnil_con(h, t, e))
+    case 0n Con{+r2, +t2}:
+      Equal.trans(List<&2, List<&2, S.D>>, rdrop(0n, t2), t2, t, rdrop0(t2), Equal.cong(List<&2, List<&2, S.D>>, List<&2, List<&2, S.D>>, m => dtl(m), Con{r2, t2}, Con{h, t}, e))
+    case 1n+j Nil{}:
+      FO.absurd({Nil{} == t : List<&2, List<&2, S.D>>}, dnil_con(h, t, e))
+    case 1n+j Con{+r2, +t2}:
+      rdrop_tl(j, t2, h, t, e)
+
+# the comparison's meaning in F
+def cm_of(~F: O.OField, +a: S.D, +b: S.D, cm: Cmp, e: {KI.dcmp(a, b) == cm : Cmp}) -> N.cmeans(F, cm, M.ofd(~F, a), M.ofd(~F, b)):
+  %e : N.cmeans(F, _, M.ofd(~F, a), M.ofd(~F, b))
+  KI.dcmp_sound(~F, a, b)
+
+def ndmax_lub.go(~F: O.OField, c: Cmp, +a: S.D, +b: S.D, +t: O.C(F), ha: O.le(~F, M.ofd(~F, a), t), hb: O.le(~F, M.ofd(~F, b), t)) -> O.le(~F, M.ofd(~F, NU.dmax.go(c, a, b)), t):
+  match c:
+    case LT{}:
+      hb
+    case EQ{}:
+      ha
+    case GT{}:
+      ha
+
+def ndmax_lub(~F: O.OField, +a: S.D, +b: S.D, +t: O.C(F), ha: O.le(~F, M.ofd(~F, a), t), hb: O.le(~F, M.ofd(~F, b), t)) -> O.le(~F, M.ofd(~F, NU.dmax(a, b)), t):
+  ndmax_lub.go(~F, KI.dcmp(a, b), a, b, t, ha, hb)
+
+def ndmax_l.go(~F: O.OField, c: Cmp, +a: S.D, +b: S.D, e: {KI.dcmp(a, b) == c : Cmp}) -> O.le(~F, M.ofd(~F, a), M.ofd(~F, NU.dmax.go(c, a, b))):
+  match c:
+    case LT{}:
+      FO.lt_le(~F, M.ofd(~F, a), M.ofd(~F, b), cm_of(~F, a, b, LT{}, e))
+    case EQ{}:
+      FO.le_refl(~F, M.ofd(~F, a))
+    case GT{}:
+      FO.le_refl(~F, M.ofd(~F, a))
+
+def ndmax_l(~F: O.OField, +a: S.D, +b: S.D) -> O.le(~F, M.ofd(~F, a), M.ofd(~F, NU.dmax(a, b))):
+  ndmax_l.go(~F, KI.dcmp(a, b), a, b, {==})
+
+def ndmax_r.go(~F: O.OField, c: Cmp, +a: S.D, +b: S.D, e: {KI.dcmp(a, b) == c : Cmp}) -> O.le(~F, M.ofd(~F, b), M.ofd(~F, NU.dmax.go(c, a, b))):
+  match c:
+    case LT{}:
+      FO.le_refl(~F, M.ofd(~F, b))
+    case EQ{}:
+      Inr{Equal.sym(O.C(F), M.ofd(~F, a), M.ofd(~F, b), cm_of(~F, a, b, EQ{}, e))}
+    case GT{}:
+      FO.lt_le(~F, M.ofd(~F, b), M.ofd(~F, a), cm_of(~F, a, b, GT{}, e))
+
+def ndmax_r(~F: O.OField, +a: S.D, +b: S.D) -> O.le(~F, M.ofd(~F, b), M.ofd(~F, NU.dmax(a, b))):
+  ndmax_r.go(~F, KI.dcmp(a, b), a, b, {==})
+
+# |x| in F for the solver's dabs
+def dabs_bnd(~F: O.OField, +x: S.D) -> M.bnd(~F, M.ofd(~F, x), M.ofd(~F, NU.dabs(x))):
+  KA.kabs_bnd(~KI.dnum(), ~F, ~KI.demb(~F), x)
+
+def cnd(b: Bool, P: Data) -> Data:
+  match b:
+    case True{}:
+      P
+    case False{}:
+      Unit
+
+# candidate j (a row at or after k) is at most m in size
+def cb(~F: O.OField, +t: List<&2, List<&2, S.D>>, +c: Nat, +k: Nat, +m: O.C(F), +j: Nat) -> Data:
+  cnd(KA.natle(k, j), M.bnd(~F, M.ofd(~F, NU.dget(NU.drow(t, j), c)), m))
+
+def cnd_mono(~F: O.OField, b: Bool, +v: O.C(F), +m: O.C(F), +m2: O.C(F), +hm: O.le(~F, m, m2), h: cnd(b, M.bnd(~F, v, m))) -> cnd(b, M.bnd(~F, v, m2)):
+  match b:
+    case True{}:
+      FM.bnd_mono(~F, v, m, m2, h, FM.sub_nonneg(~F, m, m2, hm))
+    case False{}:
+      Unit{}
+
+def cbs_mono(~F: O.OField, +t: List<&2, List<&2, S.D>>, +c: Nat, +k: Nat, +m: O.C(F), +m2: O.C(F), +hm: O.le(~F, m, m2), i: Nat, h: GJ.All(~(j => cb(~F, t, c, k, m, j)), i)) -> GJ.All(~(j => cb(~F, t, c, k, m2, j)), i):
+  all_map(~(j => cb(~F, t, c, k, m, j)), ~(j => cb(~F, t, c, k, m2, j)), ~(j => q => cnd_mono(~F, KA.natle(k, j), M.ofd(~F, NU.dget(NU.drow(t, j), c)), m, m2, hm, q)), i, h)
+
+# what the scan state promises: no pivot yet and bx <= 0, or a scanned
+# candidate r whose size is at least bx
+def acc(~F: O.OField, +t: List<&2, List<&2, S.D>>, +c: Nat, +k: Nat, +i: Nat, best: Maybe<&2, Nat>, +bx: S.D) -> Data:
+  match best:
+    case None{}:
+      O.le(~F, M.ofd(~F, bx), O.zero(F))
+    case Some{r}:
+      M.Both({KA.natle(k, r) == True{} : Bool}, M.Both({KA.natle(1n+r, i) == True{} : Bool}, O.le(~F, M.ofd(~F, bx), M.ofd(~F, NU.dabs(NU.dget(NU.drow(t, r), c))))))
+
+def acc_lo(~F: O.OField, +t: List<&2, List<&2, S.D>>, +c: Nat, +k: Nat, +i: Nat, best: Maybe<&2, Nat>, +bx: S.D, +bx2: S.D, h: acc(~F, t, c, k, i, best, bx), +hle: O.le(~F, M.ofd(~F, bx2), M.ofd(~F, bx))) -> acc(~F, t, c, k, 1n+i, best, bx2):
+  match best:
+    case None{}:
+      DM.le_trans(~F, M.ofd(~F, bx2), M.ofd(~F, bx), O.zero(F), hle, h)
+    case Some{+r}:
+      (h1, hr) = h
+      (h2, h3) = hr
+      (h1, (GJ.le_succ(1n+r, i, h2), DM.le_trans(~F, M.ofd(~F, bx2), M.ofd(~F, bx), M.ofd(~F, NU.dabs(NU.dget(NU.drow(t, r), c))), hle, h3)))
+
+# the scanned candidates, extended by row i = h
+def pre_ext(~F: O.OField, +t: List<&2, List<&2, S.D>>, +c: Nat, +k: Nat, +i: Nat, +h: List<&2, S.D>, +bx: S.D, +e1: {KA.natle(k, i) == True{} : Bool}, +hh: {NU.drow(t, i) == h : List<&2, S.D>}, hp: GJ.All(~(j => cb(~F, t, c, k, M.ofd(~F, bx), j)), i)) -> GJ.All(~(j => cb(~F, t, c, k, M.ofd(~F, NU.dmax(bx, NU.dabs(NU.dget(h, c)))), j)), 1n+i):
+  (cbs_mono(~F, t, c, k, M.ofd(~F, bx), M.ofd(~F, NU.dmax(bx, NU.dabs(NU.dget(h, c)))), ndmax_l(~F, bx, NU.dabs(NU.dget(h, c))), i, hp),
+    (%Equal.sym(Bool, KA.natle(k, i), True{}, e1) : cnd(_, M.bnd(~F, M.ofd(~F, NU.dget(NU.drow(t, i), c)), M.ofd(~F, NU.dmax(bx, NU.dabs(NU.dget(h, c))))))
+      (%Equal.sym(List<&2, S.D>, NU.drow(t, i), h, hh) : M.bnd(~F, M.ofd(~F, NU.dget(_, c)), M.ofd(~F, NU.dmax(bx, NU.dabs(NU.dget(h, c)))))
+        FM.bnd_mono(~F, M.ofd(~F, NU.dget(h, c)), M.ofd(~F, NU.dabs(NU.dget(h, c))), M.ofd(~F, NU.dmax(bx, NU.dabs(NU.dget(h, c)))), dabs_bnd(~F, NU.dget(h, c)), FM.sub_nonneg(~F, M.ofd(~F, NU.dabs(NU.dget(h, c))), M.ofd(~F, NU.dmax(bx, NU.dabs(NU.dget(h, c)))), ndmax_r(~F, bx, NU.dabs(NU.dget(h, c))))))))
+
+# one row of the scan: the scanned candidates
+def dp_pre(~F: O.OField, +t: List<&2, List<&2, S.D>>, +c: Nat, +k: Nat, +i: Nat, +h: List<&2, S.D>, +bx: S.D, b: Bool, +e1: {KA.natle(k, i) == b : Bool}, +hh: {NU.drow(t, i) == h : List<&2, S.D>}, +hp: GJ.All(~(j => cb(~F, t, c, k, M.ofd(~F, bx), j)), i)) -> GJ.All(~(j => cb(~F, t, c, k, M.ofd(~F, NU.dpivot.bx(b, bx, NU.dabs(NU.dget(h, c)))), j)), 1n+i):
+  match b:
+    case False{}:
+      (hp, (%Equal.sym(Bool, KA.natle(k, i), False{}, e1) : cnd(_, M.bnd(~F, M.ofd(~F, NU.dget(NU.drow(t, i), c)), M.ofd(~F, bx))) Unit{}))
+    case True{}:
+      pre_ext(~F, t, c, k, i, h, bx, e1, hh, hp)
+
+# one row of the scan: the state's promise
+def dp_acc(~F: O.OField, +t: List<&2, List<&2, S.D>>, +c: Nat, +k: Nat, +i: Nat, +h: List<&2, S.D>, best: Maybe<&2, Nat>, +bx: S.D, b: Bool, +e1: {KA.natle(k, i) == b : Bool}, cm: Cmp, +e2: {KI.dcmp(NU.dabs(NU.dget(h, c)), bx) == cm : Cmp}, +hh: {NU.drow(t, i) == h : List<&2, S.D>}, +ha: acc(~F, t, c, k, i, best, bx)) -> acc(~F, t, c, k, 1n+i, NU.dpivot.best(b, cm, i, best), NU.dpivot.bx(b, bx, NU.dabs(NU.dget(h, c)))):
+  match b:
+    case False{}:
+      acc_lo(~F, t, c, k, i, best, bx, bx, ha, FO.le_refl(~F, M.ofd(~F, bx)))
+    case True{}:
+      match cm:
+        case GT{}:
+          (e1, (GJ.le_refl(1n+i), (%Equal.sym(List<&2, S.D>, NU.drow(t, i), h, hh) : O.le(~F, M.ofd(~F, NU.dmax(bx, NU.dabs(NU.dget(h, c)))), M.ofd(~F, NU.dabs(NU.dget(_, c))))
+            ndmax_lub(~F, bx, NU.dabs(NU.dget(h, c)), M.ofd(~F, NU.dabs(NU.dget(h, c))), FO.lt_le(~F, M.ofd(~F, bx), M.ofd(~F, NU.dabs(NU.dget(h, c))), cm_of(~F, NU.dabs(NU.dget(h, c)), bx, GT{}, e2)), FO.le_refl(~F, M.ofd(~F, NU.dabs(NU.dget(h, c))))))))
+        case EQ{}:
+          acc_lo(~F, t, c, k, i, best, bx, NU.dmax(bx, NU.dabs(NU.dget(h, c))), ha, ndmax_lub(~F, bx, NU.dabs(NU.dget(h, c)), M.ofd(~F, bx), FO.le_refl(~F, M.ofd(~F, bx)), Inr{cm_of(~F, NU.dabs(NU.dget(h, c)), bx, EQ{}, e2)}))
+        case LT{}:
+          acc_lo(~F, t, c, k, i, best, bx, NU.dmax(bx, NU.dabs(NU.dget(h, c))), ha, ndmax_lub(~F, bx, NU.dabs(NU.dget(h, c)), M.ofd(~F, bx), FO.le_refl(~F, M.ofd(~F, bx)), FO.lt_le(~F, M.ofd(~F, NU.dabs(NU.dget(h, c))), M.ofd(~F, bx), cm_of(~F, NU.dabs(NU.dget(h, c)), bx, LT{}, e2))))
+
+# the scan's result, for rows k.. of nn rows
+def pfin(~F: O.OField, +t: List<&2, List<&2, S.D>>, +c: Nat, +k: Nat, +nn: Nat, res: Maybe<&2, Nat>) -> Data:
+  match res:
+    case None{}:
+      GJ.All(~(j => cb(~F, t, c, k, O.zero(F), j)), nn)
+    case Some{r}:
+      M.Both({KA.natle(k, r) == True{} : Bool}, M.Both({KA.natle(1n+r, nn) == True{} : Bool}, GJ.All(~(j => cb(~F, t, c, k, M.ofd(~F, NU.dabs(NU.dget(NU.drow(t, r), c))), j)), nn)))
+
+def pfin_end(~F: O.OField, +t: List<&2, List<&2, S.D>>, +c: Nat, +k: Nat, +i: Nat, best: Maybe<&2, Nat>, +bx: S.D, hp: GJ.All(~(j => cb(~F, t, c, k, M.ofd(~F, bx), j)), i), ha: acc(~F, t, c, k, i, best, bx)) -> pfin(~F, t, c, k, i, best):
+  match best:
+    case None{}:
+      cbs_mono(~F, t, c, k, M.ofd(~F, bx), O.zero(F), ha, i, hp)
+    case Some{+r}:
+      (h1, hr) = ha
+      (h2, h3) = hr
+      (h1, (h2, cbs_mono(~F, t, c, k, M.ofd(~F, bx), M.ofd(~F, NU.dabs(NU.dget(NU.drow(t, r), c))), h3, i, hp)))
+
+def dp_ok(~F: O.OField, rows: List<&2, List<&2, S.D>>, +t: List<&2, List<&2, S.D>>, +c: Nat, +k: Nat, +i: Nat, +best: Maybe<&2, Nat>, +bx: S.D, +hr: {rdrop(i, t) == rows : List<&2, List<&2, S.D>>}, +hn: {Nat.add(GJ.nrows(~F, M.ofdm(~F, rows)), i) == GJ.nrows(~F, M.ofdm(~F, t)) : Nat}, +hp: GJ.All(~(j => cb(~F, t, c, k, M.ofd(~F, bx), j)), i), +ha: acc(~F, t, c, k, i, best, bx)) -> pfin(~F, t, c, k, GJ.nrows(~F, M.ofdm(~F, t)), NU.dpivot(rows, c, k, i, best, bx)):
+  match rows:
+    case Nil{}:
+      %hn : pfin(~F, t, c, k, _, best)
+      pfin_end(~F, t, c, k, i, best, bx, hp, ha)
+    case Con{+h, +rt}:
+      dp_ok(~F, rt, t, c, k, 1n+i, NU.dpivot.best(KA.natle(k, i), KI.dcmp(NU.dabs(NU.dget(h, c)), bx), i, best), NU.dpivot.bx(KA.natle(k, i), bx, NU.dabs(NU.dget(h, c))), rdrop_tl(i, t, h, rt, hr),
+        Equal.trans(Nat, Nat.add(GJ.nrows(~F, M.ofdm(~F, rt)), 1n+i), 1n+Nat.add(GJ.nrows(~F, M.ofdm(~F, rt)), i), GJ.nrows(~F, M.ofdm(~F, t)), Equal.sym(Nat, 1n+Nat.add(GJ.nrows(~F, M.ofdm(~F, rt)), i), Nat.add(GJ.nrows(~F, M.ofdm(~F, rt)), 1n+i), LN.add_succ(GJ.nrows(~F, M.ofdm(~F, rt)), i)), hn),
+        dp_pre(~F, t, c, k, i, h, bx, KA.natle(k, i), {==}, rdrop_hd(i, t, h, rt, hr), hp),
+        dp_acc(~F, t, c, k, i, h, best, bx, KA.natle(k, i), {==}, KI.dcmp(NU.dabs(NU.dget(h, c)), bx), {==}, rdrop_hd(i, t, h, rt, hr), ha))
+
+# dpivot from the top, as dgj calls it
+def pivot_ok(~F: O.OField, +t: List<&2, List<&2, S.D>>, +c: Nat) -> pfin(~F, t, c, c, GJ.nrows(~F, M.ofdm(~F, t)), NU.dpivot(t, c, c, 0n, None{}, NU.dzero())):
+  dp_ok(~F, t, t, c, c, 0n, None{}, NU.dzero(), rdrop0(t), Equal.sym(Nat, GJ.nrows(~F, M.ofdm(~F, t)), Nat.add(GJ.nrows(~F, M.ofdm(~F, t)), 0n), LN.add_zero(GJ.nrows(~F, M.ofdm(~F, t)))), Unit{},
+    (%DM.ofd_zero(~F) : O.le(~F, _, O.zero(F))
+      FO.le_refl(~F, O.zero(F))))
