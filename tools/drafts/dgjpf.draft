@@ -775,3 +775,81 @@ def col_step(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +w: Nat, +rows: List<&2, Lis
     prow(~F, n, jm, M.ofdv(~F, NU.drow(NU.dswap(rows, c, r), c)), c, gg, dd, ph, hx, hgg, hph, M.ofd(~F, NU.dsdiv(w, NU.done(), NU.dget(NU.drow(NU.dswap(rows, c, r), c), c))), sg, O.ofq(~F, S.Q.div(S.D.toq(NU.done()), S.D.toq(NU.dget(NU.drow(NU.dswap(rows, c, r), c), c)))), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}), hsg, (%dget_ofd(~F, NU.drow(NU.dswap(rows, c, r), c), c) : {@M(O.ofq(~F, S.Q.div(S.D.toq(NU.done()), S.D.toq(NU.dget(NU.drow(NU.dswap(rows, c, r), c), c)))), _) == @1 : @T}
       div_rel(~F, NU.dget(NU.drow(NU.dswap(rows, c, r), c), c), hz)), s_err(~F, w, NU.dget(NU.drow(NU.dswap(rows, c, r), c), c)), u_nn(~F, w), M.ofdv(~F, NU.dscale(w, NU.dsdiv(w, NU.done(), NU.dget(NU.drow(NU.dswap(rows, c, r), c), c)), NU.drow(NU.dswap(rows, c, r), c))), Equal.trans(Nat, M.len(~F, M.ofdv(~F, NU.dscale(w, NU.dsdiv(w, NU.done(), NU.dget(NU.drow(NU.dswap(rows, c, r), c), c)), NU.drow(NU.dswap(rows, c, r), c)))), M.len(~F, M.ofdv(~F, NU.drow(NU.dswap(rows, c, r), c))), Nat.add(n, n), len_dscale(~F, w, NU.dsdiv(w, NU.done(), NU.dget(NU.drow(NU.dswap(rows, c, r), c), c)), NU.drow(NU.dswap(rows, c, r), c)), ri_len(~F, n, jm, M.ofdv(~F, NU.drow(NU.dswap(rows, c, r), c)), c, c, gg, dd, ph, hx)), @M(@M(sg, gg), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), dscale_err(~F, w, NU.dsdiv(w, NU.done(), NU.dget(NU.drow(NU.dswap(rows, c, r), c), c)), NU.drow(NU.dswap(rows, c, r), c), sg, gg, hsg, ri_e(~F, n, jm, M.ofdv(~F, NU.drow(NU.dswap(rows, c, r), c)), c, c, gg, dd, ph, hx)), FO.mul_nonneg(~F, @M(sg, gg), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}), FO.mul_nonneg(~F, sg, gg, FM.bnd_nonneg(~F, M.ofd(~F, NU.dsdiv(w, NU.done(), NU.dget(NU.drow(NU.dswap(rows, c, r), c), c))), sg, hsg), hgg), u_nn(~F, w)), g, hj, hg, hnj),
     hgg, hdd, hph, FO.nonneg_add(~F, @M(sg, gg), @M(@M(sg, gg), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), FO.mul_nonneg(~F, sg, gg, FM.bnd_nonneg(~F, M.ofd(~F, NU.dsdiv(w, NU.done(), NU.dget(NU.drow(NU.dswap(rows, c, r), c), c))), sg, hsg), hgg), FO.mul_nonneg(~F, @M(sg, gg), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}), FO.mul_nonneg(~F, sg, gg, FM.bnd_nonneg(~F, M.ofd(~F, NU.dsdiv(w, NU.done(), NU.dget(NU.drow(NU.dswap(rows, c, r), c), c))), sg, hsg), hgg), u_nn(~F, w))), FO.nonneg_add(~F, @M(sg, dd), @M(@M(@M(sg, gg), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), @A(@1, @M(FR.ofn(~F, n), g))), FO.mul_nonneg(~F, sg, dd, FM.bnd_nonneg(~F, M.ofd(~F, NU.dsdiv(w, NU.done(), NU.dget(NU.drow(NU.dswap(rows, c, r), c), c))), sg, hsg), hdd), FO.mul_nonneg(~F, @M(@M(sg, gg), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), @A(@1, @M(FR.ofn(~F, n), g)), FO.mul_nonneg(~F, @M(sg, gg), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}), FO.mul_nonneg(~F, sg, gg, FM.bnd_nonneg(~F, M.ofd(~F, NU.dsdiv(w, NU.done(), NU.dget(NU.drow(NU.dswap(rows, c, r), c), c))), sg, hsg), hgg), u_nn(~F, w)), FO.nonneg_add(~F, @1, @M(FR.ofn(~F, n), g), NP.one_nn(~F), FO.mul_nonneg(~F, FR.ofn(~F, n), g, ofn_nn(~F, n), hg)))), FO.nonneg_add(~F, @A(@M(sg, ph), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), @M(@M(sg, gg), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), FO.nonneg_add(~F, @M(sg, ph), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}), FO.mul_nonneg(~F, sg, ph, FM.bnd_nonneg(~F, M.ofd(~F, NU.dsdiv(w, NU.done(), NU.dget(NU.drow(NU.dswap(rows, c, r), c), c))), sg, hsg), hph), u_nn(~F, w)), FO.mul_nonneg(~F, @M(sg, gg), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}), FO.mul_nonneg(~F, sg, gg, FM.bnd_nonneg(~F, M.ofd(~F, NU.dsdiv(w, NU.done(), NU.dget(NU.drow(NU.dswap(rows, c, r), c), c))), sg, hsg), hgg), u_nn(~F, w))), hj, hg, hnj, hu, 0n, hs)
+
+# Right halves
+# ------------
+# The right parts R of the rows keep an inverse of bounded norm. Read
+# against a vector u, a row x gives zr(x) = R_x . u; one column step
+# changes these numbers by the step's row operations and a rounding term,
+# and inverting that by hand bounds |R u| by |R' u| and |u|.
+
+def zr(~F: O.OField, +n: Nat, +x: M.Vec(~F), +u: M.Vec(~F)) -> @T:
+  M.dot(~F, GJ.vdrop(~F, n, x), u)
+
+# zr of x - y
+def zr_sub(~F: O.OField, +n: Nat, +x: M.Vec(~F), +y: M.Vec(~F), +u: M.Vec(~F)) -> {zr(~F, n, M.vadd(~F, x, M.vneg(~F, y)), u) == @S(zr(~F, n, x, u), zr(~F, n, y, u)) : @T}:
+  %drop_vadd(~F, n, x, M.vneg(~F, y)) : {M.dot(~F, _, u) == @S(zr(~F, n, x, u), zr(~F, n, y, u)) : @T}
+  %drop_vneg(~F, n, y) : {M.dot(~F, M.vadd(~F, GJ.vdrop(~F, n, x), _), u) == @S(zr(~F, n, x, u), zr(~F, n, y, u)) : @T}
+  %FM.dot_vadd(~F, GJ.vdrop(~F, n, x), M.vneg(~F, GJ.vdrop(~F, n, y)), u) : {_ == @S(zr(~F, n, x, u), zr(~F, n, y, u)) : @T}
+  %FM.dot_vneg(~F, GJ.vdrop(~F, n, y), u) : {@A(M.dot(~F, GJ.vdrop(~F, n, x), u), _) == @S(zr(~F, n, x, u), zr(~F, n, y, u)) : @T}
+  @ZEQ[zx=M.dot(~F, GJ.vdrop(~F, n, x), u),, zy=M.dot(~F, GJ.vdrop(~F, n, y), u) | zx + -zy | zx - zy]
+
+# zr of x + (-m) p
+def zr_axpy(~F: O.OField, +n: Nat, +x: M.Vec(~F), +m: @T, +p: M.Vec(~F), +u: M.Vec(~F)) -> {zr(~F, n, M.vadd(~F, x, M.vscale(~F, @N(m), p)), u) == @A(zr(~F, n, x, u), @M(@N(m), zr(~F, n, p, u))) : @T}:
+  %drop_vadd(~F, n, x, M.vscale(~F, @N(m), p)) : {M.dot(~F, _, u) == @A(zr(~F, n, x, u), @M(@N(m), zr(~F, n, p, u))) : @T}
+  %drop_vscale(~F, n, @N(m), p) : {M.dot(~F, M.vadd(~F, GJ.vdrop(~F, n, x), _), u) == @A(zr(~F, n, x, u), @M(@N(m), zr(~F, n, p, u))) : @T}
+  %FM.dot_vadd(~F, GJ.vdrop(~F, n, x), M.vscale(~F, @N(m), GJ.vdrop(~F, n, p)), u) : {_ == @A(zr(~F, n, x, u), @M(@N(m), zr(~F, n, p, u))) : @T}
+  %FM.dot_vscale(~F, @N(m), GJ.vdrop(~F, n, p), u) : {@A(M.dot(~F, GJ.vdrop(~F, n, x), u), _) == @A(zr(~F, n, x, u), @M(@N(m), zr(~F, n, p, u))) : @T}
+  {==}
+
+# zr of s x
+def zr_scale(~F: O.OField, +n: Nat, +s: @T, +x: M.Vec(~F), +u: M.Vec(~F)) -> {zr(~F, n, M.vscale(~F, s, x), u) == @M(s, zr(~F, n, x, u)) : @T}:
+  %drop_vscale(~F, n, s, x) : {M.dot(~F, _, u) == @M(s, zr(~F, n, x, u)) : @T}
+  %FM.dot_vscale(~F, s, GJ.vdrop(~F, n, x), u) : {_ == @M(s, zr(~F, n, x, u)) : @T}
+  {==}
+
+# an error row: |zr(e)| <= n eps |u|
+def zerr(~F: O.OField, +n: Nat, +e: M.Vec(~F), +u: M.Vec(~F), +ep: @T, +he: M.vbnd.all(~F, e, ep), +hep: O.le(~F, @0, ep), lu: {M.len(~F, u) == n : Nat}) -> M.bnd(~F, zr(~F, n, e, u), @M(@M(FR.ofn(~F, n), ep), NP.vn(~F, u))):
+  FM.bnd_mono(~F, zr(~F, n, e, u), @M(NP.rowabs(~F, GJ.vdrop(~F, n, e), n), NP.vn(~F, u)), @M(@M(FR.ofn(~F, n), ep), NP.vn(~F, u)),
+    (%lu : M.bnd(~F, zr(~F, n, e, u), @M(NP.rowabs(~F, GJ.vdrop(~F, n, e), _), NP.vn(~F, u)))
+      NP.dot_le(~F, GJ.vdrop(~F, n, e), u, NP.vn(~F, u), FV.vmax_all(~F, u), FV.vmax_nn(~F, u))),
+    FM.sub_nonneg(~F, @M(NP.rowabs(~F, GJ.vdrop(~F, n, e), n), NP.vn(~F, u)), @M(@M(FR.ofn(~F, n), ep), NP.vn(~F, u)), FV.mul_le_r(~F, NP.rowabs(~F, GJ.vdrop(~F, n, e), n), @M(FR.ofn(~F, n), ep), NP.vn(~F, u), FV.vmax_nn(~F, u), rowabs_le(~F, GJ.vdrop(~F, n, e), n, ep, vall_drop(~F, n, e, ep, he), hep))))
+
+@ATOMS zo = zx=zr(~F, n, x, u),, z2=zr(~F, n, x2, u),, zp=zr(~F, n, p, u),, m
+
+# a row other than the pivot: x2 = x - m p + err, so
+# |zr(x)| <= |zr(x2)| + |m| |zr(p)| + n eps |u|
+def zo_bnd(~F: O.OField, +n: Nat, +x2: M.Vec(~F), +x: M.Vec(~F), +m: @T, +p: M.Vec(~F), +u: M.Vec(~F), +ep: @T, +he: M.vbnd.all(~F, M.vadd(~F, x2, M.vneg(~F, M.vadd(~F, x, M.vscale(~F, @N(m), p)))), ep), +hep: O.le(~F, @0, ep), +lu: {M.len(~F, u) == n : Nat}, +y: @T, +gg: @T, +h2: M.bnd(~F, zr(~F, n, x2, u), y), +hm: M.bnd(~F, m, gg), +hp: M.bnd(~F, zr(~F, n, p, u), y)) -> M.bnd(~F, zr(~F, n, x, u), @A(@A(y, @M(gg, y)), @M(@M(FR.ofn(~F, n), ep), NP.vn(~F, u)))):
+  three(~F, zr(~F, n, x, u), zr(~F, n, x2, u), m, zr(~F, n, p, u), y, gg, y, @M(@M(FR.ofn(~F, n), ep), NP.vn(~F, u)), h2, hm, hp,
+    KB.bnd_val(~F, @FT[zo | -(z2 - (zx + (-m)*zp))], @FT[zo | zx - (z2 + m*zp)], @M(@M(FR.ofn(~F, n), ep), NP.vn(~F, u)), @ZEQ[zo | -(z2 - (zx + (-m)*zp)) | zx - (z2 + m*zp)],
+      FM.bnd_neg(~F, @FT[zo | z2 - (zx + (-m)*zp)], @M(@M(FR.ofn(~F, n), ep), NP.vn(~F, u)),
+        (%zr_axpy(~F, n, x, m, p, u) : M.bnd(~F, @S(zr(~F, n, x2, u), _), @M(@M(FR.ofn(~F, n), ep), NP.vn(~F, u)))
+          (%zr_sub(~F, n, x2, M.vadd(~F, x, M.vscale(~F, @N(m), p)), u) : M.bnd(~F, _, @M(@M(FR.ofn(~F, n), ep), NP.vn(~F, u)))
+            zerr(~F, n, M.vadd(~F, x2, M.vneg(~F, M.vadd(~F, x, M.vscale(~F, @N(m), p)))), u, ep, he, hep, lu))))))
+
+@ATOMS zq = zx=zr(~F, n, x, u),, zp=zr(~F, n, p, u),, s
+
+# the pivot row: p = s x + err, so |s zr(x)| <= |zr(p)| + n eps |u|
+def zp_bnd(~F: O.OField, +n: Nat, +x: M.Vec(~F), +s: @T, +p: M.Vec(~F), +u: M.Vec(~F), +ep: @T, +he: M.vbnd.all(~F, M.vadd(~F, p, M.vneg(~F, M.vscale(~F, s, x))), ep), +hep: O.le(~F, @0, ep), +lu: {M.len(~F, u) == n : Nat}, +y: @T, +hp: M.bnd(~F, zr(~F, n, p, u), y)) -> M.bnd(~F, @M(s, zr(~F, n, x, u)), @A(y, @M(@M(FR.ofn(~F, n), ep), NP.vn(~F, u)))):
+  KB.bnd_val(~F, @FT[zq | zp + -(zp - s*zx)], @FT[zq | s*zx], @A(y, @M(@M(FR.ofn(~F, n), ep), NP.vn(~F, u))), @ZEQ[zq | zp + -(zp - s*zx) | s*zx],
+    FM.bnd_add(~F, zr(~F, n, p, u), y, @N(@FT[zq | zp - s*zx]), @M(@M(FR.ofn(~F, n), ep), NP.vn(~F, u)), hp,
+      FM.bnd_neg(~F, @FT[zq | zp - s*zx], @M(@M(FR.ofn(~F, n), ep), NP.vn(~F, u)),
+        (%zr_scale(~F, n, s, x, u) : M.bnd(~F, @S(zr(~F, n, p, u), _), @M(@M(FR.ofn(~F, n), ep), NP.vn(~F, u)))
+          (%zr_sub(~F, n, p, M.vscale(~F, s, x), u) : M.bnd(~F, _, @M(@M(FR.ofn(~F, n), ep), NP.vn(~F, u)))
+            zerr(~F, n, M.vadd(~F, p, M.vneg(~F, M.vscale(~F, s, x))), u, ep, he, hep, lu))))))
+
+@ATOMS pl = z,, s,, q,, pi,, gg,, u,, y,, a=FV.fabs(~F, z),, aq=FV.fabs(~F, q)
+
+# dividing by the rounded pivot reciprocal loses at most a factor 2G:
+# q pi = 1, |pi| <= G, |s - q| <= |q| u and 2 G |q| u <= 1 give
+# |z| <= 2G |s z|
+def piv_low(~F: O.OField, +z: @T, +s: @T, +q: @T, +pi: @T, +gg: @T, +u: @T, +y: @T, +hq: {@M(q, pi) == @1 : @T}, +hpi: M.bnd(~F, pi, gg), +hs: M.bnd(~F, @S(s, q), @M(FV.fabs(~F, q), u)), +hsm: O.le(~F, @A(@M(gg, @M(FV.fabs(~F, q), u)), @M(gg, @M(FV.fabs(~F, q), u))), @1), +hy: M.bnd(~F, @M(s, z), y)) -> M.bnd(~F, z, @M(@A(gg, gg), y)):
+  +h2 = KB.bnd_val(~F, @FT[pl | s*z + -((s - q)*z)], @FT[pl | q*z], @FT[pl | y + (aq*u)*a], @ZEQ[pl | s*z + -((s - q)*z) | q*z],
+    FM.bnd_add(~F, @M(s, z), y, @N(@M(@S(s, q), z)), @FT[pl | (aq*u)*a], hy, FM.bnd_neg(~F, @M(@S(s, q), z), @FT[pl | (aq*u)*a], FM.bnd_mul(~F, @S(s, q), @M(FV.fabs(~F, q), u), z, FV.fabs(~F, z), hs, FV.fabs_bnd(~F, z)))))
+  +h4 = FV.fabs_le(~F, z, @FT[pl | gg*(y + (aq*u)*a)], KB.bnd_val(~F, @FT[pl | pi*(q*z)], z, @FT[pl | gg*(y + (aq*u)*a)], @CERTEQ[pl | pi*(q*z) | z | z ; q*pi - 1 || FO.sub_of_eq(~F, @M(q, pi), @1, hq)],
+    FM.bnd_mul(~F, pi, gg, @M(q, z), @FT[pl | y + (aq*u)*a], hpi, h2)))
+  +s1 = FM.sub_nonneg(~F, FV.fabs(~F, z), @FT[pl | gg*(y + (aq*u)*a)], h4)
+  +s3 = FM.sub_nonneg(~F, @FT[pl | gg*(aq*u) + gg*(aq*u)], @1, hsm)
+  FM.bnd_mono(~F, z, FV.fabs(~F, z), @M(@A(gg, gg), y), FV.fabs_bnd(~F, z), FM.sub_nonneg(~F, FV.fabs(~F, z), @M(@A(gg, gg), y),
+    FV.le_of_sub(~F, FV.fabs(~F, z), @M(@A(gg, gg), y), FM.nn_eq(~F, @FT[pl | (gg + gg)*y - a], @FT[pl | ((gg*(y + (aq*u)*a) - a) + (gg*(y + (aq*u)*a) - a)) + a*(1 - (gg*(aq*u) + gg*(aq*u)))], @ZEQ[pl | ((gg*(y + (aq*u)*a) - a) + (gg*(y + (aq*u)*a) - a)) + a*(1 - (gg*(aq*u) + gg*(aq*u))) | (gg + gg)*y - a],
+      FO.nonneg_add(~F, @FT[pl | (gg*(y + (aq*u)*a) - a) + (gg*(y + (aq*u)*a) - a)], @FT[pl | a*(1 - (gg*(aq*u) + gg*(aq*u)))], FO.nonneg_add(~F, @FT[pl | gg*(y + (aq*u)*a) - a], @FT[pl | gg*(y + (aq*u)*a) - a], s1, s1), FO.mul_nonneg(~F, FV.fabs(~F, z), @FT[pl | 1 - (gg*(aq*u) + gg*(aq*u))], FV.fabs_nn(~F, z), s3))))))
