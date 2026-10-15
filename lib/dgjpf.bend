@@ -29,6 +29,7 @@ import ./roundpf.bend as RP
 import ./normpf.bend as NP
 import ./real.bend as RL
 import ./slope.bend as SL
+import ./nat.bend as LN
 
 # Dyadic rows in F
 # ----------------
@@ -679,3 +680,69 @@ def clear_ok(~F: O.OField, rows: List<&2, List<&2, S.D>>, +n: Nat, +jm: M.Mat(~F
     case Con{+r, +t}:
       (h1, h2) = h
       (row_ok(~F, n, jm, w, p, c, gg, dd, ph, gp, dp, pp, g, hp, hgg, hdd, hph, hgp, hdp, hpp, hj, hg, hn, hu, KA.nateq(i, c), i, {==}, r, h1), clear_ok(~F, t, n, jm, w, p, c, gg, dd, ph, gp, dp, pp, g, hp, hgg, hdd, hph, hgp, hdp, hpp, hj, hg, hn, hu, 1n+i, h2))
+
+# The swap
+# --------
+
+def all_map_lt(~n: Nat, ~Q1: Nat -> Data, ~Q2: Nat -> Data, ~f: @i: Nat -> {KA.natle(1n+i, n) == True{} : Bool} -> Q1(i) -> Q2(i), k: Nat, +hk: {KA.natle(k, n) == True{} : Bool}, h: GJ.All(~Q1, k)) -> GJ.All(~Q2, k):
+  match k:
+    case 0n:
+      Unit{}
+    case 1n++j:
+      match h:
+        case (h1, q):
+          (all_map_lt(~n, ~Q1, ~Q2, ~f, j, GJ.le_trans(j, 1n+j, n, GJ.le_succ(j, j, GJ.le_refl(j)), hk), h1), f(j, hk, q))
+
+def fin_move.ent(~F: O.OField, +x: M.Vec(~F), +a: Nat, +b: Nat, +c: Nat, +ph: O.C(F), +ha: {KA.natle(c, a) == True{} : Bool}, +hb: {KA.natle(c, b) == True{} : Bool}, +j: Nat, +hj: {KA.natle(1n+j, c) == True{} : Bool}, q: M.bnd(~F, O.sub(~F, O.lookup(~F, x, j), GJ.dl(~F, KA.nateq(a, j))), ph)) -> M.bnd(~F, O.sub(~F, O.lookup(~F, x, j), GJ.dl(~F, KA.nateq(b, j))), ph):
+  %Equal.sym(Bool, KA.nateq(b, j), False{}, ne_lt(j, b, GJ.le_trans(1n+j, c, b, hj, hb))) : M.bnd(~F, O.sub(~F, O.lookup(~F, x, j), GJ.dl(~F, _)), ph)
+  (%ne_lt(j, a, GJ.le_trans(1n+j, c, a, hj, ha)) : M.bnd(~F, O.sub(~F, O.lookup(~F, x, j), GJ.dl(~F, _)), ph)
+    q)
+
+# a row's index can move among indices >= c
+def ri_move(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x: M.Vec(~F), +a: Nat, +b: Nat, +c: Nat, +gg: O.C(F), +dd: O.C(F), +ph: O.C(F), +h: rowinv(~F, n, jm, x, a, c, gg, dd, ph), +ha: {KA.natle(c, a) == True{} : Bool}, +hb: {KA.natle(c, b) == True{} : Bool}) -> rowinv(~F, n, jm, x, b, c, gg, dd, ph):
+  ri_mk(~F, n, jm, x, b, c, gg, dd, ph, ri_len(~F, n, jm, x, a, c, gg, dd, ph, h), ri_e(~F, n, jm, x, a, c, gg, dd, ph, h), ri_d(~F, n, jm, x, a, c, gg, dd, ph, h),
+    all_map_lt(~c, ~(j => M.bnd(~F, O.sub(~F, O.lookup(~F, x, j), GJ.dl(~F, KA.nateq(a, j))), ph)), ~(j => M.bnd(~F, O.sub(~F, O.lookup(~F, x, j), GJ.dl(~F, KA.nateq(b, j))), ph)), ~(j => hj => q => fin_move.ent(~F, x, a, b, c, ph, ha, hb, j, hj, q)), c, GJ.le_refl(c), ri_f(~F, n, jm, x, a, c, gg, dd, ph, h)))
+
+# row k of the rows numbered from i0
+def ri_at(~F: O.OField, +n: Nat, +jm: M.Mat(~F), s: M.Mat(~F), +i0: Nat, +c: Nat, +gg: O.C(F), +dd: O.C(F), +ph: O.C(F), k: Nat, h: rinv(~F, n, jm, s, i0, c, gg, dd, ph), hk: {KA.natle(1n+k, GJ.nrows(~F, s)) == True{} : Bool}) -> rowinv(~F, n, jm, DV.mrow(~F, s, k), Nat.add(k, i0), c, gg, dd, ph):
+  match s k:
+    case Nil{} 0n:
+      FO.absurd(rowinv(~F, n, jm, Nil{}, i0, c, gg, dd, ph), KA.ft(hk))
+    case Nil{} 1n++j:
+      FO.absurd(rowinv(~F, n, jm, Nil{}, 1n+Nat.add(j, i0), c, gg, dd, ph), KA.ft(hk))
+    case Con{x, t} 0n:
+      (h1, h2) = h
+      h1
+    case Con{x, t} 1n++j:
+      (h1, h2) = h
+      %Equal.sym(Nat, 1n+Nat.add(j, i0), Nat.add(j, 1n+i0), LN.add_succ(j, i0)) : rowinv(~F, n, jm, DV.mrow(~F, t, j), _, c, gg, dd, ph)
+      ri_at(~F, n, jm, t, 1n+i0, c, gg, dd, ph, j, h2, hk)
+
+# replacing row k by a row good at its index
+def rinv_set(~F: O.OField, +n: Nat, +jm: M.Mat(~F), s: M.Mat(~F), +i0: Nat, +c: Nat, +gg: O.C(F), +dd: O.C(F), +ph: O.C(F), k: Nat, +x: M.Vec(~F), h: rinv(~F, n, jm, s, i0, c, gg, dd, ph), hx: rowinv(~F, n, jm, x, Nat.add(k, i0), c, gg, dd, ph)) -> rinv(~F, n, jm, GJ.mset(~F, s, k, x), i0, c, gg, dd, ph):
+  match s k:
+    case Nil{} 0n:
+      Unit{}
+    case Nil{} 1n++j:
+      Unit{}
+    case Con{y, t} 0n:
+      (h1, h2) = h
+      (hx, h2)
+    case Con{y, t} 1n++j:
+      (h1, h2) = h
+      (h1, rinv_set(~F, n, jm, t, 1n+i0, c, gg, dd, ph, j, x, h2, (%LN.add_succ(j, i0) : rowinv(~F, n, jm, x, _, c, gg, dd, ph)
+        hx)))
+
+# swapping rows c and r (both at least c) keeps the invariant
+def swap_ok(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +rows: List<&2, List<&2, S.D>>, +c: Nat, +r: Nat, +gg: O.C(F), +dd: O.C(F), +ph: O.C(F), +h: rinv(~F, n, jm, M.ofdm(~F, rows), 0n, c, gg, dd, ph), +hn: {GJ.nrows(~F, M.ofdm(~F, rows)) == n : Nat}, +hc: {KA.natle(1n+c, n) == True{} : Bool}, +hr1: {KA.natle(c, r) == True{} : Bool}, +hr2: {KA.natle(1n+r, n) == True{} : Bool}) -> rinv(~F, n, jm, M.ofdm(~F, NU.dswap(rows, c, r)), 0n, c, gg, dd, ph):
+  %Equal.sym(M.Mat(~F), M.ofdm(~F, NU.dswap(rows, c, r)), GJ.mswap(~F, M.ofdm(~F, rows), c, r), dswap_ofd(~F, rows, c, r)) : rinv(~F, n, jm, _, 0n, c, gg, dd, ph)
+  rinv_set(~F, n, jm, GJ.mset(~F, M.ofdm(~F, rows), c, DV.mrow(~F, M.ofdm(~F, rows), r)), 0n, c, gg, dd, ph, r, DV.mrow(~F, M.ofdm(~F, rows), c),
+    rinv_set(~F, n, jm, M.ofdm(~F, rows), 0n, c, gg, dd, ph, c, DV.mrow(~F, M.ofdm(~F, rows), r), h,
+      (%LN.add_zero(c) : rowinv(~F, n, jm, DV.mrow(~F, M.ofdm(~F, rows), r), _, c, gg, dd, ph)
+        ri_move(~F, n, jm, DV.mrow(~F, M.ofdm(~F, rows), r), r, c, c, gg, dd, ph, (%Equal.sym(Nat, r, Nat.add(r, 0n), LN.add_zero(r)) : rowinv(~F, n, jm, DV.mrow(~F, M.ofdm(~F, rows), r), _, c, gg, dd, ph)
+        ri_at(~F, n, jm, M.ofdm(~F, rows), 0n, c, gg, dd, ph, r, h, (%Equal.sym(Nat, GJ.nrows(~F, M.ofdm(~F, rows)), n, hn) : {KA.natle(1n+r, _) == True{} : Bool}
+          hr2))), hr1, GJ.le_refl(c)))),
+    (%LN.add_zero(r) : rowinv(~F, n, jm, DV.mrow(~F, M.ofdm(~F, rows), c), _, c, gg, dd, ph)
+      ri_move(~F, n, jm, DV.mrow(~F, M.ofdm(~F, rows), c), c, r, c, gg, dd, ph, (%Equal.sym(Nat, c, Nat.add(c, 0n), LN.add_zero(c)) : rowinv(~F, n, jm, DV.mrow(~F, M.ofdm(~F, rows), c), _, c, gg, dd, ph)
+        ri_at(~F, n, jm, M.ofdm(~F, rows), 0n, c, gg, dd, ph, c, h, (%Equal.sym(Nat, GJ.nrows(~F, M.ofdm(~F, rows)), n, hn) : {KA.natle(1n+c, _) == True{} : Bool}
+          hc))), GJ.le_refl(c), hr1)))
