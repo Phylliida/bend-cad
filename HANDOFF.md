@@ -403,6 +403,43 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
   inv_l/inv_r (an Inverse on vectors), block_inv ([[A,0],[C,D]]
   invertible gives A and D invertible). Next: C2 (structure, Tarjan
   partition, permutation of Regular to block order).
+- **C2 DONE (2026-10-15), gate green.** Four files, all proofs about the
+  solver as it runs (no solver changes; lib/redpf.bend's end result kres
+  gained two conjuncts, proofs only). Gated via tests/struct_laws.bend.
+  - C2a lib/tarjanpf.bend (`comps_part`): Tarjan's components partition
+    the equations they start from. Reached list R = st ++ cats(out); a
+    stack pop leaves rev.go(st, cats out) exactly unchanged (rgid), so
+    distinctness/membership carry over; `segs` (call stack on the
+    component stack, bottom frame at its bottom), `stok` (base <= low <=
+    idx on the stack), `lastok` (the stack's bottom numbered base) give
+    low = idx at a root's finish, which pops everything; fuel measure wm.
+  - C2b lib/structpf.bend (`struct_ok`): the variable side saturates the
+    kept equations (pigeonhole converse `pigc`), pins plus matched
+    variables are every variable once, the blocks hold the kept equations
+    (each valid: checked ones by the solver's check, the leftover via the
+    partition), vp distinct with nv entries, and `swalk`, PL.walk's
+    structural conjuncts (sizes, pars_ok, eqs_below, ecov: every variable
+    a block uses is its own or a parameter, the end at nv).
+  - C2c lib/keptpf.bend (`kept_good`, `kept_len`, `kept_reorder`): the
+    kept system is the full system picked at good.
+  - C2d lib/permpf.bend (`regular_blocks`): Regular (kept order, free
+    variables ascending) gives the block-order Jacobian an inverse (sum
+    over a permutation, `dsum_perm`; C1's inv_of_inj).
+  Next: C3 (DESIGN §10.4). Open design point for C5: GJ.block_inv wants
+  the block matrix as a list equal to [[A, 0], [C, D]]; the block-order
+  Jacobian's upper-right entries are 0 only propositionally (deriv of an
+  unused variable evaluates to 0), so InvN must transfer along entrywise
+  equality (MEq) first, or block_inv be restated for MEq.
+- Bend lessons (C2): a def whose match has a variable pattern in one
+  column does not reduce on an abstract value there even when other
+  columns are concrete (split that column into constructors in the
+  proof). Step lemmas returning band(invariant(next), natle(1 + measure
+  next, measure now)) keep a fuelled walk to one line per case. A
+  rewrite motive can be any type (`%E : DV.Regular(~F, x, _, us)`), which
+  transports a Data hypothesis inline. `Equal.cong(A, B, u => f(~F, u),
+  ..)` with a lambda gives heads/tails of vector equations; `Equal.trans`
+  chains equations. Python heredocs with Bend text can break; write the
+  text with the Write tool to a scratch file and append it.
 - Bend lessons (C1): `All(~Q, k)` with a template `~Q: Nat -> Data` and
   `all_mk(~n, ~Q, ~f, ...)` with a template lemma `~f` are the reusable
   "for every index below k" (the lambdas may capture locals); recursion
