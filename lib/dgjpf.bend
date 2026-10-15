@@ -27,6 +27,8 @@ import ./gjpf.bend as GJ
 import ./numer.bend as NU
 import ./roundpf.bend as RP
 import ./normpf.bend as NP
+import ./real.bend as RL
+import ./slope.bend as SL
 
 # Dyadic rows in F
 # ----------------
@@ -391,3 +393,95 @@ def dk_err(~F: O.OField, +n: Nat, +j: M.Mat(~F), +e: M.Vec(~F), +k: Nat, +ep: O.
           (%Equal.trans(Nat, M.len(~F, GJ.mcol(~F, j, k)), GJ.nrows(~F, j), n, len_mcol(~F, j, k), hn) : M.bnd(~F, M.dot(~F, GJ.vdrop(~F, n, e), GJ.mcol(~F, j, k)), O.mul(F, NP.rowabs(~F, GJ.vdrop(~F, n, e), _), g))
             NP.dot_le(~F, GJ.vdrop(~F, n, e), GJ.mcol(~F, j, k), g, vall_mcol(~F, j, k, g, hj, hg), hg)),
           FM.sub_nonneg(~F, O.mul(F, NP.rowabs(~F, GJ.vdrop(~F, n, e), n), g), O.mul(F, O.mul(F, FR.ofn(~F, n), ep), g), FV.mul_le_r(~F, NP.rowabs(~F, GJ.vdrop(~F, n, e), n), O.mul(F, FR.ofn(~F, n), ep), g, hg, rowabs_le(~F, GJ.vdrop(~F, n, e), n, ep, vall_drop(~F, n, e, ep, he), hep))))))))
+
+# Entries by index
+# ----------------
+
+def look_diff(~F: O.OField, +w: M.Vec(~F), +u: M.Vec(~F), +k: Nat) -> {O.lookup(~F, M.vadd(~F, w, M.vneg(~F, u)), k) == O.sub(~F, O.lookup(~F, w, k), O.lookup(~F, u, k)) : O.C(F)}:
+  %GJ.look_vadd(~F, w, M.vneg(~F, u), k) : {_ == O.sub(~F, O.lookup(~F, w, k), O.lookup(~F, u, k)) : O.C(F)}
+  %GJ.look_vneg(~F, u, k) : {O.add(F, O.lookup(~F, w, k), _) == O.sub(~F, O.lookup(~F, w, k), O.lookup(~F, u, k)) : O.C(F)}
+  {==}
+
+# a bound on every entry, by index, bounds the list
+def vall_by(~F: O.OField, ~v: M.Vec(~F), ~t: O.C(F), ~f: @k: Nat -> M.bnd(~F, O.lookup(~F, v, k), t)) -> M.vbnd.all(~F, v, t):
+  vall_of_all(~F, v, t, GJ.all_mk(~M.len(~F, v), ~(k => M.bnd(~F, O.lookup(~F, v, k), t)), ~(k => hk => f(k)), M.len(~F, v), GJ.le_refl(M.len(~F, v))))
+
+def ne_lt(j: Nat, c: Nat, h: {KA.natle(1n+j, c) == True{} : Bool}) -> {KA.nateq(c, j) == False{} : Bool}:
+  match j c:
+    case 0n 0n:
+      FO.absurd({KA.nateq(0n, 0n) == False{} : Bool}, KA.ft(h))
+    case 0n 1n+b:
+      {==}
+    case 1n+a 0n:
+      FO.absurd({KA.nateq(0n, 1n+a) == False{} : Bool}, KA.ft(h))
+    case 1n+a 1n+b:
+      ne_lt(a, b, h)
+
+def neg_contra(~F: O.OField, +x: O.C(F), hl: O.le(~F, x, O.zero(F)), e: {x == O.one(F) : O.C(F)}) -> Empty:
+  O.lt_irrefl(F)(O.zero(F))(FO.lt_le_trans(~F, O.zero(F), x, O.zero(F), FO.lt_subst_r(~F, O.one(F), x, O.zero(F), Equal.sym(O.C(F), x, O.one(F), e), O.zero_lt_one(F)), hl))
+
+def fabs_inv.go(~F: O.OField, +q: O.C(F), +p: O.C(F), tq: Or(O.lt(F, q, O.zero(F)), Or({q == O.zero(F) : O.C(F)}, O.lt(F, O.zero(F), q))), tp: Or(O.lt(F, p, O.zero(F)), Or({p == O.zero(F) : O.C(F)}, O.lt(F, O.zero(F), p))), +e: {O.mul(F, q, p) == O.one(F) : O.C(F)}) -> {O.mul(F, FV.fabs.go(~F, q, tq), FV.fabs.go(~F, p, tp)) == O.one(F) : O.C(F)}:
+  match tq tp:
+    case Inl{lq} Inl{lp}:
+      Equal.trans(O.C(F), O.mul(F, O.neg(F, q), O.neg(F, p)), O.mul(F, q, p), O.one(F), FR.fring_eq(~F, [q, p], E.ZMul{E.ZNeg{E.ZVar{0n}}, E.ZNeg{E.ZVar{1n}}}, E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, {==}), e)
+    case Inl{lq} Inr{rp}:
+      FO.absurd({O.mul(F, O.neg(F, q), p) == O.one(F) : O.C(F)}, neg_contra(~F, O.mul(F, q, p), RL.le_rw_l(~F, O.mul(F, p, q), O.mul(F, q, p), O.zero(F), FR.fring_eq(~F, [q, p], E.ZMul{E.ZVar{1n}, E.ZVar{0n}}, E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, {==}), FV.sle0(~F, p, q, FV.nn_of_ge.go(~F, p, rp), FO.lt_le(~F, q, O.zero(F), lq))), e))
+    case Inr{rq} Inl{lp}:
+      FO.absurd({O.mul(F, q, O.neg(F, p)) == O.one(F) : O.C(F)}, neg_contra(~F, O.mul(F, q, p), FV.sle0(~F, q, p, FV.nn_of_ge.go(~F, q, rq), FO.lt_le(~F, p, O.zero(F), lp)), e))
+    case Inr{rq} Inr{rp}:
+      e
+
+# q p = 1 gives |q| |p| = 1
+def fabs_inv(~F: O.OField, +q: O.C(F), +p: O.C(F), +e: {O.mul(F, q, p) == O.one(F) : O.C(F)}) -> {O.mul(F, FV.fabs(~F, q), FV.fabs(~F, p)) == O.one(F) : O.C(F)}:
+  fabs_inv.go(~F, q, p, O.lt_total(F)(q, O.zero(F)), O.lt_total(F)(p, O.zero(F)), e)
+
+# Rows during the elimination
+# ---------------------------
+# A row x at index i after c columns: 2n entries, each at most G; its
+# defect entries at most D; its first c entries within P of the unit
+# vector's.
+
+def fin(~F: O.OField, +x: M.Vec(~F), +i: Nat, +c: Nat, +ph: O.C(F)) -> Data:
+  GJ.All(~(j => M.bnd(~F, O.sub(~F, O.lookup(~F, x, j), GJ.dl(~F, KA.nateq(i, j))), ph)), c)
+
+def dfb(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x: M.Vec(~F), +dd: O.C(F)) -> Data:
+  GJ.All(~(k => M.bnd(~F, dk(~F, n, jm, x, k), dd)), n)
+
+def rowinv(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x: M.Vec(~F), +i: Nat, +c: Nat, +gg: O.C(F), +dd: O.C(F), +ph: O.C(F)) -> Data:
+  M.Both({M.len(~F, x) == Nat.add(n, n) : Nat}, M.Both(M.vbnd.all(~F, x, gg), M.Both(dfb(~F, n, jm, x, dd), fin(~F, x, i, c, ph))))
+
+def ri_mk(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x: M.Vec(~F), +i: Nat, +c: Nat, +gg: O.C(F), +dd: O.C(F), +ph: O.C(F), hl: {M.len(~F, x) == Nat.add(n, n) : Nat}, he: M.vbnd.all(~F, x, gg), hd: dfb(~F, n, jm, x, dd), hf: fin(~F, x, i, c, ph)) -> rowinv(~F, n, jm, x, i, c, gg, dd, ph):
+  (hl, (he, (hd, hf)))
+
+def ri_len(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x: M.Vec(~F), +i: Nat, +c: Nat, +gg: O.C(F), +dd: O.C(F), +ph: O.C(F), h: rowinv(~F, n, jm, x, i, c, gg, dd, ph)) -> {M.len(~F, x) == Nat.add(n, n) : Nat}:
+  (a, b) = h
+  a
+
+def ri_r1(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x: M.Vec(~F), +i: Nat, +c: Nat, +gg: O.C(F), +dd: O.C(F), +ph: O.C(F), h: rowinv(~F, n, jm, x, i, c, gg, dd, ph)) -> M.Both(M.vbnd.all(~F, x, gg), M.Both(dfb(~F, n, jm, x, dd), fin(~F, x, i, c, ph))):
+  (a, b) = h
+  b
+
+def ri_e.go(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x: M.Vec(~F), +i: Nat, +c: Nat, +gg: O.C(F), +dd: O.C(F), +ph: O.C(F), h: M.Both(M.vbnd.all(~F, x, gg), M.Both(dfb(~F, n, jm, x, dd), fin(~F, x, i, c, ph)))) -> M.vbnd.all(~F, x, gg):
+  (a, b) = h
+  a
+
+def ri_r2(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x: M.Vec(~F), +i: Nat, +c: Nat, +gg: O.C(F), +dd: O.C(F), +ph: O.C(F), h: M.Both(M.vbnd.all(~F, x, gg), M.Both(dfb(~F, n, jm, x, dd), fin(~F, x, i, c, ph)))) -> M.Both(dfb(~F, n, jm, x, dd), fin(~F, x, i, c, ph)):
+  (a, b) = h
+  b
+
+def ri_d.go(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x: M.Vec(~F), +i: Nat, +c: Nat, +dd: O.C(F), +ph: O.C(F), h: M.Both(dfb(~F, n, jm, x, dd), fin(~F, x, i, c, ph))) -> dfb(~F, n, jm, x, dd):
+  (a, b) = h
+  a
+
+def ri_f.go(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x: M.Vec(~F), +i: Nat, +c: Nat, +dd: O.C(F), +ph: O.C(F), h: M.Both(dfb(~F, n, jm, x, dd), fin(~F, x, i, c, ph))) -> fin(~F, x, i, c, ph):
+  (a, b) = h
+  b
+
+def ri_e(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x: M.Vec(~F), +i: Nat, +c: Nat, +gg: O.C(F), +dd: O.C(F), +ph: O.C(F), h: rowinv(~F, n, jm, x, i, c, gg, dd, ph)) -> M.vbnd.all(~F, x, gg):
+  ri_e.go(~F, n, jm, x, i, c, gg, dd, ph, ri_r1(~F, n, jm, x, i, c, gg, dd, ph, h))
+
+def ri_d(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x: M.Vec(~F), +i: Nat, +c: Nat, +gg: O.C(F), +dd: O.C(F), +ph: O.C(F), h: rowinv(~F, n, jm, x, i, c, gg, dd, ph)) -> dfb(~F, n, jm, x, dd):
+  ri_d.go(~F, n, jm, x, i, c, dd, ph, ri_r2(~F, n, jm, x, i, c, gg, dd, ph, ri_r1(~F, n, jm, x, i, c, gg, dd, ph, h)))
+
+def ri_f(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +x: M.Vec(~F), +i: Nat, +c: Nat, +gg: O.C(F), +dd: O.C(F), +ph: O.C(F), h: rowinv(~F, n, jm, x, i, c, gg, dd, ph)) -> fin(~F, x, i, c, ph):
+  ri_f.go(~F, n, jm, x, i, c, dd, ph, ri_r2(~F, n, jm, x, i, c, gg, dd, ph, ri_r1(~F, n, jm, x, i, c, gg, dd, ph, h)))
