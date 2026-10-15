@@ -2028,3 +2028,76 @@ def dk0(~F: O.OField, +n: Nat, +a: List<&2, List<&2, S.D>>, +i: Nat, +k: Nat, +h
         GJ.le_refl(GJ.nrows(~F, M.ofdm(~F, a)))))) : {O.zero(F) == O.sub(~F, O.lookup(~F, DV.mrow(~F, M.ofdm(~F, a), i), k), _) : O.C(F)}
   %GJ.look_mcol(~F, M.ofdm(~F, a), k, i) : {O.zero(F) == O.sub(~F, O.lookup(~F, DV.mrow(~F, M.ofdm(~F, a), i), k), _) : O.C(F)}
   FR.fring_eq(~F, [O.lookup(~F, DV.mrow(~F, M.ofdm(~F, a), i), k)], E.ZCst{S.Z0{}}, E.ZSub{E.ZVar{0n}, E.ZVar{0n}}, {==})
+
+def len_xi(~F: O.OField, +n: Nat, +a: List<&2, List<&2, S.D>>, +i: Nat, +hw: GJ.roww(~F, M.ofdm(~F, a), n, i)) -> {M.len(~F, GJ.vapp(~F, DV.mrow(~F, M.ofdm(~F, a), i), GJ.unit(~F, n, i))) == Nat.add(n, n) : Nat}:
+  %GJ.len_vapp(~F, DV.mrow(~F, M.ofdm(~F, a), i), GJ.unit(~F, n, i)) : {_ == Nat.add(n, n) : Nat}
+  %Equal.sym(Nat, M.len(~F, DV.mrow(~F, M.ofdm(~F, a), i)), n, hw) : {Nat.add(_, M.len(~F, GJ.unit(~F, n, i))) == Nat.add(n, n) : Nat}
+  %GJ.len_unit(~F, n, i) : {Nat.add(n, _) == Nat.add(n, n) : Nat}
+  {==}
+
+# the start row J_i e_i, under the column-0 constants (any row index:
+# no finished columns yet)
+def row0(~F: O.OField, +n: Nat, +a: List<&2, List<&2, S.D>>, +g: O.C(F), +w: Nat, +i: Nat, +i2: Nat, +hw: GJ.roww(~F, M.ofdm(~F, a), n, i), +hjn: {GJ.nrows(~F, M.ofdm(~F, a)) == n : Nat}, +hj: mall(~F, M.ofdm(~F, a), g), +hg: O.le(~F, O.zero(F), g)) -> rowinv(~F, n, M.ofdm(~F, a), GJ.vapp(~F, DV.mrow(~F, M.ofdm(~F, a), i), GJ.unit(~F, n, i)), i2, 0n, O.add(F, g, O.one(F)), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))):
+  ri_mk(~F, n, M.ofdm(~F, a), GJ.vapp(~F, DV.mrow(~F, M.ofdm(~F, a), i), GJ.unit(~F, n, i)), i2, 0n, O.add(F, g, O.one(F)), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), len_xi(~F, n, a, i, hw),
+    vall_app(~F, DV.mrow(~F, M.ofdm(~F, a), i), GJ.unit(~F, n, i), O.add(F, g, O.one(F)), FM.vall_mono(~F, DV.mrow(~F, M.ofdm(~F, a), i), g, O.add(F, g, O.one(F)), mall_row(~F, M.ofdm(~F, a), g, i, hj), FM.sub_nonneg(~F, g, O.add(F, g, O.one(F)), le_addr(~F, g, O.one(F), NP.one_nn(~F)))), FM.vall_mono(~F, GJ.unit(~F, n, i), O.one(F), O.add(F, g, O.one(F)), vall_unit(~F, n, i), FM.sub_nonneg(~F, O.one(F), O.add(F, g, O.one(F)), le_addl(~F, g, O.one(F), hg)))),
+    GJ.all_mk(~n, ~(k => M.bnd(~F, dk(~F, n, M.ofdm(~F, a), GJ.vapp(~F, DV.mrow(~F, M.ofdm(~F, a), i), GJ.unit(~F, n, i)), k), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})))), ~(k => hk => KB.bnd_val(~F, O.zero(F), dk(~F, n, M.ofdm(~F, a), GJ.vapp(~F, DV.mrow(~F, M.ofdm(~F, a), i), GJ.unit(~F, n, i)), k), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), dk0(~F, n, a, i, k, hw, hjn, hk), FM.bnd_zero(~F, O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), FO.mul_nonneg(~F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}), FO.le_refl(~F, O.zero(F)), u_nn(~F, w))))), n, GJ.le_refl(n)),
+    Unit{})
+
+# rinv from every row's invariant
+def rinv_of(~F: O.OField, +n: Nat, +jm: M.Mat(~F), s: M.Mat(~F), +i0: Nat, +c: Nat, +gg: O.C(F), +dd: O.C(F), +ph: O.C(F), +h: GJ.All(~(k => rowinv(~F, n, jm, DV.mrow(~F, s, k), Nat.add(k, i0), c, gg, dd, ph)), GJ.nrows(~F, s))) -> rinv(~F, n, jm, s, i0, c, gg, dd, ph):
+  match s:
+    case Nil{}:
+      Unit{}
+    case Con{+x, +t}:
+      (GJ.all_at(~(k => rowinv(~F, n, jm, DV.mrow(~F, Con{x, t}, k), Nat.add(k, i0), c, gg, dd, ph)), 1n+GJ.nrows(~F, t), h, 0n, {==}),
+        rinv_of(~F, n, jm, t, 1n+i0, c, gg, dd, ph, all_map(~(k => rowinv(~F, n, jm, DV.mrow(~F, Con{x, t}, 1n+k), Nat.add(1n+k, i0), c, gg, dd, ph)), ~(k => rowinv(~F, n, jm, DV.mrow(~F, t, k), Nat.add(k, 1n+i0), c, gg, dd, ph)), ~(k => q =>
+          (%LN.add_succ(k, i0) : rowinv(~F, n, jm, DV.mrow(~F, t, k), _, c, gg, dd, ph)
+            q)), GJ.nrows(~F, t), all_shift(~(k => rowinv(~F, n, jm, DV.mrow(~F, Con{x, t}, k), Nat.add(k, i0), c, gg, dd, ph)), GJ.nrows(~F, t), h))))
+
+def nrows_aug(~F: O.OField, a: List<&2, List<&2, S.D>>, +n: Nat, +k: Nat) -> {GJ.nrows(~F, M.ofdm(~F, NU.daugment(a, n, k))) == GJ.nrows(~F, M.ofdm(~F, a)) : Nat}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{r, t}:
+      %Equal.sym(Nat, GJ.nrows(~F, M.ofdm(~F, NU.daugment(t, n, 1n+k))), GJ.nrows(~F, M.ofdm(~F, t)), nrows_aug(~F, t, n, 1n+k)) : {1n+_ == 1n+GJ.nrows(~F, M.ofdm(~F, t)) : Nat}
+      {==}
+
+def hk_aug(~F: O.OField, +n: Nat, +a: List<&2, List<&2, S.D>>, +k: Nat, +hjn: {GJ.nrows(~F, M.ofdm(~F, a)) == n : Nat}, +hk: {KA.natle(1n+k, GJ.nrows(~F, M.ofdm(~F, NU.daugment(a, n, 0n)))) == True{} : Bool}) -> {KA.natle(1n+k, GJ.nrows(~F, M.ofdm(~F, a))) == True{} : Bool}:
+  %nrows_aug(~F, a, n, 0n) : {KA.natle(1n+k, _) == True{} : Bool}
+  hk
+
+def hk_n(~F: O.OField, +n: Nat, +a: List<&2, List<&2, S.D>>, +k: Nat, +hjn: {GJ.nrows(~F, M.ofdm(~F, a)) == n : Nat}, +hk: {KA.natle(1n+k, GJ.nrows(~F, M.ofdm(~F, a))) == True{} : Bool}) -> {KA.natle(1n+k, n) == True{} : Bool}:
+  %hjn : {KA.natle(1n+k, _) == True{} : Bool}
+  hk
+
+def row0_at(~F: O.OField, +n: Nat, +a: List<&2, List<&2, S.D>>, +g: O.C(F), +w: Nat, +k: Nat, +hk: {KA.natle(1n+k, GJ.nrows(~F, M.ofdm(~F, NU.daugment(a, n, 0n)))) == True{} : Bool}, +hw: GJ.All(~(i => GJ.roww(~F, M.ofdm(~F, a), n, i)), n), +hjn: {GJ.nrows(~F, M.ofdm(~F, a)) == n : Nat}, +hj: mall(~F, M.ofdm(~F, a), g), +hg: O.le(~F, O.zero(F), g)) -> rowinv(~F, n, M.ofdm(~F, a), DV.mrow(~F, M.ofdm(~F, NU.daugment(a, n, 0n)), k), Nat.add(k, 0n), 0n, O.add(F, g, O.one(F)), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))):
+  %Equal.sym(M.Vec(~F), DV.mrow(~F, M.ofdm(~F, NU.daugment(a, n, 0n)), k), GJ.vapp(~F, DV.mrow(~F, M.ofdm(~F, a), k), GJ.unit(~F, n, Nat.add(k, 0n))), aug_row(~F, a, n, 0n, k, hk_aug(~F, n, a, k, hjn, hk))) : rowinv(~F, n, M.ofdm(~F, a), _, Nat.add(k, 0n), 0n, O.add(F, g, O.one(F)), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})))
+  %LN.add_zero(k) : rowinv(~F, n, M.ofdm(~F, a), GJ.vapp(~F, DV.mrow(~F, M.ofdm(~F, a), k), GJ.unit(~F, n, _)), Nat.add(k, 0n), 0n, O.add(F, g, O.one(F)), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})))
+  row0(~F, n, a, g, w, k, Nat.add(k, 0n), GJ.all_at(~(i => GJ.roww(~F, M.ofdm(~F, a), n, i)), n, hw, k, hk_n(~F, n, a, k, hjn, hk_aug(~F, n, a, k, hjn, hk))), hjn, hj, hg)
+
+# the start's invariant
+def rinv0(~F: O.OField, +n: Nat, +a: List<&2, List<&2, S.D>>, +g: O.C(F), +w: Nat, +hw: GJ.All(~(i => GJ.roww(~F, M.ofdm(~F, a), n, i)), n), +hjn: {GJ.nrows(~F, M.ofdm(~F, a)) == n : Nat}, +hj: mall(~F, M.ofdm(~F, a), g), +hg: O.le(~F, O.zero(F), g)) -> rinv(~F, n, M.ofdm(~F, a), M.ofdm(~F, NU.daugment(a, n, 0n)), 0n, 0n, O.add(F, g, O.one(F)), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}))):
+  rinv_of(~F, n, M.ofdm(~F, a), M.ofdm(~F, NU.daugment(a, n, 0n)), 0n, 0n, O.add(F, g, O.one(F)), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), GJ.all_mk(~GJ.nrows(~F, M.ofdm(~F, NU.daugment(a, n, 0n))), ~(k => rowinv(~F, n, M.ofdm(~F, a), DV.mrow(~F, M.ofdm(~F, NU.daugment(a, n, 0n)), k), Nat.add(k, 0n), 0n, O.add(F, g, O.one(F)), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})))), ~(k => hk => row0_at(~F, n, a, g, w, k, hk, hw, hjn, hj, hg)), GJ.nrows(~F, M.ofdm(~F, NU.daugment(a, n, 0n))), GJ.le_refl(GJ.nrows(~F, M.ofdm(~F, NU.daugment(a, n, 0n))))))
+
+def hns0(~F: O.OField, +n: Nat, +a: List<&2, List<&2, S.D>>, +hjn: {GJ.nrows(~F, M.ofdm(~F, a)) == n : Nat}) -> {GJ.nrows(~F, M.ofdm(~F, NU.daugment(a, n, 0n))) == n : Nat}:
+  Equal.trans(Nat, GJ.nrows(~F, M.ofdm(~F, NU.daugment(a, n, 0n))), GJ.nrows(~F, M.ofdm(~F, a)), n, nrows_aug(~F, a, n, 0n), hjn)
+
+# the start's right halves are I: entry k of I u is u_k
+def e1_0(~F: O.OField, +n: Nat, +a: List<&2, List<&2, S.D>>, +u: M.Vec(~F), +k: Nat, +lu: {M.len(~F, u) == n : Nat}, +hk: {KA.natle(1n+k, n) == True{} : Bool}, +hw: GJ.All(~(i => GJ.roww(~F, M.ofdm(~F, a), n, i)), n), +hjn: {GJ.nrows(~F, M.ofdm(~F, a)) == n : Nat}) -> {zr(~F, n, DV.mrow(~F, M.ofdm(~F, NU.daugment(a, n, 0n)), k), u) == O.lookup(~F, u, k) : O.C(F)}:
+  %Equal.sym(M.Vec(~F), DV.mrow(~F, M.ofdm(~F, NU.daugment(a, n, 0n)), k), GJ.vapp(~F, DV.mrow(~F, M.ofdm(~F, a), k), GJ.unit(~F, n, Nat.add(k, 0n))), aug_row(~F, a, n, 0n, k, (%Equal.sym(Nat, GJ.nrows(~F, M.ofdm(~F, a)), n, hjn) : {KA.natle(1n+k, _) == True{} : Bool}
+      hk))) : {M.dot(~F, GJ.vdrop(~F, n, _), u) == O.lookup(~F, u, k) : O.C(F)}
+  %LN.add_zero(k) : {M.dot(~F, GJ.vdrop(~F, n, GJ.vapp(~F, DV.mrow(~F, M.ofdm(~F, a), k), GJ.unit(~F, n, _))), u) == O.lookup(~F, u, k) : O.C(F)}
+  %GJ.all_at(~(i => GJ.roww(~F, M.ofdm(~F, a), n, i)), n, hw, k, hk) : {M.dot(~F, GJ.vdrop(~F, _, GJ.vapp(~F, DV.mrow(~F, M.ofdm(~F, a), k), GJ.unit(~F, n, k))), u) == O.lookup(~F, u, k) : O.C(F)}
+  %Equal.sym(M.Vec(~F), GJ.vdrop(~F, M.len(~F, DV.mrow(~F, M.ofdm(~F, a), k)), GJ.vapp(~F, DV.mrow(~F, M.ofdm(~F, a), k), GJ.unit(~F, n, k))), GJ.unit(~F, n, k), drop_app(~F, DV.mrow(~F, M.ofdm(~F, a), k), GJ.unit(~F, n, k))) : {M.dot(~F, _, u) == O.lookup(~F, u, k) : O.C(F)}
+  Equal.sym(O.C(F), O.lookup(~F, u, k), M.dot(~F, GJ.unit(~F, n, k), u), GJ.dot_unit(~F, n, k, u, (%Equal.sym(Nat, M.len(~F, u), n, lu) : {KA.natle(_, n) == True{} : Bool}
+    GJ.le_refl(n))))
+
+def low0(~F: O.OField, +n: Nat, +a: List<&2, List<&2, S.D>>, +hw: GJ.All(~(i => GJ.roww(~F, M.ofdm(~F, a), n, i)), n), +hjn: {GJ.nrows(~F, M.ofdm(~F, a)) == n : Nat}, +u: M.Vec(~F), +lu: {M.len(~F, u) == n : Nat}) -> O.le(~F, NP.vn(~F, u), O.mul(F, O.one(F), NP.vn(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n))), u)))):
+  %Equal.sym(O.C(F), O.mul(F, O.one(F), NP.vn(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n))), u))), NP.vn(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n))), u)), FR.fring_eq(~F, [NP.vn(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n))), u))], E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{0n}}, E.ZVar{0n}, {==})) : O.le(~F, NP.vn(~F, u), _)
+  FV.vmax_lub(~F, u, NP.vn(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n))), u)), vall_lt(~F, ~u, ~NP.vn(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n))), u)), ~(k => hk =>
+      (%Equal.trans(O.C(F), O.lookup(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n))), u), k), zr(~F, n, DV.mrow(~F, M.ofdm(~F, NU.daugment(a, n, 0n)), k), u), O.lookup(~F, u, k), look_rmv(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n)), u, k), e1_0(~F, n, a, u, k, lu, (%lu : {KA.natle(1n+k, _) == True{} : Bool} hk), hw, hjn)) : M.bnd(~F, _, NP.vn(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n))), u)))
+        look_bnd(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n))), u), k, NP.vn(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n))), u)), FV.vmax_all(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n))), u)), FV.vmax_nn(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n))), u)))))), FV.vmax_nn(~F, M.matvec(~F, rmat(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n))), u)))
+
+# the start's right halves have an inverse of norm at most 1
+def invb0(~F: O.OField, +n: Nat, +a: List<&2, List<&2, S.D>>, +g: O.C(F), +w: Nat, +hw: GJ.All(~(i => GJ.roww(~F, M.ofdm(~F, a), n, i)), n), +hjn: {GJ.nrows(~F, M.ofdm(~F, a)) == n : Nat}, +hj: mall(~F, M.ofdm(~F, a), g), +hg: O.le(~F, O.zero(F), g)) -> NP.InvB(~F, rmat(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n))), n, O.one(F)):
+  NP.invb_of_low(~F, ~rmat(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n))), ~n, ~O.one(F), ~(u => lu => low0(~F, n, a, hw, hjn, u, lu)), NP.one_nn(~F), Equal.trans(Nat, GJ.nrows(~F, rmat(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n)))), GJ.nrows(~F, M.ofdm(~F, NU.daugment(a, n, 0n))), n, nrows_rmat(~F, n, M.ofdm(~F, NU.daugment(a, n, 0n))), hns0(~F, n, a, hjn)), rw_all(~F, n, M.ofdm(~F, a), M.ofdm(~F, NU.daugment(a, n, 0n)), 0n, O.add(F, g, O.one(F)), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), O.mul(F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), rinv0(~F, n, a, g, w, hw, hjn, hj, hg), hns0(~F, n, a, hjn)))
