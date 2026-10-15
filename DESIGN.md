@@ -981,8 +981,9 @@ half of |x' − x|). `Complete` is used twice: `exists_of` (Banach) and
    unknowns, a permutation of the variables; ep lists the kept equations
    block by block, a permutation; a block's equations use only pins,
    earlier unknowns and its own (blocks are checked as they are emitted,
-   and what is left becomes one block); a block's pars are exactly the
-   earlier variables it uses. So every non-numeric part of `PL.check`
+   and what is left becomes one block, which is valid because Tarjan's
+   components partition the kept equations: (6)); a block's pars are
+   exactly the earlier variables it uses. So every non-numeric part of `PL.check`
    holds by construction, as do `held`, `within` and the shape checks;
    `explained` and `wf_dec` are solve_total's.
 2. *Linear algebra in F.* Gauss–Jordan over F, deciding pivots with
@@ -998,7 +999,7 @@ half of |x' − x|). `Complete` is used twice: `exists_of` (Banach) and
    equations at x's parameters x_z, and let Z_b be its Jacobian's inverse
    there. The parameters' centers pc are earlier centers, within τ of x_z.
    Write θ = 2^-P/2.
-   - Newton: every inverse A it uses has |I − A J| ≤ θ (solver change 1).
+   - Newton: every inverse A it uses has |I − A J| ≤ θ (5).
      From the drawing (within 2^-P), one step lands within
      O(τ) + 2^-P-1 + O(θ 2^-P) of x_b. The next step moves at most
      2^-P + O(θ (τ + 2^-P)), so Newton has settled by its second step,
@@ -1020,31 +1021,43 @@ half of |x' − x|). `Complete` is used twice: `exists_of` (Banach) and
    O(radius), so it passes once the box is small; a variable-free ≥ 0 is
    computed exactly.
 
-**Solver changes, so the proof needs less (answers unchanged in normal runs).**
-- *Checked inverse.* After the dyadic Gauss–Jordan (Newton's steps and Y),
-  compute I − A J exactly and require its largest row sum ≤ 2^-P/2.
-  Otherwise, or when elimination meets a zero column, invert exactly over ℚ
-  (`qinverse`) and round to P + 32 bits. Rounded elimination with partial
-  pivoting then never needs an error analysis: the fast path's quality is
-  checked, and the exact path is proven by simulating (2)'s Gauss–Jordan.
-  Cost: one exact product per inversion, to be measured.
-- *Checked components.* If Tarjan's components do not partition the kept
-  equations, use one block. Tarjan then needs no proof, since validity is
-  already checked as blocks are emitted.
+5. *Rounded elimination, analysed.* The dyadic Gauss–Jordan at w = P + 32
+   bits, partial pivoting and all. By induction over the columns, the
+   computed rows are T [J | I] up to δ, where T is the exact product of the
+   row operations it performed (its own reciprocals and multipliers). The
+   entries stay below G, T has an inverse of norm at most H, and the
+   finished columns are unit vectors up to δ. The pivot stays at least μ: if
+   every candidate in the column were smaller, e_c minus the finished
+   columns' entries would be a near-kernel vector of J, and J is invertible
+   with |J⁻¹| ≤ β. So elimination never meets a zero column. At the end
+   |I − A J| ≤ n δ (2 + |J|), with δ ≤ K 2^-w for a K explicit in n, |J|
+   and β. No Schur complements and no growth-factor theorem: partial
+   pivoting is used only to say the pivot is the column's largest entry.
+6. *Tarjan partitions.* Every equation reached is either on the component
+   stack or in exactly one emitted component. The fuel covers one step per
+   root, per edge and per finish. When a search from a root finishes, the
+   root's low is its own index (everything above it on the stack is
+   younger), so it pops the whole stack. Hence the components partition
+   the kept equations.
+
+**The solver as it runs.** No changes. (An earlier draft of this plan
+proposed two: a residual-checked inverse with an exact fallback in place of
+(5), and a partition check in place of (6). Danielle preferred proving the
+solver as it stands, and both are provable.)
 
 **Milestones** (each one a checked file with the gate green):
 
 | | file | contents |
 |---|---|---|
-| C0 | lib/numer.bend, lib/struct.bend | the two solver changes; regression and chains unchanged; timing |
 | C1 | lib/gjpf.bend | finite sums, matrices as functions, Gauss–Jordan over F (the dichotomy), permutation, block triangular, perturbation |
-| C2 | lib/structpf.bend | the variable side saturates the kept equations; blocks partition them; vp/ep permutations; kept vs good; PL.check's structural parts |
+| C2 | lib/tarjanpf.bend, lib/structpf.bend | Tarjan partitions (6); the variable side saturates the kept equations; blocks partition them; vp/ep permutations; kept vs good; PL.check's structural parts |
 | C3 | lib/bndpf.bend | majorants and Lipschitz bounds for expressions and slopes; slope at equal points = deriv; renaming commutes with deriv; ball tightness; rounding (dround, dsig, dsigup, qsig) |
-| C4 | lib/qgjpf.bend | the exact fallback is the image of F's Gauss–Jordan, so a left inverse |
+| C4 | lib/dgjpf.bend | the rounded elimination (5): Newton's and Y's inverses are good |
 | C5 | lib/blockpf.bend | one block at P (3) |
 | C6 | lib/completepf.bend | the blocks in turn, the verdict, local uniqueness, choosing l and d: `solve_complete` |
 
-**Risks.** Size: several thousand lines over several sessions. Checker time
+**Risks.** Size: several thousand lines over several sessions (C4 is the
+largest single piece). Checker time
 on long inequality proofs: keep the files small. Rounding lemmas on binary
 positives. Lists read with trailing zeros in the matrix plumbing (C1 works
 with matrices as functions and converts only at the edges).

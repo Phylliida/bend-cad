@@ -387,9 +387,9 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
 - Next: Danielle's review of all six; solve_complete, planned in DESIGN
   §10.4 (2026-10-14: choose the level first and d ≤ 2^-P, so Newton
   settles in two steps; Gauss–Jordan over F for the finite-dimensional
-  facts; x in the box by exists_of plus local uniqueness; two solver
-  changes, a checked inverse with an exact fallback and checked
-  components; milestones C0-C6); pin witnesses; ink-metric KKT (§10.3);
+  facts; x in the box by exists_of plus local uniqueness; no solver
+  changes: Danielle preferred proving the rounded elimination and Tarjan
+  as they are; milestones C1-C6); pin witnesses; ink-metric KKT (§10.3);
   speed.
 - Bend proof lessons (solve_total): `%E : P` with E : {L == R} turns R
   into L in the goal, so to replace X by Y use E : {Y == X} (I got this
