@@ -102,43 +102,51 @@ def ncons(sk: SK.Sketch) -> Nat:
     case SK.Sketch{vs, es, cs}:
       clen(cs)
 
-# the equations (indices from k) owned by constraint c
-def owned.go(b: Bool, +k: Nat, rest: List<&2, Nat>) -> List<&2, Nat>:
-  match b:
-    case True{}:
-      Con{k, rest}
-    case False{}:
-      rest
+# Red constraints
+# ---------------
+# The constraints are walked in order, as Sketch.eqs and SV.owners walk
+# them: constraint i (counting driven ones) owns the equations k .. k + n -
+# 1 of the sketch's exact system. Its equations are matched as a unit
+# (lib/struct.bend: grp); if one fails, the matching goes back to what it
+# was and i is red, with that equation's witness. vm: the matching (each
+# variable's equation); red, why: the red constraints so far and why,
+# newest first.
 
-def owned(own: List<&2, Nat>, +c: Nat, +k: Nat) -> List<&2, Nat>:
-  match own:
+type CS is Data:
+  CS{vm: List<&2, Maybe<&2, Nat>>, red: List<&2, Nat>, why: List<&2, SV.Why>}
+
+def CS.vm(st: CS) -> List<&2, Maybe<&2, Nat>>:
+  match st:
+    case CS{vm, red, why}:
+      vm
+
+def CS.red(st: CS) -> List<&2, Nat>:
+  match st:
+    case CS{vm, red, why}:
+      red
+
+def CS.why(st: CS) -> List<&2, SV.Why>:
+  match st:
+    case CS{vm, red, why}:
+      why
+
+def cfin(+i: Nat, g: ST.GS, st: CS) -> CS:
+  match g st:
+    case ST.GOk{vm2} CS{vm, red, why}:
+      CS{vm2, red, why}
+    case ST.GFail{ST.Red{j, s, w}} CS{vm, red, why}:
+      CS{vm, Con{i, red}, Con{SV.Why{j, s, w}, why}}
+
+# the constraints cs from position i, their equations from k
+def kuhnc(cs: List<&2, SK.Rec>, +es: List<&2, SK.Ent>, +i: Nat, +k: Nat, +adj: List<&2, List<&2, Nat>>, +f: Nat, +st: CS) -> CS:
+  match cs:
     case Nil{}:
-      Nil{}
-    case Con{o, t}:
-      owned.go(SV.eq(o, c), k, owned(t, c, 1n+k))
-
-# each constraint's equations, in order (constraints from c, n of them)
-def groups(n: Nat, +own: List<&2, Nat>, +c: Nat) -> List<&2, List<&2, Nat>>:
-  match n:
-    case 0n:
-      Nil{}
-    case 1n+m:
-      Con{owned(own, c, 0n), groups(m, own, 1n+c)}
-
-# each red constraint, and why
-def reds(+own: List<&2, Nat>, rs: List<&2, ST.Red>) -> List<&2, Nat>:
-  match rs:
-    case Nil{}:
-      Nil{}
-    case Con{ST.Red{j, s, w}, t}:
-      Con{SV.nth(own, j), reds(own, t)}
-
-def whys(rs: List<&2, ST.Red>) -> List<&2, SV.Why>:
-  match rs:
-    case Nil{}:
-      Nil{}
-    case Con{ST.Red{j, s, w}, t}:
-      Con{SV.Why{j, s, w}, whys(t)}
+      st
+    case Con{SK.Rec{id, True{}, kd}, t}:
+      kuhnc(t, es, 1n+i, k, adj, f, st)
+    case Con{SK.Rec{id, False{}, +kd}, t}:
+      +n = SV.neqs(SK.Constraint.eqs(es, kd))
+      kuhnc(t, es, 1n+i, Nat.add(k, n), adj, f, cfin(i, ST.grp(n, k, adj, f, ST.GOk{CS.vm(st)}), st))
 
 # the precisions of level l: of 64, 96, 128, 192, 256, ... (doubling
 # every two steps), seven from the l-th. Level 0 is 64 .. 512 bits; a higher
@@ -270,14 +278,19 @@ def ploop(ps: List<&2, Nat>, ok: Bool, cur: NU.PR, +sk: SK.Sketch, +g0: List<&2,
 # one's witness uses only kept constraints and itself), then the sketch
 # less them: its pins and blocks.
 
-def rs_of(+sk: SK.Sketch) -> List<&2, ST.Red>:
-  ST.reds(SK.Sketch.eqs(sk), nvars(sk), groups(ncons(sk), SV.owners(sk), 0n))
+def run(sk: SK.Sketch, +nv: Nat) -> CS:
+  match sk:
+    case SK.Sketch{vs, +es, +cs}:
+      kuhnc(cs, es, 0n, 0n, ST.adj(SK.Sketch.eqs.go(es, cs)), 1n+nv, CS{ST.nones(nv), Nil{}, Nil{}})
+
+def rs_of(+sk: SK.Sketch) -> CS:
+  run(sk, nvars(sk))
 
 def red_of(+sk: SK.Sketch) -> List<&2, Nat>:
-  reds(SV.owners(sk), rs_of(sk))
+  CS.red(rs_of(sk))
 
 def why_of(+sk: SK.Sketch) -> List<&2, SV.Why>:
-  whys(rs_of(sk))
+  CS.why(rs_of(sk))
 
 # the sketch's exact system less its red constraints
 def kept(+sk: SK.Sketch) -> List<&2, E.QExpr>:
@@ -286,8 +299,20 @@ def kept(+sk: SK.Sketch) -> List<&2, E.QExpr>:
 def skel_of(+sk: SK.Sketch) -> ST.Skel:
   ST.structure(kept(sk), nvars(sk))
 
+def pick(b: Bool, +p: List<&2, Nat>, +q: List<&2, Nat>) -> List<&2, Nat>:
+  match b:
+    case True{}:
+      p
+    case False{}:
+      q
+
+# the pins: the structure's (the earliest variables it can leave over),
+# when with them the kept system is square, as it always is (the matching
+# of the red stage saturates the kept equations, and the variable side's
+# greedy matching is then maximum: Kuhn). Otherwise the variables the red
+# stage's matching leaves free, which are provably as many as needed.
 def pins_of(+sk: SK.Sketch) -> List<&2, Nat>:
-  skel.pins(skel_of(sk))
+  pick(KA.nateq(Nat.add(SV.neqs(kept(sk)), SV.len(skel.pins(skel_of(sk)))), nvars(sk)), skel.pins(skel_of(sk)), ST.holes(CS.vm(rs_of(sk)), 0n))
 
 # the loop from its first precision's answer (starting it with a literal
 # "not yet" would let the checker unfold the whole verdict symbolically

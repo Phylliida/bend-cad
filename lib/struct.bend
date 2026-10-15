@@ -7,10 +7,11 @@
 # A system is a list of equations over variables 0 .. nv - 1. Equation j
 # uses variable v when v occurs in it. The matching pairs equations with
 # distinct variables they use; it grows by augmenting paths (Kuhn),
-# searched with an explicit stack. A failed search from an equation j
-# visits variables W, all matched, and the equations S = j and their
-# mates; every variable of S lies in W and |W| = |S| - 1, so S has more
-# equations than unknowns whatever the matching becomes later.
+# searched depth first with the fuel bounding only the depth. A failed
+# search from an equation j visits variables W, all matched, and the
+# equations S = j and their mates; every variable of S lies in W and |W| =
+# |S| - 1, so S has more equations than unknowns whatever the matching
+# becomes later.
 #
 # Blocks are the strongly connected components (Tarjan, explicit stack)
 # of the graph in which an equation needs the equation matched to each
@@ -235,70 +236,125 @@ def total(xs: List<&2, List<&2, Nat>>) -> Nat:
     case Con{h, t}:
       Nat.add(len(h), total(t))
 
+def hd(xs: List<&2, Nat>) -> Nat:
+  match xs:
+    case Nil{}:
+      0n
+    case Con{h, t}:
+      h
+
+# n - 1, n - 2, ..., 0
+def down(n: Nat) -> List<&2, Nat>:
+  match n:
+    case 0n:
+      Nil{}
+    case 1n++m:
+      Con{m, down(m)}
+
 # Augmenting paths (Kuhn)
 # -----------------------
-# A frame is an equation being searched from, the variable through which
-# the search entered it (its mate; the root has none), and the variables
-# it has still to try. vm maps each variable to its equation.
+# vm maps each variable to its equation. A search from an unmatched
+# equation e tries the variables e uses, in order, depth first: a visited
+# one is skipped; a free one goes to e, which ends the search (found); one
+# matched to e2 is visited and goes to e for the time being, and the search
+# goes on from e2, now unmatched; if that fails, v stays e2's (the search
+# goes on with the matching it had) and e tries its next variable.
+#
+# A failed search from e visits variables W, every one of them matched,
+# and every variable that e or a mate of W uses lies in W: so e and the
+# mates of W are |W| + 1 equations over the |W| variables of W. Each level
+# visits a new variable, which is matched, so a fuel of one more than the
+# number of variables bounds the depth.
 
-type Frame is Data:
-  Frame{eq: Nat, via: Maybe<&2, Nat>, rest: List<&2, Nat>}
+# how the variable being tried stands: visited, free, matched to e, or
+# there is none (no variables left, or the search has already succeeded)
+type Cls is Data:
+  Seen{}
+  Free{}
+  Mate{e: Nat}
+  Done{}
 
-type SS is Data:
-  Go{fs: List<&2, Frame>, vm: List<&2, Maybe<&2, Nat>>, vis: List<&2, Nat>}
-  Hit{vm: List<&2, Maybe<&2, Nat>>}
+# a search's state: whether it found a path (and then the new matching), and
+# the variables visited so far
+type DS is Data:
+  DS{ok: Bool, vm: List<&2, Maybe<&2, Nat>>, vis: List<&2, Nat>}
 
-# the outcome of one search: the grown matching, or the visited variables
-type Aug is Data:
-  Found{vm: List<&2, Maybe<&2, Nat>>}
-  Stuck{vis: List<&2, Nat>}
+def ds.vis(s: DS) -> List<&2, Nat>:
+  match s:
+    case DS{ok, vm, vis}:
+      vis
 
-# flip the path: v goes to the top frame's equation, and each frame's
-# entry variable to the equation of the frame below
-def flip(fs: List<&2, Frame>, +v: Nat, vm: List<&2, Maybe<&2, Nat>>) -> List<&2, Maybe<&2, Nat>>:
-  match fs:
-    case Nil{}:
-      vm
-    case Con{Frame{j, None{}, r}, t}:
-      setm(vm, v, Some{j})
-    case Con{Frame{j, Some{w}, r}, t}:
-      flip(t, w, setm(vm, v, Some{j}))
-
-# v is unvisited: free (flip the path) or matched to j2 (search from j2)
-def step.m(m: Maybe<&2, Nat>, +adj: List<&2, List<&2, Nat>>, +v: Nat, +fs: List<&2, Frame>, +vm: List<&2, Maybe<&2, Nat>>, vis: List<&2, Nat>) -> SS:
+def cls.m(m: Maybe<&2, Nat>) -> Cls:
   match m:
     case None{}:
-      Hit{flip(fs, v, vm)}
-    case Some{+j2}:
-      Go{Con{Frame{j2, Some{v}, nthl(adj, j2)}, fs}, vm, Con{v, vis}}
+      Free{}
+    case Some{e}:
+      Mate{e}
 
-# try v from the top frame (its list already advanced in fs)
-def step.v(seen: Bool, +adj: List<&2, List<&2, Nat>>, +v: Nat, fs: List<&2, Frame>, +vm: List<&2, Maybe<&2, Nat>>, vis: List<&2, Nat>) -> SS:
+def cls.of(seen: Bool, m: Maybe<&2, Nat>) -> Cls:
   match seen:
     case True{}:
-      Go{fs, vm, vis}
+      Seen{}
     case False{}:
-      step.m(getm(vm, v), adj, v, fs, vm, vis)
+      cls.m(m)
 
-def ss.vis(s: SS) -> List<&2, Nat>:
-  match s:
-    case Go{fs, vm, vis}:
-      vis
-    case Hit{vm}:
-      Nil{}
+# how the first of vs stands
+def cls(+vm: List<&2, Maybe<&2, Nat>>, +vis: List<&2, Nat>, vs: List<&2, Nat>) -> Cls:
+  match vs:
+    case Nil{}:
+      Done{}
+    case Con{+v, t}:
+      cls.of(mem(v, vis), getm(vm, v))
 
-def search(f: Nat, +adj: List<&2, List<&2, Nat>>, s: SS) -> Aug:
-  match f s:
-    case 0n s:
-      Stuck{ss.vis(s)}
-    case 1n+g Hit{vm}:
-      Found{vm}
-    case 1n+g Go{Nil{}, vm, vis}:
-      Stuck{vis}
-    case 1n+g Go{Con{Frame{j, via, Nil{}}, t}, vm, vis}:
-      search(g, adj, Go{t, vm, vis})
-    case 1n+g Go{Con{Frame{j, via, Con{+v, rest}}, t}, +vm, +vis}:
-      search(g, adj, step.v(mem(v, vis), adj, v, Con{Frame{j, via, rest}, t}, vm, vis))
+# how the first of vs stands after the search r
+def cnext(r: DS, +vm: List<&2, Maybe<&2, Nat>>, +vs: List<&2, Nat>) -> Cls:
+  match r:
+    case DS{True{}, m, vis}:
+      Done{}
+    case DS{False{}, m, +vis}:
+      cls(vm, vis, vs)
+
+# try the variables vs for e (c: how the first stands), e being unmatched
+# in vm, from the state st
+def dfs(f: Nat, vs: List<&2, Nat>, c: Cls, +e: Nat, +adj: List<&2, List<&2, Nat>>, +vm: List<&2, Maybe<&2, Nat>>, +st: DS) -> DS:
+  match f vs c:
+    case 0n Nil{} Seen{}:
+      st
+    case 0n Nil{} Free{}:
+      st
+    case 0n Nil{} Mate{e2}:
+      st
+    case 0n Nil{} Done{}:
+      st
+    case 1n++g Nil{} Seen{}:
+      st
+    case 1n++g Nil{} Free{}:
+      st
+    case 1n++g Nil{} Mate{e2}:
+      st
+    case 1n++g Nil{} Done{}:
+      st
+    case 0n Con{v, +rest} Seen{}:
+      dfs(0n, rest, cls(vm, ds.vis(st), rest), e, adj, vm, st)
+    case 0n Con{+v, rest} Free{}:
+      DS{True{}, setm(vm, v, Some{e}), ds.vis(st)}
+    case 0n Con{v, rest} Mate{e2}:
+      st
+    case 0n Con{v, rest} Done{}:
+      st
+    case 1n++g Con{v, +rest} Seen{}:
+      dfs(1n+g, rest, cls(vm, ds.vis(st), rest), e, adj, vm, st)
+    case 1n++g Con{+v, rest} Free{}:
+      DS{True{}, setm(vm, v, Some{e}), ds.vis(st)}
+    case 1n++g Con{+v, +rest} Mate{+e2}:
+      +r = dfs(g, nthl(adj, e2), cls(setm(vm, v, Some{e}), Con{v, ds.vis(st)}, nthl(adj, e2)), e2, adj, setm(vm, v, Some{e}), DS{False{}, vm, Con{v, ds.vis(st)}})
+      dfs(1n+g, rest, cnext(r, vm, rest), e, adj, vm, r)
+    case 1n++g Con{v, rest} Done{}:
+      st
+
+# a search from the unmatched equation e
+def search(+f: Nat, +adj: List<&2, List<&2, Nat>>, +vm: List<&2, Maybe<&2, Nat>>, +e: Nat) -> DS:
+  dfs(f, nthl(adj, e), cls(vm, Nil{}, nthl(adj, e)), e, adj, vm, DS{False{}, vm, Nil{}})
 
 # a red equation: the search from eq failed; S is eq and the mates of the
 # visited variables W (at that moment)
@@ -313,11 +369,11 @@ def KS.vm(st: KS) -> List<&2, Maybe<&2, Nat>>:
     case KS{vm, red}:
       vm
 
-def kstep(+j: Nat, a: Aug, st: KS) -> KS:
+def kstep(+j: Nat, a: DS, st: KS) -> KS:
   match a st:
-    case Found{vm2} KS{vm, red}:
+    case DS{True{}, vm2, vis} KS{vm, red}:
       KS{vm2, red}
-    case Stuck{+vis} KS{+vm, red}:
+    case DS{False{}, vm2, +vis} KS{+vm, red}:
       KS{vm, Con{Red{j, Con{j, look(vm, vis)}, vis}, red}}
 
 # search from each equation in turn
@@ -326,8 +382,39 @@ def kuhn(js: List<&2, Nat>, +adj: List<&2, List<&2, Nat>>, +f: Nat, +st: KS) -> 
     case Nil{}:
       st
     case Con{+j, t}:
-      kuhn(t, adj, f, kstep(j, search(f, adj, Go{[Frame{j, None{}, nthl(adj, j)}], KS.vm(st), []}), st))
+      kuhn(t, adj, f, kstep(j, search(f, adj, KS.vm(st), j), st))
 
+# Constraints as units
+# --------------------
+# A constraint's equations are matched together: if one of them fails,
+# the matching goes back to what it was before the constraint, and the
+# constraint is red with that equation's witness. A witness then uses only
+# equations of constraints accepted earlier and of the red one itself, so
+# restoring any one red constraint over-determines the accepted ones.
+# (lib/solve.bend walks the sketch's constraints.)
+
+type GS is Data:
+  GOk{vm: List<&2, Maybe<&2, Nat>>}
+  GFail{r: Red}
+
+def gstep(+j: Nat, a: DS, +vm: List<&2, Maybe<&2, Nat>>) -> GS:
+  match a:
+    case DS{True{}, vm2, vis}:
+      GOk{vm2}
+    case DS{False{}, vm2, +vis}:
+      GFail{Red{j, Con{j, look(vm, vis)}, vis}}
+
+# the n equations k, k + 1, ... of one constraint, in turn
+def grp(n: Nat, +k: Nat, +adj: List<&2, List<&2, Nat>>, +f: Nat, st: GS) -> GS:
+  match n st:
+    case 0n GOk{vm}:
+      GOk{vm}
+    case 0n GFail{r}:
+      GFail{r}
+    case 1n+m GOk{+vm}:
+      grp(m, 1n+k, adj, f, gstep(k, search(f, adj, vm, k), vm))
+    case 1n+m GFail{r}:
+      GFail{r}
 
 # Components (Tarjan)
 # -------------------
@@ -403,13 +490,6 @@ def tedge(m: Maybe<&2, Nat>, on: Bool, +adj: List<&2, List<&2, Nat>>, +vm: List<
       tpush(adj, vm, w, s)
     case Some{iw}:
       tedge.on(on, v, iw, s)
-
-def hd(xs: List<&2, Nat>) -> Nat:
-  match xs:
-    case Nil{}:
-      0n
-    case Con{h, t}:
-      h
 
 # pop the component stack down to v (b: its top is v)
 def tpop(st: List<&2, Nat>, b: Bool, +v: Nat, acc: List<&2, Nat>, c: Nat, idx: List<&2, Maybe<&2, Nat>>, low: List<&2, Maybe<&2, Nat>>, cs: List<&2, TF>, out: List<&2, List<&2, Nat>>) -> TS:
@@ -673,61 +753,12 @@ def skel.pins(+adj: List<&2, List<&2, Nat>>, +ne: Nat, +nv: Nat, red: List<&2, R
 # variables first, so the earliest ones are left over as pins (greedy on
 # the transversal matroid: the best pin set for that order of preference)
 def skel.vars(+adj: List<&2, List<&2, Nat>>, +ne: Nat, +nv: Nat, red: List<&2, Red>, +good: List<&2, Nat>, +adjt: List<&2, List<&2, Nat>>) -> Skel:
-  skel.pins(adj, ne, nv, red, good, kuhn(rev(iota(nv, 0n)), adjt, Nat.add(total(adjt), Nat.add(ne, 2n)), KS{nones(ne), Nil{}}))
+  skel.pins(adj, ne, nv, red, good, kuhn(down(nv), adjt, 1n+ne, KS{nones(ne), Nil{}}))
 
 # the equation side's run st gives the red equations and their witnesses
 def skel.go(+adj: List<&2, List<&2, Nat>>, +ne: Nat, +nv: Nat, +st: KS) -> Skel:
   skel.vars(adj, ne, nv, ks.red(st), minus(iota(ne, 0n), red.eqs(ks.red(st))), transpose(nv, 0n, minus(iota(ne, 0n), red.eqs(ks.red(st))), adj))
 
-# Constraints as units
-# --------------------
-# A constraint's equations are matched together: if one of them fails,
-# the matching goes back to what it was before the constraint, and the
-# constraint is red with that equation's witness. A witness then uses only
-# equations of constraints accepted earlier and of the red one itself, so
-# restoring any one red constraint over-determines the accepted ones.
-
-type GS is Data:
-  GOk{vm: List<&2, Maybe<&2, Nat>>}
-  GFail{r: Red}
-
-def gstep(+j: Nat, a: Aug, +vm: List<&2, Maybe<&2, Nat>>) -> GS:
-  match a:
-    case Found{vm2}:
-      GOk{vm2}
-    case Stuck{+vis}:
-      GFail{Red{j, Con{j, look(vm, vis)}, vis}}
-
-# the equations js of one constraint, in turn
-def grp(js: List<&2, Nat>, +adj: List<&2, List<&2, Nat>>, +f: Nat, st: GS) -> GS:
-  match js st:
-    case Nil{} st:
-      st
-    case Con{j, t} GFail{r}:
-      GFail{r}
-    case Con{+j, t} GOk{+vm}:
-      grp(t, adj, f, gstep(j, search(f, adj, Go{[Frame{j, None{}, nthl(adj, j)}], vm, []}), vm))
-
-def gfin(g: GS, st: KS) -> KS:
-  match g st:
-    case GOk{vm2} KS{vm, red}:
-      KS{vm2, red}
-    case GFail{r} KS{vm, red}:
-      KS{vm, Con{r, red}}
-
-def kuhng(gs: List<&2, List<&2, Nat>>, +adj: List<&2, List<&2, Nat>>, +f: Nat, +st: KS) -> KS:
-  match gs:
-    case Nil{}:
-      st
-    case Con{g, t}:
-      kuhng(t, adj, f, gfin(grp(g, adj, f, GOk{KS.vm(st)}), st))
-
-# the red constraints of es over nv variables, its equations grouped by
-# constraint (gs: each constraint's equation indices, in order): one red
-# equation and its witness per red constraint
-def reds(+es: List<&2, E.QExpr>, +nv: Nat, gs: List<&2, List<&2, Nat>>) -> List<&2, Red>:
-  ks.red(kuhng(gs, adj(es), Nat.add(total(adj(es)), Nat.add(nv, 2n)), KS{nones(nv), Nil{}}))
-
 # The structure of a system: es over variables 0 .. nv - 1
 def structure(+es: List<&2, E.QExpr>, +nv: Nat) -> Skel:
-  skel.go(adj(es), len.q(es), nv, kuhn(iota(len.q(es), 0n), adj(es), Nat.add(total(adj(es)), Nat.add(nv, 2n)), KS{nones(nv), Nil{}}))
+  skel.go(adj(es), len.q(es), nv, kuhn(iota(len.q(es), 0n), adj(es), 1n+nv, KS{nones(nv), Nil{}}))
