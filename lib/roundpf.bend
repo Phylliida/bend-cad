@@ -29,6 +29,8 @@ import ./ford.bend as FO
 import ./fmat.bend as FM
 import ./fvec.bend as FV
 import ./qemb.bend as QE
+import ./kball.bend as KB
+import ./dmat.bend as DM
 
 # Order helpers
 # -------------
@@ -315,3 +317,148 @@ def zfloor_ok(~F: O.OField, n: S.Z, +d: S.Pos) -> zfl(~F, n, d, NU.zfloor(n, d))
       zfloor_pos(~F, p, d, QRD.div(p, d), div_ok(~F, p, d))
     case S.Zneg{+p}:
       zfloor_neg(~F, p, d, QRD.div(p, d), div_ok(~F, p, d))
+
+def zfl_1(~F: O.OField, +n: S.Z, +d: S.Pos, +f: S.Z, h: zfl(~F, n, d, f)) -> O.le(~F, O.mul(F, O.ofz(~F, f), O.ofp(~F, d)), O.ofz(~F, n)):
+  (a, b) = h
+  a
+
+def zfl_2(~F: O.OField, +n: S.Z, +d: S.Pos, +f: S.Z, h: zfl(~F, n, d, f)) -> O.le(~F, O.add(F, O.ofz(~F, n), O.one(F)), O.mul(F, O.add(F, O.ofz(~F, f), O.one(F)), O.ofp(~F, d))):
+  (a, b) = h
+  b
+
+# Shifts
+# ------
+
+# a floor by t, doubled: by 2t of 2q
+def fl_xo(~F: O.OField, +f: O.C(F), +t: O.C(F), +q: O.C(F), h1: O.le(~F, O.mul(F, f, t), q), h2: O.le(~F, O.add(F, q, O.one(F)), O.mul(F, O.add(F, f, O.one(F)), t))) -> M.Both(O.le(~F, O.mul(F, f, O.add(F, t, t)), O.add(F, q, q)), O.le(~F, O.add(F, O.add(F, q, q), O.one(F)), O.mul(F, O.add(F, f, O.one(F)), O.add(F, t, t)))):
+  +s1 = FM.sub_nonneg(~F, O.mul(F, f, t), q, h1)
+  +s2 = FM.sub_nonneg(~F, O.add(F, q, O.one(F)), O.mul(F, O.add(F, f, O.one(F)), t), h2)
+  (FV.le_of_sub(~F, O.mul(F, f, O.add(F, t, t)), O.add(F, q, q), FM.nn_eq(~F, O.sub(~F, O.add(F, q, q), O.mul(F, f, O.add(F, t, t))), O.add(F, O.sub(~F, q, O.mul(F, f, t)), O.sub(~F, q, O.mul(F, f, t))), FR.fring_eq(~F, [f, t, q], E.ZAdd{E.ZSub{E.ZVar{2n}, E.ZMul{E.ZVar{0n}, E.ZVar{1n}}}, E.ZSub{E.ZVar{2n}, E.ZMul{E.ZVar{0n}, E.ZVar{1n}}}}, E.ZSub{E.ZAdd{E.ZVar{2n}, E.ZVar{2n}}, E.ZMul{E.ZVar{0n}, E.ZAdd{E.ZVar{1n}, E.ZVar{1n}}}}, {==}), FO.nonneg_add(~F, O.sub(~F, q, O.mul(F, f, t)), O.sub(~F, q, O.mul(F, f, t)), s1, s1))),
+   FV.le_of_sub(~F, O.add(F, O.add(F, q, q), O.one(F)), O.mul(F, O.add(F, f, O.one(F)), O.add(F, t, t)), FM.nn_eq(~F, O.sub(~F, O.mul(F, O.add(F, f, O.one(F)), O.add(F, t, t)), O.add(F, O.add(F, q, q), O.one(F))), O.add(F, O.add(F, O.sub(~F, O.mul(F, O.add(F, f, O.one(F)), t), O.add(F, q, O.one(F))), O.sub(~F, O.mul(F, O.add(F, f, O.one(F)), t), O.add(F, q, O.one(F)))), O.one(F)), FR.fring_eq(~F, [f, t, q], E.ZAdd{E.ZAdd{E.ZSub{E.ZMul{E.ZAdd{E.ZVar{0n}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZVar{1n}}, E.ZAdd{E.ZVar{2n}, E.ZCst{S.Zpos{S.XH{}}}}}, E.ZSub{E.ZMul{E.ZAdd{E.ZVar{0n}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZVar{1n}}, E.ZAdd{E.ZVar{2n}, E.ZCst{S.Zpos{S.XH{}}}}}}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZSub{E.ZMul{E.ZAdd{E.ZVar{0n}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZAdd{E.ZVar{1n}, E.ZVar{1n}}}, E.ZAdd{E.ZAdd{E.ZVar{2n}, E.ZVar{2n}}, E.ZCst{S.Zpos{S.XH{}}}}}, {==}), FO.nonneg_add(~F, O.add(F, O.sub(~F, O.mul(F, O.add(F, f, O.one(F)), t), O.add(F, q, O.one(F))), O.sub(~F, O.mul(F, O.add(F, f, O.one(F)), t), O.add(F, q, O.one(F)))), O.one(F), FO.nonneg_add(~F, O.sub(~F, O.mul(F, O.add(F, f, O.one(F)), t), O.add(F, q, O.one(F))), O.sub(~F, O.mul(F, O.add(F, f, O.one(F)), t), O.add(F, q, O.one(F))), s2, s2), one_nn(~F)))))
+
+# a floor by t, doubled: by 2t of 2q + 1
+def fl_xi(~F: O.OField, +f: O.C(F), +t: O.C(F), +q: O.C(F), h1: O.le(~F, O.mul(F, f, t), q), h2: O.le(~F, O.add(F, q, O.one(F)), O.mul(F, O.add(F, f, O.one(F)), t))) -> M.Both(O.le(~F, O.mul(F, f, O.add(F, t, t)), O.add(F, O.add(F, q, q), O.one(F))), O.le(~F, O.add(F, O.add(F, O.add(F, q, q), O.one(F)), O.one(F)), O.mul(F, O.add(F, f, O.one(F)), O.add(F, t, t)))):
+  +s1 = FM.sub_nonneg(~F, O.mul(F, f, t), q, h1)
+  +s2 = FM.sub_nonneg(~F, O.add(F, q, O.one(F)), O.mul(F, O.add(F, f, O.one(F)), t), h2)
+  (FV.le_of_sub(~F, O.mul(F, f, O.add(F, t, t)), O.add(F, O.add(F, q, q), O.one(F)), FM.nn_eq(~F, O.sub(~F, O.add(F, O.add(F, q, q), O.one(F)), O.mul(F, f, O.add(F, t, t))), O.add(F, O.add(F, O.sub(~F, q, O.mul(F, f, t)), O.sub(~F, q, O.mul(F, f, t))), O.one(F)), FR.fring_eq(~F, [f, t, q], E.ZAdd{E.ZAdd{E.ZSub{E.ZVar{2n}, E.ZMul{E.ZVar{0n}, E.ZVar{1n}}}, E.ZSub{E.ZVar{2n}, E.ZMul{E.ZVar{0n}, E.ZVar{1n}}}}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZSub{E.ZAdd{E.ZAdd{E.ZVar{2n}, E.ZVar{2n}}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZMul{E.ZVar{0n}, E.ZAdd{E.ZVar{1n}, E.ZVar{1n}}}}, {==}), FO.nonneg_add(~F, O.add(F, O.sub(~F, q, O.mul(F, f, t)), O.sub(~F, q, O.mul(F, f, t))), O.one(F), FO.nonneg_add(~F, O.sub(~F, q, O.mul(F, f, t)), O.sub(~F, q, O.mul(F, f, t)), s1, s1), one_nn(~F)))),
+   FV.le_of_sub(~F, O.add(F, O.add(F, O.add(F, q, q), O.one(F)), O.one(F)), O.mul(F, O.add(F, f, O.one(F)), O.add(F, t, t)), FM.nn_eq(~F, O.sub(~F, O.mul(F, O.add(F, f, O.one(F)), O.add(F, t, t)), O.add(F, O.add(F, O.add(F, q, q), O.one(F)), O.one(F))), O.add(F, O.sub(~F, O.mul(F, O.add(F, f, O.one(F)), t), O.add(F, q, O.one(F))), O.sub(~F, O.mul(F, O.add(F, f, O.one(F)), t), O.add(F, q, O.one(F)))), FR.fring_eq(~F, [f, t, q], E.ZAdd{E.ZSub{E.ZMul{E.ZAdd{E.ZVar{0n}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZVar{1n}}, E.ZAdd{E.ZVar{2n}, E.ZCst{S.Zpos{S.XH{}}}}}, E.ZSub{E.ZMul{E.ZAdd{E.ZVar{0n}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZVar{1n}}, E.ZAdd{E.ZVar{2n}, E.ZCst{S.Zpos{S.XH{}}}}}}, E.ZSub{E.ZMul{E.ZAdd{E.ZVar{0n}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZAdd{E.ZVar{1n}, E.ZVar{1n}}}, E.ZAdd{E.ZAdd{E.ZAdd{E.ZVar{2n}, E.ZVar{2n}}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZCst{S.Zpos{S.XH{}}}}}, {==}), FO.nonneg_add(~F, O.sub(~F, O.mul(F, O.add(F, f, O.one(F)), t), O.add(F, q, O.one(F))), O.sub(~F, O.mul(F, O.add(F, f, O.one(F)), t), O.add(F, q, O.one(F))), s2, s2))))
+
+# p itself is its floor by 1
+def fl_self(~F: O.OField, +p: O.C(F)) -> M.Both(O.le(~F, O.mul(F, p, O.one(F)), p), O.le(~F, O.add(F, p, O.one(F)), O.mul(F, O.add(F, p, O.one(F)), O.one(F)))):
+  (Inr{FR.fring_eq(~F, [p], E.ZMul{E.ZVar{0n}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZVar{0n}, {==})}, Inr{FR.fring_eq(~F, [p], E.ZAdd{E.ZVar{0n}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZMul{E.ZAdd{E.ZVar{0n}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZCst{S.Zpos{S.XH{}}}}, {==})})
+
+# pshr(p, k) is the floor of p / 2^k
+def pshr_fl(~F: O.OField, p: S.Pos, k: Nat) -> zfl(~F, S.Zpos{p}, S.Pos.pow2(k), NU.pshr(p, k)):
+  match p k:
+    case S.XH{} 0n:
+      fl_self(~F, O.one(F))
+    case S.XH{} 1n++j:
+      (FV.le_of_sub(~F, O.mul(F, O.zero(F), t2(~F, 1n+j)), O.one(F), FM.nn_eq(~F, O.sub(~F, O.one(F), O.mul(F, O.zero(F), t2(~F, 1n+j))), O.one(F), FR.fring_eq(~F, [t2(~F, 1n+j)], E.ZCst{S.Zpos{S.XH{}}}, E.ZSub{E.ZCst{S.Zpos{S.XH{}}}, E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{0n}}}, {==}), one_nn(~F))),
+       FV.le_rw_r(~F, O.add(F, O.one(F), O.one(F)), O.add(F, t2(~F, j), t2(~F, j)), O.mul(F, O.add(F, O.zero(F), O.one(F)), t2(~F, 1n+j)), FR.fring_eq(~F, [t2(~F, j)], E.ZAdd{E.ZVar{0n}, E.ZVar{0n}}, E.ZMul{E.ZAdd{E.ZCst{S.Z0{}}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZAdd{E.ZVar{0n}, E.ZVar{0n}}}, {==}), le_dbl(~F, O.one(F), t2(~F, j), ofp_ge1(~F, S.Pos.pow2(j)))))
+    case S.XO{+q} 0n:
+      fl_self(~F, O.ofp(~F, S.XO{q}))
+    case S.XO{+q} 1n++j:
+      +h = pshr_fl(~F, q, j)
+      fl_xo(~F, O.ofz(~F, NU.pshr(q, j)), t2(~F, j), O.ofp(~F, q), zfl_1(~F, S.Zpos{q}, S.Pos.pow2(j), NU.pshr(q, j), h), zfl_2(~F, S.Zpos{q}, S.Pos.pow2(j), NU.pshr(q, j), h))
+    case S.XI{+q} 0n:
+      fl_self(~F, O.ofp(~F, S.XI{q}))
+    case S.XI{+q} 1n++j:
+      +h = pshr_fl(~F, q, j)
+      fl_xi(~F, O.ofz(~F, NU.pshr(q, j)), t2(~F, j), O.ofp(~F, q), zfl_1(~F, S.Zpos{q}, S.Pos.pow2(j), NU.pshr(q, j), h), zfl_2(~F, S.Zpos{q}, S.Pos.pow2(j), NU.pshr(q, j), h))
+
+def sub0(j: Nat) -> {Nat.sub(j, 0n) == j : Nat}:
+  match j:
+    case 0n:
+      {==}
+    case 1n+i:
+      {==}
+
+# the floor of (P + t) / 2t is within t of P / 2t, scaled: |2t f - P| <= t
+def psr_core(~F: O.OField, +f: O.C(F), +t: O.C(F), +p: O.C(F), h1: O.le(~F, O.mul(F, f, O.add(F, t, t)), O.add(F, p, t)), h2: O.le(~F, O.add(F, O.add(F, p, t), O.one(F)), O.mul(F, O.add(F, f, O.one(F)), O.add(F, t, t)))) -> M.bnd(~F, O.sub(~F, O.mul(F, f, O.add(F, t, t)), p), t):
+  (FM.nn_eq(~F, O.sub(~F, t, O.sub(~F, O.mul(F, f, O.add(F, t, t)), p)), O.sub(~F, O.add(F, p, t), O.mul(F, f, O.add(F, t, t))), FR.fring_eq(~F, [f, t, p], E.ZSub{E.ZAdd{E.ZVar{2n}, E.ZVar{1n}}, E.ZMul{E.ZVar{0n}, E.ZAdd{E.ZVar{1n}, E.ZVar{1n}}}}, E.ZSub{E.ZVar{1n}, E.ZSub{E.ZMul{E.ZVar{0n}, E.ZAdd{E.ZVar{1n}, E.ZVar{1n}}}, E.ZVar{2n}}}, {==}), FM.sub_nonneg(~F, O.mul(F, f, O.add(F, t, t)), O.add(F, p, t), h1)),
+   FM.nn_eq(~F, O.add(F, t, O.sub(~F, O.mul(F, f, O.add(F, t, t)), p)), O.add(F, O.sub(~F, O.mul(F, O.add(F, f, O.one(F)), O.add(F, t, t)), O.add(F, O.add(F, p, t), O.one(F))), O.one(F)), FR.fring_eq(~F, [f, t, p], E.ZAdd{E.ZSub{E.ZMul{E.ZAdd{E.ZVar{0n}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZAdd{E.ZVar{1n}, E.ZVar{1n}}}, E.ZAdd{E.ZAdd{E.ZVar{2n}, E.ZVar{1n}}, E.ZCst{S.Zpos{S.XH{}}}}}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZAdd{E.ZVar{1n}, E.ZSub{E.ZMul{E.ZVar{0n}, E.ZAdd{E.ZVar{1n}, E.ZVar{1n}}}, E.ZVar{2n}}}, {==}), FO.nonneg_add(~F, O.sub(~F, O.mul(F, O.add(F, f, O.one(F)), O.add(F, t, t)), O.add(F, O.add(F, p, t), O.one(F))), O.one(F), FM.sub_nonneg(~F, O.add(F, O.add(F, p, t), O.one(F)), O.mul(F, O.add(F, f, O.one(F)), O.add(F, t, t)), h2), one_nn(~F))))
+
+def psr_go(~F: O.OField, +p: S.Pos, +j: Nat) -> M.bnd(~F, O.sub(~F, O.mul(F, O.ofz(~F, NU.pshr(S.Pos.add(p, S.Pos.pow2(j)), 1n+j)), t2(~F, 1n+j)), O.ofp(~F, p)), t2(~F, j)):
+  +h = pshr_fl(~F, S.Pos.add(p, S.Pos.pow2(j)), 1n+j)
+  psr_core(~F, O.ofz(~F, NU.pshr(S.Pos.add(p, S.Pos.pow2(j)), 1n+j)), t2(~F, j), O.ofp(~F, p),
+    (%Equal.sym(O.C(F), O.add(F, O.ofp(~F, p), t2(~F, j)), O.ofp(~F, S.Pos.add(p, S.Pos.pow2(j))), ofp_add(~F, p, S.Pos.pow2(j))) : O.le(~F, O.mul(F, O.ofz(~F, NU.pshr(S.Pos.add(p, S.Pos.pow2(j)), 1n+j)), O.add(F, t2(~F, j), t2(~F, j))), _)
+      zfl_1(~F, S.Zpos{S.Pos.add(p, S.Pos.pow2(j))}, S.Pos.pow2(1n+j), NU.pshr(S.Pos.add(p, S.Pos.pow2(j)), 1n+j), h)),
+    (%Equal.sym(O.C(F), O.add(F, O.ofp(~F, p), t2(~F, j)), O.ofp(~F, S.Pos.add(p, S.Pos.pow2(j))), ofp_add(~F, p, S.Pos.pow2(j))) : O.le(~F, O.add(F, _, O.one(F)), O.mul(F, O.add(F, O.ofz(~F, NU.pshr(S.Pos.add(p, S.Pos.pow2(j)), 1n+j)), O.one(F)), O.add(F, t2(~F, j), t2(~F, j))))
+      zfl_2(~F, S.Zpos{S.Pos.add(p, S.Pos.pow2(j))}, S.Pos.pow2(1n+j), NU.pshr(S.Pos.add(p, S.Pos.pow2(j)), 1n+j), h)))
+
+# p / 2^(j+1) rounded to nearest: |2^(j+1) f - p| <= 2^j
+def psr_bnd(~F: O.OField, +p: S.Pos, +j: Nat) -> M.bnd(~F, O.sub(~F, O.mul(F, O.ofz(~F, NU.pshr_round(p, 1n+j)), t2(~F, 1n+j)), O.ofp(~F, p)), t2(~F, j)):
+  %Equal.sym(Nat, Nat.sub(j, 0n), j, sub0(j)) : M.bnd(~F, O.sub(~F, O.mul(F, O.ofz(~F, NU.pshr(S.Pos.add(p, S.Pos.pow2(_)), 1n+j)), t2(~F, 1n+j)), O.ofp(~F, p)), t2(~F, j))
+  psr_go(~F, p, j)
+
+# m / 2^(j+1) rounded to nearest: |2^(j+1) f - m| <= 2^j
+def zsr(~F: O.OField, m: S.Z, +j: Nat) -> M.bnd(~F, O.sub(~F, O.mul(F, O.ofz(~F, NU.zshr_round(m, 1n+j)), t2(~F, 1n+j)), O.ofz(~F, m)), t2(~F, j)):
+  match m:
+    case S.Z0{}:
+      KB.bnd_val(~F, O.zero(F), O.sub(~F, O.mul(F, O.zero(F), t2(~F, 1n+j)), O.zero(F)), t2(~F, j), FR.fring_eq(~F, [t2(~F, 1n+j)], E.ZCst{S.Z0{}}, E.ZSub{E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{0n}}, E.ZCst{S.Z0{}}}, {==}), FM.bnd_zero(~F, t2(~F, j), ofp_nn(~F, S.Pos.pow2(j))))
+    case S.Zpos{+p}:
+      psr_bnd(~F, p, j)
+    case S.Zneg{+p}:
+      %FR.ofz_neg(~F, NU.pshr_round(p, 1n+j)) : M.bnd(~F, O.sub(~F, O.mul(F, _, t2(~F, 1n+j)), O.neg(F, O.ofp(~F, p))), t2(~F, j))
+      KB.bnd_val(~F, O.neg(F, O.sub(~F, O.mul(F, O.ofz(~F, NU.pshr_round(p, 1n+j)), t2(~F, 1n+j)), O.ofp(~F, p))), O.sub(~F, O.mul(F, O.neg(F, O.ofz(~F, NU.pshr_round(p, 1n+j))), t2(~F, 1n+j)), O.neg(F, O.ofp(~F, p))), t2(~F, j), FR.fring_eq(~F, [O.ofz(~F, NU.pshr_round(p, 1n+j)), t2(~F, 1n+j), O.ofp(~F, p)], E.ZNeg{E.ZSub{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{2n}}}, E.ZSub{E.ZMul{E.ZNeg{E.ZVar{0n}}, E.ZVar{1n}}, E.ZNeg{E.ZVar{2n}}}, {==}), FM.bnd_neg(~F, O.sub(~F, O.mul(F, O.ofz(~F, NU.pshr_round(p, 1n+j)), t2(~F, 1n+j)), O.ofp(~F, p)), t2(~F, j), psr_bnd(~F, p, j)))
+
+# Rounding to a multiple of 2^-p
+# ------------------------------
+
+def sub_succ(e: Nat, p: Nat, h: {KA.natle(e, p) == False{} : Bool}) -> {Nat.sub(e, p) == 1n+Nat.sub(e, 1n+p) : Nat}:
+  match e p:
+    case 0n 0n:
+      FO.absurd({Nat.sub(0n, 0n) == 1n+Nat.sub(0n, 1n) : Nat}, KA.ft(Equal.sym(Bool, True{}, False{}, h)))
+    case 0n 1n++q:
+      FO.absurd({Nat.sub(0n, 1n+q) == 1n+Nat.sub(0n, 2n+q) : Nat}, KA.ft(Equal.sym(Bool, True{}, False{}, h)))
+    case 1n++i 0n:
+      Equal.cong(Nat, Nat, x => 1n+x, i, Nat.sub(i, 0n), Equal.sym(Nat, Nat.sub(i, 0n), i, sub0(i)))
+    case 1n++i 1n++q:
+      sub_succ(i, q, h)
+
+def add_sub(e: Nat, p: Nat, h: {KA.natle(e, p) == False{} : Bool}) -> {Nat.add(p, Nat.sub(e, p)) == e : Nat}:
+  match e p:
+    case 0n 0n:
+      FO.absurd({Nat.add(0n, Nat.sub(0n, 0n)) == 0n : Nat}, KA.ft(Equal.sym(Bool, True{}, False{}, h)))
+    case 0n 1n++q:
+      FO.absurd({Nat.add(1n+q, Nat.sub(0n, 1n+q)) == 0n : Nat}, KA.ft(Equal.sym(Bool, True{}, False{}, h)))
+    case 1n++i 0n:
+      {==}
+    case 1n++i 1n++q:
+      Equal.cong(Nat, Nat, x => 1n+x, Nat.add(q, Nat.sub(i, q)), i, add_sub(i, q, h))
+
+# |a| <= s and 0 <= c give |a c| <= s c
+def bnd_scale(~F: O.OField, +a: O.C(F), +s: O.C(F), +c: O.C(F), +hc: O.le(~F, O.zero(F), c), h: M.bnd(~F, a, s)) -> M.bnd(~F, O.mul(F, a, c), O.mul(F, s, c)):
+  FM.bnd_mul(~F, a, s, c, c, h, FV.bnd_self(~F, c, hc))
+
+def inv_nn(~F: O.OField, +p: S.Pos) -> O.le(~F, O.zero(F), O.inv(F, O.ofp(~F, p))):
+  FO.lt_le(~F, O.zero(F), O.inv(F, O.ofp(~F, p)), FO.inv_pos(~F, O.ofp(~F, p), QE.ofp_pos(~F, p)))
+
+
+# m / 2^(p+j+1) rounded to a multiple of 2^-p is within 2^-(p+1)
+def rnd_core(~F: O.OField, +m: S.Z, +p: Nat, +j: Nat) -> M.bnd(~F, O.sub(~F, M.ofd(~F, S.D{NU.zshr_round(m, 1n+j), p}), M.ofd(~F, S.D{m, Nat.add(p, 1n+j)})), M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n+p})):
+  +r1 = QE.ofp_rel(~F, S.Pos.pow2(p))
+  +r2 = QE.ofp_rel(~F, S.Pos.pow2(Nat.add(p, 1n+j)))
+  +r3 = FO.sub_of_eq(~F, t2(~F, Nat.add(p, 1n+j)), O.mul(F, t2(~F, p), O.add(F, t2(~F, j), t2(~F, j))), Equal.sym(O.C(F), O.mul(F, t2(~F, p), O.add(F, t2(~F, j), t2(~F, j))), t2(~F, Nat.add(p, 1n+j)), t2_add(~F, p, 1n+j)))
+  +s1 = QE.ofp_rel(~F, S.Pos.pow2(1n+p))
+  KB.bnd_val(~F, O.mul(F, O.sub(~F, O.mul(F, O.ofz(~F, NU.zshr_round(m, 1n+j)), O.add(F, t2(~F, j), t2(~F, j))), O.ofz(~F, m)), O.inv(F, t2(~F, Nat.add(p, 1n+j)))), O.sub(~F, O.mul(F, O.ofz(~F, NU.zshr_round(m, 1n+j)), O.inv(F, t2(~F, p))), O.mul(F, O.ofz(~F, m), O.inv(F, t2(~F, Nat.add(p, 1n+j))))), O.mul(F, O.one(F), O.inv(F, t2(~F, 1n+p))),
+    FO.eq_of_sub(~F, O.mul(F, O.sub(~F, O.mul(F, O.ofz(~F, NU.zshr_round(m, 1n+j)), O.add(F, t2(~F, j), t2(~F, j))), O.ofz(~F, m)), O.inv(F, t2(~F, Nat.add(p, 1n+j)))), O.sub(~F, O.mul(F, O.ofz(~F, NU.zshr_round(m, 1n+j)), O.inv(F, t2(~F, p))), O.mul(F, O.ofz(~F, m), O.inv(F, t2(~F, Nat.add(p, 1n+j))))), FO.cert3(~F, O.sub(~F, O.mul(F, O.sub(~F, O.mul(F, O.ofz(~F, NU.zshr_round(m, 1n+j)), O.add(F, t2(~F, j), t2(~F, j))), O.ofz(~F, m)), O.inv(F, t2(~F, Nat.add(p, 1n+j)))), O.sub(~F, O.mul(F, O.ofz(~F, NU.zshr_round(m, 1n+j)), O.inv(F, t2(~F, p))), O.mul(F, O.ofz(~F, m), O.inv(F, t2(~F, Nat.add(p, 1n+j)))))), O.neg(F, O.mul(F, O.mul(F, O.ofz(~F, NU.zshr_round(m, 1n+j)), O.inv(F, t2(~F, Nat.add(p, 1n+j)))), O.add(F, t2(~F, j), t2(~F, j)))), O.sub(~F, O.mul(F, t2(~F, p), O.inv(F, t2(~F, p))), O.one(F)), O.mul(F, O.ofz(~F, NU.zshr_round(m, 1n+j)), O.inv(F, t2(~F, p))), O.sub(~F, O.mul(F, t2(~F, Nat.add(p, 1n+j)), O.inv(F, t2(~F, Nat.add(p, 1n+j)))), O.one(F)), O.neg(F, O.mul(F, O.mul(F, O.ofz(~F, NU.zshr_round(m, 1n+j)), O.inv(F, t2(~F, Nat.add(p, 1n+j)))), O.inv(F, t2(~F, p)))), O.sub(~F, t2(~F, Nat.add(p, 1n+j)), O.mul(F, t2(~F, p), O.add(F, t2(~F, j), t2(~F, j)))), FR.fring_eq(~F, [O.ofz(~F, NU.zshr_round(m, 1n+j)), O.ofz(~F, m), t2(~F, p), t2(~F, j), t2(~F, Nat.add(p, 1n+j)), O.inv(F, t2(~F, p)), O.inv(F, t2(~F, Nat.add(p, 1n+j))), O.inv(F, t2(~F, 1n+p))], E.ZSub{E.ZMul{E.ZSub{E.ZMul{E.ZVar{0n}, E.ZAdd{E.ZVar{3n}, E.ZVar{3n}}}, E.ZVar{1n}}, E.ZVar{6n}}, E.ZSub{E.ZMul{E.ZVar{0n}, E.ZVar{5n}}, E.ZMul{E.ZVar{1n}, E.ZVar{6n}}}}, E.ZAdd{E.ZAdd{E.ZMul{E.ZNeg{E.ZMul{E.ZMul{E.ZVar{0n}, E.ZVar{6n}}, E.ZAdd{E.ZVar{3n}, E.ZVar{3n}}}}, E.ZSub{E.ZMul{E.ZVar{2n}, E.ZVar{5n}}, E.ZCst{S.Zpos{S.XH{}}}}}, E.ZMul{E.ZMul{E.ZVar{0n}, E.ZVar{5n}}, E.ZSub{E.ZMul{E.ZVar{4n}, E.ZVar{6n}}, E.ZCst{S.Zpos{S.XH{}}}}}}, E.ZMul{E.ZNeg{E.ZMul{E.ZMul{E.ZVar{0n}, E.ZVar{6n}}, E.ZVar{5n}}}, E.ZSub{E.ZVar{4n}, E.ZMul{E.ZVar{2n}, E.ZAdd{E.ZVar{3n}, E.ZVar{3n}}}}}}, {==}), r1, r2, r3)),
+    FM.bnd_eq(~F, O.mul(F, O.sub(~F, O.mul(F, O.ofz(~F, NU.zshr_round(m, 1n+j)), O.add(F, t2(~F, j), t2(~F, j))), O.ofz(~F, m)), O.inv(F, t2(~F, Nat.add(p, 1n+j)))), O.mul(F, t2(~F, j), O.inv(F, t2(~F, Nat.add(p, 1n+j)))), O.mul(F, O.one(F), O.inv(F, t2(~F, 1n+p))),
+      FO.eq_of_sub(~F, O.mul(F, t2(~F, j), O.inv(F, t2(~F, Nat.add(p, 1n+j)))), O.mul(F, O.one(F), O.inv(F, t2(~F, 1n+p))), FO.cert3(~F, O.sub(~F, O.mul(F, t2(~F, j), O.inv(F, t2(~F, Nat.add(p, 1n+j)))), O.mul(F, O.one(F), O.inv(F, t2(~F, 1n+p)))), O.neg(F, O.mul(F, t2(~F, j), O.inv(F, t2(~F, Nat.add(p, 1n+j))))), O.sub(~F, O.mul(F, O.add(F, t2(~F, p), t2(~F, p)), O.inv(F, t2(~F, 1n+p))), O.one(F)), O.inv(F, t2(~F, 1n+p)), O.sub(~F, O.mul(F, t2(~F, Nat.add(p, 1n+j)), O.inv(F, t2(~F, Nat.add(p, 1n+j)))), O.one(F)), O.neg(F, O.mul(F, O.inv(F, t2(~F, 1n+p)), O.inv(F, t2(~F, Nat.add(p, 1n+j))))), O.sub(~F, t2(~F, Nat.add(p, 1n+j)), O.mul(F, t2(~F, p), O.add(F, t2(~F, j), t2(~F, j)))), FR.fring_eq(~F, [O.ofz(~F, NU.zshr_round(m, 1n+j)), O.ofz(~F, m), t2(~F, p), t2(~F, j), t2(~F, Nat.add(p, 1n+j)), O.inv(F, t2(~F, p)), O.inv(F, t2(~F, Nat.add(p, 1n+j))), O.inv(F, t2(~F, 1n+p))], E.ZSub{E.ZMul{E.ZVar{3n}, E.ZVar{6n}}, E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{7n}}}, E.ZAdd{E.ZAdd{E.ZMul{E.ZNeg{E.ZMul{E.ZVar{3n}, E.ZVar{6n}}}, E.ZSub{E.ZMul{E.ZAdd{E.ZVar{2n}, E.ZVar{2n}}, E.ZVar{7n}}, E.ZCst{S.Zpos{S.XH{}}}}}, E.ZMul{E.ZVar{7n}, E.ZSub{E.ZMul{E.ZVar{4n}, E.ZVar{6n}}, E.ZCst{S.Zpos{S.XH{}}}}}}, E.ZMul{E.ZNeg{E.ZMul{E.ZVar{7n}, E.ZVar{6n}}}, E.ZSub{E.ZVar{4n}, E.ZMul{E.ZVar{2n}, E.ZAdd{E.ZVar{3n}, E.ZVar{3n}}}}}}, {==}), s1, r2, r3)),
+      bnd_scale(~F, O.sub(~F, O.mul(F, O.ofz(~F, NU.zshr_round(m, 1n+j)), O.add(F, t2(~F, j), t2(~F, j))), O.ofz(~F, m)), t2(~F, j), O.inv(F, t2(~F, Nat.add(p, 1n+j))), inv_nn(~F, S.Pos.pow2(Nat.add(p, 1n+j))), zsr(~F, m, j))))
+
+def dround_go(~F: O.OField, le: Bool, +m: S.Z, +e: Nat, +p: Nat, +h: {KA.natle(e, p) == le : Bool}) -> M.bnd(~F, O.sub(~F, M.ofd(~F, NU.dround.go(le, S.D{m, e}, p)), M.ofd(~F, S.D{m, e})), M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n+p})):
+  match le:
+    case True{}:
+      KB.bnd_subself(~F, M.ofd(~F, S.D{m, e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n+p}), FO.lt_le(~F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n+p}), DM.dpos(~F, S.XH{}, 1n+p)))
+    case False{}:
+      %add_sub(e, p, h) : M.bnd(~F, O.sub(~F, M.ofd(~F, S.D{NU.zshr_round(m, Nat.sub(e, p)), p}), M.ofd(~F, S.D{m, _})), M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n+p}))
+      %Equal.sym(Nat, Nat.sub(e, p), 1n+Nat.sub(e, 1n+p), sub_succ(e, p, h)) : M.bnd(~F, O.sub(~F, M.ofd(~F, S.D{NU.zshr_round(m, _), p}), M.ofd(~F, S.D{m, Nat.add(p, Nat.sub(e, p))})), M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n+p}))
+      %Equal.sym(Nat, Nat.sub(e, p), 1n+Nat.sub(e, 1n+p), sub_succ(e, p, h)) : M.bnd(~F, O.sub(~F, M.ofd(~F, S.D{NU.zshr_round(m, 1n+Nat.sub(e, 1n+p)), p}), M.ofd(~F, S.D{m, Nat.add(p, _)})), M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n+p}))
+      rnd_core(~F, m, p, Nat.sub(e, 1n+p))
+
+# |dround(x, p) - x| <= 2^-(p+1)
+def dround_err(~F: O.OField, x: S.D, +p: Nat) -> M.bnd(~F, O.sub(~F, M.ofd(~F, NU.dround(x, p)), M.ofd(~F, x)), M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n+p})):
+  match x:
+    case S.D{+m, +e}:
+      dround_go(~F, KA.natle(e, p), m, e, p, {==})

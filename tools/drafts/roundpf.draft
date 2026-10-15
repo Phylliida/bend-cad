@@ -29,6 +29,8 @@ import ./ford.bend as FO
 import ./fmat.bend as FM
 import ./fvec.bend as FV
 import ./qemb.bend as QE
+import ./kball.bend as KB
+import ./dmat.bend as DM
 
 # Order helpers
 # -------------
@@ -318,3 +320,149 @@ def zfloor_ok(~F: O.OField, n: S.Z, +d: S.Pos) -> zfl(~F, n, d, NU.zfloor(n, d))
       zfloor_pos(~F, p, d, QRD.div(p, d), div_ok(~F, p, d))
     case S.Zneg{+p}:
       zfloor_neg(~F, p, d, QRD.div(p, d), div_ok(~F, p, d))
+
+def zfl_1(~F: O.OField, +n: S.Z, +d: S.Pos, +f: S.Z, h: zfl(~F, n, d, f)) -> O.le(~F, @M(O.ofz(~F, f), O.ofp(~F, d)), O.ofz(~F, n)):
+  (a, b) = h
+  a
+
+def zfl_2(~F: O.OField, +n: S.Z, +d: S.Pos, +f: S.Z, h: zfl(~F, n, d, f)) -> O.le(~F, @A(O.ofz(~F, n), @1), @M(@A(O.ofz(~F, f), @1), O.ofp(~F, d))):
+  (a, b) = h
+  b
+
+# Shifts
+# ------
+
+# a floor by t, doubled: by 2t of 2q
+def fl_xo(~F: O.OField, +f: @T, +t: @T, +q: @T, h1: O.le(~F, @M(f, t), q), h2: O.le(~F, @A(q, @1), @M(@A(f, @1), t))) -> M.Both(O.le(~F, @M(f, @A(t, t)), @A(q, q)), O.le(~F, @A(@A(q, q), @1), @M(@A(f, @1), @A(t, t)))):
+  +s1 = FM.sub_nonneg(~F, @M(f, t), q, h1)
+  +s2 = FM.sub_nonneg(~F, @A(q, @1), @M(@A(f, @1), t), h2)
+  (FV.le_of_sub(~F, @M(f, @A(t, t)), @A(q, q), FM.nn_eq(~F, @S(@A(q, q), @M(f, @A(t, t))), @A(@S(q, @M(f, t)), @S(q, @M(f, t))), @ZEQ[f,, t,, q | (q - f*t) + (q - f*t) | (q + q) - f*(t + t)], FO.nonneg_add(~F, @S(q, @M(f, t)), @S(q, @M(f, t)), s1, s1))),
+   FV.le_of_sub(~F, @A(@A(q, q), @1), @M(@A(f, @1), @A(t, t)), FM.nn_eq(~F, @S(@M(@A(f, @1), @A(t, t)), @A(@A(q, q), @1)), @A(@A(@S(@M(@A(f, @1), t), @A(q, @1)), @S(@M(@A(f, @1), t), @A(q, @1))), @1), @ZEQ[f,, t,, q | (((f + 1)*t - (q + 1)) + ((f + 1)*t - (q + 1))) + 1 | (f + 1)*(t + t) - ((q + q) + 1)], FO.nonneg_add(~F, @A(@S(@M(@A(f, @1), t), @A(q, @1)), @S(@M(@A(f, @1), t), @A(q, @1))), @1, FO.nonneg_add(~F, @S(@M(@A(f, @1), t), @A(q, @1)), @S(@M(@A(f, @1), t), @A(q, @1)), s2, s2), one_nn(~F)))))
+
+# a floor by t, doubled: by 2t of 2q + 1
+def fl_xi(~F: O.OField, +f: @T, +t: @T, +q: @T, h1: O.le(~F, @M(f, t), q), h2: O.le(~F, @A(q, @1), @M(@A(f, @1), t))) -> M.Both(O.le(~F, @M(f, @A(t, t)), @A(@A(q, q), @1)), O.le(~F, @A(@A(@A(q, q), @1), @1), @M(@A(f, @1), @A(t, t)))):
+  +s1 = FM.sub_nonneg(~F, @M(f, t), q, h1)
+  +s2 = FM.sub_nonneg(~F, @A(q, @1), @M(@A(f, @1), t), h2)
+  (FV.le_of_sub(~F, @M(f, @A(t, t)), @A(@A(q, q), @1), FM.nn_eq(~F, @S(@A(@A(q, q), @1), @M(f, @A(t, t))), @A(@A(@S(q, @M(f, t)), @S(q, @M(f, t))), @1), @ZEQ[f,, t,, q | ((q - f*t) + (q - f*t)) + 1 | ((q + q) + 1) - f*(t + t)], FO.nonneg_add(~F, @A(@S(q, @M(f, t)), @S(q, @M(f, t))), @1, FO.nonneg_add(~F, @S(q, @M(f, t)), @S(q, @M(f, t)), s1, s1), one_nn(~F)))),
+   FV.le_of_sub(~F, @A(@A(@A(q, q), @1), @1), @M(@A(f, @1), @A(t, t)), FM.nn_eq(~F, @S(@M(@A(f, @1), @A(t, t)), @A(@A(@A(q, q), @1), @1)), @A(@S(@M(@A(f, @1), t), @A(q, @1)), @S(@M(@A(f, @1), t), @A(q, @1))), @ZEQ[f,, t,, q | ((f + 1)*t - (q + 1)) + ((f + 1)*t - (q + 1)) | (f + 1)*(t + t) - (((q + q) + 1) + 1)], FO.nonneg_add(~F, @S(@M(@A(f, @1), t), @A(q, @1)), @S(@M(@A(f, @1), t), @A(q, @1)), s2, s2))))
+
+# p itself is its floor by 1
+def fl_self(~F: O.OField, +p: @T) -> M.Both(O.le(~F, @M(p, @1), p), O.le(~F, @A(p, @1), @M(@A(p, @1), @1))):
+  (Inr{@ZEQ[p | p*1 | p]}, Inr{@ZEQ[p | p + 1 | (p + 1)*1]})
+
+# pshr(p, k) is the floor of p / 2^k
+def pshr_fl(~F: O.OField, p: S.Pos, k: Nat) -> zfl(~F, S.Zpos{p}, S.Pos.pow2(k), NU.pshr(p, k)):
+  match p k:
+    case S.XH{} 0n:
+      fl_self(~F, @1)
+    case S.XH{} 1n++j:
+      (FV.le_of_sub(~F, @M(@0, t2(~F, 1n+j)), @1, FM.nn_eq(~F, @S(@1, @M(@0, t2(~F, 1n+j))), @1, @ZEQ[t=t2(~F, 1n+j) | 1 | 1 - 0*t], one_nn(~F))),
+       FV.le_rw_r(~F, @A(@1, @1), @A(t2(~F, j), t2(~F, j)), @M(@A(@0, @1), t2(~F, 1n+j)), @ZEQ[t=t2(~F, j) | t + t | (0 + 1)*(t + t)], le_dbl(~F, @1, t2(~F, j), ofp_ge1(~F, S.Pos.pow2(j)))))
+    case S.XO{+q} 0n:
+      fl_self(~F, O.ofp(~F, S.XO{q}))
+    case S.XO{+q} 1n++j:
+      +h = pshr_fl(~F, q, j)
+      fl_xo(~F, O.ofz(~F, NU.pshr(q, j)), t2(~F, j), O.ofp(~F, q), zfl_1(~F, S.Zpos{q}, S.Pos.pow2(j), NU.pshr(q, j), h), zfl_2(~F, S.Zpos{q}, S.Pos.pow2(j), NU.pshr(q, j), h))
+    case S.XI{+q} 0n:
+      fl_self(~F, O.ofp(~F, S.XI{q}))
+    case S.XI{+q} 1n++j:
+      +h = pshr_fl(~F, q, j)
+      fl_xi(~F, O.ofz(~F, NU.pshr(q, j)), t2(~F, j), O.ofp(~F, q), zfl_1(~F, S.Zpos{q}, S.Pos.pow2(j), NU.pshr(q, j), h), zfl_2(~F, S.Zpos{q}, S.Pos.pow2(j), NU.pshr(q, j), h))
+
+def sub0(j: Nat) -> {Nat.sub(j, 0n) == j : Nat}:
+  match j:
+    case 0n:
+      {==}
+    case 1n+i:
+      {==}
+
+# the floor of (P + t) / 2t is within t of P / 2t, scaled: |2t f - P| <= t
+def psr_core(~F: O.OField, +f: @T, +t: @T, +p: @T, h1: O.le(~F, @M(f, @A(t, t)), @A(p, t)), h2: O.le(~F, @A(@A(p, t), @1), @M(@A(f, @1), @A(t, t)))) -> M.bnd(~F, @S(@M(f, @A(t, t)), p), t):
+  (FM.nn_eq(~F, @S(t, @S(@M(f, @A(t, t)), p)), @S(@A(p, t), @M(f, @A(t, t))), @ZEQ[f,, t,, p | (p + t) - f*(t + t) | t - (f*(t + t) - p)], FM.sub_nonneg(~F, @M(f, @A(t, t)), @A(p, t), h1)),
+   FM.nn_eq(~F, @A(t, @S(@M(f, @A(t, t)), p)), @A(@S(@M(@A(f, @1), @A(t, t)), @A(@A(p, t), @1)), @1), @ZEQ[f,, t,, p | ((f + 1)*(t + t) - ((p + t) + 1)) + 1 | t + (f*(t + t) - p)], FO.nonneg_add(~F, @S(@M(@A(f, @1), @A(t, t)), @A(@A(p, t), @1)), @1, FM.sub_nonneg(~F, @A(@A(p, t), @1), @M(@A(f, @1), @A(t, t)), h2), one_nn(~F))))
+
+def psr_go(~F: O.OField, +p: S.Pos, +j: Nat) -> M.bnd(~F, @S(@M(O.ofz(~F, NU.pshr(S.Pos.add(p, S.Pos.pow2(j)), 1n+j)), t2(~F, 1n+j)), O.ofp(~F, p)), t2(~F, j)):
+  +h = pshr_fl(~F, S.Pos.add(p, S.Pos.pow2(j)), 1n+j)
+  psr_core(~F, O.ofz(~F, NU.pshr(S.Pos.add(p, S.Pos.pow2(j)), 1n+j)), t2(~F, j), O.ofp(~F, p),
+    (%Equal.sym(@T, @A(O.ofp(~F, p), t2(~F, j)), O.ofp(~F, S.Pos.add(p, S.Pos.pow2(j))), ofp_add(~F, p, S.Pos.pow2(j))) : O.le(~F, @M(O.ofz(~F, NU.pshr(S.Pos.add(p, S.Pos.pow2(j)), 1n+j)), @A(t2(~F, j), t2(~F, j))), _)
+      zfl_1(~F, S.Zpos{S.Pos.add(p, S.Pos.pow2(j))}, S.Pos.pow2(1n+j), NU.pshr(S.Pos.add(p, S.Pos.pow2(j)), 1n+j), h)),
+    (%Equal.sym(@T, @A(O.ofp(~F, p), t2(~F, j)), O.ofp(~F, S.Pos.add(p, S.Pos.pow2(j))), ofp_add(~F, p, S.Pos.pow2(j))) : O.le(~F, @A(_, @1), @M(@A(O.ofz(~F, NU.pshr(S.Pos.add(p, S.Pos.pow2(j)), 1n+j)), @1), @A(t2(~F, j), t2(~F, j))))
+      zfl_2(~F, S.Zpos{S.Pos.add(p, S.Pos.pow2(j))}, S.Pos.pow2(1n+j), NU.pshr(S.Pos.add(p, S.Pos.pow2(j)), 1n+j), h)))
+
+# p / 2^(j+1) rounded to nearest: |2^(j+1) f - p| <= 2^j
+def psr_bnd(~F: O.OField, +p: S.Pos, +j: Nat) -> M.bnd(~F, @S(@M(O.ofz(~F, NU.pshr_round(p, 1n+j)), t2(~F, 1n+j)), O.ofp(~F, p)), t2(~F, j)):
+  %Equal.sym(Nat, Nat.sub(j, 0n), j, sub0(j)) : M.bnd(~F, @S(@M(O.ofz(~F, NU.pshr(S.Pos.add(p, S.Pos.pow2(_)), 1n+j)), t2(~F, 1n+j)), O.ofp(~F, p)), t2(~F, j))
+  psr_go(~F, p, j)
+
+# m / 2^(j+1) rounded to nearest: |2^(j+1) f - m| <= 2^j
+def zsr(~F: O.OField, m: S.Z, +j: Nat) -> M.bnd(~F, @S(@M(O.ofz(~F, NU.zshr_round(m, 1n+j)), t2(~F, 1n+j)), O.ofz(~F, m)), t2(~F, j)):
+  match m:
+    case S.Z0{}:
+      KB.bnd_val(~F, @0, @S(@M(@0, t2(~F, 1n+j)), @0), t2(~F, j), @ZEQ[t=t2(~F, 1n+j) | 0 | 0*t - 0], FM.bnd_zero(~F, t2(~F, j), ofp_nn(~F, S.Pos.pow2(j))))
+    case S.Zpos{+p}:
+      psr_bnd(~F, p, j)
+    case S.Zneg{+p}:
+      %FR.ofz_neg(~F, NU.pshr_round(p, 1n+j)) : M.bnd(~F, @S(@M(_, t2(~F, 1n+j)), @N(O.ofp(~F, p))), t2(~F, j))
+      KB.bnd_val(~F, @N(@S(@M(O.ofz(~F, NU.pshr_round(p, 1n+j)), t2(~F, 1n+j)), O.ofp(~F, p))), @S(@M(@N(O.ofz(~F, NU.pshr_round(p, 1n+j))), t2(~F, 1n+j)), @N(O.ofp(~F, p))), t2(~F, j), @ZEQ[f=O.ofz(~F, NU.pshr_round(p, 1n+j)),, t=t2(~F, 1n+j),, p=O.ofp(~F, p) | -(f*t - p) | (-f)*t - (-p)], FM.bnd_neg(~F, @S(@M(O.ofz(~F, NU.pshr_round(p, 1n+j)), t2(~F, 1n+j)), O.ofp(~F, p)), t2(~F, j), psr_bnd(~F, p, j)))
+
+# Rounding to a multiple of 2^-p
+# ------------------------------
+
+def sub_succ(e: Nat, p: Nat, h: {KA.natle(e, p) == False{} : Bool}) -> {Nat.sub(e, p) == 1n+Nat.sub(e, 1n+p) : Nat}:
+  match e p:
+    case 0n 0n:
+      FO.absurd({Nat.sub(0n, 0n) == 1n+Nat.sub(0n, 1n) : Nat}, KA.ft(Equal.sym(Bool, True{}, False{}, h)))
+    case 0n 1n++q:
+      FO.absurd({Nat.sub(0n, 1n+q) == 1n+Nat.sub(0n, 2n+q) : Nat}, KA.ft(Equal.sym(Bool, True{}, False{}, h)))
+    case 1n++i 0n:
+      Equal.cong(Nat, Nat, x => 1n+x, i, Nat.sub(i, 0n), Equal.sym(Nat, Nat.sub(i, 0n), i, sub0(i)))
+    case 1n++i 1n++q:
+      sub_succ(i, q, h)
+
+def add_sub(e: Nat, p: Nat, h: {KA.natle(e, p) == False{} : Bool}) -> {Nat.add(p, Nat.sub(e, p)) == e : Nat}:
+  match e p:
+    case 0n 0n:
+      FO.absurd({Nat.add(0n, Nat.sub(0n, 0n)) == 0n : Nat}, KA.ft(Equal.sym(Bool, True{}, False{}, h)))
+    case 0n 1n++q:
+      FO.absurd({Nat.add(1n+q, Nat.sub(0n, 1n+q)) == 0n : Nat}, KA.ft(Equal.sym(Bool, True{}, False{}, h)))
+    case 1n++i 0n:
+      {==}
+    case 1n++i 1n++q:
+      Equal.cong(Nat, Nat, x => 1n+x, Nat.add(q, Nat.sub(i, q)), i, add_sub(i, q, h))
+
+# |a| <= s and 0 <= c give |a c| <= s c
+def bnd_scale(~F: O.OField, +a: @T, +s: @T, +c: @T, +hc: O.le(~F, @0, c), h: M.bnd(~F, a, s)) -> M.bnd(~F, @M(a, c), @M(s, c)):
+  FM.bnd_mul(~F, a, s, c, c, h, FV.bnd_self(~F, c, hc))
+
+def inv_nn(~F: O.OField, +p: S.Pos) -> O.le(~F, @0, O.inv(F, O.ofp(~F, p))):
+  FO.lt_le(~F, @0, O.inv(F, O.ofp(~F, p)), FO.inv_pos(~F, O.ofp(~F, p), QE.ofp_pos(~F, p)))
+
+@ATOMS rc = r=O.ofz(~F, NU.zshr_round(m, 1n+j)),, mv=O.ofz(~F, m),, tp=t2(~F, p),, tj=t2(~F, j),, tq=t2(~F, Nat.add(p, 1n+j)),, ip=O.inv(F, t2(~F, p)),, iq=O.inv(F, t2(~F, Nat.add(p, 1n+j))),, i1=O.inv(F, t2(~F, 1n+p))
+
+# m / 2^(p+j+1) rounded to a multiple of 2^-p is within 2^-(p+1)
+def rnd_core(~F: O.OField, +m: S.Z, +p: Nat, +j: Nat) -> M.bnd(~F, @S(M.ofd(~F, S.D{NU.zshr_round(m, 1n+j), p}), M.ofd(~F, S.D{m, Nat.add(p, 1n+j)})), M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n+p})):
+  +r1 = QE.ofp_rel(~F, S.Pos.pow2(p))
+  +r2 = QE.ofp_rel(~F, S.Pos.pow2(Nat.add(p, 1n+j)))
+  +r3 = FO.sub_of_eq(~F, t2(~F, Nat.add(p, 1n+j)), @M(t2(~F, p), @A(t2(~F, j), t2(~F, j))), Equal.sym(@T, @M(t2(~F, p), @A(t2(~F, j), t2(~F, j))), t2(~F, Nat.add(p, 1n+j)), t2_add(~F, p, 1n+j)))
+  +s1 = QE.ofp_rel(~F, S.Pos.pow2(1n+p))
+  KB.bnd_val(~F, @M(@S(@M(O.ofz(~F, NU.zshr_round(m, 1n+j)), @A(t2(~F, j), t2(~F, j))), O.ofz(~F, m)), O.inv(F, t2(~F, Nat.add(p, 1n+j)))), @S(@M(O.ofz(~F, NU.zshr_round(m, 1n+j)), O.inv(F, t2(~F, p))), @M(O.ofz(~F, m), O.inv(F, t2(~F, Nat.add(p, 1n+j))))), @M(@1, O.inv(F, t2(~F, 1n+p))),
+    @CERTEQ[rc | (r*(tj + tj) - mv)*iq | r*ip - mv*iq | -(r*iq*(tj + tj)) ; tp*ip - 1 | r*ip ; tq*iq - 1 | -(r*iq*ip) ; tq - tp*(tj + tj) || r1, r2, r3],
+    FM.bnd_eq(~F, @M(@S(@M(O.ofz(~F, NU.zshr_round(m, 1n+j)), @A(t2(~F, j), t2(~F, j))), O.ofz(~F, m)), O.inv(F, t2(~F, Nat.add(p, 1n+j)))), @M(t2(~F, j), O.inv(F, t2(~F, Nat.add(p, 1n+j)))), @M(@1, O.inv(F, t2(~F, 1n+p))),
+      @CERTEQ[rc | tj*iq | 1*i1 | -(tj*iq) ; (tp + tp)*i1 - 1 | i1 ; tq*iq - 1 | -(i1*iq) ; tq - tp*(tj + tj) || s1, r2, r3],
+      bnd_scale(~F, @S(@M(O.ofz(~F, NU.zshr_round(m, 1n+j)), @A(t2(~F, j), t2(~F, j))), O.ofz(~F, m)), t2(~F, j), O.inv(F, t2(~F, Nat.add(p, 1n+j))), inv_nn(~F, S.Pos.pow2(Nat.add(p, 1n+j))), zsr(~F, m, j))))
+
+def dround_go(~F: O.OField, le: Bool, +m: S.Z, +e: Nat, +p: Nat, +h: {KA.natle(e, p) == le : Bool}) -> M.bnd(~F, @S(M.ofd(~F, NU.dround.go(le, S.D{m, e}, p)), M.ofd(~F, S.D{m, e})), M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n+p})):
+  match le:
+    case True{}:
+      KB.bnd_subself(~F, M.ofd(~F, S.D{m, e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n+p}), FO.lt_le(~F, @0, M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n+p}), DM.dpos(~F, S.XH{}, 1n+p)))
+    case False{}:
+      %add_sub(e, p, h) : M.bnd(~F, @S(M.ofd(~F, S.D{NU.zshr_round(m, Nat.sub(e, p)), p}), M.ofd(~F, S.D{m, _})), M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n+p}))
+      %Equal.sym(Nat, Nat.sub(e, p), 1n+Nat.sub(e, 1n+p), sub_succ(e, p, h)) : M.bnd(~F, @S(M.ofd(~F, S.D{NU.zshr_round(m, _), p}), M.ofd(~F, S.D{m, Nat.add(p, Nat.sub(e, p))})), M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n+p}))
+      %Equal.sym(Nat, Nat.sub(e, p), 1n+Nat.sub(e, 1n+p), sub_succ(e, p, h)) : M.bnd(~F, @S(M.ofd(~F, S.D{NU.zshr_round(m, 1n+Nat.sub(e, 1n+p)), p}), M.ofd(~F, S.D{m, Nat.add(p, _)})), M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n+p}))
+      rnd_core(~F, m, p, Nat.sub(e, 1n+p))
+
+# |dround(x, p) - x| <= 2^-(p+1)
+def dround_err(~F: O.OField, x: S.D, +p: Nat) -> M.bnd(~F, @S(M.ofd(~F, NU.dround(x, p)), M.ofd(~F, x)), M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n+p})):
+  match x:
+    case S.D{+m, +e}:
+      dround_go(~F, KA.natle(e, p), m, e, p, {==})
