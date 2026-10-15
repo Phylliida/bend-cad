@@ -345,3 +345,49 @@ def rowabs_le(~F: O.OField, r: M.Vec(~F), m: Nat, +t: O.C(F), h: M.vbnd.all(~F, 
     case Con{+a, +xs} 1n++k:
       (h1, h2) = h
       FV.le_rw_r(~F, NP.rowabs(~F, Con{a, xs}, 1n+k), O.add(F, t, O.mul(F, FR.ofn(~F, k), t)), O.mul(F, FR.ofn(~F, 1n+k), t), FR.fring_eq(~F, [t, FR.ofn(~F, k)], E.ZAdd{E.ZVar{0n}, E.ZMul{E.ZVar{1n}, E.ZVar{0n}}}, E.ZMul{E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{1n}}, E.ZVar{0n}}, {==}), RP.le_add2(~F, FV.fabs(~F, a), t, NP.rowabs(~F, xs, k), O.mul(F, FR.ofn(~F, k), t), FV.fabs_le(~F, a, t, h1), rowabs_le(~F, xs, k, t, h2, ht)))
+
+# every entry of a is at most g
+def mall(~F: O.OField, a: M.Mat(~F), +g: O.C(F)) -> Data:
+  match a:
+    case Nil{}:
+      Unit
+    case Con{r, t}:
+      M.Both(M.vbnd.all(~F, r, g), mall(~F, t, g))
+
+def vall_mcol(~F: O.OField, a: M.Mat(~F), +k: Nat, +g: O.C(F), h: mall(~F, a, g), +hg: O.le(~F, O.zero(F), g)) -> M.vbnd.all(~F, GJ.mcol(~F, a, k), g):
+  match a:
+    case Nil{}:
+      Unit{}
+    case Con{+r, +t}:
+      (h1, h2) = h
+      (look_bnd(~F, r, k, g, h1, hg), vall_mcol(~F, t, k, g, h2, hg))
+
+def len_mcol(~F: O.OField, a: M.Mat(~F), +k: Nat) -> {M.len(~F, GJ.mcol(~F, a, k)) == GJ.nrows(~F, a) : Nat}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{r, t}:
+      Equal.cong(Nat, Nat, z => 1n+z, M.len(~F, GJ.mcol(~F, t, k)), GJ.nrows(~F, t), len_mcol(~F, t, k))
+
+def vall_drop(~F: O.OField, k: Nat, v: M.Vec(~F), +t: O.C(F), h: M.vbnd.all(~F, v, t)) -> M.vbnd.all(~F, GJ.vdrop(~F, k, v), t):
+  match k v:
+    case 0n Nil{}:
+      h
+    case 0n Con{a, xs}:
+      h
+    case 1n+j Nil{}:
+      Unit{}
+    case 1n+j Con{a, xs}:
+      (h1, h2) = h
+      vall_drop(~F, j, xs, t, h2)
+
+
+# the defect of an error row: |dk(e, k)| <= eps (1 + n g)
+def dk_err(~F: O.OField, +n: Nat, +j: M.Mat(~F), +e: M.Vec(~F), +k: Nat, +ep: O.C(F), +g: O.C(F), +he: M.vbnd.all(~F, e, ep), +hep: O.le(~F, O.zero(F), ep), hj: mall(~F, j, g), +hg: O.le(~F, O.zero(F), g), hn: {GJ.nrows(~F, j) == n : Nat}) -> M.bnd(~F, dk(~F, n, j, e, k), O.mul(F, ep, O.add(F, O.one(F), O.mul(F, FR.ofn(~F, n), g)))):
+  KB.bnd_val(~F, O.add(F, O.lookup(~F, e, k), O.neg(F, M.dot(~F, GJ.vdrop(~F, n, e), GJ.mcol(~F, j, k)))), O.sub(~F, O.lookup(~F, e, k), M.dot(~F, GJ.vdrop(~F, n, e), GJ.mcol(~F, j, k))), O.mul(F, ep, O.add(F, O.one(F), O.mul(F, FR.ofn(~F, n), g))), FR.fring_eq(~F, [O.lookup(~F, e, k), M.dot(~F, GJ.vdrop(~F, n, e), GJ.mcol(~F, j, k)), NP.rowabs(~F, GJ.vdrop(~F, n, e), n), FR.ofn(~F, n), ep, g], E.ZAdd{E.ZVar{0n}, E.ZNeg{E.ZVar{1n}}}, E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, {==}),
+    FM.bnd_eq(~F, O.add(F, O.lookup(~F, e, k), O.neg(F, M.dot(~F, GJ.vdrop(~F, n, e), GJ.mcol(~F, j, k)))), O.add(F, ep, O.mul(F, O.mul(F, FR.ofn(~F, n), ep), g)), O.mul(F, ep, O.add(F, O.one(F), O.mul(F, FR.ofn(~F, n), g))), FR.fring_eq(~F, [O.lookup(~F, e, k), M.dot(~F, GJ.vdrop(~F, n, e), GJ.mcol(~F, j, k)), NP.rowabs(~F, GJ.vdrop(~F, n, e), n), FR.ofn(~F, n), ep, g], E.ZAdd{E.ZVar{4n}, E.ZMul{E.ZMul{E.ZVar{3n}, E.ZVar{4n}}, E.ZVar{5n}}}, E.ZMul{E.ZVar{4n}, E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZMul{E.ZVar{3n}, E.ZVar{5n}}}}, {==}),
+      FM.bnd_add(~F, O.lookup(~F, e, k), ep, O.neg(F, M.dot(~F, GJ.vdrop(~F, n, e), GJ.mcol(~F, j, k))), O.mul(F, O.mul(F, FR.ofn(~F, n), ep), g), look_bnd(~F, e, k, ep, he, hep),
+        FM.bnd_neg(~F, M.dot(~F, GJ.vdrop(~F, n, e), GJ.mcol(~F, j, k)), O.mul(F, O.mul(F, FR.ofn(~F, n), ep), g), FM.bnd_mono(~F, M.dot(~F, GJ.vdrop(~F, n, e), GJ.mcol(~F, j, k)), O.mul(F, NP.rowabs(~F, GJ.vdrop(~F, n, e), n), g), O.mul(F, O.mul(F, FR.ofn(~F, n), ep), g),
+          (%Equal.trans(Nat, M.len(~F, GJ.mcol(~F, j, k)), GJ.nrows(~F, j), n, len_mcol(~F, j, k), hn) : M.bnd(~F, M.dot(~F, GJ.vdrop(~F, n, e), GJ.mcol(~F, j, k)), O.mul(F, NP.rowabs(~F, GJ.vdrop(~F, n, e), _), g))
+            NP.dot_le(~F, GJ.vdrop(~F, n, e), GJ.mcol(~F, j, k), g, vall_mcol(~F, j, k, g, hj, hg), hg)),
+          FM.sub_nonneg(~F, O.mul(F, NP.rowabs(~F, GJ.vdrop(~F, n, e), n), g), O.mul(F, O.mul(F, FR.ofn(~F, n), ep), g), FV.mul_le_r(~F, NP.rowabs(~F, GJ.vdrop(~F, n, e), n), O.mul(F, FR.ofn(~F, n), ep), g, hg, rowabs_le(~F, GJ.vdrop(~F, n, e), n, ep, vall_drop(~F, n, e, ep, he), hep))))))))

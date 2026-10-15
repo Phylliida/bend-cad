@@ -348,3 +348,50 @@ def rowabs_le(~F: O.OField, r: M.Vec(~F), m: Nat, +t: @T, h: M.vbnd.all(~F, r, t
     case Con{+a, +xs} 1n++k:
       (h1, h2) = h
       FV.le_rw_r(~F, NP.rowabs(~F, Con{a, xs}, 1n+k), @A(t, @M(FR.ofn(~F, k), t)), @M(FR.ofn(~F, 1n+k), t), @ZEQ[t,, q=FR.ofn(~F, k) | t + q*t | (1 + q)*t], RP.le_add2(~F, FV.fabs(~F, a), t, NP.rowabs(~F, xs, k), @M(FR.ofn(~F, k), t), FV.fabs_le(~F, a, t, h1), rowabs_le(~F, xs, k, t, h2, ht)))
+
+# every entry of a is at most g
+def mall(~F: O.OField, a: M.Mat(~F), +g: @T) -> Data:
+  match a:
+    case Nil{}:
+      Unit
+    case Con{r, t}:
+      M.Both(M.vbnd.all(~F, r, g), mall(~F, t, g))
+
+def vall_mcol(~F: O.OField, a: M.Mat(~F), +k: Nat, +g: @T, h: mall(~F, a, g), +hg: O.le(~F, @0, g)) -> M.vbnd.all(~F, GJ.mcol(~F, a, k), g):
+  match a:
+    case Nil{}:
+      Unit{}
+    case Con{+r, +t}:
+      (h1, h2) = h
+      (look_bnd(~F, r, k, g, h1, hg), vall_mcol(~F, t, k, g, h2, hg))
+
+def len_mcol(~F: O.OField, a: M.Mat(~F), +k: Nat) -> {M.len(~F, GJ.mcol(~F, a, k)) == GJ.nrows(~F, a) : Nat}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{r, t}:
+      Equal.cong(Nat, Nat, z => 1n+z, M.len(~F, GJ.mcol(~F, t, k)), GJ.nrows(~F, t), len_mcol(~F, t, k))
+
+def vall_drop(~F: O.OField, k: Nat, v: M.Vec(~F), +t: @T, h: M.vbnd.all(~F, v, t)) -> M.vbnd.all(~F, GJ.vdrop(~F, k, v), t):
+  match k v:
+    case 0n Nil{}:
+      h
+    case 0n Con{a, xs}:
+      h
+    case 1n+j Nil{}:
+      Unit{}
+    case 1n+j Con{a, xs}:
+      (h1, h2) = h
+      vall_drop(~F, j, xs, t, h2)
+
+@ATOMS de = l=O.lookup(~F, e, k),, d=M.dot(~F, GJ.vdrop(~F, n, e), GJ.mcol(~F, j, k)),, r=NP.rowabs(~F, GJ.vdrop(~F, n, e), n),, q=FR.ofn(~F, n),, ep,, g
+
+# the defect of an error row: |dk(e, k)| <= eps (1 + n g)
+def dk_err(~F: O.OField, +n: Nat, +j: M.Mat(~F), +e: M.Vec(~F), +k: Nat, +ep: @T, +g: @T, +he: M.vbnd.all(~F, e, ep), +hep: O.le(~F, @0, ep), hj: mall(~F, j, g), +hg: O.le(~F, @0, g), hn: {GJ.nrows(~F, j) == n : Nat}) -> M.bnd(~F, dk(~F, n, j, e, k), @M(ep, @A(@1, @M(FR.ofn(~F, n), g)))):
+  KB.bnd_val(~F, @FT[de | l + -d], @FT[de | l - d], @FT[de | ep*(1 + q*g)], @ZEQ[de | l + -d | l - d],
+    FM.bnd_eq(~F, @FT[de | l + -d], @FT[de | ep + (q*ep)*g], @FT[de | ep*(1 + q*g)], @ZEQ[de | ep + (q*ep)*g | ep*(1 + q*g)],
+      FM.bnd_add(~F, @FT[de | l], @FT[de | ep], @FT[de | -d], @FT[de | (q*ep)*g], look_bnd(~F, e, k, ep, he, hep),
+        FM.bnd_neg(~F, @FT[de | d], @FT[de | (q*ep)*g], FM.bnd_mono(~F, @FT[de | d], @FT[de | r*g], @FT[de | (q*ep)*g],
+          (%Equal.trans(Nat, M.len(~F, GJ.mcol(~F, j, k)), GJ.nrows(~F, j), n, len_mcol(~F, j, k), hn) : M.bnd(~F, @FT[de | d], @M(NP.rowabs(~F, GJ.vdrop(~F, n, e), _), g))
+            NP.dot_le(~F, GJ.vdrop(~F, n, e), GJ.mcol(~F, j, k), g, vall_mcol(~F, j, k, g, hj, hg), hg)),
+          FM.sub_nonneg(~F, @FT[de | r*g], @FT[de | (q*ep)*g], FV.mul_le_r(~F, @FT[de | r], @FT[de | q*ep], g, hg, rowabs_le(~F, GJ.vdrop(~F, n, e), n, ep, vall_drop(~F, n, e, ep, he), hep))))))))
