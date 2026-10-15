@@ -1057,7 +1057,7 @@ solver as it stands, and both are provable.)
 | C3a | lib/bndpf.bend | **done 2026-10-15** (`mcen_jac`, `kball_grade`, `ksl_grade`, `eval_lip`, `sl_lip`, `deriv_rnv`, `deriv_rename`; gated via tests/bnd_laws.bend): balls: centers are values (slope at equal points = deriv), ball tightness, Lipschitz bounds for expressions and slopes; renaming commutes with deriv (plan below) |
 | C3b | lib/roundpf.bend | **done 2026-10-15** (`div_ok`, `zfloor_ok`, `dround_err`, `dsig_err`, `qsig_err`, `dsigup_ok`; gated via tests/round_laws.bend): rounding in F: dround, dsig, qsig, dsigup (plan below) |
 | C3c | lib/normpf.bend | **done 2026-10-15** (`mv_n`, `InvB`, `lowb`, `pert`; gated via tests/norm_laws.bend): norms and the perturbation lemma (plan below) |
-| C4 | lib/dgjpf.bend | the rounded elimination (5): Newton's and Y's inverses are good |
+| C4 | lib/dgjpf.bend | the rounded elimination (5): Newton's and Y's inverses are good (plan below; C4a–C4d) |
 | C5 | lib/blockpf.bend | one block at P (3) |
 | C6 | lib/completepf.bend | the blocks in turn, the verdict, local uniqueness, choosing l and d: `solve_complete` |
 
@@ -1104,6 +1104,46 @@ in K, and serves both the checker's dyadic balls and the Newton analysis.
     ‖v‖ ≤ 2β ‖J' v‖, so J' is injective, so by C1 invertible; each row of
     its inverse, read against the signs of its own entries, sums to at
     most 2β (rows walked as `mdrop(k, Z')`), so InvB(J', n, 2β).
+
+**C4 plan** (2026-10-15). `dinverse(n, w, a)` for a dyadic n × n matrix
+J = a (rows of n entries) that is invertible in F, InvB(J, n, β) (C3c),
+with entries |J_ij| ≤ g, returns some A with ‖I − A J‖ ≤ K 2^-w, for an
+explicit K from n, g and β, once 2^-w ≤ ε for an explicit ε > 0.
+
+- One column step (dgj at column c, pivot row r): swap rows c and r; s =
+  the rounded reciprocal of the pivot (qsig); the pivot row becomes
+  p = rounded s · row c; every other row i becomes rounded(row_i −
+  rounded(m_i p)) with m_i = row_i[c]. Exactly: S' = O (P S) + E, with P
+  the swap, O the elementary operation (row c times s; row i minus
+  m_i s row c), and E bounded entrywise by 2^-w times the entries' sizes
+  (C3b's dsig_err and qsig_err).
+- Invariant after c columns, with constants G_c, Δ_c, φ_c, H_c defined by
+  recursion on c. The rows are [L | R] (left n entries, right n).
+  - (a) Every entry is at most G_c in size.
+  - (b) The defect L − R J is at most Δ_c entrywise. The same operations
+    act on it, plus the rounding.
+  - (c) The finished columns are nearly unit vectors:
+    |L_ij − [i = j]| ≤ φ_c for j < c.
+  - (d) InvB(R, n, H_c). We have (O P R)^{-1} = R^{-1} P O^{-1} with O^{-1}
+    explicit (row c times 1/s; row i plus m_i row c), and C3c's pert
+    absorbs the rounding.
+- Pivot. Partial pivoting takes the largest |S_rc| over r ≥ c. Suppose
+  every candidate were below μ_c. Then v = e_c − Σ_{j<c} L_jc e_j has
+  |L v| = O(μ_c + φ_c G_c), because the finished columns are nearly unit.
+  Also R J v = L v − D v and |v| ≥ 1, so 1 ≤ |v| ≤ β |J v| ≤
+  β H_c (|L v| + n Δ_c |v|), which is false once μ_c and the errors are
+  small. So the pivot is at least μ_c > 0, elimination never meets a zero
+  column, and |s| ≤ 2/μ_c.
+- End (c = n): A = R, and |I − A J| ≤ |I − L| + |L − R J| ≤ n (φ_n + Δ_n).
+  Every error constant is K_c 2^-w and every "small" is 2^-w ≤ ε_c.
+  solve_complete reaches w = P + 32 with P large through arch.
+- Split:
+  - C4a: the exact step algebra (swap, O and O^{-1} as matrices; how the
+    defect and the finished columns transform).
+  - C4b: one rounded step's errors (dscale, daxpy and dsdiv through dsig
+    and qsig).
+  - C4c: the pivot bound.
+  - C4d: the induction over columns and the end bound for dinverse.
 
 **Risks.** Size: several thousand lines over several sessions (C4 is the
 largest single piece). Checker time on long inequality proofs: keep the
