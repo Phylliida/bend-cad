@@ -682,6 +682,14 @@ def tri3_eq(~F: O.OField, +p: M.Vec(~F), +q: M.Vec(~F), +r: M.Vec(~F), +k: Nat) 
   %Equal.sym(O.C(F), O.lookup(~F, BX.vsub(~F, p, r), k), O.sub(~F, O.lookup(~F, p, k), O.lookup(~F, r, k)), DG.look_diff(~F, p, r, k)) : {O.add(F, O.sub(~F, O.lookup(~F, p, k), O.lookup(~F, q, k)), O.sub(~F, O.lookup(~F, q, k), O.lookup(~F, r, k))) == _ : O.C(F)}
   FR.fring_eq(~F, [O.lookup(~F, p, k), O.lookup(~F, q, k), O.lookup(~F, r, k)], E.ZAdd{E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, E.ZSub{E.ZVar{1n}, E.ZVar{2n}}}, E.ZSub{E.ZVar{0n}, E.ZVar{2n}}, {==})
 
+# |p + q| <= |p| + |q|
+def add_at(~F: O.OField, +p: M.Vec(~F), +q: M.Vec(~F), +k: Nat) -> M.bnd(~F, O.lookup(~F, M.vadd(~F, p, q), k), O.add(F, NP.vn(~F, p), NP.vn(~F, q))):
+  %GJ.look_vadd(~F, p, q, k) : M.bnd(~F, _, O.add(F, NP.vn(~F, p), NP.vn(~F, q)))
+  FM.bnd_add(~F, O.lookup(~F, p, k), NP.vn(~F, p), O.lookup(~F, q, k), NP.vn(~F, q), lkb(~F, p, k), lkb(~F, q, k))
+
+def vn_add(~F: O.OField, +p: M.Vec(~F), +q: M.Vec(~F)) -> O.le(~F, NP.vn(~F, M.vadd(~F, p, q)), O.add(F, NP.vn(~F, p), NP.vn(~F, q))):
+  FV.vmax_lub(~F, M.vadd(~F, p, q), O.add(F, NP.vn(~F, p), NP.vn(~F, q)), DG.vall_by(~F, ~M.vadd(~F, p, q), ~O.add(F, NP.vn(~F, p), NP.vn(~F, q)), ~(k => add_at(~F, p, q, k))), vn_nn2(~F, p, q))
+
 # |p - r| <= |p - q| + |q - r|
 def tri3_at(~F: O.OField, +p: M.Vec(~F), +q: M.Vec(~F), +r: M.Vec(~F), +k: Nat) -> M.bnd(~F, O.lookup(~F, BX.vsub(~F, p, r), k), O.add(F, NP.vn(~F, BX.vsub(~F, p, q)), NP.vn(~F, BX.vsub(~F, q, r)))):
   KB.bnd_val(~F, O.add(F, O.lookup(~F, BX.vsub(~F, p, q), k), O.lookup(~F, BX.vsub(~F, q, r), k)), O.lookup(~F, BX.vsub(~F, p, r), k), O.add(F, NP.vn(~F, BX.vsub(~F, p, q)), NP.vn(~F, BX.vsub(~F, q, r))),

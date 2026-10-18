@@ -437,3 +437,92 @@ def pt_maj($CXP, +y: List<&2, S.D>, +ly: {M.len(~F, M.ofdv(~F, y)) == n : Nat}, 
 # the solver's step from a visited point
 def nstep_vis($CXP, +y: List<&2, S.D>, +ly: {M.len(~F, M.ofdv(~F, y)) == n : Nat}, +t: @T, +hy: M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, y), xb), t), +ht: O.le(~F, t, dx($KA))) -> NSR(~F, n, eqs, pc, ea($KA), p, y, NU.nstep(eqs, n, pc, p, y)):
   nstep_ok(~F, ~H, n, eqs, hn, hh, pc, p, y, ly, ms, bt2(~F, b), hm0, bt2_nn(~F, b, hb0), pt_inv($CXA, y, ly, t, hy, ht), AP.both_l(DG.mall(~F, jc(~F, eqs, n, pt(~F, y, pc)), ms), NP.rowsle(~F, jc(~F, eqs, n, pt(~F, y, pc)), n, @M(FR.ofn(~F, n), ms)), pt_maj($CXA, y, ly, t, hy, ht)), hsm)
+
+# A Step's parts
+# --------------
+
+@MACRO STP +y: List<&2, S.D>, +y2: List<&2, S.D>, +ea0: @T, st: Step(~F, n, eqs, pc, ea0, p, y, y2)
+
+def st_A(~F: O.OField, +n: Nat, +eqs: List<&2, E.QExpr>, +pc: List<&2, S.D>, +p: Nat, $STP) -> M.Mat(~F):
+  match st:
+    case (A, q):
+      A
+
+def st_ag(~F: O.OField, +n: Nat, +eqs: List<&2, E.QExpr>, +pc: List<&2, S.D>, +p: Nat, $STP) -> DG.agood(~F, n, jc(~F, eqs, n, pt(~F, y, pc)), st_A(~F, n, eqs, pc, p, y, y2, ea0, st), ea0):
+  match st:
+    case (A, q):
+      AP.both_l(DG.agood(~F, n, jc(~F, eqs, n, pt(~F, y, pc)), A, ea0), M.Both({GJ.nrows(~F, A) == n : Nat}, M.Both(M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, y2), BX.vsub(~F, M.ofdv(~F, y), M.matvec(~F, A, gv(~F, eqs, y, pc)))), hnw(~F, p)), {M.len(~F, M.ofdv(~F, y2)) == n : Nat})), q)
+
+def st_r1(~F: O.OField, +n: Nat, +eqs: List<&2, E.QExpr>, +pc: List<&2, S.D>, +p: Nat, $STP) -> M.Both({GJ.nrows(~F, st_A(~F, n, eqs, pc, p, y, y2, ea0, st)) == n : Nat}, M.Both(M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, y2), BX.vsub(~F, M.ofdv(~F, y), M.matvec(~F, st_A(~F, n, eqs, pc, p, y, y2, ea0, st), gv(~F, eqs, y, pc)))), hnw(~F, p)), {M.len(~F, M.ofdv(~F, y2)) == n : Nat})):
+  match st:
+    case (A, q):
+      AP.both_r(DG.agood(~F, n, jc(~F, eqs, n, pt(~F, y, pc)), A, ea0), M.Both({GJ.nrows(~F, A) == n : Nat}, M.Both(M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, y2), BX.vsub(~F, M.ofdv(~F, y), M.matvec(~F, A, gv(~F, eqs, y, pc)))), hnw(~F, p)), {M.len(~F, M.ofdv(~F, y2)) == n : Nat})), q)
+
+def st_nr(~F: O.OField, +n: Nat, +eqs: List<&2, E.QExpr>, +pc: List<&2, S.D>, +p: Nat, $STP) -> {GJ.nrows(~F, st_A(~F, n, eqs, pc, p, y, y2, ea0, st)) == n : Nat}:
+  AP.both_l({GJ.nrows(~F, st_A(~F, n, eqs, pc, p, y, y2, ea0, st)) == n : Nat}, M.Both(M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, y2), BX.vsub(~F, M.ofdv(~F, y), M.matvec(~F, st_A(~F, n, eqs, pc, p, y, y2, ea0, st), gv(~F, eqs, y, pc)))), hnw(~F, p)), {M.len(~F, M.ofdv(~F, y2)) == n : Nat}), st_r1(~F, n, eqs, pc, p, y, y2, ea0, st))
+
+def st_r2(~F: O.OField, +n: Nat, +eqs: List<&2, E.QExpr>, +pc: List<&2, S.D>, +p: Nat, $STP) -> M.Both(M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, y2), BX.vsub(~F, M.ofdv(~F, y), M.matvec(~F, st_A(~F, n, eqs, pc, p, y, y2, ea0, st), gv(~F, eqs, y, pc)))), hnw(~F, p)), {M.len(~F, M.ofdv(~F, y2)) == n : Nat}):
+  AP.both_r({GJ.nrows(~F, st_A(~F, n, eqs, pc, p, y, y2, ea0, st)) == n : Nat}, M.Both(M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, y2), BX.vsub(~F, M.ofdv(~F, y), M.matvec(~F, st_A(~F, n, eqs, pc, p, y, y2, ea0, st), gv(~F, eqs, y, pc)))), hnw(~F, p)), {M.len(~F, M.ofdv(~F, y2)) == n : Nat}), st_r1(~F, n, eqs, pc, p, y, y2, ea0, st))
+
+def st_rb(~F: O.OField, +n: Nat, +eqs: List<&2, E.QExpr>, +pc: List<&2, S.D>, +p: Nat, $STP) -> M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, y2), BX.vsub(~F, M.ofdv(~F, y), M.matvec(~F, st_A(~F, n, eqs, pc, p, y, y2, ea0, st), gv(~F, eqs, y, pc)))), hnw(~F, p)):
+  AP.both_l(M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, y2), BX.vsub(~F, M.ofdv(~F, y), M.matvec(~F, st_A(~F, n, eqs, pc, p, y, y2, ea0, st), gv(~F, eqs, y, pc)))), hnw(~F, p)), {M.len(~F, M.ofdv(~F, y2)) == n : Nat}, st_r2(~F, n, eqs, pc, p, y, y2, ea0, st))
+
+def st_len(~F: O.OField, +n: Nat, +eqs: List<&2, E.QExpr>, +pc: List<&2, S.D>, +p: Nat, $STP) -> {M.len(~F, M.ofdv(~F, y2)) == n : Nat}:
+  AP.both_r(M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, y2), BX.vsub(~F, M.ofdv(~F, y), M.matvec(~F, st_A(~F, n, eqs, pc, p, y, y2, ea0, st), gv(~F, eqs, y, pc)))), hnw(~F, p)), {M.len(~F, M.ofdv(~F, y2)) == n : Nat}, st_r2(~F, n, eqs, pc, p, y, y2, ea0, st))
+
+# |(a - b) - a| <= |b|
+def back_at(~F: O.OField, +a: M.Vec(~F), +b: M.Vec(~F), +k: Nat) -> M.bnd(~F, O.lookup(~F, BX.vsub(~F, BX.vsub(~F, a, b), a), k), NP.vn(~F, b)):
+  %Equal.sym(@T, O.lookup(~F, BX.vsub(~F, BX.vsub(~F, a, b), a), k), @S(O.lookup(~F, BX.vsub(~F, a, b), k), O.lookup(~F, a, k)), DG.look_diff(~F, BX.vsub(~F, a, b), a, k)) : M.bnd(~F, _, NP.vn(~F, b))
+  %Equal.sym(@T, O.lookup(~F, BX.vsub(~F, a, b), k), @S(O.lookup(~F, a, k), O.lookup(~F, b, k)), DG.look_diff(~F, a, b, k)) : M.bnd(~F, @S(_, O.lookup(~F, a, k)), NP.vn(~F, b))
+  KB.bnd_val(~F, @N(O.lookup(~F, b, k)), @S(@S(O.lookup(~F, a, k), O.lookup(~F, b, k)), O.lookup(~F, a, k)), NP.vn(~F, b), FR.fring_eq(~F, [O.lookup(~F, a, k), O.lookup(~F, b, k)], E.ZNeg{E.ZVar{1n}}, E.ZSub{E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{0n}}, {==}), FM.bnd_neg(~F, O.lookup(~F, b, k), NP.vn(~F, b), AP.lkb(~F, b, k)))
+
+def vn_back(~F: O.OField, +a: M.Vec(~F), +b: M.Vec(~F)) -> O.le(~F, NP.vn(~F, BX.vsub(~F, BX.vsub(~F, a, b), a)), NP.vn(~F, b)):
+  FV.vmax_lub(~F, BX.vsub(~F, BX.vsub(~F, a, b), a), NP.vn(~F, b), DG.vall_by(~F, ~BX.vsub(~F, BX.vsub(~F, a, b), a), ~NP.vn(~F, b), ~(k => back_at(~F, a, b, k))), FV.vmax_nn(~F, b))
+
+# entry by entry w = p - q: |w| <= |p| + |q|
+def vn_by2s(~F: O.OField, ~w: M.Vec(~F), ~pv: M.Vec(~F), ~qv: M.Vec(~F), ~eq: @k: Nat -> {O.lookup(~F, w, k) == @S(O.lookup(~F, pv, k), O.lookup(~F, qv, k)) : @T}) -> O.le(~F, NP.vn(~F, w), @A(NP.vn(~F, pv), NP.vn(~F, qv))):
+  FV.vmax_lub(~F, w, @A(NP.vn(~F, pv), NP.vn(~F, qv)), DG.vall_by(~F, ~w, ~@A(NP.vn(~F, pv), NP.vn(~F, qv)), ~(k => KB.bnd_val(~F, @S(O.lookup(~F, pv, k), O.lookup(~F, qv, k)), O.lookup(~F, w, k), @A(NP.vn(~F, pv), NP.vn(~F, qv)), Equal.sym(@T, O.lookup(~F, w, k), @S(O.lookup(~F, pv, k), O.lookup(~F, qv, k)), eq(k)), FM.bnd_add(~F, O.lookup(~F, pv, k), NP.vn(~F, pv), @N(O.lookup(~F, qv, k)), NP.vn(~F, qv), AP.lkb(~F, pv, k), FM.bnd_neg(~F, O.lookup(~F, qv, k), NP.vn(~F, qv), AP.lkb(~F, qv, k)))))),
+    AP.vn_nn2(~F, pv, qv))
+
+# Step 0
+# ------
+
+@MACRO Y0 M.ofdv(~F, y0)
+@MACRO P0 pt(~F, y0, pc)
+@MACRO S0 CP.smat(~F, $P0, $XS, eqs, n, 0n)
+@MACRO T0 CP.smat(~F, $P0, $XS, eqs, m, n)
+@MACRO E0 BX.vsub(~F, $Y0, xb)
+@MACRO DZ BX.vsub(~F, M.ofdv(~F, pc), xz)
+@MACRO G0 gv(~F, eqs, y0, pc)
+@MACRO Y0P +y0: List<&2, S.D>, +ly0: {M.len(~F, M.ofdv(~F, y0)) == n : Nat}, +hy0: M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, y0), xb), d)
+@MACRO Y0A y0, ly0, hy0
+
+def lg($CXP, +y: List<&2, S.D>) -> {M.len(~F, gv(~F, eqs, y, pc)) == n : Nat}:
+  Equal.trans(Nat, M.len(~F, gv(~F, eqs, y, pc)), CK.eqlen(eqs), n, CP.len_fvals(~F, eqs, pt(~F, y, pc)), hn)
+
+# f at the drawing: since f(x_b; x_z) = 0, g0 = S0 (y0 - x_b) + T0 (pc - x_z)
+def g0eq($CXP, $Y0P) -> {$G0 == M.vadd(~F, M.matvec(~F, $S0, $E0), M.matvec(~F, $T0, $DZ)) : M.Vec(~F)}:
+  %vsub_zr(~F, $G0, n, lg($CXA, y0)) : {_ == M.vadd(~F, M.matvec(~F, $S0, $E0), M.matvec(~F, $T0, $DZ)) : M.Vec(~F)}
+  %hz : {BX.vsub(~F, $G0, _) == M.vadd(~F, M.matvec(~F, $S0, $E0), M.matvec(~F, $T0, $DZ)) : M.Vec(~F)}
+  CP.fvecs_self(~F, $Y0, xb, M.ofdv(~F, pc), xz, eqs, n, m, hbl, ly0, lxb)
+
+def le0($CXP, $Y0P) -> {M.len(~F, $E0) == n : Nat}:
+  CP.len_vsub(~F, $Y0, xb, n, ly0, lxb)
+
+def ldz($CXP) -> {M.len(~F, $DZ) == m : Nat}:
+  CP.len_vsub(~F, M.ofdv(~F, pc), xz, m, lpc, lxz)
+
+# slopes between y0's point and x_b ++ x_z: at most cnt ms in norm
+def smaj0($CXP, $Y0P, +cnt: Nat, +lo: Nat) -> O.le(~F, NP.mnorm(~F, CP.smat(~F, $P0, $XS, eqs, cnt, lo), cnt), @M(FR.ofn(~F, cnt), ms)):
+  NP.mnorm_lub(~F, CP.smat(~F, $P0, $XS, eqs, cnt, lo), cnt, @M(FR.ofn(~F, cnt), ms), AP.both_r(DG.mall(~F, CP.smat(~F, $P0, $XS, eqs, cnt, lo), ms), NP.rowsle(~F, CP.smat(~F, $P0, $XS, eqs, cnt, lo), cnt, @M(FR.ofn(~F, cnt), ms)), AP.smat_maj(~F, dx($KA), bb, dx_nn($KA, $NNA), hbb0, $BIG, gbig($CXA), $P0, $XS, inbig($CXA, y0, ly0, d, hy0, d_le_dx($CXA)), xs_inbig($CXA), lam, ms, hm0, eqs, hq, cnt, lo)), nms_nn(~F, cnt, ms, hm0))
+
+# |g0| <= g0c
+def g0bnd($CXP, $Y0P) -> O.le(~F, NP.vn(~F, $G0), g0c($KA)):
+  %Equal.sym(M.Vec(~F), $G0, M.vadd(~F, M.matvec(~F, $S0, $E0), M.matvec(~F, $T0, $DZ)), g0eq($CXA, $Y0A)) : O.le(~F, NP.vn(~F, _), g0c($KA))
+  DM.le_trans(~F, NP.vn(~F, M.vadd(~F, M.matvec(~F, $S0, $E0), M.matvec(~F, $T0, $DZ))), @A(NP.vn(~F, M.matvec(~F, $S0, $E0)), NP.vn(~F, M.matvec(~F, $T0, $DZ))), g0c($KA),
+    AP.vn_add(~F, M.matvec(~F, $S0, $E0), M.matvec(~F, $T0, $DZ)),
+    RP.le_add2(~F, NP.vn(~F, M.matvec(~F, $S0, $E0)), @M(@M(FR.ofn(~F, n), ms), d), NP.vn(~F, M.matvec(~F, $T0, $DZ)), @M(@M(FR.ofn(~F, m), ms), rho),
+      DM.le_trans(~F, NP.vn(~F, M.matvec(~F, $S0, $E0)), @M(NP.mnorm(~F, $S0, n), NP.vn(~F, $E0)), @M(@M(FR.ofn(~F, n), ms), d), NP.mv_n(~F, $S0, n, $E0, le0($CXA, $Y0A)),
+        mm_le(~F, NP.mnorm(~F, $S0, n), @M(FR.ofn(~F, n), ms), NP.vn(~F, $E0), d, FV.vmax_nn(~F, $E0), nms_nn(~F, n, ms, hm0), smaj0($CXA, $Y0A, n, 0n), FV.vmax_lub(~F, $E0, d, hy0, hd0))),
+      DM.le_trans(~F, NP.vn(~F, M.matvec(~F, $T0, $DZ)), @M(NP.mnorm(~F, $T0, m), NP.vn(~F, $DZ)), @M(@M(FR.ofn(~F, m), ms), rho), NP.mv_n(~F, $T0, m, $DZ, ldz($CXA)),
+        mm_le(~F, NP.mnorm(~F, $T0, m), @M(FR.ofn(~F, m), ms), NP.vn(~F, $DZ), rho, FV.vmax_nn(~F, $DZ), nms_nn(~F, m, ms, hm0), smaj0($CXA, $Y0A, m, n), FV.vmax_lub(~F, $DZ, rho, hzc, hr0)))))
