@@ -914,15 +914,19 @@ family gets a law.
 - The witness layer: one rank-revealing elimination at working precision.
 - The exact decision: a Gröbner basis of the localized subsystem, with its
   degenerate solutions removed (a variable t with t·h₀ = 1, h₀ the
-  non-degeneracy factors), so the system has finitely many solutions.
-  That is single exponential in its variables (about 2ⁿ for quadratic
+  non-degeneracy factors). When what is left has finitely many solutions,
+  the usual case for a block that certifies once c is removed, the cost
+  is single exponential in its variables (about 2ⁿ for quadratic
   constraints), not doubly exponential as for general ideal membership.
+  Other components can remain. Then the decision is still exact and
+  complete, but only the general worst case applies.
   Modular F5 does the bulk of the work in machine words. It runs only on
   what the cheap layers leave, on a few constraints and the blocks they
   depend on, never on the ideal of the whole sketch.
-- No exact, complete method is polynomial in the worst case: an exact
-  coincidence can encode whether a sum of square roots equals a given
-  number, which has no known polynomial-time algorithm.
+- No exact, complete method is likely to be polynomial in the worst case.
+  An exact coincidence can express questions like whether a sum of square
+  roots equals a given number, which has no known polynomial-time
+  algorithm.
 - A pathological sketch can be slow, but never wrong or unknown.
 
 **Order in the solver.** Linear, then directions, then lengths, then
