@@ -871,10 +871,11 @@ family gets a law.
     h·g_c = Σ qᵢgᵢ for some h with h(x*) ≠ 0. There the kept equations
     generate every polynomial that vanishes at x*.
   - Two searches run side by side, and exactly one succeeds:
-    - **Holds.** Buchberger's algorithm (a Gröbner basis) on the subsystem
-      c depends on gives the colon ideal (I : g_c). A generator h with
-      h(x*) ≠ 0 is found and proven nonzero over the box by ball
-      arithmetic. The cofactors qᵢ then follow by division.
+    - **Holds.** A Gröbner basis of the subsystem c depends on gives the
+      colon ideal (I : g_c). A generator h with h(x*) ≠ 0 is found and
+      proven nonzero over the box by ball arithmetic. The cofactors qᵢ
+      follow from one exact linear solve at the degree the basis
+      indicates, and the ring normalizer checks the identity.
     - **Fails.** Ball arithmetic shows g_c(x*) ≠ 0 once the box is refined
       enough.
   - The result is implied (amber) or conflict (red), never unknown.
@@ -883,24 +884,52 @@ family gets a law.
   - If removing no single constraint leaves a regular block, the
     configuration is singular (§8.8), or there are several dependencies.
     The corank says how many constraints to remove together.
-  - For D7, Buchberger's termination and completeness are proven in Bend
-    (Dickson's lemma). That is a substantial proof, but a well-trodden one:
-    it is formalized in Coq, Isabelle and Lean. The certificate itself is
-    checked by the ring normalizer either way.
+- **The Gröbner algorithm (Danielle, 2026-10-18: the fastest, even at a
+  higher proof cost).**
+  - The algorithm is signature-based F5 (the F4/F5 family, which avoids
+    reductions to zero), run modulo word-size primes.
+  - Bend packs a `Nat` below 2⁴⁸ into a machine word, so arithmetic modulo
+    primes below 2²⁴ runs natively, not on bit-list bignums.
+  - The bases from several primes are combined by Chinese remaindering and
+    rational reconstruction, then checked exactly:
+    - each element is built from the inputs;
+    - each input reduces to zero;
+    - every S-pair reduces to zero (Buchberger's criterion).
+  - A failed check means unlucky primes, and the algorithm adds primes and
+    goes on. That is how modular Gröbner methods work, not a fallback.
+  - Proven, for the algorithm as it runs:
+    - **Soundness.** Buchberger's criterion and membership by reduction
+      (textbook, proven once). The certificate is checked anyway.
+    - **Termination and completeness.** F5 terminates over each prime
+      field (a port of a published termination proof for a standard
+      signature-based variant). Only finitely many primes are unlucky:
+      they divide a nonzero integer fixed by the input, so adding primes
+      until the check passes always ends.
+    - F5's signature criteria are the hardest proof here. The finite-bad-
+      primes argument is moderate.
 
 **Cost.**
 - The linear layer: one exact elimination of small dyadics.
 - The direction and length layers: near-linear.
 - The witness layer: one rank-revealing elimination at working precision.
-- The exact decision: a Gröbner basis of the localized subsystem. That is
-  worst-case doubly exponential, but it runs only on what the cheap
-  layers leave, on a few constraints and the blocks they depend on, never
-  on the ideal of the whole sketch.
+- The exact decision: a Gröbner basis of the localized subsystem, with its
+  degenerate solutions removed (a variable t with t·h₀ = 1, h₀ the
+  non-degeneracy factors), so the system has finitely many solutions.
+  That is single exponential in its variables (about 2ⁿ for quadratic
+  constraints), not doubly exponential as for general ideal membership.
+  Modular F5 does the bulk of the work in machine words. It runs only on
+  what the cheap layers leave, on a few constraints and the blocks they
+  depend on, never on the ideal of the whole sketch.
+- No exact, complete method is polynomial in the worst case: an exact
+  coincidence can encode whether a sum of square roots equals a given
+  number, which has no known polynomial-time algorithm.
 - A pathological sketch can be slow, but never wrong or unknown.
 
 **Order in the solver.** Linear, then directions, then lengths, then
-today's structural stage, then blocks; the witness layer runs only on a
-block that fails at every precision. Which constraint of a dependency is
+today's structural stage, then blocks. The witness layer runs only on a
+block that fails at every precision. Each candidate it proposes is tried
+first as a generic theorem, with the dimensions as symbols (low degree,
+fast), and then by the exact decision. Which constraint of a dependency is
 flagged: the last in constraint order (the closing edge), matching v1's
 order rule and a user's "the one I just added".
 
@@ -923,11 +952,13 @@ order rule and a user's "the one I just added".
 - sk-13a: `Why` as a sum type, `explained₂`, the linear layer.
 - sk-13b: directions: the path lemma, cycle certificates, conflicts.
 - sk-13c: lengths.
-- sk-13d: the witness layer, the exact decision (Buchberger proven
-  complete), and the three-way refusal in the page.
+- sk-13d: the witness layer and the exact decision (modular F5 with
+  the exact check, proven sound, terminating and complete).
+- sk-13e: generic theorems with the dimensions as symbols, before the
+  exact decision, and the three-way refusal in the page.
 
-The GUI sketches of 2026-10-18 join `tools/regress.sh`. Open choices are
-Q20–Q23 (§16).
+The GUI sketches of 2026-10-18 join `tools/regress.sh`. Q20–Q23 are
+decided (§16).
 
 ---
 
@@ -1735,7 +1766,7 @@ random sketches.
 | sk-10 | Bulge arcs, tangency, joins, trim/split (§5.2–5.3) | sk-07 | laws closed |
 | sk-11 | Exact constants: algebraic roots, constructive π / cos / sin / tan (§7.1–7.3) | sk-06 | laws closed; typed angles exact |
 | sk-12 | Guaranteed-digit queries (§9) | sk-09, sk-11 | demo |
-| sk-13 | Redundancy certificates (§8.7), as layers in the solver (§8.11, proposal 2026-10-18): 13a `Why` as a sum type + linear layer; 13b directions (gain cycles, path lemma); 13c lengths; 13d witness layer + exact decision (Buchberger, proven complete) + three-way refusal | sk-07, sk-09 | `solve_red` v2, `solve_implied`, `solve_conflict`, per-family `solve_red_complete` |
+| sk-13 | Redundancy certificates (§8.7), as layers in the solver (§8.11, proposal 2026-10-18): 13a `Why` as a sum type + linear layer; 13b directions (gain cycles, path lemma); 13c lengths; 13d witness layer + exact decision (modular F5, checked; proven sound, terminating, complete); 13e generic theorems + three-way refusal | sk-07, sk-09 | `solve_red` v2, `solve_implied`, `solve_conflict`, per-family `solve_red_complete` |
 | sk-14 | Proposer v2: drag previews (§6 checks), continuation, incremental re-certification | sk-09 | interactive drag; commit within target |
 | sk-15 | Splines, NURBS, conic arcs, offsets, G2 (Q6) | sk-07 | laws closed |
 | sk-16 | Regions: arrangement with exact intersections (incl. spline root isolation), certified topology, point location | sk-10, sk-15 | region laws closed |
@@ -1884,9 +1915,11 @@ comprehensive and exact.
   witness only proposes candidates, with every constraint of the failing
   block as the fallback.
 - **Q23** No degree bound. A guaranteed bound exists but is impractical,
-  so each candidate is decided by Buchberger's algorithm (complete,
-  terminating) run side by side with a ball-arithmetic nonzero test.
-  Exactly one succeeds, so the answer is never unknown.
+  so each candidate is decided exactly: a Gröbner basis run side by side
+  with a ball-arithmetic nonzero test, and exactly one succeeds. The
+  Gröbner algorithm is the fastest, modular signature-based F5 with an
+  exact check, proven sound, terminating and complete. It runs as it is
+  proven, with no fallback path.
 
 **Open for Danielle:**
 - **sk-09 statements** (ROADMAP.bend): `solve_exists`, `solve_unique`,
@@ -1964,8 +1997,10 @@ comprehensive and exact.
   to it. §15: sk-13 split into 13a–13d.
 - §16: Q20–Q23 decided (Danielle): amber for implied, the last constraint
   flagged, exact. There is no degree bound: each candidate is decided
-  exactly, by Buchberger's algorithm run side by side with a nonzero test
-  at the certified point. Coincidental redundancy is covered too (§8.7).
+  exactly, by a Gröbner basis run side by side with a nonzero test at the
+  certified point. The Gröbner algorithm is modular F5, checked exactly
+  and proven terminating and complete. Coincidental redundancy is covered
+  too (§8.7).
 
 **v0.12 → v0.13 (sk-06 reviewed; the proposer becomes verified):**
 - §8.3, §8.4, §14: the sk-06 laws are in LAWS.bend; the block laws are
