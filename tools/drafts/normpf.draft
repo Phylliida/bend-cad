@@ -140,17 +140,10 @@ def invb_nn(~F: O.OField, +j: M.Mat(~F), +n: Nat, +c: @T, h: InvB(~F, j, n, c)) 
 # Perturbation
 # ------------
 
-def one_nn(~F: O.OField) -> O.le(~F, @0, @1):
-  Inl{O.zero_lt_one(F)}
-
 def cadd(~F: O.OField, +a1: @T, +a2: @T, +b1: @T, +b2: @T, ea: {a1 == a2 : @T}, eb: {b1 == b2 : @T}) -> {@A(a1, b1) == @A(a2, b2) : @T}:
   %ea : {@A(a1, b1) == @A(_, b2) : @T}
   %eb : {@A(a1, b1) == @A(a1, _) : @T}
   {==}
-
-def bnd_lo(~F: O.OField, +v: @T, +s: @T, h: M.bnd(~F, v, s)) -> O.le(~F, v, s):
-  (h1, h2) = h
-  FV.le_of_sub(~F, v, s, h1)
 
 def vh(~F: O.OField, +a: @T, +xs: M.Vec(~F), +s: @T, h: M.vbnd.all(~F, Con{a, xs}, s)) -> M.bnd(~F, a, s):
   (h1, h2) = h
@@ -284,9 +277,9 @@ def sgn_mul(~F: O.OField, +x: @T) -> {@M(x, fsgn(~F, x)) == FV.fabs(~F, x) : @T}
 def sgn_bnd.go(~F: O.OField, +x: @T, t: Or(O.lt(F, x, @0), Or({x == @0 : @T}, O.lt(F, @0, x)))) -> M.bnd(~F, fsgn.go(~F, x, t), @1):
   match t:
     case Inl{l}:
-      FM.bnd_neg(~F, @1, @1, FV.bnd_self(~F, @1, one_nn(~F)))
+      FM.bnd_neg(~F, @1, @1, FV.bnd_self(~F, @1, FO.one_nn(~F)))
     case Inr{r}:
-      FV.bnd_self(~F, @1, one_nn(~F))
+      FV.bnd_self(~F, @1, FO.one_nn(~F))
 
 def sgn_bnd(~F: O.OField, +x: @T) -> M.bnd(~F, fsgn(~F, x), @1):
   sgn_bnd.go(~F, x, O.lt_total(F)(x, @0))
@@ -319,14 +312,14 @@ def sgnv_all(~F: O.OField, r: M.Vec(~F), n: Nat) -> M.vbnd.all(~F, sgnv(~F, r, n
     case Nil{} 0n:
       Unit{}
     case Nil{} 1n+k:
-      (FV.bnd_self(~F, @1, one_nn(~F)), sgnv_all(~F, Nil{}, k))
+      (FV.bnd_self(~F, @1, FO.one_nn(~F)), sgnv_all(~F, Nil{}, k))
     case Con{x, t} 0n:
       Unit{}
     case Con{x, t} 1n+k:
       (sgn_bnd(~F, x), sgnv_all(~F, t, k))
 
 def sgnv_vn(~F: O.OField, +r: M.Vec(~F), +n: Nat) -> O.le(~F, vn(~F, sgnv(~F, r, n)), @1):
-  FV.vmax_lub(~F, sgnv(~F, r, n), @1, sgnv_all(~F, r, n), one_nn(~F))
+  FV.vmax_lub(~F, sgnv(~F, r, n), @1, sgnv_all(~F, r, n), FO.one_nn(~F))
 
 # r read against its signs is rowabs
 def sgnv_dot(~F: O.OField, r: M.Vec(~F), n: Nat) -> {M.dot(~F, r, sgnv(~F, r, n)) == rowabs(~F, r, n) : @T}:
@@ -436,7 +429,7 @@ def zs_gen(~F: O.OField, ~a: M.Mat(~F), ~n: Nat, ~c: @T, ~lb: @u: M.Vec(~F) -> {
 def row_gen(~F: O.OField, ~a: M.Mat(~F), ~n: Nat, ~c: @T, ~lb: @u: M.Vec(~F) -> {M.len(~F, u) == n : Nat} -> O.le(~F, vn(~F, u), @M(c, vn(~F, M.matvec(~F, a, u)))), +hc: O.le(~F, @0, c), +ha: {GJ.nrows(~F, a) == n : Nat}, +z: M.Mat(~F), +hinv: DV.Inverse(~F, a, z, n), +hz: {GJ.nrows(~F, z) == n : Nat}, +k: Nat, +r: M.Vec(~F), +t: M.Mat(~F), e: {mdrop(~F, k, z) == Con{r, t} : M.Mat(~F)}) -> O.le(~F, rowabs(~F, r, n), c):
   %sgnv_dot(~F, r, n) : O.le(~F, _, c)
   DM.le_trans(~F, M.dot(~F, r, sgnv(~F, r, n)), vn(~F, M.matvec(~F, Con{r, t}, sgnv(~F, r, n))), c,
-    DM.le_trans(~F, M.dot(~F, r, sgnv(~F, r, n)), FV.fabs(~F, M.dot(~F, r, sgnv(~F, r, n))), vn(~F, M.matvec(~F, Con{r, t}, sgnv(~F, r, n))), bnd_lo(~F, M.dot(~F, r, sgnv(~F, r, n)), FV.fabs(~F, M.dot(~F, r, sgnv(~F, r, n))), FV.fabs_bnd(~F, M.dot(~F, r, sgnv(~F, r, n)))), FV.fmax_l(~F, FV.fabs(~F, M.dot(~F, r, sgnv(~F, r, n))), vn(~F, M.matvec(~F, t, sgnv(~F, r, n))))),
+    DM.le_trans(~F, M.dot(~F, r, sgnv(~F, r, n)), FV.fabs(~F, M.dot(~F, r, sgnv(~F, r, n))), vn(~F, M.matvec(~F, Con{r, t}, sgnv(~F, r, n))), FV.bnd_lo(~F, M.dot(~F, r, sgnv(~F, r, n)), FV.fabs(~F, M.dot(~F, r, sgnv(~F, r, n))), FV.fabs_bnd(~F, M.dot(~F, r, sgnv(~F, r, n)))), FV.fmax_l(~F, FV.fabs(~F, M.dot(~F, r, sgnv(~F, r, n))), vn(~F, M.matvec(~F, t, sgnv(~F, r, n))))),
     DM.le_trans(~F, vn(~F, M.matvec(~F, Con{r, t}, sgnv(~F, r, n))), vn(~F, M.matvec(~F, z, sgnv(~F, r, n))), c,
       (%e : O.le(~F, vn(~F, M.matvec(~F, _, sgnv(~F, r, n))), vn(~F, M.matvec(~F, z, sgnv(~F, r, n))))
         drop_mv(~F, k, z, sgnv(~F, r, n))),

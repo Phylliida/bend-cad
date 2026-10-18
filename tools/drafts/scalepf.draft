@@ -105,9 +105,6 @@ def u_le_h(~F: O.OField, +p: Nat) -> O.le(~F, $UU, $HH):
 def t_le1(~F: O.OField, +p: Nat) -> O.le(~F, $VB, @1):
   DG.u_le1(~F, Nat.div(p, 2n))
 
-def t_nn(~F: O.OField, +p: Nat) -> O.le(~F, @0, $VB):
-  DG.u_nn(~F, Nat.div(p, 2n))
-
 # Atoms
 # -----
 # 0 d, 1 rho, 2 h, 3 u, 4 v (small; v is fixed, bound 1, at scale h),
@@ -264,7 +261,7 @@ def fx(~F: O.OField, +x: @T, +s: @T, +hx: O.le(~F, @0, x)) -> PM.At(~F, x, x, Fa
 
 def fixd_bnd(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +m: Nat, +b: @T, +lam: @T, +ms: @T, +s: @T, +hb0: O.le(~F, @0, b), +hl0: O.le(~F, @0, lam), +hm0: O.le(~F, @0, ms)) -> PM.Bnd(~F, fixd(~F, n, m, b, lam, ms), s):
   +hk = DG.kst_nn(~F, n, ms, NW.bt2(~F, b), hm0, NW.bt2_nn(~F, b, hb0), n)
-  (fx(~F, @1, s, NP.one_nn(~F)), (fx(~F, FR.ofn(~F, n), s, DG.ofn_nn(~F, n)), (fx(~F, FR.ofn(~F, m), s, DG.ofn_nn(~F, m)), (fx(~F, ms, s, hm0), (fx(~F, lam, s, hl0), (fx(~F, b, s, hb0), (fx(~F, $KD, s, DG.knn_d(~F, DG.kst(~F, n, ms, NW.bt2(~F, b), n), hk)), (fx(~F, $KQ, s, DG.knn_p(~F, DG.kst(~F, n, ms, NW.bt2(~F, b), n), hk)), (fx(~F, $C17, s, RD.dnn(~F, ~H, $D17, {==})), (fx(~F, $E8, s, RD.dnn(~F, ~H, $D8, {==})), (fx(~F, $C65, s, RD.c65_nn(~F, ~H)), Unit{})))))))))))
+  (fx(~F, @1, s, FO.one_nn(~F)), (fx(~F, FR.ofn(~F, n), s, DG.ofn_nn(~F, n)), (fx(~F, FR.ofn(~F, m), s, DG.ofn_nn(~F, m)), (fx(~F, ms, s, hm0), (fx(~F, lam, s, hl0), (fx(~F, b, s, hb0), (fx(~F, $KD, s, DG.knn_d(~F, DG.kst(~F, n, ms, NW.bt2(~F, b), n), hk)), (fx(~F, $KQ, s, DG.knn_p(~F, DG.kst(~F, n, ms, NW.bt2(~F, b), n), hk)), (fx(~F, $C17, s, RD.dnn(~F, ~H, $D17, {==})), (fx(~F, $E8, s, RD.dnn(~F, ~H, $D8, {==})), (fx(~F, $C65, s, RD.c65_nn(~F, ~H)), Unit{})))))))))))
 
 # x <= s gives x <= s 1
 def le_s1(~F: O.OField, +x: @T, +s: @T, h: O.le(~F, x, s)) -> O.le(~F, x, @M(s, @1)):
@@ -272,19 +269,19 @@ def le_s1(~F: O.OField, +x: @T, +s: @T, h: O.le(~F, x, s)) -> O.le(~F, x, @M(s, 
 
 def envt_bnd($KPH, $NNP, $SCP) -> PM.Bnd(~F, envt($KA, tt), $VB):
   +ht = h_le_t(~F, p)
-  ((hd0, (NP.one_nn(~F), le_s1(~F, d, $VB, DM.le_trans(~F, d, $HH, $VB, hdh, ht)))),
+  ((hd0, (FO.one_nn(~F), le_s1(~F, d, $VB, DM.le_trans(~F, d, $HH, $VB, hdh, ht)))),
   ((hr0, (htt, DM.le_trans(~F, rho, @M($HH, tt), @M($VB, tt), hrh, FV.mul_le_r(~F, $HH, $VB, tt, htt, ht)))),
-  ((NW.hnw_nn(~F, p), (NP.one_nn(~F), le_s1(~F, $HH, $VB, ht))),
-  ((DG.u_nn(~F, NU.wbits(p)), (NP.one_nn(~F), le_s1(~F, $UU, $VB, DM.le_trans(~F, $UU, $HH, $VB, u_le_h(~F, p), ht)))),
-  ((t_nn(~F, p), (NP.one_nn(~F), le_s1(~F, $VB, $VB, FO.le_refl(~F, $VB)))),
+  ((NW.hnw_nn(~F, p), (FO.one_nn(~F), le_s1(~F, $HH, $VB, ht))),
+  ((DG.u_nn(~F, NU.wbits(p)), (FO.one_nn(~F), le_s1(~F, $UU, $VB, DM.le_trans(~F, $UU, $HH, $VB, u_le_h(~F, p), ht)))),
+  ((BK.vb_nn(~F, p), (FO.one_nn(~F), le_s1(~F, $VB, $VB, FO.le_refl(~F, $VB)))),
   fixd_bnd(~F, ~H, n, m, b, lam, ms, $VB, hb0, hl0, hm0))))))
 
 def envh_bnd($KPH, $NNP, $SCP) -> PM.Bnd(~F, envh($KA, tt), $HH):
-  ((hd0, (NP.one_nn(~F), le_s1(~F, d, $HH, hdh))),
+  ((hd0, (FO.one_nn(~F), le_s1(~F, d, $HH, hdh))),
   ((hr0, (htt, hrh)),
-  ((NW.hnw_nn(~F, p), (NP.one_nn(~F), le_s1(~F, $HH, $HH, FO.le_refl(~F, $HH)))),
-  ((DG.u_nn(~F, NU.wbits(p)), (NP.one_nn(~F), le_s1(~F, $UU, $HH, u_le_h(~F, p)))),
-  ((t_nn(~F, p), (NP.one_nn(~F), t_le1(~F, p))),
+  ((NW.hnw_nn(~F, p), (FO.one_nn(~F), le_s1(~F, $HH, $HH, FO.le_refl(~F, $HH)))),
+  ((DG.u_nn(~F, NU.wbits(p)), (FO.one_nn(~F), le_s1(~F, $UU, $HH, u_le_h(~F, p)))),
+  ((BK.vb_nn(~F, p), (FO.one_nn(~F), t_le1(~F, p))),
   fixd_bnd(~F, ~H, n, m, b, lam, ms, $HH, hb0, hl0, hm0))))))
 
 # Q and Phi
@@ -302,7 +299,7 @@ def env0($QP) -> List<&2, PM.Atm<@T>>:
   Con{PM.Atm{@1, @1, False{}}, Con{PM.Atm{tt, tt, False{}}, Con{PM.Atm{@1, @1, False{}}, Con{PM.Atm{@1, @1, False{}}, Con{PM.Atm{@1, @1, False{}}, fixd(~F, n, m, b, lam, ms)}}}}}
 
 def env0_bnd($QPH, $QNP) -> PM.Bnd(~F, env0($QA), @1):
-  (fx(~F, @1, @1, NP.one_nn(~F)), (fx(~F, tt, @1, htt), (fx(~F, @1, @1, NP.one_nn(~F)), (fx(~F, @1, @1, NP.one_nn(~F)), (fx(~F, @1, @1, NP.one_nn(~F)), fixd_bnd(~F, ~H, n, m, b, lam, ms, @1, hb0, hl0, hm0))))))
+  (fx(~F, @1, @1, FO.one_nn(~F)), (fx(~F, tt, @1, htt), (fx(~F, @1, @1, FO.one_nn(~F)), (fx(~F, @1, @1, FO.one_nn(~F)), (fx(~F, @1, @1, FO.one_nn(~F)), fixd_bnd(~F, ~H, n, m, b, lam, ms, @1, hb0, hl0, hm0))))))
 
 # a reflected constant at the bounds is not negative
 def qnn($QPH, $QNP, +e: PM.PE) -> O.le(~F, @0, PM.peval(~F, $CT, e)):
@@ -311,7 +308,7 @@ def qnn($QPH, $QNP, +e: PM.PE) -> O.le(~F, @0, PM.peval(~F, $CT, e)):
 def acoef_nn(~F: O.OField, +n: Nat, +g: @T, +bb: @T, +hg: O.le(~F, @0, g), +hb: O.le(~F, @0, bb), +c: Nat) -> O.le(~F, @0, DG.acoef(~F, n, bb, c, DG.kst(~F, n, g, bb, c))):
   +st = DG.kst(~F, n, g, bb, c)
   +hk = DG.kst_nn(~F, n, g, bb, hg, hb, c)
-  FO.nonneg_add(~F, @A(@A(@1, DG.ac1(~F, n, bb, c, st)), DG.ac2(~F, bb, st)), DG.ac3(~F, n, bb, st), FO.nonneg_add(~F, @A(@1, DG.ac1(~F, n, bb, c, st)), DG.ac2(~F, bb, st), FO.nonneg_add(~F, @1, DG.ac1(~F, n, bb, c, st), NP.one_nn(~F), DG.ac1_nn(~F, n, bb, c, st, hb, hk)), DG.ac2_nn(~F, bb, st, hb, hk)), DG.ac3_nn(~F, n, bb, st, hb, hk))
+  FO.nonneg_add(~F, @A(@A(@1, DG.ac1(~F, n, bb, c, st)), DG.ac2(~F, bb, st)), DG.ac3(~F, n, bb, st), FO.nonneg_add(~F, @A(@1, DG.ac1(~F, n, bb, c, st)), DG.ac2(~F, bb, st), FO.nonneg_add(~F, @1, DG.ac1(~F, n, bb, c, st), FO.one_nn(~F), DG.ac1_nn(~F, n, bb, c, st, hb, hk)), DG.ac2_nn(~F, bb, st, hb, hk)), DG.ac3_nn(~F, n, bb, st, hb, hk))
 
 # C4's column coefficients, summed over the first k columns
 def asum(~F: O.OField, +n: Nat, +g: @T, +bb: @T, k: Nat) -> @T:
@@ -332,9 +329,9 @@ def ain.go(~F: O.OField, +n: Nat, +g: @T, +bb: @T, +hg: O.le(~F, @0, g), +hb: O.
   match b:
     case True{}:
       %Equal.sym(Nat, i, j, KA.nateq_ok(i, j, e)) : O.le(~F, DG.acoef(~F, n, bb, _, DG.kst(~F, n, g, bb, _)), asum(~F, n, g, bb, 1n+j))
-      NW.le_addl(~F, asum(~F, n, g, bb, j), DG.acoef(~F, n, bb, j, DG.kst(~F, n, g, bb, j)), asum_nn(~F, n, g, bb, hg, hb, j))
+      FV.le_addl(~F, asum(~F, n, g, bb, j), DG.acoef(~F, n, bb, j, DG.kst(~F, n, g, bb, j)), asum_nn(~F, n, g, bb, hg, hb, j))
     case False{}:
-      DM.le_trans(~F, DG.acoef(~F, n, bb, i, DG.kst(~F, n, g, bb, i)), asum(~F, n, g, bb, j), asum(~F, n, g, bb, 1n+j), ih(GJ.le_ne(i, j, hi, e)), NW.le_addr(~F, asum(~F, n, g, bb, j), DG.acoef(~F, n, bb, j, DG.kst(~F, n, g, bb, j)), acoef_nn(~F, n, g, bb, hg, hb, j)))
+      DM.le_trans(~F, DG.acoef(~F, n, bb, i, DG.kst(~F, n, g, bb, i)), asum(~F, n, g, bb, j), asum(~F, n, g, bb, 1n+j), ih(GJ.le_ne(i, j, hi, e)), FV.le_addr(~F, asum(~F, n, g, bb, j), DG.acoef(~F, n, bb, j, DG.kst(~F, n, g, bb, j)), acoef_nn(~F, n, g, bb, hg, hb, j)))
 
 # column i's coefficient is at most the sum, for i < k
 def ain(~F: O.OField, +n: Nat, +g: @T, +bb: @T, +hg: O.le(~F, @0, g), +hb: O.le(~F, @0, bb), k: Nat, +i: Nat, hi: {KA.natle(1n+i, k) == True{} : Bool}) -> O.le(~F, DG.acoef(~F, n, bb, i, DG.kst(~F, n, g, bb, i)), asum(~F, n, g, bb, k)):
@@ -371,7 +368,7 @@ def phib($QP) -> @T:
   PM.peval(~F, $CT, r_rbc())
 
 def phib_ge($QPH, $QNP) -> O.le(~F, tt, phib($QA)):
-  NW.le_addl(~F, PM.peval(~F, $CT, r_ubc()), tt, qnn($QAH, $QNA, r_ubc()))
+  FV.le_addl(~F, PM.peval(~F, $CT, r_ubc()), tt, qnn($QAH, $QNA, r_ubc()))
 
 def nn7($QPH, $QNP) -> O.le(~F, @0, $Q7):
   FO.nonneg_add(~F, $QS4, $QAS, qnn($QAH, $QNA, r_settle()), asum_nn(~F, n, ms, $BT, hm0, NW.bt2_nn(~F, b, hb0), n))
@@ -392,22 +389,22 @@ def nn2($QPH, $QNP) -> O.le(~F, @0, $Q2):
   FO.nonneg_add(~F, $QS2, $Q3, qnn($QAH, $QNA, r_s2()), nn3($QAH, $QNA))
 
 def in2($QPH, $QNP) -> O.le(~F, $Q2, $Q1):
-  NW.le_addl(~F, $QS1, $Q2, qnn($QAH, $QNA, r_s1()))
+  FV.le_addl(~F, $QS1, $Q2, qnn($QAH, $QNA, r_s1()))
 
 def in3($QPH, $QNP) -> O.le(~F, $Q3, $Q1):
-  DM.le_trans(~F, $Q3, $Q2, $Q1, NW.le_addl(~F, $QS2, $Q3, qnn($QAH, $QNA, r_s2())), in2($QAH, $QNA))
+  DM.le_trans(~F, $Q3, $Q2, $Q1, FV.le_addl(~F, $QS2, $Q3, qnn($QAH, $QNA, r_s2())), in2($QAH, $QNA))
 
 def in4($QPH, $QNP) -> O.le(~F, $Q4, $Q1):
-  DM.le_trans(~F, $Q4, $Q3, $Q1, NW.le_addl(~F, $QW1, $Q4, qnn($QAH, $QNA, r_w1())), in3($QAH, $QNA))
+  DM.le_trans(~F, $Q4, $Q3, $Q1, FV.le_addl(~F, $QW1, $Q4, qnn($QAH, $QNA, r_w1())), in3($QAH, $QNA))
 
 def in5($QPH, $QNP) -> O.le(~F, $Q5, $Q1):
-  DM.le_trans(~F, $Q5, $Q4, $Q1, NW.le_addl(~F, $QW2, $Q5, qnn($QAH, $QNA, r_thrc())), in4($QAH, $QNA))
+  DM.le_trans(~F, $Q5, $Q4, $Q1, FV.le_addl(~F, $QW2, $Q5, qnn($QAH, $QNA, r_thrc())), in4($QAH, $QNA))
 
 def in6($QPH, $QNP) -> O.le(~F, $Q6, $Q1):
-  DM.le_trans(~F, $Q6, $Q5, $Q1, NW.le_addl(~F, @A($QW3, $QW3), $Q6, FO.nonneg_add(~F, $QW3, $QW3, qnn($QAH, $QNA, r_w3()), qnn($QAH, $QNA, r_w3()))), in5($QAH, $QNA))
+  DM.le_trans(~F, $Q6, $Q5, $Q1, FV.le_addl(~F, @A($QW3, $QW3), $Q6, FO.nonneg_add(~F, $QW3, $QW3, qnn($QAH, $QNA, r_w3()), qnn($QAH, $QNA, r_w3()))), in5($QAH, $QNA))
 
 def in7($QPH, $QNP) -> O.le(~F, $Q7, $Q1):
-  DM.le_trans(~F, $Q7, $Q6, $Q1, NW.le_addl(~F, @M($N64, $QW4), $Q7, FO.mul_nonneg(~F, $N64, $QW4, DG.ofn_nn(~F, 64n), qnn($QAH, $QNA, r_w4()))), in6($QAH, $QNA))
+  DM.le_trans(~F, $Q7, $Q6, $Q1, FV.le_addl(~F, @M($N64, $QW4), $Q7, FO.mul_nonneg(~F, $N64, $QW4, DG.ofn_nn(~F, 64n), qnn($QAH, $QNA, r_w4()))), in6($QAH, $QNA))
 
 # t a < 1 for a part a of q, from t q < 1
 def part(~F: O.OField, +t: @T, +a: @T, +q: @T, +ht0: O.le(~F, @0, t), +ha: O.le(~F, a, q), +hq: O.lt(F, @M(t, q), @1)) -> O.lt(F, @M(t, a), @1):
@@ -417,28 +414,28 @@ def part(~F: O.OField, +t: @T, +a: @T, +q: @T, +ht0: O.le(~F, @0, t), +ha: O.le(
 @MACRO SQA p, hsq
 
 def tq_s1($QPH, $QNP, $SQP) -> O.lt(F, @M($VB, $QS1), @1):
-  part(~F, $VB, $QS1, $Q1, t_nn(~F, p), NW.le_addr(~F, $QS1, $Q2, nn2($QAH, $QNA)), hsq)
+  part(~F, $VB, $QS1, $Q1, BK.vb_nn(~F, p), FV.le_addr(~F, $QS1, $Q2, nn2($QAH, $QNA)), hsq)
 
 def tq_s2($QPH, $QNP, $SQP) -> O.lt(F, @M($VB, $QS2), @1):
-  part(~F, $VB, $QS2, $Q1, t_nn(~F, p), DM.le_trans(~F, $QS2, $Q2, $Q1, NW.le_addr(~F, $QS2, $Q3, nn3($QAH, $QNA)), in2($QAH, $QNA)), hsq)
+  part(~F, $VB, $QS2, $Q1, BK.vb_nn(~F, p), DM.le_trans(~F, $QS2, $Q2, $Q1, FV.le_addr(~F, $QS2, $Q3, nn3($QAH, $QNA)), in2($QAH, $QNA)), hsq)
 
 def tq_w1($QPH, $QNP, $SQP) -> O.lt(F, @M($VB, $QW1), @1):
-  part(~F, $VB, $QW1, $Q1, t_nn(~F, p), DM.le_trans(~F, $QW1, $Q3, $Q1, NW.le_addr(~F, $QW1, $Q4, nn4($QAH, $QNA)), in3($QAH, $QNA)), hsq)
+  part(~F, $VB, $QW1, $Q1, BK.vb_nn(~F, p), DM.le_trans(~F, $QW1, $Q3, $Q1, FV.le_addr(~F, $QW1, $Q4, nn4($QAH, $QNA)), in3($QAH, $QNA)), hsq)
 
 def tq_w2($QPH, $QNP, $SQP) -> O.lt(F, @M($VB, $QW2), @1):
-  part(~F, $VB, $QW2, $Q1, t_nn(~F, p), DM.le_trans(~F, $QW2, $Q4, $Q1, NW.le_addr(~F, $QW2, $Q5, nn5($QAH, $QNA)), in4($QAH, $QNA)), hsq)
+  part(~F, $VB, $QW2, $Q1, BK.vb_nn(~F, p), DM.le_trans(~F, $QW2, $Q4, $Q1, FV.le_addr(~F, $QW2, $Q5, nn5($QAH, $QNA)), in4($QAH, $QNA)), hsq)
 
 def tq_w3($QPH, $QNP, $SQP) -> O.lt(F, @M($VB, @A($QW3, $QW3)), @1):
-  part(~F, $VB, @A($QW3, $QW3), $Q1, t_nn(~F, p), DM.le_trans(~F, @A($QW3, $QW3), $Q5, $Q1, NW.le_addr(~F, @A($QW3, $QW3), $Q6, nn6($QAH, $QNA)), in5($QAH, $QNA)), hsq)
+  part(~F, $VB, @A($QW3, $QW3), $Q1, BK.vb_nn(~F, p), DM.le_trans(~F, @A($QW3, $QW3), $Q5, $Q1, FV.le_addr(~F, @A($QW3, $QW3), $Q6, nn6($QAH, $QNA)), in5($QAH, $QNA)), hsq)
 
 def tq_w4($QPH, $QNP, $SQP) -> O.lt(F, @M($VB, @M($N64, $QW4)), @1):
-  part(~F, $VB, @M($N64, $QW4), $Q1, t_nn(~F, p), DM.le_trans(~F, @M($N64, $QW4), $Q6, $Q1, NW.le_addr(~F, @M($N64, $QW4), $Q7, nn7($QAH, $QNA)), in6($QAH, $QNA)), hsq)
+  part(~F, $VB, @M($N64, $QW4), $Q1, BK.vb_nn(~F, p), DM.le_trans(~F, @M($N64, $QW4), $Q6, $Q1, FV.le_addr(~F, @M($N64, $QW4), $Q7, nn7($QAH, $QNA)), in6($QAH, $QNA)), hsq)
 
 def tq_s4($QPH, $QNP, $SQP) -> O.lt(F, @M($VB, $QS4), @1):
-  part(~F, $VB, $QS4, $Q1, t_nn(~F, p), DM.le_trans(~F, $QS4, $Q7, $Q1, NW.le_addr(~F, $QS4, $QAS, asum_nn(~F, n, ms, $BT, hm0, NW.bt2_nn(~F, b, hb0), n)), in7($QAH, $QNA)), hsq)
+  part(~F, $VB, $QS4, $Q1, BK.vb_nn(~F, p), DM.le_trans(~F, $QS4, $Q7, $Q1, FV.le_addr(~F, $QS4, $QAS, asum_nn(~F, n, ms, $BT, hm0, NW.bt2_nn(~F, b, hb0), n)), in7($QAH, $QNA)), hsq)
 
 def tq_as($QPH, $QNP, $SQP) -> O.lt(F, @M($VB, $QAS), @1):
-  part(~F, $VB, $QAS, $Q1, t_nn(~F, p), DM.le_trans(~F, $QAS, $Q7, $Q1, NW.le_addl(~F, $QS4, $QAS, qnn($QAH, $QNA, r_settle())), in7($QAH, $QNA)), hsq)
+  part(~F, $VB, $QAS, $Q1, BK.vb_nn(~F, p), DM.le_trans(~F, $QAS, $Q7, $Q1, FV.le_addl(~F, $QS4, $QAS, qnn($QAH, $QNA, r_settle())), in7($QAH, $QNA)), hsq)
 
 # Dyadic constants
 # ----------------
@@ -470,7 +467,7 @@ def hh_le1(~F: O.OField, +p: Nat) -> O.le(~F, $HH, @1):
 def h6_ge(~F: O.OField, +p: Nat) -> O.le(~F, $HH, NW.h6(~F, p)):
   +hn = NW.hnw_nn(~F, p)
   +h2 = FO.nonneg_add(~F, $HH, $HH, hn, hn)
-  DM.le_trans(~F, $HH, @A($HH, $HH), NW.h6(~F, p), NW.le_addr(~F, $HH, $HH, hn), DM.le_trans(~F, @A($HH, $HH), @A(@A($HH, $HH), @A($HH, $HH)), NW.h6(~F, p), NW.le_addr(~F, @A($HH, $HH), @A($HH, $HH), h2), NW.le_addr(~F, @A(@A($HH, $HH), @A($HH, $HH)), @A($HH, $HH), h2)))
+  DM.le_trans(~F, $HH, @A($HH, $HH), NW.h6(~F, p), FV.le_addr(~F, $HH, $HH, hn), DM.le_trans(~F, @A($HH, $HH), @A(@A($HH, $HH), @A($HH, $HH)), NW.h6(~F, p), FV.le_addr(~F, @A($HH, $HH), @A($HH, $HH), h2), FV.le_addr(~F, @A(@A($HH, $HH), @A($HH, $HH)), @A($HH, $HH), h2)))
 
 # The hypotheses
 # --------------
@@ -478,7 +475,7 @@ def h6_ge(~F: O.OField, +p: Nat) -> O.le(~F, $HH, NW.h6(~F, p)):
 @MACRO AVT PM.avs(~F, envt($KA, tt))
 
 def cond_t($KPH, $NNP, $SCP, +e: PM.PE, +hd: {PM.d1(PM.svs(~F, envt($KA, tt)), e) == True{} : Bool}, +q: @T, +hb: O.le(~F, @M($VB, PM.peval(~F, $CT, e)), q)) -> O.le(~F, PM.peval(~F, $AVT, e), q):
-  DM.le_trans(~F, PM.peval(~F, $AVT, e), @M($VB, PM.peval(~F, $CT, e)), q, PM.pe_lin(~F, envt($KA, tt), $VB, envt_bnd($KAH, $NNA, $SCA), t_nn(~F, p), t_le1(~F, p), e, hd), hb)
+  DM.le_trans(~F, PM.peval(~F, $AVT, e), @M($VB, PM.peval(~F, $CT, e)), q, PM.pe_lin(~F, envt($KA, tt), $VB, envt_bnd($KAH, $NNA, $SCA), BK.vb_nn(~F, p), t_le1(~F, p), e, hd), hb)
 
 def cond_h($KPH, $NNP, $SCP, +e: PM.PE, +hd: {PM.d1(PM.svs(~F, envh($KA, tt)), e) == True{} : Bool}) -> O.le(~F, PM.peval(~F, $AVT, e), @M($HH, PM.peval(~F, $CT, e))):
   PM.pe_lin(~F, envh($KA, tt), $HH, envh_bnd($KAH, $NNA, $SCA), NW.hnw_nn(~F, p), hh_le1(~F, p), e, hd)
@@ -518,7 +515,7 @@ def s4_sc($SHP) -> O.le(~F, NW.settle($KA), NW.h6(~F, p)):
 def col_sm($SHP, +i: Nat, hi: {KA.natle(1n+i, n) == True{} : Bool}) -> O.le(~F, @M($UU, DG.acoef(~F, n, $BT, i, DG.kst(~F, n, ms, $BT, i))), @1):
   +a = DG.acoef(~F, n, $BT, i, DG.kst(~F, n, ms, $BT, i))
   +hb2 = NW.bt2_nn(~F, b, hb0)
-  DM.le_trans(~F, @M($UU, a), @M($VB, $QAS), @1, DM.le_trans(~F, @M($UU, a), @M($VB, a), @M($VB, $QAS), FV.mul_le_r(~F, $UU, $VB, a, acoef_nn(~F, n, ms, $BT, hm0, hb2, i), DM.le_trans(~F, $UU, $HH, $VB, u_le_h(~F, p), h_le_t(~F, p))), FV.mul_le(~F, $VB, a, $QAS, t_nn(~F, p), ain(~F, n, ms, $BT, hm0, hb2, n, i, hi))), FO.lt_le(~F, @M($VB, $QAS), @1, tq_as($QAH, $QNA, $SQA)))
+  DM.le_trans(~F, @M($UU, a), @M($VB, $QAS), @1, DM.le_trans(~F, @M($UU, a), @M($VB, a), @M($VB, $QAS), FV.mul_le_r(~F, $UU, $VB, a, acoef_nn(~F, n, ms, $BT, hm0, hb2, i), DM.le_trans(~F, $UU, $HH, $VB, u_le_h(~F, p), h_le_t(~F, p))), FV.mul_le(~F, $VB, a, $QAS, BK.vb_nn(~F, p), ain(~F, n, ms, $BT, hm0, hb2, n, i, hi))), FO.lt_le(~F, @M($VB, $QAS), @1, tq_as($QAH, $QNA, $SQA)))
 
 def hsm_sc($SHP) -> AP.small(~F, n, ms, NW.bt2(~F, b), NU.wbits(p)):
   GJ.all_mk(~n, ~(q => O.le(~F, @M($UU, DG.acoef(~F, n, $BT, q, DG.kst(~F, n, ms, $BT, q))), @1)), ~(i => hi => col_sm($SHA, i, hi)), n, KA.natle_refl(n))

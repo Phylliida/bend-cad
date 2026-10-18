@@ -1025,6 +1025,22 @@ def two_ball(~F: O.OField, y1: M.Vec(~F), y2: M.Vec(~F), c: M.Vec(~F), +r: M.Vec
               FM.bnd_add(~F, O.sub(~F, a, x), vhd(~F, r), O.neg(F, O.sub(~F, b, x)), vhd(~F, r), rbnd_head(~F, O.sub(~F, a, x), BX.vsub(~F, as, xs), r, h1), FM.bnd_neg(~F, O.sub(~F, b, x), vhd(~F, r), rbnd_head(~F, O.sub(~F, b, x), BX.vsub(~F, bs, xs), r, h2)))))),
         rbnd_vtl_vscale(~F, BX.vsub(~F, as, bs), O.two(~F), r, two_ball(~F, as, bs, xs, vtl(~F, r), LN.succ_inj(M.len(~F, as), M.len(~F, xs), hl1), LN.succ_inj(M.len(~F, bs), M.len(~F, xs), hl2), rbnd_tail(~F, O.sub(~F, a, x), BX.vsub(~F, as, xs), r, h1), rbnd_tail(~F, O.sub(~F, b, x), BX.vsub(~F, bs, xs), r, h2))))
 
+# a <= b and c <= d give a + c <= b + d
+def le_add2(~F: O.OField, +a: O.C(F), +b: O.C(F), +c: O.C(F), +d: O.C(F), h1: O.le(~F, a, b), h2: O.le(~F, c, d)) -> O.le(~F, O.add(F, a, c), O.add(F, b, d)):
+  le_of_sub(~F, O.add(F, a, c), O.add(F, b, d), FM.nn_eq(~F, O.sub(~F, O.add(F, b, d), O.add(F, a, c)), O.add(F, O.sub(~F, b, a), O.sub(~F, d, c)), FR.fring_eq(~F, [a, b, c, d], E.ZAdd{E.ZSub{E.ZVar{1n}, E.ZVar{0n}}, E.ZSub{E.ZVar{3n}, E.ZVar{2n}}}, E.ZSub{E.ZAdd{E.ZVar{1n}, E.ZVar{3n}}, E.ZAdd{E.ZVar{0n}, E.ZVar{2n}}}, {==}), FO.nonneg_add(~F, O.sub(~F, b, a), O.sub(~F, d, c), FM.sub_nonneg(~F, a, b, h1), FM.sub_nonneg(~F, c, d, h2))))
+
+# a <= a + b and b <= a + b for nonnegatives
+def le_addr(~F: O.OField, +a: O.C(F), +b: O.C(F), +hb: O.le(~F, O.zero(F), b)) -> O.le(~F, a, O.add(F, a, b)):
+  le_of_sub(~F, a, O.add(F, a, b), FM.nn_eq(~F, O.sub(~F, O.add(F, a, b), a), b, FR.fring_eq(~F, [a, b], E.ZVar{1n}, E.ZSub{E.ZAdd{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{0n}}, {==}), hb))
+
+def le_addl(~F: O.OField, +a: O.C(F), +b: O.C(F), +ha: O.le(~F, O.zero(F), a)) -> O.le(~F, b, O.add(F, a, b)):
+  le_of_sub(~F, b, O.add(F, a, b), FM.nn_eq(~F, O.sub(~F, O.add(F, a, b), b), a, FR.fring_eq(~F, [a, b], E.ZVar{0n}, E.ZSub{E.ZAdd{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{1n}}, {==}), ha))
+
+# |v| <= s gives v <= s
+def bnd_lo(~F: O.OField, +v: O.C(F), +s: O.C(F), h: M.bnd(~F, v, s)) -> O.le(~F, v, s):
+  (h1, h2) = h
+  le_of_sub(~F, v, s, h1)
+
 # x s <= y s, for x <= y and s >= 0
 def mul_le_r(~F: O.OField, +x: O.C(F), +y: O.C(F), +s: O.C(F), hs: O.le(~F, O.zero(F), s), h: O.le(~F, x, y)) -> O.le(~F, O.mul(F, x, s), O.mul(F, y, s)):
   le_of_sub(~F, O.mul(F, x, s), O.mul(F, y, s), FM.mono_mul(~F, x, y, s, h, hs))
@@ -1094,9 +1110,6 @@ def rat_nn.go(~F: O.OField, +a: O.C(F), +r: O.C(F), t: Or(O.lt(F, O.zero(F), r),
 def rat_nn(~F: O.OField, +a: O.C(F), +r: O.C(F)) -> O.le(~F, O.zero(F), rat(~F, a, r)):
   rat_nn.go(~F, a, r, O.lt_total(F)(O.zero(F), r))
 
-def zero_mul(~F: O.OField, +x: O.C(F)) -> {O.mul(F, O.zero(F), x) == O.zero(F) : O.C(F)}:
-  FR.fring_eq(~F, [x], E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{0n}}, E.ZCst{S.Z0{}}, {==})
-
 def le_rw_r(~F: O.OField, +a: O.C(F), +b: O.C(F), +b2: O.C(F), e: {b == b2 : O.C(F)}, h: O.le(~F, a, b)) -> O.le(~F, a, b2):
   %e : O.le(~F, a, _)
   h
@@ -1151,5 +1164,5 @@ def vall_zero(~F: O.OField, d: M.Vec(~F), +s: O.C(F), +r: M.Vec(~F), +h: BX.rbnd
     case Con{+a, +ds}:
       +vr = vhd(~F, r)
       +m0 = mul_le_r(~F, s, O.zero(F), vr, rnn_head(~F, r, hr), hs)
-      (FM.bnd_mono(~F, a, O.mul(F, s, vr), O.zero(F), bnd_vhd_scale(~F, a, s, r, rbnd_head(~F, a, ds, M.vscale(~F, s, r), h)), FM.sub_nonneg(~F, O.mul(F, s, vr), O.zero(F), le_rw_r(~F, O.mul(F, s, vr), O.mul(F, O.zero(F), vr), O.zero(F), zero_mul(~F, vr), m0))),
+      (FM.bnd_mono(~F, a, O.mul(F, s, vr), O.zero(F), bnd_vhd_scale(~F, a, s, r, rbnd_head(~F, a, ds, M.vscale(~F, s, r), h)), FM.sub_nonneg(~F, O.mul(F, s, vr), O.zero(F), le_rw_r(~F, O.mul(F, s, vr), O.mul(F, O.zero(F), vr), O.zero(F), FL.zero_mul(~F, vr), m0))),
        vall_zero(~F, ds, s, vtl(~F, r), rbnd_tail_scale(~F, ds, s, r, rbnd_tail(~F, a, ds, M.vscale(~F, s, r), h)), hs, rnn_tail(~F, r, hr)))

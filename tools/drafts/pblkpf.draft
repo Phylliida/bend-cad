@@ -458,7 +458,7 @@ def mj_nn(~F: O.OField, +bb: @T, +hb: O.le(~F, @0, bb), e: E.QExpr) -> O.le(~F, 
 def lp_nn(~F: O.OField, +bb: @T, +hb: O.le(~F, @0, bb), e: E.QExpr) -> O.le(~F, @0, BP.lp(~F, bb, e)):
   match e:
     case E.QVar{i}:
-      NP.one_nn(~F)
+      FO.one_nn(~F)
     case E.QCst{q}:
       FO.le_refl(~F, @0)
     case E.QAdd{+a, +b}:
@@ -473,7 +473,7 @@ def lp_nn(~F: O.OField, +bb: @T, +hb: O.le(~F, @0, bb), e: E.QExpr) -> O.le(~F, 
 def ms_nn(~F: O.OField, +bb: @T, +hb: O.le(~F, @0, bb), e: E.QExpr) -> O.le(~F, @0, BP.ms(~F, bb, e)):
   match e:
     case E.QVar{i}:
-      NP.one_nn(~F)
+      FO.one_nn(~F)
     case E.QCst{q}:
       FO.le_refl(~F, @0)
     case E.QAdd{+a, +b}:
@@ -534,9 +534,9 @@ def eqok_le(~F: O.OField, +bb: @T, +hb: O.le(~F, @0, bb), +lam: @T, +ms: @T, es:
     case Nil{}:
       Unit{}
     case Con{+e, +t}:
-      (DM.le_trans(~F, BP.ls(~F, bb, e), lsum(~F, bb, Con{e, t}), lam, NW.le_addr(~F, BP.ls(~F, bb, e), lsum(~F, bb, t), lsum_nn(~F, bb, hb, t)), hl),
-      (DM.le_trans(~F, BP.ms(~F, bb, e), msum(~F, bb, Con{e, t}), ms, NW.le_addr(~F, BP.ms(~F, bb, e), msum(~F, bb, t), msum_nn(~F, bb, hb, t)), hm),
-      eqok_le(~F, bb, hb, lam, ms, t, DM.le_trans(~F, lsum(~F, bb, t), lsum(~F, bb, Con{e, t}), lam, NW.le_addl(~F, BP.ls(~F, bb, e), lsum(~F, bb, t), ls_nn(~F, bb, hb, e)), hl), DM.le_trans(~F, msum(~F, bb, t), msum(~F, bb, Con{e, t}), ms, NW.le_addl(~F, BP.ms(~F, bb, e), msum(~F, bb, t), ms_nn(~F, bb, hb, e)), hm))))
+      (DM.le_trans(~F, BP.ls(~F, bb, e), lsum(~F, bb, Con{e, t}), lam, FV.le_addr(~F, BP.ls(~F, bb, e), lsum(~F, bb, t), lsum_nn(~F, bb, hb, t)), hl),
+      (DM.le_trans(~F, BP.ms(~F, bb, e), msum(~F, bb, Con{e, t}), ms, FV.le_addr(~F, BP.ms(~F, bb, e), msum(~F, bb, t), msum_nn(~F, bb, hb, t)), hm),
+      eqok_le(~F, bb, hb, lam, ms, t, DM.le_trans(~F, lsum(~F, bb, t), lsum(~F, bb, Con{e, t}), lam, FV.le_addl(~F, BP.ls(~F, bb, e), lsum(~F, bb, t), ls_nn(~F, bb, hb, e)), hl), DM.le_trans(~F, msum(~F, bb, t), msum(~F, bb, Con{e, t}), ms, FV.le_addl(~F, BP.ms(~F, bb, e), msum(~F, bb, t), ms_nn(~F, bb, hb, e)), hm))))
 
 # Bounds on the block's vectors
 # -----------------------------
@@ -957,7 +957,7 @@ def qch_nn(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +full: List<&2, E.QExpr>, +goo
     case Nil{}:
       FO.le_refl(~F, @0)
     case Con{ST.SB{+es, +vs}, +t}:
-      +hbb = FO.nonneg_add(~F, NP.vn(~F, x), @1, FV.vmax_nn(~F, x), NP.one_nn(~F))
+      +hbb = FO.nonneg_add(~F, NP.vn(~F, x), @1, FV.vmax_nn(~F, x), FO.one_nn(~F))
       +hb = ibd_nn(~F, $JSK, SV.len(vs), $IV0)
       +hl = lsum_nn(~F, $BB, hbb, $EQL)
       +hm = msum_nn(~F, $BB, hbb, $EQL)
@@ -968,7 +968,7 @@ def tch_nn(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +full: List<&2, E.QExpr>, +goo
     case Nil{}:
       htt
     case Con{ST.SB{+es, +vs}, +t}:
-      +hbb = FO.nonneg_add(~F, NP.vn(~F, x), @1, FV.vmax_nn(~F, x), NP.one_nn(~F))
+      +hbb = FO.nonneg_add(~F, NP.vn(~F, x), @1, FV.vmax_nn(~F, x), FO.one_nn(~F))
       +hb = ibd_nn(~F, $JSK, SV.len(vs), $IV0)
       +hl = lsum_nn(~F, $BB, hbb, $EQL)
       +hm = msum_nn(~F, $BB, hbb, $EQL)
@@ -1447,7 +1447,7 @@ def blk_sc($OKP, +es: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +k
   +hX = KA.natle_rw(Nat.add(o, $NN), nv, M.len(~F, $XV), Equal.sym(Nat, M.len(~F, $XV), nv, hlx), s2)
   +hbl = ren_below(o, $NN, $PARS, PL.takeq($NN, $SYSK), s4, s5)
   +hr = rowsok_blk($BKA, known, hvp, c1, s4, hbl)
-  +hbb0 = FO.nonneg_add(~F, NP.vn(~F, x), @1, FV.vmax_nn(~F, x), NP.one_nn(~F))
+  +hbb0 = FO.nonneg_add(~F, NP.vn(~F, x), @1, FV.vmax_nn(~F, x), FO.one_nn(~F))
   +hr0 = FO.mul_nonneg(~F, $HH, tt, NW.hnw_nn(~F, p), htt)
   +hgc = KA.natle_rw(o, o, KA.klen($DN, gc), Equal.sym(Nat, KA.klen($DN, gc), o, hlc), KA.natle_refl(o))
   SC.block_sc(~F, ~H, $NN, $MM, $EQL, hn_of($BKA), hh_of($BKA, hdy), hbl, NU.dpick(gc, $PARS), len_pick(~F, gc, $PARS), p, $YBN, PP.zmap(~F, $PBN, $PARS), PP.len_ftake(~F, $NN, PP.fdrop(~F, o, $XV), LC.ld_le(~F, o, $NN, $XV, hX)), PP.len_zmap(~F, $PBN, $PARS),
@@ -1500,15 +1500,15 @@ def pb_ok($OKP, kb: List<&2, ST.SB>, +binv: BI.BInv(~F, x, full, kb), $IVQ) -> P
       +l1 = L.band_l(SP.nleq(vs, ST.look(vm, es)), SP.lkb(vm, t), hlk)
       +l2 = L.band_r(SP.nleq(vs, ST.look(vm, es)), SP.lkb(vm, t), hlk)
       +hnv = Equal.sym(Nat, $NN, SV.len(vs), Equal.trans(Nat, $NN, ST.len(es), SV.len(vs), SP.positions_len(es, good), Equal.trans(Nat, ST.len(es), SV.len(es), SV.len(vs), TJ.len_sv(es), BI.len_es(es, vs, vm, l1))))
-      +hbb0 = FO.nonneg_add(~F, NP.vn(~F, x), @1, FV.vmax_nn(~F, x), NP.one_nn(~F))
+      +hbb0 = FO.nonneg_add(~F, NP.vn(~F, x), @1, FV.vmax_nn(~F, x), FO.one_nn(~F))
       +hb0 = ibd_nn(~F, $JSK, SV.len(vs), $IV0)
       +hl0 = lsum_nn(~F, $BB, hbb0, $EQL)
       +hm0 = msum_nn(~F, $BB, hbb0, $EQL)
       +hr0 = FO.mul_nonneg(~F, $HH, tt, NW.hnw_nn(~F, p), htt)
       +qt = qch($CA, t, $IVT, Nat.add(o, $NN), $PK)
       +hqt = qch_nn(~F, ~H, full, good, vp, x, t, $IVT, Nat.add(o, $NN), $PK, SC.phib_nn(~F, ~H, $NN, $MM, $BET, $LAM, $MSS, tt, hb0, hl0, hm0, htt))
-      +hsqk = SC.part(~F, $VB, $QK, @A($QK, qt), SC.t_nn(~F, p), NW.le_addr(~F, $QK, qt, hqt), hsq)
-      +hsqt = SC.part(~F, $VB, qt, @A($QK, qt), SC.t_nn(~F, p), NW.le_addl(~F, $QK, qt, SC.qblk_nn(~F, ~H, $NN, $MM, $BET, $LAM, $MSS, tt, hb0, hl0, hm0, htt)), hsq)
+      +hsqk = SC.part(~F, $VB, $QK, @A($QK, qt), BK.vb_nn(~F, p), FV.le_addr(~F, $QK, qt, hqt), hsq)
+      +hsqt = SC.part(~F, $VB, qt, @A($QK, qt), BK.vb_nn(~F, p), FV.le_addl(~F, $QK, qt, SC.qblk_nn(~F, ~H, $NN, $MM, $BET, $LAM, $MSS, tt, hb0, hl0, hm0, htt)), hsq)
       +hgs1 = subl_app_l(es, ST.alleqs(t), good, hgs)
       +hgs2 = subl_app_r(es, ST.alleqs(t), good, hgs)
       +hfv = disj_app_l(vs, ST.allvars(t), pins, hfr)

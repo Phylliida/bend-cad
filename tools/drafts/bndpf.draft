@@ -281,10 +281,6 @@ def mcen_jac(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +box: List<&2, KB.KB<K>>,
 # Order helpers
 # -------------
 
-# a <= b and c <= d give a + c <= b + d
-def le_add2(~F: O.OField, +a: @T, +b: @T, +c: @T, +d: @T, h1: O.le(~F, a, b), h2: O.le(~F, c, d)) -> O.le(~F, @A(a, c), @A(b, d)):
-  FV.le_of_sub(~F, @A(a, c), @A(b, d), FM.nn_eq(~F, @S(@A(b, d), @A(a, c)), @A(@S(b, a), @S(d, c)), @ZEQ[a,, b,, c,, d | (b - a) + (d - c) | (b + d) - (a + c)], FO.nonneg_add(~F, @S(b, a), @S(d, c), FM.sub_nonneg(~F, a, b, h1), FM.sub_nonneg(~F, c, d, h2))))
-
 # 0 <= 0 rho
 def zl(~F: O.OField, +rho: @T) -> O.le(~F, @0, @M(@0, rho)):
   FM.nn_eq(~F, @M(@0, rho), @0, Equal.sym(@T, @M(@0, rho), @0, FL.zero_mul(~F, rho)), FO.le_refl(~F, @0))
@@ -409,7 +405,7 @@ def gf_pt(~F: O.OField, +rho: @T, +cv: @T, +m: @T, +l: @T, hm: M.bnd(~F, cv, m),
 def gf_add(~F: O.OField, +rho: @T, +c1: @T, +r1: @T, +c2: @T, +r2: @T, +m1: @T, +l1: @T, +m2: @T, +l2: @T, +g1: gf(~F, rho, c1, r1, m1, l1), +g2: gf(~F, rho, c2, r2, m2, l2)) -> gf(~F, rho, @A(c1, c2), @A(r1, r2), @A(m1, m2), @A(l1, l2)):
   (FO.nonneg_add(~F, r1, r2, gf_0(~F, rho, c1, r1, m1, l1, g1), gf_0(~F, rho, c2, r2, m2, l2, g2)),
    (FM.bnd_eq(~F, @A(c1, c2), @A(@S(m1, r1), @S(m2, r2)), @S(@A(m1, m2), @A(r1, r2)), @ZEQ[m1,, r1,, m2,, r2 | (m1 - r1) + (m2 - r2) | (m1 + m2) - (r1 + r2)], FM.bnd_add(~F, c1, @S(m1, r1), c2, @S(m2, r2), gf_c(~F, rho, c1, r1, m1, l1, g1), gf_c(~F, rho, c2, r2, m2, l2, g2))),
-    FV.le_rw_r(~F, @A(r1, r2), @A(@M(l1, rho), @M(l2, rho)), @M(@A(l1, l2), rho), @ZEQ[l1,, l2,, rho | l1*rho + l2*rho | (l1 + l2)*rho], le_add2(~F, r1, @M(l1, rho), r2, @M(l2, rho), gf_l(~F, rho, c1, r1, m1, l1, g1), gf_l(~F, rho, c2, r2, m2, l2, g2)))))
+    FV.le_rw_r(~F, @A(r1, r2), @A(@M(l1, rho), @M(l2, rho)), @M(@A(l1, l2), rho), @ZEQ[l1,, l2,, rho | l1*rho + l2*rho | (l1 + l2)*rho], FV.le_add2(~F, r1, @M(l1, rho), r2, @M(l2, rho), gf_l(~F, rho, c1, r1, m1, l1, g1), gf_l(~F, rho, c2, r2, m2, l2, g2)))))
 
 def gf_neg(~F: O.OField, +rho: @T, +c: @T, +r: @T, +m: @T, +l: @T, +g: gf(~F, rho, c, r, m, l)) -> gf(~F, rho, @N(c), r, m, l):
   (gf_0(~F, rho, c, r, m, l, g), (FM.bnd_neg(~F, c, @S(m, r), gf_c(~F, rho, c, r, m, l, g)), gf_l(~F, rho, c, r, m, l, g)))

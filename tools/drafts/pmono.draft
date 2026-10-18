@@ -110,9 +110,6 @@ def le_r(~F: O.OField, +a: O.C(F), +b: O.C(F), +b2: O.C(F), e: {b2 == b : O.C(F)
   %Equal.sym(O.C(F), b2, b, e) : O.le(~F, a, _)
   h
 
-def le_add2(~F: O.OField, +a: O.C(F), +b: O.C(F), +c: O.C(F), +d: O.C(F), h1: O.le(~F, a, b), h2: O.le(~F, c, d)) -> O.le(~F, @A(a, c), @A(b, d)):
-  FV.le_of_sub(~F, @A(a, c), @A(b, d), FM.nn_eq(~F, @S(@A(b, d), @A(a, c)), @A(@S(b, a), @S(d, c)), @ZEQ[a,, b,, c,, d | (b - a) + (d - c) | (b + d) - (a + c)], FO.nonneg_add(~F, @S(b, a), @S(d, c), FM.sub_nonneg(~F, a, b, h1), FM.sub_nonneg(~F, c, d, h2))))
-
 # a <= b and c <= d give a c <= b d, for 0 <= c and 0 <= b
 def le_mul2(~F: O.OField, +a: O.C(F), +b: O.C(F), +c: O.C(F), +d: O.C(F), h1: O.le(~F, a, b), h2: O.le(~F, c, d), hc: O.le(~F, @0, c), +hb: O.le(~F, @0, b)) -> O.le(~F, @M(a, c), @M(b, d)):
   DM.le_trans(~F, @M(a, c), @M(b, c), @M(b, d), FV.mul_le_r(~F, a, b, c, hc, h1), FV.mul_le(~F, b, c, d, hb, h2))
@@ -261,7 +258,7 @@ def pe_mono($EP, +ht1: O.le(~F, t, @1), e: PE) -> O.le(~F, peval(~F, $AE, e), pe
     case PAt{+i}:
       at_le(~F, O.lookup(~F, $AE, i), O.lookup(~F, $CE, i), bget($SE, i), t, ht1, bnd_at(~F, env, t, h, i))
     case PPlus{+p, +q}:
-      le_add2(~F, peval(~F, $AE, p), peval(~F, $CE, p), peval(~F, $AE, q), peval(~F, $CE, q), pe_mono($EA, ht1, p), pe_mono($EA, ht1, q))
+      FV.le_add2(~F, peval(~F, $AE, p), peval(~F, $CE, p), peval(~F, $AE, q), peval(~F, $CE, q), pe_mono($EA, ht1, p), pe_mono($EA, ht1, q))
     case PTimes{+p, +q}:
       le_mul2(~F, peval(~F, $AE, p), peval(~F, $CE, p), peval(~F, $AE, q), peval(~F, $CE, q), pe_mono($EA, ht1, p), pe_mono($EA, ht1, q), pe_nn($EA, q), pe_cnn($EA, p))
 
@@ -269,7 +266,7 @@ def pe_mono($EP, +ht1: O.le(~F, t, @1), e: PE) -> O.le(~F, peval(~F, $AE, e), pe
 # -----------------------------------
 
 def lin_add(~F: O.OField, +t: O.C(F), +a1: O.C(F), +a2: O.C(F), +c1: O.C(F), +c2: O.C(F), h1: O.le(~F, a1, @M(t, c1)), h2: O.le(~F, a2, @M(t, c2))) -> O.le(~F, @A(a1, a2), @M(t, @A(c1, c2))):
-  le_r(~F, @A(a1, a2), @A(@M(t, c1), @M(t, c2)), @M(t, @A(c1, c2)), @ZEQ[t,, c1,, c2 | t*(c1 + c2) | t*c1 + t*c2], le_add2(~F, a1, @M(t, c1), a2, @M(t, c2), h1, h2))
+  le_r(~F, @A(a1, a2), @A(@M(t, c1), @M(t, c2)), @M(t, @A(c1, c2)), @ZEQ[t,, c1,, c2 | t*(c1 + c2) | t*c1 + t*c2], FV.le_add2(~F, a1, @M(t, c1), a2, @M(t, c2), h1, h2))
 
 def lin_mul_l(~F: O.OField, +t: O.C(F), +a1: O.C(F), +a2: O.C(F), +c1: O.C(F), +c2: O.C(F), h1: O.le(~F, a1, @M(t, c1)), h2: O.le(~F, a2, c2), ha2: O.le(~F, @0, a2), hc1: O.le(~F, @0, c1), ht0: O.le(~F, @0, t)) -> O.le(~F, @M(a1, a2), @M(t, @M(c1, c2))):
   le_r(~F, @M(a1, a2), @M(@M(t, c1), c2), @M(t, @M(c1, c2)), @ZEQ[t,, c1,, c2 | t*(c1*c2) | (t*c1)*c2], le_mul2(~F, a1, @M(t, c1), a2, c2, h1, h2, ha2, FO.mul_nonneg(~F, t, c1, ht0, hc1)))
@@ -303,7 +300,7 @@ def pe_lin($LP, e: PE, +hd: {d1($SE, e) == True{} : Bool}) -> O.le(~F, peval(~F,
 # --------------------------------------
 
 def quad_add(~F: O.OField, +t: O.C(F), +a1: O.C(F), +a2: O.C(F), +c1: O.C(F), +c2: O.C(F), h1: O.le(~F, a1, @M(t, @M(t, c1))), h2: O.le(~F, a2, @M(t, @M(t, c2)))) -> O.le(~F, @A(a1, a2), @M(t, @M(t, @A(c1, c2)))):
-  le_r(~F, @A(a1, a2), @A(@M(t, @M(t, c1)), @M(t, @M(t, c2))), @M(t, @M(t, @A(c1, c2))), @ZEQ[t,, c1,, c2 | t*(t*(c1 + c2)) | t*(t*c1) + t*(t*c2)], le_add2(~F, a1, @M(t, @M(t, c1)), a2, @M(t, @M(t, c2)), h1, h2))
+  le_r(~F, @A(a1, a2), @A(@M(t, @M(t, c1)), @M(t, @M(t, c2))), @M(t, @M(t, @A(c1, c2))), @ZEQ[t,, c1,, c2 | t*(t*(c1 + c2)) | t*(t*c1) + t*(t*c2)], FV.le_add2(~F, a1, @M(t, @M(t, c1)), a2, @M(t, @M(t, c2)), h1, h2))
 
 def quad_mul_l(~F: O.OField, +t: O.C(F), +a1: O.C(F), +a2: O.C(F), +c1: O.C(F), +c2: O.C(F), h1: O.le(~F, a1, @M(t, @M(t, c1))), h2: O.le(~F, a2, c2), ha2: O.le(~F, @0, a2), +hc1: O.le(~F, @0, c1), +ht0: O.le(~F, @0, t)) -> O.le(~F, @M(a1, a2), @M(t, @M(t, @M(c1, c2)))):
   le_r(~F, @M(a1, a2), @M(@M(t, @M(t, c1)), c2), @M(t, @M(t, @M(c1, c2))), @ZEQ[t,, c1,, c2 | t*(t*(c1*c2)) | (t*(t*c1))*c2], le_mul2(~F, a1, @M(t, @M(t, c1)), a2, c2, h1, h2, ha2, FO.mul_nonneg(~F, t, @M(t, c1), ht0, FO.mul_nonneg(~F, t, c1, ht0, hc1))))

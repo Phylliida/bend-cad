@@ -82,6 +82,9 @@ def lt_le(~F: O.OField, +a: @T, +b: @T, h: O.lt(F, a, b)) -> O.le(~F, a, b):
 def le_refl(~F: O.OField, +a: @T) -> O.le(~F, a, a):
   Inr{{==}}
 
+def one_nn(~F: O.OField) -> O.le(~F, @0, @1):
+  Inl{O.zero_lt_one(F)}
+
 def lt_le_trans(~F: O.OField, +a: @T, +b: @T, +c: @T, h1: O.lt(F, a, b), h2: O.le(~F, b, c)) -> O.lt(F, a, c):
   match h2:
     case Inl{l}:

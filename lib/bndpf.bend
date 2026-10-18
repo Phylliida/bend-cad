@@ -281,10 +281,6 @@ def mcen_jac(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +box: List<&2, KB.KB<K>>,
 # Order helpers
 # -------------
 
-# a <= b and c <= d give a + c <= b + d
-def le_add2(~F: O.OField, +a: O.C(F), +b: O.C(F), +c: O.C(F), +d: O.C(F), h1: O.le(~F, a, b), h2: O.le(~F, c, d)) -> O.le(~F, O.add(F, a, c), O.add(F, b, d)):
-  FV.le_of_sub(~F, O.add(F, a, c), O.add(F, b, d), FM.nn_eq(~F, O.sub(~F, O.add(F, b, d), O.add(F, a, c)), O.add(F, O.sub(~F, b, a), O.sub(~F, d, c)), FR.fring_eq(~F, [a, b, c, d], E.ZAdd{E.ZSub{E.ZVar{1n}, E.ZVar{0n}}, E.ZSub{E.ZVar{3n}, E.ZVar{2n}}}, E.ZSub{E.ZAdd{E.ZVar{1n}, E.ZVar{3n}}, E.ZAdd{E.ZVar{0n}, E.ZVar{2n}}}, {==}), FO.nonneg_add(~F, O.sub(~F, b, a), O.sub(~F, d, c), FM.sub_nonneg(~F, a, b, h1), FM.sub_nonneg(~F, c, d, h2))))
-
 # 0 <= 0 rho
 def zl(~F: O.OField, +rho: O.C(F)) -> O.le(~F, O.zero(F), O.mul(F, O.zero(F), rho)):
   FM.nn_eq(~F, O.mul(F, O.zero(F), rho), O.zero(F), Equal.sym(O.C(F), O.mul(F, O.zero(F), rho), O.zero(F), FL.zero_mul(~F, rho)), FO.le_refl(~F, O.zero(F)))
@@ -409,7 +405,7 @@ def gf_pt(~F: O.OField, +rho: O.C(F), +cv: O.C(F), +m: O.C(F), +l: O.C(F), hm: M
 def gf_add(~F: O.OField, +rho: O.C(F), +c1: O.C(F), +r1: O.C(F), +c2: O.C(F), +r2: O.C(F), +m1: O.C(F), +l1: O.C(F), +m2: O.C(F), +l2: O.C(F), +g1: gf(~F, rho, c1, r1, m1, l1), +g2: gf(~F, rho, c2, r2, m2, l2)) -> gf(~F, rho, O.add(F, c1, c2), O.add(F, r1, r2), O.add(F, m1, m2), O.add(F, l1, l2)):
   (FO.nonneg_add(~F, r1, r2, gf_0(~F, rho, c1, r1, m1, l1, g1), gf_0(~F, rho, c2, r2, m2, l2, g2)),
    (FM.bnd_eq(~F, O.add(F, c1, c2), O.add(F, O.sub(~F, m1, r1), O.sub(~F, m2, r2)), O.sub(~F, O.add(F, m1, m2), O.add(F, r1, r2)), FR.fring_eq(~F, [m1, r1, m2, r2], E.ZAdd{E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, E.ZSub{E.ZVar{2n}, E.ZVar{3n}}}, E.ZSub{E.ZAdd{E.ZVar{0n}, E.ZVar{2n}}, E.ZAdd{E.ZVar{1n}, E.ZVar{3n}}}, {==}), FM.bnd_add(~F, c1, O.sub(~F, m1, r1), c2, O.sub(~F, m2, r2), gf_c(~F, rho, c1, r1, m1, l1, g1), gf_c(~F, rho, c2, r2, m2, l2, g2))),
-    FV.le_rw_r(~F, O.add(F, r1, r2), O.add(F, O.mul(F, l1, rho), O.mul(F, l2, rho)), O.mul(F, O.add(F, l1, l2), rho), FR.fring_eq(~F, [l1, l2, rho], E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{2n}}, E.ZMul{E.ZVar{1n}, E.ZVar{2n}}}, E.ZMul{E.ZAdd{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{2n}}, {==}), le_add2(~F, r1, O.mul(F, l1, rho), r2, O.mul(F, l2, rho), gf_l(~F, rho, c1, r1, m1, l1, g1), gf_l(~F, rho, c2, r2, m2, l2, g2)))))
+    FV.le_rw_r(~F, O.add(F, r1, r2), O.add(F, O.mul(F, l1, rho), O.mul(F, l2, rho)), O.mul(F, O.add(F, l1, l2), rho), FR.fring_eq(~F, [l1, l2, rho], E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{2n}}, E.ZMul{E.ZVar{1n}, E.ZVar{2n}}}, E.ZMul{E.ZAdd{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{2n}}, {==}), FV.le_add2(~F, r1, O.mul(F, l1, rho), r2, O.mul(F, l2, rho), gf_l(~F, rho, c1, r1, m1, l1, g1), gf_l(~F, rho, c2, r2, m2, l2, g2)))))
 
 def gf_neg(~F: O.OField, +rho: O.C(F), +c: O.C(F), +r: O.C(F), +m: O.C(F), +l: O.C(F), +g: gf(~F, rho, c, r, m, l)) -> gf(~F, rho, O.neg(F, c), r, m, l):
   (gf_0(~F, rho, c, r, m, l, g), (FM.bnd_neg(~F, c, O.sub(~F, m, r), gf_c(~F, rho, c, r, m, l, g)), gf_l(~F, rho, c, r, m, l, g)))

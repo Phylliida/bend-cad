@@ -110,9 +110,6 @@ def le_r(~F: O.OField, +a: O.C(F), +b: O.C(F), +b2: O.C(F), e: {b2 == b : O.C(F)
   %Equal.sym(O.C(F), b2, b, e) : O.le(~F, a, _)
   h
 
-def le_add2(~F: O.OField, +a: O.C(F), +b: O.C(F), +c: O.C(F), +d: O.C(F), h1: O.le(~F, a, b), h2: O.le(~F, c, d)) -> O.le(~F, O.add(F, a, c), O.add(F, b, d)):
-  FV.le_of_sub(~F, O.add(F, a, c), O.add(F, b, d), FM.nn_eq(~F, O.sub(~F, O.add(F, b, d), O.add(F, a, c)), O.add(F, O.sub(~F, b, a), O.sub(~F, d, c)), FR.fring_eq(~F, [a, b, c, d], E.ZAdd{E.ZSub{E.ZVar{1n}, E.ZVar{0n}}, E.ZSub{E.ZVar{3n}, E.ZVar{2n}}}, E.ZSub{E.ZAdd{E.ZVar{1n}, E.ZVar{3n}}, E.ZAdd{E.ZVar{0n}, E.ZVar{2n}}}, {==}), FO.nonneg_add(~F, O.sub(~F, b, a), O.sub(~F, d, c), FM.sub_nonneg(~F, a, b, h1), FM.sub_nonneg(~F, c, d, h2))))
-
 # a <= b and c <= d give a c <= b d, for 0 <= c and 0 <= b
 def le_mul2(~F: O.OField, +a: O.C(F), +b: O.C(F), +c: O.C(F), +d: O.C(F), h1: O.le(~F, a, b), h2: O.le(~F, c, d), hc: O.le(~F, O.zero(F), c), +hb: O.le(~F, O.zero(F), b)) -> O.le(~F, O.mul(F, a, c), O.mul(F, b, d)):
   DM.le_trans(~F, O.mul(F, a, c), O.mul(F, b, c), O.mul(F, b, d), FV.mul_le_r(~F, a, b, c, hc, h1), FV.mul_le(~F, b, c, d, hb, h2))
@@ -256,7 +253,7 @@ def pe_mono(~F: O.OField, +env: List<&2, Atm<O.C(F)>>, +t: O.C(F), +h: Bnd(~F, e
     case PAt{+i}:
       at_le(~F, O.lookup(~F, avs(~F, env), i), O.lookup(~F, cvs(~F, env), i), bget(svs(~F, env), i), t, ht1, bnd_at(~F, env, t, h, i))
     case PPlus{+p, +q}:
-      le_add2(~F, peval(~F, avs(~F, env), p), peval(~F, cvs(~F, env), p), peval(~F, avs(~F, env), q), peval(~F, cvs(~F, env), q), pe_mono(~F, env, t, h, ht1, p), pe_mono(~F, env, t, h, ht1, q))
+      FV.le_add2(~F, peval(~F, avs(~F, env), p), peval(~F, cvs(~F, env), p), peval(~F, avs(~F, env), q), peval(~F, cvs(~F, env), q), pe_mono(~F, env, t, h, ht1, p), pe_mono(~F, env, t, h, ht1, q))
     case PTimes{+p, +q}:
       le_mul2(~F, peval(~F, avs(~F, env), p), peval(~F, cvs(~F, env), p), peval(~F, avs(~F, env), q), peval(~F, cvs(~F, env), q), pe_mono(~F, env, t, h, ht1, p), pe_mono(~F, env, t, h, ht1, q), pe_nn(~F, env, t, h, q), pe_cnn(~F, env, t, h, p))
 
@@ -264,7 +261,7 @@ def pe_mono(~F: O.OField, +env: List<&2, Atm<O.C(F)>>, +t: O.C(F), +h: Bnd(~F, e
 # -----------------------------------
 
 def lin_add(~F: O.OField, +t: O.C(F), +a1: O.C(F), +a2: O.C(F), +c1: O.C(F), +c2: O.C(F), h1: O.le(~F, a1, O.mul(F, t, c1)), h2: O.le(~F, a2, O.mul(F, t, c2))) -> O.le(~F, O.add(F, a1, a2), O.mul(F, t, O.add(F, c1, c2))):
-  le_r(~F, O.add(F, a1, a2), O.add(F, O.mul(F, t, c1), O.mul(F, t, c2)), O.mul(F, t, O.add(F, c1, c2)), FR.fring_eq(~F, [t, c1, c2], E.ZMul{E.ZVar{0n}, E.ZAdd{E.ZVar{1n}, E.ZVar{2n}}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZMul{E.ZVar{0n}, E.ZVar{2n}}}, {==}), le_add2(~F, a1, O.mul(F, t, c1), a2, O.mul(F, t, c2), h1, h2))
+  le_r(~F, O.add(F, a1, a2), O.add(F, O.mul(F, t, c1), O.mul(F, t, c2)), O.mul(F, t, O.add(F, c1, c2)), FR.fring_eq(~F, [t, c1, c2], E.ZMul{E.ZVar{0n}, E.ZAdd{E.ZVar{1n}, E.ZVar{2n}}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZMul{E.ZVar{0n}, E.ZVar{2n}}}, {==}), FV.le_add2(~F, a1, O.mul(F, t, c1), a2, O.mul(F, t, c2), h1, h2))
 
 def lin_mul_l(~F: O.OField, +t: O.C(F), +a1: O.C(F), +a2: O.C(F), +c1: O.C(F), +c2: O.C(F), h1: O.le(~F, a1, O.mul(F, t, c1)), h2: O.le(~F, a2, c2), ha2: O.le(~F, O.zero(F), a2), hc1: O.le(~F, O.zero(F), c1), ht0: O.le(~F, O.zero(F), t)) -> O.le(~F, O.mul(F, a1, a2), O.mul(F, t, O.mul(F, c1, c2))):
   le_r(~F, O.mul(F, a1, a2), O.mul(F, O.mul(F, t, c1), c2), O.mul(F, t, O.mul(F, c1, c2)), FR.fring_eq(~F, [t, c1, c2], E.ZMul{E.ZVar{0n}, E.ZMul{E.ZVar{1n}, E.ZVar{2n}}}, E.ZMul{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{2n}}, {==}), le_mul2(~F, a1, O.mul(F, t, c1), a2, c2, h1, h2, ha2, FO.mul_nonneg(~F, t, c1, ht0, hc1)))
@@ -295,7 +292,7 @@ def pe_lin(~F: O.OField, +env: List<&2, Atm<O.C(F)>>, +t: O.C(F), +h: Bnd(~F, en
 # --------------------------------------
 
 def quad_add(~F: O.OField, +t: O.C(F), +a1: O.C(F), +a2: O.C(F), +c1: O.C(F), +c2: O.C(F), h1: O.le(~F, a1, O.mul(F, t, O.mul(F, t, c1))), h2: O.le(~F, a2, O.mul(F, t, O.mul(F, t, c2)))) -> O.le(~F, O.add(F, a1, a2), O.mul(F, t, O.mul(F, t, O.add(F, c1, c2)))):
-  le_r(~F, O.add(F, a1, a2), O.add(F, O.mul(F, t, O.mul(F, t, c1)), O.mul(F, t, O.mul(F, t, c2))), O.mul(F, t, O.mul(F, t, O.add(F, c1, c2))), FR.fring_eq(~F, [t, c1, c2], E.ZMul{E.ZVar{0n}, E.ZMul{E.ZVar{0n}, E.ZAdd{E.ZVar{1n}, E.ZVar{2n}}}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZMul{E.ZVar{0n}, E.ZVar{1n}}}, E.ZMul{E.ZVar{0n}, E.ZMul{E.ZVar{0n}, E.ZVar{2n}}}}, {==}), le_add2(~F, a1, O.mul(F, t, O.mul(F, t, c1)), a2, O.mul(F, t, O.mul(F, t, c2)), h1, h2))
+  le_r(~F, O.add(F, a1, a2), O.add(F, O.mul(F, t, O.mul(F, t, c1)), O.mul(F, t, O.mul(F, t, c2))), O.mul(F, t, O.mul(F, t, O.add(F, c1, c2))), FR.fring_eq(~F, [t, c1, c2], E.ZMul{E.ZVar{0n}, E.ZMul{E.ZVar{0n}, E.ZAdd{E.ZVar{1n}, E.ZVar{2n}}}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZMul{E.ZVar{0n}, E.ZVar{1n}}}, E.ZMul{E.ZVar{0n}, E.ZMul{E.ZVar{0n}, E.ZVar{2n}}}}, {==}), FV.le_add2(~F, a1, O.mul(F, t, O.mul(F, t, c1)), a2, O.mul(F, t, O.mul(F, t, c2)), h1, h2))
 
 def quad_mul_l(~F: O.OField, +t: O.C(F), +a1: O.C(F), +a2: O.C(F), +c1: O.C(F), +c2: O.C(F), h1: O.le(~F, a1, O.mul(F, t, O.mul(F, t, c1))), h2: O.le(~F, a2, c2), ha2: O.le(~F, O.zero(F), a2), +hc1: O.le(~F, O.zero(F), c1), +ht0: O.le(~F, O.zero(F), t)) -> O.le(~F, O.mul(F, a1, a2), O.mul(F, t, O.mul(F, t, O.mul(F, c1, c2)))):
   le_r(~F, O.mul(F, a1, a2), O.mul(F, O.mul(F, t, O.mul(F, t, c1)), c2), O.mul(F, t, O.mul(F, t, O.mul(F, c1, c2))), FR.fring_eq(~F, [t, c1, c2], E.ZMul{E.ZVar{0n}, E.ZMul{E.ZVar{0n}, E.ZMul{E.ZVar{1n}, E.ZVar{2n}}}}, E.ZMul{E.ZMul{E.ZVar{0n}, E.ZMul{E.ZVar{0n}, E.ZVar{1n}}}, E.ZVar{2n}}, {==}), le_mul2(~F, a1, O.mul(F, t, O.mul(F, t, c1)), a2, c2, h1, h2, ha2, FO.mul_nonneg(~F, t, O.mul(F, t, c1), ht0, FO.mul_nonneg(~F, t, c1, ht0, hc1))))

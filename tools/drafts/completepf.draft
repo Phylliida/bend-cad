@@ -64,6 +64,7 @@ import ./radpf.bend as RD
 import ./binvpf.bend as BI
 import ./locpf.bend as LC
 import ./pblkpf.bend as PB
+import ./blockpf.bend as BK
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -884,7 +885,7 @@ def bb_le(~F: O.OField, +v: O.C(F), +rho: O.C(F), +h: O.le(~F, rho, O.one(F))) -
   FV.le_of_sub(~F, O.add(F, v, rho), O.sub(~F, O.add(F, O.add(F, v, O.one(F)), O.one(F)), rho), FM.nn_eq(~F, O.sub(~F, O.sub(~F, O.add(F, O.add(F, v, O.one(F)), O.one(F)), rho), O.add(F, v, rho)), O.add(F, O.sub(~F, O.one(F), rho), O.sub(~F, O.one(F), rho)), @ZEQ[v,, rho | (1 - rho) + (1 - rho) | (((v + 1) + 1) - rho) - (v + rho)], FO.nonneg_add(~F, O.sub(~F, O.one(F), rho), O.sub(~F, O.one(F), rho), FM.sub_nonneg(~F, rho, O.one(F), h), FM.sub_nonneg(~F, rho, O.one(F), h))))
 
 def bbs_nn(~F: O.OField, +x: M.Vec(~F)) -> O.le(~F, O.zero(F), $BBS):
-  FO.nonneg_add(~F, O.add(F, NP.vn(~F, x), O.one(F)), O.one(F), FO.nonneg_add(~F, NP.vn(~F, x), O.one(F), FV.vmax_nn(~F, x), NP.one_nn(~F)), NP.one_nn(~F))
+  FO.nonneg_add(~F, O.add(F, NP.vn(~F, x), O.one(F)), O.one(F), FO.nonneg_add(~F, NP.vn(~F, x), O.one(F), FV.vmax_nn(~F, x), FO.one_nn(~F)), FO.one_nn(~F))
 
 @MACRO RBP +rho: O.C(F), +hr0: O.le(~F, O.zero(F), rho), +hr1: O.le(~F, rho, O.one(F)), +hvr: M.vbnd.all(~F, M.ofdv(~F, grf), rho)
 @MACRO RBA rho, hr0, hr1, hvr
@@ -1062,7 +1063,7 @@ def nv_s(~F: O.OField, +n: O.C(F), +v: O.C(F), hI: O.le(~F, O.mul(F, n, v), O.on
 def nv_le(~F: O.OField, l: Nat) -> O.le(~F, O.mul(F, CR.nat(~F, l), AP.vbit(~F, l)), O.one(F)):
   match l:
     case 0n:
-      FV.le_of_sub(~F, O.mul(F, O.zero(F), AP.vbit(~F, 0n)), O.one(F), FM.nn_eq(~F, O.sub(~F, O.one(F), O.mul(F, O.zero(F), AP.vbit(~F, 0n))), O.one(F), @ZEQ[v=AP.vbit(~F, 0n) | 1 | 1 - 0*v], NP.one_nn(~F)))
+      FV.le_of_sub(~F, O.mul(F, O.zero(F), AP.vbit(~F, 0n)), O.one(F), FM.nn_eq(~F, O.sub(~F, O.one(F), O.mul(F, O.zero(F), AP.vbit(~F, 0n))), O.one(F), @ZEQ[v=AP.vbit(~F, 0n) | 1 | 1 - 0*v], FO.one_nn(~F)))
     case 1n++m:
       %DM.ofd_mul(~F, S.D{S.Zpos{S.XH{}}, 1n}, S.D{S.Zpos{S.XH{}}, m}) : O.le(~F, O.mul(F, O.add(F, CR.nat(~F, m), O.one(F)), _), O.one(F))
       nv_s(~F, CR.nat(~F, m), AP.vbit(~F, m), nv_le(~F, m), DG.u_le1(~F, m))
@@ -1163,15 +1164,15 @@ def sbud_of(~F: O.OField, $SBP, +h: O.C(F), +t: O.C(F), +hht: O.le(~F, h, t), +h
     case Con{SK.Gt0{+e}, +r}:
       +h1 = AP.both_l(O.lt(F, O.zero(F), $EX), SV.Strict(~F, x, r), hs)
       +h2 = AP.both_r(O.lt(F, O.zero(F), $EX), SV.Strict(~F, x, r), hs)
-      +hle = DM.le_trans(~F, $SBE, O.add(F, $SBE, sbs(~F, bb, tf, x, r)), S, NW.le_addr(~F, $SBE, sbs(~F, bb, tf, x, r), sbs_nn(~F, $SBA, r, h2)), hS)
-      +hlr = DM.le_trans(~F, sbs(~F, bb, tf, x, r), O.add(F, $SBE, sbs(~F, bb, tf, x, r)), S, NW.le_addl(~F, $SBE, sbs(~F, bb, tf, x, r), sbe_nn(~F, $SBA, e, h1)), hS)
+      +hle = DM.le_trans(~F, $SBE, O.add(F, $SBE, sbs(~F, bb, tf, x, r)), S, FV.le_addr(~F, $SBE, sbs(~F, bb, tf, x, r), sbs_nn(~F, $SBA, r, h2)), hS)
+      +hlr = DM.le_trans(~F, sbs(~F, bb, tf, x, r), O.add(F, $SBE, sbs(~F, bb, tf, x, r)), S, FV.le_addl(~F, $SBE, sbs(~F, bb, tf, x, r), sbe_nn(~F, $SBA, e, h1)), hS)
       (gt_side(~F, BP.lp(~F, bb, e), h, tf, t, $EX, PB.lp_nn(~F, bb, hb, e), htf, hht, h1, FO.le_lt_trans(~F, O.mul(F, t, $SBE), O.mul(F, t, S), O.one(F), FV.mul_le(~F, t, $SBE, S, ht0, hle), hq)), sbud_of(~F, $SBA, h, t, hht, ht0, r, h2, S, hlr, hq))
     case Con{SK.Ge0{+e}, +r}:
       +gb = sbg(~F, BX.QExpr.within(e, 0n), bb, tf, x, e)
       +h1 = AP.both_l(SV.Strict.ge(~F, BX.QExpr.within(e, 0n), x, e), SV.Strict(~F, x, r), hs)
       +h2 = AP.both_r(SV.Strict.ge(~F, BX.QExpr.within(e, 0n), x, e), SV.Strict(~F, x, r), hs)
-      +hle = DM.le_trans(~F, gb, O.add(F, gb, sbs(~F, bb, tf, x, r)), S, NW.le_addr(~F, gb, sbs(~F, bb, tf, x, r), sbs_nn(~F, $SBA, r, h2)), hS)
-      +hlr = DM.le_trans(~F, sbs(~F, bb, tf, x, r), O.add(F, gb, sbs(~F, bb, tf, x, r)), S, NW.le_addl(~F, gb, sbs(~F, bb, tf, x, r), sbg_nn(~F, $SBA, e, BX.QExpr.within(e, 0n), h1)), hS)
+      +hle = DM.le_trans(~F, gb, O.add(F, gb, sbs(~F, bb, tf, x, r)), S, FV.le_addr(~F, gb, sbs(~F, bb, tf, x, r), sbs_nn(~F, $SBA, r, h2)), hS)
+      +hlr = DM.le_trans(~F, sbs(~F, bb, tf, x, r), O.add(F, gb, sbs(~F, bb, tf, x, r)), S, FV.le_addl(~F, gb, sbs(~F, bb, tf, x, r), sbg_nn(~F, $SBA, e, BX.QExpr.within(e, 0n), h1)), hS)
       (ge_go(~F, $SBA, h, t, hht, ht0, e, BX.QExpr.within(e, 0n), {==}, h1, S, hle, hq), sbud_of(~F, $SBA, h, t, hht, ht0, r, h2, S, hlr, hq))
 
 # The whole budget
@@ -1183,19 +1184,16 @@ def sbud_of(~F: O.OField, $SBP, +h: O.C(F), +t: O.C(F), +hht: O.le(~F, h, t), +h
 @MACRO SBX sbs(~F, $BBS, $TCH, x, $SDK)
 @MACRO QQ O.add(F, $QCH, O.add(F, $TCH, $SBX))
 
-def mul_le_r(~F: O.OField, +a: O.C(F), +b: O.C(F), +c: O.C(F), hc: O.le(~F, O.zero(F), c), h: O.le(~F, a, b)) -> O.le(~F, O.mul(F, a, c), O.mul(F, b, c)):
-  FV.le_of_sub(~F, O.mul(F, a, c), O.mul(F, b, c), FM.nn_eq(~F, O.sub(~F, O.mul(F, b, c), O.mul(F, a, c)), O.mul(F, O.sub(~F, b, a), c), @ZEQ[a,, b,, c | (b - a)*c | b*c - a*c], FO.mul_nonneg(~F, O.sub(~F, b, a), c, FM.sub_nonneg(~F, a, b, h), hc)))
-
 def budget($SKP, +x: M.Vec(~F), +binv: BI.BInv(~F, x, $FULL, $KB), +hs: SV.Strict(~F, x, $SDK), +p: Nat, +ht: O.lt(F, O.mul(F, $VB, $QQ), O.one(F))) -> M.Both(O.lt(F, O.mul(F, $VB, $QCH), O.one(F)), M.Both(O.le(~F, O.mul(F, NW.hnw(~F, p), $TCH), O.one(F)), SBud(~F, $BBS, O.mul(F, NW.hnw(~F, p), $TCH), x, $SDK))):
   +hq0 = PB.qch_nn(~F, ~H, $FULL, $GOOD, $VP, x, $KB, binv, $NP, @0, FO.le_refl(~F, @0))
   +htc = PB.tch_nn(~F, ~H, $FULL, $GOOD, $VP, x, $KB, binv, $NP, @0, FO.le_refl(~F, @0))
   +hsb = sbs_nn(~F, $BBS, bbs_nn(~F, x), $TCH, htc, x, $SDK, hs)
-  +ht0 = SC.t_nn(~F, p)
+  +ht0 = BK.vb_nn(~F, p)
   +hht = SC.h_le_t(~F, p)
-  +hlq = NW.le_addl(~F, $QCH, O.add(F, $TCH, $SBX), hq0)
-  (FO.le_lt_trans(~F, O.mul(F, $VB, $QCH), O.mul(F, $VB, $QQ), O.one(F), FV.mul_le(~F, $VB, $QCH, $QQ, ht0, NW.le_addr(~F, $QCH, O.add(F, $TCH, $SBX), FO.nonneg_add(~F, $TCH, $SBX, htc, hsb))), ht),
-  (FO.lt_le(~F, O.mul(F, NW.hnw(~F, p), $TCH), O.one(F), FO.le_lt_trans(~F, O.mul(F, NW.hnw(~F, p), $TCH), O.mul(F, $VB, $QQ), O.one(F), DM.le_trans(~F, O.mul(F, NW.hnw(~F, p), $TCH), O.mul(F, $VB, $TCH), O.mul(F, $VB, $QQ), mul_le_r(~F, NW.hnw(~F, p), $VB, $TCH, htc, hht), FV.mul_le(~F, $VB, $TCH, $QQ, ht0, DM.le_trans(~F, $TCH, O.add(F, $TCH, $SBX), $QQ, NW.le_addr(~F, $TCH, $SBX, hsb), hlq))), ht)),
-  sbud_of(~F, $BBS, bbs_nn(~F, x), $TCH, htc, x, NW.hnw(~F, p), $VB, hht, ht0, $SDK, hs, $QQ, DM.le_trans(~F, $SBX, O.add(F, $TCH, $SBX), $QQ, NW.le_addl(~F, $TCH, $SBX, htc), hlq), ht)))
+  +hlq = FV.le_addl(~F, $QCH, O.add(F, $TCH, $SBX), hq0)
+  (FO.le_lt_trans(~F, O.mul(F, $VB, $QCH), O.mul(F, $VB, $QQ), O.one(F), FV.mul_le(~F, $VB, $QCH, $QQ, ht0, FV.le_addr(~F, $QCH, O.add(F, $TCH, $SBX), FO.nonneg_add(~F, $TCH, $SBX, htc, hsb))), ht),
+  (FO.lt_le(~F, O.mul(F, NW.hnw(~F, p), $TCH), O.one(F), FO.le_lt_trans(~F, O.mul(F, NW.hnw(~F, p), $TCH), O.mul(F, $VB, $QQ), O.one(F), DM.le_trans(~F, O.mul(F, NW.hnw(~F, p), $TCH), O.mul(F, $VB, $TCH), O.mul(F, $VB, $QQ), FV.mul_le_r(~F, NW.hnw(~F, p), $VB, $TCH, htc, hht), FV.mul_le(~F, $VB, $TCH, $QQ, ht0, DM.le_trans(~F, $TCH, O.add(F, $TCH, $SBX), $QQ, FV.le_addr(~F, $TCH, $SBX, hsb), hlq))), ht)),
+  sbud_of(~F, $BBS, bbs_nn(~F, x), $TCH, htc, x, NW.hnw(~F, p), $VB, hht, ht0, $SDK, hs, $QQ, DM.le_trans(~F, $SBX, O.add(F, $TCH, $SBX), $QQ, FV.le_addl(~F, $TCH, $SBX, htc), hlq), ht)))
 
 # at level l = arch(Q): t Q < 1 at l's first precision
 def tq_lt(~F: O.OField, ~R: CR.Complete<F>, +q: O.C(F)) -> O.lt(F, O.mul(F, AP.vbit(~F, Nat.div(pfirst(CR.arch(F, R, q), 64n, 96n), 2n)), q), O.one(F)):

@@ -203,9 +203,12 @@ wrong; she restated it after the roll.)
 `lib/certpf.bend`; the checker `lib/cert.bend` runs inside the gate on a
 real block (`tests/cert_demo.bend`). Sabotage checks: replacing any checker
 condition, or the whole checker with "accept", breaks the proofs.
-- Libraries: `lib/karith.bend` (K arithmetic + laws in F),
+- Libraries: `lib/karith.bend` (K arithmetic + laws in F; also the one
+  home of the Bool facts about `natle`/`nateq`/`band`: `natle_refl`,
+  `natle_trans`, `nateq_ok`, `band_i`, ...),
   `lib/fvec.bend` (entrywise bounds, Newton-difference/split/self3/shift
-  row lemmas, fabs/fmax/vmaxabs, weighted ratios), `lib/kball.bend` (ball
+  row lemmas, fabs/fmax/vmaxabs, weighted ratios, and the field-order
+  facts `le_add2`, `le_addl`, `le_addr`, `mul_le_r`, `bnd_lo`), `lib/kball.bend` (ball
   arithmetic + soundness), `lib/slope.bend` (telescoping slopes per
   variable, slope_ok), `lib/cert.bend` (checker, named conjuncts),
   `lib/certpf.bend` (block lemmas + the six laws), `lib/kinst.bend`
