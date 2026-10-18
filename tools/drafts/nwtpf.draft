@@ -39,6 +39,7 @@ import ./dgjpf.bend as DG
 import ./bndpf.bend as BP
 import ./roundpf.bend as RP
 import ./apxpf.bend as AP
+import ./real.bend as RL
 
 # The block in F
 # --------------
@@ -786,3 +787,89 @@ def bx3($CXP, $Y0P, $ST0P, $ST1P) -> O.le(~F, NP.vn(~F, $X3), @A(hnw(~F, p), @A(
           FV.mul_le(~F, @M(FR.ofn(~F, n), ea($KA)), NP.vn(~F, $EPS), hnw(~F, p), nms_nn(~F, n, ea($KA), ea_nn($KA, $NNA)), r0bnd($CXA, y0, $ST0A)),
           FV.mul_le(~F, al($KA), @M(NP.mnorm(~F, M.madd(~F, $S1, M.mneg(~F, $J1)), n), NP.vn(~F, $EPS)), @M(@M(FR.ofn(~F, n), @M(lam, dl0($KA))), hnw(~F, p)), al_nn($KA, $NNA),
             mm_le(~F, NP.mnorm(~F, M.madd(~F, $S1, M.mneg(~F, $J1)), n), @M(FR.ofn(~F, n), @M(lam, dl0($KA))), NP.vn(~F, $EPS), hnw(~F, p), FV.vmax_nn(~F, $EPS), AP.lr_nn(~F, n, lam, dl0($KA), hl0, dl0_nn($KA, $NNA)), lip11($CXA, $Y0A, $ST0A), r0bnd($CXA, y0, $ST0A)))))))
+
+@MACRO GG O.lookup(~F, M.matvec(~F, $STA1, $G1), k)
+@MACRO GL O.lookup(~F, M.matvec(~F, $STA1, $G0), k)
+@MACRO AA O.lookup(~F, M.matvec(~F, $STA1, M.matvec(~F, $J0, $W)), k)
+@MACRO BQ O.lookup(~F, M.matvec(~F, $STA1, M.matvec(~F, $S1, $W)), k)
+@MACRO CC O.lookup(~F, M.matvec(~F, $STA1, M.matvec(~F, $S1, $V0)), k)
+@MACRO DD O.lookup(~F, M.matvec(~F, $STA1, M.matvec(~F, $S1, $EPS)), k)
+@MACRO DG1 O.lookup(~F, M.matvec(~F, $STA1, BX.vsub(~F, $G1, $G0)), k)
+
+def eq_g1($CXP, $Y0P, $ST0P, $ST1P, +k: Nat) -> {$DG1 == @S($GG, $GL) : @T}:
+  %Equal.sym(M.Vec(~F), M.matvec(~F, $STA1, BX.vsub(~F, $G1, $G0)), BX.vsub(~F, M.matvec(~F, $STA1, $G1), M.matvec(~F, $STA1, $G0)), AP.mv_vsub(~F, $STA1, $G1, $G0)) : {O.lookup(~F, _, k) == @S($GG, $GL) : @T}
+  DG.look_diff(~F, M.matvec(~F, $STA1, $G1), M.matvec(~F, $STA1, $G0), k)
+
+def eq_g2($CXP, $Y0P, $ST0P, $ST1P, +k: Nat) -> {$DG1 == @S($DD, $CC) : @T}:
+  %Equal.sym(M.Vec(~F), BX.vsub(~F, $G1, $G0), M.matvec(~F, $S1, BX.vsub(~F, $Y1, $Y0)), CP.fvecs_con(~F, $Y1, $Y0, M.ofdv(~F, pc), eqs, n, m, hbl, ly1($CXA, $Y0A, $ST0A), ly0)) : {O.lookup(~F, M.matvec(~F, $STA1, _), k) == @S($DD, $CC) : @T}
+  %Equal.sym(M.Vec(~F), BX.vsub(~F, $Y1, $Y0), BX.vsub(~F, $EPS, $V0), dy_eq($CXA, $Y0A, $ST0A)) : {O.lookup(~F, M.matvec(~F, $STA1, M.matvec(~F, $S1, _)), k) == @S($DD, $CC) : @T}
+  %Equal.sym(M.Vec(~F), M.matvec(~F, $S1, BX.vsub(~F, $EPS, $V0)), BX.vsub(~F, M.matvec(~F, $S1, $EPS), M.matvec(~F, $S1, $V0)), AP.mv_vsub(~F, $S1, $EPS, $V0)) : {O.lookup(~F, M.matvec(~F, $STA1, _), k) == @S($DD, $CC) : @T}
+  %Equal.sym(M.Vec(~F), M.matvec(~F, $STA1, BX.vsub(~F, M.matvec(~F, $S1, $EPS), M.matvec(~F, $S1, $V0))), BX.vsub(~F, M.matvec(~F, $STA1, M.matvec(~F, $S1, $EPS)), M.matvec(~F, $STA1, M.matvec(~F, $S1, $V0))), AP.mv_vsub(~F, $STA1, M.matvec(~F, $S1, $EPS), M.matvec(~F, $S1, $V0))) : {O.lookup(~F, _, k) == @S($DD, $CC) : @T}
+  DG.look_diff(~F, M.matvec(~F, $STA1, M.matvec(~F, $S1, $EPS)), M.matvec(~F, $STA1, M.matvec(~F, $S1, $V0)), k)
+
+def eq_g3($CXP, $Y0P, $ST0P, $ST1P, $Z0P, +k: Nat) -> {$GL == $AA : @T}:
+  %g0w($CXA, $Y0A, $Z0A) : {O.lookup(~F, M.matvec(~F, $STA1, _), k) == $AA : @T}
+  {==}
+
+def eq_x1($CXP, $Y0P, $ST0P, $ST1P, $Z0P, +k: Nat) -> {O.lookup(~F, $X1, k) == @S($BQ, $AA) : @T}:
+  %Equal.sym(M.Vec(~F), $X1, BX.vsub(~F, M.matvec(~F, $STA1, M.matvec(~F, $S1, $W)), M.matvec(~F, $STA1, M.matvec(~F, $J0, $W))), AP.mv_vsub(~F, $STA1, M.matvec(~F, $S1, $W), M.matvec(~F, $J0, $W))) : {O.lookup(~F, _, k) == @S($BQ, $AA) : @T}
+  DG.look_diff(~F, M.matvec(~F, $STA1, M.matvec(~F, $S1, $W)), M.matvec(~F, $STA1, M.matvec(~F, $J0, $W)), k)
+
+def eq_x2($CXP, $Y0P, $ST0P, $ST1P, $Z0P, +k: Nat) -> {O.lookup(~F, $X2, k) == @S($BQ, $CC) : @T}:
+  %Equal.sym(M.Vec(~F), M.matvec(~F, $S1, BX.vsub(~F, $W, $V0)), BX.vsub(~F, M.matvec(~F, $S1, $W), M.matvec(~F, $S1, $V0)), AP.mv_vsub(~F, $S1, $W, $V0)) : {O.lookup(~F, M.matvec(~F, $STA1, _), k) == @S($BQ, $CC) : @T}
+  %Equal.sym(M.Vec(~F), M.matvec(~F, $STA1, BX.vsub(~F, M.matvec(~F, $S1, $W), M.matvec(~F, $S1, $V0))), BX.vsub(~F, M.matvec(~F, $STA1, M.matvec(~F, $S1, $W)), M.matvec(~F, $STA1, M.matvec(~F, $S1, $V0))), AP.mv_vsub(~F, $STA1, M.matvec(~F, $S1, $W), M.matvec(~F, $S1, $V0))) : {O.lookup(~F, _, k) == @S($BQ, $CC) : @T}
+  DG.look_diff(~F, M.matvec(~F, $STA1, M.matvec(~F, $S1, $W)), M.matvec(~F, $STA1, M.matvec(~F, $S1, $V0)), k)
+
+def add_of_sub(~F: O.OField, +x: @T, +y: @T, +t: @T, h: {@S(x, y) == t : @T}) -> {x == @A(y, t) : @T}:
+  %h : {x == @A(y, _) : @T}
+  FR.fring_eq(~F, [x, y], E.ZVar{0n}, E.ZAdd{E.ZVar{1n}, E.ZSub{E.ZVar{0n}, E.ZVar{1n}}}, {==})
+
+# entry k of A1 g1 is -X1 + X2 + X3
+def s1_eq($CXP, $Y0P, $ST0P, $ST1P, $Z0P, +k: Nat) -> {$GG == @A(@A(@N(O.lookup(~F, $X1, k)), O.lookup(~F, $X2, k)), O.lookup(~F, $X3, k)) : @T}:
+  %Equal.sym(@T, $GG, @A($GL, @S($DD, $CC)), add_of_sub(~F, $GG, $GL, @S($DD, $CC), Equal.trans(@T, @S($GG, $GL), $DG1, @S($DD, $CC), Equal.sym(@T, $DG1, @S($GG, $GL), eq_g1($CXA, $Y0A, $ST0A, $ST1A, k)), eq_g2($CXA, $Y0A, $ST0A, $ST1A, k)))) : {_ == @A(@A(@N(O.lookup(~F, $X1, k)), O.lookup(~F, $X2, k)), O.lookup(~F, $X3, k)) : @T}
+  %Equal.sym(@T, $GL, $AA, eq_g3($CXA, $Y0A, $ST0A, $ST1A, $Z0A, k)) : {@A(_, @S($DD, $CC)) == @A(@A(@N(O.lookup(~F, $X1, k)), O.lookup(~F, $X2, k)), O.lookup(~F, $X3, k)) : @T}
+  %Equal.sym(@T, O.lookup(~F, $X1, k), @S($BQ, $AA), eq_x1($CXA, $Y0A, $ST0A, $ST1A, $Z0A, k)) : {@A($AA, @S($DD, $CC)) == @A(@A(@N(_), O.lookup(~F, $X2, k)), O.lookup(~F, $X3, k)) : @T}
+  %Equal.sym(@T, O.lookup(~F, $X2, k), @S($BQ, $CC), eq_x2($CXA, $Y0A, $ST0A, $ST1A, $Z0A, k)) : {@A($AA, @S($DD, $CC)) == @A(@A(@N(@S($BQ, $AA)), _), O.lookup(~F, $X3, k)) : @T}
+  FR.fring_eq(~F, [$AA, $BQ, $CC, $DD], E.ZAdd{E.ZVar{0n}, E.ZSub{E.ZVar{3n}, E.ZVar{2n}}}, E.ZAdd{E.ZAdd{E.ZNeg{E.ZSub{E.ZVar{1n}, E.ZVar{0n}}}, E.ZSub{E.ZVar{1n}, E.ZVar{2n}}}, E.ZVar{3n}}, {==})
+
+# entry by entry w = -p1 + p2 + p3: |w| <= |p1| + |p2| + |p3|
+def vn_by3(~F: O.OField, ~w: M.Vec(~F), ~p1: M.Vec(~F), ~p2: M.Vec(~F), ~p3: M.Vec(~F), ~eq: @k: Nat -> {O.lookup(~F, w, k) == @A(@A(@N(O.lookup(~F, p1, k)), O.lookup(~F, p2, k)), O.lookup(~F, p3, k)) : @T}) -> O.le(~F, NP.vn(~F, w), @A(@A(NP.vn(~F, p1), NP.vn(~F, p2)), NP.vn(~F, p3))):
+  FV.vmax_lub(~F, w, @A(@A(NP.vn(~F, p1), NP.vn(~F, p2)), NP.vn(~F, p3)), DG.vall_by(~F, ~w, ~@A(@A(NP.vn(~F, p1), NP.vn(~F, p2)), NP.vn(~F, p3)), ~(k => KB.bnd_val(~F, @A(@A(@N(O.lookup(~F, p1, k)), O.lookup(~F, p2, k)), O.lookup(~F, p3, k)), O.lookup(~F, w, k), @A(@A(NP.vn(~F, p1), NP.vn(~F, p2)), NP.vn(~F, p3)), Equal.sym(@T, O.lookup(~F, w, k), @A(@A(@N(O.lookup(~F, p1, k)), O.lookup(~F, p2, k)), O.lookup(~F, p3, k)), eq(k)),
+      FM.bnd_add(~F, @A(@N(O.lookup(~F, p1, k)), O.lookup(~F, p2, k)), @A(NP.vn(~F, p1), NP.vn(~F, p2)), O.lookup(~F, p3, k), NP.vn(~F, p3), FM.bnd_add(~F, @N(O.lookup(~F, p1, k)), NP.vn(~F, p1), O.lookup(~F, p2, k), NP.vn(~F, p2), FM.bnd_neg(~F, O.lookup(~F, p1, k), NP.vn(~F, p1), AP.lkb(~F, p1, k)), AP.lkb(~F, p2, k)), AP.lkb(~F, p3, k))))),
+    FO.nonneg_add(~F, @A(NP.vn(~F, p1), NP.vn(~F, p2)), NP.vn(~F, p3), AP.vn_nn2(~F, p1, p2), FV.vmax_nn(~F, p3)))
+
+@MACRO CX1 @M(al($KA), @M(@M(FR.ofn(~F, n), @M(lam, dl0($KA))), @M(bt2(~F, b), g0c($KA))))
+@MACRO CX2 @M(al($KA), @M(@M(FR.ofn(~F, n), ms), @M(@M(FR.ofn(~F, n), ea($KA)), @M(bt2(~F, b), g0c($KA)))))
+@MACRO CE @M(@M(FR.ofn(~F, n), ea($KA)), hnw(~F, p))
+@MACRO CF @M(al($KA), @M(@M(FR.ofn(~F, n), @M(lam, dl0($KA))), hnw(~F, p)))
+@MACRO Q1 BX.vsub(~F, $Y1, M.matvec(~F, $STA1, $G1))
+
+# the second step moves at most 8h
+def s1_go($CXP, $Y0P, $ST0P, $ST1P, $Z0P) -> O.le(~F, NP.vn(~F, BX.vsub(~F, $Y2, $Y1)), h8(~F, p)):
+  +ag = M.matvec(~F, $STA1, $G1)
+  DM.le_trans(~F, NP.vn(~F, BX.vsub(~F, $Y2, $Y1)), @A(NP.vn(~F, BX.vsub(~F, $Y2, $Q1)), NP.vn(~F, BX.vsub(~F, $Q1, $Y1))), h8(~F, p),
+    AP.vn_tri3(~F, $Y2, $Q1, $Y1),
+    DM.le_trans(~F, @A(NP.vn(~F, BX.vsub(~F, $Y2, $Q1)), NP.vn(~F, BX.vsub(~F, $Q1, $Y1))), @A(hnw(~F, p), @A(@A($CX1, $CX2), @A(hnw(~F, p), @A($CE, $CF)))), h8(~F, p),
+      RP.le_add2(~F, NP.vn(~F, BX.vsub(~F, $Y2, $Q1)), hnw(~F, p), NP.vn(~F, BX.vsub(~F, $Q1, $Y1)), @A(@A($CX1, $CX2), @A(hnw(~F, p), @A($CE, $CF))),
+        FV.vmax_lub(~F, BX.vsub(~F, $Y2, $Q1), hnw(~F, p), st_rb(~F, n, eqs, pc, p, y1, y2, ea($KA), st1), hnw_nn(~F, p)),
+        DM.le_trans(~F, NP.vn(~F, BX.vsub(~F, $Q1, $Y1)), NP.vn(~F, ag), @A(@A($CX1, $CX2), @A(hnw(~F, p), @A($CE, $CF))), vn_back(~F, $Y1, ag),
+          DM.le_trans(~F, NP.vn(~F, ag), @A(@A(NP.vn(~F, $X1), NP.vn(~F, $X2)), NP.vn(~F, $X3)), @A(@A($CX1, $CX2), @A(hnw(~F, p), @A($CE, $CF))),
+            vn_by3(~F, ~ag, ~$X1, ~$X2, ~$X3, ~(k => s1_eq($CXA, $Y0A, $ST0A, $ST1A, $Z0A, k))),
+            RP.le_add2(~F, @A(NP.vn(~F, $X1), NP.vn(~F, $X2)), @A($CX1, $CX2), NP.vn(~F, $X3), @A(hnw(~F, p), @A($CE, $CF)),
+              RP.le_add2(~F, NP.vn(~F, $X1), $CX1, NP.vn(~F, $X2), $CX2, bx1($CXA, $Y0A, $ST0A, $ST1A, $Z0A), bx2($CXA, $Y0A, $ST0A, $ST1A, $Z0A)),
+              bx3($CXA, $Y0A, $ST0A, $ST1A))))),
+      RL.le_rw_l(~F, @A(@A(hnw(~F, p), hnw(~F, p)), settle($KA)), @A(hnw(~F, p), @A(@A($CX1, $CX2), @A(hnw(~F, p), @A($CE, $CF)))), h8(~F, p),
+          FR.fring_eq(~F, [hnw(~F, p), $CX1, $CX2, $CE, $CF], E.ZAdd{E.ZAdd{E.ZVar{0n}, E.ZVar{0n}}, E.ZAdd{E.ZAdd{E.ZVar{3n}, E.ZVar{4n}}, E.ZAdd{E.ZVar{1n}, E.ZVar{2n}}}}, E.ZAdd{E.ZVar{0n}, E.ZAdd{E.ZAdd{E.ZVar{1n}, E.ZVar{2n}}, E.ZAdd{E.ZVar{0n}, E.ZAdd{E.ZVar{3n}, E.ZVar{4n}}}}}, {==}),
+          RP.le_add2(~F, @A(hnw(~F, p), hnw(~F, p)), @A(hnw(~F, p), hnw(~F, p)), settle($KA), @M(FR.ofn(~F, 6n), hnw(~F, p)), FO.le_refl(~F, @A(hnw(~F, p), hnw(~F, p))), s4))))
+
+def s1_inv($CXP, $Y0P, $ST0P, $ST1P, hJ0: NP.InvB(~F, $J0, n, bt2(~F, b))) -> O.le(~F, NP.vn(~F, BX.vsub(~F, $Y2, $Y1)), h8(~F, p)):
+  match hJ0:
+    case (+z0, q):
+      match q:
+        case (hinv0, q2):
+          match q2:
+            case (hz0, hzb0):
+              s1_go($CXA, $Y0A, $ST0A, $ST1A, $Z0A)
+
+def s1_settle($CXP, $Y0P, $ST0P, $ST1P) -> O.le(~F, NP.vn(~F, BX.vsub(~F, $Y2, $Y1)), h8(~F, p)):
+  s1_inv($CXA, $Y0A, $ST0A, $ST1A, pt_inv($CXA, y0, ly0, d, hy0, d_le_dx($CXA)))
