@@ -1,0 +1,119 @@
+# bend-cad: one block at P, for solve_complete (DESIGN §10.4, C5d).
+# Proofs only.
+#
+# block(eqs, n, pc, pr, y0, p) as the solver runs it: Newton from the
+# drawing (lib/nwtpf.bend), elimination at the center, Y rounded to
+# p/2 bits, the radius search (lib/radpf.bend). From a drawing within d
+# of a regular solution x_b ++ x_z of the block (parameters' balls
+# holding x_z) and smallness conditions in the given constants, block
+# returns BOk of a certificate the checker accepts whose box holds x_b,
+# with radii at most rb.
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ../spec/mat.bend as M
+import ../spec/box.bend as BX
+import ../spec/knum.bend as N
+import ../spec/deriv.bend as DV
+import ./karith.bend as KA
+import ./kball.bend as KB
+import ./cert.bend as CK
+import ./certdef.bend as C
+import ./certpf.bend as CP
+import ./kinst.bend as KI
+import ./numer.bend as NU
+import ./struct.bend as ST
+import ./fring.bend as FR
+import ./ford.bend as FO
+import ./fmat.bend as FM
+import ./fvec.bend as FV
+import ./dmat.bend as DM
+import ./gjpf.bend as GJ
+import ./normpf.bend as NP
+import ./dgjpf.bend as DG
+import ./bndpf.bend as BP
+import ./roundpf.bend as RP
+import ./real.bend as RL
+import ./apxpf.bend as AP
+import ./nwtpf.bend as NW
+import ./radpf.bend as RD
+
+
+# The constants
+# -------------
+# vb = 2^-(p/2) (Y's rounding), yn bounds |Y|, thL |I - Y J|, thR
+# |I - J Y|, sbc the self-map bound S at radius 0, ubc the search's
+# upper bound, rbc = ubc + rho every radius in sight.
+
+
+def ync(~F: O.OField, +n: Nat, +m: Nat, +b: O.C(F), +lam: O.C(F), +ms: O.C(F), +d: O.C(F), +rho: O.C(F), +p: Nat) -> O.C(F):
+  O.mul(F, O.add(F, O.one(F), AP.vbit(~F, Nat.div(p, 2n))), NW.al(~F, n, m, b, lam, ms, d, rho, p))
+
+def thlc(~F: O.OField, +n: Nat, +m: Nat, +b: O.C(F), +lam: O.C(F), +ms: O.C(F), +d: O.C(F), +rho: O.C(F), +p: Nat) -> O.C(F):
+  O.add(F, O.mul(F, FR.ofn(~F, n), NW.ea(~F, n, m, b, lam, ms, d, rho, p)), O.mul(F, O.mul(F, AP.vbit(~F, Nat.div(p, 2n)), NW.al(~F, n, m, b, lam, ms, d, rho, p)), O.mul(F, FR.ofn(~F, n), ms)))
+
+def thrc(~F: O.OField, +n: Nat, +m: Nat, +b: O.C(F), +lam: O.C(F), +ms: O.C(F), +d: O.C(F), +rho: O.C(F), +p: Nat) -> O.C(F):
+  O.add(F, O.mul(F, O.mul(F, FR.ofn(~F, n), ms), O.mul(F, O.mul(F, FR.ofn(~F, n), NW.ea(~F, n, m, b, lam, ms, d, rho, p)), NW.bt2(~F, b))), O.mul(F, O.mul(F, FR.ofn(~F, n), ms), O.mul(F, AP.vbit(~F, Nat.div(p, 2n)), NW.al(~F, n, m, b, lam, ms, d, rho, p))))
+
+def sbc(~F: O.OField, +n: Nat, +m: Nat, +b: O.C(F), +lam: O.C(F), +ms: O.C(F), +d: O.C(F), +rho: O.C(F), +p: Nat) -> O.C(F):
+  O.add(F, O.mul(F, ync(~F, n, m, b, lam, ms, d, rho, p), O.add(F, O.mul(F, O.mul(F, FR.ofn(~F, n), ms), NW.en(~F, n, m, b, lam, ms, d, rho, p)), O.mul(F, O.mul(F, FR.ofn(~F, m), ms), rho))), O.mul(F, ync(~F, n, m, b, lam, ms, d, rho, p), O.mul(F, O.mul(F, FR.ofn(~F, m), ms), rho)))
+
+
+def ubc(~F: O.OField, +n: Nat, +m: Nat, +b: O.C(F), +lam: O.C(F), +ms: O.C(F), +d: O.C(F), +rho: O.C(F), +p: Nat) -> O.C(F):
+  O.mul(F, O.mul(F, M.ofd(~F, S.D{S.Zpos{S.XI{S.XO{S.XO{S.XO{S.XH{}}}}}}, 4n}), O.add(F, O.one(F), M.ofd(~F, S.D{S.Zpos{S.XO{S.XH{}}}, 8n}))), O.add(F, sbc(~F, n, m, b, lam, ms, d, rho, p), sbc(~F, n, m, b, lam, ms, d, rho, p)))
+
+def rbc(~F: O.OField, +n: Nat, +m: Nat, +b: O.C(F), +lam: O.C(F), +ms: O.C(F), +d: O.C(F), +rho: O.C(F), +p: Nat) -> O.C(F):
+  O.add(F, ubc(~F, n, m, b, lam, ms, d, rho, p), rho)
+
+# S is at most the largest |entry|
+# -------------------------------
+
+def dvmax_vn(~F: O.OField, xs: List<&2, S.D>) -> O.le(~F, M.ofd(~F, NU.dvmax(xs)), NP.vn(~F, M.ofdv(~F, xs))):
+  match xs:
+    case Nil{}:
+      %DM.ofd_zero(~F) : O.le(~F, _, O.zero(F))
+      FO.le_refl(~F, O.zero(F))
+    case Con{+x, +t}:
+      DG.ndmax_lub(~F, x, NU.dvmax(t), NP.vn(~F, M.ofdv(~F, Con{x, t})),
+        DM.le_trans(~F, M.ofd(~F, x), FV.fabs(~F, M.ofd(~F, x)), NP.vn(~F, M.ofdv(~F, Con{x, t})), NP.bnd_lo(~F, M.ofd(~F, x), FV.fabs(~F, M.ofd(~F, x)), FV.fabs_bnd(~F, M.ofd(~F, x))), FV.fmax_l(~F, FV.fabs(~F, M.ofd(~F, x)), NP.vn(~F, M.ofdv(~F, t)))),
+        DM.le_trans(~F, M.ofd(~F, NU.dvmax(t)), NP.vn(~F, M.ofdv(~F, t)), NP.vn(~F, M.ofdv(~F, Con{x, t})), dvmax_vn(~F, t), FV.fmax_r(~F, FV.fabs(~F, M.ofd(~F, x)), NP.vn(~F, M.ofdv(~F, t)))))
+
+# K's |u| has F norm at most u's
+def vn_kvabs(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: N.KVec(~K)) -> O.le(~F, NP.vn(~F, N.ofkv(~K, ~F, ~H, KA.kvabs(~K, u))), NP.vn(~F, N.ofkv(~K, ~F, ~H, u))):
+  match u:
+    case Nil{}:
+      FO.le_refl(~F, O.zero(F))
+    case Con{+a, +us}:
+      FV.fmax_lub(~F, FV.fabs(~F, N.emap(K, F, H, KA.kabs(~K, a))), NP.vn(~F, N.ofkv(~K, ~F, ~H, KA.kvabs(~K, us))), NP.vn(~F, N.ofkv(~K, ~F, ~H, Con{a, us})),
+        DM.le_trans(~F, FV.fabs(~F, N.emap(K, F, H, KA.kabs(~K, a))), FV.fabs(~F, N.emap(K, F, H, a)), NP.vn(~F, N.ofkv(~K, ~F, ~H, Con{a, us})), RD.kabs_ent(~K, ~F, ~H, a), FV.fmax_l(~F, FV.fabs(~F, N.emap(K, F, H, a)), NP.vn(~F, N.ofkv(~K, ~F, ~H, us)))),
+        DM.le_trans(~F, NP.vn(~F, N.ofkv(~K, ~F, ~H, KA.kvabs(~K, us))), NP.vn(~F, N.ofkv(~K, ~F, ~H, us)), NP.vn(~F, N.ofkv(~K, ~F, ~H, Con{a, us})), vn_kvabs(~K, ~F, ~H, us), FV.fmax_r(~F, FV.fabs(~F, N.emap(K, F, H, a)), NP.vn(~F, N.ofkv(~K, ~F, ~H, us)))))
+
+# The parameters' |J0z| + Dz over a graded box: entries <= ms
+# -----------------------------------------------------------
+
+def mzr_all(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: O.C(F), +bb: O.C(F), +hr: O.le(~F, O.zero(F), rho), +hb: O.le(~F, O.zero(F), bb), +box: List<&2, KB.KB<K>>, +hg: BP.gbox(~K, ~F, ~H, rho, bb, box), +e: E.QExpr, +hh: {KB.held(~K, e) == True{} : Bool}, +ms: O.C(F), +hms: O.le(~F, BP.ms(~F, bb, e), ms), cnt: Nat, +lo: Nat) -> M.vbnd.all(~F, N.ofkv(~K, ~F, ~H, RD.mzr(~K, ~F, ~H, box, e, cnt, lo)), ms):
+  match cnt:
+    case 0n:
+      Unit{}
+    case 1n++k:
+      +g = BP.ksl_grade(~K, ~F, ~H, rho, bb, hr, hb, box, hg, lo, e, hh)
+      +c = KB.KB.c(K, KB.ksl(~K, lo, box, e))
+      +r = KB.KB.r(K, KB.ksl(~K, lo, box, e))
+      ((%KA.ea(~K, ~F, ~H, KA.kabs(~K, c), r) : M.bnd(~F, _, ms)
+         RD.bnd_of01(~F, O.add(F, N.emap(K, F, H, KA.kabs(~K, c)), N.emap(K, F, H, r)), ms, FO.nonneg_add(~F, N.emap(K, F, H, KA.kabs(~K, c)), N.emap(K, F, H, r), KA.kabs_nonneg(~K, ~F, ~H, c), BP.gf_0(~F, rho, N.emap(K, F, H, c), N.emap(K, F, H, r), BP.ms(~F, bb, e), BP.ls(~F, bb, e), g)), DM.le_trans(~F, O.add(F, N.emap(K, F, H, KA.kabs(~K, c)), N.emap(K, F, H, r)), BP.ms(~F, bb, e), ms, RD.gr_m(~K, ~F, ~H, rho, KB.ksl(~K, lo, box, e), BP.ms(~F, bb, e), BP.ls(~F, bb, e), g), hms))),
+       mzr_all(~K, ~F, ~H, rho, bb, hr, hb, box, hg, e, hh, ms, hms, k, 1n+lo))
+
+def mz_rows_le(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: O.C(F), +bb: O.C(F), +hr: O.le(~F, O.zero(F), rho), +hb: O.le(~F, O.zero(F), bb), +box: List<&2, KB.KB<K>>, +hg: BP.gbox(~K, ~F, ~H, rho, bb, box), +lam: O.C(F), +ms: O.C(F), +hm0: O.le(~F, O.zero(F), ms), eqs: List<&2, E.QExpr>, +hq: AP.eqok(~F, bb, lam, ms, eqs), +hh: {CK.allheld(~K, eqs) == True{} : Bool}, +cnt: Nat, +lo: Nat) -> NP.rowsle(~F, N.ofkm(~K, ~F, ~H, RD.mzm(~K, ~F, ~H, box, cnt, lo, eqs)), cnt, O.mul(F, FR.ofn(~F, cnt), ms)):
+  match eqs:
+    case Nil{}:
+      Unit{}
+    case Con{+e, +es}:
+      +he = KA.band_l(KB.held(~K, e), CK.allheld(~K, es), hh)
+      +hes = KA.band_r(KB.held(~K, e), CK.allheld(~K, es), hh)
+      (DG.rowabs_le(~F, N.ofkv(~K, ~F, ~H, RD.mzr(~K, ~F, ~H, box, e, cnt, lo)), cnt, ms, mzr_all(~K, ~F, ~H, rho, bb, hr, hb, box, hg, e, he, ms, AP.eqok_ms(~F, bb, lam, ms, e, es, hq), cnt, lo), hm0),
+       mz_rows_le(~K, ~F, ~H, rho, bb, hr, hb, box, hg, lam, ms, hm0, es, AP.eqok_tl(~F, bb, lam, ms, e, es, hq), hes, cnt, lo))
+
+def mzm_mn(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +rho: O.C(F), +bb: O.C(F), +hr: O.le(~F, O.zero(F), rho), +hb: O.le(~F, O.zero(F), bb), +box: List<&2, KB.KB<K>>, +hg: BP.gbox(~K, ~F, ~H, rho, bb, box), +lam: O.C(F), +ms: O.C(F), +hm0: O.le(~F, O.zero(F), ms), +eqs: List<&2, E.QExpr>, +hq: AP.eqok(~F, bb, lam, ms, eqs), +hh: {CK.allheld(~K, eqs) == True{} : Bool}, +cnt: Nat, +lo: Nat) -> O.le(~F, NP.mnorm(~F, N.ofkm(~K, ~F, ~H, RD.mzm(~K, ~F, ~H, box, cnt, lo, eqs)), cnt), O.mul(F, FR.ofn(~F, cnt), ms)):
+  NP.mnorm_lub(~F, N.ofkm(~K, ~F, ~H, RD.mzm(~K, ~F, ~H, box, cnt, lo, eqs)), cnt, O.mul(F, FR.ofn(~F, cnt), ms), mz_rows_le(~K, ~F, ~H, rho, bb, hr, hb, box, hg, lam, ms, hm0, eqs, hq, hh, cnt, lo), FO.mul_nonneg(~F, FR.ofn(~F, cnt), ms, DG.ofn_nn(~F, cnt), hm0))
