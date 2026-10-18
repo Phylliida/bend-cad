@@ -22,7 +22,7 @@ src = "\n".join(_lines)
 for _ in range(20):
     _new = src
     for _name in sorted(_macros, key=len, reverse=True):
-        _new = _new.replace("$" + _name, _macros[_name])
+        _new = _re.sub(r'\$' + _re.escape(_name) + r'(?![A-Za-z0-9_])', lambda _m, _b=_macros[_name]: _b, _new)
     if _new == src:
         break
     src = _new
