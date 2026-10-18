@@ -140,3 +140,120 @@ def mz_rows_le($KH, +rho: @T, +bb: @T, +hr: O.le(~F, @0, rho), +hb: O.le(~F, @0,
 
 def mzm_mn($KH, +rho: @T, +bb: @T, +hr: O.le(~F, @0, rho), +hb: O.le(~F, @0, bb), +box: List<&2, KB.KB<K>>, +hg: BP.gbox($KHA, rho, bb, box), +lam: @T, +ms: @T, +hm0: O.le(~F, @0, ms), +eqs: List<&2, E.QExpr>, +hq: AP.eqok(~F, bb, lam, ms, eqs), +hh: {CK.allheld(~K, eqs) == True{} : Bool}, +cnt: Nat, +lo: Nat) -> O.le(~F, NP.mnorm(~F, N.ofkm($KHA, RD.mzm($KHA, box, cnt, lo, eqs)), cnt), @M(FR.ofn(~F, cnt), ms)):
   NP.mnorm_lub(~F, N.ofkm($KHA, RD.mzm($KHA, box, cnt, lo, eqs)), cnt, @M(FR.ofn(~F, cnt), ms), mz_rows_le($KHA, rho, bb, hr, hb, box, hg, lam, ms, hm0, eqs, hq, hh, cnt, lo), FO.mul_nonneg(~F, FR.ofn(~F, cnt), ms, DG.ofn_nn(~F, cnt), hm0))
+
+# The self-map bound at radius 0, in the given constants
+# -------------------------------------------------------
+# S <= |Y f(P)| + |B(0)| (G(0) = 0), f(P) = f(P) - f(x_b ++ x_z) through
+# the slopes between them (both in the big F-box), B(0) <= yn (m ms) rho.
+
+@MACRO YCP +yc: List<&2, S.D>, +lyc: {M.len(~F, M.ofdv(~F, yc)) == n : Nat}, +hyc: O.le(~F, NP.vn(~F, BX.vsub(~F, M.ofdv(~F, yc), xb)), NW.en($KA))
+@MACRO YCA yc, lyc, hyc
+@MACRO PRP +pr: List<&2, S.D>, +lpr: {M.len(~F, M.ofdv(~F, pr)) == m : Nat}, +hpn: FV.rnn(~F, M.ofdv(~F, pr)), +hzr: BX.rbnd(~F, BX.vsub(~F, xz, M.ofdv(~F, pc)), M.ofdv(~F, pr)), +hpr: M.vbnd.all(~F, M.ofdv(~F, pr), rho)
+@MACRO PRA pr, lpr, hpn, hzr, hpr
+@MACRO YMP +ym: List<&2, List<&2, S.D>>, +yn: @T, +hyn: O.le(~F, NP.mnorm(~F, M.ofdm(~F, ym), n), yn), +hyn0: O.le(~F, @0, yn)
+@MACRO YMA ym, yn, hyn, hyn0
+@MACRO RBP +rb: @T, +hrb: O.le(~F, @0, rb), +hcr: M.vbnd.all(~F, $PTC, @S(bb, rb)), +hprb: M.vbnd.all(~F, M.ofdv(~F, pr), rb)
+@MACRO RBA rb, hrb, hcr, hprb
+@MACRO TF @A(@M(@M(FR.ofn(~F, n), ms), NW.en($KA)), @M(@M(FR.ofn(~F, m), ms), rho))
+@MACRO YK N.ofkm($DH, ym)
+@MACRO FP C.fvals(~F, eqs, $PTC)
+
+def klen_m($CXP) -> {$KPC == m : Nat}:
+  Equal.trans(Nat, $KPC, M.len(~F, M.ofdv(~F, pc)), m, RD.klen_d(~F, ~H, pc), lpc)
+
+def lyck(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +yc: List<&2, S.D>, +lyc: {M.len(~F, M.ofdv(~F, yc)) == n : Nat}) -> {KA.klen($DN, yc) == n : Nat}:
+  Equal.trans(Nat, KA.klen($DN, yc), M.len(~F, M.ofdv(~F, yc)), n, RD.klen_d(~F, ~H, yc), lyc)
+
+def d0_le(~F: O.OField, +t: @T, +h: O.le(~F, @0, t)) -> O.le(~F, M.ofd(~F, M.d0()), t):
+  %DM.ofd_zero(~F) : O.le(~F, _, t)
+  h
+
+def fp_eq($CXP, +yc: List<&2, S.D>) -> {BX.vsub(~F, $FP, C.fvals(~F, eqs, $XS)) == $FP : M.Vec(~F)}:
+  %Equal.sym(M.Vec(~F), C.fvals(~F, eqs, $XS), GJ.zeros(~F, n), hz) : {BX.vsub(~F, $FP, _) == $FP : M.Vec(~F)}
+  RD.vsub_zeros(~F, $FP, n, Equal.trans(Nat, M.len(~F, $FP), CK.eqlen(eqs), n, CP.len_fvals(~F, eqs, $PTC), hn))
+
+# |f(P)| <= n ms en + m ms rho
+def fp_bnd($CXP, $YCP) -> O.le(~F, NP.vn(~F, $FP), $TF):
+  +e = BX.vsub(~F, M.ofdv(~F, yc), xb)
+  +dz = BX.vsub(~F, M.ofdv(~F, pc), xz)
+  +sy = CP.smat(~F, $PTC, $XS, eqs, n, 0n)
+  +sz = CP.smat(~F, $PTC, $XS, eqs, m, n)
+  +in1 = NW.inbig($CXA, yc, lyc, NW.en($KA), NW.vall_of_vn(~F, e, NW.en($KA), hyc), NW.en_le_dx($CXA))
+  +in2 = NW.xs_inbig($CXA)
+  +hsy = AP.smat_maj(~F, NW.dx($KA), bb, NW.dx_nn($KA, $NNA), hbb0, $BIG, NW.gbig($CXA), $PTC, $XS, in1, in2, lam, ms, hm0, eqs, hq, n, 0n)
+  +hsz = AP.smat_maj(~F, NW.dx($KA), bb, NW.dx_nn($KA, $NNA), hbb0, $BIG, NW.gbig($CXA), $PTC, $XS, in1, in2, lam, ms, hm0, eqs, hq, m, n)
+  +le = CP.len_vsub(~F, M.ofdv(~F, yc), xb, n, lyc, lxb)
+  +ld = CP.len_vsub(~F, M.ofdv(~F, pc), xz, m, lpc, lxz)
+  %fp_eq($CXA, yc) : O.le(~F, NP.vn(~F, _), $TF)
+  %Equal.sym(M.Vec(~F), BX.vsub(~F, $FP, C.fvals(~F, eqs, $XS)), M.vadd(~F, M.matvec(~F, sy, e), M.matvec(~F, sz, dz)), CP.fvecs_self(~F, M.ofdv(~F, yc), xb, M.ofdv(~F, pc), xz, eqs, n, m, hbl, lyc, lxb)) : O.le(~F, NP.vn(~F, _), $TF)
+  DM.le_trans(~F, NP.vn(~F, M.vadd(~F, M.matvec(~F, sy, e), M.matvec(~F, sz, dz))), @A(NP.vn(~F, M.matvec(~F, sy, e)), NP.vn(~F, M.matvec(~F, sz, dz))), $TF, AP.vn_add(~F, M.matvec(~F, sy, e), M.matvec(~F, sz, dz)),
+    RP.le_add2(~F, NP.vn(~F, M.matvec(~F, sy, e)), @M(@M(FR.ofn(~F, n), ms), NW.en($KA)), NP.vn(~F, M.matvec(~F, sz, dz)), @M(@M(FR.ofn(~F, m), ms), rho),
+      DM.le_trans(~F, NP.vn(~F, M.matvec(~F, sy, e)), @M(NP.mnorm(~F, sy, n), NP.vn(~F, e)), @M(@M(FR.ofn(~F, n), ms), NW.en($KA)), NP.mv_n(~F, sy, n, e, le),
+        NW.mm_le(~F, NP.mnorm(~F, sy, n), @M(FR.ofn(~F, n), ms), NP.vn(~F, e), NW.en($KA), FV.vmax_nn(~F, e), FO.mul_nonneg(~F, FR.ofn(~F, n), ms, DG.ofn_nn(~F, n), hm0), NP.mnorm_lub(~F, sy, n, @M(FR.ofn(~F, n), ms), AP.both_r(DG.mall(~F, sy, ms), NP.rowsle(~F, sy, n, @M(FR.ofn(~F, n), ms)), hsy), FO.mul_nonneg(~F, FR.ofn(~F, n), ms, DG.ofn_nn(~F, n), hm0)), hyc)),
+      DM.le_trans(~F, NP.vn(~F, M.matvec(~F, sz, dz)), @M(NP.mnorm(~F, sz, m), NP.vn(~F, dz)), @M(@M(FR.ofn(~F, m), ms), rho), NP.mv_n(~F, sz, m, dz, ld),
+        NW.mm_le(~F, NP.mnorm(~F, sz, m), @M(FR.ofn(~F, m), ms), NP.vn(~F, dz), rho, FV.vmax_nn(~F, dz), FO.mul_nonneg(~F, FR.ofn(~F, m), ms, DG.ofn_nn(~F, m), hm0), NP.mnorm_lub(~F, sz, m, @M(FR.ofn(~F, m), ms), AP.both_r(DG.mall(~F, sz, ms), NP.rowsle(~F, sz, m, @M(FR.ofn(~F, m), ms)), hsz), FO.mul_nonneg(~F, FR.ofn(~F, m), ms, DG.ofn_nn(~F, m), hm0)), FV.vmax_lub(~F, dz, rho, hzc, hr0)))))
+
+def yk_mn(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, $YMP) -> O.le(~F, NP.mnorm(~F, $YK, n), yn):
+  %Equal.sym(M.Mat(~F), $YK, M.ofdm(~F, ym), AP.ofkm_d(~F, ~H, ym)) : O.le(~F, NP.mnorm(~F, _, n), yn)
+  hyn
+
+def vf_bnd($CXP, $YCP, $YMP) -> O.le(~F, NP.vn(~F, M.matvec(~F, $YK, $FP)), @M(yn, $TF)):
+  DM.le_trans(~F, NP.vn(~F, M.matvec(~F, $YK, $FP)), @M(NP.mnorm(~F, $YK, n), NP.vn(~F, $FP)), @M(yn, $TF), NP.mv_n(~F, $YK, n, $FP, Equal.trans(Nat, M.len(~F, $FP), CK.eqlen(eqs), n, CP.len_fvals(~F, eqs, $PTC), hn)),
+    NW.mm_le(~F, NP.mnorm(~F, $YK, n), yn, NP.vn(~F, $FP), $TF, FV.vmax_nn(~F, $FP), hyn0, yk_mn(~F, ~H, n, $YMA), fp_bnd($CXA, $YCA)))
+
+# |Y f(P)| <= yn (n ms en + m ms rho)
+def av_bnd($CXP, $YCP, +pr: List<&2, S.D>, $YMP) -> O.le(~F, NP.vn(~F, N.ofkv($DH, RD.ayf($SVA))), @M(yn, $TF)):
+  +lycK = lyck(~F, ~H, n, yc, lyc)
+  +u = KA.kmatvec($DN, ym, CK.kvals($DN, KA.kapp($DN, yc, pc), eqs))
+  DM.le_trans(~F, NP.vn(~F, N.ofkv($DH, KA.kvabs($DN, u))), NP.vn(~F, N.ofkv($DH, u)), @M(yn, $TF), vn_kvabs($DH, u),
+    (%CP.yft_ok($DH, eqs, n, yc, ym, pc, hh, Equal.trans(Nat, M.len(~F, N.ofkv($DH, yc)), KA.klen($DN, yc), n, CP.len_ofkv($DH, yc), lycK)) : O.le(~F, NP.vn(~F, _), @M(yn, $TF))
+      (%Equal.sym(M.Vec(~F), C.fit(~F, n, N.ofkv($DH, yc)), M.ofdv(~F, yc), RD.fit_d(~F, ~H, n, yc, lycK)) : O.le(~F, NP.vn(~F, M.matvec(~F, $YK, C.fvals(~F, eqs, C.app(~F, _, N.ofkv($DH, pc))))), @M(yn, $TF))
+        (%Equal.sym(M.Vec(~F), N.ofkv($DH, pc), M.ofdv(~F, pc), AP.ofkv_d(~F, ~H, pc)) : O.le(~F, NP.vn(~F, M.matvec(~F, $YK, C.fvals(~F, eqs, C.app(~F, M.ofdv(~F, yc), _)))), @M(yn, $TF))
+          vf_bnd($CXA, $YCA, $YMA)))))
+
+def vpk(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +pr: List<&2, S.D>, +rho: @T, +hr0: O.le(~F, @0, rho), +hpr: M.vbnd.all(~F, M.ofdv(~F, pr), rho)) -> O.le(~F, NP.vn(~F, N.ofkv($DH, pr)), rho):
+  %Equal.sym(M.Vec(~F), N.ofkv($DH, pr), M.ofdv(~F, pr), AP.ofkv_d(~F, ~H, pr)) : O.le(~F, NP.vn(~F, _), rho)
+  FV.vmax_lub(~F, M.ofdv(~F, pr), rho, hpr, hr0)
+
+@MACRO TB2 @M(yn, @M(@M(FR.ofn(~F, $KPC), ms), rho))
+
+# B(0) <= yn (m ms) rho
+def b0_bnd($CXP, +yc: List<&2, S.D>, +lyc: {M.len(~F, M.ofdv(~F, yc)) == n : Nat}, $PRP, $YMP, $RBP) -> O.le(~F, NP.vn(~F, N.ofkv($DH, RD.bk($SVA, Nil{}))), $TB2):
+  +kp = $KPC
+  +b0 = CK.box($DN, n, yc, Nil{}, pc, pr)
+  +mz = N.ofkm($DH, RD.mzm($DH, b0, kp, n, eqs))
+  +pk = N.ofkv($DH, pr)
+  +ya = N.ofkm($DH, KA.kmabs($DN, ym))
+  +w = M.matvec(~F, mz, pk)
+  +lycK = lyck(~F, ~H, n, yc, lyc)
+  +hkm = klen_m($CXA)
+  +lpp = Equal.trans(Nat, kp, m, KA.klen($DN, pr), hkm, Equal.sym(Nat, KA.klen($DN, pr), m, Equal.trans(Nat, KA.klen($DN, pr), M.len(~F, M.ofdv(~F, pr)), m, RD.klen_d(~F, ~H, pr), lpr)))
+  +gb0 = RD.gbox_ckb(~F, ~H, n, yc, Nil{}, pc, pr, lycK, lpp, M.d0(), RD.kfit_nil(n), rb, bb, hcr, RD.dnn(~F, ~H, M.d0(), {==}), d0_le(~F, rb, hrb), hpn, hprb)
+  +lw = Equal.trans(Nat, M.len(~F, w), GJ.nrows(~F, mz), n, Equal.sym(Nat, GJ.nrows(~F, mz), M.len(~F, w), GJ.len_matvec(~F, mz, pk)), Equal.trans(Nat, GJ.nrows(~F, mz), CK.eqlen(eqs), n, RD.nrows_mzm($DH, b0, kp, n, eqs), hn))
+  +lp = Equal.trans(Nat, M.len(~F, pk), KA.klen($DN, pr), kp, CP.len_ofkv($DH, pr), Equal.sym(Nat, kp, KA.klen($DN, pr), lpp))
+  %Equal.sym(M.Vec(~F), N.ofkv($DH, RD.bk($SVA, Nil{})), M.matvec(~F, ya, w), RD.bf_eq($SVA, Nil{})) : O.le(~F, NP.vn(~F, _), $TB2)
+  DM.le_trans(~F, NP.vn(~F, M.matvec(~F, ya, w)), @M(NP.mnorm(~F, ya, n), NP.vn(~F, w)), $TB2, NP.mv_n(~F, ya, n, w, lw),
+    NW.mm_le(~F, NP.mnorm(~F, ya, n), yn, NP.vn(~F, w), @M(@M(FR.ofn(~F, kp), ms), rho), FV.vmax_nn(~F, w), hyn0, RD.kabs_mn($DH, ym, n, yn, hyn0, yk_mn(~F, ~H, n, $YMA)),
+      DM.le_trans(~F, NP.vn(~F, w), @M(NP.mnorm(~F, mz, kp), NP.vn(~F, pk)), @M(@M(FR.ofn(~F, kp), ms), rho), NP.mv_n(~F, mz, kp, pk, lp),
+        NW.mm_le(~F, NP.mnorm(~F, mz, kp), @M(FR.ofn(~F, kp), ms), NP.vn(~F, pk), rho, FV.vmax_nn(~F, pk), FO.mul_nonneg(~F, FR.ofn(~F, kp), ms, DG.ofn_nn(~F, kp), hm0), mzm_mn($DH, rb, bb, hrb, hbb0, b0, gb0, lam, ms, hm0, eqs, hq, hh, kp, n), vpk(~F, ~H, pr, rho, hr0, hpr)))))
+
+@MACRO TS @A(@M(yn, $TF), @M(yn, @M(@M(FR.ofn(~F, m), ms), rho)))
+
+def ts_eq($CXP, +yn: @T) -> {@A(@A(@M(yn, $TF), $TB2), @0) == $TS : @T}:
+  %Equal.sym(Nat, $KPC, m, klen_m($CXA)) : {@A(@A(@M(yn, $TF), @M(yn, @M(@M(FR.ofn(~F, _), ms), rho))), @0) == $TS : @T}
+  FR.fring_eq(~F, [@M(yn, $TF), @M(yn, @M(@M(FR.ofn(~F, m), ms), rho))], E.ZAdd{E.ZAdd{E.ZVar{0n}, E.ZVar{1n}}, E.ZCst{S.Z0{}}}, E.ZAdd{E.ZVar{0n}, E.ZVar{1n}}, {==})
+
+# S <= yn (n ms en + m ms rho) + yn (m ms rho)
+def s_bnd($CXP, $YCP, $PRP, $YMP, $RBP) -> O.le(~F, $SD, $TS):
+  +av = N.ofkv($DH, RD.ayf($SVA))
+  +bv = N.ofkv($DH, RD.bk($SVA, Nil{}))
+  +gv = N.ofkv($DH, CK.gvec($DN, eqs, n, yc, Nil{}, ym, pc, pr))
+  DM.le_trans(~F, $SD, NP.vn(~F, M.ofdv(~F, $S0)), $TS, dvmax_vn(~F, $S0),
+    (%AP.ofkv_d(~F, ~H, $S0) : O.le(~F, NP.vn(~F, _), $TS)
+      (%Equal.sym(M.Vec(~F), N.ofkv($DH, $S0), M.vadd(~F, M.vadd(~F, av, bv), gv), RD.svec_f($SVA, Nil{})) : O.le(~F, NP.vn(~F, _), $TS)
+        DM.le_trans(~F, NP.vn(~F, M.vadd(~F, M.vadd(~F, av, bv), gv)), @A(NP.vn(~F, M.vadd(~F, av, bv)), NP.vn(~F, gv)), $TS, AP.vn_add(~F, M.vadd(~F, av, bv), gv),
+          FV.le_rw_r(~F, @A(NP.vn(~F, M.vadd(~F, av, bv)), NP.vn(~F, gv)), @A(@A(@M(yn, $TF), $TB2), @0), $TS, ts_eq($CXA, yn),
+            RP.le_add2(~F, NP.vn(~F, M.vadd(~F, av, bv)), @A(@M(yn, $TF), $TB2), NP.vn(~F, gv), @0,
+              DM.le_trans(~F, NP.vn(~F, M.vadd(~F, av, bv)), @A(NP.vn(~F, av), NP.vn(~F, bv)), @A(@M(yn, $TF), $TB2), AP.vn_add(~F, av, bv),
+                RP.le_add2(~F, NP.vn(~F, av), @M(yn, $TF), NP.vn(~F, bv), $TB2, av_bnd($CXA, $YCA, pr, $YMA), b0_bnd($CXA, yc, lyc, $PRA, $YMA, $RBA))),
+              RD.g0_bnd($SVA)))))))
