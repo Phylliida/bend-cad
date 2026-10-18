@@ -1,4 +1,4 @@
-# bend-cad — Design v0.13 (draft; exact by default; sk-06 done; sk-09: a verified proposer)
+# bend-cad — Design v0.14 (draft; exact by default; sk-06 done; sk-09: a verified proposer; §8.11 proposed)
 
 A formally verified 2D sketch constraint solver in Bend 2, aiming at Onshape /
 FreeCAD sketcher parity, feeding an implicit-function (SDF) modeling pipeline.
@@ -730,7 +730,10 @@ the balls), checked by the reflective normalizer.
 - A library covers common structural cases (rectangle closure; parallel
   transitivity: cross(a,c)·\|b\|² = cross(a,b)·dot(b,c) + cross(b,c)·dot(a,b),
   with b ≠ 0).
-- An offline Gröbner search (untrusted) finds rarer ones.
+- Rarer ones were to come from an offline Gröbner search (untrusted). That
+  is superseded by D7 and §8.11 (proposal): layers that find dependencies in
+  the solver itself, with lemmas proven once for the common families and a
+  localized certificate search for the rest.
 - Coincidental redundancy (two dimensions that merely agree) has no such
   identity. The constraint is dropped from the exact system and **flagged red**;
   the user deletes it, marks it driven, or fixes the sketch.
@@ -742,6 +745,10 @@ Near-singular blocks need more precision (radius shrinks) but still certify.
 Exactly singular configurations cannot be certified. The proposer finds the
 smallest dependent set of constraints in the failing block (rank analysis); those
 are **flagged red** with the reason, and the rest of the sketch is certified.
+§8.11 (proposal) refines this. A dependency that holds for every value of
+the dimensions is red with a certificate (implied, or conflicting). A block
+whose constraints are generically independent but singular at these values
+is reported as a singular configuration, with nothing red.
 
 ### 8.9 Incrementality
 
@@ -757,6 +764,144 @@ property, not part of exactness. An optional certificate per touched component
 proves an exact KKT point with positive curvature on the tangent space, in
 Finsler/Debreu form: Tᵀ(H_L + ρJᵀJ)T strictly diagonally dominant with
 positive diagonal (dyadic unit-triangular T, entries ~100–150 bits).
+
+### 8.11 Generic dependencies (proposal, 2026-10-18, for review)
+
+**The problem.** v1 finds redundancy by structure (§10.1): a constraint is
+red when it owns an equation in a set with more equations than variables.
+Structure sees counts, not geometry. When constraints depend on each other
+through a theorem, every one can still be matched to a variable of its
+own: a constraint repeated, a chain of parallels, a fourth right angle.
+The kept block is then singular at every solution. In rigidity terms its
+Jacobian has a self-stress (a left null vector: the dependency) and a flex
+(a right null vector: the freedom left over). Newton fails at every
+precision, and the solver refuses with nothing red.
+
+Seen 2026-10-18 in the GUI:
+- `onCircle` repeated (two sketches).
+- seg 28 made vertical twice: once through 27 ⊥ (top edge) with 28 ∥ 27,
+  and once through 28 ∥ 35, where 35 is vertical by a merge.
+  This gave a 19×19 block of rank 18, refused after 29 s.
+
+The page now drops exact repeats (untrusted shaping). Everything below is
+the solver's job (D7).
+
+**The goal: every refusal is explained, as a law.** A red constraint gets
+one of three explanations:
+- **Implied**: the kept constraints imply it, for every value of the
+  dimensions. It is flagged red as redundant, with a certificate, and a law
+  says the certified solution satisfies it too.
+- **Conflict**: it cannot hold together with the kept constraints at a
+  nondegenerate configuration. It is flagged red as conflicting, with a
+  certificate.
+- **Over-determined**: today's structural `Why`, kept for what the two
+  kinds above do not cover.
+
+A **singular configuration** is different: the constraints are generically
+independent, and these values put the solution where they are not (two
+circles exactly tangent, §8.8). Nothing is red. The answer says so and
+names the failing block.
+
+**Layers, cheapest first.** Most dependencies in sketches come from three
+families with a group structure. For these, the search is a graph walk
+and each certificate is an instance of a lemma proven once, so no
+per-sketch algebra is needed.
+
+- **Linear.** Fix, HDistance, VDistance, Midpoint, Radius and Diameter
+  (§5.1) have equations linear in the variables, merges included.
+  - Exact elimination over the dyadic constants finds every dependency
+    among them.
+  - The certificate is the coefficients λ with Σ λᵢgᵢ ≡ k, checked by the
+    ring normalizer: k = 0 means implied, k ≠ 0 means conflict.
+- **Directions.** Parallel, Perpendicular and Angle each say
+  cross(g·a, b) = 0, with a and b segment directions and g a Gaussian
+  dyadic: 1, i, or c + is (§5.1's forms; perpendicular is
+  cross(i·a, b) = −dot(a, b)). So b is a real multiple of g·a.
+  - The constraints are edges of a graph labelled by the group ℂ*/ℝ*
+    (directions of lines). A frame node joins the segments that are
+    horizontal or vertical by a merge, with label 1 or i.
+  - A union–find with labels (near-linear) finds every cycle. If a cycle's
+    labels multiply to a real number, its closing edge is implied;
+    otherwise the cycle is a conflict.
+  - Lemma, proven once, by induction on path length:
+    |b|²·cross(g₁g₂·a, c) = dot(g₁·a, b)·cross(g₂·b, c) + cross(g₁·a, b)·dot(g₂·b, c).
+    §8.7's parallel transitivity is the case g₁ = g₂ = 1.
+  - So a path of holding edges implies the closing edge wherever the
+    path's interior directions are nonzero. Q15 allows zero lengths, so
+    that is not assumed: |b|² > 0 is proven over the certified box with
+    ball arithmetic, like the side conditions (§8.6).
+  - Certificate: the cycle. Check: the exact label product, plus the
+    interior lengths.
+- **Lengths.** EqualLength, Distance, OnCircle with its radius, and Radius
+  or Diameter relate squared lengths of point pairs and squared radii.
+  - The same union–find, on squared-length nodes with constant anchors (d²),
+    finds them: a class anchored twice is implied if the two anchors agree,
+    a conflict if they do not.
+  - The signs come from the existing side conditions (r > 0, d ≥ 0).
+
+These three layers are **complete for their families**: every dependency or
+conflict among constraints of one family is found and certified. Each
+family gets a law.
+
+- **Witness (the rest).** This covers theorems that mix families: a
+  midline parallel to a base, points made collinear twice, Pappus-type
+  incidences, LineDistance, Symmetric.
+  - Method: the witness configuration method (Michelucci and Foufou). Take
+    the Jacobian's rank at a *generic* configuration that satisfies every
+    relational constraint, with the dimension values read off that
+    configuration. Rank only drops at special points, so the witness's left
+    kernel holds every generic dependency, and perhaps some accidental ones.
+  - Its support localizes each dependency to a few constraints (two to
+    five in practice).
+  - For each, a certificate h·g_c = Σ qᵢgᵢ, with h ≠ 0 over the box (Wu's
+    form), is searched by linear algebra with a degree bound (Macaulay
+    matrices, starting at degree 1). That is polynomial for each bound,
+    with no Gröbner basis of the whole sketch.
+  - A dependency with no certificate within the bound is reported as
+    found, as a diagnostic, and not flagged red.
+  - An exact witness is itself a constraint problem. A first version can
+    use the relaxed drawing with a rank tolerance. That can miss or invent
+    dependencies; soundness is unaffected, since only certificates make a
+    constraint red, but completeness for this layer stays an open law (D7's
+    rule for a checked search).
+
+**Cost.**
+- The linear layer: one exact elimination of small dyadics.
+- The direction and length layers: near-linear.
+- The witness layer: one rank-revealing elimination at working precision,
+  plus a certificate search per dependency, polynomial in its local size
+  for a fixed degree.
+- No step searches the ideal of the whole sketch.
+
+**Order in the solver.** Linear, then directions, then lengths, then
+today's structural stage, then blocks; the witness layer runs only on a
+block that fails at every precision. Which constraint of a dependency is
+flagged: the last in constraint order (the closing edge), matching v1's
+order rule and a user's "the one I just added".
+
+**Laws (drafts).**
+- `solve_red` (v2): every red constraint has an Implied, Conflict or
+  Over-determined explanation, checked by `explained₂`; `Why` becomes a sum
+  type.
+- `solve_implied`: when the answer is ok, every x in the box that
+  satisfies the kept constraints also satisfies each Implied red
+  constraint.
+- `solve_conflict`: no x satisfies a Conflict's constraints. For the
+  direction and length families: with the cycle's interior lengths
+  nonzero.
+- `solve_red_complete`, one per family: a dependency within the family
+  leaves some constraint of it red.
+- `solve_complete` (v2): Regular is required only after the implied
+  constraints are removed.
+
+**Milestones.** sk-13 (§15) becomes:
+- sk-13a: `Why` as a sum type, `explained₂`, the linear layer.
+- sk-13b: directions: the path lemma, cycle certificates, conflicts.
+- sk-13c: lengths.
+- sk-13d: the witness layer, and the three-way refusal in the page.
+
+The GUI sketches of 2026-10-18 join `tools/regress.sh`. Open choices are
+Q20–Q23 (§16).
 
 ---
 
@@ -1564,7 +1709,7 @@ random sketches.
 | sk-10 | Bulge arcs, tangency, joins, trim/split (§5.2–5.3) | sk-07 | laws closed |
 | sk-11 | Exact constants: algebraic roots, constructive π / cos / sin / tan (§7.1–7.3) | sk-06 | laws closed; typed angles exact |
 | sk-12 | Guaranteed-digit queries (§9) | sk-09, sk-11 | demo |
-| sk-13 | Redundancy certificates: library + verified check (§8.7) | sk-07 | laws closed |
+| sk-13 | Redundancy certificates (§8.7), as layers in the solver (§8.11, proposal 2026-10-18): 13a `Why` as a sum type + linear layer; 13b directions (gain cycles, path lemma); 13c lengths; 13d witness layer + three-way refusal | sk-07, sk-09 | `solve_red` v2, `solve_implied`, `solve_conflict`, per-family `solve_red_complete` |
 | sk-14 | Proposer v2: drag previews (§6 checks), continuation, incremental re-certification | sk-09 | interactive drag; commit within target |
 | sk-15 | Splines, NURBS, conic arcs, offsets, G2 (Q6) | sk-07 | laws closed |
 | sk-16 | Regions: arrangement with exact intersections (incl. spline root isolation), certified topology, point location | sk-10, sk-15 | region laws closed |
@@ -1708,6 +1853,19 @@ sk-02 and sk-03 can run in parallel after sk-01.
   position, `owners`, `overdet`, `explained` with its no-spare-flag
   condition, `held`). All four are proven; an independent audit found no
   blocker, and its two fixes are in (§10.2).
+- **§8.11, generic dependencies (proposal, 2026-10-18).** Approve the
+  layered design, then:
+  - **Q20** How the page shows the kinds: implied red constraints in amber
+    ("redundant, holds anyway"), conflicts in red, structural
+    over-determination as today, and a singular configuration as a status
+    message naming the block?
+  - **Q21** Which constraint of a dependency is flagged: the last in
+    constraint order (proposed), or let the user choose among the cycle?
+  - **Q22** The witness layer's witness: the relaxed drawing with a rank
+    tolerance first (completeness an open law), or an exact witness
+    construction first (a research step)?
+  - **Q23** The certificate search's degree bound for the witness layer
+    (proposed: try 1, then 2, then report unproven).
 
 
 ---
@@ -1766,6 +1924,16 @@ sk-02 and sk-03 can run in parallel after sk-01.
 ---
 
 ## 19. Changelog
+
+**v0.13 → v0.14 (generic dependencies proposed):**
+- §8.11 (new, proposal for review): every refusal explained, as a law.
+  Red is implied (with a certificate), conflicting, or over-determined; a
+  singular configuration is reported as such. Found by layers: linear,
+  directions (labelled union–find over ℂ*/ℝ*, path lemma proven once),
+  lengths, then the witness configuration method with a localized,
+  degree-bounded certificate search.
+- §8.7: the untrusted Gröbner search is superseded by §8.11. §8.8 points
+  to it. §15: sk-13 split into 13a–13d. §16: Q20–Q23.
 
 **v0.12 → v0.13 (sk-06 reviewed; the proposer becomes verified):**
 - §8.3, §8.4, §14: the sk-06 laws are in LAWS.bend; the block laws are
