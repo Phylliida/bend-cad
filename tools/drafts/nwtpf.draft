@@ -968,3 +968,47 @@ def t8_ok($CXP, $PQP, +u: List<&2, S.D>, +v: List<&2, S.D>, lu: {M.len(~F, M.ofd
   dclose_of(~F, ~H, u, v, $T8, lsym($CXA, u, v, lu, lv), vall_swap(~F, M.ofdv(~F, v), M.ofdv(~F, u), M.ofd(~F, $T8),
     (%Equal.sym(@T, M.ofd(~F, $T8), h8(~F, p), t8_eq(~F, p, q2, hp2)) : M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, v), M.ofdv(~F, u)), _)
       vall_of_vn(~F, BX.vsub(~F, M.ofdv(~F, v), M.ofdv(~F, u)), h8(~F, p), hs))))
+
+def h8_le1($CXP) -> O.le(~F, h8(~F, p), @1):
+  DM.le_trans(~F, h8(~F, p), en($KA), @1, le_addr(~F, h8(~F, p), e1($KA), e1_nn($KA, $NNA)), DM.le_trans(~F, en($KA), dx($KA), @1, en_le_dx($CXA), dx_le1($CXA)))
+
+def dl0_le1($CXP) -> O.le(~F, dl0($KA), @1):
+  DM.le_trans(~F, dl0($KA), dx($KA), @1, dl0_le_dx($CXA), dx_le1($CXA))
+
+# after the second step: settled, within h8 + e1 = en of x_b
+def nw2.some($CXP, $Y0P, $ST0P, $PQP, $ST1P) -> NOK($KA, xb, NU.newton(38n, eqs, n, pc, p, NU.classify(y1, p, Some{y2}))):
+  %Equal.sym(Bool, NU.dclose(y1, y2, NU.far()), True{}, far_ok($CXA, y1, y2, ly1($CXA, $Y0A, $ST0A), st_len(~F, n, eqs, pc, p, y1, y2, ea($KA), st1), h8(~F, p), s1_settle($CXA, $Y0A, $ST0A, $ST1A), h8_le1($CXA))) : NOK($KA, xb, NU.newton(38n, eqs, n, pc, p, NU.classify.far(_, y1, p, y2)))
+  %Equal.sym(Bool, NU.dclose(y1, y2, $T8), True{}, t8_ok($CXA, $PQA, y1, y2, ly1($CXA, $Y0A, $ST0A), st_len(~F, n, eqs, pc, p, y1, y2, ea($KA), st1), s1_settle($CXA, $Y0A, $ST0A, $ST1A))) : NOK($KA, xb, NU.newton(38n, eqs, n, pc, p, NU.classify.go(_, y2)))
+  (DM.le_trans(~F, NP.vn(~F, BX.vsub(~F, $Y2, xb)), @A(NP.vn(~F, BX.vsub(~F, $Y2, $Y1)), NP.vn(~F, BX.vsub(~F, $Y1, xb))), en($KA), AP.vn_tri3(~F, $Y2, $Y1, xb),
+     RP.le_add2(~F, NP.vn(~F, BX.vsub(~F, $Y2, $Y1)), h8(~F, p), NP.vn(~F, BX.vsub(~F, $Y1, xb)), e1($KA), s1_settle($CXA, $Y0A, $ST0A, $ST1A), s0_near($CXA, $Y0A, $ST0A))),
+   st_len(~F, n, eqs, pc, p, y1, y2, ea($KA), st1))
+
+def nw2($CXP, $Y0P, $ST0P, $PQP, r1: Maybe<&2, List<&2, S.D>>, hr1: NSR(~F, n, eqs, pc, ea($KA), p, y1, r1)) -> NOK($KA, xb, NU.newton(38n, eqs, n, pc, p, NU.classify(y1, p, r1))):
+  match r1:
+    case None{}:
+      hr1
+    case Some{+y2}:
+      nw2.some($CXA, $Y0A, $ST0A, $PQA, y2, hr1)
+
+# after the first step: settled, or one more step
+def nw1($CXP, $Y0P, $ST0P, $PQP, bc: Bool) -> NOK($KA, xb, NU.newton(39n, eqs, n, pc, p, NU.classify.go(bc, y1))):
+  match bc:
+    case True{}:
+      (DM.le_trans(~F, NP.vn(~F, BX.vsub(~F, $Y1, xb)), e1($KA), en($KA), s0_near($CXA, $Y0A, $ST0A), e1_le_en($CXA)), ly1($CXA, $Y0A, $ST0A))
+    case False{}:
+      nw2($CXA, $Y0A, $ST0A, $PQA, NU.nstep(eqs, n, pc, p, y1), nstep_vis($CXA, y1, ly1($CXA, $Y0A, $ST0A), e1($KA), hy1($CXA, $Y0A, $ST0A), e1_le_dx($CXA)))
+
+def nw0.some($CXP, $Y0P, $PQP, $ST0P) -> NOK($KA, xb, NU.newton(39n, eqs, n, pc, p, NU.classify(y0, p, Some{y1}))):
+  %Equal.sym(Bool, NU.dclose(y0, y1, NU.far()), True{}, far_ok($CXA, y0, y1, ly0, ly1($CXA, $Y0A, $ST0A), dl0($KA), s0_far($CXA, $Y0A, $ST0A), dl0_le1($CXA))) : NOK($KA, xb, NU.newton(39n, eqs, n, pc, p, NU.classify.far(_, y0, p, y1)))
+  nw1($CXA, $Y0A, $ST0A, $PQA, NU.dclose(y0, y1, $T8))
+
+def nw0($CXP, $Y0P, $PQP, r0: Maybe<&2, List<&2, S.D>>, hns0: NSR(~F, n, eqs, pc, ea($KA), p, y0, r0)) -> NOK($KA, xb, NU.newton(39n, eqs, n, pc, p, NU.classify(y0, p, r0))):
+  match r0:
+    case None{}:
+      hns0
+    case Some{+y1}:
+      nw0.some($CXA, $Y0A, $PQA, y1, hns0)
+
+# C5b: the solver's Newton, from the drawing, returns a point within en of x_b
+def newton_ok($CXP, $Y0P, $PQP) -> NOK($KA, xb, NU.newton(40n, eqs, n, pc, p, NU.NMore{y0})):
+  nw0($CXA, $Y0A, $PQA, NU.nstep(eqs, n, pc, p, y0), nstep_vis($CXA, y0, ly0, d, hy0, d_le_dx($CXA)))
