@@ -241,3 +241,114 @@ def ks_pd(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +dl: O.C(F), +rho: O.C(F), +
         pd_bmul(~K, ~F, ~H, dl, rho, KB.kball(~K, b0, b), KB.ksl(~K, i, b0, a), KB.kball(~K, b1, b), KB.ksl(~K, i, b1, a), BP.lp(~F, bb, b), BP.mj(~F, bb, b), BP.ls(~F, bb, a), BP.ms(~F, bb, a), BP.lp(~F, bb, b), BP.ls(~F, bb, a), kc_eq(~K, ~F, ~H, b0, b1, hcen, b, hb2), sc_eq(~K, ~F, ~H, b0, b1, hcen, i, a, ha), kb_pd(~K, ~F, ~H, dl, rho, bb, hdl, hr, hb, b0, b1, hcen, hp, hg, b, hb2), ks_pd(~K, ~F, ~H, dl, rho, bb, hdl, hr, hb, b0, b1, hcen, hp, hg, i, a, ha), BP.kball_grade(~K, ~F, ~H, rho, bb, hr, hb, b1, hg, b, hb2), BP.ksl_grade(~K, ~F, ~H, rho, bb, hr, hb, b1, hg, i, a, ha)))
     case E.QNeg{+a}:
       pd_bneg(~K, ~F, ~H, dl, KB.ksl(~K, i, b0, a), KB.ksl(~K, i, b1, a), BP.ls(~F, bb, a), ks_pd(~K, ~F, ~H, dl, rho, bb, hdl, hr, hb, b0, b1, hcen, hp, hg, i, a, hh))
+
+# Lists in K and F
+# ----------------
+
+
+def kfit_dreps(n: Nat, +r: S.D) -> {KA.kfit(~KI.dnum(), n, NU.dreps(n, r)) == NU.dreps(n, r) : List<&2, S.D>}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+k:
+      %Equal.sym(List<&2, S.D>, KA.kfit(~KI.dnum(), k, NU.dreps(k, r)), NU.dreps(k, r), kfit_dreps(k, r)) : {Con{r, _} == Con{r, NU.dreps(k, r)} : List<&2, S.D>}
+      {==}
+
+def kfit_nil(n: Nat) -> {KA.kfit(~KI.dnum(), n, Nil{}) == NU.dreps(n, M.d0()) : List<&2, S.D>}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+k:
+      %Equal.sym(List<&2, S.D>, KA.kfit(~KI.dnum(), k, Nil{}), NU.dreps(k, M.d0()), kfit_nil(k)) : {Con{M.d0(), _} == Con{M.d0(), NU.dreps(k, M.d0())} : List<&2, S.D>}
+      {==}
+
+def klen_dreps(n: Nat, +r: S.D) -> {KA.klen(~KI.dnum(), NU.dreps(n, r)) == n : Nat}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+k:
+      %Equal.sym(Nat, KA.klen(~KI.dnum(), NU.dreps(k, r)), k, klen_dreps(k, r)) : {1n+_ == 1n+k : Nat}
+      {==}
+
+def klen_app(~K: N.Num, u: N.KVec(~K), +w: N.KVec(~K)) -> {KA.klen(~K, KA.kapp(~K, u, w)) == Nat.add(KA.klen(~K, u), KA.klen(~K, w)) : Nat}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{a, us}:
+      %Equal.sym(Nat, KA.klen(~K, KA.kapp(~K, us, w)), Nat.add(KA.klen(~K, us), KA.klen(~K, w)), klen_app(~K, us, w)) : {1n+_ == 1n+Nat.add(KA.klen(~K, us), KA.klen(~K, w)) : Nat}
+      {==}
+
+# n copies of x in F
+def frep(~F: O.OField, n: Nat, +x: O.C(F)) -> M.Vec(~F):
+  match n:
+    case 0n:
+      Nil{}
+    case 1n+k:
+      Con{x, frep(~F, k, x)}
+
+def ofdv_dreps(~F: O.OField, n: Nat, +r: S.D) -> {M.ofdv(~F, NU.dreps(n, r)) == frep(~F, n, M.ofd(~F, r)) : M.Vec(~F)}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+k:
+      %Equal.sym(M.Vec(~F), M.ofdv(~F, NU.dreps(k, r)), frep(~F, k, M.ofd(~F, r)), ofdv_dreps(~F, k, r)) : {Con{M.ofd(~F, r), _} == Con{M.ofd(~F, r), frep(~F, k, M.ofd(~F, r))} : M.Vec(~F)}
+      {==}
+
+def len_frep(~F: O.OField, n: Nat, +x: O.C(F)) -> {M.len(~F, frep(~F, n, x)) == n : Nat}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+k:
+      %Equal.sym(Nat, M.len(~F, frep(~F, k, x)), k, len_frep(~F, k, x)) : {1n+_ == 1n+k : Nat}
+      {==}
+
+def frep_all(~F: O.OField, n: Nat, +x: O.C(F), +hx: O.le(~F, O.zero(F), x)) -> M.vbnd.all(~F, frep(~F, n, x), x):
+  match n:
+    case 0n:
+      Unit{}
+    case 1n+k:
+      (FV.bnd_self(~F, x, hx), frep_all(~F, k, x, hx))
+
+def frep_nn(~F: O.OField, n: Nat, +x: O.C(F), +hx: O.le(~F, O.zero(F), x)) -> FV.rnn(~F, frep(~F, n, x)):
+  match n:
+    case 0n:
+      Unit{}
+    case 1n+k:
+      (hx, frep_nn(~F, k, x, hx))
+
+def vn_frep(~F: O.OField, +n: Nat, +x: O.C(F), +hx: O.le(~F, O.zero(F), x)) -> O.le(~F, NP.vn(~F, frep(~F, n, x)), x):
+  FV.vmax_lub(~F, frep(~F, n, x), x, frep_all(~F, n, x, hx), hx)
+
+def klen_d(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +v: List<&2, S.D>) -> {KA.klen(~KI.dnum(), v) == M.len(~F, M.ofdv(~F, v)) : Nat}:
+  %AP.ofkv_d(~F, ~H, v) : {KA.klen(~KI.dnum(), v) == M.len(~F, _) : Nat}
+  Equal.sym(Nat, M.len(~F, N.ofkv(~KI.dnum(), ~F, ~H, v)), KA.klen(~KI.dnum(), v), CP.len_ofkv(~KI.dnum(), ~F, ~H, v))
+
+# the centers of a zipped box are its center list
+def bcen_zipb(~K: N.Num, cs: N.KVec(~K), rs: N.KVec(~K), hl: {KA.klen(~K, cs) == KA.klen(~K, rs) : Nat}) -> {KB.bcenters(~K, CK.zipb(~K, cs, rs)) == cs : N.KVec(~K)}:
+  match cs rs:
+    case Nil{} Nil{}:
+      {==}
+    case Nil{} Con{r, rt}:
+      FO.absurd({KB.bcenters(~K, CK.zipb(~K, Nil{}, Con{r, rt})) == Nil{} : N.KVec(~K)}, FV.zero_ne(KA.klen(~K, rt), hl))
+    case Con{c, ct} Nil{}:
+      FO.absurd({KB.bcenters(~K, CK.zipb(~K, Con{c, ct}, Nil{})) == Con{c, ct} : N.KVec(~K)}, FV.succ_ne(KA.klen(~K, ct), hl))
+    case Con{+c, +ct} Con{+r, +rt}:
+      %Equal.sym(N.KVec(~K), KB.bcenters(~K, CK.zipb(~K, ct, rt)), ct, bcen_zipb(~K, ct, rt, FV.succ_inj(KA.klen(~K, ct), KA.klen(~K, rt), hl))) : {Con{c, _} == Con{c, ct} : N.KVec(~K)}
+      {==}
+
+# a zipped box whose centers are within bb - rho and radii in [0, rho] has grade (bb, 1)
+def gbox_zip(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, cs: N.KVec(~K), rs: N.KVec(~K), +rho: O.C(F), +bb: O.C(F), hc: M.vbnd.all(~F, N.ofkv(~K, ~F, ~H, cs), O.sub(~F, bb, rho)), hn: FV.rnn(~F, N.ofkv(~K, ~F, ~H, rs)), hr: M.vbnd.all(~F, N.ofkv(~K, ~F, ~H, rs), rho), hl: {KA.klen(~K, cs) == KA.klen(~K, rs) : Nat}) -> BP.gbox(~K, ~F, ~H, rho, bb, CK.zipb(~K, cs, rs)):
+  match cs rs:
+    case Nil{} Nil{}:
+      Unit{}
+    case Nil{} Con{r, rt}:
+      FO.absurd(BP.gbox(~K, ~F, ~H, rho, bb, CK.zipb(~K, Nil{}, Con{r, rt})), FV.zero_ne(KA.klen(~K, rt), hl))
+    case Con{c, ct} Nil{}:
+      FO.absurd(BP.gbox(~K, ~F, ~H, rho, bb, CK.zipb(~K, Con{c, ct}, Nil{})), FV.succ_ne(KA.klen(~K, ct), hl))
+    case Con{+c, +ct} Con{+r, +rt}:
+      (hc1, hc2) = hc
+      (hn1, hn2) = hn
+      (hr1, hr2) = hr
+      +hrl = NP.bnd_lo(~F, N.emap(K, F, H, r), rho, hr1)
+      ((hn1, (FM.bnd_mono(~F, N.emap(K, F, H, c), O.sub(~F, bb, rho), O.sub(~F, bb, N.emap(K, F, H, r)), hc1, FM.nn_eq(~F, O.sub(~F, O.sub(~F, bb, N.emap(K, F, H, r)), O.sub(~F, bb, rho)), O.sub(~F, rho, N.emap(K, F, H, r)), FR.fring_eq(~F, [bb, rho, N.emap(K, F, H, r)], E.ZSub{E.ZVar{1n}, E.ZVar{2n}}, E.ZSub{E.ZSub{E.ZVar{0n}, E.ZVar{2n}}, E.ZSub{E.ZVar{0n}, E.ZVar{1n}}}, {==}), FM.sub_nonneg(~F, N.emap(K, F, H, r), rho, hrl))), DM.le_trans(~F, N.emap(K, F, H, r), rho, O.mul(F, O.one(F), rho), hrl, AP.le_one_mul(~F, rho)))),
+       gbox_zip(~K, ~F, ~H, ct, rt, rho, bb, hc2, hn2, hr2, FV.succ_inj(KA.klen(~K, ct), KA.klen(~K, rt), hl)))
