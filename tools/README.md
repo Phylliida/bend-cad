@@ -17,7 +17,12 @@ the checker verifies the output.
 | `lib/roundpf.bend` | `python3 tools/expand.py tools/drafts/roundpf.draft lib/roundpf.bend` |
 | `lib/normpf.bend` | `python3 tools/expand.py tools/drafts/normpf.draft lib/normpf.bend` |
 | `lib/dgjpf.bend` | `python3 tools/expand.py tools/drafts/dgjpf.draft lib/dgjpf.bend` |
+| `lib/apxpf.bend` | `python3 tools/expand.py tools/drafts/apxpf.draft lib/apxpf.bend` |
+| `lib/nwtpf.bend` | `python3 tools/expand.py tools/drafts/nwtpf.draft lib/nwtpf.bend` |
 
+`@MACRO NAME text` (a line) makes every `$NAME` below stand for `text`
+(textual, longest names first, macros may use macros): long hypothesis lists
+shared by many lemmas.
 `@CONJ name` / `params: ...` / `- tag: expr` lines / `@END` (`tools/conj.py`)
 defines `name(params)` as the conjunction (`SV.band`) of the exprs, with
 an accessor lemma `name_tag` per conjunct and a constructor `name_mk`.
