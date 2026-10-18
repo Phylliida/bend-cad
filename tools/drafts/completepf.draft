@@ -592,3 +592,73 @@ def held_go($SKP, +g: List<&2, S.D>, +gcf: List<&2, S.D>, +grf: List<&2, S.D>, +
     case Con{+v, +t}:
       +hvf = L.subl_hd(v, t, $FS, hs)
       L.band_i(SV.deq(SV.dnth($GRU, v), SV.dzero()), SV.band(SV.deq(SV.dnth($GCU, v), SV.dnth(g, v)), SV.held(t, g, $GCU, $GRU)), held_r($SKA, g, grf, hkr, v, hvf), L.band_i(SV.deq(SV.dnth($GCU, v), SV.dnth(g, v)), SV.held(t, g, $GCU, $GRU), held_c($SKA, g, gcf, hkc, v, hvf), held_go($SKA, g, gcf, grf, hkc, hkr, t, L.subl_tl(v, t, $FS, hs))))
+
+# The plan checks
+# ---------------
+
+def pinz_kt(n: Nat, u: List<&2, S.D>) -> {PL.pinz($DN, n, PL.ktake($DN, n, u)) == PL.pinz($DN, n, u) : Bool}:
+  match n u:
+    case 0n u:
+      {==}
+    case 1n+k Nil{}:
+      {==}
+    case 1n+k Con{r, t}:
+      %Equal.sym(Bool, PL.pinz($DN, k, PL.ktake($DN, k, t)), PL.pinz($DN, k, t), pinz_kt(k, t)) : {KA.band(PL.keq($DN, r, N.nzero(KI.dnum())), _) == KA.band(PL.keq($DN, r, N.nzero(KI.dnum())), PL.pinz($DN, k, t)) : Bool}
+      {==}
+
+def pinz_dreps(n: Nat) -> {PL.pinz($DN, n, NU.dreps(n, NU.dzero())) == True{} : Bool}:
+  match n:
+    case 0n:
+      {==}
+    case 1n++m:
+      AP.band_t(PL.keq($DN, NU.dzero(), N.nzero(KI.dnum())), PL.pinz($DN, m, NU.dreps(m, NU.dzero())), {==}, pinz_dreps(m))
+
+def pinz_of(+n: Nat, +u: List<&2, S.D>, h: {PL.ktake($DN, n, u) == NU.dreps(n, NU.dzero()) : List<&2, S.D>}) -> {PL.pinz($DN, n, u) == True{} : Bool}:
+  %pinz_kt(n, u) : {_ == True{} : Bool}
+  %Equal.sym(List<&2, S.D>, PL.ktake($DN, n, u), NU.dreps(n, NU.dzero()), h) : {PL.pinz($DN, n, _) == True{} : Bool}
+  pinz_dreps(n)
+
+def kvle_nil(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +grf: List<&2, S.D>, hrn: FV.rnn(~F, M.ofdv(~F, grf))) -> {KA.kvle($DN, Nil{}, grf) == True{} : Bool}:
+  AP.kvle_of($DN, ~F, ~H, Nil{}, grf, (%Equal.sym(M.Vec(~F), N.ofkv($DN, ~F, ~H, grf), M.ofdv(~F, grf), AP.ofkv_d(~F, ~H, grf)) : FV.rle(~F, Nil{}, _)
+    hrn))
+
+def np_le($SKP, +gcf: List<&2, S.D>, hlc: {KA.klen($DN, gcf) == $NV : Nat}) -> {KA.natle($NP, KA.klen($DN, gcf)) == True{} : Bool}:
+  %Equal.sym(Nat, KA.klen($DN, gcf), $NV, hlc) : {KA.natle($NP, _) == True{} : Bool}
+  %Equal.trans(Nat, ST.len($VP), SV.len($VP), $NV, TJ.len_sv($VP), L.eq_ok(SV.len($VP), $NV, SP.sfacts_vpl($SFA))) : {KA.natle($NP, _) == True{} : Bool}
+  SP.len_app_ge($FS, ST.allvars($KB))
+
+@MACRO PGF +gcf: List<&2, S.D>, +grf: List<&2, S.D>, +bsf: List<&2, PL.PBlock<KI.dnum()>>, +hw: {PL.walk($DN, gcf, grf, bsf, $SYS, $NP) == True{} : Bool}, +hkc: {PL.ktake($DN, $NP, gcf) == $GC0 : List<&2, S.D>}, +hkr: {PL.ktake($DN, $NP, grf) == $GR0 : List<&2, S.D>}, +hlc: {KA.klen($DN, gcf) == $NV : Nat}, +hlr: {KA.klen($DN, grf) == $NV : Nat}, +hpb: PP.pbox($DN, ~F, ~H, gcf, grf, $NV, $XV), +hrn: FV.rnn(~F, M.ofdv(~F, grf))
+@MACRO PGA gcf, grf, bsf, hw, hkc, hkr, hlc, hlr, hpb, hrn
+
+# in block order
+def cp_ok($SKP, +x: M.Vec(~F), +g: List<&2, S.D>, $PGF) -> {PL.check.p($DN, $SYS, gcf, grf, $NP, bsf) == True{} : Bool}:
+  AP.band_t(KA.nateq(KA.klen($DN, grf), KA.klen($DN, gcf)), KA.band(KA.kvle($DN, Nil{}, grf), KA.band(KA.natle($NP, KA.klen($DN, gcf)), KA.band(PL.pinz($DN, $NP, grf), PL.walk($DN, gcf, grf, bsf, $SYS, $NP)))), PB.nateq_of(KA.klen($DN, grf), KA.klen($DN, gcf), Equal.trans(Nat, KA.klen($DN, grf), $NV, KA.klen($DN, gcf), hlr, Equal.sym(Nat, KA.klen($DN, gcf), $NV, hlc))),
+  AP.band_t(KA.kvle($DN, Nil{}, grf), KA.band(KA.natle($NP, KA.klen($DN, gcf)), KA.band(PL.pinz($DN, $NP, grf), PL.walk($DN, gcf, grf, bsf, $SYS, $NP))), kvle_nil(~F, ~H, grf, hrn),
+  AP.band_t(KA.natle($NP, KA.klen($DN, gcf)), KA.band(PL.pinz($DN, $NP, grf), PL.walk($DN, gcf, grf, bsf, $SYS, $NP)), np_le($SKA, gcf, hlc),
+  AP.band_t(PL.pinz($DN, $NP, grf), PL.walk($DN, gcf, grf, bsf, $SYS, $NP), pinz_of($NP, grf, hkr), hw))))
+
+@MACRO KL KA.klen($DN, $GCU)
+@MACRO EQL CK.eqlen(SO.kept(sk))
+@MACRO CPK PL.check.p($DN, PL.reorder($VP, SO.kept(sk), $EP), PL.kperm($DN, $GCU, $VP), PL.kperm($DN, $GRU, $VP), $NP, bsf)
+
+def cpk_ok($SKP, +x: M.Vec(~F), +g: List<&2, S.D>, $PGF) -> {$CPK == True{} : Bool}:
+  %Equal.sym(List<&2, E.QExpr>, PL.reorder($VP, SO.kept(sk), $EP), $SYS, KP.kept_reorder(sk, ha, $VP, ST.alleqs($KB), SP.sfacts_gc($SFA))) : {PL.check.p($DN, _, PL.kperm($DN, $GCU, $VP), PL.kperm($DN, $GRU, $VP), $NP, bsf) == True{} : Bool}
+  %Equal.sym(List<&2, S.D>, PL.kperm($DN, $GCU, $VP), gcf, kp_vp($SKA, gcf, hlc)) : {PL.check.p($DN, $SYS, _, PL.kperm($DN, $GRU, $VP), $NP, bsf) == True{} : Bool}
+  %Equal.sym(List<&2, S.D>, PL.kperm($DN, $GRU, $VP), grf, kp_vp($SKA, grf, hlr)) : {PL.check.p($DN, $SYS, gcf, _, $NP, bsf) == True{} : Bool}
+  cp_ok($SKA, x, g, $PGA)
+
+# the plan against the kept system and the read-back box
+def cr_ok($SKP, +hwf: {WF.wf_dec(sk) == True{} : Bool}, +cov: {BX.Sketch.within(sk, $NV) == True{} : Bool}, +x: M.Vec(~F), +g: List<&2, S.D>, $PGF) -> {PL.check.r($DN, SO.kept(sk), $GCU, $GRU, $VP, $EP, $NP, bsf) == True{} : Bool}:
+  +ek = Equal.sym(Nat, $KL, $NV, klen_up($NV, 0n, gcf, $VP))
+  +ee = Equal.sym(Nat, $EQL, SV.len($GOOD), kept_eqlen($SKA))
+  AP.band_t(PL.present($VP, $KL, 0n), KA.band(PL.pars_ok($KL, $VP), KA.band(PL.present($EP, $EQL, 0n), KA.band(PL.pars_ok($EQL, $EP), KA.band(PL.eqs_below($KL, SO.kept(sk)), $CPK)))), (%ek : {PL.present($VP, _, 0n) == True{} : Bool}
+    vp_pres($SKA)),
+  AP.band_t(PL.pars_ok($KL, $VP), KA.band(PL.present($EP, $EQL, 0n), KA.band(PL.pars_ok($EQL, $EP), KA.band(PL.eqs_below($KL, SO.kept(sk)), $CPK))), (%ek : {PL.pars_ok(_, $VP) == True{} : Bool}
+    pars_of($NV, $VP, SP.sfacts_vpb($SFA))),
+  AP.band_t(PL.present($EP, $EQL, 0n), KA.band(PL.pars_ok($EQL, $EP), KA.band(PL.eqs_below($KL, SO.kept(sk)), $CPK)), (%ee : {PL.present($EP, _, 0n) == True{} : Bool}
+    ep_pres($SKA)),
+  AP.band_t(PL.pars_ok($EQL, $EP), KA.band(PL.eqs_below($KL, SO.kept(sk)), $CPK), (%ee : {PL.pars_ok(_, $EP) == True{} : Bool}
+    pp_of(ST.alleqs($KB), $GOOD, SP.sfacts_gc($SFA))),
+  AP.band_t(PL.eqs_below($KL, SO.kept(sk)), $CPK, (%ek : {PL.eqs_below(_, SO.kept(sk)) == True{} : Bool}
+    kept_below(sk, hwf, cov)),
+  cpk_ok($SKA, x, g, $PGA))))))
