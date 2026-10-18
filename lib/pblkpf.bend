@@ -735,3 +735,181 @@ def y0_close(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +nv: Nat, +g: List<&2, S.D>,
       (near_bnd(~F, ~H, nv, w, g, x, d, pins, g0, MX.disj_hd(w, t, pins, hf), (%L.lt_sv(w, nv) : {_ == True{} : Bool}
         L.band_l(SV.lt(w, nv), SV.below(t, nv), hb)), hN),
       y0_close(~F, ~H, nv, g, x, d, pins, g0, hN, t, MX.disj_tl(w, t, pins, hf), L.band_r(SV.lt(w, nv), SV.below(t, nv), hb)))
+
+# The block's part of the lists
+# -----------------------------
+
+def nlen_sv(xs: List<&2, Nat>) -> {PL.nlen(xs) == SV.len(xs) : Nat}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{h, t}:
+      %nlen_sv(t) : {1n+PL.nlen(t) == 1n+_ : Nat}
+      {==}
+
+def dpick_app(+xs: List<&2, S.D>, a: List<&2, Nat>, +b: List<&2, Nat>) -> {NU.dpick(xs, ST.app(a, b)) == NU.dapp(NU.dpick(xs, a), NU.dpick(xs, b)) : List<&2, S.D>}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+k, t}:
+      %dpick_app(xs, t, b) : {Con{NU.dlook(xs, k), NU.dpick(xs, ST.app(t, b))} == Con{NU.dlook(xs, k), _} : List<&2, S.D>}
+      {==}
+
+def ddrop_dapp(a: List<&2, S.D>, +b: List<&2, S.D>) -> {NU.ddrop(KA.klen(~KI.dnum(), a), NU.dapp(a, b)) == b : List<&2, S.D>}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{h, t}:
+      ddrop_dapp(t, b)
+
+def dtake_dapp(a: List<&2, S.D>, +b: List<&2, S.D>) -> {NU.dtake(KA.klen(~KI.dnum(), a), NU.dapp(a, b)) == a : List<&2, S.D>}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+h, t}:
+      %dtake_dapp(t, b) : {Con{h, NU.dtake(KA.klen(~KI.dnum(), t), NU.dapp(t, b))} == Con{h, _} : List<&2, S.D>}
+      {==}
+
+def xperm_app(~F: O.OField, +x: M.Vec(~F), a: List<&2, Nat>, +b: List<&2, Nat>) -> {LC.xperm(~F, x, ST.app(a, b)) == C.app(~F, LC.xperm(~F, x, a), LC.xperm(~F, x, b)) : M.Vec(~F)}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+k, t}:
+      %xperm_app(~F, x, t, b) : {Con{O.lookup(~F, x, k), LC.xperm(~F, x, ST.app(t, b))} == Con{O.lookup(~F, x, k), _} : M.Vec(~F)}
+      {==}
+
+def fdrop_app(~F: O.OField, p: M.Vec(~F), +r: M.Vec(~F)) -> {PP.fdrop(~F, M.len(~F, p), C.app(~F, p, r)) == r : M.Vec(~F)}:
+  match p:
+    case Nil{}:
+      {==}
+    case Con{a, t}:
+      fdrop_app(~F, t, r)
+
+def ftake_app(~F: O.OField, p: M.Vec(~F), +r: M.Vec(~F)) -> {PP.ftake(~F, M.len(~F, p), C.app(~F, p, r)) == p : M.Vec(~F)}:
+  match p:
+    case Nil{}:
+      {==}
+    case Con{+a, t}:
+      %ftake_app(~F, t, r) : {Con{a, PP.ftake(~F, M.len(~F, t), C.app(~F, t, r))} == Con{a, _} : M.Vec(~F)}
+      {==}
+
+def len_xperm(~F: O.OField, +x: M.Vec(~F), vp: List<&2, Nat>) -> {M.len(~F, LC.xperm(~F, x, vp)) == SV.len(vp) : Nat}:
+  match vp:
+    case Nil{}:
+      {==}
+    case Con{v, t}:
+      %len_xperm(~F, x, t) : {1n+M.len(~F, LC.xperm(~F, x, t)) == 1n+_ : Nat}
+      {==}
+
+def kl_pick(+g: List<&2, S.D>, +ws: List<&2, Nat>, +k: Nat, h: {SV.len(ws) == k : Nat}) -> {KA.klen(~KI.dnum(), NU.dpick(g, ws)) == k : Nat}:
+  Equal.trans(Nat, KA.klen(~KI.dnum(), NU.dpick(g, ws)), PL.nlen(ws), k, klen_pick(g, ws), Equal.trans(Nat, PL.nlen(ws), SV.len(ws), k, nlen_sv(ws), h))
+
+def l_xperm(~F: O.OField, +x: M.Vec(~F), +ws: List<&2, Nat>, +k: Nat, h: {SV.len(ws) == k : Nat}) -> {M.len(~F, LC.xperm(~F, x, ws)) == k : Nat}:
+  Equal.trans(Nat, M.len(~F, LC.xperm(~F, x, ws)), SV.len(ws), k, len_xperm(~F, x, ws), h)
+
+
+# the drawing at the block's unknowns, as the solver reads it
+def y0_eq(+g: List<&2, S.D>, +known: List<&2, Nat>, +vs: List<&2, Nat>, +v2: List<&2, Nat>, +o: Nat, +n: Nat, +ho: {SV.len(known) == o : Nat}, +hn: {SV.len(vs) == n : Nat}) -> {NU.dtake(n, NU.ddrop(o, NU.dpick(g, ST.app(known, ST.app(vs, v2))))) == NU.dpick(g, vs) : List<&2, S.D>}:
+  %kl_pick(g, known, o, ho) : {NU.dtake(n, NU.ddrop(_, NU.dpick(g, ST.app(known, ST.app(vs, v2))))) == NU.dpick(g, vs) : List<&2, S.D>}
+  %kl_pick(g, vs, n, hn) : {NU.dtake(_, NU.ddrop(KA.klen(~KI.dnum(), NU.dpick(g, known)), NU.dpick(g, ST.app(known, ST.app(vs, v2))))) == NU.dpick(g, vs) : List<&2, S.D>}
+  %Equal.sym(List<&2, S.D>, NU.dpick(g, ST.app(known, ST.app(vs, v2))), NU.dapp(NU.dpick(g, known), NU.dpick(g, ST.app(vs, v2))), dpick_app(g, known, ST.app(vs, v2))) : {NU.dtake(KA.klen(~KI.dnum(), NU.dpick(g, vs)), NU.ddrop(KA.klen(~KI.dnum(), NU.dpick(g, known)), _)) == NU.dpick(g, vs) : List<&2, S.D>}
+  %Equal.sym(List<&2, S.D>, NU.ddrop(KA.klen(~KI.dnum(), NU.dpick(g, known)), NU.dapp(NU.dpick(g, known), NU.dpick(g, ST.app(vs, v2)))), NU.dpick(g, ST.app(vs, v2)), ddrop_dapp(NU.dpick(g, known), NU.dpick(g, ST.app(vs, v2)))) : {NU.dtake(KA.klen(~KI.dnum(), NU.dpick(g, vs)), _) == NU.dpick(g, vs) : List<&2, S.D>}
+  %Equal.sym(List<&2, S.D>, NU.dpick(g, ST.app(vs, v2)), NU.dapp(NU.dpick(g, vs), NU.dpick(g, v2)), dpick_app(g, vs, v2)) : {NU.dtake(KA.klen(~KI.dnum(), NU.dpick(g, vs)), _) == NU.dpick(g, vs) : List<&2, S.D>}
+  dtake_dapp(NU.dpick(g, vs), NU.dpick(g, v2))
+
+# x at the block's unknowns, as the block-order point gives it
+def yb_eq(~F: O.OField, +x: M.Vec(~F), +known: List<&2, Nat>, +vs: List<&2, Nat>, +v2: List<&2, Nat>, +o: Nat, +n: Nat, +ho: {SV.len(known) == o : Nat}, +hn: {SV.len(vs) == n : Nat}) -> {PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, ST.app(known, ST.app(vs, v2))))) == LC.xperm(~F, x, vs) : M.Vec(~F)}:
+  %l_xperm(~F, x, known, o, ho) : {PP.ftake(~F, n, PP.fdrop(~F, _, LC.xperm(~F, x, ST.app(known, ST.app(vs, v2))))) == LC.xperm(~F, x, vs) : M.Vec(~F)}
+  %l_xperm(~F, x, vs, n, hn) : {PP.ftake(~F, _, PP.fdrop(~F, M.len(~F, LC.xperm(~F, x, known)), LC.xperm(~F, x, ST.app(known, ST.app(vs, v2))))) == LC.xperm(~F, x, vs) : M.Vec(~F)}
+  %Equal.sym(M.Vec(~F), LC.xperm(~F, x, ST.app(known, ST.app(vs, v2))), C.app(~F, LC.xperm(~F, x, known), LC.xperm(~F, x, ST.app(vs, v2))), xperm_app(~F, x, known, ST.app(vs, v2))) : {PP.ftake(~F, M.len(~F, LC.xperm(~F, x, vs)), PP.fdrop(~F, M.len(~F, LC.xperm(~F, x, known)), _)) == LC.xperm(~F, x, vs) : M.Vec(~F)}
+  %Equal.sym(M.Vec(~F), PP.fdrop(~F, M.len(~F, LC.xperm(~F, x, known)), C.app(~F, LC.xperm(~F, x, known), LC.xperm(~F, x, ST.app(vs, v2)))), LC.xperm(~F, x, ST.app(vs, v2)), fdrop_app(~F, LC.xperm(~F, x, known), LC.xperm(~F, x, ST.app(vs, v2)))) : {PP.ftake(~F, M.len(~F, LC.xperm(~F, x, vs)), _) == LC.xperm(~F, x, vs) : M.Vec(~F)}
+  %Equal.sym(M.Vec(~F), LC.xperm(~F, x, ST.app(vs, v2)), C.app(~F, LC.xperm(~F, x, vs), LC.xperm(~F, x, v2)), xperm_app(~F, x, vs, v2)) : {PP.ftake(~F, M.len(~F, LC.xperm(~F, x, vs)), _) == LC.xperm(~F, x, vs) : M.Vec(~F)}
+  ftake_app(~F, LC.xperm(~F, x, vs), LC.xperm(~F, x, v2))
+
+def nateq_refl(a: Nat) -> {KA.nateq(a, a) == True{} : Bool}:
+  match a:
+    case 0n:
+      {==}
+    case 1n+b:
+      nateq_refl(b)
+
+def nateq_of(+a: Nat, +b: Nat, e: {a == b : Nat}) -> {KA.nateq(a, b) == True{} : Bool}:
+  %e : {KA.nateq(a, _) == True{} : Bool}
+  nateq_refl(a)
+
+# w's position in p ++ w :: r is |p|, for w not in p
+def pos_mid(+w: Nat, p: List<&2, Nat>, +r: List<&2, Nat>, +hn: {SV.mem(w, p) == False{} : Bool}) -> {PL.pos(w, ST.app(p, Con{w, r})) == SV.len(p) : Nat}:
+  match p:
+    case Nil{}:
+      %Equal.sym(Bool, KA.nateq(w, w), True{}, nateq_refl(w)) : {PL.pos.go(_, PL.pos(w, r)) == 0n : Nat}
+      {==}
+    case Con{+h, +t}:
+      +e1 = L.bor_fl(SV.eq(w, h), SV.mem(w, t), hn)
+      %Equal.sym(Bool, KA.nateq(w, h), False{}, (%L.eq_sv(w, h) : {_ == False{} : Bool}
+        e1)) : {PL.pos.go(_, PL.pos(w, ST.app(t, Con{w, r}))) == 1n+SV.len(t) : Nat}
+      %Equal.sym(Nat, PL.pos(w, ST.app(t, Con{w, r})), SV.len(t), pos_mid(w, t, r, L.bor_fr(SV.eq(w, h), SV.mem(w, t), hn))) : {1n+_ == 1n+SV.len(t) : Nat}
+      {==}
+
+def add1(+o: Nat, +k: Nat) -> {Nat.add(Nat.add(o, k), 1n) == Nat.add(o, 1n+k) : Nat}:
+  %LN.add_assoc(o, k, 1n) : {_ == Nat.add(o, 1n+k) : Nat}
+  %LN.add_succ(k, 0n) : {Nat.add(o, _) == Nat.add(o, 1n+k) : Nat}
+  %LN.add_zero(k) : {Nat.add(o, 1n+_) == Nat.add(o, 1n+k) : Nat}
+  {==}
+
+def notin_dist(+w: Nat, +p: List<&2, Nat>, +r: List<&2, Nat>, +hd: {SV.distinct(ST.app(p, Con{w, r})) == True{} : Bool}) -> {SV.mem(w, p) == False{} : Bool}:
+  MX.disj_hd(w, r, p, BI.disj_swap(p, Con{w, r}, BI.dist_disj(p, Con{w, r}, hd)))
+
+# a stretch ws of a distinct vp sits at consecutive positions
+def posrun_of(+vp: List<&2, Nat>, ws: List<&2, Nat>, +p: List<&2, Nat>, +q: List<&2, Nat>, +o: Nat, +k: Nat, +hvp: {vp == ST.app(p, ST.app(ws, q)) : List<&2, Nat>}, +hp: {SV.len(p) == Nat.add(o, k) : Nat}, +hd: {SV.distinct(vp) == True{} : Bool}) -> {LC.posrun(vp, ws, o, k) == True{} : Bool}:
+  match ws:
+    case Nil{}:
+      {==}
+    case Con{+w, +t}:
+      +hpos = Equal.trans(Nat, PL.pos(w, vp), SV.len(p), Nat.add(o, k), (%Equal.sym(List<&2, Nat>, vp, ST.app(p, Con{w, ST.app(t, q)}), hvp) : {PL.pos(w, _) == SV.len(p) : Nat}
+        pos_mid(w, p, ST.app(t, q), notin_dist(w, p, ST.app(t, q), (%hvp : {SV.distinct(_) == True{} : Bool}
+          hd)))), hp)
+      +p2 = ST.app(p, Con{w, Nil{}})
+      L.band_i(KA.nateq(PL.pos(w, vp), Nat.add(o, k)), LC.posrun(vp, t, o, 1n+k), nateq_of(PL.pos(w, vp), Nat.add(o, k), hpos),
+        posrun_of(vp, t, p2, q, o, 1n+k, Equal.trans(List<&2, Nat>, vp, ST.app(p, Con{w, ST.app(t, q)}), ST.app(p2, ST.app(t, q)), hvp, Equal.sym(List<&2, Nat>, ST.app(p2, ST.app(t, q)), ST.app(p, Con{w, ST.app(t, q)}), TJ.app_assoc(p, Con{w, Nil{}}, ST.app(t, q)))),
+          Equal.trans(Nat, SV.len(p2), Nat.add(Nat.add(o, k), 1n), Nat.add(o, 1n+k), (%hp : {SV.len(p2) == Nat.add(_, 1n) : Nat}
+            MX.len_app(p, Con{w, Nil{}})), add1(o, k)), hd))
+
+def subl_mid(b0: List<&2, Nat>, +a: List<&2, Nat>, +b: List<&2, Nat>, +c: List<&2, Nat>, +hs: {L.subl(b0, b) == True{} : Bool}) -> {L.subl(b0, ST.app(a, ST.app(b, c))) == True{} : Bool}:
+  match b0:
+    case Nil{}:
+      {==}
+    case Con{+e, +t}:
+      L.subl_con(e, t, ST.app(a, ST.app(b, c)), TJ.mem_app_r(e, a, ST.app(b, c), TJ.mem_app_l(e, b, c, L.subl_hd(e, t, b, hs))), subl_mid(t, a, b, c, L.subl_tl(e, t, b, hs)))
+
+def inside_sub(e: E.QExpr, +w: List<&2, Nat>, +w2: List<&2, Nat>, +h: {SV.inside(e, w) == True{} : Bool}, +hs: {L.subl(w, w2) == True{} : Bool}) -> {SV.inside(e, w2) == True{} : Bool}:
+  match e:
+    case E.QVar{+v}:
+      L.subl_mem(v, w, w2, h, hs)
+    case E.QCst{q}:
+      {==}
+    case E.QAdd{+a, +b}:
+      L.band_i(SV.inside(a, w2), SV.inside(b, w2), inside_sub(a, w, w2, L.band_l(SV.inside(a, w), SV.inside(b, w), h), hs), inside_sub(b, w, w2, L.band_r(SV.inside(a, w), SV.inside(b, w), h), hs))
+    case E.QSub{+a, +b}:
+      L.band_i(SV.inside(a, w2), SV.inside(b, w2), inside_sub(a, w, w2, L.band_l(SV.inside(a, w), SV.inside(b, w), h), hs), inside_sub(b, w, w2, L.band_r(SV.inside(a, w), SV.inside(b, w), h), hs))
+    case E.QMul{+a, +b}:
+      L.band_i(SV.inside(a, w2), SV.inside(b, w2), inside_sub(a, w, w2, L.band_l(SV.inside(a, w), SV.inside(b, w), h), hs), inside_sub(b, w, w2, L.band_r(SV.inside(a, w), SV.inside(b, w), h), hs))
+    case E.QNeg{+a}:
+      inside_sub(a, w, w2, h, hs)
+
+def allin_mono(+full: List<&2, E.QExpr>, es: List<&2, Nat>, +w: List<&2, Nat>, +w2: List<&2, Nat>, +h: {BI.allin(full, es, w) == True{} : Bool}, +hs: {L.subl(w, w2) == True{} : Bool}) -> {BI.allin(full, es, w2) == True{} : Bool}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{+j, +t}:
+      L.band_i(SV.inside(PL.eqget(full, j), w2), BI.allin(full, t, w2), inside_sub(PL.eqget(full, j), w, w2, L.band_l(SV.inside(PL.eqget(full, j), w), BI.allin(full, t, w), h), hs), allin_mono(full, t, w, w2, L.band_r(SV.inside(PL.eqget(full, j), w), BI.allin(full, t, w), h), hs))
+
+def rowsok_of(+full: List<&2, E.QExpr>, +vp: List<&2, Nat>, +o: Nat, +n: Nat, +pars: List<&2, Nat>, es: List<&2, Nat>, +h1: {BI.allin(full, es, vp) == True{} : Bool}, +h2: {PL.eqs_below(Nat.add(o, n), PL.reorder(vp, full, es)) == True{} : Bool}, +h3: {CK.allbelow(Nat.add(n, PL.nlen(pars)), PL.renames(o, n, pars, PL.reorder(vp, full, es))) == True{} : Bool}) -> {LC.rowsok(full, vp, o, n, pars, es) == True{} : Bool}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{+j, +t}:
+      +rj = PL.rnv(vp, PL.eqget(full, j))
+      L.band_i(SV.inside(PL.eqget(full, j), vp), SV.band(SL.below(Nat.add(o, n), rj), SV.band(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, rj)), LC.rowsok(full, vp, o, n, pars, t))), L.band_l(SV.inside(PL.eqget(full, j), vp), BI.allin(full, t, vp), h1),
+        L.band_i(SL.below(Nat.add(o, n), rj), SV.band(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, rj)), LC.rowsok(full, vp, o, n, pars, t)), KA.band_l(SL.below(Nat.add(o, n), rj), PL.eqs_below(Nat.add(o, n), PL.reorder(vp, full, t)), h2),
+          L.band_i(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, rj)), LC.rowsok(full, vp, o, n, pars, t), KA.band_l(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, rj)), CK.allbelow(Nat.add(n, PL.nlen(pars)), PL.renames(o, n, pars, PL.reorder(vp, full, t))), h3),
+            rowsok_of(full, vp, o, n, pars, t, L.band_r(SV.inside(PL.eqget(full, j), vp), BI.allin(full, t, vp), h1), KA.band_r(SL.below(Nat.add(o, n), rj), PL.eqs_below(Nat.add(o, n), PL.reorder(vp, full, t)), h2), KA.band_r(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, rj)), CK.allbelow(Nat.add(n, PL.nlen(pars)), PL.renames(o, n, pars, PL.reorder(vp, full, t))), h3)))))
