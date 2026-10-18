@@ -1473,3 +1473,65 @@ def blk_sc($OKP, +es: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +k
     NU.dpick(gr, $PARS), len_pick(~F, gr, $PARS), rnn_pick(~F, gr, $PARS, hrn), hzr_of(~F, ~H, gc, gr, o, $PBN, hpb, hgc, $PARS, s3), vall_pick(~F, gr, $PARS, $RHO, hr0, hrb),
     tt, htt, hdh, FO.le_refl(~F, $RHO),
     hsqk)
+
+# The blocks in turn
+# ------------------
+
+@MACRO SYK PL.reorder(vp, full, ST.alleqs(kb))
+@MACRO BSK ST.renum.bs(ST.skbs(kb, ST.adj(full), vp), good)
+@MACRO SYT PL.reorder(vp, full, ST.alleqs(t))
+@MACRO IVQ +known: List<&2, Nat>, +o: Nat, +ho: {SV.len(known) == o : Nat}, +hvp: {vp == ST.app(known, ST.allvars(kb)) : List<&2, Nat>}, +hsw: {SP.swalk($BSK, $SYK, o, nv) == True{} : Bool}, +hch: {SP.vchain(kb, known, ST.adj(full)) == True{} : Bool}, +hlk: {SP.lkb(vm, kb) == True{} : Bool}, +hgs: {L.subl(ST.alleqs(kb), good) == True{} : Bool}, +hfr: {MX.disj(ST.allvars(kb), pins) == True{} : Bool}, +hbe: {SV.below(ST.allvars(kb), nv) == True{} : Bool}, +gc: List<&2, S.D>, +gr: List<&2, S.D>, $BXP, +hsq: O.lt(F, @M($VB, qch($CA, kb, binv, o, tt)), @1)
+
+def sw_rw(+bs: List<&2, ST.SkB>, +a: List<&2, E.QExpr>, +b: List<&2, E.QExpr>, +o: Nat, +nv: Nat, +e: {a == b : List<&2, E.QExpr>}, +h: {SP.swalk(bs, a, o, nv) == True{} : Bool}) -> {SP.swalk(bs, b, o, nv) == True{} : Bool}:
+  %e : {SP.swalk(bs, _, o, nv) == True{} : Bool}
+  h
+
+# by induction over the solver's structure: pblocks from offset o returns
+# PBOk, the checker's walk accepting the final box, which holds X with
+# radii at most h tch
+def pb_ok($OKP, kb: List<&2, ST.SB>, +binv: BI.BInv(~F, x, full, kb), $IVQ) -> PG($PGA, o, gc, gr, $SYK, tch($CA, kb, binv, o, tt), NU.pblocks($BSK, NU.bcert($BSK, $SYK, NU.dpick(g, vp), p, o, gc, gr), $SYK, NU.dpick(g, vp), p, o, gc, gr, Nil{})):
+  match kb:
+    case Nil{}:
+      pg_nil($PGA, o, gc, gr, $BXA, hsw, Equal.trans(Nat, M.len(~F, $XV), SV.len(vp), nv, len_xperm(~F, x, vp), hvl))
+    case Con{ST.SB{+es, +vs}, +t}:
+      +hlx = Equal.trans(Nat, M.len(~F, $XV), SV.len(vp), nv, len_xperm(~F, x, vp), hvl)
+      +s1 = L.band_l($SW1, SV.band($SW2, SV.band($SW3, SV.band($SW4, SV.band($SW5, $SW6)))), hsw)
+      +r2 = L.band_r($SW1, SV.band($SW2, SV.band($SW3, SV.band($SW4, SV.band($SW5, $SW6)))), hsw)
+      +s2 = L.band_l($SW2, SV.band($SW3, SV.band($SW4, SV.band($SW5, $SW6))), r2)
+      +r3 = L.band_r($SW2, SV.band($SW3, SV.band($SW4, SV.band($SW5, $SW6))), r2)
+      +s3 = L.band_l($SW3, SV.band($SW4, SV.band($SW5, $SW6)), r3)
+      +r4 = L.band_r($SW3, SV.band($SW4, SV.band($SW5, $SW6)), r3)
+      +s4 = L.band_l($SW4, SV.band($SW5, $SW6), r4)
+      +r5 = L.band_r($SW4, SV.band($SW5, $SW6), r4)
+      +s5 = L.band_l($SW5, $SW6, r5)
+      +s6 = L.band_r($SW5, $SW6, r5)
+      +hdq = dq_eq(vp, full, es, ST.alleqs(t), good)
+      +c1 = L.band_l(L.subl(ST.uses(es, ST.adj(full)), ST.app(vs, known)), SP.vchain(t, ST.app(known, vs), ST.adj(full)), hch)
+      +c2 = L.band_r(L.subl(ST.uses(es, ST.adj(full)), ST.app(vs, known)), SP.vchain(t, ST.app(known, vs), ST.adj(full)), hch)
+      +l1 = L.band_l(SP.nleq(vs, ST.look(vm, es)), SP.lkb(vm, t), hlk)
+      +l2 = L.band_r(SP.nleq(vs, ST.look(vm, es)), SP.lkb(vm, t), hlk)
+      +hnv = Equal.sym(Nat, $NN, SV.len(vs), Equal.trans(Nat, $NN, ST.len(es), SV.len(vs), SP.positions_len(es, good), Equal.trans(Nat, ST.len(es), SV.len(es), SV.len(vs), TJ.len_sv(es), BI.len_es(es, vs, vm, l1))))
+      +hbb0 = FO.nonneg_add(~F, NP.vn(~F, x), @1, FV.vmax_nn(~F, x), NP.one_nn(~F))
+      +hb0 = ibd_nn(~F, $JSK, SV.len(vs), $IV0)
+      +hl0 = lsum_nn(~F, $BB, hbb0, $EQL)
+      +hm0 = msum_nn(~F, $BB, hbb0, $EQL)
+      +hr0 = FO.mul_nonneg(~F, $HH, tt, NW.hnw_nn(~F, p), htt)
+      +qt = qch($CA, t, $IVT, Nat.add(o, $NN), $PK)
+      +hqt = qch_nn(~F, ~H, full, good, vp, x, t, $IVT, Nat.add(o, $NN), $PK, SC.phib_nn(~F, ~H, $NN, $MM, $BET, $LAM, $MSS, tt, hb0, hl0, hm0, htt))
+      +hsqk = SC.part(~F, $VB, $QK, @A($QK, qt), SC.t_nn(~F, p), NW.le_addr(~F, $QK, qt, hqt), hsq)
+      +hsqt = SC.part(~F, $VB, qt, @A($QK, qt), SC.t_nn(~F, p), NW.le_addl(~F, $QK, qt, SC.qblk_nn(~F, ~H, $NN, $MM, $BET, $LAM, $MSS, tt, hb0, hl0, hm0, htt)), hsq)
+      +hgs1 = subl_app_l(es, ST.alleqs(t), good, hgs)
+      +hgs2 = subl_app_r(es, ST.alleqs(t), good, hgs)
+      +hfv = disj_app_l(vs, ST.allvars(t), pins, hfr)
+      +hft = BI.disj_app_r(vs, ST.allvars(t), pins, hfr)
+      +hbv = below_app_l(vs, ST.allvars(t), nv, hbe)
+      +hbt = below_app_r(vs, ST.allvars(t), nv, hbe)
+      +ho2 = Equal.trans(Nat, SV.len(ST.app(known, vs)), Nat.add(SV.len(known), SV.len(vs)), Nat.add(o, $NN), MX.len_app(known, vs), PP.add2(SV.len(known), o, SV.len(vs), $NN, ho, hnv))
+      +hvp2 = Equal.trans(List<&2, Nat>, vp, $VPT, ST.app(ST.app(known, vs), ST.allvars(t)), hvp, Equal.sym(List<&2, Nat>, ST.app(ST.app(known, vs), ST.allvars(t)), $VPT, TJ.app_assoc(known, vs, ST.allvars(t))))
+      +hsw2 = sw_rw($BSKT, PL.dropq($NN, $SYSK), $SYT, Nat.add(o, $NN), nv, hdq, s6)
+      +hrbn = SC.rb_sc(~F, ~H, $NN, $MM, $BET, $LAM, $MSS, d, $RHO, p, hb0, hl0, hm0, hd0, hr0, tt, htt, hdh, FO.le_refl(~F, $RHO))
+      +htn = SC.phib_ge(~F, ~H, $NN, $MM, $BET, $LAM, $MSS, tt, hb0, hl0, hm0, htt)
+      +hg = blk_sc($OKA, es, vs, t, known, o, $IV0, hvp, ho, hnv, c1, hgs1, hfv, hbv, s2, s3, s4, s5, gc, gr, $BXA, hsqk)
+      pb_step($PGA, g, $QS, vs, $PARS, $BSKT, $SYSK, $SYT, o, gc, gr, $BXA, tch($CA, t, $IVT, Nat.add(o, $NN), $PK), $PK, htn, BK.rbc(~F, $NN, $MM, $BET, $LAM, $MSS, d, $RHO, p), hrbn, s1, s2, s3, s4, hdq, hlx,
+        NU.block($EQL, $NN, NU.dpick(gc, $PARS), NU.dpick(gr, $PARS), NU.dtake($NN, NU.ddrop(o, NU.dpick(g, vp))), p), hg,
+        yc => yr => hlc2 => hlr2 => hpb2 => hrn2 => hrb2 => pb_ok($OKA, t, $IVT, ST.app(known, vs), Nat.add(o, $NN), ho2, hvp2, hsw2, c2, l2, hgs2, hft, hbt, NU.dapp(gc, yc), NU.dapp(gr, NU.dtake($NN, yr)), hlc2, hlr2, hpb2, hrn2, $PK, SC.phib_nn(~F, ~H, $NN, $MM, $BET, $LAM, $MSS, tt, hb0, hl0, hm0, htt), hrb2, hsqt))
