@@ -52,6 +52,7 @@ import ./nat.bend as LN
 import ./tarjanpf.bend as TJ
 import ./maxpf.bend as MX
 import ./scalepf.bend as SC
+import ./blockpf.bend as BK
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -1156,3 +1157,167 @@ def pg_con($PGP, $CNP, r: NU.PBR, hih: PG($PGA, Nat.add(o, n), NU.dapp(gc, yc), 
       absurd(Empty, hih)
     case NU.PBStop{}:
       absurd(Empty, hih)
+
+# The box, one block longer
+# -------------------------
+
+def klen_dapp(+a: List<&2, S.D>, +b: List<&2, S.D>, +o: Nat, +n: Nat, +ha: {KA.klen($DN, a) == o : Nat}, +hb: {KA.klen($DN, b) == n : Nat}) -> {KA.klen($DN, NU.dapp(a, b)) == Nat.add(o, n) : Nat}:
+  %Equal.sym(List<&2, S.D>, NU.dapp(a, b), KA.kapp($DN, a, b), dapp_ka(a, b)) : {KA.klen($DN, _) == Nat.add(o, n) : Nat}
+  %Equal.sym(Nat, KA.klen($DN, KA.kapp($DN, a, b)), Nat.add(KA.klen($DN, a), KA.klen($DN, b)), klen_kapp($DN, a, b)) : {_ == Nat.add(o, n) : Nat}
+  %Equal.sym(Nat, KA.klen($DN, a), o, ha) : {Nat.add(_, KA.klen($DN, b)) == Nat.add(o, n) : Nat}
+  %Equal.sym(Nat, KA.klen($DN, b), n, hb) : {Nat.add(o, _) == Nat.add(o, n) : Nat}
+  {==}
+
+def ofdv_app(~F: O.OField, a: List<&2, S.D>, +b: List<&2, S.D>) -> {M.ofdv(~F, NU.dapp(a, b)) == C.app(~F, M.ofdv(~F, a), M.ofdv(~F, b)) : M.Vec(~F)}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+h, t}:
+      %ofdv_app(~F, t, b) : {Con{M.ofd(~F, h), M.ofdv(~F, NU.dapp(t, b))} == Con{M.ofd(~F, h), _} : M.Vec(~F)}
+      {==}
+
+def rnn_app(~F: O.OField, u: M.Vec(~F), +w: M.Vec(~F), +hu: FV.rnn(~F, u), +hw: FV.rnn(~F, w)) -> FV.rnn(~F, C.app(~F, u, w)):
+  match u:
+    case Nil{}:
+      hw
+    case Con{+a, +t}:
+      (AP.both_l(O.le(~F, @0, a), FV.rnn(~F, t), hu), rnn_app(~F, t, w, AP.both_r(O.le(~F, @0, a), FV.rnn(~F, t), hu), hw))
+
+def vall_mono(~F: O.OField, v: M.Vec(~F), +c1: @T, +c2: @T, +h: M.vbnd.all(~F, v, c1), +hc: O.le(~F, c1, c2)) -> M.vbnd.all(~F, v, c2):
+  match v:
+    case Nil{}:
+      Unit{}
+    case Con{+a, +t}:
+      (FM.bnd_mono(~F, a, c1, c2, AP.both_l(M.bnd(~F, a, c1), M.vbnd.all(~F, t, c1), h), FM.sub_nonneg(~F, c1, c2, hc)), vall_mono(~F, t, c1, c2, AP.both_r(M.bnd(~F, a, c1), M.vbnd.all(~F, t, c1), h), hc))
+
+
+# the box so far, read in a longer box with the same start
+def pbox_grow(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +gc: List<&2, S.D>, +gr: List<&2, S.D>, +o: Nat, +p: M.Vec(~F), +a: List<&2, S.D>, +b: List<&2, S.D>, +hlc: {KA.klen($DN, gc) == o : Nat}, +hlr: {KA.klen($DN, gr) == o : Nat}, hpb: PP.pbox($DN, ~F, ~H, gc, gr, o, p)) -> PP.pbox($DN, ~F, ~H, NU.dapp(gc, a), NU.dapp(gr, b), o, p):
+  %Equal.sym(List<&2, S.D>, NU.dapp(gc, a), KA.kapp($DN, gc, a), dapp_ka(gc, a)) : PP.pbox($DN, ~F, ~H, _, NU.dapp(gr, b), o, p)
+  %Equal.sym(List<&2, S.D>, NU.dapp(gr, b), KA.kapp($DN, gr, b), dapp_ka(gr, b)) : PP.pbox($DN, ~F, ~H, KA.kapp($DN, gc, a), _, o, p)
+  %hlc : M.Both({M.len(~F, p) == o : Nat}, BX.rbnd(~F, BX.vsub(~F, p, N.ofkv($DN, ~F, ~H, PL.ktake($DN, _, KA.kapp($DN, gc, a)))), N.ofkv($DN, ~F, ~H, PL.ktake($DN, o, KA.kapp($DN, gr, b)))))
+  %hlr : M.Both({M.len(~F, p) == o : Nat}, BX.rbnd(~F, BX.vsub(~F, p, N.ofkv($DN, ~F, ~H, PL.ktake($DN, KA.klen($DN, gc), KA.kapp($DN, gc, a)))), N.ofkv($DN, ~F, ~H, PL.ktake($DN, _, KA.kapp($DN, gr, b)))))
+  %Equal.sym(List<&2, S.D>, PL.ktake($DN, KA.klen($DN, gc), KA.kapp($DN, gc, a)), gc, kt_app($DN, gc, a)) : M.Both({M.len(~F, p) == o : Nat}, BX.rbnd(~F, BX.vsub(~F, p, N.ofkv($DN, ~F, ~H, _)), N.ofkv($DN, ~F, ~H, PL.ktake($DN, KA.klen($DN, gr), KA.kapp($DN, gr, b)))))
+  %Equal.sym(List<&2, S.D>, PL.ktake($DN, KA.klen($DN, gr), KA.kapp($DN, gr, b)), gr, kt_app($DN, gr, b)) : M.Both({M.len(~F, p) == o : Nat}, BX.rbnd(~F, BX.vsub(~F, p, N.ofkv($DN, ~F, ~H, gc)), N.ofkv($DN, ~F, ~H, _)))
+  %kt_len($DN, gc) : M.Both({M.len(~F, p) == o : Nat}, BX.rbnd(~F, BX.vsub(~F, p, N.ofkv($DN, ~F, ~H, _)), N.ofkv($DN, ~F, ~H, gr)))
+  %kt_len($DN, gr) : M.Both({M.len(~F, p) == o : Nat}, BX.rbnd(~F, BX.vsub(~F, p, N.ofkv($DN, ~F, ~H, PL.ktake($DN, KA.klen($DN, gc), gc))), N.ofkv($DN, ~F, ~H, _)))
+  %Equal.sym(Nat, KA.klen($DN, gc), o, hlc) : M.Both({M.len(~F, p) == o : Nat}, BX.rbnd(~F, BX.vsub(~F, p, N.ofkv($DN, ~F, ~H, PL.ktake($DN, _, gc))), N.ofkv($DN, ~F, ~H, PL.ktake($DN, KA.klen($DN, gr), gr))))
+  %Equal.sym(Nat, KA.klen($DN, gr), o, hlr) : M.Both({M.len(~F, p) == o : Nat}, BX.rbnd(~F, BX.vsub(~F, p, N.ofkv($DN, ~F, ~H, PL.ktake($DN, o, gc))), N.ofkv($DN, ~F, ~H, PL.ktake($DN, _, gr))))
+  hpb
+
+# the block's stretch of the longer box is its certificate's
+def segk(+u: List<&2, S.D>, +w: List<&2, S.D>, +o: Nat, +n: Nat, +hu: {KA.klen($DN, u) == o : Nat}, +hw: {KA.klen($DN, w) == n : Nat}) -> {PL.ktake($DN, n, PL.kdrop($DN, o, NU.dapp(u, w))) == w : List<&2, S.D>}:
+  %Equal.sym(List<&2, S.D>, NU.dapp(u, w), KA.kapp($DN, u, w), dapp_ka(u, w)) : {PL.ktake($DN, n, PL.kdrop($DN, o, _)) == w : List<&2, S.D>}
+  %hu : {PL.ktake($DN, n, PL.kdrop($DN, _, KA.kapp($DN, u, w))) == w : List<&2, S.D>}
+  %Equal.sym(List<&2, S.D>, PL.kdrop($DN, KA.klen($DN, u), KA.kapp($DN, u, w)), w, kd_app($DN, u, w)) : {PL.ktake($DN, n, _) == w : List<&2, S.D>}
+  %hw : {PL.ktake($DN, _, w) == w : List<&2, S.D>}
+  kt_len($DN, w)
+
+@MACRO N0 ST.len(qs)
+@MACRO ON Nat.add(o, $N0)
+@MACRO G0B NU.dpick(g, vp)
+@MACRO BS0 Con{ST.SkB{qs, vs, pars}, bst}
+@MACRO EQ0 PL.renames(o, $N0, pars, PL.takeq($N0, sys))
+@MACRO YB0 PP.ftake(~F, $N0, PP.fdrop(~F, o, $XV))
+@MACRO PB0 PP.ftake(~F, o, $XV)
+@MACRO GC2 NU.dapp(gc, yc)
+@MACRO GR2 NU.dapp(gr, NU.dtake($N0, yr))
+@MACRO RST NU.pblocks(bst, NU.bcert(bst, syst, $G0B, p, $ON, $GC2, $GR2), syst, $G0B, p, $ON, $GC2, $GR2, Nil{})
+@MACRO IHT @yc: List<&2, S.D> -> @yr: List<&2, S.D> -> {KA.klen($DN, $GC2) == $ON : Nat} -> {KA.klen($DN, $GR2) == $ON : Nat} -> PP.pbox($DN, ~F, ~H, $GC2, $GR2, $ON, PP.ftake(~F, $ON, $XV)) -> FV.rnn(~F, M.ofdv(~F, $GR2)) -> M.vbnd.all(~F, M.ofdv(~F, $GR2), @M($HH, tn)) -> PG($PGA, $ON, $GC2, $GR2, syst, tf, $RST)
+@MACRO SWP +h1: {KA.natle($N0, CK.eqlen(sys)) == True{} : Bool}, +h2n: {KA.natle($ON, nv) == True{} : Bool}, +h3: {PL.pars_ok(o, pars) == True{} : Bool}, +h4: {PL.eqs_below($ON, PL.takeq($N0, sys)) == True{} : Bool}, +hdq: {PL.dropq($N0, sys) == syst : List<&2, E.QExpr>}
+@MACRO STP $PGP, +g: List<&2, S.D>, +qs: List<&2, Nat>, +vs: List<&2, Nat>, +pars: List<&2, Nat>, +bst: List<&2, ST.SkB>, +sys: List<&2, E.QExpr>, +syst: List<&2, E.QExpr>, +o: Nat, +gc: List<&2, S.D>, +gr: List<&2, S.D>, $BXP, +tf: @T, +tn: @T, +htn: O.le(~F, tt, tn), +rb: @T, +hrbn: O.le(~F, rb, @M($HH, tn)), $SWP, +hlx: {M.len(~F, $XV) == nv : Nat}
+@MACRO STA $PGA, g, qs, vs, pars, bst, sys, syst, o, gc, gr, $BXA, tf, tn, htn, rb, hrbn, h1, h2n, h3, h4, hdq, hlx
+
+def kl_dt(+n: Nat, +yr: List<&2, S.D>, +hlyr: {KA.klen($DN, yr) == n : Nat}) -> {KA.klen($DN, NU.dtake(n, yr)) == n : Nat}:
+  %Equal.sym(List<&2, S.D>, NU.dtake(n, yr), yr, dtake_eq(n, yr, hlyr)) : {KA.klen($DN, _) == n : Nat}
+  hlyr
+
+def hseg_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +y: M.Vec(~F), +gc: List<&2, S.D>, +gr: List<&2, S.D>, +o: Nat, +n: Nat, +yc: List<&2, S.D>, +yr: List<&2, S.D>, +hlc: {KA.klen($DN, gc) == o : Nat}, +hlr: {KA.klen($DN, gr) == o : Nat}, +hly: {KA.klen($DN, yc) == n : Nat}, +hlyr: {KA.klen($DN, yr) == n : Nat}, h: BX.rbnd(~F, BX.vsub(~F, y, M.ofdv(~F, yc)), M.ofdv(~F, yr))) -> BX.rbnd(~F, BX.vsub(~F, y, N.ofkv($DN, ~F, ~H, PL.ktake($DN, n, PL.kdrop($DN, o, NU.dapp(gc, yc))))), N.ofkv($DN, ~F, ~H, PL.ktake($DN, n, PL.kdrop($DN, o, NU.dapp(gr, NU.dtake(n, yr)))))):
+  +hd = kl_dt(n, yr, hlyr)
+  %Equal.sym(List<&2, S.D>, PL.ktake($DN, n, PL.kdrop($DN, o, NU.dapp(gc, yc))), yc, segk(gc, yc, o, n, hlc, hly)) : BX.rbnd(~F, BX.vsub(~F, y, N.ofkv($DN, ~F, ~H, _)), N.ofkv($DN, ~F, ~H, PL.ktake($DN, n, PL.kdrop($DN, o, NU.dapp(gr, NU.dtake(n, yr))))))
+  %Equal.sym(List<&2, S.D>, PL.ktake($DN, n, PL.kdrop($DN, o, NU.dapp(gr, NU.dtake(n, yr)))), NU.dtake(n, yr), segk(gr, NU.dtake(n, yr), o, n, hlr, hd)) : BX.rbnd(~F, BX.vsub(~F, y, N.ofkv($DN, ~F, ~H, yc)), N.ofkv($DN, ~F, ~H, _))
+  %Equal.sym(List<&2, S.D>, NU.dtake(n, yr), yr, dtake_eq(n, yr, hlyr)) : BX.rbnd(~F, BX.vsub(~F, y, N.ofkv($DN, ~F, ~H, yc)), N.ofkv($DN, ~F, ~H, _))
+  %Equal.sym(M.Vec(~F), N.ofkv($DN, ~F, ~H, yc), M.ofdv(~F, yc), AP.ofkv_d(~F, ~H, yc)) : BX.rbnd(~F, BX.vsub(~F, y, _), N.ofkv($DN, ~F, ~H, yr))
+  %Equal.sym(M.Vec(~F), N.ofkv($DN, ~F, ~H, yr), M.ofdv(~F, yr), AP.ofkv_d(~F, ~H, yr)) : BX.rbnd(~F, BX.vsub(~F, y, M.ofdv(~F, yc)), _)
+  h
+
+# One block's step
+# ----------------
+
+@MACRO CR0 C.Cert{yc, yr, q, ym, pc, pr}
+@MACRO BLK PL.PBlock{$N0, pars, $CRP}
+
+def h5_of(+o: Nat, +n: Nat, +pars: List<&2, Nat>, +sys: List<&2, E.QExpr>, +gc: List<&2, S.D>, +gr: List<&2, S.D>, +yc: List<&2, S.D>, +yr: List<&2, S.D>, +q: S.D, +ym: List<&2, List<&2, S.D>>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +hck: {CK.check($DN, C.Block{PL.renames(o, n, pars, PL.takeq(n, sys)), n}, $CR0) == True{} : Bool}, +hpc: {pc == NU.dpick(gc, pars) : List<&2, S.D>}, +hpr: {pr == NU.dpick(gr, pars) : List<&2, S.D>}) -> {CK.check($DN, C.Block{PL.renames(o, n, pars, PL.takeq(n, sys)), n}, $CRP) == True{} : Bool}:
+  %hpc : {CK.check($DN, C.Block{PL.renames(o, n, pars, PL.takeq(n, sys)), n}, C.Cert{yc, yr, q, ym, _, NU.dpick(gr, pars)}) == True{} : Bool}
+  %hpr : {CK.check($DN, C.Block{PL.renames(o, n, pars, PL.takeq(n, sys)), n}, C.Cert{yc, yr, q, ym, pc, _}) == True{} : Bool}
+  hck
+
+def pb2_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +vp: List<&2, Nat>, +x: M.Vec(~F), +o: Nat, +n: Nat, +gc: List<&2, S.D>, +gr: List<&2, S.D>, +yc: List<&2, S.D>, +yr: List<&2, S.D>, +hlc: {KA.klen($DN, gc) == o : Nat}, +hlr: {KA.klen($DN, gr) == o : Nat}, +hlyc: {KA.klen($DN, yc) == n : Nat}, +hly: {KA.klen($DN, yr) == n : Nat}, +hlc2: {KA.klen($DN, NU.dapp(gc, yc)) == Nat.add(o, n) : Nat}, +hlr2: {KA.klen($DN, NU.dapp(gr, NU.dtake(n, yr))) == Nat.add(o, n) : Nat}, +hX: {KA.natle(Nat.add(o, n), M.len(~F, $XV)) == True{} : Bool}, +hpb: PP.pbox($DN, ~F, ~H, gc, gr, o, PP.ftake(~F, o, $XV)), +hbl: BX.rbnd(~F, BX.vsub(~F, PP.ftake(~F, n, PP.fdrop(~F, o, $XV)), M.ofdv(~F, yc)), M.ofdv(~F, yr))) -> PP.pbox($DN, ~F, ~H, NU.dapp(gc, yc), NU.dapp(gr, NU.dtake(n, yr)), Nat.add(o, n), PP.ftake(~F, Nat.add(o, n), $XV)):
+  %LC.app_take(~F, o, n, $XV) : PP.pbox($DN, ~F, ~H, NU.dapp(gc, yc), NU.dapp(gr, NU.dtake(n, yr)), Nat.add(o, n), _)
+  PP.pbox_ext($DN, ~F, ~H, NU.dapp(gc, yc), NU.dapp(gr, NU.dtake(n, yr)), o, n, PP.ftake(~F, o, $XV), PP.ftake(~F, n, PP.fdrop(~F, o, $XV)),
+    pbox_grow(~F, ~H, gc, gr, o, PP.ftake(~F, o, $XV), yc, NU.dtake(n, yr), hlc, hlr, hpb),
+    hseg_of(~F, ~H, PP.ftake(~F, n, PP.fdrop(~F, o, $XV)), gc, gr, o, n, yc, yr, hlc, hlr, hlyc, hly, hbl),
+    PP.len_ftake(~F, n, PP.fdrop(~F, o, $XV), LC.ld_le(~F, o, n, $XV, hX)),
+    (%Equal.sym(Nat, KA.klen($DN, NU.dapp(gc, yc)), Nat.add(o, n), hlc2) : {KA.natle(o, _) == True{} : Bool}
+      L.le_add_r(o, n)),
+    Equal.trans(Nat, KA.klen($DN, NU.dapp(gr, NU.dtake(n, yr))), Nat.add(o, n), KA.klen($DN, NU.dapp(gc, yc)), hlr2, Equal.sym(Nat, KA.klen($DN, NU.dapp(gc, yc)), Nat.add(o, n), hlc2)))
+
+def rn_dt(~F: O.OField, +n: Nat, +yr: List<&2, S.D>, +hly: {KA.klen($DN, yr) == n : Nat}, +h: FV.rnn(~F, M.ofdv(~F, yr))) -> FV.rnn(~F, M.ofdv(~F, NU.dtake(n, yr))):
+  %Equal.sym(List<&2, S.D>, NU.dtake(n, yr), yr, dtake_eq(n, yr, hly)) : FV.rnn(~F, M.ofdv(~F, _))
+  h
+
+def rn2_of(~F: O.OField, +gr: List<&2, S.D>, +n: Nat, +yr: List<&2, S.D>, +hly: {KA.klen($DN, yr) == n : Nat}, +hrn: FV.rnn(~F, M.ofdv(~F, gr)), +hrny: FV.rnn(~F, M.ofdv(~F, yr))) -> FV.rnn(~F, M.ofdv(~F, NU.dapp(gr, NU.dtake(n, yr)))):
+  %Equal.sym(M.Vec(~F), M.ofdv(~F, NU.dapp(gr, NU.dtake(n, yr))), C.app(~F, M.ofdv(~F, gr), M.ofdv(~F, NU.dtake(n, yr))), ofdv_app(~F, gr, NU.dtake(n, yr))) : FV.rnn(~F, _)
+  rnn_app(~F, M.ofdv(~F, gr), M.ofdv(~F, NU.dtake(n, yr)), hrn, rn_dt(~F, n, yr, hly, hrny))
+
+def vb_dt(~F: O.OField, +n: Nat, +yr: List<&2, S.D>, +c: @T, +hly: {KA.klen($DN, yr) == n : Nat}, +h: M.vbnd.all(~F, M.ofdv(~F, yr), c)) -> M.vbnd.all(~F, M.ofdv(~F, NU.dtake(n, yr)), c):
+  %Equal.sym(List<&2, S.D>, NU.dtake(n, yr), yr, dtake_eq(n, yr, hly)) : M.vbnd.all(~F, M.ofdv(~F, _), c)
+  h
+
+def rb2_of(~F: O.OField, +p: Nat, +gr: List<&2, S.D>, +n: Nat, +yr: List<&2, S.D>, +hly: {KA.klen($DN, yr) == n : Nat}, +tt: @T, +tn: @T, +rb: @T, +htn: O.le(~F, tt, tn), +hrbn: O.le(~F, rb, @M($HH, tn)), +hrb: M.vbnd.all(~F, M.ofdv(~F, gr), @M($HH, tt)), +hvy: M.vbnd.all(~F, M.ofdv(~F, yr), rb)) -> M.vbnd.all(~F, M.ofdv(~F, NU.dapp(gr, NU.dtake(n, yr))), @M($HH, tn)):
+  %Equal.sym(M.Vec(~F), M.ofdv(~F, NU.dapp(gr, NU.dtake(n, yr))), C.app(~F, M.ofdv(~F, gr), M.ofdv(~F, NU.dtake(n, yr))), ofdv_app(~F, gr, NU.dtake(n, yr))) : M.vbnd.all(~F, _, @M($HH, tn))
+  NW.vall_app(~F, M.ofdv(~F, gr), M.ofdv(~F, NU.dtake(n, yr)), @M($HH, tn), vall_mono(~F, M.ofdv(~F, gr), @M($HH, tt), @M($HH, tn), hrb, FV.mul_le(~F, $HH, tt, tn, NW.hnw_nn(~F, p), htn)), vb_dt(~F, n, yr, @M($HH, tn), hly, vall_mono(~F, M.ofdv(~F, yr), rb, @M($HH, tn), hvy, hrbn)))
+
+def natle_r(+a: Nat, +b: Nat, +b2: Nat, e: {b == b2 : Nat}, h: {KA.natle(a, b) == True{} : Bool}) -> {KA.natle(a, b2) == True{} : Bool}:
+  %e : {KA.natle(a, _) == True{} : Bool}
+  h
+
+def pb_cert.go($STP, +yc: List<&2, S.D>, +yr: List<&2, S.D>, +q: S.D, +ym: List<&2, List<&2, S.D>>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +hck: {CK.check($DN, C.Block{$EQ0, $N0}, $CR0) == True{} : Bool}, +hbl: BX.rbnd(~F, BX.vsub(~F, $YB0, M.ofdv(~F, yc)), M.ofdv(~F, yr)), +hrny: FV.rnn(~F, M.ofdv(~F, yr)), +hvy: M.vbnd.all(~F, M.ofdv(~F, yr), rb), +hly: {KA.klen($DN, yr) == $N0 : Nat}, +hpc: {pc == NU.dpick(gc, pars) : List<&2, S.D>}, +hpr: {pr == NU.dpick(gr, pars) : List<&2, S.D>}, ih: $IHT) -> PG($PGA, o, gc, gr, sys, tf, NU.pblocks($BS0, NU.BOk{$CR0}, sys, $G0B, p, o, gc, gr, Nil{})):
+  +hX = natle_r($ON, nv, M.len(~F, $XV), Equal.sym(Nat, M.len(~F, $XV), nv, hlx), h2n)
+  +hlyc = PP.cert_lyc($DN, $EQ0, $N0, $CR0, hck)
+  +hlc2 = klen_dapp(gc, yc, o, $N0, hlc, hlyc)
+  +hlr2 = klen_dapp(gr, NU.dtake($N0, yr), o, $N0, hlr, kl_dt($N0, yr, hly))
+  +hpb2 = pb2_of(~F, ~H, vp, x, o, $N0, gc, gr, yc, yr, hlc, hlr, hlyc, hly, hlc2, hlr2, hX, hpb, hbl)
+  +hrn2 = rn2_of(~F, gr, $N0, yr, hly, hrn, hrny)
+  +hrb2 = rb2_of(~F, p, gr, $N0, yr, hly, tt, tn, rb, htn, hrbn, hrb, hvy)
+  +h5 = h5_of(o, $N0, pars, sys, gc, gr, yc, yr, q, ym, pc, pr, hck, hpc, hpr)
+  %Equal.sym(List<&2, S.D>, pc, NU.dpick(gc, pars), hpc) : PG($PGA, o, gc, gr, sys, tf, NU.pblocks($BS0, NU.BOk{C.Cert{yc, yr, q, ym, _, pr}}, sys, $G0B, p, o, gc, gr, Nil{}))
+  %Equal.sym(List<&2, S.D>, pr, NU.dpick(gr, pars), hpr) : PG($PGA, o, gc, gr, sys, tf, NU.pblocks($BS0, NU.BOk{C.Cert{yc, yr, q, ym, NU.dpick(gc, pars), _}}, sys, $G0B, p, o, gc, gr, Nil{}))
+  %Equal.sym(NU.PBR, NU.pblocks(bst, NU.bcert(bst, PL.dropq($N0, sys), $G0B, p, $ON, $GC2, $GR2), PL.dropq($N0, sys), $G0B, p, $ON, $GC2, $GR2, Con{$BLK, Nil{}}), pbacc(Con{$BLK, Nil{}}, NU.pblocks(bst, NU.bcert(bst, PL.dropq($N0, sys), $G0B, p, $ON, $GC2, $GR2), PL.dropq($N0, sys), $G0B, p, $ON, $GC2, $GR2, Nil{})), pb_acc(bst, NU.bcert(bst, PL.dropq($N0, sys), $G0B, p, $ON, $GC2, $GR2), PL.dropq($N0, sys), $G0B, p, $ON, $GC2, $GR2, Con{$BLK, Nil{}})) : PG($PGA, o, gc, gr, sys, tf, _)
+  %Equal.sym(List<&2, E.QExpr>, PL.dropq($N0, sys), syst, hdq) : PG($PGA, o, gc, gr, sys, tf, pbacc(Con{$BLK, Nil{}}, NU.pblocks(bst, NU.bcert(bst, _, $G0B, p, $ON, $GC2, $GR2), _, $G0B, p, $ON, $GC2, $GR2, Nil{})))
+  pg_con($PGA, o, $N0, pars, gc, gr, sys, syst, tf, yc, yr, q, ym, $RST, ih(yc, yr, hlc2, hlr2, hpb2, hrn2, hrb2), hdq, h1, h2n, h3, h4, h5, hly, hlc, hlr)
+
+def pb_cert($STP, +yc: List<&2, S.D>, +yr: List<&2, S.D>, +q: S.D, +ym: List<&2, List<&2, S.D>>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, hg: BK.bgc(~F, $N0, $EQ0, $YB0, rb, NU.dpick(gc, pars), NU.dpick(gr, pars), $CR0), ih: $IHT) -> PG($PGA, o, gc, gr, sys, tf, NU.pblocks($BS0, NU.BOk{$CR0}, sys, $G0B, p, o, gc, gr, Nil{})):
+  match hg:
+    case (hck, r1):
+      match r1:
+        case (hbl, r2):
+          match r2:
+            case (hrny, r3):
+              match r3:
+                case (hvy, r4):
+                  match r4:
+                    case (hly, r5):
+                      match r5:
+                        case (hpc, hpr):
+                          pb_cert.go($STA, yc, yr, q, ym, pc, pr, hck, hbl, hrny, hvy, hly, hpc, hpr, ih)
+
+# a block's step: its certificate (as block_sc promises), then the rest
+def pb_step($STP, cur: NU.BR, hg: BK.bgood(~F, $N0, $EQ0, $YB0, rb, NU.dpick(gc, pars), NU.dpick(gr, pars), cur), ih: $IHT) -> PG($PGA, o, gc, gr, sys, tf, NU.pblocks($BS0, cur, sys, $G0B, p, o, gc, gr, Nil{})):
+  match cur:
+    case NU.BOk{C.Cert{+yc, +yr, +q, +ym, +pc, +pr}}:
+      pb_cert($STA, yc, yr, q, ym, pc, pr, hg, ih)
+    case NU.BRetry{}:
+      absurd(PG($PGA, o, gc, gr, sys, tf, NU.pblocks($BS0, NU.BRetry{}, sys, $G0B, p, o, gc, gr, Nil{})), hg)
+    case NU.BStop{}:
+      absurd(PG($PGA, o, gc, gr, sys, tf, NU.pblocks($BS0, NU.BStop{}, sys, $G0B, p, o, gc, gr, Nil{})), hg)
