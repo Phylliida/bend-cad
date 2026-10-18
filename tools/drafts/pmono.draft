@@ -1,0 +1,340 @@
+# bend-cad: monotone polynomials, reflected (DESIGN §10.4 "C6 plan",
+# C6a). Proofs only.
+# Generated: python3 tools/expand.py tools/drafts/pmono.draft lib/pmono.bend
+#
+# A PE is a polynomial over atoms 0, 1, ... built with + and * only, read
+# in F at a list of values (peval). Each atom i carries a bound c_i and a
+# flag: fixed (0 <= a_i <= c_i) or small (0 <= a_i <= t c_i), for one
+# scale 0 <= t <= 1 (Bnd). Then peval(a, P) <= peval(c, P) (pe_mono); when
+# every monomial of P has a small atom (d1), peval(a, P) <= t peval(c, P)
+# (pe_lin); when every monomial has two (d2), peval(a, P) <= t (t
+# peval(c, P)) (pe_quad). The solver's constants (C5) are pevals of
+# reflected expressions by conversion, so each smallness hypothesis
+# becomes one of these.
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ../spec/mat.bend as M
+import ./fring.bend as FR
+import ./ford.bend as FO
+import ./fmat.bend as FM
+import ./dmat.bend as DM
+import ./fvec.bend as FV
+import ./karith.bend as KA
+
+type PE is Data:
+  PAt{i: Nat}
+  PPlus{p: PE, q: PE}
+  PTimes{p: PE, q: PE}
+
+def peval(~F: O.OField, +env: List<&2, O.C(F)>, e: PE) -> O.C(F):
+  match e:
+    case PAt{i}:
+      O.lookup(~F, env, i)
+    case PPlus{p, q}:
+      O.add(F, peval(~F, env, p), peval(~F, env, q))
+    case PTimes{p, q}:
+      O.mul(F, peval(~F, env, p), peval(~F, env, q))
+
+# Flags
+# -----
+
+def pand(a: Bool, b: Bool) -> Bool:
+  match a:
+    case True{}:
+      b
+    case False{}:
+      False{}
+
+def por(a: Bool, b: Bool) -> Bool:
+  match a:
+    case True{}:
+      True{}
+    case False{}:
+      b
+
+def bget(sm: List<&2, Bool>, i: Nat) -> Bool:
+  match sm i:
+    case Nil{} i:
+      False{}
+    case Con{s, ss} 0n:
+      s
+    case Con{s, ss} 1n+j:
+      bget(ss, j)
+
+# every monomial has a small atom
+def d1(+sm: List<&2, Bool>, e: PE) -> Bool:
+  match e:
+    case PAt{i}:
+      bget(sm, i)
+    case PPlus{p, q}:
+      pand(d1(sm, p), d1(sm, q))
+    case PTimes{p, q}:
+      por(d1(sm, p), d1(sm, q))
+
+# every monomial has two small atoms (counted with multiplicity)
+def d2(+sm: List<&2, Bool>, e: PE) -> Bool:
+  match e:
+    case PAt{i}:
+      False{}
+    case PPlus{p, q}:
+      pand(d2(sm, p), d2(sm, q))
+    case PTimes{+p, +q}:
+      por(d2(sm, p), por(d2(sm, q), pand(d1(sm, p), d1(sm, q))))
+
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+def pand_l(a: Bool, +b: Bool, h: {pand(a, b) == True{} : Bool}) -> {a == True{} : Bool}:
+  match a:
+    case True{}:
+      {==}
+    case False{}:
+      h
+
+def pand_r(a: Bool, +b: Bool, h: {pand(a, b) == True{} : Bool}) -> {b == True{} : Bool}:
+  match a:
+    case True{}:
+      h
+    case False{}:
+      absurd({b == True{} : Bool}, KA.ft(h))
+
+# Order
+# -----
+
+# a <= b and b2 = b give a <= b2
+def le_r(~F: O.OField, +a: O.C(F), +b: O.C(F), +b2: O.C(F), e: {b2 == b : O.C(F)}, h: O.le(~F, a, b)) -> O.le(~F, a, b2):
+  %Equal.sym(O.C(F), b2, b, e) : O.le(~F, a, _)
+  h
+
+def le_add2(~F: O.OField, +a: O.C(F), +b: O.C(F), +c: O.C(F), +d: O.C(F), h1: O.le(~F, a, b), h2: O.le(~F, c, d)) -> O.le(~F, @A(a, c), @A(b, d)):
+  FV.le_of_sub(~F, @A(a, c), @A(b, d), FM.nn_eq(~F, @S(@A(b, d), @A(a, c)), @A(@S(b, a), @S(d, c)), @ZEQ[a,, b,, c,, d | (b - a) + (d - c) | (b + d) - (a + c)], FO.nonneg_add(~F, @S(b, a), @S(d, c), FM.sub_nonneg(~F, a, b, h1), FM.sub_nonneg(~F, c, d, h2))))
+
+# a <= b and c <= d give a c <= b d, for 0 <= c and 0 <= b
+def le_mul2(~F: O.OField, +a: O.C(F), +b: O.C(F), +c: O.C(F), +d: O.C(F), h1: O.le(~F, a, b), h2: O.le(~F, c, d), hc: O.le(~F, @0, c), +hb: O.le(~F, @0, b)) -> O.le(~F, @M(a, c), @M(b, d)):
+  DM.le_trans(~F, @M(a, c), @M(b, c), @M(b, d), FV.mul_le_r(~F, a, b, c, hc, h1), FV.mul_le(~F, b, c, d, hb, h2))
+
+# t y <= y, for t <= 1 and 0 <= y
+def tle(~F: O.OField, +t: O.C(F), +y: O.C(F), ht1: O.le(~F, t, @1), hy: O.le(~F, @0, y)) -> O.le(~F, @M(t, y), y):
+  le_r(~F, @M(t, y), @M(@1, y), y, @ZEQ[y | y | 1*y], FV.mul_le_r(~F, t, @1, y, hy, ht1))
+
+# Atoms
+# -----
+# an atom's value a, its bound c and whether it is small
+
+type Atm<-A: Data> is Data:
+  Atm{a: A, c: A, s: Bool}
+
+def avs(~F: O.OField, env: List<&2, Atm<O.C(F)>>) -> List<&2, O.C(F)>:
+  match env:
+    case Nil{}:
+      Nil{}
+    case Con{Atm{x, y, s}, r}:
+      Con{x, avs(~F, r)}
+
+def cvs(~F: O.OField, env: List<&2, Atm<O.C(F)>>) -> List<&2, O.C(F)>:
+  match env:
+    case Nil{}:
+      Nil{}
+    case Con{Atm{x, y, s}, r}:
+      Con{y, cvs(~F, r)}
+
+def svs(~F: O.OField, env: List<&2, Atm<O.C(F)>>) -> List<&2, Bool>:
+  match env:
+    case Nil{}:
+      Nil{}
+    case Con{Atm{x, y, s}, r}:
+      Con{s, svs(~F, r)}
+
+def AtB(~F: O.OField, +x: O.C(F), +y: O.C(F), s: Bool, +t: O.C(F)) -> Data:
+  match s:
+    case True{}:
+      O.le(~F, x, @M(t, y))
+    case False{}:
+      O.le(~F, x, y)
+
+# 0 <= x, 0 <= y, and x <= y (fixed) or x <= t y (small)
+def At(~F: O.OField, +x: O.C(F), +y: O.C(F), +s: Bool, +t: O.C(F)) -> Data:
+  M.Both(O.le(~F, @0, x), M.Both(O.le(~F, @0, y), AtB(~F, x, y, s, t)))
+
+def Bnd(~F: O.OField, env: List<&2, Atm<O.C(F)>>, +t: O.C(F)) -> Data:
+  match env:
+    case Nil{}:
+      Unit
+    case Con{Atm{+x, +y, +s}, r}:
+      M.Both(At(~F, x, y, s, t), Bnd(~F, r, t))
+
+@MACRO AE avs(~F, env)
+@MACRO CE cvs(~F, env)
+@MACRO SE svs(~F, env)
+@MACRO EP ~F: O.OField, +env: List<&2, Atm<O.C(F)>>, +t: O.C(F), +h: Bnd(~F, env, t)
+@MACRO EA ~F, env, t, h
+
+def bnd_hd(~F: O.OField, +x: O.C(F), +y: O.C(F), +s: Bool, r: List<&2, Atm<O.C(F)>>, +t: O.C(F), h: M.Both(At(~F, x, y, s, t), Bnd(~F, r, t))) -> At(~F, x, y, s, t):
+  (h1, h2) = h
+  h1
+
+def bnd_tl(~F: O.OField, +x: O.C(F), +y: O.C(F), +s: Bool, r: List<&2, Atm<O.C(F)>>, +t: O.C(F), h: M.Both(At(~F, x, y, s, t), Bnd(~F, r, t))) -> Bnd(~F, r, t):
+  (h1, h2) = h
+  h2
+
+def bnd_at(~F: O.OField, env: List<&2, Atm<O.C(F)>>, +t: O.C(F), h: Bnd(~F, env, t), i: Nat) -> At(~F, O.lookup(~F, avs(~F, env), i), O.lookup(~F, cvs(~F, env), i), bget(svs(~F, env), i), t):
+  match env i:
+    case Nil{} i:
+      (FO.le_refl(~F, @0), (FO.le_refl(~F, @0), FO.le_refl(~F, @0)))
+    case Con{Atm{+x, +y, +s}, +r} 0n:
+      bnd_hd(~F, x, y, s, r, t, h)
+    case Con{Atm{+x, +y, +s}, +r} 1n+j:
+      bnd_at(~F, r, t, bnd_tl(~F, x, y, s, r, t, h), j)
+
+def at_nn(~F: O.OField, +x: O.C(F), +y: O.C(F), +s: Bool, +t: O.C(F), h: At(~F, x, y, s, t)) -> O.le(~F, @0, x):
+  (h1, h2) = h
+  h1
+
+def at_cnn.go(~F: O.OField, +x: O.C(F), +y: O.C(F), +s: Bool, +t: O.C(F), h: M.Both(O.le(~F, @0, y), AtB(~F, x, y, s, t))) -> O.le(~F, @0, y):
+  (h1, h2) = h
+  h1
+
+def at_cnn(~F: O.OField, +x: O.C(F), +y: O.C(F), +s: Bool, +t: O.C(F), h: At(~F, x, y, s, t)) -> O.le(~F, @0, y):
+  (h1, h2) = h
+  at_cnn.go(~F, x, y, s, t, h2)
+
+def at_le.go(~F: O.OField, +x: O.C(F), +y: O.C(F), s: Bool, +t: O.C(F), +ht1: O.le(~F, t, @1), +hy: O.le(~F, @0, y), h: AtB(~F, x, y, s, t)) -> O.le(~F, x, y):
+  match s:
+    case True{}:
+      DM.le_trans(~F, x, @M(t, y), y, h, tle(~F, t, y, ht1, hy))
+    case False{}:
+      h
+
+def at_le.b(~F: O.OField, +x: O.C(F), +y: O.C(F), +s: Bool, +t: O.C(F), +ht1: O.le(~F, t, @1), h: M.Both(O.le(~F, @0, y), AtB(~F, x, y, s, t))) -> O.le(~F, x, y):
+  (h1, h2) = h
+  at_le.go(~F, x, y, s, t, ht1, h1, h2)
+
+# an atom is at most its bound
+def at_le(~F: O.OField, +x: O.C(F), +y: O.C(F), +s: Bool, +t: O.C(F), +ht1: O.le(~F, t, @1), h: At(~F, x, y, s, t)) -> O.le(~F, x, y):
+  (h1, h2) = h
+  at_le.b(~F, x, y, s, t, ht1, h2)
+
+def at_lin.go(~F: O.OField, +x: O.C(F), +y: O.C(F), s: Bool, +t: O.C(F), hs: {s == True{} : Bool}, h: AtB(~F, x, y, s, t)) -> O.le(~F, x, @M(t, y)):
+  match s:
+    case True{}:
+      h
+    case False{}:
+      absurd(O.le(~F, x, @M(t, y)), KA.ft(hs))
+
+def at_lin.b(~F: O.OField, +x: O.C(F), +y: O.C(F), +s: Bool, +t: O.C(F), hs: {s == True{} : Bool}, h: M.Both(O.le(~F, @0, y), AtB(~F, x, y, s, t))) -> O.le(~F, x, @M(t, y)):
+  (h1, h2) = h
+  at_lin.go(~F, x, y, s, t, hs, h2)
+
+# a small atom is at most t times its bound
+def at_lin(~F: O.OField, +x: O.C(F), +y: O.C(F), +s: Bool, +t: O.C(F), hs: {s == True{} : Bool}, h: At(~F, x, y, s, t)) -> O.le(~F, x, @M(t, y)):
+  (h1, h2) = h
+  at_lin.b(~F, x, y, s, t, hs, h2)
+
+# Bounds
+# ------
+
+def pe_nn($EP, e: PE) -> O.le(~F, @0, peval(~F, $AE, e)):
+  match e:
+    case PAt{+i}:
+      at_nn(~F, O.lookup(~F, $AE, i), O.lookup(~F, $CE, i), bget($SE, i), t, bnd_at(~F, env, t, h, i))
+    case PPlus{+p, +q}:
+      FO.nonneg_add(~F, peval(~F, $AE, p), peval(~F, $AE, q), pe_nn($EA, p), pe_nn($EA, q))
+    case PTimes{+p, +q}:
+      FO.mul_nonneg(~F, peval(~F, $AE, p), peval(~F, $AE, q), pe_nn($EA, p), pe_nn($EA, q))
+
+def pe_cnn($EP, e: PE) -> O.le(~F, @0, peval(~F, $CE, e)):
+  match e:
+    case PAt{+i}:
+      at_cnn(~F, O.lookup(~F, $AE, i), O.lookup(~F, $CE, i), bget($SE, i), t, bnd_at(~F, env, t, h, i))
+    case PPlus{+p, +q}:
+      FO.nonneg_add(~F, peval(~F, $CE, p), peval(~F, $CE, q), pe_cnn($EA, p), pe_cnn($EA, q))
+    case PTimes{+p, +q}:
+      FO.mul_nonneg(~F, peval(~F, $CE, p), peval(~F, $CE, q), pe_cnn($EA, p), pe_cnn($EA, q))
+
+# P at the values is at most P at the bounds
+def pe_mono($EP, +ht1: O.le(~F, t, @1), e: PE) -> O.le(~F, peval(~F, $AE, e), peval(~F, $CE, e)):
+  match e:
+    case PAt{+i}:
+      at_le(~F, O.lookup(~F, $AE, i), O.lookup(~F, $CE, i), bget($SE, i), t, ht1, bnd_at(~F, env, t, h, i))
+    case PPlus{+p, +q}:
+      le_add2(~F, peval(~F, $AE, p), peval(~F, $CE, p), peval(~F, $AE, q), peval(~F, $CE, q), pe_mono($EA, ht1, p), pe_mono($EA, ht1, q))
+    case PTimes{+p, +q}:
+      le_mul2(~F, peval(~F, $AE, p), peval(~F, $CE, p), peval(~F, $AE, q), peval(~F, $CE, q), pe_mono($EA, ht1, p), pe_mono($EA, ht1, q), pe_nn($EA, q), pe_cnn($EA, p))
+
+# With a small atom in every monomial
+# -----------------------------------
+
+def lin_add(~F: O.OField, +t: O.C(F), +a1: O.C(F), +a2: O.C(F), +c1: O.C(F), +c2: O.C(F), h1: O.le(~F, a1, @M(t, c1)), h2: O.le(~F, a2, @M(t, c2))) -> O.le(~F, @A(a1, a2), @M(t, @A(c1, c2))):
+  le_r(~F, @A(a1, a2), @A(@M(t, c1), @M(t, c2)), @M(t, @A(c1, c2)), @ZEQ[t,, c1,, c2 | t*(c1 + c2) | t*c1 + t*c2], le_add2(~F, a1, @M(t, c1), a2, @M(t, c2), h1, h2))
+
+def lin_mul_l(~F: O.OField, +t: O.C(F), +a1: O.C(F), +a2: O.C(F), +c1: O.C(F), +c2: O.C(F), h1: O.le(~F, a1, @M(t, c1)), h2: O.le(~F, a2, c2), ha2: O.le(~F, @0, a2), hc1: O.le(~F, @0, c1), ht0: O.le(~F, @0, t)) -> O.le(~F, @M(a1, a2), @M(t, @M(c1, c2))):
+  le_r(~F, @M(a1, a2), @M(@M(t, c1), c2), @M(t, @M(c1, c2)), @ZEQ[t,, c1,, c2 | t*(c1*c2) | (t*c1)*c2], le_mul2(~F, a1, @M(t, c1), a2, c2, h1, h2, ha2, FO.mul_nonneg(~F, t, c1, ht0, hc1)))
+
+def lin_mul_r(~F: O.OField, +t: O.C(F), +a1: O.C(F), +a2: O.C(F), +c1: O.C(F), +c2: O.C(F), h1: O.le(~F, a1, c1), h2: O.le(~F, a2, @M(t, c2)), ha2: O.le(~F, @0, a2), hc1: O.le(~F, @0, c1)) -> O.le(~F, @M(a1, a2), @M(t, @M(c1, c2))):
+  le_r(~F, @M(a1, a2), @M(c1, @M(t, c2)), @M(t, @M(c1, c2)), @ZEQ[t,, c1,, c2 | t*(c1*c2) | c1*(t*c2)], le_mul2(~F, a1, c1, a2, @M(t, c2), h1, h2, ha2, hc1))
+
+@MACRO LP $EP, +ht0: O.le(~F, @0, t), +ht1: O.le(~F, t, @1)
+@MACRO LA $EA, ht0, ht1
+@MACRO VA(X) peval(~F, $AE, X)
+
+def lin_times($LP, +p: PE, +q: PE, b: Bool, eb: {d1($SE, p) == b : Bool}, hd: {por(b, d1($SE, q)) == True{} : Bool}, ihp: {d1($SE, p) == True{} : Bool} -> O.le(~F, peval(~F, $AE, p), @M(t, peval(~F, $CE, p))), ihq: {d1($SE, q) == True{} : Bool} -> O.le(~F, peval(~F, $AE, q), @M(t, peval(~F, $CE, q)))) -> O.le(~F, @M(peval(~F, $AE, p), peval(~F, $AE, q)), @M(t, @M(peval(~F, $CE, p), peval(~F, $CE, q)))):
+  match b:
+    case True{}:
+      lin_mul_l(~F, t, peval(~F, $AE, p), peval(~F, $AE, q), peval(~F, $CE, p), peval(~F, $CE, q), ihp(eb), pe_mono($EA, ht1, q), pe_nn($EA, q), pe_cnn($EA, p), ht0)
+    case False{}:
+      lin_mul_r(~F, t, peval(~F, $AE, p), peval(~F, $AE, q), peval(~F, $CE, p), peval(~F, $CE, q), pe_mono($EA, ht1, p), ihq(hd), pe_nn($EA, q), pe_cnn($EA, p))
+
+# every monomial with a small atom: P at the values is at most t times P
+# at the bounds
+def pe_lin($LP, e: PE, +hd: {d1($SE, e) == True{} : Bool}) -> O.le(~F, peval(~F, $AE, e), @M(t, peval(~F, $CE, e))):
+  match e:
+    case PAt{+i}:
+      at_lin(~F, O.lookup(~F, $AE, i), O.lookup(~F, $CE, i), bget($SE, i), t, hd, bnd_at(~F, env, t, h, i))
+    case PPlus{+p, +q}:
+      lin_add(~F, t, peval(~F, $AE, p), peval(~F, $AE, q), peval(~F, $CE, p), peval(~F, $CE, q), pe_lin($LA, p, pand_l(d1($SE, p), d1($SE, q), hd)), pe_lin($LA, q, pand_r(d1($SE, p), d1($SE, q), hd)))
+    case PTimes{+p, +q}:
+      lin_times($LA, p, q, d1($SE, p), {==}, hd, hp => pe_lin($LA, p, hp), hq => pe_lin($LA, q, hq))
+
+# With two small atoms in every monomial
+# --------------------------------------
+
+def quad_add(~F: O.OField, +t: O.C(F), +a1: O.C(F), +a2: O.C(F), +c1: O.C(F), +c2: O.C(F), h1: O.le(~F, a1, @M(t, @M(t, c1))), h2: O.le(~F, a2, @M(t, @M(t, c2)))) -> O.le(~F, @A(a1, a2), @M(t, @M(t, @A(c1, c2)))):
+  le_r(~F, @A(a1, a2), @A(@M(t, @M(t, c1)), @M(t, @M(t, c2))), @M(t, @M(t, @A(c1, c2))), @ZEQ[t,, c1,, c2 | t*(t*(c1 + c2)) | t*(t*c1) + t*(t*c2)], le_add2(~F, a1, @M(t, @M(t, c1)), a2, @M(t, @M(t, c2)), h1, h2))
+
+def quad_mul_l(~F: O.OField, +t: O.C(F), +a1: O.C(F), +a2: O.C(F), +c1: O.C(F), +c2: O.C(F), h1: O.le(~F, a1, @M(t, @M(t, c1))), h2: O.le(~F, a2, c2), ha2: O.le(~F, @0, a2), +hc1: O.le(~F, @0, c1), +ht0: O.le(~F, @0, t)) -> O.le(~F, @M(a1, a2), @M(t, @M(t, @M(c1, c2)))):
+  le_r(~F, @M(a1, a2), @M(@M(t, @M(t, c1)), c2), @M(t, @M(t, @M(c1, c2))), @ZEQ[t,, c1,, c2 | t*(t*(c1*c2)) | (t*(t*c1))*c2], le_mul2(~F, a1, @M(t, @M(t, c1)), a2, c2, h1, h2, ha2, FO.mul_nonneg(~F, t, @M(t, c1), ht0, FO.mul_nonneg(~F, t, c1, ht0, hc1))))
+
+def quad_mul_r(~F: O.OField, +t: O.C(F), +a1: O.C(F), +a2: O.C(F), +c1: O.C(F), +c2: O.C(F), h1: O.le(~F, a1, c1), h2: O.le(~F, a2, @M(t, @M(t, c2))), ha2: O.le(~F, @0, a2), hc1: O.le(~F, @0, c1)) -> O.le(~F, @M(a1, a2), @M(t, @M(t, @M(c1, c2)))):
+  le_r(~F, @M(a1, a2), @M(c1, @M(t, @M(t, c2))), @M(t, @M(t, @M(c1, c2))), @ZEQ[t,, c1,, c2 | t*(t*(c1*c2)) | c1*(t*(t*c2))], le_mul2(~F, a1, c1, a2, @M(t, @M(t, c2)), h1, h2, ha2, hc1))
+
+def quad_mul_b(~F: O.OField, +t: O.C(F), +a1: O.C(F), +a2: O.C(F), +c1: O.C(F), +c2: O.C(F), h1: O.le(~F, a1, @M(t, c1)), h2: O.le(~F, a2, @M(t, c2)), ha2: O.le(~F, @0, a2), hc1: O.le(~F, @0, c1), ht0: O.le(~F, @0, t)) -> O.le(~F, @M(a1, a2), @M(t, @M(t, @M(c1, c2)))):
+  le_r(~F, @M(a1, a2), @M(@M(t, c1), @M(t, c2)), @M(t, @M(t, @M(c1, c2))), @ZEQ[t,, c1,, c2 | t*(t*(c1*c2)) | (t*c1)*(t*c2)], le_mul2(~F, a1, @M(t, c1), a2, @M(t, c2), h1, h2, ha2, FO.mul_nonneg(~F, t, c1, ht0, hc1)))
+
+def quad_times2($LP, +p: PE, +q: PE, b: Bool, eb: {d2($SE, q) == b : Bool}, +hd: {por(b, pand(d1($SE, p), d1($SE, q))) == True{} : Bool}, ihq: {d2($SE, q) == True{} : Bool} -> O.le(~F, peval(~F, $AE, q), @M(t, @M(t, peval(~F, $CE, q))))) -> O.le(~F, @M(peval(~F, $AE, p), peval(~F, $AE, q)), @M(t, @M(t, @M(peval(~F, $CE, p), peval(~F, $CE, q))))):
+  match b:
+    case True{}:
+      quad_mul_r(~F, t, peval(~F, $AE, p), peval(~F, $AE, q), peval(~F, $CE, p), peval(~F, $CE, q), pe_mono($EA, ht1, p), ihq(eb), pe_nn($EA, q), pe_cnn($EA, p))
+    case False{}:
+      quad_mul_b(~F, t, peval(~F, $AE, p), peval(~F, $AE, q), peval(~F, $CE, p), peval(~F, $CE, q), pe_lin($LA, p, pand_l(d1($SE, p), d1($SE, q), hd)), pe_lin($LA, q, pand_r(d1($SE, p), d1($SE, q), hd)), pe_nn($EA, q), pe_cnn($EA, p), ht0)
+
+def quad_times($LP, +p: PE, +q: PE, b: Bool, eb: {d2($SE, p) == b : Bool}, hd: {por(b, por(d2($SE, q), pand(d1($SE, p), d1($SE, q)))) == True{} : Bool}, ihp: {d2($SE, p) == True{} : Bool} -> O.le(~F, peval(~F, $AE, p), @M(t, @M(t, peval(~F, $CE, p)))), ihq: {d2($SE, q) == True{} : Bool} -> O.le(~F, peval(~F, $AE, q), @M(t, @M(t, peval(~F, $CE, q))))) -> O.le(~F, @M(peval(~F, $AE, p), peval(~F, $AE, q)), @M(t, @M(t, @M(peval(~F, $CE, p), peval(~F, $CE, q))))):
+  match b:
+    case True{}:
+      quad_mul_l(~F, t, peval(~F, $AE, p), peval(~F, $AE, q), peval(~F, $CE, p), peval(~F, $CE, q), ihp(eb), pe_mono($EA, ht1, q), pe_nn($EA, q), pe_cnn($EA, p), ht0)
+    case False{}:
+      quad_times2($LA, p, q, d2($SE, q), {==}, hd, ihq)
+
+# every monomial with two small atoms: P at the values is at most t (t P)
+# at the bounds
+def pe_quad($LP, e: PE, +hd: {d2($SE, e) == True{} : Bool}) -> O.le(~F, peval(~F, $AE, e), @M(t, @M(t, peval(~F, $CE, e)))):
+  match e:
+    case PAt{+i}:
+      absurd(O.le(~F, O.lookup(~F, $AE, i), @M(t, @M(t, O.lookup(~F, $CE, i)))), KA.ft(hd))
+    case PPlus{+p, +q}:
+      quad_add(~F, t, peval(~F, $AE, p), peval(~F, $AE, q), peval(~F, $CE, p), peval(~F, $CE, q), pe_quad($LA, p, pand_l(d2($SE, p), d2($SE, q), hd)), pe_quad($LA, q, pand_r(d2($SE, p), d2($SE, q), hd)))
+    case PTimes{+p, +q}:
+      quad_times($LA, p, q, d2($SE, p), {==}, hd, hp => pe_quad($LA, p, hp), hq => pe_quad($LA, q, hq))

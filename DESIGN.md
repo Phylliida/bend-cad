@@ -1290,6 +1290,54 @@ restates pieces of each and block_ok in full, so the gate checks them).
   1, w3 the window's cw ≤ 1/2, w4 (65/64)(θ_L + yn nΛ dx) ≤ 1/64.
   C6 discharges them for large p.
 
+**C6 plan** (2026-10-17). The solver as it runs: solve_l = seal(search_lw);
+at level l the loop's first precision is P = P_l (64, 96, 128, 192, ...),
+and if P's answer passes the whole verdict the loop returns it and ok is
+that verdict. So it is enough to show plan(kept, nv, skel_of(sk), g, P)
+is POk and accept is True at P, for every g within d of x.
+- *Scales.* h = 2^-(P+1), u = 2^-(P+32) ≤ h, t = 2^-⌊P/2⌋ (Y's v) with
+  h ≤ t ≤ 1. Take d ≤ h. Every block constant of C5 is a polynomial with
+  nonnegative coefficients in the small quantities (d, ρ, h, u, v) and
+  fixed ones (n, m, β, Λ, M, C4's KD and KP, dyadic constants), and every
+  smallness hypothesis is "such a polynomial with no constant term is at
+  most a constant".
+- *C6a, scale form* (lib/pmono.bend, lib/scalepf.bend). Monotone
+  polynomials, reflected: an expression type over atoms with `peval` in
+  F; with each atom 0 ≤ a_i ≤ c_i (fixed) or ≤ c_i t (small), 0 ≤ t ≤ 1:
+  peval(P, a) ≤ peval(P, c), and ≤ t peval(P, c) when every monomial has
+  a small atom, t² peval(P, c) when two. One induction each; each C5
+  constant is peval of a reflected expression by conversion. Then
+  `block_sc`: block_ok with the smallness hypotheses replaced by
+  d ≤ h, ρ ≤ T h and t Q(T) ≤ 1 (Q explicit in the block's fixed
+  constants and T), and r_b ≤ Φ(T) h with Φ(T) ≥ T. Two scales: t for
+  the w's, s1, s2 and C4's acoef (u ≤ t); h for the radius and the settle
+  test (settle ≤ h² Q').
+- *C6b, per-block inverses* (lib/binvpf.bend). regular_blocks gives InvN
+  of the block-order Jacobian; it is [[A, 0], [C, D]] as a list once the
+  upper-right entries are rewritten to 0 (an equation that does not use
+  a variable has derivative 0 there, propositionally), so GJ.block_inv
+  peels block by block. Each A is the block's local Jacobian
+  (deriv_rename, deriv_rnv, kept_reorder), and InvN gives InvB with
+  β = its inverse's mnorm.
+- *C6c, the blocks in turn* (lib/pblkpf.bend). The induction over
+  pblocks (accumulator moved out: pblocks(.., acc) = pbacc(acc,
+  pblocks(.., Nil))). Invariant at offset o: the box so far (gc, gr) has
+  length o, holds X = x in block order (planpf's pbox), radii in
+  [0, T_k h]. Per block, block_sc's inputs: lengths, equations held and
+  below n + m (dyadic, swalk's ecov), x_b's equations zero locally
+  (zeros_unsubst), the drawing within d (Near, the block's unknowns are
+  not pins), the parameters' balls from pbox. Result: PBOk with
+  walk(final box) (block_ok's conjuncts transported along the prefix;
+  pcont from kle(|c - c| + r, r)), pbox over all nv, radii ≤ T_K h.
+  T_0 = 0, T_(k+1) = Φ_k(T_k).
+- *C6d, the verdict and the top* (lib/completepf.bend). held (pins: radius
+  0, centers g's), explained and wf_dec (solve_total), within, check.r's
+  permutations (vp from sfacts, ep from alleqs vs good), kperm of unperm,
+  check_sides (Strict at x: center within lp T h of the value, radius
+  ≤ lp T h; a variable-free Ge0 has radius 0), inbox (unperm of pbox).
+  Choosing: Q = Σ_k Q_k + the sides' 4 lp T_K / σ, l = arch(Q) (P_l ≥ 2l,
+  so t ≤ 2^-l < 1/Q), d = h.
+
 **Risks.** Size: several thousand lines over several sessions (C4 is the
 largest single piece). Checker time on long inequality proofs: keep the
 files small. Rounding lemmas on binary positives. (Lists read with
