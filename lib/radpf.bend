@@ -961,3 +961,151 @@ def cs_fin(~F: O.OField, +sd: O.C(F), +db: O.C(F), +dg: O.C(F), +d0: O.C(F), +R:
             sub_nn(~F, db, O.mul(F, yn, O.mul(F, O.mul(F, mm, O.mul(F, lam, R)), rb)), hdb)),
           sub_nn(~F, dg, O.add(F, O.mul(F, thL, R), O.mul(F, yn, O.mul(F, O.mul(F, nn, O.mul(F, lam, rb)), R))), hdg)),
         sub_nn(~F, d0, O.zero(F), hd0)))))
+
+# The window's three bound conditions
+# -----------------------------------
+
+
+def lk_le(~F: O.OField, +v: M.Vec(~F), +k: Nat) -> O.le(~F, O.lookup(~F, v, k), NP.vn(~F, v)):
+  NP.bnd_lo(~F, O.lookup(~F, v, k), NP.vn(~F, v), AP.lkb(~F, v, k))
+
+# entry k of svec(r) is at most r
+def cs_k(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +eqs: List<&2, E.QExpr>, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +ym: List<&2, List<&2, S.D>>, +r: S.D, +k: Nat, +hT: O.le(~F, O.add(F, O.add(F, O.add(F, M.ofd(~F, NU.dvmax(CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr))), NP.vn(~F, BX.vsub(~F, N.ofkv(~KI.dnum(), ~F, ~H, bk(~F, ~H, n, eqs, yc, pc, pr, ym, NU.dreps(n, r))), N.ofkv(~KI.dnum(), ~F, ~H, bk(~F, ~H, n, eqs, yc, pc, pr, ym, Nil{}))))), NP.vn(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)))), NP.vn(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr)))), M.ofd(~F, r))) -> O.le(~F, O.lookup(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.svec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)), k), M.ofd(~F, r)):
+  %Equal.sym(M.Vec(~F), N.ofkv(~KI.dnum(), ~F, ~H, CK.svec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)), M.vadd(~F, M.vadd(~F, N.ofkv(~KI.dnum(), ~F, ~H, ayf(~F, ~H, n, eqs, yc, pc, pr, ym)), N.ofkv(~KI.dnum(), ~F, ~H, bk(~F, ~H, n, eqs, yc, pc, pr, ym, NU.dreps(n, r)))), N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr))), svec_f(~F, ~H, n, eqs, yc, pc, pr, ym, NU.dreps(n, r))) : O.le(~F, O.lookup(~F, _, k), M.ofd(~F, r))
+  DM.le_trans(~F, O.lookup(~F, M.vadd(~F, M.vadd(~F, N.ofkv(~KI.dnum(), ~F, ~H, ayf(~F, ~H, n, eqs, yc, pc, pr, ym)), N.ofkv(~KI.dnum(), ~F, ~H, bk(~F, ~H, n, eqs, yc, pc, pr, ym, NU.dreps(n, r)))), N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr))), k), O.add(F, O.add(F, O.add(F, M.ofd(~F, NU.dvmax(CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr))), NP.vn(~F, BX.vsub(~F, N.ofkv(~KI.dnum(), ~F, ~H, bk(~F, ~H, n, eqs, yc, pc, pr, ym, NU.dreps(n, r))), N.ofkv(~KI.dnum(), ~F, ~H, bk(~F, ~H, n, eqs, yc, pc, pr, ym, Nil{}))))), NP.vn(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)))), NP.vn(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr)))), M.ofd(~F, r),
+    cs_at(~F, N.ofkv(~KI.dnum(), ~F, ~H, ayf(~F, ~H, n, eqs, yc, pc, pr, ym)), N.ofkv(~KI.dnum(), ~F, ~H, bk(~F, ~H, n, eqs, yc, pc, pr, ym, NU.dreps(n, r))), N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)), N.ofkv(~KI.dnum(), ~F, ~H, bk(~F, ~H, n, eqs, yc, pc, pr, ym, Nil{})), N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr)), M.ofd(~F, NU.dvmax(CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr))), k,
+      (%svec_f(~F, ~H, n, eqs, yc, pc, pr, ym, Nil{}) : O.le(~F, O.lookup(~F, _, k), M.ofd(~F, NU.dvmax(CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr))))
+        (%Equal.sym(M.Vec(~F), N.ofkv(~KI.dnum(), ~F, ~H, CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr)), M.ofdv(~F, CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr)), AP.ofkv_d(~F, ~H, CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr))) : O.le(~F, O.lookup(~F, _, k), M.ofd(~F, NU.dvmax(CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr))))
+          dvmax_at(~F, CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr), k)))),
+    hT)
+
+# the self-map condition at r, from S <= r/2 and the window cw <= 1/2
+def cself_ok(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +eqs: List<&2, E.QExpr>, +hn: {CK.eqlen(eqs) == n : Nat}, +hh: {CK.allheld(~KI.dnum(), eqs) == True{} : Bool}, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +lyc: {KA.klen(~KI.dnum(), yc) == n : Nat}, +lpp: {KA.klen(~KI.dnum(), pc) == KA.klen(~KI.dnum(), pr) : Nat}, +ym: List<&2, List<&2, S.D>>, +bb: O.C(F), +lam: O.C(F), +ms: O.C(F), +rb: O.C(F), +hb: O.le(~F, O.zero(F), bb), +hl0: O.le(~F, O.zero(F), lam), +hrb: O.le(~F, O.zero(F), rb), +hq: AP.eqok(~F, bb, lam, ms, eqs), +hc: M.vbnd.all(~F, C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc)), O.sub(~F, bb, rb)), +hpn: FV.rnn(~F, M.ofdv(~F, pr)), +hpr: M.vbnd.all(~F, M.ofdv(~F, pr), rb), +yn: O.C(F), +thL: O.C(F), +hyn: O.le(~F, NP.mnorm(~F, M.ofdm(~F, ym), n), yn), +hthl: O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, M.ofdm(~F, ym), NW.jc(~F, eqs, n, C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc)))))), n), thL), +hyn0: O.le(~F, O.zero(F), yn), +hthl0: O.le(~F, O.zero(F), thL), +hym: {CK.mlen(~KI.dnum(), ym) == n : Nat}, +r: S.D, +hr0: O.le(~F, O.zero(F), M.ofd(~F, r)), +hr1: O.le(~F, M.ofd(~F, r), rb), +hS: O.le(~F, M.ofd(~F, NU.dvmax(CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr))), O.mul(F, M.ofd(~F, NU.half()), M.ofd(~F, r))), +hw: O.le(~F, O.add(F, O.add(F, thL, O.mul(F, yn, O.mul(F, FR.ofn(~F, n), O.mul(F, lam, rb)))), O.mul(F, yn, O.mul(F, FR.ofn(~F, KA.klen(~KI.dnum(), pc)), O.mul(F, lam, rb)))), M.ofd(~F, NU.half()))) -> {CK.cself(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr) == True{} : Bool}:
+  +hT = cs_fin(~F, M.ofd(~F, NU.dvmax(CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr))), NP.vn(~F, BX.vsub(~F, N.ofkv(~KI.dnum(), ~F, ~H, bk(~F, ~H, n, eqs, yc, pc, pr, ym, NU.dreps(n, r))), N.ofkv(~KI.dnum(), ~F, ~H, bk(~F, ~H, n, eqs, yc, pc, pr, ym, Nil{})))), NP.vn(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr))), NP.vn(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr))), M.ofd(~F, r), M.ofd(~F, NU.half()), thL, yn, FR.ofn(~F, n), FR.ofn(~F, KA.klen(~KI.dnum(), pc)), lam, rb, hS, bdiff_bnd(~F, ~H, n, eqs, hn, hh, yc, pc, pr, lyc, lpp, ym, bb, lam, ms, rb, hb, hl0, hrb, hq, hc, hpn, hpr, yn, thL, hyn, hthl, hyn0, hthl0, r, hr0, hr1), gvec_bnd(~F, ~H, n, eqs, hn, hh, yc, pc, pr, lyc, lpp, ym, bb, lam, ms, rb, hb, hl0, hrb, hq, hc, hpn, hpr, yn, thL, hyn, hthl, hyn0, hthl0, r, hr0, hr1), g0_bnd(~F, ~H, n, eqs, yc, pc, pr, ym), hw, hr0, half_two(~F))
+  +lsr = Equal.trans(Nat, M.len(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.svec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr))), KA.klen(~KI.dnum(), CK.svec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)), n, CP.len_ofkv(~KI.dnum(), ~F, ~H, CK.svec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)), klen_svec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr, hym))
+  AP.kvle_of(~KI.dnum(), ~F, ~H, CK.svec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr), NU.dreps(n, r),
+    (%Equal.sym(M.Vec(~F), N.ofkv(~KI.dnum(), ~F, ~H, NU.dreps(n, r)), frep(~F, n, M.ofd(~F, r)), rf_eq(~F, ~H, n, r)) : FV.rle(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.svec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)), _)
+      rle_rep(~F, ~N.ofkv(~KI.dnum(), ~F, ~H, CK.svec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)), ~M.ofd(~F, r), ~(k => cs_k(~F, ~H, n, eqs, yc, pc, pr, ym, r, k, hT)), n, lsr)))
+
+def vscale_frep(~F: O.OField, n: Nat, +c: O.C(F), +x: O.C(F)) -> {frep(~F, n, O.mul(F, c, x)) == M.vscale(~F, c, frep(~F, n, x)) : M.Vec(~F)}:
+  match n:
+    case 0n:
+      {==}
+    case 1n++k:
+      %vscale_frep(~F, k, c, x) : {Con{O.mul(F, c, x), frep(~F, k, O.mul(F, c, x))} == Con{O.mul(F, c, x), _} : M.Vec(~F)}
+      {==}
+
+# thL r + yn (n lam rb) r <= q r
+def cg_le(~F: O.OField, +R: O.C(F), +q: O.C(F), +thL: O.C(F), +yn: O.C(F), +nn: O.C(F), +mm: O.C(F), +lam: O.C(F), +rb: O.C(F), +hw: O.le(~F, O.add(F, O.add(F, thL, O.mul(F, yn, O.mul(F, nn, O.mul(F, lam, rb)))), O.mul(F, yn, O.mul(F, mm, O.mul(F, lam, rb)))), q), +hR: O.le(~F, O.zero(F), R), +hyn: O.le(~F, O.zero(F), yn), +hmm: O.le(~F, O.zero(F), mm), +hl: O.le(~F, O.zero(F), lam), +hrb: O.le(~F, O.zero(F), rb)) -> O.le(~F, O.add(F, O.mul(F, thL, R), O.mul(F, yn, O.mul(F, O.mul(F, nn, O.mul(F, lam, rb)), R))), O.mul(F, q, R)):
+  FV.le_of_sub(~F, O.add(F, O.mul(F, thL, R), O.mul(F, yn, O.mul(F, O.mul(F, nn, O.mul(F, lam, rb)), R))), O.mul(F, q, R), FM.nn_eq(~F, O.sub(~F, O.mul(F, q, R), O.add(F, O.mul(F, thL, R), O.mul(F, yn, O.mul(F, O.mul(F, nn, O.mul(F, lam, rb)), R)))), O.add(F, O.mul(F, O.sub(~F, q, O.add(F, O.add(F, thL, O.mul(F, yn, O.mul(F, nn, O.mul(F, lam, rb)))), O.mul(F, yn, O.mul(F, mm, O.mul(F, lam, rb))))), R), O.mul(F, O.mul(F, yn, O.mul(F, mm, O.mul(F, lam, rb))), R)),
+    FR.fring_eq(~F, [R, q, thL, yn, nn, mm, lam, rb], E.ZAdd{E.ZMul{E.ZSub{E.ZVar{1n}, E.ZAdd{E.ZAdd{E.ZVar{2n}, E.ZMul{E.ZVar{3n}, E.ZMul{E.ZVar{4n}, E.ZMul{E.ZVar{6n}, E.ZVar{7n}}}}}, E.ZMul{E.ZVar{3n}, E.ZMul{E.ZVar{5n}, E.ZMul{E.ZVar{6n}, E.ZVar{7n}}}}}}, E.ZVar{0n}}, E.ZMul{E.ZMul{E.ZVar{3n}, E.ZMul{E.ZVar{5n}, E.ZMul{E.ZVar{6n}, E.ZVar{7n}}}}, E.ZVar{0n}}}, E.ZSub{E.ZMul{E.ZVar{1n}, E.ZVar{0n}}, E.ZAdd{E.ZMul{E.ZVar{2n}, E.ZVar{0n}}, E.ZMul{E.ZVar{3n}, E.ZMul{E.ZMul{E.ZVar{4n}, E.ZMul{E.ZVar{6n}, E.ZVar{7n}}}, E.ZVar{0n}}}}}, {==}),
+    FO.nonneg_add(~F, O.mul(F, O.sub(~F, q, O.add(F, O.add(F, thL, O.mul(F, yn, O.mul(F, nn, O.mul(F, lam, rb)))), O.mul(F, yn, O.mul(F, mm, O.mul(F, lam, rb))))), R), O.mul(F, O.mul(F, yn, O.mul(F, mm, O.mul(F, lam, rb))), R),
+      FO.mul_nonneg(~F, O.sub(~F, q, O.add(F, O.add(F, thL, O.mul(F, yn, O.mul(F, nn, O.mul(F, lam, rb)))), O.mul(F, yn, O.mul(F, mm, O.mul(F, lam, rb))))), R, sub_nn(~F, O.add(F, O.add(F, thL, O.mul(F, yn, O.mul(F, nn, O.mul(F, lam, rb)))), O.mul(F, yn, O.mul(F, mm, O.mul(F, lam, rb)))), q, hw), hR),
+      FO.mul_nonneg(~F, O.mul(F, yn, O.mul(F, mm, O.mul(F, lam, rb))), R, FO.mul_nonneg(~F, yn, O.mul(F, mm, O.mul(F, lam, rb)), hyn, FO.mul_nonneg(~F, mm, O.mul(F, lam, rb), hmm, FO.mul_nonneg(~F, lam, rb, hl, hrb))), hR))))
+
+# the contraction condition at r (q = 1/2)
+def ccon_ok(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +eqs: List<&2, E.QExpr>, +hn: {CK.eqlen(eqs) == n : Nat}, +hh: {CK.allheld(~KI.dnum(), eqs) == True{} : Bool}, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +lyc: {KA.klen(~KI.dnum(), yc) == n : Nat}, +lpp: {KA.klen(~KI.dnum(), pc) == KA.klen(~KI.dnum(), pr) : Nat}, +ym: List<&2, List<&2, S.D>>, +bb: O.C(F), +lam: O.C(F), +ms: O.C(F), +rb: O.C(F), +hb: O.le(~F, O.zero(F), bb), +hl0: O.le(~F, O.zero(F), lam), +hrb: O.le(~F, O.zero(F), rb), +hq: AP.eqok(~F, bb, lam, ms, eqs), +hc: M.vbnd.all(~F, C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc)), O.sub(~F, bb, rb)), +hpn: FV.rnn(~F, M.ofdv(~F, pr)), +hpr: M.vbnd.all(~F, M.ofdv(~F, pr), rb), +yn: O.C(F), +thL: O.C(F), +hyn: O.le(~F, NP.mnorm(~F, M.ofdm(~F, ym), n), yn), +hthl: O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, M.ofdm(~F, ym), NW.jc(~F, eqs, n, C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc)))))), n), thL), +hyn0: O.le(~F, O.zero(F), yn), +hthl0: O.le(~F, O.zero(F), thL), +hym: {CK.mlen(~KI.dnum(), ym) == n : Nat}, +r: S.D, +hr0: O.le(~F, O.zero(F), M.ofd(~F, r)), +hr1: O.le(~F, M.ofd(~F, r), rb), +hw: O.le(~F, O.add(F, O.add(F, thL, O.mul(F, yn, O.mul(F, FR.ofn(~F, n), O.mul(F, lam, rb)))), O.mul(F, yn, O.mul(F, FR.ofn(~F, KA.klen(~KI.dnum(), pc)), O.mul(F, lam, rb)))), M.ofd(~F, NU.half()))) -> {CK.ccon(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr) == True{} : Bool}:
+  +lg = Equal.trans(Nat, M.len(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr))), KA.klen(~KI.dnum(), CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)), n, CP.len_ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)), klen_gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr, hym))
+  +hG = DM.le_trans(~F, NP.vn(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr))), O.add(F, O.mul(F, thL, M.ofd(~F, r)), O.mul(F, yn, O.mul(F, O.mul(F, FR.ofn(~F, n), O.mul(F, lam, rb)), M.ofd(~F, r)))), O.mul(F, M.ofd(~F, NU.half()), M.ofd(~F, r)), gvec_bnd(~F, ~H, n, eqs, hn, hh, yc, pc, pr, lyc, lpp, ym, bb, lam, ms, rb, hb, hl0, hrb, hq, hc, hpn, hpr, yn, thL, hyn, hthl, hyn0, hthl0, r, hr0, hr1), cg_le(~F, M.ofd(~F, r), M.ofd(~F, NU.half()), thL, yn, FR.ofn(~F, n), FR.ofn(~F, KA.klen(~KI.dnum(), pc)), lam, rb, hw, hr0, hyn0, DG.ofn_nn(~F, KA.klen(~KI.dnum(), pc)), hl0, hrb))
+  AP.kvle_of(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr), KA.kvscale(~KI.dnum(), NU.half(), NU.dreps(n, r)),
+    (%KA.kvscale_ofk(~KI.dnum(), ~F, ~H, NU.half(), NU.dreps(n, r)) : FV.rle(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)), _)
+      (%Equal.sym(M.Vec(~F), N.ofkv(~KI.dnum(), ~F, ~H, NU.dreps(n, r)), frep(~F, n, M.ofd(~F, r)), rf_eq(~F, ~H, n, r)) : FV.rle(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)), M.vscale(~F, N.emap(KI.dnum(), F, H, NU.half()), _))
+        (%vscale_frep(~F, n, N.emap(KI.dnum(), F, H, NU.half()), M.ofd(~F, r)) : FV.rle(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)), _)
+          (%Equal.sym(O.C(F), N.emap(KI.dnum(), F, H, NU.half()), M.ofd(~F, NU.half()), AP.hofd(~F, ~H, NU.half())) : FV.rle(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)), frep(~F, n, O.mul(F, _, M.ofd(~F, r))))
+            rle_rep(~F, ~N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)), ~O.mul(F, M.ofd(~F, NU.half()), M.ofd(~F, r)), ~(k => DM.le_trans(~F, O.lookup(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)), k), NP.vn(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr))), O.mul(F, M.ofd(~F, NU.half()), M.ofd(~F, r)), lk_le(~F, N.ofkv(~KI.dnum(), ~F, ~H, CK.gvec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr)), k), hG)), n, lg))))))
+
+def klen_kones(~K: N.Num, n: Nat) -> {KA.klen(~K, KA.kones(~K, n)) == n : Nat}:
+  match n:
+    case 0n:
+      {==}
+    case 1n++k:
+      %Equal.sym(Nat, KA.klen(~K, KA.kones(~K, k)), k, klen_kones(~K, k)) : {1n+_ == 1n+k : Nat}
+      {==}
+
+def vall_k1(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, n: Nat) -> M.vbnd.all(~F, N.ofkv(~K, ~F, ~H, KA.kones(~K, n)), O.one(F)):
+  match n:
+    case 0n:
+      Unit{}
+    case 1n+k:
+      ((%Equal.sym(O.C(F), N.emap(K, F, H, N.none(K)), O.one(F), N.e_one(K, F, H)) : M.bnd(~F, _, O.one(F))
+         FV.bnd_self(~F, O.one(F), NP.one_nn(~F))),
+       vall_k1(~K, ~F, ~H, k))
+
+def vn_ones(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +n: Nat) -> O.le(~F, NP.vn(~F, N.ofkv(~K, ~F, ~H, KA.kones(~K, n))), O.one(F)):
+  FV.vmax_lub(~F, N.ofkv(~K, ~F, ~H, KA.kones(~K, n)), O.one(F), vall_k1(~K, ~F, ~H, n), NP.one_nn(~F))
+
+# entries below t from |v| < t
+def vlt_of_vn(~F: O.OField, v: M.Vec(~F), +t: O.C(F), +h: O.lt(F, NP.vn(~F, v), t)) -> FV.vlt_all(~F, v, t):
+  match v:
+    case Nil{}:
+      Unit{}
+    case Con{+a, +as}:
+      (FO.le_lt_trans(~F, a, NP.vn(~F, Con{a, as}), t, lk_le(~F, Con{a, as}, 0n), h),
+       vlt_of_vn(~F, as, t, FO.le_lt_trans(~F, NP.vn(~F, as), NP.vn(~F, Con{a, as}), t, FV.fmax_r(~F, FV.fabs(~F, a), NP.vn(~F, as)), h)))
+
+
+# |I - J0y Y| in the checker's numbers is at most thR
+def imr_mn(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +eqs: List<&2, E.QExpr>, +hn: {CK.eqlen(eqs) == n : Nat}, +hh: {CK.allheld(~KI.dnum(), eqs) == True{} : Bool}, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +lyc: {KA.klen(~KI.dnum(), yc) == n : Nat}, +lpp: {KA.klen(~KI.dnum(), pc) == KA.klen(~KI.dnum(), pr) : Nat}, +ym: List<&2, List<&2, S.D>>, +bb: O.C(F), +lam: O.C(F), +ms: O.C(F), +rb: O.C(F), +hb: O.le(~F, O.zero(F), bb), +hl0: O.le(~F, O.zero(F), lam), +hrb: O.le(~F, O.zero(F), rb), +hq: AP.eqok(~F, bb, lam, ms, eqs), +hc: M.vbnd.all(~F, C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc)), O.sub(~F, bb, rb)), +hpn: FV.rnn(~F, M.ofdv(~F, pr)), +hpr: M.vbnd.all(~F, M.ofdv(~F, pr), rb), +yn: O.C(F), +thL: O.C(F), +hyn: O.le(~F, NP.mnorm(~F, M.ofdm(~F, ym), n), yn), +hthl: O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, M.ofdm(~F, ym), NW.jc(~F, eqs, n, C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc)))))), n), thL), +hyn0: O.le(~F, O.zero(F), yn), +hthl0: O.le(~F, O.zero(F), thL), +thR: O.C(F), +hthr: O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, NW.jc(~F, eqs, n, C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc))), M.ofdm(~F, ym)))), n), thR), +yr: List<&2, S.D>) -> O.le(~F, NP.mnorm(~F, N.ofkm(~KI.dnum(), ~F, ~H, CK.imm(~KI.dnum(), n, CK.mcenters(~KI.dnum(), CK.rowsy(~KI.dnum(), eqs, n, yc, yr, pc, pr)), ym)), n), thR):
+  %Equal.sym(M.Mat(~F), N.ofkm(~KI.dnum(), ~F, ~H, CK.imm(~KI.dnum(), n, CK.mcenters(~KI.dnum(), CK.rowsy(~KI.dnum(), eqs, n, yc, yr, pc, pr)), ym)), M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, N.ofkm(~KI.dnum(), ~F, ~H, CK.mcenters(~KI.dnum(), CK.rowsy(~KI.dnum(), eqs, n, yc, yr, pc, pr))), N.ofkm(~KI.dnum(), ~F, ~H, ym)))), ofkm_imm(~KI.dnum(), ~F, ~H, n, CK.mcenters(~KI.dnum(), CK.rowsy(~KI.dnum(), eqs, n, yc, yr, pc, pr)), ym)) : O.le(~F, NP.mnorm(~F, _, n), thR)
+  %Equal.sym(M.Mat(~F), N.ofkm(~KI.dnum(), ~F, ~H, ym), M.ofdm(~F, ym), AP.ofkm_d(~F, ~H, ym)) : O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, N.ofkm(~KI.dnum(), ~F, ~H, CK.mcenters(~KI.dnum(), CK.rowsy(~KI.dnum(), eqs, n, yc, yr, pc, pr))), _))), n), thR)
+  %Equal.sym(M.Mat(~F), N.ofkm(~KI.dnum(), ~F, ~H, CK.mcenters(~KI.dnum(), CK.rowsy(~KI.dnum(), eqs, n, yc, yr, pc, pr))), NW.jc(~F, eqs, n, C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc))), jc_ckb(~F, ~H, n, eqs, hn, hh, yc, pc, pr, lyc, lpp, ym, bb, lam, ms, rb, hb, hl0, hrb, hq, hc, hpn, hpr, yn, thL, hyn, hthl, hyn0, hthl0, yr)) : O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, _, M.ofdm(~F, ym)))), n), thR)
+  hthr
+
+# the injectivity condition at r, from |I - J0y Y| <= thR < 1
+def cinj_ok(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +eqs: List<&2, E.QExpr>, +hn: {CK.eqlen(eqs) == n : Nat}, +hh: {CK.allheld(~KI.dnum(), eqs) == True{} : Bool}, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +lyc: {KA.klen(~KI.dnum(), yc) == n : Nat}, +lpp: {KA.klen(~KI.dnum(), pc) == KA.klen(~KI.dnum(), pr) : Nat}, +ym: List<&2, List<&2, S.D>>, +bb: O.C(F), +lam: O.C(F), +ms: O.C(F), +rb: O.C(F), +hb: O.le(~F, O.zero(F), bb), +hl0: O.le(~F, O.zero(F), lam), +hrb: O.le(~F, O.zero(F), rb), +hq: AP.eqok(~F, bb, lam, ms, eqs), +hc: M.vbnd.all(~F, C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc)), O.sub(~F, bb, rb)), +hpn: FV.rnn(~F, M.ofdv(~F, pr)), +hpr: M.vbnd.all(~F, M.ofdv(~F, pr), rb), +yn: O.C(F), +thL: O.C(F), +hyn: O.le(~F, NP.mnorm(~F, M.ofdm(~F, ym), n), yn), +hthl: O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, M.ofdm(~F, ym), NW.jc(~F, eqs, n, C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc)))))), n), thL), +hyn0: O.le(~F, O.zero(F), yn), +hthl0: O.le(~F, O.zero(F), thL), +thR: O.C(F), +hthr0: O.le(~F, O.zero(F), thR), +hthr: O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, NW.jc(~F, eqs, n, C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc))), M.ofdm(~F, ym)))), n), thR), +hthr1: O.lt(F, thR, O.one(F)), +r: S.D) -> {CK.cinj(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr) == True{} : Bool}:
+  +mc = CK.mcenters(~KI.dnum(), CK.rowsy(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), pc, pr))
+  +xa = N.ofkm(~KI.dnum(), ~F, ~H, KA.kmabs(~KI.dnum(), CK.imm(~KI.dnum(), n, mc, ym)))
+  +on = N.ofkv(~KI.dnum(), ~F, ~H, KA.kones(~KI.dnum(), n))
+  +lon = Equal.trans(Nat, M.len(~F, on), KA.klen(~KI.dnum(), KA.kones(~KI.dnum(), n)), n, CP.len_ofkv(~KI.dnum(), ~F, ~H, KA.kones(~KI.dnum(), n)), klen_kones(~KI.dnum(), n))
+  AP.kvlt_ones_of(~KI.dnum(), ~F, ~H, CK.ivec(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr), n, klen_ivec(~KI.dnum(), eqs, n, hn, yc, NU.dreps(n, r), ym, pc, pr),
+    (%KA.kmatvec_ofk(~KI.dnum(), ~F, ~H, KA.kmabs(~KI.dnum(), CK.imm(~KI.dnum(), n, mc, ym)), KA.kones(~KI.dnum(), n)) : FV.vlt_all(~F, _, O.one(F))
+      vlt_of_vn(~F, M.matvec(~F, xa, on), O.one(F),
+        FO.le_lt_trans(~F, NP.vn(~F, M.matvec(~F, xa, on)), O.mul(F, NP.mnorm(~F, xa, n), NP.vn(~F, on)), O.one(F), NP.mv_n(~F, xa, n, on, lon),
+          FO.le_lt_trans(~F, O.mul(F, NP.mnorm(~F, xa, n), NP.vn(~F, on)), O.mul(F, thR, O.one(F)), O.one(F), NW.mm_le(~F, NP.mnorm(~F, xa, n), thR, NP.vn(~F, on), O.one(F), FV.vmax_nn(~F, on), hthr0, kabs_mn(~KI.dnum(), ~F, ~H, CK.imm(~KI.dnum(), n, mc, ym), n, thR, hthr0, imr_mn(~F, ~H, n, eqs, hn, hh, yc, pc, pr, lyc, lpp, ym, bb, lam, ms, rb, hb, hl0, hrb, hq, hc, hpn, hpr, yn, thL, hyn, hthl, hyn0, hthl0, thR, hthr, NU.dreps(n, r))), vn_ones(~KI.dnum(), ~F, ~H, n)),
+            (%FR.fring_eq(~F, [thR], E.ZVar{0n}, E.ZMul{E.ZVar{0n}, E.ZCst{S.Zpos{S.XH{}}}}, {==}) : O.lt(F, _, O.one(F))
+              hthr1))))))
+
+# Shape
+# -----
+
+def rle_nil_rep(~F: O.OField, n: Nat, +x: O.C(F), +hx: O.le(~F, O.zero(F), x)) -> FV.rle(~F, Nil{}, frep(~F, n, x)):
+  match n:
+    case 0n:
+      Unit{}
+    case 1n+k:
+      (hx, rle_nil_rep(~F, k, x, hx))
+
+def rle_nil_rnn(~F: O.OField, v: M.Vec(~F), h: FV.rnn(~F, v)) -> FV.rle(~F, Nil{}, v):
+  match v:
+    case Nil{}:
+      Unit{}
+    case Con{a, as}:
+      (h1, h2) = h
+      (h1, rle_nil_rnn(~F, as, h2))
+
+def nateq_of(+a: Nat, +b: Nat, e: {a == b : Nat}) -> {KA.nateq(a, b) == True{} : Bool}:
+  %e : {KA.nateq(a, _) == True{} : Bool}
+  GJ.nateq_refl(a)
+
+def shape_ok(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +eqs: List<&2, E.QExpr>, +hn: {CK.eqlen(eqs) == n : Nat}, +hh: {CK.allheld(~KI.dnum(), eqs) == True{} : Bool}, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +lyc: {KA.klen(~KI.dnum(), yc) == n : Nat}, +lpp: {KA.klen(~KI.dnum(), pc) == KA.klen(~KI.dnum(), pr) : Nat}, +ym: List<&2, List<&2, S.D>>, +bb: O.C(F), +lam: O.C(F), +ms: O.C(F), +rb: O.C(F), +hb: O.le(~F, O.zero(F), bb), +hl0: O.le(~F, O.zero(F), lam), +hrb: O.le(~F, O.zero(F), rb), +hq: AP.eqok(~F, bb, lam, ms, eqs), +hc: M.vbnd.all(~F, C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc)), O.sub(~F, bb, rb)), +hpn: FV.rnn(~F, M.ofdv(~F, pr)), +hpr: M.vbnd.all(~F, M.ofdv(~F, pr), rb), +yn: O.C(F), +thL: O.C(F), +hyn: O.le(~F, NP.mnorm(~F, M.ofdm(~F, ym), n), yn), +hthl: O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, M.ofdm(~F, ym), NW.jc(~F, eqs, n, C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc)))))), n), thL), +hyn0: O.le(~F, O.zero(F), yn), +hthl0: O.le(~F, O.zero(F), thL), +hym: {CK.mlen(~KI.dnum(), ym) == n : Nat}, +hab: {CK.allbelow(Nat.add(n, KA.klen(~KI.dnum(), pc)), eqs) == True{} : Bool}, +r: S.D, +hr0: O.le(~F, O.zero(F), M.ofd(~F, r))) -> {CK.shape(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr) == True{} : Bool}:
+  AP.band_t(KA.nateq(CK.eqlen(eqs), n), KA.band(KA.nateq(CK.mlen(~KI.dnum(), ym), n), KA.band(KA.nateq(KA.klen(~KI.dnum(), yc), n), KA.band(KA.natle(KA.klen(~KI.dnum(), NU.dreps(n, r)), n), KA.band(KA.nateq(KA.klen(~KI.dnum(), pc), KA.klen(~KI.dnum(), pr)), KA.band(KA.kvle(~KI.dnum(), Nil{}, NU.dreps(n, r)), KA.band(KA.kvle(~KI.dnum(), Nil{}, pr), KA.band(CK.allheld(~KI.dnum(), eqs), CK.allbelow(Nat.add(n, KA.klen(~KI.dnum(), pc)), eqs)))))))), nateq_of(CK.eqlen(eqs), n, hn),
+  AP.band_t(KA.nateq(CK.mlen(~KI.dnum(), ym), n), KA.band(KA.nateq(KA.klen(~KI.dnum(), yc), n), KA.band(KA.natle(KA.klen(~KI.dnum(), NU.dreps(n, r)), n), KA.band(KA.nateq(KA.klen(~KI.dnum(), pc), KA.klen(~KI.dnum(), pr)), KA.band(KA.kvle(~KI.dnum(), Nil{}, NU.dreps(n, r)), KA.band(KA.kvle(~KI.dnum(), Nil{}, pr), KA.band(CK.allheld(~KI.dnum(), eqs), CK.allbelow(Nat.add(n, KA.klen(~KI.dnum(), pc)), eqs))))))), nateq_of(CK.mlen(~KI.dnum(), ym), n, hym),
+  AP.band_t(KA.nateq(KA.klen(~KI.dnum(), yc), n), KA.band(KA.natle(KA.klen(~KI.dnum(), NU.dreps(n, r)), n), KA.band(KA.nateq(KA.klen(~KI.dnum(), pc), KA.klen(~KI.dnum(), pr)), KA.band(KA.kvle(~KI.dnum(), Nil{}, NU.dreps(n, r)), KA.band(KA.kvle(~KI.dnum(), Nil{}, pr), KA.band(CK.allheld(~KI.dnum(), eqs), CK.allbelow(Nat.add(n, KA.klen(~KI.dnum(), pc)), eqs)))))), nateq_of(KA.klen(~KI.dnum(), yc), n, lyc),
+  AP.band_t(KA.natle(KA.klen(~KI.dnum(), NU.dreps(n, r)), n), KA.band(KA.nateq(KA.klen(~KI.dnum(), pc), KA.klen(~KI.dnum(), pr)), KA.band(KA.kvle(~KI.dnum(), Nil{}, NU.dreps(n, r)), KA.band(KA.kvle(~KI.dnum(), Nil{}, pr), KA.band(CK.allheld(~KI.dnum(), eqs), CK.allbelow(Nat.add(n, KA.klen(~KI.dnum(), pc)), eqs))))),
+    (%Equal.sym(Nat, KA.klen(~KI.dnum(), NU.dreps(n, r)), n, klen_dreps(n, r)) : {KA.natle(_, n) == True{} : Bool}
+      GJ.le_refl(n)),
+  AP.band_t(KA.nateq(KA.klen(~KI.dnum(), pc), KA.klen(~KI.dnum(), pr)), KA.band(KA.kvle(~KI.dnum(), Nil{}, NU.dreps(n, r)), KA.band(KA.kvle(~KI.dnum(), Nil{}, pr), KA.band(CK.allheld(~KI.dnum(), eqs), CK.allbelow(Nat.add(n, KA.klen(~KI.dnum(), pc)), eqs)))), nateq_of(KA.klen(~KI.dnum(), pc), KA.klen(~KI.dnum(), pr), lpp),
+  AP.band_t(KA.kvle(~KI.dnum(), Nil{}, NU.dreps(n, r)), KA.band(KA.kvle(~KI.dnum(), Nil{}, pr), KA.band(CK.allheld(~KI.dnum(), eqs), CK.allbelow(Nat.add(n, KA.klen(~KI.dnum(), pc)), eqs))),
+    AP.kvle_of(~KI.dnum(), ~F, ~H, Nil{}, NU.dreps(n, r),
+      (%Equal.sym(M.Vec(~F), N.ofkv(~KI.dnum(), ~F, ~H, NU.dreps(n, r)), frep(~F, n, M.ofd(~F, r)), rf_eq(~F, ~H, n, r)) : FV.rle(~F, Nil{}, _)
+        rle_nil_rep(~F, n, M.ofd(~F, r), hr0))),
+  AP.band_t(KA.kvle(~KI.dnum(), Nil{}, pr), KA.band(CK.allheld(~KI.dnum(), eqs), CK.allbelow(Nat.add(n, KA.klen(~KI.dnum(), pc)), eqs)),
+    AP.kvle_of(~KI.dnum(), ~F, ~H, Nil{}, pr, rle_nil_rnn(~F, N.ofkv(~KI.dnum(), ~F, ~H, pr), rnn_kv(~F, ~H, pr, hpn))),
+  AP.band_t(CK.allheld(~KI.dnum(), eqs), CK.allbelow(Nat.add(n, KA.klen(~KI.dnum(), pc)), eqs), hh, hab))))))))
+
+# The window: every r with S <= r/2, r <= rb passes the block checker
+def window_ok(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +eqs: List<&2, E.QExpr>, +hn: {CK.eqlen(eqs) == n : Nat}, +hh: {CK.allheld(~KI.dnum(), eqs) == True{} : Bool}, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +lyc: {KA.klen(~KI.dnum(), yc) == n : Nat}, +lpp: {KA.klen(~KI.dnum(), pc) == KA.klen(~KI.dnum(), pr) : Nat}, +ym: List<&2, List<&2, S.D>>, +bb: O.C(F), +lam: O.C(F), +ms: O.C(F), +rb: O.C(F), +hb: O.le(~F, O.zero(F), bb), +hl0: O.le(~F, O.zero(F), lam), +hrb: O.le(~F, O.zero(F), rb), +hq: AP.eqok(~F, bb, lam, ms, eqs), +hc: M.vbnd.all(~F, C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc)), O.sub(~F, bb, rb)), +hpn: FV.rnn(~F, M.ofdv(~F, pr)), +hpr: M.vbnd.all(~F, M.ofdv(~F, pr), rb), +yn: O.C(F), +thL: O.C(F), +hyn: O.le(~F, NP.mnorm(~F, M.ofdm(~F, ym), n), yn), +hthl: O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, M.ofdm(~F, ym), NW.jc(~F, eqs, n, C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc)))))), n), thL), +hyn0: O.le(~F, O.zero(F), yn), +hthl0: O.le(~F, O.zero(F), thL), +hym: {CK.mlen(~KI.dnum(), ym) == n : Nat}, +hab: {CK.allbelow(Nat.add(n, KA.klen(~KI.dnum(), pc)), eqs) == True{} : Bool}, +thR: O.C(F), +hthr0: O.le(~F, O.zero(F), thR), +hthr: O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, NW.jc(~F, eqs, n, C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc))), M.ofdm(~F, ym)))), n), thR), +hthr1: O.lt(F, thR, O.one(F)), +hw: O.le(~F, O.add(F, O.add(F, thL, O.mul(F, yn, O.mul(F, FR.ofn(~F, n), O.mul(F, lam, rb)))), O.mul(F, yn, O.mul(F, FR.ofn(~F, KA.klen(~KI.dnum(), pc)), O.mul(F, lam, rb)))), M.ofd(~F, NU.half())), +r: S.D, +hr0: O.le(~F, O.zero(F), M.ofd(~F, r)), +hr1: O.le(~F, M.ofd(~F, r), rb), +hS: O.le(~F, M.ofd(~F, NU.dvmax(CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr))), O.mul(F, M.ofd(~F, NU.half()), M.ofd(~F, r)))) -> {NU.okr(eqs, n, yc, r, ym, pc, pr) == True{} : Bool}:
+  AP.band_t(CK.shape(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr), CK.rest1(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr), shape_ok(~F, ~H, n, eqs, hn, hh, yc, pc, pr, lyc, lpp, ym, bb, lam, ms, rb, hb, hl0, hrb, hq, hc, hpn, hpr, yn, thL, hyn, hthl, hyn0, hthl0, hym, hab, r, hr0),
+  AP.band_t(CK.factor(~KI.dnum(), NU.half()), CK.rest2(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr), {==},
+  AP.band_t(CK.ccon(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr), CK.rest3(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr), ccon_ok(~F, ~H, n, eqs, hn, hh, yc, pc, pr, lyc, lpp, ym, bb, lam, ms, rb, hb, hl0, hrb, hq, hc, hpn, hpr, yn, thL, hyn, hthl, hyn0, hthl0, hym, r, hr0, hr1, hw),
+  AP.band_t(CK.cself(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr), CK.cinj(~KI.dnum(), eqs, n, yc, NU.dreps(n, r), ym, pc, pr), cself_ok(~F, ~H, n, eqs, hn, hh, yc, pc, pr, lyc, lpp, ym, bb, lam, ms, rb, hb, hl0, hrb, hq, hc, hpn, hpr, yn, thL, hyn, hthl, hyn0, hthl0, hym, r, hr0, hr1, hS, hw), cinj_ok(~F, ~H, n, eqs, hn, hh, yc, pc, pr, lyc, lpp, ym, bb, lam, ms, rb, hb, hl0, hrb, hq, hc, hpn, hpr, yn, thL, hyn, hthl, hyn0, hthl0, thR, hthr0, hthr, hthr1, r)))))
