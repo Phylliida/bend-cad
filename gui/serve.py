@@ -83,8 +83,18 @@ def parse_out(text):
     return res
 
 
+def sources():
+    """the files the solver binary is built from: the CLI and every .bend it
+    can import (a change to the solver in lib/ must rebuild it too)"""
+    out = [SRC, os.path.join(ROOT, "proto", "block.bend")]
+    for sub in ("lib", "spec"):
+        d = os.path.join(ROOT, sub)
+        out += [os.path.join(d, f) for f in os.listdir(d) if f.endswith(".bend")]
+    return out
+
+
 def ensure_cli():
-    if os.path.exists(CLI) and os.path.getmtime(CLI) >= os.path.getmtime(SRC):
+    if os.path.exists(CLI) and os.path.getmtime(CLI) >= max(os.path.getmtime(f) for f in sources()):
         return
     print("building the solver (about 20 s) ...", flush=True)
     r = subprocess.run([os.path.join(ROOT, "bin", "bend"), SRC, "-o", CLI],

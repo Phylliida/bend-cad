@@ -231,6 +231,7 @@ export function toSolver(sk, opts = { dyadic: true }) {
   });
   const cons = [], owner = [];
   for (const c of sk.cons) {
+    if (duplicateOf(sk, c)) continue;
     const k = CK[c.kind], E = c.ents.map(i => eid.get(i));
     const dr = c.driven ? 1 : 0;
     const v = c.value;
@@ -300,6 +301,32 @@ export function removeEnts(sk, ids) {
   }
   sk.ents = sk.ents.filter(e => !gone.has(e.id));
   sk.cons = sk.cons.filter(c => !c.ents.some(i => gone.has(i)));
+}
+
+// kinds that say the same thing with their two entities either way round
+const SYMMETRIC = new Set(["coincident", "horizontal", "vertical", "concentric", "equalRadius",
+  "distance", "equalLength", "perpendicular", "parallel"]);
+
+// equal for two constraints exactly when they are the same constraint: the
+// kind, the entities (a symmetric kind's in either order) and every value
+export function conKey(c) {
+  const ents = SYMMETRIC.has(c.kind) ? [...c.ents].sort((a, b) => a - b) : c.ents;
+  const vals = Object.keys(c).filter(k => !["id", "kind", "ents", "driven"].includes(k)).sort().map(k => [k, c[k]]);
+  return JSON.stringify([c.kind, ents, vals]);
+}
+
+// the earlier driving constraint that c repeats, if any. A repeat is not
+// redundant by structure (each copy can be matched to another variable),
+// so the solver would keep both copies and meet a singular block: the
+// request leaves repeats out, and the page does not add them.
+export function duplicateOf(sk, c) {
+  if (c.driven) return null;
+  const key = conKey(c);
+  for (const d of sk.cons) {
+    if (d === c || (c.id !== undefined && d.id === c.id)) return null;
+    if (!d.driven && conKey(d) === key) return d;
+  }
+  return null;
 }
 
 export function addConstraint(sk, kind, ents, extra = {}) {

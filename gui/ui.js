@@ -234,6 +234,11 @@ function reason(prep) {
 function selEnts() { return S.sel.map(E).filter(Boolean); }
 
 function addCon(kind, ents, extra = {}) {
+  const dup = M.duplicateOf(S.sk, { kind, ents, driven: false, ...extra });
+  if (dup) {
+    $("hint").textContent = `Already constrained: ${M.CK[kind].label} ${ents.map(entName).join(" ")} is there.`;
+    return null;
+  }
   const c = M.addConstraint(S.sk, kind, ents, extra);
   if (!S.opts.relax) { touched(); M.presatisfy(S.sk, c); }
   return c;
@@ -877,9 +882,11 @@ function renderPanels() {
   ul.innerHTML = S.sk.cons.map(con => {
     const k = M.CK[con.kind];
     const red = S.cert.red.has(con.id);
+    const dup = M.duplicateOf(S.sk, con);
     const v = k.value ? `<input data-val="${con.id}" value="${con.value}">` : "";
     const fx = con.kind === "fix" ? ` (${nice(con.fx)}, ${nice(con.fy)})` : "";
-    return `<li data-con="${con.id}" class="${red ? "red" : ""} ${S.selCon === con.id ? "sel" : ""}" title="${red ? "Red: flagged by the solver (over-determined)" : ""}">
+    const why = red ? "Red: flagged by the solver (over-determined)" : dup ? "Repeats an earlier constraint; left out of the solve" : "";
+    return `<li data-con="${con.id}" class="${red ? "red" : ""} ${dup ? "dup" : ""} ${S.selCon === con.id ? "sel" : ""}" title="${why}">
       <span class="nm">${k.label} ${con.ents.map(entName).join(" ")}${fx}</span>${v}<button class="x" data-del="${con.id}" title="Delete">×</button></li>`;
   }).join("");
   for (const li of ul.querySelectorAll("[data-con]")) {

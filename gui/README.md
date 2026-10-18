@@ -9,8 +9,9 @@ python3 gui/serve.py 9000       # another port
 ```
 
 The first start builds the solver binary `gui/solve_cli` from
-`gui/solve_cli.bend` with `bin/bend` (about 20 s); it rebuilds when the
-`.bend` file is newer.
+`gui/solve_cli.bend` with `bin/bend` (about 20 s); it rebuilds when that
+file or any of the solver's sources (`lib/`, `spec/`, `proto/block.bend`)
+is newer.
 
 ## What runs where
 
@@ -32,9 +33,11 @@ The first start builds the solver binary `gui/solve_cli` from
       well-conditioned set to solve for.
     - *Dimensions as dyadics*: below.
 
-## Two limits of the v1 solver this makes visible
+## Three limits of the v1 solver this makes visible
 
-Both are already stated in DESIGN.md and in solve_complete's hypotheses.
+All three are already in solve_complete's hypotheses (the third as
+Regular: a repeat makes the kept system singular), and the first two are
+stated in DESIGN.md.
 
 - **Constants must be dyadic (Q19).** The certifying arithmetic holds only
   rationals with a power-of-two denominator, so a dimension of 3.6, or an
@@ -49,6 +52,15 @@ Both are already stated in DESIGN.md and in solve_complete's hypotheses.
   cases, and *Relax the drawing first* brings the drawing near a solution,
   which is where the solver is complete. Turn both off to see the raw
   behavior.
+- **Redundancy is found by structure.** A constraint is red when some
+  part of the sketch has more equations than variables. A constraint
+  repeated exactly is not over-determined by that count (each copy can be
+  matched to a different variable), yet it makes its block singular, and
+  the solver then refuses without a red constraint. So the page does not
+  add a repeat, and leaves out of the request any repeat it finds (from an
+  older file, or after an edit), shown struck through in the list.
+  Constraints that are dependent without being equal (a fourth right angle
+  on a quadrilateral that has three) still meet this limit.
 
 Points drawn hollow have a coordinate the solver held at its drawn value.
 Red constraints are listed in red and drawn red.
