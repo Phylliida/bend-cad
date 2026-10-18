@@ -451,3 +451,75 @@ def gbox_ckb(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +yc: List<&2, S.D>,
       (%Equal.sym(M.Vec(~F), M.ofdv(~F, NU.dreps(n, w)), frep(~F, n, M.ofd(~F, w)), ofdv_dreps(~F, n, w)) : M.vbnd.all(~F, C.app(~F, _, M.ofdv(~F, pr)), rb)
         NW.vall_app(~F, frep(~F, n, M.ofd(~F, w)), M.ofdv(~F, pr), rb, NW.vall_le(~F, frep(~F, n, M.ofd(~F, w)), M.ofd(~F, w), rb, frep_all(~F, n, M.ofd(~F, w), hw0), hw1), hpr))),
     klen_ckw(n, yc, pc, pr, w, lyc, lpp))
+
+# radius lists pairwise: 0 <= a <= b <= a + dl
+def rpair(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +dl: O.C(F), rs0: N.KVec(~K), rs1: N.KVec(~K)) -> Data:
+  match rs0 rs1:
+    case Nil{} Nil{}:
+      Unit
+    case Nil{} Con{b, t1}:
+      Empty
+    case Con{a, t0} Nil{}:
+      Empty
+    case Con{a, t0} Con{b, t1}:
+      M.Both(pd(~F, dl, N.emap(K, F, H, a), N.emap(K, F, H, b), O.one(F)), rpair(~K, ~F, ~H, dl, t0, t1))
+
+def bpair_zip(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +dl: O.C(F), cs: N.KVec(~K), rs0: N.KVec(~K), rs1: N.KVec(~K), hp: rpair(~K, ~F, ~H, dl, rs0, rs1), hl: {KA.klen(~K, cs) == KA.klen(~K, rs0) : Nat}) -> bpair(~K, ~F, ~H, dl, CK.zipb(~K, cs, rs0), CK.zipb(~K, cs, rs1)):
+  match cs rs0 rs1:
+    case Nil{} Nil{} Nil{}:
+      Unit{}
+    case Nil{} Nil{} Con{b, t1}:
+      FO.absurd(bpair(~K, ~F, ~H, dl, CK.zipb(~K, Nil{}, Nil{}), CK.zipb(~K, Nil{}, Con{b, t1})), hp)
+    case Nil{} Con{a, t0} Nil{}:
+      FO.absurd(bpair(~K, ~F, ~H, dl, CK.zipb(~K, Nil{}, Con{a, t0}), CK.zipb(~K, Nil{}, Nil{})), hp)
+    case Nil{} Con{a, t0} Con{b, t1}:
+      FO.absurd(bpair(~K, ~F, ~H, dl, CK.zipb(~K, Nil{}, Con{a, t0}), CK.zipb(~K, Nil{}, Con{b, t1})), FV.zero_ne(KA.klen(~K, t0), hl))
+    case Con{c, ct} Nil{} Nil{}:
+      FO.absurd(bpair(~K, ~F, ~H, dl, CK.zipb(~K, Con{c, ct}, Nil{}), CK.zipb(~K, Con{c, ct}, Nil{})), FV.succ_ne(KA.klen(~K, ct), hl))
+    case Con{c, ct} Nil{} Con{b, t1}:
+      FO.absurd(bpair(~K, ~F, ~H, dl, CK.zipb(~K, Con{c, ct}, Nil{}), CK.zipb(~K, Con{c, ct}, Con{b, t1})), FV.succ_ne(KA.klen(~K, ct), hl))
+    case Con{c, ct} Con{a, t0} Nil{}:
+      FO.absurd(bpair(~K, ~F, ~H, dl, CK.zipb(~K, Con{c, ct}, Con{a, t0}), CK.zipb(~K, Con{c, ct}, Nil{})), hp)
+    case Con{+c, +ct} Con{+a, +t0} Con{+b, +t1}:
+      (h1, h2) = hp
+      (h1, bpair_zip(~K, ~F, ~H, dl, ct, t0, t1, h2, FV.succ_inj(KA.klen(~K, ct), KA.klen(~K, t0), hl)))
+
+def rpair_app(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +dl: O.C(F), u0: N.KVec(~K), u1: N.KVec(~K), +w: N.KVec(~K), hu: rpair(~K, ~F, ~H, dl, u0, u1), hw: rpair(~K, ~F, ~H, dl, w, w)) -> rpair(~K, ~F, ~H, dl, KA.kapp(~K, u0, w), KA.kapp(~K, u1, w)):
+  match u0 u1:
+    case Nil{} Nil{}:
+      hw
+    case Nil{} Con{b, t1}:
+      FO.absurd(rpair(~K, ~F, ~H, dl, KA.kapp(~K, Nil{}, w), KA.kapp(~K, Con{b, t1}, w)), hu)
+    case Con{a, t0} Nil{}:
+      FO.absurd(rpair(~K, ~F, ~H, dl, KA.kapp(~K, Con{a, t0}, w), KA.kapp(~K, Nil{}, w)), hu)
+    case Con{+a, +t0} Con{+b, +t1}:
+      (h1, h2) = hu
+      (h1, rpair_app(~K, ~F, ~H, dl, t0, t1, w, h2, hw))
+
+def rpair_self(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +dl: O.C(F), +hdl: O.le(~F, O.zero(F), dl), w: N.KVec(~K), hn: FV.rnn(~F, N.ofkv(~K, ~F, ~H, w))) -> rpair(~K, ~F, ~H, dl, w, w):
+  match w:
+    case Nil{}:
+      Unit{}
+    case Con{+a, +t}:
+      (h1, h2) = hn
+      (pd_one(~F, dl, N.emap(K, F, H, a), h1, hdl), rpair_self(~K, ~F, ~H, dl, hdl, t, h2))
+
+def pd_0r(~F: O.OField, +z: O.C(F), +x: O.C(F), ez: {z == O.zero(F) : O.C(F)}, +hx: O.le(~F, O.zero(F), x)) -> pd(~F, x, z, x, O.one(F)):
+  %Equal.sym(O.C(F), z, O.zero(F), ez) : pd(~F, x, _, x, O.one(F))
+  (FO.le_refl(~F, O.zero(F)), (hx, FV.le_of_sub(~F, O.sub(~F, x, O.zero(F)), O.mul(F, O.one(F), x), FM.nn_eq(~F, O.sub(~F, O.mul(F, O.one(F), x), O.sub(~F, x, O.zero(F))), O.zero(F), FR.fring_eq(~F, [x], E.ZCst{S.Z0{}}, E.ZSub{E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{0n}}, E.ZSub{E.ZVar{0n}, E.ZCst{S.Z0{}}}}, {==}), FO.le_refl(~F, O.zero(F))))))
+
+# zeros against r's: each within H r
+def rpair_dreps(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, n: Nat, +r: S.D, +hr: O.le(~F, O.zero(F), N.emap(KI.dnum(), F, H, r))) -> rpair(~KI.dnum(), ~F, ~H, N.emap(KI.dnum(), F, H, r), NU.dreps(n, M.d0()), NU.dreps(n, r)):
+  match n:
+    case 0n:
+      Unit{}
+    case 1n+k:
+      (pd_0r(~F, N.emap(KI.dnum(), F, H, M.d0()), N.emap(KI.dnum(), F, H, r), N.e_zero(KI.dnum(), F, H), hr), rpair_dreps(~F, ~H, k, r, hr))
+
+# the checker's boxes at radius 0 and r pair up, with dl = H r
+def bpair_ckb(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +lyc: {KA.klen(~KI.dnum(), yc) == n : Nat}, +lpp: {KA.klen(~KI.dnum(), pc) == KA.klen(~KI.dnum(), pr) : Nat}, +r: S.D, +hr: O.le(~F, O.zero(F), N.emap(KI.dnum(), F, H, r)), hpn: FV.rnn(~F, N.ofkv(~KI.dnum(), ~F, ~H, pr))) -> bpair(~KI.dnum(), ~F, ~H, N.emap(KI.dnum(), F, H, r), CK.box(~KI.dnum(), n, yc, Nil{}, pc, pr), CK.box(~KI.dnum(), n, yc, NU.dreps(n, r), pc, pr)):
+  %Equal.sym(List<&2, S.D>, KA.kfit(~KI.dnum(), n, Nil{}), NU.dreps(n, M.d0()), kfit_nil(n)) : bpair(~KI.dnum(), ~F, ~H, N.emap(KI.dnum(), F, H, r), CK.zipb(~KI.dnum(), KA.kapp(~KI.dnum(), yc, pc), KA.kapp(~KI.dnum(), _, pr)), CK.box(~KI.dnum(), n, yc, NU.dreps(n, r), pc, pr))
+  %Equal.sym(List<&2, S.D>, KA.kfit(~KI.dnum(), n, NU.dreps(n, r)), NU.dreps(n, r), kfit_dreps(n, r)) : bpair(~KI.dnum(), ~F, ~H, N.emap(KI.dnum(), F, H, r), CK.zipb(~KI.dnum(), KA.kapp(~KI.dnum(), yc, pc), KA.kapp(~KI.dnum(), NU.dreps(n, M.d0()), pr)), CK.zipb(~KI.dnum(), KA.kapp(~KI.dnum(), yc, pc), KA.kapp(~KI.dnum(), _, pr)))
+  bpair_zip(~KI.dnum(), ~F, ~H, N.emap(KI.dnum(), F, H, r), KA.kapp(~KI.dnum(), yc, pc), KA.kapp(~KI.dnum(), NU.dreps(n, M.d0()), pr), KA.kapp(~KI.dnum(), NU.dreps(n, r), pr),
+    rpair_app(~KI.dnum(), ~F, ~H, N.emap(KI.dnum(), F, H, r), NU.dreps(n, M.d0()), NU.dreps(n, r), pr, rpair_dreps(~F, ~H, n, r, hr), rpair_self(~KI.dnum(), ~F, ~H, N.emap(KI.dnum(), F, H, r), hr, pr, hpn)),
+    klen_ckw(n, yc, pc, pr, M.d0(), lyc, lpp))
