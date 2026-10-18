@@ -2,3 +2,4 @@ proto/plan_chain.txt
 proto/_stmtcheck.bend
 __pycache__/
 gui/solve_cli
+refs/

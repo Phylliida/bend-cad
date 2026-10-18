@@ -1,4 +1,4 @@
-# HANDOFF — bend-cad (2026-10-18, sk-06 done; sk-09 verified solver built, solve_total and solve_complete proven, drafts awaiting review)
+# HANDOFF — bend-cad (2026-10-18, sk-06 done; sk-09 verified solver built, solve_total and solve_complete proven, drafts awaiting review; next: sk-13 per PLAN-sk13.md)
 
 Read first: `DESIGN.md` (v0.9: the plan, Danielle's decisions, §3 spec
 numbers, §4–§5 typed IR, forms and meanings as built), `proto/RESULTS.md`
@@ -170,6 +170,19 @@ laws):
   the operations given (negative-tested in sk-04).
 
 ## Next
+
+**Now (2026-10-18): sk-13, generic dependencies.** The design is DESIGN.md
+§8.11 (v0.14; Q20–Q23 decided by Danielle). The order of work, phase exit
+criteria, downloaded references (`refs/`, git-ignored) and risks are in
+**PLAN-sk13.md**. Diagnosis tools for slow or refused sketches are in
+`tools/diag/` and `proto/probe_*.bend`. Before sk-13a, ask Danielle about
+her review of the six sk-09 law drafts. Same day, before the design:
+- deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
+- a parallel gate (about 50 s);
+- `dsig` normalises zero (a zero's exponent had compounded to ~90000);
+- the page drops repeated constraints.
+
+(The rest of this section is history, oldest first.)
 
 **sk-05** (parametric block certificate, §8.3), with sk-06 (composition,
 §8.6 side conditions over balls). Danielle answered (2026-10-13, DESIGN §16):
