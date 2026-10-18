@@ -988,3 +988,79 @@ def kseg(~K: N.Num, +o: Nat, +n: Nat, +u: N.KVec(~K), +a: N.KVec(~K), +b: N.KVec
   %Equal.sym(N.KVec(~K), PL.ktake(~K, Nat.add(o, n), u), KA.kapp(~K, a, b), h) : {PL.kdrop(~K, o, _) == b : N.KVec(~K)}
   %ha : {PL.kdrop(~K, _, KA.kapp(~K, a, b)) == b : N.KVec(~K)}
   kd_app(~K, a, b)
+
+def ftake_len(~F: O.OField, v: M.Vec(~F)) -> {PP.ftake(~F, M.len(~F, v), v) == v : M.Vec(~F)}:
+  match v:
+    case Nil{}:
+      {==}
+    case Con{+a, t}:
+      %ftake_len(~F, t) : {Con{a, PP.ftake(~F, M.len(~F, t), t)} == Con{a, _} : M.Vec(~F)}
+      {==}
+
+def ftk(~F: O.OField, +n: Nat, +v: M.Vec(~F), +h: {M.len(~F, v) == n : Nat}) -> {PP.ftake(~F, n, v) == v : M.Vec(~F)}:
+  %h : {PP.ftake(~F, _, v) == v : M.Vec(~F)}
+  ftake_len(~F, v)
+
+def kfit_eq(+n: Nat, +u: List<&2, S.D>, +h: {KA.klen(~KI.dnum(), u) == n : Nat}) -> {KA.kfit(~KI.dnum(), n, u) == u : List<&2, S.D>}:
+  %h : {KA.kfit(~KI.dnum(), _, u) == u : List<&2, S.D>}
+  kfit_len(~KI.dnum(), u)
+
+def dtake_eq(+n: Nat, +u: List<&2, S.D>, +h: {KA.klen(~KI.dnum(), u) == n : Nat}) -> {NU.dtake(n, u) == u : List<&2, S.D>}:
+  %Equal.sym(List<&2, S.D>, NU.dtake(n, u), PL.ktake(~KI.dnum(), n, u), dtake_kt(n, u)) : {_ == u : List<&2, S.D>}
+  %h : {PL.ktake(~KI.dnum(), _, u) == u : List<&2, S.D>}
+  kt_len(~KI.dnum(), u)
+
+# The result
+# ----------
+# pblocks' answer at offset o, from the box (gc, gr) so far: a plan whose
+# blocks the checker's walk accepts against the final box, the final box
+# extending (gc, gr), nv long, holding X, its radii in [0, h tf]
+
+
+def PG(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +vp: List<&2, Nat>, +nv: Nat, +x: M.Vec(~F), +p: Nat, +o: Nat, +gc: List<&2, S.D>, +gr: List<&2, S.D>, +sys: List<&2, E.QExpr>, +tf: O.C(F), r: NU.PBR) -> Data:
+  match r:
+    case NU.PBOk{NU.PB{+bsf, +gcf, +grf}}:
+      M.Both({PL.walk(~KI.dnum(), gcf, grf, bsf, sys, o) == True{} : Bool}, M.Both({PL.ktake(~KI.dnum(), o, gcf) == gc : List<&2, S.D>}, M.Both({PL.ktake(~KI.dnum(), o, grf) == gr : List<&2, S.D>}, M.Both({KA.klen(~KI.dnum(), gcf) == nv : Nat}, M.Both({KA.klen(~KI.dnum(), grf) == nv : Nat}, M.Both(PP.pbox(~KI.dnum(), ~F, ~H, gcf, grf, nv, LC.xperm(~F, x, vp)), M.Both(FV.rnn(~F, M.ofdv(~F, grf)), M.vbnd.all(~F, M.ofdv(~F, grf), O.mul(F, NW.hnw(~F, p), tf)))))))))
+    case NU.PBRetry{}:
+      Empty
+    case NU.PBStop{}:
+      Empty
+
+
+# no blocks left: the box is the final one
+def pg_nil(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +vp: List<&2, Nat>, +nv: Nat, +x: M.Vec(~F), +p: Nat, +o: Nat, +gc: List<&2, S.D>, +gr: List<&2, S.D>, +hlc: {KA.klen(~KI.dnum(), gc) == o : Nat}, +hlr: {KA.klen(~KI.dnum(), gr) == o : Nat}, +hpb: PP.pbox(~KI.dnum(), ~F, ~H, gc, gr, o, PP.ftake(~F, o, LC.xperm(~F, x, vp))), +hrn: FV.rnn(~F, M.ofdv(~F, gr)), +tt: O.C(F), +htt: O.le(~F, O.zero(F), tt), +hrb: M.vbnd.all(~F, M.ofdv(~F, gr), O.mul(F, NW.hnw(~F, p), tt)), +hsw: {SP.swalk(Nil{}, Nil{}, o, nv) == True{} : Bool}, +hlx: {M.len(~F, LC.xperm(~F, x, vp)) == nv : Nat}) -> PG(~F, ~H, vp, nv, x, p, o, gc, gr, Nil{}, tt, NU.PBOk{NU.PB{Nil{}, gc, gr}}):
+  +hon = GJ.nateq_ok(o, nv, L.band_l(KA.nateq(o, nv), PL.isnil(Nil{}), hsw))
+  (kband_i(KA.nateq(o, KA.klen(~KI.dnum(), gc)), PL.isnil(Nil{}), nateq_of(o, KA.klen(~KI.dnum(), gc), Equal.sym(Nat, KA.klen(~KI.dnum(), gc), o, hlc)), {==}),
+  ((%hlc : {PL.ktake(~KI.dnum(), _, gc) == gc : List<&2, S.D>}
+    kt_len(~KI.dnum(), gc)),
+  ((%hlr : {PL.ktake(~KI.dnum(), _, gr) == gr : List<&2, S.D>}
+    kt_len(~KI.dnum(), gr)),
+  (Equal.trans(Nat, KA.klen(~KI.dnum(), gc), o, nv, hlc, hon),
+  (Equal.trans(Nat, KA.klen(~KI.dnum(), gr), o, nv, hlr, hon),
+  ((%ftk(~F, nv, LC.xperm(~F, x, vp), hlx) : PP.pbox(~KI.dnum(), ~F, ~H, gc, gr, nv, _)
+    (%hon : PP.pbox(~KI.dnum(), ~F, ~H, gc, gr, _, PP.ftake(~F, _, LC.xperm(~F, x, vp)))
+    hpb)),
+  (hrn, hrb)))))))
+
+
+def k6_of(~F: O.OField, +gcf: List<&2, S.D>, +o: Nat, +n: Nat, +yc: List<&2, S.D>, +h6: {PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, gcf)) == yc : List<&2, S.D>}) -> {PL.kveq(~KI.dnum(), yc, PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, gcf))) == True{} : Bool}:
+  %Equal.sym(List<&2, S.D>, PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, gcf)), yc, h6) : {PL.kveq(~KI.dnum(), yc, _) == True{} : Bool}
+  kveq_refl(~F, yc)
+
+def k7_of(~F: O.OField, +grf: List<&2, S.D>, +o: Nat, +n: Nat, +yr: List<&2, S.D>, +h7: {PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, grf)) == yr : List<&2, S.D>}, +h8: {KA.klen(~KI.dnum(), yr) == n : Nat}) -> {PL.kveq(~KI.dnum(), KA.kfit(~KI.dnum(), n, yr), PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, grf))) == True{} : Bool}:
+  %Equal.sym(List<&2, S.D>, PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, grf)), yr, h7) : {PL.kveq(~KI.dnum(), KA.kfit(~KI.dnum(), n, yr), _) == True{} : Bool}
+  %Equal.sym(List<&2, S.D>, KA.kfit(~KI.dnum(), n, yr), yr, kfit_eq(n, yr, h8)) : {PL.kveq(~KI.dnum(), _, yr) == True{} : Bool}
+  kveq_refl(~F, yr)
+
+# the checker's block_ok against the final box
+def bo_fin(~F: O.OField, +gcf: List<&2, S.D>, +grf: List<&2, S.D>, +es: List<&2, E.QExpr>, +o: Nat, +n: Nat, +pars: List<&2, Nat>, +yc: List<&2, S.D>, +yr: List<&2, S.D>, +q: S.D, +ym: List<&2, List<&2, S.D>>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +h1: {KA.natle(n, CK.eqlen(es)) == True{} : Bool}, +h2: {KA.natle(Nat.add(o, n), KA.klen(~KI.dnum(), gcf)) == True{} : Bool}, +h3: {PL.pars_ok(o, pars) == True{} : Bool}, +h4: {PL.eqs_below(Nat.add(o, n), PL.takeq(n, es)) == True{} : Bool}, +h5: {CK.check(~KI.dnum(), C.Block{PL.renames(o, n, pars, PL.takeq(n, es)), n}, C.Cert{yc, yr, q, ym, pc, pr}) == True{} : Bool}, +h6: {PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, gcf)) == yc : List<&2, S.D>}, +h7: {PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, grf)) == yr : List<&2, S.D>}, +h8: {KA.klen(~KI.dnum(), yr) == n : Nat}, +h9: {PL.pcont(~KI.dnum(), gcf, grf, pars, pc, pr) == True{} : Bool}) -> {PL.block_ok(~KI.dnum(), gcf, grf, es, o, n, pars, C.Cert{yc, yr, q, ym, pc, pr}) == True{} : Bool}:
+  +e1 = PL.takeq(n, es)
+  +k6 = k6_of(~F, gcf, o, n, yc, h6)
+  +k7 = k7_of(~F, grf, o, n, yr, h7, h8)
+  kband_i(KA.natle(n, CK.eqlen(es)), KA.band(KA.natle(Nat.add(o, n), KA.klen(~KI.dnum(), gcf)), KA.band(PL.pars_ok(o, pars), KA.band(PL.eqs_below(Nat.add(o, n), e1), KA.band(CK.check(~KI.dnum(), C.Block{PL.renames(o, n, pars, e1), n}, C.Cert{yc, yr, q, ym, pc, pr}), KA.band(PL.kveq(~KI.dnum(), yc, PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, gcf))), KA.band(PL.kveq(~KI.dnum(), KA.kfit(~KI.dnum(), n, yr), PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, grf))), PL.pcont(~KI.dnum(), gcf, grf, pars, pc, pr))))))), h1,
+  kband_i(KA.natle(Nat.add(o, n), KA.klen(~KI.dnum(), gcf)), KA.band(PL.pars_ok(o, pars), KA.band(PL.eqs_below(Nat.add(o, n), e1), KA.band(CK.check(~KI.dnum(), C.Block{PL.renames(o, n, pars, e1), n}, C.Cert{yc, yr, q, ym, pc, pr}), KA.band(PL.kveq(~KI.dnum(), yc, PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, gcf))), KA.band(PL.kveq(~KI.dnum(), KA.kfit(~KI.dnum(), n, yr), PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, grf))), PL.pcont(~KI.dnum(), gcf, grf, pars, pc, pr)))))), h2,
+  kband_i(PL.pars_ok(o, pars), KA.band(PL.eqs_below(Nat.add(o, n), e1), KA.band(CK.check(~KI.dnum(), C.Block{PL.renames(o, n, pars, e1), n}, C.Cert{yc, yr, q, ym, pc, pr}), KA.band(PL.kveq(~KI.dnum(), yc, PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, gcf))), KA.band(PL.kveq(~KI.dnum(), KA.kfit(~KI.dnum(), n, yr), PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, grf))), PL.pcont(~KI.dnum(), gcf, grf, pars, pc, pr))))), h3,
+  kband_i(PL.eqs_below(Nat.add(o, n), e1), KA.band(CK.check(~KI.dnum(), C.Block{PL.renames(o, n, pars, e1), n}, C.Cert{yc, yr, q, ym, pc, pr}), KA.band(PL.kveq(~KI.dnum(), yc, PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, gcf))), KA.band(PL.kveq(~KI.dnum(), KA.kfit(~KI.dnum(), n, yr), PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, grf))), PL.pcont(~KI.dnum(), gcf, grf, pars, pc, pr)))), h4,
+  kband_i(CK.check(~KI.dnum(), C.Block{PL.renames(o, n, pars, e1), n}, C.Cert{yc, yr, q, ym, pc, pr}), KA.band(PL.kveq(~KI.dnum(), yc, PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, gcf))), KA.band(PL.kveq(~KI.dnum(), KA.kfit(~KI.dnum(), n, yr), PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, grf))), PL.pcont(~KI.dnum(), gcf, grf, pars, pc, pr))), h5,
+  kband_i(PL.kveq(~KI.dnum(), yc, PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, gcf))), KA.band(PL.kveq(~KI.dnum(), KA.kfit(~KI.dnum(), n, yr), PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, grf))), PL.pcont(~KI.dnum(), gcf, grf, pars, pc, pr)), k6,
+  kband_i(PL.kveq(~KI.dnum(), KA.kfit(~KI.dnum(), n, yr), PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, grf))), PL.pcont(~KI.dnum(), gcf, grf, pars, pc, pr), k7, h9)))))))
