@@ -202,3 +202,119 @@ def plan_pg($TP) -> PB.PG(~F, ~H, $VP, $NV, x, p, $NP, $GC0, $GR0, $SYS, PB.tch(
     (%Equal.sym(List<&2, S.D>, $GC0, NU.dpick(g, $FS), dtake_pick(g, $FS, ST.allvars($KB))) : {KA.klen($DN, _) == $NP : Nat}
       Equal.trans(Nat, KA.klen($DN, NU.dpick(g, $FS)), PL.nlen($FS), $NP, PB.klen_pick(g, $FS), nlen_st($FS))),
     klen_dreps($NP, NU.dzero()), pbox0($SKA, x, g, g0, d, hN, hpa), rnn_dreps(~F, $NP), @0, FO.le_refl(~F, @0), vb_dreps(~F, $NP, @M($HH, @0), FO.mul_nonneg(~F, $HH, @0, NW.hnw_nn(~F, p), FO.le_refl(~F, @0))), hsq)
+
+# The answer at P
+# ---------------
+# PG's facts about the blocks' result (gcf, grf in block order) give the
+# whole verdict about the answer the solver reads back (unperm).
+
+# lookups agree
+def dnth_dl(xs: List<&2, S.D>, k: Nat) -> {SV.dnth(xs, k) == NU.dlook(xs, k) : S.D}:
+  match xs k:
+    case Nil{} k:
+      {==}
+    case Con{h, t} 0n:
+      {==}
+    case Con{h, t} 1n+j:
+      dnth_dl(t, j)
+
+def dlook_pick(+g: List<&2, S.D>, ks: List<&2, Nat>, j: Nat, h: {KA.natle(1n+j, PL.nlen(ks)) == True{} : Bool}) -> {NU.dlook(NU.dpick(g, ks), j) == NU.dlook(g, PL.nthn(ks, j)) : S.D}:
+  match ks j:
+    case Nil{} j:
+      FO.absurd({NU.dlook(Nil{}, j) == NU.dlook(g, PL.nthn(Nil{}, j)) : S.D}, KA.ft(h))
+    case Con{k, t} 0n:
+      {==}
+    case Con{k, t} 1n+i:
+      dlook_pick(g, t, i, h)
+
+def dlook_dreps(n: Nat, +z: S.D, j: Nat, h: {KA.natle(1n+j, n) == True{} : Bool}) -> {NU.dlook(NU.dreps(n, z), j) == z : S.D}:
+  match n j:
+    case 0n j:
+      FO.absurd({NU.dlook(Nil{}, j) == z : S.D}, KA.ft(h))
+    case 1n+m 0n:
+      {==}
+    case 1n+m 1n+i:
+      dlook_dreps(m, z, i, h)
+
+# the box in the system's order at variable j is the block-order box at
+# j's position
+def up_kl(n: Nat, +k: Nat, +u: List<&2, S.D>, +vp: List<&2, Nat>, j: Nat, h: {KA.natle(1n+j, n) == True{} : Bool}) -> {KB.klook($DN, NU.unperm(n, k, u, vp), j) == KB.klook($DN, u, PL.pos(Nat.add(j, k), vp)) : S.D}:
+  match n j:
+    case 0n j:
+      FO.absurd({KB.klook($DN, Nil{}, j) == KB.klook($DN, u, PL.pos(Nat.add(j, k), vp)) : S.D}, KA.ft(h))
+    case 1n+m 0n:
+      %SP.pos_eq(k, vp) : {NU.dlook(u, _) == KB.klook($DN, u, PL.pos(k, vp)) : S.D}
+      PB.dl_kl(u, PL.pos(k, vp))
+    case 1n+m 1n++i:
+      %Equal.sym(Nat, 1n+Nat.add(i, k), Nat.add(i, 1n+k), LN.add_succ(i, k)) : {KB.klook($DN, NU.unperm(m, 1n+k, u, vp), i) == KB.klook($DN, u, PL.pos(_, vp)) : S.D}
+      up_kl(m, 1n+k, u, vp, i, h)
+
+def up_kl0(+n: Nat, +u: List<&2, S.D>, +vp: List<&2, Nat>, +j: Nat, h: {KA.natle(1n+j, n) == True{} : Bool}) -> {KB.klook($DN, NU.unperm(n, 0n, u, vp), j) == KB.klook($DN, u, PL.pos(j, vp)) : S.D}:
+  %Equal.sym(Nat, j, Nat.add(j, 0n), LN.add_zero(j)) : {KB.klook($DN, NU.unperm(n, 0n, u, vp), j) == KB.klook($DN, u, PL.pos(_, vp)) : S.D}
+  up_kl(n, 0n, u, vp, j, h)
+
+def klen_up(n: Nat, +k: Nat, +u: List<&2, S.D>, +vp: List<&2, Nat>) -> {KA.klen($DN, NU.unperm(n, k, u, vp)) == n : Nat}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+m:
+      %Equal.sym(Nat, KA.klen($DN, NU.unperm(m, 1n+k, u, vp)), m, klen_up(m, 1n+k, u, vp)) : {1n+_ == 1n+m : Nat}
+      {==}
+
+def length_up(n: Nat, +k: Nat, +u: List<&2, S.D>, +vp: List<&2, Nat>) -> {List.length(&2, S.D, NU.unperm(n, k, u, vp)) == n : Nat}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+m:
+      %Equal.sym(Nat, List.length(&2, S.D, NU.unperm(m, 1n+k, u, vp)), m, length_up(m, 1n+k, u, vp)) : {1n+_ == 1n+m : Nat}
+      {==}
+
+# kdrop peels one entry
+def kd_con(k: Nat, u: List<&2, S.D>, h: {KA.natle(1n+k, KA.klen($DN, u)) == True{} : Bool}) -> {PL.kdrop($DN, k, u) == Con{KB.klook($DN, u, k), PL.kdrop($DN, 1n+k, u)} : List<&2, S.D>}:
+  match k u:
+    case k Nil{}:
+      FO.absurd({PL.kdrop($DN, k, Nil{}) == Con{KB.klook($DN, Nil{}, k), PL.kdrop($DN, 1n+k, Nil{})} : List<&2, S.D>}, KA.ft(h))
+    case 0n Con{a, t}:
+      {==}
+    case 1n+i Con{a, t}:
+      kd_con(i, t, h)
+
+def kd_all(u: List<&2, S.D>) -> {PL.kdrop($DN, KA.klen($DN, u), u) == Nil{} : List<&2, S.D>}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{a, t}:
+      kd_all(t)
+
+def kp_up.hk(+k: Nat, +lt: Nat, +u: List<&2, S.D>, hl: {Nat.add(k, 1n+lt) == KA.klen($DN, u) : Nat}) -> {KA.natle(1n+k, KA.klen($DN, u)) == True{} : Bool}:
+  %hl : {KA.natle(1n+k, _) == True{} : Bool}
+  %LN.add_succ(k, lt) : {KA.natle(1n+k, _) == True{} : Bool}
+  L.le_add_r(k, lt)
+
+def lt_nl(+w: Nat, +n: Nat, h: {SV.lt(w, n) == True{} : Bool}) -> {KA.natle(1n+w, n) == True{} : Bool}:
+  %L.lt_sv(w, n) : {_ == True{} : Bool}
+  h
+
+def kl_at(+n: Nat, +u: List<&2, S.D>, +vp: List<&2, Nat>, +w: Nat, +k: Nat, hp: {PL.pos(w, vp) == k : Nat}, hw: {KA.natle(1n+w, n) == True{} : Bool}) -> {KB.klook($DN, NU.unperm(n, 0n, u, vp), w) == KB.klook($DN, u, k) : S.D}:
+  %hp : {KB.klook($DN, NU.unperm(n, 0n, u, vp), w) == KB.klook($DN, u, _) : S.D}
+  up_kl0(n, u, vp, w, hw)
+
+# read back in block order from position k on: the block-order box from k
+def kp_up(+n: Nat, +u: List<&2, S.D>, +vp: List<&2, Nat>, ws: List<&2, Nat>, +k: Nat, +hr: {LC.posrun(vp, ws, 0n, k) == True{} : Bool}, +hb: {SV.below(ws, n) == True{} : Bool}, +hl: {Nat.add(k, SV.len(ws)) == KA.klen($DN, u) : Nat}) -> {PL.kperm($DN, NU.unperm(n, 0n, u, vp), ws) == PL.kdrop($DN, k, u) : List<&2, S.D>}:
+  match ws:
+    case Nil{}:
+      %Equal.sym(Nat, k, KA.klen($DN, u), Equal.trans(Nat, k, Nat.add(k, 0n), KA.klen($DN, u), LN.add_zero(k), hl)) : {Nil{} == PL.kdrop($DN, _, u) : List<&2, S.D>}
+      Equal.sym(List<&2, S.D>, PL.kdrop($DN, KA.klen($DN, u), u), Nil{}, kd_all(u))
+    case Con{+w, +t}:
+      +hp = GJ.nateq_ok(PL.pos(w, vp), k, L.band_l(KA.nateq(PL.pos(w, vp), k), LC.posrun(vp, t, 0n, 1n+k), hr))
+      +hw = lt_nl(w, n, L.band_l(SV.lt(w, n), SV.below(t, n), hb))
+      %Equal.sym(List<&2, S.D>, PL.kdrop($DN, k, u), Con{KB.klook($DN, u, k), PL.kdrop($DN, 1n+k, u)}, kd_con(k, u, kp_up.hk(k, SV.len(t), u, hl))) : {Con{KB.klook($DN, NU.unperm(n, 0n, u, vp), w), PL.kperm($DN, NU.unperm(n, 0n, u, vp), t)} == _ : List<&2, S.D>}
+      %kp_up(n, u, vp, t, 1n+k, L.band_r(KA.nateq(PL.pos(w, vp), k), LC.posrun(vp, t, 0n, 1n+k), hr), L.band_r(SV.lt(w, n), SV.below(t, n), hb), Equal.trans(Nat, 1n+Nat.add(k, SV.len(t)), Nat.add(k, 1n+SV.len(t)), KA.klen($DN, u), LN.add_succ(k, SV.len(t)), hl)) : {Con{KB.klook($DN, NU.unperm(n, 0n, u, vp), w), PL.kperm($DN, NU.unperm(n, 0n, u, vp), t)} == Con{KB.klook($DN, u, k), _} : List<&2, S.D>}
+      %kl_at(n, u, vp, w, k, hp, hw) : {Con{KB.klook($DN, NU.unperm(n, 0n, u, vp), w), PL.kperm($DN, NU.unperm(n, 0n, u, vp), t)} == Con{_, PL.kperm($DN, NU.unperm(n, 0n, u, vp), t)} : List<&2, S.D>}
+      {==}
+
+# the solver's read-back box, put back in block order, is the blocks' box
+def kp_vp($SKP, +u: List<&2, S.D>, +hu: {KA.klen($DN, u) == $NV : Nat}) -> {PL.kperm($DN, NU.unperm($NV, 0n, u, $VP), $VP) == u : List<&2, S.D>}:
+  +hvd = SP.sfacts_vpd($SFA)
+  +hl = Equal.trans(Nat, SV.len($VP), $NV, KA.klen($DN, u), L.eq_ok(SV.len($VP), $NV, SP.sfacts_vpl($SFA)), Equal.sym(Nat, KA.klen($DN, u), $NV, hu))
+  kp_up($NV, u, $VP, $VP, 0n, PB.posrun_of($VP, $VP, Nil{}, Nil{}, 0n, 0n, Equal.sym(List<&2, Nat>, ST.app($VP, Nil{}), $VP, TJ.app_nil($VP)), {==}, hvd), SP.sfacts_vpb($SFA), hl)
