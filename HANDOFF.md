@@ -485,6 +485,42 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
   v1 also needs the drawing near a solution, which the relaxation
   provides; D13's least-ink KKT solve (§10.3) is the verified
   replacement.
+- **C5 IN PROGRESS (2026-10-17)**, plan in DESIGN §10.4 "C5 plan". Gated
+  so far via tests/block_laws.bend (importing a module checks all of it).
+  - C5a lib/apxpf.bend (tools/drafts/apxpf.draft): every Emb<dnum, F> is
+    ofd (`hofd`; stay generic in ~H, naming KI.demb in a signature blows
+    up); the solver's Jacobian/values/dmatvec in F; `vform`
+    |v - AJv| <= n e |v|; `abound` |Aw| <= (1+ne) b |w|; `op_mn`
+    (an operator bound gives mnorm, as a template); F-boxes `fbx` over
+    BP.fnum with `smat_lip_mn`, `smat_maj`, `jac_lip`; `invb_at` (pert at
+    a box point); `elim_at` (dinverse at the solver's dyadic Jacobian);
+    complete comparisons `kle_of`, `klt_of`, `kvle_of`, `kvlt_ones_of`;
+    vector toolkit (`vext`, matvec linearity, vn triangles); `ajs`; Y
+    rounded to b bits (`ymn`, `ydmn`), `imv`, `thl_mn` |I - YJ|,
+    `thr_mn` |I - JY|.
+  - C5b lib/nwtpf.bend (tools/drafts/nwtpf.draft): `nstep_ok` (the
+    `Step` relation), the constants (ea, al, g0c, dl0, e1, en, dx,
+    settle, h6, h8), step 0 (`s0_near`, `s0_far`), step 1 (`s1_settle`
+    |y2 - y1| <= 8h: the parameter offset cancels), `newton_ok` (the
+    control flow; `t8_eq` the settle threshold is 8h; the 2^40 guard
+    through K-level comparisons).
+  - C5c lib/radpf.bend (started): `kabs_eq`, pair grades `kb_pd`/`ks_pd`.
+    Next: the checker's box at radius r (cen, gbox), the window (okr(r)
+    = True for 2S <= R <= U via kvle_of + certpf's gF_ok/svec_ok), r0
+    and grow bounds, rsearch (Bernoulli invariant R (1 + i/16) >= 2S over
+    16 steps), x_b in the box (|e| <= s0 + kappa |e|). Then C5d
+    lib/blockpf.bend `block_ok` and its restatement in tests/.
+- Bend lessons (C5):
+  - expand.py `@MACRO NAME text` for long shared hypothesis lists
+    (whole-name matches).
+  - Never let an F term contain a big concrete integer: ofp(p) unfolds
+    to about p nodes (2^40 hung the checker). Keep F numerals small and
+    prove facts about big dyadics at the K level (computed comparisons
+    plus kle_trans).
+  - A parameter must not share a name with a def or another parameter
+    (hh, b, hr0 all bit); an unknown name shows as "expected a term,
+    observed '~'".
+  - Match scrutinees in declaration order (nrows_ad).
 - Bend lessons (C4):
   - A `let` can't hold an inline rewrite, and neither can a let-bound pair
     be destructured: move either into a helper def, or carry the pair as
