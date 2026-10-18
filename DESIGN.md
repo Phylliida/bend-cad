@@ -1370,6 +1370,31 @@ is POk and accept is True at P, for every g within d of x.
   against the final box via its prefix, `kpre`/`kseg`). `pb_ok`: the
   induction, the recursive call passed as a lambda; the chain functions
   `qch` (budgets) and `tch` (radius scale) run over (kb, BInv, o, T).
+- *C6d plan* (2026-10-17), lib/completepf.bend in parts:
+  - C6d-1 the plan at P: skel_of(sk) computes to Skel{vp = fs ++ allvars
+    kb, positions(alleqs kb, good), np = len fs, renum.bs(skbs kb ...)};
+    kept_reorder turns the plan's system into reorder(vp, full, alleqs
+    kb); pb_ok at o = np, known = fs, the pins' box (gc = dtake(np,
+    dpick(g, vp)), gr = dreps(np, 0)) holding X's prefix (PinnedAt and
+    Near's pin case: x_v = g0_v = g_v), T = 0, BInv from block_invs, Zeros
+    from kept_good, hfr from distinct vp (pins_of = ntake(np, vp) = fs);
+    then plan.fin and unperm.
+  - C6d-2 the checker's structural part: kperm(unperm(u, vp), vp) = u
+    (vp distinct, |u| = nv); present/pars_ok for vp (pigeonhole) and ep
+    (alleqs kb a permutation of good, good distinct); eqs_below(nv, kept)
+    from within; pinz and kvle from the result's prefix and radii; held
+    (deq reflexive through dcmp_sound); within of the marked sketch;
+    explained and wf_dec from solve_total; inbox from pbox via unperm.
+  - C6d-3 the side conditions: kball's center is e at the box's centers
+    (kball_c), within lp ρ of e(x) (eval_lip), radius at most lp ρ
+    (kball_grade, B = |x| + 2 once ρ ≤ 1); Strict gives e(x) > 0, so c - r
+    > 0 once 2 lp ρ < e(x); a variable-free Ge0 has radius 0 and center
+    e(x) >= 0. The budget adds Σ 4 lp T / e(x) and T.
+  - C6d-4 the top: P_l = pfirst(l, 64, 96) (P_0 = 64, P_1 = 96, P_(k+2) =
+    2 P_k: p + 2 <= q <= 2p - 2 keeps P_l >= 64 + 2l), so ⌊P_l/2⌋ >= l
+    and t <= 2^-l; with nat(l) 2^-l <= 1 and Q < nat(l) (arch), t Q < 1;
+    d = h at P_l; precisions(l, 7) starts with P_l and accept = True, so
+    the loop returns P_l's answer and seal's ok is that verdict.
 - *C6d, the verdict and the top* (lib/completepf.bend). held (pins: radius
   0, centers g's), explained and wf_dec (solve_total), within, check.r's
   permutations (vp from sfacts, ep from alleqs vs good), kperm of unperm,
