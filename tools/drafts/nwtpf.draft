@@ -40,6 +40,7 @@ import ./bndpf.bend as BP
 import ./roundpf.bend as RP
 import ./apxpf.bend as AP
 import ./real.bend as RL
+import ./qemb.bend as QE
 
 # The block in F
 # --------------
@@ -172,9 +173,12 @@ def dl0($KP) -> @T:
 def e1($KP) -> @T:
   @A(hnw(~F, p), @A(@A(@M(@M(FR.ofn(~F, n), ea($KA)), d), @M(al($KA), @M(@M(FR.ofn(~F, n), @M(lam, @A(d, rho))), d))), @M(al($KA), @M(@M(FR.ofn(~F, m), ms), rho))))
 
-# 8h, as h + h + 6h (the settle test's threshold, through the second step's bound)
+# 6h and 8h = 2h + 6h, as sums (8h is the settle test's threshold)
+def h6(~F: O.OField, +p: Nat) -> @T:
+  @A(@A(@A(hnw(~F, p), hnw(~F, p)), @A(hnw(~F, p), hnw(~F, p))), @A(hnw(~F, p), hnw(~F, p)))
+
 def h8(~F: O.OField, +p: Nat) -> @T:
-  @A(@A(hnw(~F, p), hnw(~F, p)), @M(FR.ofn(~F, 6n), hnw(~F, p)))
+  @A(@A(hnw(~F, p), hnw(~F, p)), h6(~F, p))
 
 def en($KP) -> @T:
   @A(h8(~F, p), e1($KA))
@@ -219,8 +223,11 @@ def e1_nn($KP, $NNP) -> O.le(~F, @0, e1($KA)):
         FO.mul_nonneg(~F, al($KA), @M(@M(FR.ofn(~F, n), @M(lam, @A(d, rho))), d), hal, FO.mul_nonneg(~F, @M(FR.ofn(~F, n), @M(lam, @A(d, rho))), d, nms_nn(~F, n, @M(lam, @A(d, rho)), FO.mul_nonneg(~F, lam, @A(d, rho), hl0, FO.nonneg_add(~F, d, rho, hd0, hr0))), hd0))),
       FO.mul_nonneg(~F, al($KA), @M(@M(FR.ofn(~F, m), ms), rho), hal, FO.mul_nonneg(~F, @M(FR.ofn(~F, m), ms), rho, nms_nn(~F, m, ms, hm0), hr0))))
 
+def h2_nn(~F: O.OField, +p: Nat) -> O.le(~F, @0, @A(hnw(~F, p), hnw(~F, p))):
+  FO.nonneg_add(~F, hnw(~F, p), hnw(~F, p), hnw_nn(~F, p), hnw_nn(~F, p))
+
 def h8_nn(~F: O.OField, +p: Nat) -> O.le(~F, @0, h8(~F, p)):
-  FO.nonneg_add(~F, @A(hnw(~F, p), hnw(~F, p)), @M(FR.ofn(~F, 6n), hnw(~F, p)), FO.nonneg_add(~F, hnw(~F, p), hnw(~F, p), hnw_nn(~F, p), hnw_nn(~F, p)), nms_nn(~F, 6n, hnw(~F, p), hnw_nn(~F, p)))
+  FO.nonneg_add(~F, @A(hnw(~F, p), hnw(~F, p)), h6(~F, p), h2_nn(~F, p), FO.nonneg_add(~F, @A(@A(hnw(~F, p), hnw(~F, p)), @A(hnw(~F, p), hnw(~F, p))), @A(hnw(~F, p), hnw(~F, p)), FO.nonneg_add(~F, @A(hnw(~F, p), hnw(~F, p)), @A(hnw(~F, p), hnw(~F, p)), h2_nn(~F, p), h2_nn(~F, p)), h2_nn(~F, p)))
 
 def en_nn($KP, $NNP) -> O.le(~F, @0, en($KA)):
   FO.nonneg_add(~F, h8(~F, p), e1($KA), h8_nn(~F, p), e1_nn($KA, $NNA))
@@ -382,7 +389,7 @@ def le_addl(~F: O.OField, +a: @T, +b: @T, +ha: O.le(~F, @0, a)) -> O.le(~F, b, @
 # The block's context
 # -------------------
 
-@MACRO CXP ~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +m: Nat, +eqs: List<&2, E.QExpr>, +hn: {CK.eqlen(eqs) == n : Nat}, +hh: {CK.allheld(~KI.dnum(), eqs) == True{} : Bool}, +hbl: {CK.allbelow(Nat.add(n, m), eqs) == True{} : Bool}, +pc: List<&2, S.D>, +lpc: {M.len(~F, M.ofdv(~F, pc)) == m : Nat}, +p: Nat, +xb: M.Vec(~F), +xz: M.Vec(~F), +lxb: {M.len(~F, xb) == n : Nat}, +lxz: {M.len(~F, xz) == m : Nat}, +hz: {C.fvals(~F, eqs, C.app(~F, xb, xz)) == GJ.zeros(~F, n) : M.Vec(~F)}, +bb: @T, +lam: @T, +ms: @T, +b: @T, +d: @T, +rho: @T, $NNP, +hbb0: O.le(~F, @0, bb), +hbb: M.vbnd.all(~F, C.app(~F, xb, xz), @S(bb, @1)), +hq: AP.eqok(~F, bb, lam, ms, eqs), +hJ: NP.InvB(~F, jc(~F, eqs, n, C.app(~F, xb, xz)), n, b), +hzc: M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, pc), xz), rho), +hsm: AP.small(~F, n, ms, bt2(~F, b), NU.wbits(p)), +s1: O.le(~F, @A(dx($KA), dx($KA)), @1), +s2: O.le(~F, @A(@M(b, @M(FR.ofn(~F, n), @M(lam, dx($KA)))), @M(b, @M(FR.ofn(~F, n), @M(lam, dx($KA))))), @1), +s4: O.le(~F, settle($KA), @M(FR.ofn(~F, 6n), hnw(~F, p)))
+@MACRO CXP ~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +m: Nat, +eqs: List<&2, E.QExpr>, +hn: {CK.eqlen(eqs) == n : Nat}, +hh: {CK.allheld(~KI.dnum(), eqs) == True{} : Bool}, +hbl: {CK.allbelow(Nat.add(n, m), eqs) == True{} : Bool}, +pc: List<&2, S.D>, +lpc: {M.len(~F, M.ofdv(~F, pc)) == m : Nat}, +p: Nat, +xb: M.Vec(~F), +xz: M.Vec(~F), +lxb: {M.len(~F, xb) == n : Nat}, +lxz: {M.len(~F, xz) == m : Nat}, +hz: {C.fvals(~F, eqs, C.app(~F, xb, xz)) == GJ.zeros(~F, n) : M.Vec(~F)}, +bb: @T, +lam: @T, +ms: @T, +b: @T, +d: @T, +rho: @T, $NNP, +hbb0: O.le(~F, @0, bb), +hbb: M.vbnd.all(~F, C.app(~F, xb, xz), @S(bb, @1)), +hq: AP.eqok(~F, bb, lam, ms, eqs), +hJ: NP.InvB(~F, jc(~F, eqs, n, C.app(~F, xb, xz)), n, b), +hzc: M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, pc), xz), rho), +hsm: AP.small(~F, n, ms, bt2(~F, b), NU.wbits(p)), +s1: O.le(~F, @A(dx($KA), dx($KA)), @1), +s2: O.le(~F, @A(@M(b, @M(FR.ofn(~F, n), @M(lam, dx($KA)))), @M(b, @M(FR.ofn(~F, n), @M(lam, dx($KA))))), @1), +s4: O.le(~F, settle($KA), h6(~F, p))
 @MACRO CXA ~F, ~H, n, m, eqs, hn, hh, hbl, pc, lpc, p, xb, xz, lxb, lxz, hz, bb, lam, ms, b, d, rho, $NNA, hbb0, hbb, hq, hJ, hzc, hsm, s1, s2, s4
 @MACRO XS C.app(~F, xb, xz)
 @MACRO BIG AP.fbx(~F, $XS, dx($KA))
@@ -860,7 +867,7 @@ def s1_go($CXP, $Y0P, $ST0P, $ST1P, $Z0P) -> O.le(~F, NP.vn(~F, BX.vsub(~F, $Y2,
               bx3($CXA, $Y0A, $ST0A, $ST1A))))),
       RL.le_rw_l(~F, @A(@A(hnw(~F, p), hnw(~F, p)), settle($KA)), @A(hnw(~F, p), @A(@A($CX1, $CX2), @A(hnw(~F, p), @A($CE, $CF)))), h8(~F, p),
           FR.fring_eq(~F, [hnw(~F, p), $CX1, $CX2, $CE, $CF], E.ZAdd{E.ZAdd{E.ZVar{0n}, E.ZVar{0n}}, E.ZAdd{E.ZAdd{E.ZVar{3n}, E.ZVar{4n}}, E.ZAdd{E.ZVar{1n}, E.ZVar{2n}}}}, E.ZAdd{E.ZVar{0n}, E.ZAdd{E.ZAdd{E.ZVar{1n}, E.ZVar{2n}}, E.ZAdd{E.ZVar{0n}, E.ZAdd{E.ZVar{3n}, E.ZVar{4n}}}}}, {==}),
-          RP.le_add2(~F, @A(hnw(~F, p), hnw(~F, p)), @A(hnw(~F, p), hnw(~F, p)), settle($KA), @M(FR.ofn(~F, 6n), hnw(~F, p)), FO.le_refl(~F, @A(hnw(~F, p), hnw(~F, p))), s4))))
+          RP.le_add2(~F, @A(hnw(~F, p), hnw(~F, p)), @A(hnw(~F, p), hnw(~F, p)), settle($KA), h6(~F, p), FO.le_refl(~F, @A(hnw(~F, p), hnw(~F, p))), s4))))
 
 def s1_inv($CXP, $Y0P, $ST0P, $ST1P, hJ0: NP.InvB(~F, $J0, n, bt2(~F, b))) -> O.le(~F, NP.vn(~F, BX.vsub(~F, $Y2, $Y1)), h8(~F, p)):
   match hJ0:
@@ -873,3 +880,91 @@ def s1_inv($CXP, $Y0P, $ST0P, $ST1P, hJ0: NP.InvB(~F, $J0, n, bt2(~F, b))) -> O.
 
 def s1_settle($CXP, $Y0P, $ST0P, $ST1P) -> O.le(~F, NP.vn(~F, BX.vsub(~F, $Y2, $Y1)), h8(~F, p)):
   s1_inv($CXA, $Y0A, $ST0A, $ST1A, pt_inv($CXA, y0, ly0, d, hy0, d_le_dx($CXA)))
+
+# Newton's control flow
+# ---------------------
+
+# the settle threshold 2^-(p-2) is 8h, for p = 2 + q
+def t8_q(~F: O.OField, +q: Nat) -> {M.ofd(~F, S.D{S.Zpos{S.XH{}}, q}) == h8(~F, 1n+(1n+q)) : @T}:
+  @CERTEQ[t=O.ofp(~F, S.Pos.pow2(q)),, i=O.inv(F, O.ofp(~F, S.Pos.pow2(q))),, j=O.inv(F, O.ofp(~F, S.Pos.pow2(1n+(1n+(1n+q))))) | 1*i | (1*j + 1*j) + (((1*j + 1*j) + (1*j + 1*j)) + (1*j + 1*j)) | -i ; (((t + t) + (t + t)) + ((t + t) + (t + t)))*j - 1 | ((j + j) + (j + j)) + ((j + j) + (j + j)) ; t*i - 1 || QE.ofp_rel(~F, S.Pos.pow2(1n+(1n+(1n+q)))), QE.ofp_rel(~F, S.Pos.pow2(q))]
+
+def t8_eq(~F: O.OField, +p: Nat, +q: Nat, hp: {p == 1n+(1n+q) : Nat}) -> {M.ofd(~F, S.D{S.Zpos{S.XH{}}, Nat.sub(p, 2n)}) == h8(~F, p) : @T}:
+  %Equal.sym(Nat, p, 1n+(1n+q), hp) : {M.ofd(~F, S.D{S.Zpos{S.XH{}}, Nat.sub(_, 2n)}) == h8(~F, _) : @T}
+  %Equal.sym(Nat, Nat.sub(q, 0n), q, RP.sub0(q)) : {M.ofd(~F, S.D{S.Zpos{S.XH{}}, _}) == h8(~F, 1n+(1n+q)) : @T}
+  t8_q(~F, q)
+
+def le_hofd(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +a: S.D, +b: S.D, h: O.le(~F, M.ofd(~F, a), M.ofd(~F, b))) -> O.le(~F, N.emap(KI.dnum(), F, H, a), N.emap(KI.dnum(), F, H, b)):
+  %Equal.sym(@T, N.emap(KI.dnum(), F, H, a), M.ofd(~F, a), AP.hofd(~F, ~H, a)) : O.le(~F, _, N.emap(KI.dnum(), F, H, b))
+  %Equal.sym(@T, N.emap(KI.dnum(), F, H, b), M.ofd(~F, b), AP.hofd(~F, ~H, b)) : O.le(~F, M.ofd(~F, a), _)
+  h
+
+def bnd_hsub(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +x: S.D, +y: S.D, +t: @T, h: M.bnd(~F, @A(M.ofd(~F, x), @N(M.ofd(~F, y))), t)) -> M.bnd(~F, N.emap(KI.dnum(), F, H, S.D.sub(x, y)), t):
+  %Equal.sym(@T, N.emap(KI.dnum(), F, H, S.D.sub(x, y)), M.ofd(~F, S.D.sub(x, y)), AP.hofd(~F, ~H, S.D.sub(x, y))) : M.bnd(~F, _, t)
+  %Equal.sym(@T, M.ofd(~F, S.D.sub(x, y)), @A(M.ofd(~F, x), @N(M.ofd(~F, y))), ofd_sub(~F, x, y)) : M.bnd(~F, _, t)
+  h
+
+def dabs_le_t(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +x: S.D, +y: S.D, +t: S.D, h: M.bnd(~F, @A(M.ofd(~F, x), @N(M.ofd(~F, y))), M.ofd(~F, t))) -> {KA.kle(~KI.dnum(), NU.dabs(S.D.sub(x, y)), t) == True{} : Bool}:
+  AP.kle_of(~KI.dnum(), ~F, ~H, NU.dabs(S.D.sub(x, y)), t,
+    (%Equal.sym(@T, N.emap(KI.dnum(), F, H, t), M.ofd(~F, t), AP.hofd(~F, ~H, t)) : O.le(~F, N.emap(KI.dnum(), F, H, NU.dabs(S.D.sub(x, y))), _)
+      BP.kabs_le(~KI.dnum(), ~F, ~H, S.D.sub(x, y), M.ofd(~F, t), bnd_hsub(~F, ~H, x, y, M.ofd(~F, t), h))))
+
+# entries within ofd t pass the solver's closeness test
+def dclose_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, xs: List<&2, S.D>, ys: List<&2, S.D>, +t: S.D, hl: {M.len(~F, M.ofdv(~F, xs)) == M.len(~F, M.ofdv(~F, ys)) : Nat}, h: M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, xs), M.ofdv(~F, ys)), M.ofd(~F, t))) -> {NU.dclose(xs, ys, t) == True{} : Bool}:
+  match xs ys:
+    case Nil{} Nil{}:
+      {==}
+    case Nil{} Con{y, yt}:
+      FO.absurd({NU.dclose(Nil{}, Con{y, yt}, t) == True{} : Bool}, FV.zero_ne(M.len(~F, M.ofdv(~F, yt)), hl))
+    case Con{x, xt} Nil{}:
+      FO.absurd({NU.dclose(Con{x, xt}, Nil{}, t) == True{} : Bool}, FV.succ_ne(M.len(~F, M.ofdv(~F, xt)), hl))
+    case Con{+x, +xt} Con{+y, +yt}:
+      (h1, h2) = h
+      AP.band_t(KA.kle(~KI.dnum(), NU.dabs(S.D.sub(x, y)), t), NU.dclose(xt, yt, t), dabs_le_t(~F, ~H, x, y, t, h1), dclose_of(~F, ~H, xt, yt, t, FV.succ_inj(M.len(~F, M.ofdv(~F, xt)), M.len(~F, M.ofdv(~F, yt)), hl), h2))
+
+# what newton promises: an answer within en of x_b, n entries
+def NOK($KP, +xb: M.Vec(~F), r: Maybe<&2, List<&2, S.D>>) -> Type:
+  match r:
+    case None{}:
+      Empty
+    case Some{yc}:
+      M.Both(O.le(~F, NP.vn(~F, BX.vsub(~F, M.ofdv(~F, yc), xb)), en($KA)), {M.len(~F, M.ofdv(~F, yc)) == n : Nat})
+
+@MACRO T8 S.D{S.Zpos{S.XH{}}, Nat.sub(p, 2n)}
+@MACRO PQP +q2: Nat, +hp2: {p == 1n+(1n+q2) : Nat}
+@MACRO PQA q2, hp2
+
+def lsym($CXP, +u: List<&2, S.D>, +v: List<&2, S.D>, lu: {M.len(~F, M.ofdv(~F, u)) == n : Nat}, lv: {M.len(~F, M.ofdv(~F, v)) == n : Nat}) -> {M.len(~F, M.ofdv(~F, u)) == M.len(~F, M.ofdv(~F, v)) : Nat}:
+  Equal.trans(Nat, M.len(~F, M.ofdv(~F, u)), n, M.len(~F, M.ofdv(~F, v)), lu, Equal.sym(Nat, M.len(~F, M.ofdv(~F, v)), n, lv))
+
+# kle is transitive (through F, for any K)
+def kle_trans(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.NC(K), +b: N.NC(K), +c: N.NC(K), h1: {KA.kle(~K, a, b) == True{} : Bool}, h2: {KA.kle(~K, b, c) == True{} : Bool}) -> {KA.kle(~K, a, c) == True{} : Bool}:
+  AP.kle_of(~K, ~F, ~H, a, c, DM.le_trans(~F, @H(a), @H(b), @H(c), KA.kle_ok(~K, ~F, ~H, a, b, h1), KA.kle_ok(~K, ~F, ~H, b, c, h2)))
+
+# entries within 1 pass the 2^40 guard: kle(1, 2^40) is computed, never
+# read in F (2^40 unfolds to 2^40 terms there)
+def dclose_far(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, xs: List<&2, S.D>, ys: List<&2, S.D>, hl: {M.len(~F, M.ofdv(~F, xs)) == M.len(~F, M.ofdv(~F, ys)) : Nat}, h: M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, xs), M.ofdv(~F, ys)), M.ofd(~F, M.d1()))) -> {NU.dclose(xs, ys, NU.far()) == True{} : Bool}:
+  match xs ys:
+    case Nil{} Nil{}:
+      {==}
+    case Nil{} Con{y, yt}:
+      FO.absurd({NU.dclose(Nil{}, Con{y, yt}, NU.far()) == True{} : Bool}, FV.zero_ne(M.len(~F, M.ofdv(~F, yt)), hl))
+    case Con{x, xt} Nil{}:
+      FO.absurd({NU.dclose(Con{x, xt}, Nil{}, NU.far()) == True{} : Bool}, FV.succ_ne(M.len(~F, M.ofdv(~F, xt)), hl))
+    case Con{+x, +xt} Con{+y, +yt}:
+      (h1, h2) = h
+      AP.band_t(KA.kle(~KI.dnum(), NU.dabs(S.D.sub(x, y)), NU.far()), NU.dclose(xt, yt, NU.far()), kle_trans(~KI.dnum(), ~F, ~H, NU.dabs(S.D.sub(x, y)), M.d1(), NU.far(), dabs_le_t(~F, ~H, x, y, M.d1(), h1), {==}), dclose_far(~F, ~H, xt, yt, FV.succ_inj(M.len(~F, M.ofdv(~F, xt)), M.len(~F, M.ofdv(~F, yt)), hl), h2))
+
+def d1_one(~F: O.OField) -> {@1 == M.ofd(~F, M.d1()) : @T}:
+  DM.ofd_one(~F)
+
+# a move of at most s <= 1 passes the 2^40 guard
+def far_ok($CXP, +u: List<&2, S.D>, +v: List<&2, S.D>, lu: {M.len(~F, M.ofdv(~F, u)) == n : Nat}, lv: {M.len(~F, M.ofdv(~F, v)) == n : Nat}, +s: @T, hs: O.le(~F, NP.vn(~F, BX.vsub(~F, M.ofdv(~F, v), M.ofdv(~F, u))), s), hs1: O.le(~F, s, @1)) -> {NU.dclose(u, v, NU.far()) == True{} : Bool}:
+  dclose_far(~F, ~H, u, v, lsym($CXA, u, v, lu, lv), vall_swap(~F, M.ofdv(~F, v), M.ofdv(~F, u), M.ofd(~F, M.d1()),
+    (%d1_one(~F) : M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, v), M.ofdv(~F, u)), _)
+      vall_of_vn(~F, BX.vsub(~F, M.ofdv(~F, v), M.ofdv(~F, u)), @1, DM.le_trans(~F, NP.vn(~F, BX.vsub(~F, M.ofdv(~F, v), M.ofdv(~F, u))), s, @1, hs, hs1)))))
+
+# a move of at most 8h passes the settle test
+def t8_ok($CXP, $PQP, +u: List<&2, S.D>, +v: List<&2, S.D>, lu: {M.len(~F, M.ofdv(~F, u)) == n : Nat}, lv: {M.len(~F, M.ofdv(~F, v)) == n : Nat}, hs: O.le(~F, NP.vn(~F, BX.vsub(~F, M.ofdv(~F, v), M.ofdv(~F, u))), h8(~F, p))) -> {NU.dclose(u, v, $T8) == True{} : Bool}:
+  dclose_of(~F, ~H, u, v, $T8, lsym($CXA, u, v, lu, lv), vall_swap(~F, M.ofdv(~F, v), M.ofdv(~F, u), M.ofd(~F, $T8),
+    (%Equal.sym(@T, M.ofd(~F, $T8), h8(~F, p), t8_eq(~F, p, q2, hp2)) : M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, v), M.ofdv(~F, u)), _)
+      vall_of_vn(~F, BX.vsub(~F, M.ofdv(~F, v), M.ofdv(~F, u)), h8(~F, p), hs))))
