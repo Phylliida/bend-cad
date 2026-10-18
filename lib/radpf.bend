@@ -523,3 +523,44 @@ def bpair_ckb(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +yc: List<&2, S.D>
   bpair_zip(~KI.dnum(), ~F, ~H, N.emap(KI.dnum(), F, H, r), KA.kapp(~KI.dnum(), yc, pc), KA.kapp(~KI.dnum(), NU.dreps(n, M.d0()), pr), KA.kapp(~KI.dnum(), NU.dreps(n, r), pr),
     rpair_app(~KI.dnum(), ~F, ~H, N.emap(KI.dnum(), F, H, r), NU.dreps(n, M.d0()), NU.dreps(n, r), pr, rpair_dreps(~F, ~H, n, r, hr), rpair_self(~KI.dnum(), ~F, ~H, N.emap(KI.dnum(), F, H, r), hr, pr, hpn)),
     klen_ckw(n, yc, pc, pr, M.d0(), lyc, lpp))
+
+# The parameter slopes, |center| + radius, over the two boxes
+# ------------------------------------------------------------
+# Row k of the checker's |J0z| + Dz grows by at most ls dl, entry by entry.
+
+def mzr(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +box: List<&2, KB.KB<K>>, +e: E.QExpr, +cnt: Nat, +lo: Nat) -> N.KVec(~K):
+  KA.kvadd(~K, KA.kvabs(~K, KB.bcenters(~K, KB.krange(~K, box, e, cnt, lo))), KB.bradii(~K, KB.krange(~K, box, e, cnt, lo)))
+
+def mz_ent(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +dl: O.C(F), +l: O.C(F), +c0: N.NC(K), +r0: N.NC(K), +c1: N.NC(K), +r1: N.NC(K), +ek: {N.emap(K, F, H, KA.kabs(~K, c0)) == N.emap(K, F, H, KA.kabs(~K, c1)) : O.C(F)}, +hp: pd(~F, dl, N.emap(K, F, H, r0), N.emap(K, F, H, r1), l)) -> M.bnd(~F, O.sub(~F, N.emap(K, F, H, N.nadd(K, KA.kabs(~K, c1), r1)), N.emap(K, F, H, N.nadd(K, KA.kabs(~K, c0), r0))), O.mul(F, l, dl)):
+  %KA.ea(~K, ~F, ~H, KA.kabs(~K, c1), r1) : M.bnd(~F, O.sub(~F, _, N.emap(K, F, H, N.nadd(K, KA.kabs(~K, c0), r0))), O.mul(F, l, dl))
+  %KA.ea(~K, ~F, ~H, KA.kabs(~K, c0), r0) : M.bnd(~F, O.sub(~F, O.add(F, N.emap(K, F, H, KA.kabs(~K, c1)), N.emap(K, F, H, r1)), _), O.mul(F, l, dl))
+  %Equal.sym(O.C(F), N.emap(K, F, H, KA.kabs(~K, c0)), N.emap(K, F, H, KA.kabs(~K, c1)), ek) : M.bnd(~F, O.sub(~F, O.add(F, N.emap(K, F, H, KA.kabs(~K, c1)), N.emap(K, F, H, r1)), O.add(F, _, N.emap(K, F, H, r0))), O.mul(F, l, dl))
+  KB.bnd_val(~F, O.sub(~F, N.emap(K, F, H, r1), N.emap(K, F, H, r0)), O.sub(~F, O.add(F, N.emap(K, F, H, KA.kabs(~K, c1)), N.emap(K, F, H, r1)), O.add(F, N.emap(K, F, H, KA.kabs(~K, c1)), N.emap(K, F, H, r0))), O.mul(F, l, dl), FR.fring_eq(~F, [N.emap(K, F, H, KA.kabs(~K, c1)), N.emap(K, F, H, r0), N.emap(K, F, H, r1)], E.ZSub{E.ZVar{2n}, E.ZVar{1n}}, E.ZSub{E.ZAdd{E.ZVar{0n}, E.ZVar{2n}}, E.ZAdd{E.ZVar{0n}, E.ZVar{1n}}}, {==}),
+    bnd_of01(~F, O.sub(~F, N.emap(K, F, H, r1), N.emap(K, F, H, r0)), O.mul(F, l, dl), FM.sub_nonneg(~F, N.emap(K, F, H, r0), N.emap(K, F, H, r1), pd_1(~F, dl, N.emap(K, F, H, r0), N.emap(K, F, H, r1), l, hp)), pd_2(~F, dl, N.emap(K, F, H, r0), N.emap(K, F, H, r1), l, hp)))
+
+def mz_row(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +dl: O.C(F), +rho: O.C(F), +bb: O.C(F), +hdl: O.le(~F, O.zero(F), dl), +hr: O.le(~F, O.zero(F), rho), +hb: O.le(~F, O.zero(F), bb), +b0: List<&2, KB.KB<K>>, +b1: List<&2, KB.KB<K>>, +hcen: {BP.cen(~K, ~F, ~H, b0) == BP.cen(~K, ~F, ~H, b1) : M.Vec(~F)}, +hp: bpair(~K, ~F, ~H, dl, b0, b1), +hg: BP.gbox(~K, ~F, ~H, rho, bb, b1), +e: E.QExpr, +hh: {KB.held(~K, e) == True{} : Bool}, cnt: Nat, +lo: Nat) -> M.vbnd.all(~F, BX.vsub(~F, N.ofkv(~K, ~F, ~H, mzr(~K, ~F, ~H, b1, e, cnt, lo)), N.ofkv(~K, ~F, ~H, mzr(~K, ~F, ~H, b0, e, cnt, lo))), O.mul(F, BP.ls(~F, bb, e), dl)):
+  match cnt:
+    case 0n:
+      Unit{}
+    case 1n++k:
+      (mz_ent(~K, ~F, ~H, dl, BP.ls(~F, bb, e), KB.KB.c(K, KB.ksl(~K, lo, b0, e)), KB.KB.r(K, KB.ksl(~K, lo, b0, e)), KB.KB.c(K, KB.ksl(~K, lo, b1, e)), KB.KB.r(K, KB.ksl(~K, lo, b1, e)), sc_eq(~K, ~F, ~H, b0, b1, hcen, lo, e, hh), ks_pd(~K, ~F, ~H, dl, rho, bb, hdl, hr, hb, b0, b1, hcen, hp, hg, lo, e, hh)),
+       mz_row(~K, ~F, ~H, dl, rho, bb, hdl, hr, hb, b0, b1, hcen, hp, hg, e, hh, k, 1n+lo))
+
+def mzm(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +box: List<&2, KB.KB<K>>, +cnt: Nat, +lo: Nat, +eqs: List<&2, E.QExpr>) -> N.KMat(~K):
+  KA.kmadd(~K, KA.kmabs(~K, CK.mcenters(~K, CK.srows(~K, box, cnt, lo, eqs))), CK.mradii(~K, CK.srows(~K, box, cnt, lo, eqs)))
+
+def mz_rows(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +dl: O.C(F), +rho: O.C(F), +bb: O.C(F), +hdl: O.le(~F, O.zero(F), dl), +hr: O.le(~F, O.zero(F), rho), +hb: O.le(~F, O.zero(F), bb), +b0: List<&2, KB.KB<K>>, +b1: List<&2, KB.KB<K>>, +hcen: {BP.cen(~K, ~F, ~H, b0) == BP.cen(~K, ~F, ~H, b1) : M.Vec(~F)}, +hp: bpair(~K, ~F, ~H, dl, b0, b1), +hg: BP.gbox(~K, ~F, ~H, rho, bb, b1), +lam: O.C(F), +ms: O.C(F), +hl0: O.le(~F, O.zero(F), lam), eqs: List<&2, E.QExpr>, +hq: AP.eqok(~F, bb, lam, ms, eqs), +hh: {CK.allheld(~K, eqs) == True{} : Bool}, +cnt: Nat, +lo: Nat) -> NP.rowsle(~F, M.madd(~F, N.ofkm(~K, ~F, ~H, mzm(~K, ~F, ~H, b1, cnt, lo, eqs)), M.mneg(~F, N.ofkm(~K, ~F, ~H, mzm(~K, ~F, ~H, b0, cnt, lo, eqs)))), cnt, O.mul(F, FR.ofn(~F, cnt), O.mul(F, lam, dl))):
+  match eqs:
+    case Nil{}:
+      Unit{}
+    case Con{+e, +es}:
+      +he = KA.band_l(KB.held(~K, e), CK.allheld(~K, es), hh)
+      +hes = KA.band_r(KB.held(~K, e), CK.allheld(~K, es), hh)
+      (DG.rowabs_le(~F, BX.vsub(~F, N.ofkv(~K, ~F, ~H, mzr(~K, ~F, ~H, b1, e, cnt, lo)), N.ofkv(~K, ~F, ~H, mzr(~K, ~F, ~H, b0, e, cnt, lo))), cnt, O.mul(F, lam, dl),
+         NW.vall_le(~F, BX.vsub(~F, N.ofkv(~K, ~F, ~H, mzr(~K, ~F, ~H, b1, e, cnt, lo)), N.ofkv(~K, ~F, ~H, mzr(~K, ~F, ~H, b0, e, cnt, lo))), O.mul(F, BP.ls(~F, bb, e), dl), O.mul(F, lam, dl), mz_row(~K, ~F, ~H, dl, rho, bb, hdl, hr, hb, b0, b1, hcen, hp, hg, e, he, cnt, lo), FV.mul_le_r(~F, BP.ls(~F, bb, e), lam, dl, hdl, AP.eqok_ls(~F, bb, lam, ms, e, es, hq))),
+         FO.mul_nonneg(~F, lam, dl, hl0, hdl)),
+       mz_rows(~K, ~F, ~H, dl, rho, bb, hdl, hr, hb, b0, b1, hcen, hp, hg, lam, ms, hl0, es, AP.eqok_tl(~F, bb, lam, ms, e, es, hq), hes, cnt, lo))
+
+# |(|J0z| + Dz)(box1) - (|J0z| + Dz)(box0)| <= cnt lam dl
+def mz_mn(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +dl: O.C(F), +rho: O.C(F), +bb: O.C(F), +hdl: O.le(~F, O.zero(F), dl), +hr: O.le(~F, O.zero(F), rho), +hb: O.le(~F, O.zero(F), bb), +b0: List<&2, KB.KB<K>>, +b1: List<&2, KB.KB<K>>, +hcen: {BP.cen(~K, ~F, ~H, b0) == BP.cen(~K, ~F, ~H, b1) : M.Vec(~F)}, +hp: bpair(~K, ~F, ~H, dl, b0, b1), +hg: BP.gbox(~K, ~F, ~H, rho, bb, b1), +lam: O.C(F), +ms: O.C(F), +hl0: O.le(~F, O.zero(F), lam), +eqs: List<&2, E.QExpr>, +hq: AP.eqok(~F, bb, lam, ms, eqs), +hh: {CK.allheld(~K, eqs) == True{} : Bool}, +cnt: Nat, +lo: Nat) -> O.le(~F, NP.mnorm(~F, M.madd(~F, N.ofkm(~K, ~F, ~H, mzm(~K, ~F, ~H, b1, cnt, lo, eqs)), M.mneg(~F, N.ofkm(~K, ~F, ~H, mzm(~K, ~F, ~H, b0, cnt, lo, eqs)))), cnt), O.mul(F, FR.ofn(~F, cnt), O.mul(F, lam, dl))):
+  NP.mnorm_lub(~F, M.madd(~F, N.ofkm(~K, ~F, ~H, mzm(~K, ~F, ~H, b1, cnt, lo, eqs)), M.mneg(~F, N.ofkm(~K, ~F, ~H, mzm(~K, ~F, ~H, b0, cnt, lo, eqs)))), cnt, O.mul(F, FR.ofn(~F, cnt), O.mul(F, lam, dl)), mz_rows(~K, ~F, ~H, dl, rho, bb, hdl, hr, hb, b0, b1, hcen, hp, hg, lam, ms, hl0, eqs, hq, hh, cnt, lo), AP.lr_nn(~F, cnt, lam, dl, hl0, hdl))
