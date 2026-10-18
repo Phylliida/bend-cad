@@ -533,3 +533,148 @@ def eqok_le(~F: O.OField, +bb: O.C(F), +hb: O.le(~F, O.zero(F), bb), +lam: O.C(F
       (DM.le_trans(~F, BP.ls(~F, bb, e), lsum(~F, bb, Con{e, t}), lam, NW.le_addr(~F, BP.ls(~F, bb, e), lsum(~F, bb, t), lsum_nn(~F, bb, hb, t)), hl),
       (DM.le_trans(~F, BP.ms(~F, bb, e), msum(~F, bb, Con{e, t}), ms, NW.le_addr(~F, BP.ms(~F, bb, e), msum(~F, bb, t), msum_nn(~F, bb, hb, t)), hm),
       eqok_le(~F, bb, hb, lam, ms, t, DM.le_trans(~F, lsum(~F, bb, t), lsum(~F, bb, Con{e, t}), lam, NW.le_addl(~F, BP.ls(~F, bb, e), lsum(~F, bb, t), ls_nn(~F, bb, hb, e)), hl), DM.le_trans(~F, msum(~F, bb, t), msum(~F, bb, Con{e, t}), ms, NW.le_addl(~F, BP.ms(~F, bb, e), msum(~F, bb, t), ms_nn(~F, bb, hb, e)), hm))))
+
+# Bounds on the block's vectors
+# -----------------------------
+
+def vall_xp(~F: O.OField, +x: M.Vec(~F), vp: List<&2, Nat>) -> M.vbnd.all(~F, LC.xperm(~F, x, vp), NP.vn(~F, x)):
+  match vp:
+    case Nil{}:
+      Unit{}
+    case Con{+v, t}:
+      (AP.lkb(~F, x, v), vall_xp(~F, x, t))
+
+def vall_ft(~F: O.OField, n: Nat, v: M.Vec(~F), +c: O.C(F), +h: M.vbnd.all(~F, v, c)) -> M.vbnd.all(~F, PP.ftake(~F, n, v), c):
+  match n v:
+    case 0n v:
+      Unit{}
+    case 1n+k Nil{}:
+      Unit{}
+    case 1n+k Con{+a, +t}:
+      (AP.both_l(M.bnd(~F, a, c), M.vbnd.all(~F, t, c), h), vall_ft(~F, k, t, c, AP.both_r(M.bnd(~F, a, c), M.vbnd.all(~F, t, c), h)))
+
+def vall_fd(~F: O.OField, n: Nat, v: M.Vec(~F), +c: O.C(F), h: M.vbnd.all(~F, v, c)) -> M.vbnd.all(~F, PP.fdrop(~F, n, v), c):
+  match n v:
+    case 0n v:
+      h
+    case 1n+k Nil{}:
+      Unit{}
+    case 1n+k Con{+a, +t}:
+      vall_fd(~F, k, t, c, AP.both_r(M.bnd(~F, a, c), M.vbnd.all(~F, t, c), h))
+
+def vall_look(~F: O.OField, v: M.Vec(~F), +c: O.C(F), +hc: O.le(~F, O.zero(F), c), h: M.vbnd.all(~F, v, c), k: Nat) -> M.bnd(~F, O.lookup(~F, v, k), c):
+  match v k:
+    case Nil{} k:
+      FM.bnd_zero(~F, c, hc)
+    case Con{+a, +t} 0n:
+      AP.both_l(M.bnd(~F, a, c), M.vbnd.all(~F, t, c), h)
+    case Con{+a, +t} 1n+j:
+      vall_look(~F, t, c, hc, AP.both_r(M.bnd(~F, a, c), M.vbnd.all(~F, t, c), h), j)
+
+def vall_zmap(~F: O.OField, +p: M.Vec(~F), pars: List<&2, Nat>, +c: O.C(F), +hc: O.le(~F, O.zero(F), c), +h: M.vbnd.all(~F, p, c)) -> M.vbnd.all(~F, PP.zmap(~F, p, pars), c):
+  match pars:
+    case Nil{}:
+      Unit{}
+    case Con{+v, t}:
+      (vall_look(~F, p, c, hc, h, v), vall_zmap(~F, p, t, c, hc, h))
+
+# |x_b ++ x_z| <= bb - 1, for bb = |x| + 1 (C5's hbb)
+def hbb_of(~F: O.OField, +x: M.Vec(~F), +vp: List<&2, Nat>, +o: Nat, +n: Nat, +pars: List<&2, Nat>) -> M.vbnd.all(~F, C.app(~F, PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, LC.xperm(~F, x, vp)), pars)), O.sub(~F, O.add(F, NP.vn(~F, x), O.one(F)), O.one(F))):
+  +hx = vall_xp(~F, x, vp)
+  %FR.fring_eq(~F, [NP.vn(~F, x)], E.ZVar{0n}, E.ZSub{E.ZAdd{E.ZVar{0n}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZCst{S.Zpos{S.XH{}}}}, {==}) : M.vbnd.all(~F, C.app(~F, PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, LC.xperm(~F, x, vp)), pars)), _)
+  NW.vall_app(~F, PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, LC.xperm(~F, x, vp)), pars), NP.vn(~F, x), vall_ft(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, vp)), NP.vn(~F, x), vall_fd(~F, o, LC.xperm(~F, x, vp), NP.vn(~F, x), hx)), vall_zmap(~F, PP.ftake(~F, o, LC.xperm(~F, x, vp)), pars, NP.vn(~F, x), FV.vmax_nn(~F, x), vall_ft(~F, o, LC.xperm(~F, x, vp), NP.vn(~F, x), hx)))
+
+def len_ofdv(~F: O.OField, xs: List<&2, S.D>) -> {M.len(~F, M.ofdv(~F, xs)) == KA.klen(~KI.dnum(), xs) : Nat}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{a, t}:
+      %len_ofdv(~F, t) : {1n+M.len(~F, M.ofdv(~F, t)) == 1n+_ : Nat}
+      {==}
+
+def klen_pick(+xs: List<&2, S.D>, ks: List<&2, Nat>) -> {KA.klen(~KI.dnum(), NU.dpick(xs, ks)) == PL.nlen(ks) : Nat}:
+  match ks:
+    case Nil{}:
+      {==}
+    case Con{k, t}:
+      %klen_pick(xs, t) : {1n+KA.klen(~KI.dnum(), NU.dpick(xs, t)) == 1n+_ : Nat}
+      {==}
+
+def len_pick(~F: O.OField, +xs: List<&2, S.D>, +ks: List<&2, Nat>) -> {M.len(~F, M.ofdv(~F, NU.dpick(xs, ks))) == PL.nlen(ks) : Nat}:
+  Equal.trans(Nat, M.len(~F, M.ofdv(~F, NU.dpick(xs, ks))), KA.klen(~KI.dnum(), NU.dpick(xs, ks)), PL.nlen(ks), len_ofdv(~F, NU.dpick(xs, ks)), klen_pick(xs, ks))
+
+def look_ofdv(~F: O.OField, xs: List<&2, S.D>, k: Nat) -> {O.lookup(~F, M.ofdv(~F, xs), k) == M.ofd(~F, NU.dlook(xs, k)) : O.C(F)}:
+  match xs k:
+    case Nil{} k:
+      DM.ofd_zero(~F)
+    case Con{a, t} 0n:
+      {==}
+    case Con{a, t} 1n+j:
+      look_ofdv(~F, t, j)
+
+def rnn_look(~F: O.OField, w: M.Vec(~F), h: FV.rnn(~F, w), k: Nat) -> O.le(~F, O.zero(F), O.lookup(~F, w, k)):
+  match w k:
+    case Nil{} k:
+      FO.le_refl(~F, O.zero(F))
+    case Con{+a, +t} 0n:
+      AP.both_l(O.le(~F, O.zero(F), a), FV.rnn(~F, t), h)
+    case Con{+a, +t} 1n+j:
+      rnn_look(~F, t, AP.both_r(O.le(~F, O.zero(F), a), FV.rnn(~F, t), h), j)
+
+# the parameters' radii are radii of the box
+def rnn_pick(~F: O.OField, +gr: List<&2, S.D>, pars: List<&2, Nat>, +h: FV.rnn(~F, M.ofdv(~F, gr))) -> FV.rnn(~F, M.ofdv(~F, NU.dpick(gr, pars))):
+  match pars:
+    case Nil{}:
+      Unit{}
+    case Con{+v, t}:
+      ((%look_ofdv(~F, gr, v) : O.le(~F, O.zero(F), _)
+      rnn_look(~F, M.ofdv(~F, gr), h, v)), rnn_pick(~F, gr, t, h))
+
+def vall_pick(~F: O.OField, +gr: List<&2, S.D>, pars: List<&2, Nat>, +c: O.C(F), +hc: O.le(~F, O.zero(F), c), +h: M.vbnd.all(~F, M.ofdv(~F, gr), c)) -> M.vbnd.all(~F, M.ofdv(~F, NU.dpick(gr, pars)), c):
+  match pars:
+    case Nil{}:
+      Unit{}
+    case Con{+v, t}:
+      ((%look_ofdv(~F, gr, v) : M.bnd(~F, _, c)
+      vall_look(~F, M.ofdv(~F, gr), c, hc, h, v)), vall_pick(~F, gr, t, c, hc, h))
+
+def pcont_pick(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +gc: List<&2, S.D>, +gr: List<&2, S.D>, pars: List<&2, Nat>) -> {PL.pcont(~KI.dnum(), gc, gr, pars, NU.dpick(gc, pars), NU.dpick(gr, pars)) == True{} : Bool}:
+  match pars:
+    case Nil{}:
+      {==}
+    case Con{+v, +t}:
+      kband_i(KA.kle(~KI.dnum(), N.nadd(KI.dnum(), KA.kabs(~KI.dnum(), KA.ksub(~KI.dnum(), KB.klook(~KI.dnum(), gc, v), NU.dlook(gc, v))), KB.klook(~KI.dnum(), gr, v)), NU.dlook(gr, v)), PL.pcont(~KI.dnum(), gc, gr, t, NU.dpick(gc, t), NU.dpick(gr, t)),
+        (%Equal.sym(S.D, NU.dlook(gc, v), KB.klook(~KI.dnum(), gc, v), dl_kl(gc, v)) : {KA.kle(~KI.dnum(), N.nadd(KI.dnum(), KA.kabs(~KI.dnum(), KA.ksub(~KI.dnum(), KB.klook(~KI.dnum(), gc, v), _)), KB.klook(~KI.dnum(), gr, v)), NU.dlook(gr, v)) == True{} : Bool}
+        (%Equal.sym(S.D, NU.dlook(gr, v), KB.klook(~KI.dnum(), gr, v), dl_kl(gr, v)) : {KA.kle(~KI.dnum(), N.nadd(KI.dnum(), KA.kabs(~KI.dnum(), KA.ksub(~KI.dnum(), KB.klook(~KI.dnum(), gc, v), KB.klook(~KI.dnum(), gc, v))), KB.klook(~KI.dnum(), gr, v)), _) == True{} : Bool}
+        pc_refl(~F, ~H, KB.klook(~KI.dnum(), gc, v), KB.klook(~KI.dnum(), gr, v)))),
+        pcont_pick(~F, ~H, gc, gr, t))
+
+def bnd_swap(~F: O.OField, +a: O.C(F), +b: O.C(F), +s: O.C(F), +c: O.C(F), h: M.bnd(~F, O.sub(~F, a, b), s), hs: M.bnd(~F, s, c)) -> M.bnd(~F, O.sub(~F, b, a), c):
+  FM.bnd_mono(~F, O.sub(~F, b, a), s, c, KB.bnd_val(~F, O.neg(F, O.sub(~F, a, b)), O.sub(~F, b, a), s, FR.fring_eq(~F, [a, b], E.ZNeg{E.ZSub{E.ZVar{0n}, E.ZVar{1n}}}, E.ZSub{E.ZVar{1n}, E.ZVar{0n}}, {==}), FM.bnd_neg(~F, O.sub(~F, a, b), s, h)), AP.both_l(O.le(~F, O.zero(F), O.sub(~F, c, s)), O.le(~F, O.zero(F), O.add(F, c, s)), hs))
+
+# |d1 - d2| <= r <= c entrywise gives |d2 - d1| <= c
+def rbs(~F: O.OField, d1: M.Vec(~F), d2: M.Vec(~F), r: M.Vec(~F), +c: O.C(F), +h: BX.rbnd(~F, BX.vsub(~F, d1, d2), r), +hr: M.vbnd.all(~F, r, c), +hl1: {M.len(~F, d1) == M.len(~F, d2) : Nat}, +hl2: {M.len(~F, d2) == M.len(~F, r) : Nat}) -> M.vbnd.all(~F, BX.vsub(~F, d2, d1), c):
+  match d1 d2 r:
+    case Nil{} Nil{} r:
+      Unit{}
+    case Nil{} Con{b, t2} r:
+      absurd(M.vbnd.all(~F, BX.vsub(~F, Con{b, t2}, Nil{}), c), FV.zero_ne(M.len(~F, t2), hl1))
+    case Con{a, t1} Nil{} r:
+      absurd(M.vbnd.all(~F, BX.vsub(~F, Nil{}, Con{a, t1}), c), FV.succ_ne(M.len(~F, t1), hl1))
+    case Con{+a, +t1} Con{+b, +t2} Nil{}:
+      absurd(M.vbnd.all(~F, BX.vsub(~F, Con{b, t2}, Con{a, t1}), c), FV.succ_ne(M.len(~F, t2), hl2))
+    case Con{+a, +t1} Con{+b, +t2} Con{+s, +rs}:
+      (bnd_swap(~F, a, b, s, c, AP.both_l(M.bnd(~F, O.sub(~F, a, b), s), BX.rbnd(~F, BX.vsub(~F, t1, t2), rs), h), AP.both_l(M.bnd(~F, s, c), M.vbnd.all(~F, rs, c), hr)),
+      rbs(~F, t1, t2, rs, c, AP.both_r(M.bnd(~F, O.sub(~F, a, b), s), BX.rbnd(~F, BX.vsub(~F, t1, t2), rs), h), AP.both_r(M.bnd(~F, s, c), M.vbnd.all(~F, rs, c), hr), FV.succ_inj(M.len(~F, t1), M.len(~F, t2), hl1), FV.succ_inj(M.len(~F, t2), M.len(~F, rs), hl2)))
+
+# the parameters' values are in their balls (C5's hzr)
+def hzr_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +gc: List<&2, S.D>, +gr: List<&2, S.D>, +o: Nat, +p: M.Vec(~F), +hpb: PP.pbox(~KI.dnum(), ~F, ~H, gc, gr, o, p), +hgc: {KA.natle(o, KA.klen(~KI.dnum(), gc)) == True{} : Bool}, +pars: List<&2, Nat>, +hpo: {PL.pars_ok(o, pars) == True{} : Bool}) -> BX.rbnd(~F, BX.vsub(~F, PP.zmap(~F, p, pars), M.ofdv(~F, NU.dpick(gc, pars))), M.ofdv(~F, NU.dpick(gr, pars))):
+  %AP.ofkv_d(~F, ~H, NU.dpick(gc, pars)) : BX.rbnd(~F, BX.vsub(~F, PP.zmap(~F, p, pars), _), M.ofdv(~F, NU.dpick(gr, pars)))
+  %AP.ofkv_d(~F, ~H, NU.dpick(gr, pars)) : BX.rbnd(~F, BX.vsub(~F, PP.zmap(~F, p, pars), N.ofkv(~KI.dnum(), ~F, ~H, NU.dpick(gc, pars))), _)
+  PP.pin_pc(~KI.dnum(), ~F, ~H, gc, gr, o, p, hpb, hgc, pars, NU.dpick(gc, pars), NU.dpick(gr, pars), hpo, pcont_pick(~F, ~H, gc, gr, pars))
+
+# |pc - x_z| <= rho (C5's hzc), from hzr and the radii's bound
+def hzc_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +gc: List<&2, S.D>, +gr: List<&2, S.D>, +o: Nat, +p: M.Vec(~F), +hpb: PP.pbox(~KI.dnum(), ~F, ~H, gc, gr, o, p), +hgc: {KA.natle(o, KA.klen(~KI.dnum(), gc)) == True{} : Bool}, +pars: List<&2, Nat>, +hpo: {PL.pars_ok(o, pars) == True{} : Bool}, +rho: O.C(F), +hpr: M.vbnd.all(~F, M.ofdv(~F, NU.dpick(gr, pars)), rho)) -> M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, NU.dpick(gc, pars)), PP.zmap(~F, p, pars)), rho):
+  rbs(~F, PP.zmap(~F, p, pars), M.ofdv(~F, NU.dpick(gc, pars)), M.ofdv(~F, NU.dpick(gr, pars)), rho, hzr_of(~F, ~H, gc, gr, o, p, hpb, hgc, pars, hpo), hpr,
+    Equal.trans(Nat, M.len(~F, PP.zmap(~F, p, pars)), PL.nlen(pars), M.len(~F, M.ofdv(~F, NU.dpick(gc, pars))), PP.len_zmap(~F, p, pars), Equal.sym(Nat, M.len(~F, M.ofdv(~F, NU.dpick(gc, pars))), PL.nlen(pars), len_pick(~F, gc, pars))),
+    Equal.trans(Nat, M.len(~F, M.ofdv(~F, NU.dpick(gc, pars))), PL.nlen(pars), M.len(~F, M.ofdv(~F, NU.dpick(gr, pars))), len_pick(~F, gc, pars), Equal.sym(Nat, M.len(~F, M.ofdv(~F, NU.dpick(gr, pars))), PL.nlen(pars), len_pick(~F, gr, pars))))
