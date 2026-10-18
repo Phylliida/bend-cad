@@ -12,18 +12,6 @@ import ./karith.bend as KA
 def absurd(-A: Type, x: Empty) -> A:
   match x:
 
-def nateq_ok(a: Nat, b: Nat, h: {KA.nateq(a, b) == True{} : Bool}) -> {a == b : Nat}:
-  match a b:
-    case 0n 0n:
-      {==}
-    case 0n 1n+j:
-      absurd({0n == 1n+j : Nat}, KA.ft(h))
-    case 1n+i 0n:
-      absurd({1n+i == 0n : Nat}, KA.ft(h))
-    case 1n++i 1n+j:
-      %nateq_ok(i, j, h) : {1n+i == 1n+_ : Nat}
-      {==}
-
 # Points
 # ------
 
@@ -35,8 +23,8 @@ def pteq(p: SK.Pt, q: SK.Pt) -> Bool:
 def pteq_ok(p: SK.Pt, q: SK.Pt, +h: {pteq(p, q) == True{} : Bool}) -> {p == q : SK.Pt}:
   match p q:
     case SK.Pt{+a, +b} SK.Pt{+c, +d}:
-      %nateq_ok(a, c, KA.band_l(KA.nateq(a, c), KA.nateq(b, d), h)) : {SK.Pt{a, b} == SK.Pt{_, d} : SK.Pt}
-      %nateq_ok(b, d, KA.band_r(KA.nateq(a, c), KA.nateq(b, d), h)) : {SK.Pt{a, b} == SK.Pt{a, _} : SK.Pt}
+      %KA.nateq_ok(a, c, KA.band_l(KA.nateq(a, c), KA.nateq(b, d), h)) : {SK.Pt{a, b} == SK.Pt{_, d} : SK.Pt}
+      %KA.nateq_ok(b, d, KA.band_r(KA.nateq(a, c), KA.nateq(b, d), h)) : {SK.Pt{a, b} == SK.Pt{a, _} : SK.Pt}
       {==}
 
 def ispt(+es: List<&2, SK.Ent>, +id: Nat) -> Bool:
@@ -212,13 +200,13 @@ def cmerge_ok(+es: List<&2, SK.Ent>, k: SK.Constraint, +h: {cmerge(es, k) == Tru
     case SK.Coincident{+a, +b}:
       pteq_ok(SK.pt(es, a), SK.pt(es, b), h)
     case SK.Horizontal{+a, +b}:
-      nateq_ok(SK.Pt.y(SK.pt(es, a)), SK.Pt.y(SK.pt(es, b)), h)
+      KA.nateq_ok(SK.Pt.y(SK.pt(es, a)), SK.Pt.y(SK.pt(es, b)), h)
     case SK.Vertical{+a, +b}:
-      nateq_ok(SK.Pt.x(SK.pt(es, a)), SK.Pt.x(SK.pt(es, b)), h)
+      KA.nateq_ok(SK.Pt.x(SK.pt(es, a)), SK.Pt.x(SK.pt(es, b)), h)
     case SK.Concentric{+a, +b}:
       pteq_ok(SK.Circ.c(SK.circ(es, a)), SK.Circ.c(SK.circ(es, b)), h)
     case SK.EqualRadius{+a, +b}:
-      nateq_ok(SK.Circ.r(SK.circ(es, a)), SK.Circ.r(SK.circ(es, b)), h)
+      KA.nateq_ok(SK.Circ.r(SK.circ(es, a)), SK.Circ.r(SK.circ(es, b)), h)
     case SK.Fix{v, c}:
       Unit{}
     case SK.Distance{p, q, d}:

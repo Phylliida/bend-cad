@@ -148,39 +148,39 @@ def cls_seen(b: Bool, m: Maybe<&2, Nat>, h: {ST.Seen{} == ST.cls.of(b, m) : ST.C
     case True{} m:
       {==}
     case False{} None{}:
-      absurd({False{} == True{} : Bool}, L.tf(Equal.cong(ST.Cls, Bool, isseen, ST.Seen{}, ST.Free{}, h)))
+      absurd({False{} == True{} : Bool}, KA.tf(Equal.cong(ST.Cls, Bool, isseen, ST.Seen{}, ST.Free{}, h)))
     case False{} Some{x}:
-      absurd({False{} == True{} : Bool}, L.tf(Equal.cong(ST.Cls, Bool, isseen, ST.Seen{}, ST.Mate{x}, h)))
+      absurd({False{} == True{} : Bool}, KA.tf(Equal.cong(ST.Cls, Bool, isseen, ST.Seen{}, ST.Mate{x}, h)))
 
 def cls_free_b(b: Bool, m: Maybe<&2, Nat>, h: {ST.Free{} == ST.cls.of(b, m) : ST.Cls}) -> {b == False{} : Bool}:
   match b:
     case True{}:
-      absurd({True{} == False{} : Bool}, L.tf(Equal.cong(ST.Cls, Bool, isfree, ST.Free{}, ST.Seen{}, h)))
+      absurd({True{} == False{} : Bool}, KA.tf(Equal.cong(ST.Cls, Bool, isfree, ST.Free{}, ST.Seen{}, h)))
     case False{}:
       {==}
 
 def cls_free_m(b: Bool, m: Maybe<&2, Nat>, h: {ST.Free{} == ST.cls.of(b, m) : ST.Cls}) -> {m == None{} : Maybe<&2, Nat>}:
   match b m:
     case True{} m:
-      absurd({m == None{} : Maybe<&2, Nat>}, L.tf(Equal.cong(ST.Cls, Bool, isfree, ST.Free{}, ST.Seen{}, h)))
+      absurd({m == None{} : Maybe<&2, Nat>}, KA.tf(Equal.cong(ST.Cls, Bool, isfree, ST.Free{}, ST.Seen{}, h)))
     case False{} None{}:
       {==}
     case False{} Some{x}:
-      absurd({Some{x} == None{} : Maybe<&2, Nat>}, L.tf(Equal.cong(ST.Cls, Bool, isfree, ST.Free{}, ST.Mate{x}, h)))
+      absurd({Some{x} == None{} : Maybe<&2, Nat>}, KA.tf(Equal.cong(ST.Cls, Bool, isfree, ST.Free{}, ST.Mate{x}, h)))
 
 def cls_mate_b(b: Bool, m: Maybe<&2, Nat>, +e: Nat, h: {ST.Mate{e} == ST.cls.of(b, m) : ST.Cls}) -> {b == False{} : Bool}:
   match b:
     case True{}:
-      absurd({True{} == False{} : Bool}, L.tf(Equal.cong(ST.Cls, Bool, ismate, ST.Mate{e}, ST.Seen{}, h)))
+      absurd({True{} == False{} : Bool}, KA.tf(Equal.cong(ST.Cls, Bool, ismate, ST.Mate{e}, ST.Seen{}, h)))
     case False{}:
       {==}
 
 def cls_mate_m(b: Bool, m: Maybe<&2, Nat>, +e: Nat, h: {ST.Mate{e} == ST.cls.of(b, m) : ST.Cls}) -> {m == Some{e} : Maybe<&2, Nat>}:
   match b m:
     case True{} m:
-      absurd({m == Some{e} : Maybe<&2, Nat>}, L.tf(Equal.cong(ST.Cls, Bool, ismate, ST.Mate{e}, ST.Seen{}, h)))
+      absurd({m == Some{e} : Maybe<&2, Nat>}, KA.tf(Equal.cong(ST.Cls, Bool, ismate, ST.Mate{e}, ST.Seen{}, h)))
     case False{} None{}:
-      absurd({None{} == Some{e} : Maybe<&2, Nat>}, L.tf(Equal.cong(ST.Cls, Bool, ismate, ST.Mate{e}, ST.Free{}, h)))
+      absurd({None{} == Some{e} : Maybe<&2, Nat>}, KA.tf(Equal.cong(ST.Cls, Bool, ismate, ST.Mate{e}, ST.Free{}, h)))
     case False{} Some{+x}:
       %Equal.sym(Nat, e, x, Equal.cong(ST.Cls, Nat, mate.e, ST.Mate{e}, ST.Mate{x}, h)) : {Some{x} == Some{_} : Maybe<&2, Nat>}
       {==}
@@ -188,22 +188,22 @@ def cls_mate_m(b: Bool, m: Maybe<&2, Nat>, +e: Nat, h: {ST.Mate{e} == ST.cls.of(
 def cls_done(b: Bool, m: Maybe<&2, Nat>, h: {ST.Done{} == ST.cls.of(b, m) : ST.Cls}) -> Empty:
   match b m:
     case True{} m:
-      L.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Seen{}, h))
+      KA.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Seen{}, h))
     case False{} None{}:
-      L.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Free{}, h))
+      KA.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Free{}, h))
     case False{} Some{x}:
-      L.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Mate{x}, h))
+      KA.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Mate{x}, h))
 
 def done_not(c: ST.Cls, h: {c == ST.Done{} : ST.Cls}, hn: {isdone(c) == False{} : Bool}) -> Empty:
   match c:
     case ST.Seen{}:
-      L.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Seen{}, Equal.sym(ST.Cls, ST.Seen{}, ST.Done{}, h)))
+      KA.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Seen{}, Equal.sym(ST.Cls, ST.Seen{}, ST.Done{}, h)))
     case ST.Free{}:
-      L.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Free{}, Equal.sym(ST.Cls, ST.Free{}, ST.Done{}, h)))
+      KA.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Free{}, Equal.sym(ST.Cls, ST.Free{}, ST.Done{}, h)))
     case ST.Mate{x}:
-      L.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Mate{x}, Equal.sym(ST.Cls, ST.Mate{x}, ST.Done{}, h)))
+      KA.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Mate{x}, Equal.sym(ST.Cls, ST.Mate{x}, ST.Done{}, h)))
     case ST.Done{}:
-      L.tf(hn)
+      KA.tf(hn)
 
 # The fuel: at most as many visited variables as vm is long
 # ----------------------------------------------------------
@@ -227,7 +227,7 @@ def ix_len(vm: List<&2, Maybe<&2, Nat>>, +k: Nat) -> {SV.len(ix(vm, k)) == L.mle
 def ix_mem(vm: List<&2, Maybe<&2, Nat>>, v: Nat, +k: Nat, h: {L.issome(ST.getm(vm, v)) == True{} : Bool}) -> {SV.mem(Nat.add(k, v), ix(vm, k)) == True{} : Bool}:
   match vm v:
     case Nil{} v:
-      absurd({SV.mem(Nat.add(k, v), Nil{}) == True{} : Bool}, L.ft(h))
+      absurd({SV.mem(Nat.add(k, v), Nil{}) == True{} : Bool}, KA.ft(h))
     case Con{m, +t} 0n:
       %LN.add_zero(k) : {SV.mem(_, Con{k, ix(t, 1n+k)}) == True{} : Bool}
       L.mem_hd(k, ix(t, 1n+k))
@@ -298,7 +298,7 @@ def closed_mem.go(+vm: List<&2, Maybe<&2, Nat>>, +adj: List<&2, List<&2, Nat>>, 
 def closed_mem(+vm: List<&2, Maybe<&2, Nat>>, +adj: List<&2, List<&2, Nat>>, +b: List<&2, Nat>, +w: List<&2, Nat>, xs: List<&2, Nat>, +v: Nat, h: {closed(vm, adj, b, w, xs) == True{} : Bool}, hv: {SV.mem(v, xs) == True{} : Bool}) -> {SV.bor(SV.mem(v, b), L.subl(ST.nthl(adj, mate(vm, v)), w)) == True{} : Bool}:
   match xs:
     case Nil{}:
-      absurd({SV.bor(SV.mem(v, b), L.subl(ST.nthl(adj, mate(vm, v)), w)) == True{} : Bool}, L.ft(hv))
+      absurd({SV.bor(SV.mem(v, b), L.subl(ST.nthl(adj, mate(vm, v)), w)) == True{} : Bool}, KA.ft(hv))
     case Con{+x, +t}:
       closed_mem.go(vm, adj, b, w, x, t, v, SV.eq(v, x), {==}, h, hv, q => r => closed_mem(vm, adj, b, w, t, v, q, r))
 
@@ -441,7 +441,7 @@ def tr(+g: Nat, +e: Nat, +e2: Nat, +adj: List<&2, List<&2, Nat>>, +vm: List<&2, 
       +hvv = L.band_l(L.subl(Con{v, vis}, vis2), True{}, L.band_r(L.subl(ST.nthl(adj, e2), vis2), SV.band(L.subl(Con{v, vis}, vis2), True{}), hq))
       +hsub = sub2(v, vis, vis2, hvv)
       L.band_i(vis_ok(vm, adj, b, 1n+g, vis2), SV.band(SV.mem(v, vis2), L.subl(vis, vis2)), vo_mk(vm, adj, b, 1n+g, vis2, vo_d(vm2, adj, Con{v, vis}, g, vis2, hi), allm_unset(vm, v, Some{e}, vis2, vo_a(vm2, adj, Con{v, vis}, g, vis2, hi), %Equal.sym(Maybe<&2, Nat>, ST.getm(vm, v), Some{e2}, hs) : {L.issome(_) == True{} : Bool}
-        {==}), L.subl_trans(b, vis, vis2, vo_s(vm, adj, b, 1n+g, vis, ho), hsub), closed_tr(vm, adj, b, v, e, e2, vis, vis2, vis2, vo_c(vm2, adj, Con{v, vis}, g, vis2, hi), vo_c(vm, adj, b, 1n+g, vis, ho), he2, hsub, hs), L.le_succ(1n+L.mlen(vm), Nat.add(g, SV.len(vis2)), %L.mlen_set(vm, v, Some{e}) : {KA.natle(1n+_, Nat.add(g, SV.len(vis2))) == True{} : Bool}
+        {==}), L.subl_trans(b, vis, vis2, vo_s(vm, adj, b, 1n+g, vis, ho), hsub), closed_tr(vm, adj, b, v, e, e2, vis, vis2, vis2, vo_c(vm2, adj, Con{v, vis}, g, vis2, hi), vo_c(vm, adj, b, 1n+g, vis, ho), he2, hsub, hs), KA.natle_succ(1n+L.mlen(vm), Nat.add(g, SV.len(vis2)), %L.mlen_set(vm, v, Some{e}) : {KA.natle(1n+_, Nat.add(g, SV.len(vis2))) == True{} : Bool}
         vo_f(vm2, adj, Con{v, vis}, g, vis2, hi))), L.band_i(SV.mem(v, vis2), L.subl(vis, vis2), L.subl_hd(v, vis, vis2, hvv), hsub))
 
 # the continuation after the level ended with r: trying v :: rest
@@ -450,7 +450,7 @@ def fin(+f: Nat, +e: Nat, +adj: List<&2, List<&2, Nat>>, +vm: List<&2, Maybe<&2,
     case r ST.DS{True{}, m, x}:
       hc
     case ST.DS{True{}, mr, +visr} ST.DS{False{}, m, +visf}:
-      absurd({res(f, e, adj, vm, b, ST.DS{False{}, m0, vis}, Con{v, rest}, ST.DS{False{}, m, visf}) == True{} : Bool}, L.ft(L.band_r(L.subl(visr, visf), False{}, L.band_r(L.subl(rest, visf), SV.band(L.subl(visr, visf), False{}), L.band_r(vis_ok(vm, adj, b, f, visf), SV.band(L.subl(rest, visf), SV.band(L.subl(visr, visf), False{})), hc)))))
+      absurd({res(f, e, adj, vm, b, ST.DS{False{}, m0, vis}, Con{v, rest}, ST.DS{False{}, m, visf}) == True{} : Bool}, KA.ft(L.band_r(L.subl(visr, visf), False{}, L.band_r(L.subl(rest, visf), SV.band(L.subl(visr, visf), False{}), L.band_r(vis_ok(vm, adj, b, f, visf), SV.band(L.subl(rest, visf), SV.band(L.subl(visr, visf), False{})), hc)))))
     case ST.DS{False{}, mr, +visr} ST.DS{False{}, m, +visf}:
       +hq = L.band_r(vis_ok(vm, adj, b, f, visf), SV.band(L.subl(rest, visf), SV.band(L.subl(visr, visf), True{})), hc)
       +hrf = L.band_l(L.subl(visr, visf), True{}, L.band_r(L.subl(rest, visf), SV.band(L.subl(visr, visf), True{}), hq))
@@ -479,7 +479,7 @@ def free_res(+vm: List<&2, Maybe<&2, Nat>>, +v: Nat, +e: Nat, hn: {ST.getm(vm, v
 
 # out of fuel with a matched variable left: impossible
 def no_fuel(+vm: List<&2, Maybe<&2, Nat>>, +adj: List<&2, List<&2, Nat>>, +b: List<&2, Nat>, +vis: List<&2, Nat>, +hi: {vis_ok(vm, adj, b, 0n, vis) == True{} : Bool}) -> Empty:
-  L.lt_irr(L.mlen(vm), L.le_trans(1n+L.mlen(vm), SV.len(vis), L.mlen(vm), vo_f(vm, adj, b, 0n, vis, hi), vis_pig(vm, vis, vo_d(vm, adj, b, 0n, vis, hi), vo_a(vm, adj, b, 0n, vis, hi))))
+  KA.natlt_irr(L.mlen(vm), KA.natle_trans(1n+L.mlen(vm), SV.len(vis), L.mlen(vm), vo_f(vm, adj, b, 0n, vis, hi), vis_pig(vm, vis, vo_d(vm, adj, b, 0n, vis, hi), vo_a(vm, adj, b, 0n, vis, hi))))
 
 # Entering a level through v
 # --------------------------
@@ -533,15 +533,15 @@ def dfs_ok(f: Nat, vs: List<&2, Nat>, c: ST.Cls, +e: Nat, +adj: List<&2, List<&2
     case 0n Nil{} ST.Done{} ST.DS{False{}, +m, +vis}:
       nil_res(0n, e, adj, vm, b, m, vis, hi)
     case 0n Con{+v, +rest} ST.Seen{} ST.DS{True{}, +m, +vis}:
-      absurd({res(0n, e, adj, vm, b, ST.DS{True{}, m, vis}, Con{v, rest}, ST.dfs(0n, Con{v, rest}, ST.Seen{}, e, adj, vm, ST.DS{True{}, m, vis})) == True{} : Bool}, L.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Seen{}, Equal.sym(ST.Cls, ST.Seen{}, ST.Done{}, hc))))
+      absurd({res(0n, e, adj, vm, b, ST.DS{True{}, m, vis}, Con{v, rest}, ST.dfs(0n, Con{v, rest}, ST.Seen{}, e, adj, vm, ST.DS{True{}, m, vis})) == True{} : Bool}, KA.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Seen{}, Equal.sym(ST.Cls, ST.Seen{}, ST.Done{}, hc))))
     case 0n Con{+v, +rest} ST.Seen{} ST.DS{False{}, +m, +vis}:
       seen_fix(0n, e, adj, vm, b, v, rest, m, vis, seen_mem(v, vis, ST.getm(vm, v), hc), ST.dfs(0n, rest, ST.cls(vm, vis, rest), e, adj, vm, ST.DS{False{}, m, vis}), dfs_ok(0n, rest, ST.cls(vm, vis, rest), e, adj, vm, ST.DS{False{}, m, vis}, b, {==}, h1, h2, below_tl(v, rest, L.mlen(vm), h3), h4, hi))
     case 0n Con{+v, +rest} ST.Free{} ST.DS{True{}, +m, +vis}:
-      absurd({res(0n, e, adj, vm, b, ST.DS{True{}, m, vis}, Con{v, rest}, ST.dfs(0n, Con{v, rest}, ST.Free{}, e, adj, vm, ST.DS{True{}, m, vis})) == True{} : Bool}, L.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Free{}, Equal.sym(ST.Cls, ST.Free{}, ST.Done{}, hc))))
+      absurd({res(0n, e, adj, vm, b, ST.DS{True{}, m, vis}, Con{v, rest}, ST.dfs(0n, Con{v, rest}, ST.Free{}, e, adj, vm, ST.DS{True{}, m, vis})) == True{} : Bool}, KA.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Free{}, Equal.sym(ST.Cls, ST.Free{}, ST.Done{}, hc))))
     case 0n Con{+v, +rest} ST.Free{} ST.DS{False{}, +m, +vis}:
       free_res(vm, v, e, cls_free_m(ST.mem(v, vis), ST.getm(vm, v), hc), below_hd(v, rest, L.mlen(vm), h3), h1, h2)
     case 0n Con{+v, +rest} ST.Mate{+e2} ST.DS{True{}, +m, +vis}:
-      absurd({res(0n, e, adj, vm, b, ST.DS{True{}, m, vis}, Con{v, rest}, ST.dfs(0n, Con{v, rest}, ST.Mate{e2}, e, adj, vm, ST.DS{True{}, m, vis})) == True{} : Bool}, L.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Mate{e2}, Equal.sym(ST.Cls, ST.Mate{e2}, ST.Done{}, hc))))
+      absurd({res(0n, e, adj, vm, b, ST.DS{True{}, m, vis}, Con{v, rest}, ST.dfs(0n, Con{v, rest}, ST.Mate{e2}, e, adj, vm, ST.DS{True{}, m, vis})) == True{} : Bool}, KA.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Mate{e2}, Equal.sym(ST.Cls, ST.Mate{e2}, ST.Done{}, hc))))
     case 0n Con{+v, +rest} ST.Mate{+e2} ST.DS{False{}, +m, +vis}:
       absurd({res(0n, e, adj, vm, b, ST.DS{False{}, m, vis}, Con{v, rest}, ST.dfs(0n, Con{v, rest}, ST.Mate{e2}, e, adj, vm, ST.DS{False{}, m, vis})) == True{} : Bool}, no_fuel(vm, adj, b, vis, hi))
     case 0n Con{+v, +rest} ST.Done{} ST.DS{True{}, +m, +vis}:
@@ -565,15 +565,15 @@ def dfs_ok(f: Nat, vs: List<&2, Nat>, c: ST.Cls, +e: Nat, +adj: List<&2, List<&2
     case 1n++g Nil{} ST.Done{} ST.DS{False{}, +m, +vis}:
       nil_res(1n+g, e, adj, vm, b, m, vis, hi)
     case 1n++g Con{+v, +rest} ST.Seen{} ST.DS{True{}, +m, +vis}:
-      absurd({res(1n+g, e, adj, vm, b, ST.DS{True{}, m, vis}, Con{v, rest}, ST.dfs(1n+g, Con{v, rest}, ST.Seen{}, e, adj, vm, ST.DS{True{}, m, vis})) == True{} : Bool}, L.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Seen{}, Equal.sym(ST.Cls, ST.Seen{}, ST.Done{}, hc))))
+      absurd({res(1n+g, e, adj, vm, b, ST.DS{True{}, m, vis}, Con{v, rest}, ST.dfs(1n+g, Con{v, rest}, ST.Seen{}, e, adj, vm, ST.DS{True{}, m, vis})) == True{} : Bool}, KA.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Seen{}, Equal.sym(ST.Cls, ST.Seen{}, ST.Done{}, hc))))
     case 1n++g Con{+v, +rest} ST.Seen{} ST.DS{False{}, +m, +vis}:
       seen_fix(1n+g, e, adj, vm, b, v, rest, m, vis, seen_mem(v, vis, ST.getm(vm, v), hc), ST.dfs(1n+g, rest, ST.cls(vm, vis, rest), e, adj, vm, ST.DS{False{}, m, vis}), dfs_ok(1n+g, rest, ST.cls(vm, vis, rest), e, adj, vm, ST.DS{False{}, m, vis}, b, {==}, h1, h2, below_tl(v, rest, L.mlen(vm), h3), h4, hi))
     case 1n++g Con{+v, +rest} ST.Free{} ST.DS{True{}, +m, +vis}:
-      absurd({res(1n+g, e, adj, vm, b, ST.DS{True{}, m, vis}, Con{v, rest}, ST.dfs(1n+g, Con{v, rest}, ST.Free{}, e, adj, vm, ST.DS{True{}, m, vis})) == True{} : Bool}, L.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Free{}, Equal.sym(ST.Cls, ST.Free{}, ST.Done{}, hc))))
+      absurd({res(1n+g, e, adj, vm, b, ST.DS{True{}, m, vis}, Con{v, rest}, ST.dfs(1n+g, Con{v, rest}, ST.Free{}, e, adj, vm, ST.DS{True{}, m, vis})) == True{} : Bool}, KA.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Free{}, Equal.sym(ST.Cls, ST.Free{}, ST.Done{}, hc))))
     case 1n++g Con{+v, +rest} ST.Free{} ST.DS{False{}, +m, +vis}:
       free_res(vm, v, e, cls_free_m(ST.mem(v, vis), ST.getm(vm, v), hc), below_hd(v, rest, L.mlen(vm), h3), h1, h2)
     case 1n++g Con{+v, +rest} ST.Mate{+e2} ST.DS{True{}, +m, +vis}:
-      absurd({res(1n+g, e, adj, vm, b, ST.DS{True{}, m, vis}, Con{v, rest}, ST.dfs(1n+g, Con{v, rest}, ST.Mate{e2}, e, adj, vm, ST.DS{True{}, m, vis})) == True{} : Bool}, L.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Mate{e2}, Equal.sym(ST.Cls, ST.Mate{e2}, ST.Done{}, hc))))
+      absurd({res(1n+g, e, adj, vm, b, ST.DS{True{}, m, vis}, Con{v, rest}, ST.dfs(1n+g, Con{v, rest}, ST.Mate{e2}, e, adj, vm, ST.DS{True{}, m, vis})) == True{} : Bool}, KA.tf(Equal.cong(ST.Cls, Bool, isdone, ST.Done{}, ST.Mate{e2}, Equal.sym(ST.Cls, ST.Mate{e2}, ST.Done{}, hc))))
     case 1n++g Con{+v, +rest} ST.Mate{+e2} ST.DS{False{}, +m, +vis}:
       +hs = cls_mate_m(ST.mem(v, vis), ST.getm(vm, v), e2, hc)
       +hmv = mate_mem(v, vis, ST.getm(vm, v), e2, hc)
@@ -667,7 +667,7 @@ def below_mem.go(+x: Nat, +y: Nat, +t: List<&2, Nat>, +n: Nat, c: Bool, e: {SV.e
 def below_mem(+x: Nat, ys: List<&2, Nat>, +n: Nat, hm: {SV.mem(x, ys) == True{} : Bool}, hb: {SV.below(ys, n) == True{} : Bool}) -> {SV.lt(x, n) == True{} : Bool}:
   match ys:
     case Nil{}:
-      absurd({SV.lt(x, n) == True{} : Bool}, L.ft(hm))
+      absurd({SV.lt(x, n) == True{} : Bool}, KA.ft(hm))
     case Con{+y, +t}:
       below_mem.go(x, y, t, n, SV.eq(x, y), {==}, hm, hb, p => q => below_mem(x, t, n, p, q))
 

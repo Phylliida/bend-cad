@@ -36,14 +36,14 @@ def and_l(a: Bool, +b: Bool, +h: {Bool.and(a, b) == True{} : Bool}) -> {a == Tru
 def and_r(a: Bool, +b: Bool, +h: {Bool.and(a, b) == True{} : Bool}) -> {b == True{} : Bool}:
   match a:
     case False{}:
-      absurd({b == True{} : Bool}, L.ft(h))
+      absurd({b == True{} : Bool}, KA.ft(h))
     case True{}:
       h
 
 def and_i(a: Bool, +b: Bool, +ha: {a == True{} : Bool}, +hb: {b == True{} : Bool}) -> {Bool.and(a, b) == True{} : Bool}:
   match a:
     case False{}:
-      absurd({False{} == True{} : Bool}, L.ft(ha))
+      absurd({False{} == True{} : Bool}, KA.ft(ha))
     case True{}:
       hb
 
@@ -201,15 +201,15 @@ def find_r(+es: List<&2, SK.Ent>, +a: Nat, xs: List<&2, SK.Ent>, +he: {WF.ents(e
 def ptok.go(m: Maybe<&2, SK.Geo>, +n: Nat, +hp: {SK.is_pt(m) == True{} : Bool}, +hg: {geow(m, n) == True{} : Bool}) -> {ptin(SK.pt.of(m), n) == True{} : Bool}:
   match m:
     case None{}:
-      absurd({ptin(SK.Pt{0n, 0n}, n) == True{} : Bool}, L.ft(hp))
+      absurd({ptin(SK.Pt{0n, 0n}, n) == True{} : Bool}, KA.ft(hp))
     case Some{SK.GPoint{x, y}}:
       hg
     case Some{SK.GSeg{p, q}}:
-      absurd({ptin(SK.Pt{0n, 0n}, n) == True{} : Bool}, L.ft(hp))
+      absurd({ptin(SK.Pt{0n, 0n}, n) == True{} : Bool}, KA.ft(hp))
     case Some{SK.GCirc{c, r}}:
-      absurd({ptin(SK.Pt{0n, 0n}, n) == True{} : Bool}, L.ft(hp))
+      absurd({ptin(SK.Pt{0n, 0n}, n) == True{} : Bool}, KA.ft(hp))
     case Some{SK.GArc{s, f, b}}:
-      absurd({ptin(SK.Pt{0n, 0n}, n) == True{} : Bool}, L.ft(hp))
+      absurd({ptin(SK.Pt{0n, 0n}, n) == True{} : Bool}, KA.ft(hp))
 
 # a referenced point's coordinates are within n
 def ptok(+es: List<&2, SK.Ent>, +a: Nat, +n: Nat, +hp: {WF.ispt(es, a) == True{} : Bool}, +hw: {BX.Sketch.within.ents(es, n) == True{} : Bool}) -> {ptin(SK.pt(es, a), n) == True{} : Bool}:
@@ -218,15 +218,15 @@ def ptok(+es: List<&2, SK.Ent>, +a: Nat, +n: Nat, +hp: {WF.ispt(es, a) == True{}
 def segok.go(+es: List<&2, SK.Ent>, m: Maybe<&2, SK.Geo>, +n: Nat, +hs: {SK.is_seg(m) == True{} : Bool}, +hr: {georef(es, m) == True{} : Bool}, +hw: {BX.Sketch.within.ents(es, n) == True{} : Bool}) -> {Bool.and(ptin(SK.Seg.p(SK.seg.of(es, m)), n), ptin(SK.Seg.q(SK.seg.of(es, m)), n)) == True{} : Bool}:
   match m:
     case None{}:
-      absurd({Bool.and(ptin(SK.Pt{0n, 0n}, n), ptin(SK.Pt{0n, 0n}, n)) == True{} : Bool}, L.ft(hs))
+      absurd({Bool.and(ptin(SK.Pt{0n, 0n}, n), ptin(SK.Pt{0n, 0n}, n)) == True{} : Bool}, KA.ft(hs))
     case Some{SK.GPoint{x, y}}:
-      absurd({Bool.and(ptin(SK.Pt{0n, 0n}, n), ptin(SK.Pt{0n, 0n}, n)) == True{} : Bool}, L.ft(hs))
+      absurd({Bool.and(ptin(SK.Pt{0n, 0n}, n), ptin(SK.Pt{0n, 0n}, n)) == True{} : Bool}, KA.ft(hs))
     case Some{SK.GSeg{+p, +q}}:
       and_i(ptin(SK.pt(es, p), n), ptin(SK.pt(es, q), n), ptok(es, p, n, KA.band_l(WF.ispt(es, p), WF.ispt(es, q), hr), hw), ptok(es, q, n, KA.band_r(WF.ispt(es, p), WF.ispt(es, q), hr), hw))
     case Some{SK.GCirc{c, r}}:
-      absurd({Bool.and(ptin(SK.Pt{0n, 0n}, n), ptin(SK.Pt{0n, 0n}, n)) == True{} : Bool}, L.ft(hs))
+      absurd({Bool.and(ptin(SK.Pt{0n, 0n}, n), ptin(SK.Pt{0n, 0n}, n)) == True{} : Bool}, KA.ft(hs))
     case Some{SK.GArc{s, f, b}}:
-      absurd({Bool.and(ptin(SK.Pt{0n, 0n}, n), ptin(SK.Pt{0n, 0n}, n)) == True{} : Bool}, L.ft(hs))
+      absurd({Bool.and(ptin(SK.Pt{0n, 0n}, n), ptin(SK.Pt{0n, 0n}, n)) == True{} : Bool}, KA.ft(hs))
 
 # a referenced segment's ends are within n
 def segok(+es: List<&2, SK.Ent>, +a: Nat, +n: Nat, +hs: {WF.isseg(es, a) == True{} : Bool}, +hw: {BX.Sketch.within.ents(es, n) == True{} : Bool}, +he: {WF.ents(es, es) == True{} : Bool}) -> {Bool.and(ptin(SK.Seg.p(SK.seg(es, a)), n), ptin(SK.Seg.q(SK.seg(es, a)), n)) == True{} : Bool}:
@@ -235,15 +235,15 @@ def segok(+es: List<&2, SK.Ent>, +a: Nat, +n: Nat, +hs: {WF.isseg(es, a) == True
 def circok.go(+es: List<&2, SK.Ent>, m: Maybe<&2, SK.Geo>, +n: Nat, +hc: {SK.is_circ(m) == True{} : Bool}, +hr: {georef(es, m) == True{} : Bool}, +hg: {geow(m, n) == True{} : Bool}, +hw: {BX.Sketch.within.ents(es, n) == True{} : Bool}) -> {Bool.and(ptin(SK.Circ.c(SK.circ.of(es, m)), n), BX.lt(SK.Circ.r(SK.circ.of(es, m)), n)) == True{} : Bool}:
   match m:
     case None{}:
-      absurd({Bool.and(ptin(SK.Pt{0n, 0n}, n), BX.lt(0n, n)) == True{} : Bool}, L.ft(hc))
+      absurd({Bool.and(ptin(SK.Pt{0n, 0n}, n), BX.lt(0n, n)) == True{} : Bool}, KA.ft(hc))
     case Some{SK.GPoint{x, y}}:
-      absurd({Bool.and(ptin(SK.Pt{0n, 0n}, n), BX.lt(0n, n)) == True{} : Bool}, L.ft(hc))
+      absurd({Bool.and(ptin(SK.Pt{0n, 0n}, n), BX.lt(0n, n)) == True{} : Bool}, KA.ft(hc))
     case Some{SK.GSeg{p, q}}:
-      absurd({Bool.and(ptin(SK.Pt{0n, 0n}, n), BX.lt(0n, n)) == True{} : Bool}, L.ft(hc))
+      absurd({Bool.and(ptin(SK.Pt{0n, 0n}, n), BX.lt(0n, n)) == True{} : Bool}, KA.ft(hc))
     case Some{SK.GCirc{+c, +r}}:
       and_i(ptin(SK.pt(es, c), n), BX.lt(r, n), ptok(es, c, n, hr, hw), hg)
     case Some{SK.GArc{s, f, b}}:
-      absurd({Bool.and(ptin(SK.Pt{0n, 0n}, n), BX.lt(0n, n)) == True{} : Bool}, L.ft(hc))
+      absurd({Bool.and(ptin(SK.Pt{0n, 0n}, n), BX.lt(0n, n)) == True{} : Bool}, KA.ft(hc))
 
 # a referenced circle's center and radius are within n
 def circok(+es: List<&2, SK.Ent>, +c: Nat, +n: Nat, +hc: {WF.iscirc(es, c) == True{} : Bool}, +hw: {BX.Sketch.within.ents(es, n) == True{} : Bool}, +he: {WF.ents(es, es) == True{} : Bool}) -> {Bool.and(ptin(SK.Circ.c(SK.circ(es, c)), n), BX.lt(SK.Circ.r(SK.circ(es, c)), n)) == True{} : Bool}:

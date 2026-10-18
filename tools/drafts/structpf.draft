@@ -42,7 +42,7 @@ def pigc.one(+y: Nat, +xs: List<&2, Nat>, +ys: List<&2, Nat>, b: Bool, e: {SV.me
     case True{}:
       {==}
     case False{}:
-      absurd({False{} == True{} : Bool}, L.lt_irr(SV.len(xs), L.le_trans(1n+SV.len(xs), 1n+SV.len(L.rem(y, ys)), SV.len(xs), L.pig(xs, L.rem(y, ys), dx, L.subl_rem(xs, y, ys, hs, e)), L.le_trans(1n+SV.len(L.rem(y, ys)), SV.len(ys), SV.len(xs), L.rem_len(y, ys, hy), hl))))
+      absurd({False{} == True{} : Bool}, KA.natlt_irr(SV.len(xs), KA.natle_trans(1n+SV.len(xs), 1n+SV.len(L.rem(y, ys)), SV.len(xs), L.pig(xs, L.rem(y, ys), dx, L.subl_rem(xs, y, ys, hs, e)), KA.natle_trans(1n+SV.len(L.rem(y, ys)), SV.len(ys), SV.len(xs), L.rem_len(y, ys, hy), hl))))
 
 def pigc.go(zs: List<&2, Nat>, +xs: List<&2, Nat>, +ys: List<&2, Nat>, +hz: {L.subl(zs, ys) == True{} : Bool}, +dx: {SV.distinct(xs) == True{} : Bool}, +hs: {L.subl(xs, ys) == True{} : Bool}, +hl: {KA.natle(SV.len(ys), SV.len(xs)) == True{} : Bool}) -> {L.subl(zs, xs) == True{} : Bool}:
   match zs:
@@ -57,7 +57,7 @@ def pigc(+xs: List<&2, Nat>, +ys: List<&2, Nat>, dx: {SV.distinct(xs) == True{} 
 
 # two distinct lists, each within the other, are as long
 def len_eq(+xs: List<&2, Nat>, +ys: List<&2, Nat>, dx: {SV.distinct(xs) == True{} : Bool}, dy: {SV.distinct(ys) == True{} : Bool}, h1: {L.subl(xs, ys) == True{} : Bool}, h2: {L.subl(ys, xs) == True{} : Bool}) -> {SV.len(xs) == SV.len(ys) : Nat}:
-  TJ.le_anti(SV.len(xs), SV.len(ys), L.pig(xs, ys, dx, h1), L.pig(ys, xs, dy, h2))
+  KA.natle_antisym(SV.len(xs), SV.len(ys), L.pig(xs, ys, dx, h1), L.pig(ys, xs, dy, h2))
 
 def sv_ne(+u: Nat, +x: Nat, e: {KA.nateq(u, x) == False{} : Bool}) -> {SV.eq(u, x) == False{} : Bool}:
   %Equal.sym(Bool, SV.eq(u, x), KA.nateq(u, x), L.eq_sv(u, x)) : {_ == False{} : Bool}
@@ -78,7 +78,7 @@ def pos_in.go(+u: Nat, +x: Nat, +t: List<&2, Nat>, +r: List<&2, Nat>, b: Bool, e
 def pos_in(+u: Nat, k: List<&2, Nat>, +r: List<&2, Nat>, h: {SV.mem(u, k) == True{} : Bool}) -> {KA.natle(1n+ST.pos(u, ST.app(k, r)), SV.len(k)) == True{} : Bool}:
   match k:
     case Nil{}:
-      absurd({KA.natle(1n+ST.pos(u, ST.app(Nil{}, r)), 0n) == True{} : Bool}, L.ft(h))
+      absurd({KA.natle(1n+ST.pos(u, ST.app(Nil{}, r)), 0n) == True{} : Bool}, KA.ft(h))
     case Con{+x, +t}:
       pos_in.go(u, x, t, r, KA.nateq(u, x), {==}, h, p => pos_in(u, t, r, p))
 
@@ -109,7 +109,7 @@ def pos_mem.go(+u: Nat, +x: Nat, +t: List<&2, Nat>, +vp: List<&2, Nat>, b: Bool,
 def pos_mem(+u: Nat, xs: List<&2, Nat>, +vp: List<&2, Nat>, h: {SV.mem(u, xs) == True{} : Bool}) -> {SV.mem(ST.pos(u, vp), ST.positions(xs, vp)) == True{} : Bool}:
   match xs:
     case Nil{}:
-      absurd({SV.mem(ST.pos(u, vp), Nil{}) == True{} : Bool}, L.ft(h))
+      absurd({SV.mem(ST.pos(u, vp), Nil{}) == True{} : Bool}, KA.ft(h))
     case Con{+x, +t}:
       pos_mem.go(u, x, t, vp, SV.eq(u, x), {==}, h, p => pos_mem(u, t, vp, p))
 
@@ -141,7 +141,7 @@ def look_has.go(+m: List<&2, Maybe<&2, Nat>>, +x: Nat, +y: Nat, +t: List<&2, Nat
 def look_has(+m: List<&2, Maybe<&2, Nat>>, +x: Nat, ys: List<&2, Nat>, h: {SV.mem(x, ys) == True{} : Bool}) -> {SV.mem(ST.look.of(ST.getm(m, x)), ST.look(m, ys)) == True{} : Bool}:
   match ys:
     case Nil{}:
-      absurd({SV.mem(ST.look.of(ST.getm(m, x)), Nil{}) == True{} : Bool}, L.ft(h))
+      absurd({SV.mem(ST.look.of(ST.getm(m, x)), Nil{}) == True{} : Bool}, KA.ft(h))
     case Con{+y, +t}:
       look_has.go(m, x, y, t, SV.eq(x, y), {==}, h, p => look_has(m, x, t, p))
 
@@ -241,7 +241,7 @@ def ug_has.go(+e: Nat, +j: Nat, +t: List<&2, Nat>, +adj: List<&2, List<&2, Nat>>
 def ug_has(js: List<&2, Nat>, +adj: List<&2, List<&2, Nat>>, +acc: List<&2, Nat>, +e: Nat, h: {SV.mem(e, js) == True{} : Bool}) -> {L.subl(ST.nthl(adj, e), ST.uses.go(js, adj, acc)) == True{} : Bool}:
   match js:
     case Nil{}:
-      absurd({L.subl(ST.nthl(adj, e), acc) == True{} : Bool}, L.ft(h))
+      absurd({L.subl(ST.nthl(adj, e), acc) == True{} : Bool}, KA.ft(h))
     case Con{+j, +t}:
       ug_has.go(e, j, t, adj, acc, SV.eq(e, j), {==}, h, p => ug_has(t, adj, ST.uses.add(ST.nthl(adj, j), acc), e, p))
 
@@ -291,9 +291,9 @@ def nleq_ok(xs: List<&2, Nat>, ys: List<&2, Nat>, +h: {nleq(xs, ys) == True{} : 
     case Nil{} Nil{}:
       {==}
     case Nil{} Con{+b, +t}:
-      absurd({Nil{} == Con{b, t} : List<&2, Nat>}, L.ft(h))
+      absurd({Nil{} == Con{b, t} : List<&2, Nat>}, KA.ft(h))
     case Con{+a, +s} Nil{}:
-      absurd({Con{a, s} == Nil{} : List<&2, Nat>}, L.ft(h))
+      absurd({Con{a, s} == Nil{} : List<&2, Nat>}, KA.ft(h))
     case Con{+a, +s} Con{+b, +t}:
       %L.eq_ok(a, b, L.band_l(SV.eq(a, b), nleq(s, t), h)) : {Con{a, s} == Con{_, t} : List<&2, Nat>}
       %nleq_ok(s, t, L.band_r(SV.eq(a, b), nleq(s, t), h)) : {Con{a, s} == Con{a, _} : List<&2, Nat>}
@@ -492,21 +492,21 @@ def iota_ge.go(+k: Nat, +x: Nat, +t: List<&2, Nat>, b: Bool, e: {SV.eq(x, k) == 
   match b:
     case True{}:
       %Equal.sym(Nat, x, k, L.eq_ok(x, k, e)) : {KA.natle(k, _) == True{} : Bool}
-      L.le_refl(k)
+      KA.natle_refl(k)
     case False{}:
-      L.le_pred(k, x, ih(h))
+      KA.natle_pred(k, x, ih(h))
 
 def iota_ge(n: Nat, +k: Nat, +x: Nat, h: {SV.mem(x, ST.iota(n, k)) == True{} : Bool}) -> {KA.natle(k, x) == True{} : Bool}:
   match n:
     case 0n:
-      absurd({KA.natle(k, x) == True{} : Bool}, L.ft(h))
+      absurd({KA.natle(k, x) == True{} : Bool}, KA.ft(h))
     case 1n++m:
       iota_ge.go(k, x, ST.iota(m, 1n+k), SV.eq(x, k), {==}, h, p => iota_ge(m, 1n+k, x, p))
 
 def iota_new(m: Nat, +k: Nat, b: Bool, e: {SV.mem(k, ST.iota(m, 1n+k)) == b : Bool}) -> {b == False{} : Bool}:
   match b:
     case True{}:
-      absurd({True{} == False{} : Bool}, L.lt_irr(k, iota_ge(m, 1n+k, k, e)))
+      absurd({True{} == False{} : Bool}, KA.natlt_irr(k, iota_ge(m, 1n+k, k, e)))
     case False{}:
       {==}
 
@@ -543,7 +543,7 @@ def mem_down.go(+x: Nat, +m: Nat, b: Bool, e: {SV.eq(x, m) == b : Bool}, h: {KA.
 def mem_down(+x: Nat, n: Nat, h: {KA.natle(1n+x, n) == True{} : Bool}) -> {SV.mem(x, ST.down(n)) == True{} : Bool}:
   match n:
     case 0n:
-      absurd({SV.mem(x, Nil{}) == True{} : Bool}, L.ft(h))
+      absurd({SV.mem(x, Nil{}) == True{} : Bool}, KA.ft(h))
     case 1n++m:
       mem_down.go(x, m, SV.eq(x, m), {==}, h, p => mem_down(x, m, p))
 
@@ -565,9 +565,9 @@ def ne_succ(k: Nat, +i: Nat) -> {SV.eq(Nat.add(k, 1n+i), k) == False{} : Bool}:
 def keys_some(vm: List<&2, Maybe<&2, Nat>>, +k: Nat, j: Nat, h: {SV.mem(Nat.add(k, j), MX.keys(vm, k)) == True{} : Bool}) -> {L.issome(ST.getm(vm, j)) == True{} : Bool}:
   match vm j:
     case Nil{} j:
-      absurd({L.issome(ST.getm(Nil{}, j)) == True{} : Bool}, L.ft(h))
+      absurd({L.issome(ST.getm(Nil{}, j)) == True{} : Bool}, KA.ft(h))
     case Con{None{}, +t} 0n:
-      absurd({L.issome(None{}) == True{} : Bool}, L.lt_irr(k, MX.keys_ge(t, 1n+k, k, MX.mem_k0(k, MX.keys(t, 1n+k), h))))
+      absurd({L.issome(None{}) == True{} : Bool}, KA.natlt_irr(k, MX.keys_ge(t, 1n+k, k, MX.mem_k0(k, MX.keys(t, 1n+k), h))))
     case Con{Some{x}, +t} 0n:
       {==}
     case Con{None{}, +t} 1n++i:
@@ -585,10 +585,6 @@ def cr_e(+a: Nat, +b: Nat, +f: Nat, +nv: Nat, h1: {Nat.add(a, f) == nv : Nat}, h
 # a + f = nv = b + f: a = b
 def cancel_r(+a: Nat, +b: Nat, +f: Nat, +nv: Nat, h1: {Nat.add(a, f) == nv : Nat}, h2: {Nat.add(b, f) == nv : Nat}) -> {a == b : Nat}:
   LN.add_cancel(f, a, b, cr_e(a, b, f, nv, h1, h2))
-
-def le_rw_r(+a: Nat, +b: Nat, +c: Nat, e: {b == c : Nat}, h: {KA.natle(a, b) == True{} : Bool}) -> {KA.natle(a, c) == True{} : Bool}:
-  %e : {KA.natle(a, _) == True{} : Bool}
-  h
 
 def le_rw_l(+a: Nat, +b: Nat, +c: Nat, e: {a == c : Nat}, h: {KA.natle(a, b) == True{} : Bool}) -> {KA.natle(c, b) == True{} : Bool}:
   %e : {KA.natle(_, b) == True{} : Bool}
@@ -623,7 +619,7 @@ def all_len(+fs: List<&2, Nat>, +ss: List<&2, Nat>, +nv: Nat, hc: {Nat.add(SV.le
   %Equal.sym(Nat, SV.len(ST.app(fs, ss)), Nat.add(SV.len(fs), SV.len(ss)), len_app(fs, ss)) : {KA.natle(nv, _) == True{} : Bool}
   %LN.add_comm(SV.len(ss), SV.len(fs)) : {KA.natle(nv, _) == True{} : Bool}
   %Equal.sym(Nat, Nat.add(SV.len(ss), SV.len(fs)), nv, hc) : {KA.natle(nv, _) == True{} : Bool}
-  L.le_refl(nv)
+  KA.natle_refl(nv)
 
 def vend.go(+full: List<&2, E.QExpr>, +nv: Nat, +vmr: List<&2, Maybe<&2, Nat>>, +kn: Nat, kd: ST.KD, +h: {MX.kinvs(ST.transpose(nv, 0n, ST.inter(ST.iota(ST.len.q(full), 0n), ST.somes(vmr)), ST.adj(full)), ST.len.q(full), ST.down(nv), SV.len(ST.down(nv)), Nil{}, kd) == True{} : Bool}, +hp: {SV.band(SV.distinct(ST.KD.red(kd)), SV.band(SV.below(ST.KD.red(kd), nv), SV.eq(Nat.add(kn, SV.len(ST.KD.red(kd))), nv))) == True{} : Bool}, hdr: {SV.distinct(ST.somes(vmr)) == True{} : Bool}, hcr: {SV.len(ST.somes(vmr)) == kn : Nat}) -> {vsides(ST.len.q(full), nv, ST.inter(ST.iota(ST.len.q(full), 0n), ST.somes(vmr)), kd) == True{} : Bool}:
   match kd:
@@ -648,10 +644,10 @@ def vend.go(+full: List<&2, E.QExpr>, +nv: Nat, +vmr: List<&2, Maybe<&2, Nat>>, 
       +hfd = MX.kinv_fdist(adjt, nq, us, c, js, vm, fs, dd, h)
       +hff = MX.kinv_ffree(adjt, nq, us, c, js, vm, fs, dd, h)
       +hmus = MX.kinv_mus(adjt, nq, us, c, js, vm, fs, dd, h)
-      +hg1 = le_rw_r(g, SV.len(ST.somes(vmr)), a, (%Equal.sym(Nat, a, kn, hak) : {SV.len(ST.somes(vmr)) == _ : Nat}
+      +hg1 = KA.natle_rw(g, SV.len(ST.somes(vmr)), a, (%Equal.sym(Nat, a, kn, hak) : {SV.len(ST.somes(vmr)) == _ : Nat}
         hcr), L.pig(good, ST.somes(vmr), hgd, MX.inter_sub(ST.iota(nq, 0n), ST.somes(vmr))))
       +hg2 = le_rw_l(SV.len(MX.keys(vm, 0n)), g, a, MX.keys_len(vm, 0n), L.pig(MX.keys(vm, 0n), good, MX.keys_dist(vm, 0n), hkg))
-      vside_mk(nq, nv, good, vm, fs, hkg, hvd, hfd, hff, pigc(ST.app(fs, ST.somes(vm)), us, MX.dist_app(fs, ST.somes(vm), hfd, hvd, hff), TJ.subl_app(fs, ST.somes(vm), us, MX.kinv_fus(adjt, nq, us, c, js, vm, fs, dd, h), hmus), all_len(fs, ST.somes(vm), nv, hc)), hmus, L.band_l(SV.below(fs, nv), SV.eq(Nat.add(kn, f), nv), hp2), hgd, D.below_subl(good, ST.iota(nq, 0n), nq, MX.inter_subx(ST.iota(nq, 0n), ST.somes(vmr)), MX.iota_below(nq, 0n)), D.eq_of(g, a, TJ.le_anti(g, a, hg1, hg2)), D.eq_of(Nat.add(a, f), nv, hc))
+      vside_mk(nq, nv, good, vm, fs, hkg, hvd, hfd, hff, pigc(ST.app(fs, ST.somes(vm)), us, MX.dist_app(fs, ST.somes(vm), hfd, hvd, hff), TJ.subl_app(fs, ST.somes(vm), us, MX.kinv_fus(adjt, nq, us, c, js, vm, fs, dd, h), hmus), all_len(fs, ST.somes(vm), nv, hc)), hmus, L.band_l(SV.below(fs, nv), SV.eq(Nat.add(kn, f), nv), hp2), hgd, D.below_subl(good, ST.iota(nq, 0n), nq, MX.inter_subx(ST.iota(nq, 0n), ST.somes(vmr)), MX.iota_below(nq, 0n)), D.eq_of(g, a, KA.natle_antisym(g, a, hg1, hg2)), D.eq_of(Nat.add(a, f), nv, hc))
 
 # the variable side over the sketch's kept equations
 def vend(+sk: SK.Sketch, +ha: {D.adjb(ST.adj(SK.Sketch.eqs(sk)), SO.nvars(sk)) == True{} : Bool}) -> {vsides(ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))) == True{} : Bool}:
@@ -664,14 +660,14 @@ def vend(+sk: SK.Sketch, +ha: {D.adjb(ST.adj(SK.Sketch.eqs(sk)), SO.nvars(sk)) =
   +good = ST.inter(ST.iota(nq, 0n), ST.somes(vmr))
   +adjt = ST.transpose(nv, 0n, good, adj)
   +hbg = D.below_subl(good, ST.iota(nq, 0n), nq, MX.inter_subx(ST.iota(nq, 0n), ST.somes(vmr)), MX.iota_below(nq, 0n))
-  vend.go(full, nv, vmr, kn, MX.kvs(adj, nq, nv, good), MX.kwalk(ST.down(nv), adjt, nq, ST.down(nv), SV.len(ST.down(nv)), 1n+nq, ST.KD{ST.nones(nq), Nil{}, Nil{}}, MX.down_dist(nv), L.subl_refl(ST.down(nv)), MX.adjb_tr(nv, 0n, good, adj, nq, hbg), L.le_refl(1n+nq), MX.kinit(adjt, nq, ST.down(nv), ST.down(nv))), MX.pins_kv(full, nv, vmr, kn, MX.red_valid(sk, nv), RP.red_dist(sk, nv, ha), RP.red_mlen(sk, nv, ha), RP.red_cnt(sk, nv, ha)), RP.red_dist(sk, nv, ha), RP.red_cnt(sk, nv, ha))
+  vend.go(full, nv, vmr, kn, MX.kvs(adj, nq, nv, good), MX.kwalk(ST.down(nv), adjt, nq, ST.down(nv), SV.len(ST.down(nv)), 1n+nq, ST.KD{ST.nones(nq), Nil{}, Nil{}}, MX.down_dist(nv), L.subl_refl(ST.down(nv)), MX.adjb_tr(nv, 0n, good, adj, nq, hbg), KA.natle_refl(1n+nq), MX.kinit(adjt, nq, ST.down(nv), ST.down(nv))), MX.pins_kv(full, nv, vmr, kn, MX.red_valid(sk, nv), RP.red_dist(sk, nv, ha), RP.red_mlen(sk, nv, ha), RP.red_cnt(sk, nv, ha)), RP.red_dist(sk, nv, ha), RP.red_cnt(sk, nv, ha))
 
 # What follows from the variable side's end
 # -----------------------------------------
 
 def le_of_eq(+a: Nat, +b: Nat, e: {a == b : Nat}) -> {KA.natle(a, b) == True{} : Bool}:
   %e : {KA.natle(a, _) == True{} : Bool}
-  L.le_refl(a)
+  KA.natle_refl(a)
 
 def allm_mem.go(+x: Nat, +y: Nat, +t: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, b: Bool, e: {SV.eq(x, y) == b : Bool}, hm: {SV.bor(b, SV.mem(x, t)) == True{} : Bool}, +h: {L.allm(vm, Con{y, t}) == True{} : Bool}, ih: {SV.mem(x, t) == True{} : Bool} -> {L.allm(vm, t) == True{} : Bool} -> {L.issome(ST.getm(vm, x)) == True{} : Bool}) -> {L.issome(ST.getm(vm, x)) == True{} : Bool}:
   match b:
@@ -684,7 +680,7 @@ def allm_mem.go(+x: Nat, +y: Nat, +t: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat
 def allm_mem(+x: Nat, ys: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, hm: {SV.mem(x, ys) == True{} : Bool}, h: {L.allm(vm, ys) == True{} : Bool}) -> {L.issome(ST.getm(vm, x)) == True{} : Bool}:
   match ys:
     case Nil{}:
-      absurd({L.issome(ST.getm(vm, x)) == True{} : Bool}, L.ft(hm))
+      absurd({L.issome(ST.getm(vm, x)) == True{} : Bool}, KA.ft(hm))
     case Con{+y, +t}:
       allm_mem.go(x, y, t, vm, SV.eq(x, y), {==}, hm, h, p => q => allm_mem(x, t, vm, p, q))
 
@@ -708,14 +704,14 @@ def vs_glen(+nq: Nat, +nv: Nat, +good: List<&2, Nat>, +vm: List<&2, Maybe<&2, Na
 # every kept equation is matched
 def vs_sat(+nq: Nat, +nv: Nat, +good: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +fs: List<&2, Nat>, +h: {vside(nq, nv, good, vm, fs) == True{} : Bool}) -> {L.allm(vm, good) == True{} : Bool}:
   +ks = MX.keys(vm, 0n)
-  +hl = le_rw_r(SV.len(good), SV.len(ST.somes(vm)), SV.len(ks), Equal.sym(Nat, SV.len(ks), SV.len(ST.somes(vm)), MX.keys_len(vm, 0n)), le_of_eq(SV.len(good), SV.len(ST.somes(vm)), vs_glen(nq, nv, good, vm, fs, h)))
+  +hl = KA.natle_rw(SV.len(good), SV.len(ST.somes(vm)), SV.len(ks), Equal.sym(Nat, SV.len(ks), SV.len(ST.somes(vm)), MX.keys_len(vm, 0n)), le_of_eq(SV.len(good), SV.len(ST.somes(vm)), vs_glen(nq, nv, good, vm, fs, h)))
   allm_keys(good, vm, pigc(ks, good, MX.keys_dist(vm, 0n), vside_kg(nq, nv, good, vm, fs, h), hl))
 
 # the matched variables are the kept equations' mates
 def vs_look(+nq: Nat, +nv: Nat, +good: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +fs: List<&2, Nat>, +h: {vside(nq, nv, good, vm, fs) == True{} : Bool}) -> {L.subl(ST.somes(vm), ST.look(vm, good)) == True{} : Bool}:
   +sat = vs_sat(nq, nv, good, vm, fs, h)
   +lk = ST.look(vm, good)
-  +hl = le_rw_r(SV.len(ST.somes(vm)), SV.len(good), SV.len(lk), Equal.sym(Nat, SV.len(lk), SV.len(good), L.look_len(vm, good)), le_of_eq(SV.len(ST.somes(vm)), SV.len(good), Equal.sym(Nat, SV.len(good), SV.len(ST.somes(vm)), vs_glen(nq, nv, good, vm, fs, h))))
+  +hl = KA.natle_rw(SV.len(ST.somes(vm)), SV.len(good), SV.len(lk), Equal.sym(Nat, SV.len(lk), SV.len(good), L.look_len(vm, good)), le_of_eq(SV.len(ST.somes(vm)), SV.len(good), Equal.sym(Nat, SV.len(good), SV.len(ST.somes(vm)), vs_glen(nq, nv, good, vm, fs, h))))
   pigc(lk, ST.somes(vm), L.look_dist(vm, good, vside_gd(nq, nv, good, vm, fs, h), sat, vside_vd(nq, nv, good, vm, fs, h)), L.look_subl(vm, good, sat), hl)
 
 def ab_down(js: List<&2, Nat>, +adj: List<&2, List<&2, Nat>>, +nv: Nat, +ha: {D.adjb(adj, nv) == True{} : Bool}) -> {alladj(js, adj, ST.down(nv)) == True{} : Bool}:
@@ -795,7 +791,7 @@ def blocks_ok(+adj: List<&2, List<&2, Nat>>, +nq: Nat, +nv: Nat, +good: List<&2,
   +cs = ST.comps(adj, em, good, nq)
   +cc = ST.cats(cs)
   +gd = vside_gd(nq, nv, good, vm, fs, h)
-  +hl3 = le_rw_r(SV.len(good), SV.len(ST.down(nq)), nq, MX.down_len(nq), L.pig(good, ST.down(nq), gd, below_down(good, nq, vside_gb(nq, nv, good, vm, fs, h))))
+  +hl3 = KA.natle_rw(SV.len(good), SV.len(ST.down(nq)), nq, MX.down_len(nq), L.pig(good, ST.down(nq), gd, below_down(good, nq, vside_gb(nq, nv, good, vm, fs, h))))
   +hcp = TJ.comps_part(adj, em, good, nq, vs_inv(nq, nv, good, vm, fs, h), vside_gb(nq, nv, good, vm, fs, h), hl3)
   +hcp2 = L.band_r(SV.distinct(cc), SV.band(L.subl(good, cc), L.subl(cc, good)), hcp)
   +hcd = L.band_l(SV.distinct(cc), SV.band(L.subl(good, cc), L.subl(cc, good)), hcp)
@@ -827,13 +823,6 @@ def blocks_ok(+adj: List<&2, List<&2, Nat>>, +nq: Nat, +nv: Nat, +good: List<&2,
 # parameter is earlier, the block's equations (renumbered) use only
 # variables below o + n, and each such variable is the block's own
 # (>= o) or a parameter; at the end o = nv and no equation is left.
-
-def kband_i(a: Bool, +b: Bool, ha: {a == True{} : Bool}, hb: {b == True{} : Bool}) -> {KA.band(a, b) == True{} : Bool}:
-  match a:
-    case True{}:
-      hb
-    case False{}:
-      absurd({False{} == True{} : Bool}, L.ft(ha))
 
 # every variable of e is o or later, or a parameter
 def ecov(+o: Nat, +pars: List<&2, Nat>, e: E.QExpr) -> Bool:
@@ -961,7 +950,7 @@ def posb_at.go(+u: Nat, +x: Nat, +t: List<&2, Nat>, +vp: List<&2, Nat>, +m: Nat,
 def posb_at(+u: Nat, xs: List<&2, Nat>, +vp: List<&2, Nat>, +m: Nat, hm: {SV.mem(u, xs) == True{} : Bool}, h: {posb(xs, vp, m) == True{} : Bool}) -> {KA.natle(1n+ST.pos(u, vp), m) == True{} : Bool}:
   match xs:
     case Nil{}:
-      absurd({KA.natle(1n+ST.pos(u, vp), m) == True{} : Bool}, L.ft(hm))
+      absurd({KA.natle(1n+ST.pos(u, vp), m) == True{} : Bool}, KA.ft(hm))
     case Con{+x, +t}:
       posb_at.go(u, x, t, vp, m, SV.eq(u, x), {==}, hm, h, p => q => posb_at(u, t, vp, m, p, q))
 
@@ -981,11 +970,11 @@ def rnv_below(e: E.QExpr, +vp: List<&2, Nat>, +m: Nat, +w: List<&2, Nat>, +hin: 
     case E.QCst{q}:
       {==}
     case E.QAdd{+a, +b}:
-      kband_i(SL.below(m, PL.rnv(vp, a)), SL.below(m, PL.rnv(vp, b)), rnv_below(a, vp, m, w, L.band_l(SV.inside(a, w), SV.inside(b, w), hin), hw), rnv_below(b, vp, m, w, L.band_r(SV.inside(a, w), SV.inside(b, w), hin), hw))
+      KA.band_i(SL.below(m, PL.rnv(vp, a)), SL.below(m, PL.rnv(vp, b)), rnv_below(a, vp, m, w, L.band_l(SV.inside(a, w), SV.inside(b, w), hin), hw), rnv_below(b, vp, m, w, L.band_r(SV.inside(a, w), SV.inside(b, w), hin), hw))
     case E.QSub{+a, +b}:
-      kband_i(SL.below(m, PL.rnv(vp, a)), SL.below(m, PL.rnv(vp, b)), rnv_below(a, vp, m, w, L.band_l(SV.inside(a, w), SV.inside(b, w), hin), hw), rnv_below(b, vp, m, w, L.band_r(SV.inside(a, w), SV.inside(b, w), hin), hw))
+      KA.band_i(SL.below(m, PL.rnv(vp, a)), SL.below(m, PL.rnv(vp, b)), rnv_below(a, vp, m, w, L.band_l(SV.inside(a, w), SV.inside(b, w), hin), hw), rnv_below(b, vp, m, w, L.band_r(SV.inside(a, w), SV.inside(b, w), hin), hw))
     case E.QMul{+a, +b}:
-      kband_i(SL.below(m, PL.rnv(vp, a)), SL.below(m, PL.rnv(vp, b)), rnv_below(a, vp, m, w, L.band_l(SV.inside(a, w), SV.inside(b, w), hin), hw), rnv_below(b, vp, m, w, L.band_r(SV.inside(a, w), SV.inside(b, w), hin), hw))
+      KA.band_i(SL.below(m, PL.rnv(vp, a)), SL.below(m, PL.rnv(vp, b)), rnv_below(a, vp, m, w, L.band_l(SV.inside(a, w), SV.inside(b, w), hin), hw), rnv_below(b, vp, m, w, L.band_r(SV.inside(a, w), SV.inside(b, w), hin), hw))
     case E.QNeg{+a}:
       rnv_below(a, vp, m, w, hin, hw)
 
@@ -1008,7 +997,7 @@ def covb_at.go(+u: Nat, +x: Nat, +t: List<&2, Nat>, +vp: List<&2, Nat>, +o: Nat,
 def covb_at(+u: Nat, xs: List<&2, Nat>, +vp: List<&2, Nat>, +o: Nat, +pars: List<&2, Nat>, hm: {SV.mem(u, xs) == True{} : Bool}, h: {covb(xs, vp, o, pars) == True{} : Bool}) -> {SV.bor(KA.natle(o, ST.pos(u, vp)), SV.mem(ST.pos(u, vp), pars)) == True{} : Bool}:
   match xs:
     case Nil{}:
-      absurd({SV.bor(KA.natle(o, ST.pos(u, vp)), SV.mem(ST.pos(u, vp), pars)) == True{} : Bool}, L.ft(hm))
+      absurd({SV.bor(KA.natle(o, ST.pos(u, vp)), SV.mem(ST.pos(u, vp), pars)) == True{} : Bool}, KA.ft(hm))
     case Con{+x, +t}:
       covb_at.go(u, x, t, vp, o, pars, SV.eq(u, x), {==}, hm, h, p => q => covb_at(u, t, vp, o, pars, p, q))
 
@@ -1038,7 +1027,7 @@ def eb_re(xs: List<&2, Nat>, +vp: List<&2, Nat>, +full: List<&2, E.QExpr>, +m: N
     case Nil{}:
       {==}
     case Con{+x, +t}:
-      kband_i(SL.below(m, PL.rnv(vp, PL.eqget(full, x))), PL.eqs_below(m, PL.reorder(vp, full, t)), rnv_below(PL.eqget(full, x), vp, m, w, ins_get(full, x, w, L.band_l(L.subl(ST.nthl(ST.adj(full), x), w), alladj(t, ST.adj(full), w), hx)), hw), eb_re(t, vp, full, m, w, L.band_r(L.subl(ST.nthl(ST.adj(full), x), w), alladj(t, ST.adj(full), w), hx), hw))
+      KA.band_i(SL.below(m, PL.rnv(vp, PL.eqget(full, x))), PL.eqs_below(m, PL.reorder(vp, full, t)), rnv_below(PL.eqget(full, x), vp, m, w, ins_get(full, x, w, L.band_l(L.subl(ST.nthl(ST.adj(full), x), w), alladj(t, ST.adj(full), w), hx)), hw), eb_re(t, vp, full, m, w, L.band_r(L.subl(ST.nthl(ST.adj(full), x), w), alladj(t, ST.adj(full), w), hx), hw))
 
 def ec_re(xs: List<&2, Nat>, +vp: List<&2, Nat>, +full: List<&2, E.QExpr>, +o: Nat, +pars: List<&2, Nat>, +w: List<&2, Nat>, +hx: {alladj(xs, ST.adj(full), w) == True{} : Bool}, +hw: {covb(w, vp, o, pars) == True{} : Bool}) -> {ecovs(o, pars, PL.reorder(vp, full, xs)) == True{} : Bool}:
   match xs:
@@ -1095,7 +1084,7 @@ def minus_mem.go(+u: Nat, +x: Nat, +t: List<&2, Nat>, +ys: List<&2, Nat>, b: Boo
 def minus_mem(+u: Nat, xs: List<&2, Nat>, +ys: List<&2, Nat>, hx: {SV.mem(u, xs) == True{} : Bool}, +hn: {SV.mem(u, ys) == False{} : Bool}) -> {SV.mem(u, ST.minus(xs, ys)) == True{} : Bool}:
   match xs:
     case Nil{}:
-      absurd({SV.mem(u, Nil{}) == True{} : Bool}, L.ft(hx))
+      absurd({SV.mem(u, Nil{}) == True{} : Bool}, KA.ft(hx))
     case Con{+x, +t}:
       minus_mem.go(u, x, t, ys, SV.eq(u, x), {==}, hx, hn, p => minus_mem(u, t, ys, p, hn))
 
@@ -1104,7 +1093,7 @@ def pok(xs: List<&2, Nat>, +vp: List<&2, Nat>, +o: Nat, +h: {posb(xs, vp, o) == 
     case Nil{}:
       {==}
     case Con{+x, +t}:
-      kband_i(KA.natle(1n+ST.pos(x, vp), o), PL.pars_ok(o, ST.positions(t, vp)), L.band_l(KA.natle(1n+ST.pos(x, vp), o), posb(t, vp, o), h), pok(t, vp, o, L.band_r(KA.natle(1n+ST.pos(x, vp), o), posb(t, vp, o), h)))
+      KA.band_i(KA.natle(1n+ST.pos(x, vp), o), PL.pars_ok(o, ST.positions(t, vp)), L.band_l(KA.natle(1n+ST.pos(x, vp), o), posb(t, vp, o), h), pok(t, vp, o, L.band_r(KA.natle(1n+ST.pos(x, vp), o), posb(t, vp, o), h)))
 
 # One block
 # ---------
@@ -1127,7 +1116,7 @@ def c2_of(+es: List<&2, Nat>, +vs: List<&2, Nat>, +known: List<&2, Nat>, +tl: Li
   %hl : {KA.natle(Nat.add(SV.len(known), SV.len(vs)), _) == True{} : Bool}
   %Equal.sym(List<&2, Nat>, vp, ST.app(known, ST.app(vs, tl)), ev) : {KA.natle(Nat.add(SV.len(known), SV.len(vs)), SV.len(_)) == True{} : Bool}
   %Equal.sym(Nat, SV.len(ST.app(known, ST.app(vs, tl))), Nat.add(SV.len(known), SV.len(ST.app(vs, tl))), len_app(known, ST.app(vs, tl))) : {KA.natle(Nat.add(SV.len(known), SV.len(vs)), _) == True{} : Bool}
-  L.le_add_mono(SV.len(known), SV.len(vs), SV.len(ST.app(vs, tl)), lag(vs, tl))
+  KA.natle_add_mono(SV.len(known), SV.len(vs), SV.len(ST.app(vs, tl)), lag(vs, tl))
 
 def c3_of(+mw: List<&2, Nat>, +known: List<&2, Nat>, +vs: List<&2, Nat>, +tl: List<&2, Nat>, +o: Nat, +vp: List<&2, Nat>, ev: {vp == ST.app(known, ST.app(vs, tl)) : List<&2, Nat>}, hk: {SV.len(known) == o : Nat}, h: {L.subl(mw, known) == True{} : Bool}) -> {PL.pars_ok(o, ST.positions(mw, vp)) == True{} : Bool}:
   %Equal.sym(List<&2, Nat>, vp, ST.app(known, ST.app(vs, tl)), ev) : {PL.pars_ok(o, ST.positions(mw, _)) == True{} : Bool}
@@ -1223,7 +1212,7 @@ def ev_next(+known: List<&2, Nat>, +vs: List<&2, Nat>, +tl: List<&2, Nat>, +vp: 
 def sw_go(bs: List<&2, ST.SB>, +known: List<&2, Nat>, +o: Nat, +vm: List<&2, Maybe<&2, Nat>>, +full: List<&2, E.QExpr>, +vp: List<&2, Nat>, +nv: Nat, +good: List<&2, Nat>, +ev: {vp == ST.app(known, ST.allvars(bs)) : List<&2, Nat>}, +hk: {SV.len(known) == o : Nat}, +hd: {SV.distinct(vp) == True{} : Bool}, +hl: {SV.len(vp) == nv : Nat}, +hc: {vchain(bs, known, ST.adj(full)) == True{} : Bool}, +hlk: {lkb(vm, bs) == True{} : Bool}) -> {swalk(ST.renum.bs(ST.skbs(bs, ST.adj(full), vp), good), PL.reorder(vp, full, ST.alleqs(bs)), o, nv) == True{} : Bool}:
   match bs:
     case Nil{}:
-      L.band_i(KA.nateq(o, nv), True{}, TJ.eq_nateq(o, nv, o_nv(known, o, vp, nv, ev, hk, hl)), {==})
+      L.band_i(KA.nateq(o, nv), True{}, KA.nateq_of(o, nv, o_nv(known, o, vp, nv, ev, hk, hl)), {==})
     case Con{ST.SB{+es, +vs}, +t}:
       +adj = ST.adj(full)
       +tl = ST.allvars(t)

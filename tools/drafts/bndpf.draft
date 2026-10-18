@@ -621,17 +621,6 @@ def deq_refl(a: Nat) -> {DV.eq(a, a) == True{} : Bool}:
     case 1n+i:
       deq_refl(i)
 
-def nateq_ok(a: Nat, b: Nat, h: {KA.nateq(a, b) == True{} : Bool}) -> {a == b : Nat}:
-  match a b:
-    case 0n 0n:
-      {==}
-    case 0n 1n+j:
-      FO.absurd({0n == 1n+j : Nat}, KA.ft(h))
-    case 1n+i 0n:
-      FO.absurd({1n+i == 0n : Nat}, KA.ft(h))
-    case 1n+i 1n+j:
-      Equal.cong(Nat, Nat, x => 1n+x, i, j, nateq_ok(i, j, h))
-
 # w < a: w is not a, a is not w
 def deq_lt(w: Nat, a: Nat, h: {KA.natle(1n+w, a) == True{} : Bool}) -> {DV.eq(w, a) == False{} : Bool}:
   match w a:
@@ -654,34 +643,6 @@ def deq_gt(w: Nat, a: Nat, h: {KA.natle(1n+w, a) == True{} : Bool}) -> {DV.eq(a,
       FO.absurd({DV.eq(0n, 1n+i) == False{} : Bool}, KA.ft(h))
     case 1n+i 1n+j:
       deq_gt(i, j, h)
-
-def natle_trans(a: Nat, b: Nat, +c: Nat, h1: {KA.natle(a, b) == True{} : Bool}, h2: {KA.natle(b, c) == True{} : Bool}) -> {KA.natle(a, c) == True{} : Bool}:
-  match a b c:
-    case 0n b c:
-      {==}
-    case 1n+i 0n c:
-      FO.absurd({KA.natle(1n+i, c) == True{} : Bool}, KA.ft(h1))
-    case 1n+i 1n+j 0n:
-      FO.absurd({KA.natle(1n+i, 0n) == True{} : Bool}, KA.ft(h2))
-    case 1n+i 1n+j 1n+k:
-      natle_trans(i, j, k, h1, h2)
-
-def natle_add_r(a: Nat, +b: Nat) -> {KA.natle(a, Nat.add(a, b)) == True{} : Bool}:
-  match a:
-    case 0n:
-      {==}
-    case 1n+i:
-      natle_add_r(i, b)
-
-# v not below o: o <= v
-def nle_ge(v: Nat, o: Nat, h: {KA.natle(1n+v, o) == False{} : Bool}) -> {KA.natle(o, v) == True{} : Bool}:
-  match v o:
-    case v 0n:
-      {==}
-    case 0n 1n+k:
-      FO.absurd({KA.natle(1n+k, 0n) == True{} : Bool}, KA.ft(Equal.sym(Bool, KA.natle(0n, k), False{}, h)))
-    case 1n+w 1n+k:
-      nle_ge(w, k, h)
 
 # v - o < n, for v < o + n and v not below o
 def natle_minus(o: Nat, v: Nat, +n: Nat, h1: {KA.natle(1n+v, Nat.add(o, n)) == True{} : Bool}, h2: {KA.natle(1n+v, o) == False{} : Bool}) -> {KA.natle(1n+PL.minus(o, v), n) == True{} : Bool}:
@@ -710,14 +671,14 @@ def minus_eq(o: Nat, u: Nat, v: Nat, hu: {KA.natle(1n+u, o) == False{} : Bool}, 
 def pos_eq.go(+u: Nat, +v: Nat, +h: Nat, +t: List<&2, Nat>, bu: Bool, eu: {KA.nateq(u, h) == bu : Bool}, bv: Bool, ev: {KA.nateq(v, h) == bv : Bool}, hv: {SV.bor(bv, SV.mem(v, t)) == True{} : Bool}, ih: {SV.mem(v, t) == True{} : Bool} -> {DV.eq(PL.pos(u, t), PL.pos(v, t)) == DV.eq(u, v) : Bool}) -> {DV.eq(PL.pos.go(bu, PL.pos(u, t)), PL.pos.go(bv, PL.pos(v, t))) == DV.eq(u, v) : Bool}:
   match bu bv:
     case True{} True{}:
-      %Equal.sym(Nat, u, h, nateq_ok(u, h, eu)) : {True{} == DV.eq(_, v) : Bool}
-      %Equal.sym(Nat, v, h, nateq_ok(v, h, ev)) : {True{} == DV.eq(h, _) : Bool}
+      %Equal.sym(Nat, u, h, KA.nateq_ok(u, h, eu)) : {True{} == DV.eq(_, v) : Bool}
+      %Equal.sym(Nat, v, h, KA.nateq_ok(v, h, ev)) : {True{} == DV.eq(h, _) : Bool}
       Equal.sym(Bool, DV.eq(h, h), True{}, deq_refl(h))
     case True{} False{}:
-      %Equal.sym(Nat, u, h, nateq_ok(u, h, eu)) : {False{} == DV.eq(_, v) : Bool}
+      %Equal.sym(Nat, u, h, KA.nateq_ok(u, h, eu)) : {False{} == DV.eq(_, v) : Bool}
       Equal.trans(Bool, False{}, KA.nateq(v, h), DV.eq(h, v), Equal.sym(Bool, KA.nateq(v, h), False{}, ev), nateq_flip(v, h))
     case False{} True{}:
-      %Equal.sym(Nat, v, h, nateq_ok(v, h, ev)) : {False{} == DV.eq(u, _) : Bool}
+      %Equal.sym(Nat, v, h, KA.nateq_ok(v, h, ev)) : {False{} == DV.eq(u, _) : Bool}
       Equal.trans(Bool, False{}, KA.nateq(u, h), DV.eq(u, h), Equal.sym(Bool, KA.nateq(u, h), False{}, eu), Equal.sym(Bool, DV.eq(u, h), KA.nateq(u, h), deq_nateq(u, h)))
     case False{} False{}:
       ih(hv)
@@ -768,8 +729,8 @@ def loc_eq.go(+o: Nat, +n: Nat, +pars: List<&2, Nat>, +u: Nat, +v: Nat, b: Bool,
   match b:
     case True{}:
       Equal.trans(Bool, DV.eq(Nat.add(n, PL.pos(u, pars)), PL.minus(o, v)), False{}, DV.eq(u, v),
-        deq_gt(PL.minus(o, v), Nat.add(n, PL.pos(u, pars)), natle_trans(1n+PL.minus(o, v), n, Nat.add(n, PL.pos(u, pars)), natle_minus(o, v, n, hv2, hv1), natle_add_r(n, PL.pos(u, pars)))),
-        Equal.sym(Bool, DV.eq(u, v), False{}, deq_lt(u, v, natle_trans(1n+u, o, v, eb, nle_ge(v, o, hv1)))))
+        deq_gt(PL.minus(o, v), Nat.add(n, PL.pos(u, pars)), KA.natle_trans(1n+PL.minus(o, v), n, Nat.add(n, PL.pos(u, pars)), natle_minus(o, v, n, hv2, hv1), KA.natle_add_r(n, PL.pos(u, pars)))),
+        Equal.sym(Bool, DV.eq(u, v), False{}, deq_lt(u, v, KA.natle_trans(1n+u, o, v, eb, KA.natle_of_nlt(v, o, hv1)))))
     case False{}:
       minus_eq(o, u, v, eb, hv1)
 

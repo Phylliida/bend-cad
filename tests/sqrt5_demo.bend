@@ -26,6 +26,7 @@ import ../lib/banach.bend as BA
 import ../lib/cert.bend as CK
 import ../lib/certpf.bend as CP
 import ./cc_data.bend as D
+import ../lib/nat.bend as LN
 
 # The block's two equations at (a, b), as integer expressions in a, b and
 # w = 1/1 (how a constant n/1 reads in F)
@@ -274,11 +275,11 @@ def root.y(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +c: C.Cert<K>, +hk: Hk(~K, 
     case Nil{}:
       FO.absurd(Root5(~F), FV.zero_ne(1n, blen(~K, ~F, ~H, c, hk_yc(~K, c, hk), Nil{}, h)))
     case Con{+a, Nil{}}:
-      FO.absurd(Root5(~F), FV.zero_ne(0n, FV.succ_inj(0n, 1n, blen(~K, ~F, ~H, c, hk_yc(~K, c, hk), [a], h))))
+      FO.absurd(Root5(~F), FV.zero_ne(0n, LN.succ_inj(0n, 1n, blen(~K, ~F, ~H, c, hk_yc(~K, c, hk), [a], h))))
     case Con{+a, Con{+b, Nil{}}}:
       root.ab(~K, ~F, ~H, c, hk, a, b, h)
     case Con{+a, Con{+b, Con{+x, +rest}}}:
-      FO.absurd(Root5(~F), FV.succ_ne(M.len(~F, rest), FV.succ_inj(1n+M.len(~F, rest), 0n, FV.succ_inj(2n+M.len(~F, rest), 1n, blen(~K, ~F, ~H, c, hk_yc(~K, c, hk), Con{a, Con{b, Con{x, rest}}}, h)))))
+      FO.absurd(Root5(~F), FV.succ_ne(M.len(~F, rest), LN.succ_inj(1n+M.len(~F, rest), 0n, LN.succ_inj(2n+M.len(~F, rest), 1n, blen(~K, ~F, ~H, c, hk_yc(~K, c, hk), Con{a, Con{b, Con{x, rest}}}, h)))))
 
 def root.ex(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +c: C.Cert<K>, +hk: Hk(~K, c), s: Sigma<&2, &2, M.Vec(~F), y => Zero(~K, ~F, ~H, c, y)>) -> Root5(~F):
   (y, h) = s

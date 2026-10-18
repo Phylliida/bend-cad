@@ -149,3 +149,12 @@ def add_cancel(c: Nat, -x: Nat, -y: Nat, e: {Nat.add(c, x) == Nat.add(c, y) : Na
       e
     case 1n+k:
       add_cancel(k, x, y, Equal.cong(Nat, Nat, n => pred(n), 1n+Nat.add(k, x), 1n+Nat.add(k, y), e))
+
+def succ_inj(+a: Nat, +b: Nat, e: {1n+a == 1n+b : Nat}) -> {a == b : Nat}:
+  %e : {a == pred(_) : Nat}
+  {==}
+
+# u + (1 + k) = c: (1 + u) + k = c
+def succ_add(+u: Nat, +k: Nat, +c: Nat, e: {Nat.add(u, 1n+k) == c : Nat}) -> {Nat.add(1n+u, k) == c : Nat}:
+  %Equal.sym(Nat, 1n+Nat.add(u, k), Nat.add(u, 1n+k), add_succ(u, k)) : {_ == c : Nat}
+  e

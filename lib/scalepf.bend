@@ -53,7 +53,7 @@ def absurd(-A: Type, x: Empty) -> A:
 
 def le_of_Le.go(+a: Nat, +b: Nat, +k: Nat, e: {Nat.add(a, k) == b : Nat}) -> {KA.natle(a, b) == True{} : Bool}:
   %e : {KA.natle(a, _) == True{} : Bool}
-  L.le_add_r(a, k)
+  KA.natle_add_r(a, k)
 
 def le_of_Le(+a: Nat, +b: Nat, h: SB.Le(a, b)) -> {KA.natle(a, b) == True{} : Bool}:
   match h:
@@ -70,13 +70,13 @@ def natle_s(p: Nat) -> {KA.natle(p, 1n+p) == True{} : Bool}:
 # p/2 <= p + 1
 def div2_le(+p: Nat) -> {KA.natle(Nat.div(p, 2n), 1n+p) == True{} : Bool}:
   +q = Nat.div(p, 2n)
-  L.le_trans(q, p, 1n+p, L.le_trans(q, Nat.mul(q, 2n), p, (%LN.mul_succ(q, 1n) : {KA.natle(q, _) == True{} : Bool}
-    L.le_add_r(q, Nat.mul(q, 1n))), le_of_Le(Nat.mul(q, 2n), p, NO.divb_le(p, 1n))), natle_s(p))
+  KA.natle_trans(q, p, 1n+p, KA.natle_trans(q, Nat.mul(q, 2n), p, (%LN.mul_succ(q, 1n) : {KA.natle(q, _) == True{} : Bool}
+    KA.natle_add_r(q, Nat.mul(q, 1n))), le_of_Le(Nat.mul(q, 2n), p, NO.divb_le(p, 1n))), natle_s(p))
 
 # p + 1 <= p + 32
 def wb_le(+p: Nat) -> {KA.natle(1n+p, NU.wbits(p)) == True{} : Bool}:
   %LN.add_succ(p, 31n) : {KA.natle(1n+p, _) == True{} : Bool}
-  L.le_add_r(p, 31n)
+  KA.natle_add_r(p, 31n)
 
 
 # 2^-b <= 2^-a for a <= b
@@ -302,7 +302,7 @@ def asum_nn(~F: O.OField, +n: Nat, +g: O.C(F), +bb: O.C(F), +hg: O.le(~F, O.zero
 def ain.go(~F: O.OField, +n: Nat, +g: O.C(F), +bb: O.C(F), +hg: O.le(~F, O.zero(F), g), +hb: O.le(~F, O.zero(F), bb), +i: Nat, +j: Nat, b: Bool, e: {KA.nateq(i, j) == b : Bool}, hi: {KA.natle(1n+i, 1n+j) == True{} : Bool}, ih: {KA.natle(1n+i, j) == True{} : Bool} -> O.le(~F, DG.acoef(~F, n, bb, i, DG.kst(~F, n, g, bb, i)), asum(~F, n, g, bb, j))) -> O.le(~F, DG.acoef(~F, n, bb, i, DG.kst(~F, n, g, bb, i)), asum(~F, n, g, bb, 1n+j)):
   match b:
     case True{}:
-      %Equal.sym(Nat, i, j, GJ.nateq_ok(i, j, e)) : O.le(~F, DG.acoef(~F, n, bb, _, DG.kst(~F, n, g, bb, _)), asum(~F, n, g, bb, 1n+j))
+      %Equal.sym(Nat, i, j, KA.nateq_ok(i, j, e)) : O.le(~F, DG.acoef(~F, n, bb, _, DG.kst(~F, n, g, bb, _)), asum(~F, n, g, bb, 1n+j))
       NW.le_addl(~F, asum(~F, n, g, bb, j), DG.acoef(~F, n, bb, j, DG.kst(~F, n, g, bb, j)), asum_nn(~F, n, g, bb, hg, hb, j))
     case False{}:
       DM.le_trans(~F, DG.acoef(~F, n, bb, i, DG.kst(~F, n, g, bb, i)), asum(~F, n, g, bb, j), asum(~F, n, g, bb, 1n+j), ih(GJ.le_ne(i, j, hi, e)), NW.le_addr(~F, asum(~F, n, g, bb, j), DG.acoef(~F, n, bb, j, DG.kst(~F, n, g, bb, j)), acoef_nn(~F, n, g, bb, hg, hb, j)))
@@ -470,7 +470,7 @@ def col_sm(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +m: Nat, +b: O.C(F), 
   DM.le_trans(~F, O.mul(F, M.ofd(~F, S.D{S.Zpos{S.XH{}}, NU.wbits(p)}), a), O.mul(F, AP.vbit(~F, Nat.div(p, 2n)), asum(~F, n, ms, NW.bt2(~F, b), n)), O.one(F), DM.le_trans(~F, O.mul(F, M.ofd(~F, S.D{S.Zpos{S.XH{}}, NU.wbits(p)}), a), O.mul(F, AP.vbit(~F, Nat.div(p, 2n)), a), O.mul(F, AP.vbit(~F, Nat.div(p, 2n)), asum(~F, n, ms, NW.bt2(~F, b), n)), FV.mul_le_r(~F, M.ofd(~F, S.D{S.Zpos{S.XH{}}, NU.wbits(p)}), AP.vbit(~F, Nat.div(p, 2n)), a, acoef_nn(~F, n, ms, NW.bt2(~F, b), hm0, hb2, i), DM.le_trans(~F, M.ofd(~F, S.D{S.Zpos{S.XH{}}, NU.wbits(p)}), NW.hnw(~F, p), AP.vbit(~F, Nat.div(p, 2n)), u_le_h(~F, p), h_le_t(~F, p))), FV.mul_le(~F, AP.vbit(~F, Nat.div(p, 2n)), a, asum(~F, n, ms, NW.bt2(~F, b), n), t_nn(~F, p), ain(~F, n, ms, NW.bt2(~F, b), hm0, hb2, n, i, hi))), FO.lt_le(~F, O.mul(F, AP.vbit(~F, Nat.div(p, 2n)), asum(~F, n, ms, NW.bt2(~F, b), n)), O.one(F), tq_as(~F, ~H, n, m, b, lam, ms, tt, hb0, hl0, hm0, htt, p, hsq)))
 
 def hsm_sc(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +m: Nat, +b: O.C(F), +lam: O.C(F), +ms: O.C(F), +d: O.C(F), +rho: O.C(F), +p: Nat, +hb0: O.le(~F, O.zero(F), b), +hl0: O.le(~F, O.zero(F), lam), +hm0: O.le(~F, O.zero(F), ms), +hd0: O.le(~F, O.zero(F), d), +hr0: O.le(~F, O.zero(F), rho), +tt: O.C(F), +htt: O.le(~F, O.zero(F), tt), +hdh: O.le(~F, d, NW.hnw(~F, p)), +hrh: O.le(~F, rho, O.mul(F, NW.hnw(~F, p), tt)), +hsq: O.lt(F, O.mul(F, AP.vbit(~F, Nat.div(p, 2n)), qblk(~F, n, m, b, lam, ms, tt)), O.one(F))) -> AP.small(~F, n, ms, NW.bt2(~F, b), NU.wbits(p)):
-  GJ.all_mk(~n, ~(q => O.le(~F, O.mul(F, M.ofd(~F, S.D{S.Zpos{S.XH{}}, NU.wbits(p)}), DG.acoef(~F, n, NW.bt2(~F, b), q, DG.kst(~F, n, ms, NW.bt2(~F, b), q))), O.one(F))), ~(i => hi => col_sm(~F, ~H, n, m, b, lam, ms, d, rho, p, hb0, hl0, hm0, hd0, hr0, tt, htt, hdh, hrh, hsq, i, hi)), n, GJ.le_refl(n))
+  GJ.all_mk(~n, ~(q => O.le(~F, O.mul(F, M.ofd(~F, S.D{S.Zpos{S.XH{}}, NU.wbits(p)}), DG.acoef(~F, n, NW.bt2(~F, b), q, DG.kst(~F, n, ms, NW.bt2(~F, b), q))), O.one(F))), ~(i => hi => col_sm(~F, ~H, n, m, b, lam, ms, d, rho, p, hb0, hl0, hm0, hd0, hr0, tt, htt, hdh, hrh, hsq, i, hi)), n, KA.natle_refl(n))
 
 # Results
 # -------

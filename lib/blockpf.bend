@@ -39,6 +39,7 @@ import ./real.bend as RL
 import ./apxpf.bend as AP
 import ./nwtpf.bend as NW
 import ./radpf.bend as RD
+import ./nat.bend as LN
 
 
 # The constants
@@ -362,7 +363,7 @@ def rbnd_vall(~F: O.OField, v: M.Vec(~F), +n: Nat, +t: O.C(F), lv: {M.len(~F, v)
       FO.absurd(BX.rbnd(~F, Con{a, as}, RD.frep(~F, 0n, t)), FV.succ_ne(M.len(~F, as), lv))
     case Con{+a, +as} 1n++k:
       (h1, h2) = h
-      (h1, rbnd_vall(~F, as, k, t, FV.succ_inj(M.len(~F, as), k, lv), h2))
+      (h1, rbnd_vall(~F, as, k, t, LN.succ_inj(M.len(~F, as), k, lv), h2))
 
 
 # the search's radius makes the certificate

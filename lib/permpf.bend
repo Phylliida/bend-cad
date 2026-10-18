@@ -98,7 +98,7 @@ def nil_of_subl(xs: List<&2, Nat>, h: {L.subl(xs, Nil{}) == True{} : Bool}) -> {
     case Nil{}:
       {==}
     case Con{+y, +t}:
-      absurd({Con{y, t} == Nil{} : List<&2, Nat>}, L.ft(L.subl_hd(y, t, Nil{}, h)))
+      absurd({Con{y, t} == Nil{} : List<&2, Nat>}, KA.ft(L.subl_hd(y, t, Nil{}, h)))
 
 def notin_rw(+y: Nat, +h: Nat, +t: List<&2, Nat>, eh: {y == h : Nat}, hn: {SV.mem(y, t) == False{} : Bool}) -> {SV.mem(h, t) == False{} : Bool}:
   %eh : {SV.mem(_, t) == False{} : Bool}
@@ -169,7 +169,7 @@ def dsum_rem.go(~F: O.OField, +x: M.Vec(~F), +e: E.QExpr, +w: M.Vec(~F), +v: Lis
 def dsum_rem(~F: O.OField, +x: M.Vec(~F), +e: E.QExpr, +w: M.Vec(~F), +v: List<&2, Nat>, b: List<&2, Nat>, +h: Nat, hm: {SV.mem(h, b) == True{} : Bool}, +hd: {SV.distinct(b) == True{} : Bool}) -> {dsum(~F, x, e, w, v, b) == O.add(F, dt(~F, x, e, w, v, h), dsum(~F, x, e, w, v, L.rem(h, b))) : O.C(F)}:
   match b:
     case Nil{}:
-      absurd({O.zero(F) == O.add(F, dt(~F, x, e, w, v, h), O.zero(F)) : O.C(F)}, L.ft(hm))
+      absurd({O.zero(F) == O.add(F, dt(~F, x, e, w, v, h), O.zero(F)) : O.C(F)}, KA.ft(hm))
     case Con{+y, +t}:
       dsum_rem.go(~F, x, e, w, v, y, t, h, SV.eq(y, h), {==}, hm, L.dist_hd(y, t, hd), p => dsum_rem(~F, x, e, w, v, t, h, p, L.dist_tl(y, t, hd)))
 
@@ -198,7 +198,7 @@ def reix_cons(~F: O.OField, +a: O.C(F), +ws: M.Vec(~F), +v0: Nat, +t: List<&2, N
       {==}
 
 def len_zero(~F: O.OField, +a: O.C(F), +ws: M.Vec(~F), h: {1n+M.len(~F, ws) == 0n : Nat}) -> Empty:
-  L.ft(D.eq_of(1n+M.len(~F, ws), 0n, h))
+  KA.ft(D.eq_of(1n+M.len(~F, ws), 0n, h))
 
 # v distinct, w as long: reading w through v at v is w
 def reix_self(~F: O.OField, w: M.Vec(~F), v: List<&2, Nat>, +hd: {SV.distinct(v) == True{} : Bool}, hl: {M.len(~F, w) == SV.len(v) : Nat}) -> {reix(~F, w, v, v) == w : M.Vec(~F)}:
@@ -206,13 +206,13 @@ def reix_self(~F: O.OField, w: M.Vec(~F), v: List<&2, Nat>, +hd: {SV.distinct(v)
     case Nil{} Nil{}:
       {==}
     case Nil{} Con{+v0, +t}:
-      absurd({reix(~F, Nil{}, Con{v0, t}, Con{v0, t}) == Nil{} : M.Vec(~F)}, L.ft(D.eq_of(0n, 1n+SV.len(t), hl)))
+      absurd({reix(~F, Nil{}, Con{v0, t}, Con{v0, t}) == Nil{} : M.Vec(~F)}, KA.ft(D.eq_of(0n, 1n+SV.len(t), hl)))
     case Con{+a, +ws} Nil{}:
       absurd({Nil{} == Con{a, ws} : M.Vec(~F)}, len_zero(~F, a, ws, hl))
     case Con{+a, +ws} Con{+v0, +t}:
-      %Equal.sym(Bool, KA.nateq(v0, v0), True{}, TJ.nateq_refl(v0)) : {Con{O.lookup(~F, Con{a, ws}, ST.pos.go(_, ST.pos(v0, t))), reix(~F, Con{a, ws}, Con{v0, t}, t)} == Con{a, ws} : M.Vec(~F)}
+      %Equal.sym(Bool, KA.nateq(v0, v0), True{}, KA.nateq_refl(v0)) : {Con{O.lookup(~F, Con{a, ws}, ST.pos.go(_, ST.pos(v0, t))), reix(~F, Con{a, ws}, Con{v0, t}, t)} == Con{a, ws} : M.Vec(~F)}
       %Equal.sym(M.Vec(~F), reix(~F, Con{a, ws}, Con{v0, t}, t), reix(~F, ws, t, t), reix_cons(~F, a, ws, v0, t, t, L.dist_hd(v0, t, hd))) : {Con{a, _} == Con{a, ws} : M.Vec(~F)}
-      %Equal.sym(M.Vec(~F), reix(~F, ws, t, t), ws, reix_self(~F, ws, t, L.dist_tl(v0, t, hd), KP.succ_inj(M.len(~F, ws), SV.len(t), hl))) : {Con{a, _} == Con{a, ws} : M.Vec(~F)}
+      %Equal.sym(M.Vec(~F), reix(~F, ws, t, t), ws, reix_self(~F, ws, t, L.dist_tl(v0, t, hd), LN.succ_inj(M.len(~F, ws), SV.len(t), hl))) : {Con{a, _} == Con{a, ws} : M.Vec(~F)}
       {==}
 
 # Zero vectors
@@ -236,7 +236,7 @@ def rows_zero.go(~F: O.OField, +x: M.Vec(~F), +full: List<&2, E.QExpr>, +w: M.Ve
 def rows_zero(~F: O.OField, +x: M.Vec(~F), +full: List<&2, E.QExpr>, +w: M.Vec(~F), +v: List<&2, Nat>, +us: List<&2, Nat>, xs: List<&2, Nat>, h: {rowsum(~F, x, full, w, v, us, xs) == GJ.zeros(~F, SV.len(xs)) : M.Vec(~F)}, +y: Nat, hm: {SV.mem(y, xs) == True{} : Bool}) -> {dsum(~F, x, PL.eqget(full, y), w, v, us) == O.zero(F) : O.C(F)}:
   match xs:
     case Nil{}:
-      absurd({dsum(~F, x, PL.eqget(full, y), w, v, us) == O.zero(F) : O.C(F)}, L.ft(hm))
+      absurd({dsum(~F, x, PL.eqget(full, y), w, v, us) == O.zero(F) : O.C(F)}, KA.ft(hm))
     case Con{+j, +t}:
       rows_zero.go(~F, x, full, w, v, us, j, t, y, SV.eq(y, j), {==}, hm, h, p => q => rows_zero(~F, x, full, w, v, us, t, q, y, p))
 
@@ -252,7 +252,7 @@ def reix_zero.go(~F: O.OField, +w: M.Vec(~F), +v: List<&2, Nat>, +u: Nat, +t: Li
 def reix_zero(~F: O.OField, +w: M.Vec(~F), +v: List<&2, Nat>, us: List<&2, Nat>, h: {reix(~F, w, v, us) == GJ.zeros(~F, SV.len(us)) : M.Vec(~F)}, +y: Nat, hm: {SV.mem(y, us) == True{} : Bool}) -> {O.lookup(~F, w, ST.pos(y, v)) == O.zero(F) : O.C(F)}:
   match us:
     case Nil{}:
-      absurd({O.lookup(~F, w, ST.pos(y, v)) == O.zero(F) : O.C(F)}, L.ft(hm))
+      absurd({O.lookup(~F, w, ST.pos(y, v)) == O.zero(F) : O.C(F)}, KA.ft(hm))
     case Con{+u, +t}:
       reix_zero.go(~F, w, v, u, t, y, SV.eq(y, u), {==}, hm, h, p => q => reix_zero(~F, w, v, t, q, y, p))
 
@@ -396,14 +396,14 @@ def fge_k(c: Bool, +k: Nat, +u: Nat, +r: List<&2, Nat>, e: {SV.eq(u, k) == c : B
   match c:
     case True{}:
       %Equal.sym(Nat, u, k, L.eq_ok(u, k, e)) : {KA.natle(k, _) == True{} : Bool}
-      L.le_refl(k)
+      KA.natle_refl(k)
     case False{}:
-      L.le_pred(k, u, ih(h))
+      KA.natle_pred(k, u, ih(h))
 
 def fge_b(b: Bool, +k: Nat, +u: Nat, +r: List<&2, Nat>, h: {SV.mem(u, SV.free.go(b, k, r)) == True{} : Bool}, ih: {SV.mem(u, r) == True{} : Bool} -> {KA.natle(1n+k, u) == True{} : Bool}) -> {KA.natle(k, u) == True{} : Bool}:
   match b:
     case True{}:
-      L.le_pred(k, u, ih(h))
+      KA.natle_pred(k, u, ih(h))
     case False{}:
       fge_k(SV.eq(u, k), k, u, r, {==}, h, ih)
 
@@ -411,7 +411,7 @@ def fge_b(b: Bool, +k: Nat, +u: Nat, +r: List<&2, Nat>, h: {SV.mem(u, SV.free.go
 def free_ge(n: Nat, +k: Nat, +pins: List<&2, Nat>, +u: Nat, h: {SV.mem(u, SV.free(n, k, pins)) == True{} : Bool}) -> {KA.natle(k, u) == True{} : Bool}:
   match n:
     case 0n:
-      absurd({KA.natle(k, u) == True{} : Bool}, L.ft(h))
+      absurd({KA.natle(k, u) == True{} : Bool}, KA.ft(h))
     case 1n++m:
       fge_b(SV.mem(k, pins), k, u, SV.free(m, 1n+k, pins), h, p => free_ge(m, 1n+k, pins, u, p))
 
@@ -419,7 +419,7 @@ def flt_k(c: Bool, +k: Nat, +m: Nat, +u: Nat, +r: List<&2, Nat>, e: {SV.eq(u, k)
   match c:
     case True{}:
       %Equal.sym(Nat, u, k, L.eq_ok(u, k, e)) : {KA.natle(1n+_, 1n+Nat.add(k, m)) == True{} : Bool}
-      L.le_add_r(k, m)
+      KA.natle_add_r(k, m)
     case False{}:
       ih(h)
 
@@ -434,7 +434,7 @@ def flt_b(b: Bool, +k: Nat, +m: Nat, +u: Nat, +r: List<&2, Nat>, h: {SV.mem(u, S
 def free_lt(n: Nat, +k: Nat, +pins: List<&2, Nat>, +u: Nat, h: {SV.mem(u, SV.free(n, k, pins)) == True{} : Bool}) -> {KA.natle(1n+u, Nat.add(k, n)) == True{} : Bool}:
   match n:
     case 0n:
-      absurd({KA.natle(1n+u, Nat.add(k, 0n)) == True{} : Bool}, L.ft(h))
+      absurd({KA.natle(1n+u, Nat.add(k, 0n)) == True{} : Bool}, KA.ft(h))
     case 1n++m:
       %LN.add_succ(k, m) : {KA.natle(1n+u, _) == True{} : Bool}
       flt_b(SV.mem(k, pins), k, m, u, SV.free(m, 1n+k, pins), h, p => free_lt(m, 1n+k, pins, u, p))
@@ -458,14 +458,14 @@ def fnp_b(b: Bool, +k: Nat, +u: Nat, +r: List<&2, Nat>, +pins: List<&2, Nat>, eb
 def free_np(n: Nat, +k: Nat, +pins: List<&2, Nat>, +u: Nat, h: {SV.mem(u, SV.free(n, k, pins)) == True{} : Bool}) -> {SV.mem(u, pins) == False{} : Bool}:
   match n:
     case 0n:
-      absurd({SV.mem(u, pins) == False{} : Bool}, L.ft(h))
+      absurd({SV.mem(u, pins) == False{} : Bool}, KA.ft(h))
     case 1n++m:
       fnp_b(SV.mem(k, pins), k, u, SV.free(m, 1n+k, pins), pins, {==}, h, p => free_np(m, 1n+k, pins, u, p))
 
 def free_new(m: Nat, +k: Nat, +pins: List<&2, Nat>, c: Bool, e: {SV.mem(k, SV.free(m, 1n+k, pins)) == c : Bool}) -> {c == False{} : Bool}:
   match c:
     case True{}:
-      absurd({True{} == False{} : Bool}, L.lt_irr(k, free_ge(m, 1n+k, pins, k, e)))
+      absurd({True{} == False{} : Bool}, KA.natlt_irr(k, free_ge(m, 1n+k, pins, k, e)))
     case False{}:
       {==}
 
@@ -499,7 +499,7 @@ def fmem_add(+k: Nat, +m: Nat, +u: Nat, h: {KA.natle(1n+u, Nat.add(k, 1n+m)) == 
   h
 
 def fmem_zero(+k: Nat, +u: Nat, h1: {KA.natle(k, u) == True{} : Bool}, h2: {KA.natle(1n+u, Nat.add(k, 0n)) == True{} : Bool}) -> Empty:
-  L.lt_irr(u, L.le_trans(1n+u, k, u, (%Equal.sym(Nat, k, Nat.add(k, 0n), LN.add_zero(k)) : {KA.natle(1n+u, _) == True{} : Bool}
+  KA.natlt_irr(u, KA.natle_trans(1n+u, k, u, (%Equal.sym(Nat, k, Nat.add(k, 0n), LN.add_zero(k)) : {KA.natle(1n+u, _) == True{} : Bool}
     h2), h1))
 
 # k <= u < k + n, u not a pin: u is free

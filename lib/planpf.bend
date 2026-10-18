@@ -128,7 +128,7 @@ def natle_minus(o: Nat, v: Nat, +n: Nat, h1: {KA.natle(1n+v, Nat.add(o, n)) == T
 def pos_nth.go(+v: Nat, +h: Nat, +t: List<&2, Nat>, b: Bool, e: {KA.nateq(v, h) == b : Bool}, hh: {KA.natle(1n+PL.pos.go(b, PL.pos(v, t)), 1n+PL.nlen(t)) == True{} : Bool}, ih: {KA.natle(1n+PL.pos(v, t), PL.nlen(t)) == True{} : Bool} -> {PL.nthn(t, PL.pos(v, t)) == v : Nat}) -> {PL.nthn(Con{h, t}, PL.pos.go(b, PL.pos(v, t))) == v : Nat}:
   match b:
     case True{}:
-      Equal.sym(Nat, v, h, CP.nateq_ok(v, h, e))
+      Equal.sym(Nat, v, h, KA.nateq_ok(v, h, e))
     case False{}:
       ih(hh)
 
@@ -172,10 +172,6 @@ def look_rw(~F: O.OField, +x: M.Vec(~F), +i: Nat, +j: Nat, e: {i == j : Nat}) ->
   %e : {O.lookup(~F, x, i) == O.lookup(~F, x, _) : O.C(F)}
   {==}
 
-def natle_rw(+a: Nat, +b: Nat, +b2: Nat, e: {b == b2 : Nat}, h: {KA.natle(a, b) == True{} : Bool}) -> {KA.natle(a, b2) == True{} : Bool}:
-  %e : {KA.natle(a, _) == True{} : Bool}
-  h
-
 def natlef_rw(+a: Nat, +b: Nat, +b2: Nat, e: {b == b2 : Nat}, h: {KA.natle(a, b) == False{} : Bool}) -> {KA.natle(a, b2) == False{} : Bool}:
   %e : {KA.natle(a, _) == False{} : Bool}
   h
@@ -192,7 +188,7 @@ def subst.par(~F: O.OField, +o: Nat, +n: Nat, +pars: List<&2, Nat>, +p: M.Vec(~F
   +e1 = la_r(~F, y, z, Nat.add(n, k), natlef_rw(1n+Nat.add(n, k), n, M.len(~F, y), Equal.sym(Nat, M.len(~F, y), n, hy), natle_add_f(n, k)))
   +e2 = Equal.trans(Nat, PL.minus(M.len(~F, y), Nat.add(n, k)), PL.minus(n, Nat.add(n, k)), k, mrw(M.len(~F, y), n, Nat.add(n, k), hy), minus_add(n, k))
   +e3 = Equal.trans(O.C(F), O.lookup(~F, z, k), O.lookup(~F, p, PL.nthn(pars, k)), O.lookup(~F, p, v), look_zmap(~F, p, pars, k, hk), look_rw(~F, p, PL.nthn(pars, k), v, pos_nth(v, pars, hk)))
-  +e4 = Equal.sym(O.C(F), O.lookup(~F, C.app(~F, p, y), v), O.lookup(~F, p, v), la_l(~F, p, y, v, natle_rw(1n+v, o, M.len(~F, p), Equal.sym(Nat, M.len(~F, p), o, hp), hv)))
+  +e4 = Equal.sym(O.C(F), O.lookup(~F, C.app(~F, p, y), v), O.lookup(~F, p, v), la_l(~F, p, y, v, KA.natle_rw(1n+v, o, M.len(~F, p), Equal.sym(Nat, M.len(~F, p), o, hp), hv)))
   Equal.trans(O.C(F), O.lookup(~F, C.app(~F, y, z), Nat.add(n, k)), O.lookup(~F, z, PL.minus(M.len(~F, y), Nat.add(n, k))), O.lookup(~F, C.app(~F, p, y), v), e1,
     Equal.trans(O.C(F), O.lookup(~F, z, PL.minus(M.len(~F, y), Nat.add(n, k))), O.lookup(~F, z, k), O.lookup(~F, C.app(~F, p, y), v), look_rw(~F, z, PL.minus(M.len(~F, y), Nat.add(n, k)), k, e2),
       Equal.trans(O.C(F), O.lookup(~F, z, k), O.lookup(~F, p, v), O.lookup(~F, C.app(~F, p, y), v), e3, e4)))
@@ -200,7 +196,7 @@ def subst.par(~F: O.OField, +o: Nat, +n: Nat, +pars: List<&2, Nat>, +p: M.Vec(~F
 # an unknown: lookup at v - o in (y ++ z) is x_v
 def subst.unk(~F: O.OField, +o: Nat, +n: Nat, +pars: List<&2, Nat>, +p: M.Vec(~F), +y: M.Vec(~F), +v: Nat, +hp: {M.len(~F, p) == o : Nat}, +hy: {M.len(~F, y) == n : Nat}, +hv: {KA.natle(1n+v, o) == False{} : Bool}, hb: {KA.natle(1n+v, Nat.add(o, n)) == True{} : Bool}) -> {O.lookup(~F, C.app(~F, y, zmap(~F, p, pars)), PL.minus(o, v)) == O.lookup(~F, C.app(~F, p, y), v) : O.C(F)}:
   +z = zmap(~F, p, pars)
-  +e1 = la_l(~F, y, z, PL.minus(o, v), natle_rw(1n+PL.minus(o, v), n, M.len(~F, y), Equal.sym(Nat, M.len(~F, y), n, hy), natle_minus(o, v, n, hb, hv)))
+  +e1 = la_l(~F, y, z, PL.minus(o, v), KA.natle_rw(1n+PL.minus(o, v), n, M.len(~F, y), Equal.sym(Nat, M.len(~F, y), n, hy), natle_minus(o, v, n, hb, hv)))
   +e2 = la_r(~F, p, y, v, natlef_rw(1n+v, o, M.len(~F, p), Equal.sym(Nat, M.len(~F, p), o, hp), hv))
   Equal.trans(O.C(F), O.lookup(~F, C.app(~F, y, z), PL.minus(o, v)), O.lookup(~F, y, PL.minus(o, v)), O.lookup(~F, C.app(~F, p, y), v), e1, Equal.sym(O.C(F), O.lookup(~F, C.app(~F, p, y), v), O.lookup(~F, y, PL.minus(o, v)), Equal.trans(O.C(F), O.lookup(~F, C.app(~F, p, y), v), O.lookup(~F, y, PL.minus(M.len(~F, p), v)), O.lookup(~F, y, PL.minus(o, v)), e2, look_rw(~F, y, PL.minus(M.len(~F, p), v), PL.minus(o, v), mrw(M.len(~F, p), o, v, hp)))))
 
@@ -363,7 +359,7 @@ def rbnd_app(~F: O.OField, d1: M.Vec(~F), +d2: M.Vec(~F), r1: M.Vec(~F), +r2: M.
       FO.absurd(BX.rbnd(~F, Con{a, C.app(~F, ds, d2)}, r2), FV.succ_ne(M.len(~F, ds), hl))
     case Con{+a, +ds} Con{+s, +rs}:
       (ha, hs) = h1
-      (ha, rbnd_app(~F, ds, d2, rs, r2, hs, h2, FV.succ_inj(M.len(~F, ds), M.len(~F, rs), hl)))
+      (ha, rbnd_app(~F, ds, d2, rs, r2, hs, h2, LN.succ_inj(M.len(~F, ds), M.len(~F, rs), hl)))
 
 # and back
 def rbnd_l(~F: O.OField, d1: M.Vec(~F), +d2: M.Vec(~F), r1: M.Vec(~F), +r2: M.Vec(~F), +h: BX.rbnd(~F, C.app(~F, d1, d2), C.app(~F, r1, r2)), hl: {M.len(~F, d1) == M.len(~F, r1) : Nat}) -> BX.rbnd(~F, d1, r1):
@@ -376,7 +372,7 @@ def rbnd_l(~F: O.OField, d1: M.Vec(~F), +d2: M.Vec(~F), r1: M.Vec(~F), +r2: M.Ve
       FO.absurd(BX.rbnd(~F, Con{a, ds}, Nil{}), FV.succ_ne(M.len(~F, ds), hl))
     case Con{+a, +ds} Con{+s, +rs}:
       (ha, hs) = h
-      (ha, rbnd_l(~F, ds, d2, rs, r2, hs, FV.succ_inj(M.len(~F, ds), M.len(~F, rs), hl)))
+      (ha, rbnd_l(~F, ds, d2, rs, r2, hs, LN.succ_inj(M.len(~F, ds), M.len(~F, rs), hl)))
 
 def rbnd_r(~F: O.OField, d1: M.Vec(~F), +d2: M.Vec(~F), r1: M.Vec(~F), +r2: M.Vec(~F), +h: BX.rbnd(~F, C.app(~F, d1, d2), C.app(~F, r1, r2)), hl: {M.len(~F, d1) == M.len(~F, r1) : Nat}) -> BX.rbnd(~F, d2, r2):
   match d1 r1:
@@ -388,7 +384,7 @@ def rbnd_r(~F: O.OField, d1: M.Vec(~F), +d2: M.Vec(~F), r1: M.Vec(~F), +r2: M.Ve
       FO.absurd(BX.rbnd(~F, d2, r2), FV.succ_ne(M.len(~F, ds), hl))
     case Con{+a, +ds} Con{+s, +rs}:
       (ha, hs) = h
-      rbnd_r(~F, ds, d2, rs, r2, hs, FV.succ_inj(M.len(~F, ds), M.len(~F, rs), hl))
+      rbnd_r(~F, ds, d2, rs, r2, hs, LN.succ_inj(M.len(~F, ds), M.len(~F, rs), hl))
 
 # Equations at appended assignments
 # ---------------------------------
@@ -511,15 +507,6 @@ def zeros_unsubst(~F: O.OField, +o: Nat, +n: Nat, +pars: List<&2, Nat>, +p: M.Ve
 def pbox(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +gc: N.KVec(~K), +gr: N.KVec(~K), +o: Nat, +p: M.Vec(~F)) -> Data:
   M.Both({M.len(~F, p) == o : Nat}, BX.rbnd(~F, BX.vsub(~F, p, N.ofkv(~K, ~F, ~H, PL.ktake(~K, o, gc))), N.ofkv(~K, ~F, ~H, PL.ktake(~K, o, gr))))
 
-def natle_pred(a: Nat, +m: Nat, h: {KA.natle(1n+a, m) == True{} : Bool}) -> {KA.natle(a, m) == True{} : Bool}:
-  match a m:
-    case 0n m:
-      {==}
-    case 1n+k 0n:
-      FO.absurd({KA.natle(1n+k, 0n) == True{} : Bool}, KA.ft(h))
-    case 1n+k 1n+j:
-      natle_pred(k, j, h)
-
 def natle_rw2(+a: Nat, +a2: Nat, +m: Nat, e: {a == a2 : Nat}, h: {KA.natle(a, m) == True{} : Bool}) -> {KA.natle(a2, m) == True{} : Bool}:
   %e : {KA.natle(_, m) == True{} : Bool}
   h
@@ -534,7 +521,7 @@ def natle_addl(+o: Nat, n: Nat, +m: Nat, h: {KA.natle(Nat.add(o, n), m) == True{
       %Equal.sym(Nat, o, Nat.add(o, 0n), LN.add_zero(o)) : {KA.natle(_, m) == True{} : Bool}
       h
     case 1n++k:
-      natle_addl(o, k, m, natle_pred(Nat.add(o, k), m, natle_rw2(Nat.add(o, 1n+k), 1n+Nat.add(o, k), m, Equal.sym(Nat, 1n+Nat.add(o, k), Nat.add(o, 1n+k), LN.add_succ(o, k)), h)))
+      natle_addl(o, k, m, KA.natle_pred(Nat.add(o, k), m, natle_rw2(Nat.add(o, 1n+k), 1n+Nat.add(o, k), m, Equal.sym(Nat, 1n+Nat.add(o, k), Nat.add(o, 1n+k), LN.add_succ(o, k)), h)))
 
 def len_kt(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +o: Nat, +u: N.KVec(~K), h: {KA.natle(o, KA.klen(~K, u)) == True{} : Bool}) -> {M.len(~F, N.ofkv(~K, ~F, ~H, PL.ktake(~K, o, u))) == o : Nat}:
   Equal.trans(Nat, M.len(~F, N.ofkv(~K, ~F, ~H, PL.ktake(~K, o, u))), KA.klen(~K, PL.ktake(~K, o, u)), o, CP.len_ofkv(~K, ~F, ~H, PL.ktake(~K, o, u)), klen_ktake(~K, o, u, h))
@@ -634,7 +621,7 @@ def pbox_ext(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +gc: N.KVec(~K), +gr: N.K
   +ra = N.ofkv(~K, ~F, ~H, PL.ktake(~K, o, gr))
   +rb = N.ofkv(~K, ~F, ~H, PL.ktake(~K, n, PL.kdrop(~K, o, gr)))
   +hla = len_kt(~K, ~F, ~H, o, gc, hgc)
-  +hlr = len_kt(~K, ~F, ~H, o, gr, natle_rw(o, KA.klen(~K, gc), KA.klen(~K, gr), Equal.sym(Nat, KA.klen(~K, gr), KA.klen(~K, gc), hgr), hgc))
+  +hlr = len_kt(~K, ~F, ~H, o, gr, KA.natle_rw(o, KA.klen(~K, gc), KA.klen(~K, gr), Equal.sym(Nat, KA.klen(~K, gr), KA.klen(~K, gc), hgr), hgc))
   +ec = Equal.trans(M.Vec(~F), N.ofkv(~K, ~F, ~H, PL.ktake(~K, Nat.add(o, n), gc)), N.ofkv(~K, ~F, ~H, KA.kapp(~K, PL.ktake(~K, o, gc), PL.ktake(~K, n, PL.kdrop(~K, o, gc)))), C.app(~F, ca, cb), ofkv_rw(~K, ~F, ~H, PL.ktake(~K, Nat.add(o, n), gc), KA.kapp(~K, PL.ktake(~K, o, gc), PL.ktake(~K, n, PL.kdrop(~K, o, gc))), ktake_split(~K, o, n, gc)), CP.kapp_ofk(~K, ~F, ~H, PL.ktake(~K, o, gc), PL.ktake(~K, n, PL.kdrop(~K, o, gc))))
   +er = Equal.trans(M.Vec(~F), N.ofkv(~K, ~F, ~H, PL.ktake(~K, Nat.add(o, n), gr)), N.ofkv(~K, ~F, ~H, KA.kapp(~K, PL.ktake(~K, o, gr), PL.ktake(~K, n, PL.kdrop(~K, o, gr)))), C.app(~F, ra, rb), ofkv_rw(~K, ~F, ~H, PL.ktake(~K, Nat.add(o, n), gr), KA.kapp(~K, PL.ktake(~K, o, gr), PL.ktake(~K, n, PL.kdrop(~K, o, gr))), ktake_split(~K, o, n, gr)), CP.kapp_ofk(~K, ~F, ~H, PL.ktake(~K, o, gr), PL.ktake(~K, n, PL.kdrop(~K, o, gr))))
   +joined = rbnd_app(~F, BX.vsub(~F, p, ca), BX.vsub(~F, y, cb), ra, rb, hr, hseg, Equal.trans(Nat, M.len(~F, BX.vsub(~F, p, ca)), o, M.len(~F, ra), CP.len_vsub(~F, p, ca, o, hl, hla), Equal.sym(Nat, M.len(~F, ra), o, hlr)))
@@ -696,7 +683,7 @@ def bo_pcont(~K: N.Num, +gc: N.KVec(~K), +gr: N.KVec(~K), +es: List<&2, E.QExpr>
 # a checked certificate has n centers, and its local equations read only
 # its unknowns and parameters
 def cert_lyc.go(~K: N.Num, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +q: N.NC(K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K), +ok: {CK.check.go(~K, eqs, n, yc, yr, q, ym, pc, pr) == True{} : Bool}) -> {KA.klen(~K, yc) == n : Nat}:
-  CP.nateq_ok(KA.klen(~K, yc), n, CP.x_len_yc(~K, eqs, n, yc, yr, q, ym, pc, pr, ok))
+  KA.nateq_ok(KA.klen(~K, yc), n, CP.x_len_yc(~K, eqs, n, yc, yr, q, ym, pc, pr, ok))
 
 def cert_lyc(~K: N.Num, +eqs: List<&2, E.QExpr>, +n: Nat, c: C.Cert<K>, ok: {CK.check(~K, C.Block{eqs, n}, c) == True{} : Bool}) -> {KA.klen(~K, C.Cert.yc(K, c)) == n : Nat}:
   match c:
@@ -775,7 +762,7 @@ def walk_ex.fin(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +gc: N.KVec(~K), +gr: 
 def walk_ex(~K: N.Num, ~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<K, F>, +gc: N.KVec(~K), +gr: N.KVec(~K), bs: List<&2, PL.PBlock<K>>, +es: List<&2, E.QExpr>, +o: Nat, +p: M.Vec(~F), +hw: {PL.walk(~K, gc, gr, bs, es, o) == True{} : Bool}, +hpb: pbox(~K, ~F, ~H, gc, gr, o, p), +hgr: {KA.klen(~K, gr) == KA.klen(~K, gc) : Nat}) -> Ex(~K, ~F, ~H, gc, gr, es, p):
   match bs:
     case Nil{}:
-      walk_ex.nil(~K, ~F, ~H, gc, gr, es, o, p, CP.nateq_ok(o, KA.klen(~K, gc), KA.band_l(KA.nateq(o, KA.klen(~K, gc)), PL.isnil(es), hw)), KA.band_r(KA.nateq(o, KA.klen(~K, gc)), PL.isnil(es), hw), hpb, hgr)
+      walk_ex.nil(~K, ~F, ~H, gc, gr, es, o, p, KA.nateq_ok(o, KA.klen(~K, gc), KA.band_l(KA.nateq(o, KA.klen(~K, gc)), PL.isnil(es), hw)), KA.band_r(KA.nateq(o, KA.klen(~K, gc)), PL.isnil(es), hw), hpb, hgr)
     case Con{PL.PBlock{+n, +pars, +c}, +t}:
       +hbo = KA.band_l(PL.block_ok(~K, gc, gr, es, o, n, pars, c), PL.walk(~K, gc, gr, t, PL.dropq(n, es), Nat.add(o, n)), hw)
       +hrest = KA.band_r(PL.block_ok(~K, gc, gr, es, o, n, pars, c), PL.walk(~K, gc, gr, t, PL.dropq(n, es), Nat.add(o, n)), hw)
@@ -817,7 +804,7 @@ def cp_r3(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), 
   KA.band_r(KA.natle(np, KA.klen(~K, gc)), KA.band(PL.pinz(~K, np, gr), PL.walk(~K, gc, gr, bs, eqs, np)), cp_r2(~K, eqs, gc, gr, np, bs, h))
 
 def cp_len(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +np: Nat, +bs: List<&2, PL.PBlock<K>>, +h: {PL.check.p(~K, eqs, gc, gr, np, bs) == True{} : Bool}) -> {KA.klen(~K, gr) == KA.klen(~K, gc) : Nat}:
-  CP.nateq_ok(KA.klen(~K, gr), KA.klen(~K, gc), KA.band_l(KA.nateq(KA.klen(~K, gr), KA.klen(~K, gc)), KA.band(KA.kvle(~K, Nil{}, gr), KA.band(KA.natle(np, KA.klen(~K, gc)), KA.band(PL.pinz(~K, np, gr), PL.walk(~K, gc, gr, bs, eqs, np)))), h))
+  KA.nateq_ok(KA.klen(~K, gr), KA.klen(~K, gc), KA.band_l(KA.nateq(KA.klen(~K, gr), KA.klen(~K, gc)), KA.band(KA.kvle(~K, Nil{}, gr), KA.band(KA.natle(np, KA.klen(~K, gc)), KA.band(PL.pinz(~K, np, gr), PL.walk(~K, gc, gr, bs, eqs, np)))), h))
 
 def cp_nn(~K: N.Num, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +np: Nat, +bs: List<&2, PL.PBlock<K>>, +h: {PL.check.p(~K, eqs, gc, gr, np, bs) == True{} : Bool}) -> {KA.kvle(~K, Nil{}, gr) == True{} : Bool}:
   KA.band_l(KA.kvle(~K, Nil{}, gr), KA.band(KA.natle(np, KA.klen(~K, gc)), KA.band(PL.pinz(~K, np, gr), PL.walk(~K, gc, gr, bs, eqs, np))), cp_r1(~K, eqs, gc, gr, np, bs, h))
@@ -895,7 +882,7 @@ def natle_rest(o: Nat, +n: Nat, +lr: Nat, m: Nat, e: {Nat.add(o, lr) == m : Nat}
     case 1n++k 0n:
       FO.absurd({KA.natle(n, lr) == True{} : Bool}, FV.succ_ne(Nat.add(k, lr), e))
     case 1n++k 1n++j:
-      natle_rest(k, n, lr, j, FV.succ_inj(Nat.add(k, lr), j, e), h)
+      natle_rest(k, n, lr, j, LN.succ_inj(Nat.add(k, lr), j, e), h)
 
 # u = w, from |u_i - w_i| <= 0 and equal lengths
 def eq_of_vall(~F: O.OField, u: M.Vec(~F), w: M.Vec(~F), h: M.vbnd.all(~F, BX.vsub(~F, u, w), O.zero(F)), hl: {M.len(~F, u) == M.len(~F, w) : Nat}) -> {u == w : M.Vec(~F)}:
@@ -909,7 +896,7 @@ def eq_of_vall(~F: O.OField, u: M.Vec(~F), w: M.Vec(~F), h: M.vbnd.all(~F, BX.vs
     case Con{+a, +us} Con{+b, +ws}:
       (h0, hs) = h
       %FO.eq_of_sub(~F, a, b, RL.bnd0_eq(~F, O.sub(~F, a, b), h0)) : {Con{a, us} == Con{_, ws} : M.Vec(~F)}
-      %eq_of_vall(~F, us, ws, hs, FV.succ_inj(M.len(~F, us), M.len(~F, ws), hl)) : {Con{a, us} == Con{a, _} : M.Vec(~F)}
+      %eq_of_vall(~F, us, ws, hs, LN.succ_inj(M.len(~F, us), M.len(~F, ws), hl)) : {Con{a, us} == Con{a, _} : M.Vec(~F)}
       {==}
 
 def kt_kd(~K: N.Num, n: Nat, u: N.KVec(~K)) -> {KA.kapp(~K, PL.ktake(~K, n, u), PL.kdrop(~K, n, u)) == u : N.KVec(~K)}:
@@ -930,7 +917,7 @@ def pbox_of_inbox(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +gc: N.KVec(~K), +gr
   +ra = N.ofkv(~K, ~F, ~H, PL.ktake(~K, m, gr))
   +rb = N.ofkv(~K, ~F, ~H, PL.kdrop(~K, m, gr))
   +hla = len_kt(~K, ~F, ~H, m, gc, hm)
-  +hlr = len_kt(~K, ~F, ~H, m, gr, natle_rw(m, KA.klen(~K, gc), KA.klen(~K, gr), Equal.sym(Nat, KA.klen(~K, gr), KA.klen(~K, gc), hgr), hm))
+  +hlr = len_kt(~K, ~F, ~H, m, gr, KA.natle_rw(m, KA.klen(~K, gc), KA.klen(~K, gr), Equal.sym(Nat, KA.klen(~K, gr), KA.klen(~K, gc), hgr), hm))
   +ec = Equal.trans(M.Vec(~F), N.ofkv(~K, ~F, ~H, gc), N.ofkv(~K, ~F, ~H, KA.kapp(~K, PL.ktake(~K, m, gc), PL.kdrop(~K, m, gc))), C.app(~F, ca, cb), ofkv_rw(~K, ~F, ~H, gc, KA.kapp(~K, PL.ktake(~K, m, gc), PL.kdrop(~K, m, gc)), Equal.sym(N.KVec(~K), KA.kapp(~K, PL.ktake(~K, m, gc), PL.kdrop(~K, m, gc)), gc, kt_kd(~K, m, gc))), CP.kapp_ofk(~K, ~F, ~H, PL.ktake(~K, m, gc), PL.kdrop(~K, m, gc)))
   +er = Equal.trans(M.Vec(~F), N.ofkv(~K, ~F, ~H, gr), N.ofkv(~K, ~F, ~H, KA.kapp(~K, PL.ktake(~K, m, gr), PL.kdrop(~K, m, gr))), C.app(~F, ra, rb), ofkv_rw(~K, ~F, ~H, gr, KA.kapp(~K, PL.ktake(~K, m, gr), PL.kdrop(~K, m, gr)), Equal.sym(N.KVec(~K), KA.kapp(~K, PL.ktake(~K, m, gr), PL.kdrop(~K, m, gr)), gr, kt_kd(~K, m, gr))), CP.kapp_ofk(~K, ~F, ~H, PL.ktake(~K, m, gr), PL.kdrop(~K, m, gr)))
   +ed = Equal.trans(M.Vec(~F), BX.vsub(~F, C.app(~F, q, r), N.ofkv(~K, ~F, ~H, gc)), BX.vsub(~F, C.app(~F, q, r), C.app(~F, ca, cb)), C.app(~F, BX.vsub(~F, q, ca), BX.vsub(~F, r, cb)), vsub_rw(~F, C.app(~F, q, r), N.ofkv(~K, ~F, ~H, gc), C.app(~F, ca, cb), ec), FV.vsub_app(~F, q, ca, r, cb, Equal.trans(Nat, M.len(~F, q), m, M.len(~F, ca), hq, Equal.sym(Nat, M.len(~F, ca), m, hla))))
@@ -945,7 +932,7 @@ def seg_of_pbox(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +gc: N.KVec(~K), +gr: 
   +ra = N.ofkv(~K, ~F, ~H, PL.ktake(~K, o, gr))
   +rb = N.ofkv(~K, ~F, ~H, PL.ktake(~K, n, PL.kdrop(~K, o, gr)))
   +hla = len_kt(~K, ~F, ~H, o, gc, hgo)
-  +hlr = len_kt(~K, ~F, ~H, o, gr, natle_rw(o, KA.klen(~K, gc), KA.klen(~K, gr), Equal.sym(Nat, KA.klen(~K, gr), KA.klen(~K, gc), hgr), hgo))
+  +hlr = len_kt(~K, ~F, ~H, o, gr, KA.natle_rw(o, KA.klen(~K, gc), KA.klen(~K, gr), Equal.sym(Nat, KA.klen(~K, gr), KA.klen(~K, gc), hgr), hgo))
   +ec = Equal.trans(M.Vec(~F), N.ofkv(~K, ~F, ~H, PL.ktake(~K, Nat.add(o, n), gc)), N.ofkv(~K, ~F, ~H, KA.kapp(~K, PL.ktake(~K, o, gc), PL.ktake(~K, n, PL.kdrop(~K, o, gc)))), C.app(~F, ca, cb), ofkv_rw(~K, ~F, ~H, PL.ktake(~K, Nat.add(o, n), gc), KA.kapp(~K, PL.ktake(~K, o, gc), PL.ktake(~K, n, PL.kdrop(~K, o, gc))), ktake_split(~K, o, n, gc)), CP.kapp_ofk(~K, ~F, ~H, PL.ktake(~K, o, gc), PL.ktake(~K, n, PL.kdrop(~K, o, gc))))
   +er = Equal.trans(M.Vec(~F), N.ofkv(~K, ~F, ~H, PL.ktake(~K, Nat.add(o, n), gr)), N.ofkv(~K, ~F, ~H, KA.kapp(~K, PL.ktake(~K, o, gr), PL.ktake(~K, n, PL.kdrop(~K, o, gr)))), C.app(~F, ra, rb), ofkv_rw(~K, ~F, ~H, PL.ktake(~K, Nat.add(o, n), gr), KA.kapp(~K, PL.ktake(~K, o, gr), PL.ktake(~K, n, PL.kdrop(~K, o, gr))), ktake_split(~K, o, n, gr)), CP.kapp_ofk(~K, ~F, ~H, PL.ktake(~K, o, gr), PL.ktake(~K, n, PL.kdrop(~K, o, gr))))
   +ed = Equal.trans(M.Vec(~F), BX.vsub(~F, C.app(~F, p, y), N.ofkv(~K, ~F, ~H, PL.ktake(~K, Nat.add(o, n), gc))), BX.vsub(~F, C.app(~F, p, y), C.app(~F, ca, cb)), C.app(~F, BX.vsub(~F, p, ca), BX.vsub(~F, y, cb)), vsub_rw(~F, C.app(~F, p, y), N.ofkv(~K, ~F, ~H, PL.ktake(~K, Nat.add(o, n), gc)), C.app(~F, ca, cb), ec), FV.vsub_app(~F, p, ca, y, cb, Equal.trans(Nat, M.len(~F, p), o, M.len(~F, ca), hp, Equal.sym(Nat, M.len(~F, ca), o, hla))))
@@ -963,10 +950,10 @@ def rbnd_unkfit(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, n: Nat, d: M.Vec(~F), 
       FO.absurd(BX.rbnd(~F, Nil{}, N.ofkv(~K, ~F, ~H, r)), FV.zero_ne(k, hl))
     case 1n+k Con{+a, +ds} Nil{}:
       (ha, hs) = h
-      (BA.bnd_rw_s(~F, a, N.emap(K, F, H, N.nzero(K)), O.zero(F), N.e_zero(K, F, H), ha), rbnd_unkfit(~K, ~F, ~H, k, ds, Nil{}, hs, FV.succ_inj(M.len(~F, ds), k, hl)))
+      (BA.bnd_rw_s(~F, a, N.emap(K, F, H, N.nzero(K)), O.zero(F), N.e_zero(K, F, H), ha), rbnd_unkfit(~K, ~F, ~H, k, ds, Nil{}, hs, LN.succ_inj(M.len(~F, ds), k, hl)))
     case 1n+k Con{+a, +ds} Con{x, xs}:
       (ha, hs) = h
-      (ha, rbnd_unkfit(~K, ~F, ~H, k, ds, xs, hs, FV.succ_inj(M.len(~F, ds), k, hl)))
+      (ha, rbnd_unkfit(~K, ~F, ~H, k, ds, xs, hs, LN.succ_inj(M.len(~F, ds), k, hl)))
 
 # a stretch of the box is the certificate's ball
 def ball_of_seg(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +gc: N.KVec(~K), +gr: N.KVec(~K), +o: Nat, +n: Nat, +c: C.Cert<K>, +y: M.Vec(~F), hs: BX.rbnd(~F, BX.vsub(~F, y, N.ofkv(~K, ~F, ~H, PL.ktake(~K, n, PL.kdrop(~K, o, gc)))), N.ofkv(~K, ~F, ~H, PL.ktake(~K, n, PL.kdrop(~K, o, gr)))), +hy: {M.len(~F, y) == n : Nat}, +hlc: {KA.klen(~K, C.Cert.yc(K, c)) == n : Nat}, hyc: {PL.kveq(~K, C.Cert.yc(K, c), PL.ktake(~K, n, PL.kdrop(~K, o, gc))) == True{} : Bool}, hyr: {PL.kveq(~K, KA.kfit(~K, n, C.Cert.yr(K, c)), PL.ktake(~K, n, PL.kdrop(~K, o, gr))) == True{} : Bool}) -> C.ball(~K, ~F, ~H, c, y):
@@ -1084,14 +1071,14 @@ def rnil(~F: O.OField, p: M.Vec(~F), +r: M.Vec(~F), o: Nat, hp: {M.len(~F, p) ==
     case Con{a, +ps} 0n:
       FO.absurd({r == Nil{} : M.Vec(~F)}, FV.succ_ne(M.len(~F, ps), hp))
     case Con{a, +ps} 1n++k:
-      rnil(~F, ps, r, k, FV.succ_inj(M.len(~F, ps), k, hp), FV.succ_inj(M.len(~F, C.app(~F, ps, r)), k, h))
+      rnil(~F, ps, r, k, LN.succ_inj(M.len(~F, ps), k, hp), LN.succ_inj(M.len(~F, C.app(~F, ps, r)), k, h))
 
 # two points of the box that solve the remaining equations and share the
 # prefix p agree
 def walk_un(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +gc: N.KVec(~K), +gr: N.KVec(~K), bs: List<&2, PL.PBlock<K>>, +es: List<&2, E.QExpr>, +o: Nat, +p: M.Vec(~F), +hw: {PL.walk(~K, gc, gr, bs, es, o) == True{} : Bool}, +hpb: pbox(~K, ~F, ~H, gc, gr, o, p), +hgr: {KA.klen(~K, gr) == KA.klen(~K, gc) : Nat}, +r1: M.Vec(~F), +r2: M.Vec(~F), +h1: BX.inbox(~K, ~F, ~H, gc, gr, C.app(~F, p, r1)), +z1: SK.Zeros(~F, C.app(~F, p, r1), es), +h2: BX.inbox(~K, ~F, ~H, gc, gr, C.app(~F, p, r2)), +z2: SK.Zeros(~F, C.app(~F, p, r2), es)) -> {r1 == r2 : M.Vec(~F)}:
   match bs:
     case Nil{}:
-      +ho = CP.nateq_ok(o, KA.klen(~K, gc), KA.band_l(KA.nateq(o, KA.klen(~K, gc)), PL.isnil(es), hw))
+      +ho = KA.nateq_ok(o, KA.klen(~K, gc), KA.band_l(KA.nateq(o, KA.klen(~K, gc)), PL.isnil(es), hw))
       +hlp = pbox_len(~K, ~F, ~H, gc, gr, o, p, hpb)
       +hv = Equal.sym(Nat, o, KA.klen(~K, gc), ho)
       +l1 = Equal.trans(Nat, M.len(~F, C.app(~F, p, r1)), KA.klen(~K, gc), o, Equal.trans(Nat, M.len(~F, C.app(~F, p, r1)), M.len(~F, N.ofkv(~K, ~F, ~H, gc)), KA.klen(~K, gc), inbox_len(~K, ~F, ~H, gc, gr, C.app(~F, p, r1), h1), CP.len_ofkv(~K, ~F, ~H, gc)), hv)
@@ -1134,7 +1121,7 @@ def pin_prefix.c(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +k: Nat, +g: N.NC(K),
     case Con{+a, +xs} Con{+r, +rs}:
       (ha, hs) = h
       %Equal.sym(O.C(F), a, N.emap(K, F, H, g), pin_one(~K, ~F, ~H, a, g, r, ha, KA.band_l(PL.keq(~K, r, N.nzero(K)), PL.pinz(~K, k, rs), hpz))) : {Con{_, ftake(~F, k, xs)} == Con{N.emap(K, F, H, g), N.ofkv(~K, ~F, ~H, PL.ktake(~K, k, gs))} : M.Vec(~F)}
-      %Equal.sym(M.Vec(~F), ftake(~F, k, xs), N.ofkv(~K, ~F, ~H, PL.ktake(~K, k, gs)), ih(xs, rs, hs, KA.band_r(PL.keq(~K, r, N.nzero(K)), PL.pinz(~K, k, rs), hpz), FV.succ_inj(M.len(~F, xs), M.len(~F, N.ofkv(~K, ~F, ~H, gs)), hlx))) : {Con{N.emap(K, F, H, g), _} == Con{N.emap(K, F, H, g), N.ofkv(~K, ~F, ~H, PL.ktake(~K, k, gs))} : M.Vec(~F)}
+      %Equal.sym(M.Vec(~F), ftake(~F, k, xs), N.ofkv(~K, ~F, ~H, PL.ktake(~K, k, gs)), ih(xs, rs, hs, KA.band_r(PL.keq(~K, r, N.nzero(K)), PL.pinz(~K, k, rs), hpz), LN.succ_inj(M.len(~F, xs), M.len(~F, N.ofkv(~K, ~F, ~H, gs)), hlx))) : {Con{N.emap(K, F, H, g), _} == Con{N.emap(K, F, H, g), N.ofkv(~K, ~F, ~H, PL.ktake(~K, k, gs))} : M.Vec(~F)}
       {==}
 
 # a point of the box starts with the pinned centers
@@ -1415,7 +1402,7 @@ def ex_zero(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +
   +k = PL.pos(j, ep)
   +hk = present0(ep, CK.eqlen(eqs), j, cr_ep_has(~K, eqs, gc, gr, vp, ep, np, bs, ok), hj)
   +eq1 = Equal.trans(E.QExpr, PL.eqget(e2, k), PL.rnv(vp, PL.eqget(eqs, PL.nthn(ep, k))), PL.rnv(vp, PL.eqget(eqs, j)), eqget_reorder(vp, eqs, ep, k, hk), rnv_rw(vp, eqs, PL.nthn(ep, k), j, pos_nth(j, ep, hk)))
-  +z0 = zeros_at(~F, x2, e2, k, hz, natle_rw(1n+k, PL.nlen(ep), CK.eqlen(e2), Equal.sym(Nat, CK.eqlen(e2), PL.nlen(ep), len_reorder(vp, eqs, ep)), hk))
+  +z0 = zeros_at(~F, x2, e2, k, hz, KA.natle_rw(1n+k, PL.nlen(ep), CK.eqlen(e2), Equal.sym(Nat, CK.eqlen(e2), PL.nlen(ep), len_reorder(vp, eqs, ep)), hk))
   +ren = ren_eval(~F, ~x, ~x2, ~vp, ~nv, ~(v => hv => look_upm0(~F, x2, vp, nv, v, hv)), PL.eqget(eqs, j), below_at(nv, eqs, j, cr_below(~K, eqs, gc, gr, vp, ep, np, bs, ok), hj))
   Equal.trans(O.C(F), O.eval(~F, x, PL.eqget(eqs, j)), O.eval(~F, x2, PL.eqget(e2, k)), O.zero(F), Equal.trans(O.C(F), O.eval(~F, x, PL.eqget(eqs, j)), O.eval(~F, x2, PL.rnv(vp, PL.eqget(eqs, j))), O.eval(~F, x2, PL.eqget(e2, k)), Equal.sym(O.C(F), O.eval(~F, x2, PL.rnv(vp, PL.eqget(eqs, j))), O.eval(~F, x, PL.eqget(eqs, j)), ren), Equal.sym(O.C(F), O.eval(~F, x2, PL.eqget(e2, k)), O.eval(~F, x2, PL.rnv(vp, PL.eqget(eqs, j))), eval_rw(~F, x2, PL.eqget(e2, k), PL.rnv(vp, PL.eqget(eqs, j)), eq1))), z0)
 
@@ -1463,7 +1450,7 @@ def zm_pos(~K: N.Num, ~F: O.OField, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +g
 def un_zero(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +gc: N.KVec(~K), +gr: N.KVec(~K), +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<K>>, +ok: {PL.check.r(~K, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}, +x: M.Vec(~F), +hz: SK.Zeros(~F, x, eqs), +k: Nat, +hk: {KA.natle(1n+k, CK.eqlen(PL.reorder(vp, eqs, ep))) == True{} : Bool}) -> {O.eval(~F, zmap(~F, x, vp), PL.eqget(PL.reorder(vp, eqs, ep), k)) == O.zero(F) : O.C(F)}:
   +nv = KA.klen(~K, gc)
   +x2 = zmap(~F, x, vp)
-  +hk2 = natle_rw(1n+k, CK.eqlen(PL.reorder(vp, eqs, ep)), PL.nlen(ep), len_reorder(vp, eqs, ep), hk)
+  +hk2 = KA.natle_rw(1n+k, CK.eqlen(PL.reorder(vp, eqs, ep)), PL.nlen(ep), len_reorder(vp, eqs, ep), hk)
   +j = PL.nthn(ep, k)
   +hj = pars_at(CK.eqlen(eqs), ep, k, cr_ep_lt(~K, eqs, gc, gr, vp, ep, np, bs, ok), hk2)
   +ren = ren_eval(~F, ~x, ~x2, ~vp, ~nv, ~(v => hv => zm_pos(~K, ~F, eqs, gc, gr, vp, ep, np, bs, ok, x, v, hv)), PL.eqget(eqs, j), below_at(nv, eqs, j, cr_below(~K, eqs, gc, gr, vp, ep, np, bs, ok), hj))

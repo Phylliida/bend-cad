@@ -18,12 +18,6 @@ def absurd(-A: Type, x: Empty) -> A:
 # Booleans
 # --------
 
-def ft(e: {False{} == True{} : Bool}) -> Empty:
-  KA.ft(e)
-
-def tf(e: {True{} == False{} : Bool}) -> Empty:
-  KA.ft(Equal.sym(Bool, True{}, False{}, e))
-
 def band_l(a: Bool, +b: Bool, h: {SV.band(a, b) == True{} : Bool}) -> {a == True{} : Bool}:
   match a:
     case True{}:
@@ -36,21 +30,21 @@ def band_r(a: Bool, +b: Bool, h: {SV.band(a, b) == True{} : Bool}) -> {b == True
     case True{}:
       h
     case False{}:
-      absurd({b == True{} : Bool}, ft(h))
+      absurd({b == True{} : Bool}, KA.ft(h))
 
 def band_i(a: Bool, +b: Bool, ha: {a == True{} : Bool}, hb: {b == True{} : Bool}) -> {SV.band(a, b) == True{} : Bool}:
   match a:
     case True{}:
       hb
     case False{}:
-      absurd({False{} == True{} : Bool}, ft(ha))
+      absurd({False{} == True{} : Bool}, KA.ft(ha))
 
 def bor_l(a: Bool, +b: Bool, ha: {a == True{} : Bool}) -> {SV.bor(a, b) == True{} : Bool}:
   match a:
     case True{}:
       {==}
     case False{}:
-      absurd({b == True{} : Bool}, ft(ha))
+      absurd({b == True{} : Bool}, KA.ft(ha))
 
 def bor_r(a: Bool, +b: Bool, hb: {b == True{} : Bool}) -> {SV.bor(a, b) == True{} : Bool}:
   match a:
@@ -63,28 +57,28 @@ def bor_r(a: Bool, +b: Bool, hb: {b == True{} : Bool}) -> {SV.bor(a, b) == True{
 def bor_rf(a: Bool, +b: Bool, h: {SV.bor(a, b) == True{} : Bool}, ha: {a == False{} : Bool}) -> {b == True{} : Bool}:
   match a:
     case True{}:
-      absurd({b == True{} : Bool}, tf(ha))
+      absurd({b == True{} : Bool}, KA.tf(ha))
     case False{}:
       h
 
 def bor_f(a: Bool, +b: Bool, ha: {a == False{} : Bool}, hb: {b == False{} : Bool}) -> {SV.bor(a, b) == False{} : Bool}:
   match a:
     case True{}:
-      absurd({True{} == False{} : Bool}, tf(ha))
+      absurd({True{} == False{} : Bool}, KA.tf(ha))
     case False{}:
       hb
 
 def bnot_t(a: Bool, h: {a == False{} : Bool}) -> {SV.bnot(a) == True{} : Bool}:
   match a:
     case True{}:
-      absurd({False{} == True{} : Bool}, tf(h))
+      absurd({False{} == True{} : Bool}, KA.tf(h))
     case False{}:
       {==}
 
 def bnot_f(a: Bool, h: {SV.bnot(a) == True{} : Bool}) -> {a == False{} : Bool}:
   match a:
     case True{}:
-      absurd({True{} == False{} : Bool}, ft(h))
+      absurd({True{} == False{} : Bool}, KA.ft(h))
     case False{}:
       {==}
 
@@ -92,9 +86,9 @@ def bnot_f(a: Bool, h: {SV.bnot(a) == True{} : Bool}) -> {a == False{} : Bool}:
 def tnf(a: Bool, ht: {a == True{} : Bool}, hf: {a == False{} : Bool}) -> Empty:
   match a:
     case True{}:
-      tf(hf)
+      KA.tf(hf)
     case False{}:
-      ft(ht)
+      KA.ft(ht)
 
 def bor_sv(a: Bool, +b: Bool) -> {SV.bor(a, b) == ST.bor(a, b) : Bool}:
   match a:
@@ -125,9 +119,9 @@ def eq_ok(a: Nat, b: Nat, h: {SV.eq(a, b) == True{} : Bool}) -> {a == b : Nat}:
     case 0n 0n:
       {==}
     case 0n 1n+j:
-      absurd({0n == 1n+j : Nat}, ft(h))
+      absurd({0n == 1n+j : Nat}, KA.ft(h))
     case 1n+i 0n:
-      absurd({1n+i == 0n : Nat}, ft(h))
+      absurd({1n+i == 0n : Nat}, KA.ft(h))
     case 1n++i 1n+j:
       %eq_ok(i, j, h) : {1n+i == 1n+_ : Nat}
       {==}
@@ -172,7 +166,7 @@ def bor_fl(a: Bool, +b: Bool, h: {SV.bor(a, b) == False{} : Bool}) -> {a == Fals
 def bor_fr(a: Bool, +b: Bool, h: {SV.bor(a, b) == False{} : Bool}) -> {b == False{} : Bool}:
   match a:
     case True{}:
-      absurd({b == False{} : Bool}, tf(h))
+      absurd({b == False{} : Bool}, KA.tf(h))
     case False{}:
       h
 
@@ -200,7 +194,7 @@ def mem_tl_inv(+v: Nat, +h: Nat, +t: List<&2, Nat>, hm: {SV.mem(v, Con{h, t}) ==
   bor_rf(SV.eq(v, h), SV.mem(v, t), hm, hn)
 
 def mem_nil(+v: Nat, h: {SV.mem(v, Nil{}) == True{} : Bool}) -> Empty:
-  ft(h)
+  KA.ft(h)
 
 # x in xs and v not in xs: x /= v
 def mem_ne.go(+x: Nat, +v: Nat, +xs: List<&2, Nat>, b: Bool, e: {SV.eq(x, v) == b : Bool}, hx: {SV.mem(x, xs) == True{} : Bool}, hv: {SV.mem(v, xs) == False{} : Bool}) -> {b == False{} : Bool}:
@@ -244,7 +238,7 @@ def subl_mem.go(+x: Nat, +h: Nat, +t: List<&2, Nat>, +ys: List<&2, Nat>, b: Bool
 def subl_mem(+x: Nat, xs: List<&2, Nat>, +ys: List<&2, Nat>, hx: {SV.mem(x, xs) == True{} : Bool}, +hs: {subl(xs, ys) == True{} : Bool}) -> {SV.mem(x, ys) == True{} : Bool}:
   match xs:
     case Nil{}:
-      absurd({SV.mem(x, ys) == True{} : Bool}, ft(hx))
+      absurd({SV.mem(x, ys) == True{} : Bool}, KA.ft(hx))
     case Con{+h, +t}:
       subl_mem.go(x, h, t, ys, SV.eq(x, h), {==}, hx, hs, k => subl_mem(x, t, ys, k, subl_tl(h, t, ys, hs)))
 
@@ -281,70 +275,6 @@ def dist_tl(+h: Nat, +t: List<&2, Nat>, d: {SV.distinct(Con{h, t}) == True{} : B
 def dist_con(+h: Nat, +t: List<&2, Nat>, hn: {SV.mem(h, t) == False{} : Bool}, d: {SV.distinct(t) == True{} : Bool}) -> {SV.distinct(Con{h, t}) == True{} : Bool}:
   band_i(SV.bnot(SV.mem(h, t)), SV.distinct(t), bnot_t(SV.mem(h, t), hn), d)
 
-# Order of numbers
-# ----------------
-
-def le_refl(a: Nat) -> {KA.natle(a, a) == True{} : Bool}:
-  match a:
-    case 0n:
-      {==}
-    case 1n+b:
-      le_refl(b)
-
-def le_trans(a: Nat, b: Nat, +c: Nat, h1: {KA.natle(a, b) == True{} : Bool}, h2: {KA.natle(b, c) == True{} : Bool}) -> {KA.natle(a, c) == True{} : Bool}:
-  match a b c:
-    case 0n b c:
-      {==}
-    case 1n+i 0n c:
-      absurd({KA.natle(1n+i, c) == True{} : Bool}, ft(h1))
-    case 1n+i 1n+j 0n:
-      absurd({False{} == True{} : Bool}, ft(h2))
-    case 1n+i 1n+j 1n+k:
-      le_trans(i, j, k, h1, h2)
-
-def le_succ(a: Nat, +b: Nat, h: {KA.natle(a, b) == True{} : Bool}) -> {KA.natle(a, 1n+b) == True{} : Bool}:
-  match a b:
-    case 0n b:
-      {==}
-    case 1n+i 0n:
-      absurd({KA.natle(i, 0n) == True{} : Bool}, ft(h))
-    case 1n+i 1n+j:
-      le_succ(i, j, h)
-
-# a + 1 <= b: a <= b
-def le_pred(+a: Nat, +b: Nat, h: {KA.natle(1n+a, b) == True{} : Bool}) -> {KA.natle(a, b) == True{} : Bool}:
-  le_trans(a, 1n+a, b, le_succ(a, a, le_refl(a)), h)
-
-def le_add_r(a: Nat, +b: Nat) -> {KA.natle(a, Nat.add(a, b)) == True{} : Bool}:
-  match a:
-    case 0n:
-      {==}
-    case 1n+i:
-      le_add_r(i, b)
-
-def le_add_l(a: Nat, +b: Nat) -> {KA.natle(b, Nat.add(a, b)) == True{} : Bool}:
-  match a:
-    case 0n:
-      le_refl(b)
-    case 1n++i:
-      le_succ(b, Nat.add(i, b), le_add_l(i, b))
-
-# a <= b: c + a <= c + b
-def le_add_mono(c: Nat, +a: Nat, +b: Nat, h: {KA.natle(a, b) == True{} : Bool}) -> {KA.natle(Nat.add(c, a), Nat.add(c, b)) == True{} : Bool}:
-  match c:
-    case 0n:
-      h
-    case 1n+i:
-      le_add_mono(i, a, b, h)
-
-# not a + 1 <= a
-def lt_irr(a: Nat, h: {KA.natle(1n+a, a) == True{} : Bool}) -> Empty:
-  match a:
-    case 0n:
-      ft(h)
-    case 1n+b:
-      lt_irr(b, h)
-
 # The pigeonhole principle
 # ------------------------
 
@@ -366,7 +296,7 @@ def rem(+x: Nat, ys: List<&2, Nat>) -> List<&2, Nat>:
 def rem_le.go(b: Bool, +y: Nat, +r: List<&2, Nat>, +n: Nat, h: {KA.natle(SV.len(r), n) == True{} : Bool}) -> {KA.natle(SV.len(rem.go(b, y, r)), 1n+n) == True{} : Bool}:
   match b:
     case True{}:
-      le_succ(SV.len(r), n, h)
+      KA.natle_succ(SV.len(r), n, h)
     case False{}:
       h
 
@@ -389,7 +319,7 @@ def rem_len.go(+x: Nat, +y: Nat, +t: List<&2, Nat>, b: Bool, e: {SV.eq(y, x) == 
 def rem_len(+x: Nat, ys: List<&2, Nat>, hx: {SV.mem(x, ys) == True{} : Bool}) -> {KA.natle(1n+SV.len(rem(x, ys)), SV.len(ys)) == True{} : Bool}:
   match ys:
     case Nil{}:
-      absurd({KA.natle(1n+SV.len(rem(x, Nil{})), 0n) == True{} : Bool}, ft(hx))
+      absurd({KA.natle(1n+SV.len(rem(x, Nil{})), 0n) == True{} : Bool}, KA.ft(hx))
     case Con{+y, +t}:
       rem_len.go(x, y, t, SV.eq(y, x), {==}, hx, k => rem_len(x, t, k))
 
@@ -412,7 +342,7 @@ def rem_mem.go(+z: Nat, +x: Nat, +y: Nat, +t: List<&2, Nat>, b: Bool, e: {SV.eq(
 def rem_mem(+z: Nat, +x: Nat, ys: List<&2, Nat>, hz: {SV.mem(z, ys) == True{} : Bool}, +hn: {SV.eq(z, x) == False{} : Bool}) -> {SV.mem(z, rem(x, ys)) == True{} : Bool}:
   match ys:
     case Nil{}:
-      absurd({SV.mem(z, Nil{}) == True{} : Bool}, ft(hz))
+      absurd({SV.mem(z, Nil{}) == True{} : Bool}, KA.ft(hz))
     case Con{+y, +t}:
       rem_mem.go(z, x, y, t, SV.eq(y, x), {==}, hz, hn, k => rem_mem(z, x, t, k, hn))
 
@@ -431,7 +361,7 @@ def pig(xs: List<&2, Nat>, +ys: List<&2, Nat>, +d: {SV.distinct(xs) == True{} : 
     case Nil{}:
       {==}
     case Con{+x, +t}:
-      le_trans(1n+SV.len(t), 1n+SV.len(rem(x, ys)), SV.len(ys), pig(t, rem(x, ys), dist_tl(x, t, d), subl_rem(t, x, ys, subl_tl(x, t, ys, hs), dist_hd(x, t, d))), rem_len(x, ys, subl_hd(x, t, ys, hs)))
+      KA.natle_trans(1n+SV.len(t), 1n+SV.len(rem(x, ys)), SV.len(ys), pig(t, rem(x, ys), dist_tl(x, t, d), subl_rem(t, x, ys, subl_tl(x, t, ys, hs), dist_hd(x, t, d))), rem_len(x, ys, subl_hd(x, t, ys, hs)))
 
 # a < b, two ways
 def lt_sv(a: Nat, b: Nat) -> {SV.lt(a, b) == KA.natle(1n+a, b) : Bool}:
@@ -472,7 +402,7 @@ def allm(+vm: List<&2, Maybe<&2, Nat>>, xs: List<&2, Nat>) -> Bool:
       SV.band(issome(ST.getm(vm, x)), allm(vm, t))
 
 def none_some(+e: Nat, h: {None{} == Some{e} : Maybe<&2, Nat>}) -> Empty:
-  ft(Equal.cong(Maybe<&2, Nat>, Bool, issome, None{}, Some{e}, h))
+  KA.ft(Equal.cong(Maybe<&2, Nat>, Bool, issome, None{}, Some{e}, h))
 
 def some_inj(+a: Nat, +b: Nat, h: {Some{a} == Some{b} : Maybe<&2, Nat>}) -> {a == b : Nat}:
   Equal.cong(Maybe<&2, Nat>, Nat, ST.look.of, Some{a}, Some{b}, h)
@@ -481,14 +411,14 @@ def some_inj(+a: Nat, +b: Nat, h: {Some{a} == Some{b} : Maybe<&2, Nat>}) -> {a =
 def some_of(m: Maybe<&2, Nat>, h: {issome(m) == True{} : Bool}) -> {m == Some{ST.look.of(m)} : Maybe<&2, Nat>}:
   match m:
     case None{}:
-      absurd({None{} == Some{0n} : Maybe<&2, Nat>}, ft(h))
+      absurd({None{} == Some{0n} : Maybe<&2, Nat>}, KA.ft(h))
     case Some{x}:
       {==}
 
 def getm_lt(vm: List<&2, Maybe<&2, Nat>>, v: Nat, h: {issome(ST.getm(vm, v)) == True{} : Bool}) -> {KA.natle(1n+v, mlen(vm)) == True{} : Bool}:
   match vm v:
     case Nil{} v:
-      absurd({KA.natle(1n+v, 0n) == True{} : Bool}, ft(h))
+      absurd({KA.natle(1n+v, 0n) == True{} : Bool}, KA.ft(h))
     case Con{m, t} 0n:
       {==}
     case Con{m, t} 1n+j:
@@ -497,7 +427,7 @@ def getm_lt(vm: List<&2, Maybe<&2, Nat>>, v: Nat, h: {issome(ST.getm(vm, v)) == 
 def getm_set_eq(vm: List<&2, Maybe<&2, Nat>>, v: Nat, +x: Maybe<&2, Nat>, h: {KA.natle(1n+v, mlen(vm)) == True{} : Bool}) -> {ST.getm(ST.setm(vm, v, x), v) == x : Maybe<&2, Nat>}:
   match vm v:
     case Nil{} v:
-      absurd({ST.getm(Nil{}, v) == x : Maybe<&2, Nat>}, ft(h))
+      absurd({ST.getm(Nil{}, v) == x : Maybe<&2, Nat>}, KA.ft(h))
     case Con{m, t} 0n:
       {==}
     case Con{m, t} 1n+j:
@@ -508,7 +438,7 @@ def getm_set_ne(vm: List<&2, Maybe<&2, Nat>>, v: Nat, w: Nat, +x: Maybe<&2, Nat>
     case Nil{} v w:
       {==}
     case Con{m, t} 0n 0n:
-      absurd({ST.getm(ST.setm(Con{m, t}, 0n, x), 0n) == m : Maybe<&2, Nat>}, tf(h))
+      absurd({ST.getm(ST.setm(Con{m, t}, 0n, x), 0n) == m : Maybe<&2, Nat>}, KA.tf(h))
     case Con{m, t} 0n 1n+k:
       {==}
     case Con{m, t} 1n+j 0n:
@@ -586,7 +516,7 @@ def set_subl(vm: List<&2, Maybe<&2, Nat>>, v: Nat, +e: Nat) -> {subl(ST.somes(ST
 def set_none_len(vm: List<&2, Maybe<&2, Nat>>, v: Nat, +e: Nat, hn: {ST.getm(vm, v) == None{} : Maybe<&2, Nat>}, hl: {KA.natle(1n+v, mlen(vm)) == True{} : Bool}) -> {SV.len(ST.somes(ST.setm(vm, v, Some{e}))) == 1n+SV.len(ST.somes(vm)) : Nat}:
   match vm v:
     case Nil{} v:
-      absurd({0n == 1n : Nat}, ft(hl))
+      absurd({0n == 1n : Nat}, KA.ft(hl))
     case Con{None{}, t} 0n:
       {==}
     case Con{Some{+x}, t} 0n:
@@ -731,24 +661,24 @@ def holes_ge.go(+x: Nat, +k: Nat, +r: List<&2, Nat>, b: Bool, e: {SV.eq(x, k) ==
   match b:
     case True{}:
       %Equal.sym(Nat, x, k, eq_ok(x, k, e)) : {KA.natle(k, _) == True{} : Bool}
-      le_refl(k)
+      KA.natle_refl(k)
     case False{}:
-      le_pred(k, x, ih(h))
+      KA.natle_pred(k, x, ih(h))
 
 # the free variables from k are at least k
 def holes_ge(vm: List<&2, Maybe<&2, Nat>>, +k: Nat, +x: Nat, h: {SV.mem(x, ST.holes(vm, k)) == True{} : Bool}) -> {KA.natle(k, x) == True{} : Bool}:
   match vm:
     case Nil{}:
-      absurd({KA.natle(k, x) == True{} : Bool}, ft(h))
+      absurd({KA.natle(k, x) == True{} : Bool}, KA.ft(h))
     case Con{None{}, +t}:
       holes_ge.go(x, k, ST.holes(t, 1n+k), SV.eq(x, k), {==}, h, q => holes_ge(t, 1n+k, x, q))
     case Con{Some{y}, +t}:
-      le_pred(k, x, holes_ge(t, 1n+k, x, h))
+      KA.natle_pred(k, x, holes_ge(t, 1n+k, x, h))
 
 def holes_dist.go(+k: Nat, +t: List<&2, Maybe<&2, Nat>>, b: Bool, e: {SV.mem(k, ST.holes(t, 1n+k)) == b : Bool}) -> {b == False{} : Bool}:
   match b:
     case True{}:
-      absurd({True{} == False{} : Bool}, lt_irr(k, holes_ge(t, 1n+k, k, e)))
+      absurd({True{} == False{} : Bool}, KA.natlt_irr(k, holes_ge(t, 1n+k, k, e)))
     case False{}:
       {==}
 
@@ -764,8 +694,8 @@ def holes_dist(vm: List<&2, Maybe<&2, Nat>>, +k: Nat) -> {SV.distinct(ST.holes(v
 # k + 1 + m <= n: k < n
 def lt_of(+k: Nat, +m: Nat, +n: Nat, h: {KA.natle(Nat.add(k, 1n+m), n) == True{} : Bool}) -> {SV.lt(k, n) == True{} : Bool}:
   %Equal.sym(Bool, SV.lt(k, n), KA.natle(1n+k, n), lt_sv(k, n)) : {_ == True{} : Bool}
-  le_trans(1n+k, Nat.add(k, 1n+m), n, %LN.add_succ(k, m) : {KA.natle(1n+k, _) == True{} : Bool}
-    le_add_r(k, m), h)
+  KA.natle_trans(1n+k, Nat.add(k, 1n+m), n, %LN.add_succ(k, m) : {KA.natle(1n+k, _) == True{} : Bool}
+    KA.natle_add_r(k, m), h)
 
 def hb_step(+k: Nat, +m: Nat, +n: Nat, h: {KA.natle(Nat.add(k, 1n+m), n) == True{} : Bool}) -> {KA.natle(Nat.add(1n+k, m), n) == True{} : Bool}:
   %Equal.sym(Nat, 1n+Nat.add(k, m), Nat.add(k, 1n+m), LN.add_succ(k, m)) : {KA.natle(_, n) == True{} : Bool}

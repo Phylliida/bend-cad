@@ -69,13 +69,6 @@ def below(+m: Nat, e: E.QExpr) -> Bool:
 # Natural-number facts
 # --------------------
 
-def nateq_refl(a: Nat) -> {KA.nateq(a, a) == True{} : Bool}:
-  match a:
-    case 0n:
-      {==}
-    case 1n+p:
-      nateq_refl(p)
-
 # t + 1 + j is not j
 def nateq_gt(+t: Nat, j: Nat) -> {KA.nateq(Nat.add(1n+t, j), j) == False{} : Bool}:
   match j:
@@ -135,7 +128,7 @@ def unit_dot(~F: O.OField, +x1: M.Vec(~F), +x2: M.Vec(~F), k: Nat, cnt: Nat, +lo
     case k 0n d:
       FO.absurd({O.lookup(~F, d, k) == O.zero(F) : O.C(F)}, KA.ft(h))
     case 0n 1n+c d:
-      %Equal.sym(Bool, KA.nateq(lo, lo), True{}, nateq_refl(lo)) : {O.lookup(~F, d, 0n) == M.dot(~F, Con{find(~F, _), srange(~F, x1, x2, E.QVar{lo}, c, 1n+lo)}, d) : O.C(F)}
+      %Equal.sym(Bool, KA.nateq(lo, lo), True{}, KA.nateq_refl(lo)) : {O.lookup(~F, d, 0n) == M.dot(~F, Con{find(~F, _), srange(~F, x1, x2, E.QVar{lo}, c, 1n+lo)}, d) : O.C(F)}
       unit_dot.zero(~F, x1, x2, c, lo, d)
     case 1n+kk 1n+c Nil{}:
       {==}

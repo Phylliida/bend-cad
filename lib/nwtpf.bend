@@ -41,6 +41,7 @@ import ./roundpf.bend as RP
 import ./apxpf.bend as AP
 import ./real.bend as RL
 import ./qemb.bend as QE
+import ./nat.bend as LN
 
 # The block in F
 # --------------
@@ -79,7 +80,7 @@ def round_ok(~F: O.OField, ys: List<&2, S.D>, ds: List<&2, S.D>, +p: Nat, hl: {M
     case Con{+y, +yt} Con{+d, +dt}:
       ((%ofd_sub(~F, y, d) : M.bnd(~F, O.add(F, M.ofd(~F, NU.dround(S.D.sub(y, d), p)), O.neg(F, _)), hnw(~F, p))
           RP.dround_err(~F, S.D.sub(y, d), p)),
-       round_ok(~F, yt, dt, p, FV.succ_inj(M.len(~F, M.ofdv(~F, yt)), M.len(~F, M.ofdv(~F, dt)), hl)))
+       round_ok(~F, yt, dt, p, LN.succ_inj(M.len(~F, M.ofdv(~F, yt)), M.len(~F, M.ofdv(~F, dt)), hl)))
 
 def len_round(~F: O.OField, ys: List<&2, S.D>, ds: List<&2, S.D>, +p: Nat) -> {M.len(~F, M.ofdv(~F, NU.nstep.round(ys, ds, p))) == M.len(~F, M.ofdv(~F, ys)) : Nat}:
   match ys ds:
@@ -281,7 +282,7 @@ def gnear(~F: O.OField, c: M.Vec(~F), xs: M.Vec(~F), +bb: O.C(F), +dc: O.C(F), +
       (FM.bnd_mono(~F, a, O.add(F, O.sub(~F, bb, O.one(F)), dc), O.sub(~F, bb, rad),
          KB.bnd_val(~F, O.add(F, b, O.sub(~F, a, b)), a, O.add(F, O.sub(~F, bb, O.one(F)), dc), FR.fring_eq(~F, [a, b], E.ZAdd{E.ZVar{1n}, E.ZSub{E.ZVar{0n}, E.ZVar{1n}}}, E.ZVar{0n}, {==}), FM.bnd_add(~F, b, O.sub(~F, bb, O.one(F)), O.sub(~F, a, b), dc, hx1, hc1)),
          FM.nn_eq(~F, O.sub(~F, O.sub(~F, bb, rad), O.add(F, O.sub(~F, bb, O.one(F)), dc)), O.sub(~F, O.one(F), O.add(F, dc, rad)), FR.fring_eq(~F, [bb, rad, dc], E.ZSub{E.ZCst{S.Zpos{S.XH{}}}, E.ZAdd{E.ZVar{2n}, E.ZVar{1n}}}, E.ZSub{E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, E.ZAdd{E.ZSub{E.ZVar{0n}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZVar{2n}}}, {==}), FM.sub_nonneg(~F, O.add(F, dc, rad), O.one(F), hs))),
-       gnear(~F, as, bs, bb, dc, rad, hx2, hc2, hs, FV.succ_inj(M.len(~F, as), M.len(~F, bs), hl)))
+       gnear(~F, as, bs, bb, dc, rad, hx2, hc2, hs, LN.succ_inj(M.len(~F, as), M.len(~F, bs), hl)))
 
 def vsub_zr(~F: O.OField, u: M.Vec(~F), +n: Nat, lu: {M.len(~F, u) == n : Nat}) -> {BX.vsub(~F, u, GJ.zeros(~F, n)) == u : M.Vec(~F)}:
   match u n:
@@ -292,7 +293,7 @@ def vsub_zr(~F: O.OField, u: M.Vec(~F), +n: Nat, lu: {M.len(~F, u) == n : Nat}) 
     case Con{+a, +t} 0n:
       FO.absurd({BX.vsub(~F, Con{a, t}, GJ.zeros(~F, 0n)) == Con{a, t} : M.Vec(~F)}, FV.succ_ne(M.len(~F, t), lu))
     case Con{+a, +t} 1n+k:
-      %Equal.sym(M.Vec(~F), BX.vsub(~F, t, GJ.zeros(~F, k)), t, vsub_zr(~F, t, k, FV.succ_inj(M.len(~F, t), k, lu))) : {Con{O.sub(~F, a, O.zero(F)), _} == Con{a, t} : M.Vec(~F)}
+      %Equal.sym(M.Vec(~F), BX.vsub(~F, t, GJ.zeros(~F, k)), t, vsub_zr(~F, t, k, LN.succ_inj(M.len(~F, t), k, lu))) : {Con{O.sub(~F, a, O.zero(F)), _} == Con{a, t} : M.Vec(~F)}
       %FR.fring_eq(~F, [a], E.ZVar{0n}, E.ZSub{E.ZVar{0n}, E.ZCst{S.Z0{}}}, {==}) : {Con{_, t} == Con{a, t} : M.Vec(~F)}
       {==}
 
@@ -360,7 +361,7 @@ def nrows_madd(~F: O.OField, a: M.Mat(~F), b: M.Mat(~F), +n: Nat, ha: {GJ.nrows(
         case 0n:
           FO.absurd({GJ.nrows(~F, M.madd(~F, Con{r, rs}, Con{t, ts})) == 0n : Nat}, FV.succ_ne(GJ.nrows(~F, rs), ha))
         case 1n+k:
-          %Equal.sym(Nat, GJ.nrows(~F, M.madd(~F, rs, ts)), k, nrows_madd(~F, rs, ts, k, FV.succ_inj(GJ.nrows(~F, rs), k, ha), FV.succ_inj(GJ.nrows(~F, ts), k, hb))) : {1n+_ == 1n+k : Nat}
+          %Equal.sym(Nat, GJ.nrows(~F, M.madd(~F, rs, ts)), k, nrows_madd(~F, rs, ts, k, LN.succ_inj(GJ.nrows(~F, rs), k, ha), LN.succ_inj(GJ.nrows(~F, ts), k, hb))) : {1n+_ == 1n+k : Nat}
           {==}
 
 # the n x n difference S - J has n rows
@@ -856,7 +857,7 @@ def dclose_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, xs: List<&2, S.D>, ys: List
       FO.absurd({NU.dclose(Con{x, xt}, Nil{}, t) == True{} : Bool}, FV.succ_ne(M.len(~F, M.ofdv(~F, xt)), hl))
     case Con{+x, +xt} Con{+y, +yt}:
       (h1, h2) = h
-      AP.band_t(KA.kle(~KI.dnum(), NU.dabs(S.D.sub(x, y)), t), NU.dclose(xt, yt, t), dabs_le_t(~F, ~H, x, y, t, h1), dclose_of(~F, ~H, xt, yt, t, FV.succ_inj(M.len(~F, M.ofdv(~F, xt)), M.len(~F, M.ofdv(~F, yt)), hl), h2))
+      KA.band_i(KA.kle(~KI.dnum(), NU.dabs(S.D.sub(x, y)), t), NU.dclose(xt, yt, t), dabs_le_t(~F, ~H, x, y, t, h1), dclose_of(~F, ~H, xt, yt, t, LN.succ_inj(M.len(~F, M.ofdv(~F, xt)), M.len(~F, M.ofdv(~F, yt)), hl), h2))
 
 # what newton promises: an answer within en of x_b, n entries
 def NOK(~F: O.OField, +n: Nat, +m: Nat, +b: O.C(F), +lam: O.C(F), +ms: O.C(F), +d: O.C(F), +rho: O.C(F), +p: Nat, +xb: M.Vec(~F), r: Maybe<&2, List<&2, S.D>>) -> Type:
@@ -886,7 +887,7 @@ def dclose_far(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, xs: List<&2, S.D>, ys: Lis
       FO.absurd({NU.dclose(Con{x, xt}, Nil{}, NU.far()) == True{} : Bool}, FV.succ_ne(M.len(~F, M.ofdv(~F, xt)), hl))
     case Con{+x, +xt} Con{+y, +yt}:
       (h1, h2) = h
-      AP.band_t(KA.kle(~KI.dnum(), NU.dabs(S.D.sub(x, y)), NU.far()), NU.dclose(xt, yt, NU.far()), kle_trans(~KI.dnum(), ~F, ~H, NU.dabs(S.D.sub(x, y)), M.d1(), NU.far(), dabs_le_t(~F, ~H, x, y, M.d1(), h1), {==}), dclose_far(~F, ~H, xt, yt, FV.succ_inj(M.len(~F, M.ofdv(~F, xt)), M.len(~F, M.ofdv(~F, yt)), hl), h2))
+      KA.band_i(KA.kle(~KI.dnum(), NU.dabs(S.D.sub(x, y)), NU.far()), NU.dclose(xt, yt, NU.far()), kle_trans(~KI.dnum(), ~F, ~H, NU.dabs(S.D.sub(x, y)), M.d1(), NU.far(), dabs_le_t(~F, ~H, x, y, M.d1(), h1), {==}), dclose_far(~F, ~H, xt, yt, LN.succ_inj(M.len(~F, M.ofdv(~F, xt)), M.len(~F, M.ofdv(~F, yt)), hl), h2))
 
 def d1_one(~F: O.OField) -> {O.one(F) == M.ofd(~F, M.d1()) : O.C(F)}:
   DM.ofd_one(~F)

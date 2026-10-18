@@ -16,6 +16,7 @@ import ./ford.bend as FO
 import ./fmat.bend as FM
 import ./fvec.bend as FV
 import ./certdef.bend as C
+import ./nat.bend as LN
 
 # The map's laws, turned to rewrite F's operations into K's
 # --------------------------------------------------------
@@ -117,6 +118,17 @@ def band_r(a: Bool, +b: Bool, h: {band(a, b) == True{} : Bool}) -> {b == True{} 
       h
     case False{}:
       FO.absurd({b == True{} : Bool}, ft(h))
+
+def band_i(a: Bool, +b: Bool, ha: {a == True{} : Bool}, hb: {b == True{} : Bool}) -> {band(a, b) == True{} : Bool}:
+  match a:
+    case True{}:
+      hb
+    case False{}:
+      FO.absurd({band(False{}, b) == True{} : Bool}, ft(ha))
+
+# True is not False
+def tf(e: {True{} == False{} : Bool}) -> Empty:
+  ft(Equal.sym(Bool, True{}, False{}, e))
 
 # Order in F from K's verdicts
 # ----------------------------
@@ -477,6 +489,176 @@ def natle(a: Nat, b: Nat) -> Bool:
       False{}
     case 1n+i 1n+j:
       natle(i, j)
+
+# Equality and order of Nat, as booleans
+# --------------------------------------
+
+def nateq_refl(a: Nat) -> {nateq(a, a) == True{} : Bool}:
+  match a:
+    case 0n:
+      {==}
+    case 1n+b:
+      nateq_refl(b)
+
+# a = b gives nateq(a, b)
+def nateq_of(+a: Nat, +b: Nat, e: {a == b : Nat}) -> {nateq(a, b) == True{} : Bool}:
+  %e : {nateq(a, _) == True{} : Bool}
+  nateq_refl(a)
+
+# nateq(a, b) gives a = b
+def nateq_ok(a: Nat, b: Nat, h: {nateq(a, b) == True{} : Bool}) -> {a == b : Nat}:
+  match a b:
+    case 0n 0n:
+      {==}
+    case 0n 1n+j:
+      FO.absurd({0n == 1n+j : Nat}, ft(h))
+    case 1n+i 0n:
+      FO.absurd({1n+i == 0n : Nat}, ft(h))
+    case 1n++i 1n+j:
+      %nateq_ok(i, j, h) : {1n+i == 1n+_ : Nat}
+      {==}
+
+def nateq_sym(a: Nat, b: Nat) -> {nateq(a, b) == nateq(b, a) : Bool}:
+  match a b:
+    case 0n 0n:
+      {==}
+    case 0n 1n+j:
+      {==}
+    case 1n+i 0n:
+      {==}
+    case 1n+i 1n+j:
+      nateq_sym(i, j)
+
+def natle_refl(a: Nat) -> {natle(a, a) == True{} : Bool}:
+  match a:
+    case 0n:
+      {==}
+    case 1n+b:
+      natle_refl(b)
+
+def natle_trans(a: Nat, b: Nat, +c: Nat, h1: {natle(a, b) == True{} : Bool}, h2: {natle(b, c) == True{} : Bool}) -> {natle(a, c) == True{} : Bool}:
+  match a b c:
+    case 0n b c:
+      {==}
+    case 1n+i 0n c:
+      FO.absurd({natle(1n+i, c) == True{} : Bool}, ft(h1))
+    case 1n+i 1n+j 0n:
+      FO.absurd({False{} == True{} : Bool}, ft(h2))
+    case 1n+i 1n+j 1n+k:
+      natle_trans(i, j, k, h1, h2)
+
+# a <= b: a <= b + 1
+def natle_succ(a: Nat, +b: Nat, h: {natle(a, b) == True{} : Bool}) -> {natle(a, 1n+b) == True{} : Bool}:
+  match a b:
+    case 0n b:
+      {==}
+    case 1n+i 0n:
+      FO.absurd({natle(i, 0n) == True{} : Bool}, ft(h))
+    case 1n+i 1n+j:
+      natle_succ(i, j, h)
+
+# a + 1 <= b: a <= b
+def natle_pred(+a: Nat, +b: Nat, h: {natle(1n+a, b) == True{} : Bool}) -> {natle(a, b) == True{} : Bool}:
+  natle_trans(a, 1n+a, b, natle_succ(a, a, natle_refl(a)), h)
+
+def natle_add_r(a: Nat, +b: Nat) -> {natle(a, Nat.add(a, b)) == True{} : Bool}:
+  match a:
+    case 0n:
+      {==}
+    case 1n+i:
+      natle_add_r(i, b)
+
+def natle_add_l(a: Nat, +b: Nat) -> {natle(b, Nat.add(a, b)) == True{} : Bool}:
+  match a:
+    case 0n:
+      natle_refl(b)
+    case 1n++i:
+      natle_succ(b, Nat.add(i, b), natle_add_l(i, b))
+
+# a <= b: c + a <= c + b
+def natle_add_mono(c: Nat, +a: Nat, +b: Nat, h: {natle(a, b) == True{} : Bool}) -> {natle(Nat.add(c, a), Nat.add(c, b)) == True{} : Bool}:
+  match c:
+    case 0n:
+      h
+    case 1n+i:
+      natle_add_mono(i, a, b, h)
+
+# a <= c: a + d <= c + d
+def natle_add_rr(a: Nat, c: Nat, +d: Nat, h: {natle(a, c) == True{} : Bool}) -> {natle(Nat.add(a, d), Nat.add(c, d)) == True{} : Bool}:
+  match a c:
+    case 0n c:
+      natle_add_l(c, d)
+    case 1n+i 0n:
+      FO.absurd({natle(Nat.add(1n+i, d), d) == True{} : Bool}, ft(h))
+    case 1n+i 1n+j:
+      natle_add_rr(i, j, d, h)
+
+# a <= c and b <= d: a + b <= c + d
+def natle_add2(+a: Nat, +b: Nat, +c: Nat, +d: Nat, h1: {natle(a, c) == True{} : Bool}, h2: {natle(b, d) == True{} : Bool}) -> {natle(Nat.add(a, b), Nat.add(c, d)) == True{} : Bool}:
+  natle_trans(Nat.add(a, b), Nat.add(a, d), Nat.add(c, d), natle_add_mono(a, b, d, h2), natle_add_rr(a, c, d, h1))
+
+def natle_antisym(a: Nat, b: Nat, h1: {natle(a, b) == True{} : Bool}, h2: {natle(b, a) == True{} : Bool}) -> {a == b : Nat}:
+  match a b:
+    case 0n 0n:
+      {==}
+    case 0n 1n+j:
+      FO.absurd({0n == 1n+j : Nat}, ft(h2))
+    case 1n+i 0n:
+      FO.absurd({1n+i == 0n : Nat}, ft(h1))
+    case 1n++i 1n+j:
+      %natle_antisym(i, j, h1, h2) : {1n+i == 1n+_ : Nat}
+      {==}
+
+# not a <= b: b <= a
+def natle_flip(a: Nat, b: Nat, h: {natle(a, b) == False{} : Bool}) -> {natle(b, a) == True{} : Bool}:
+  match a b:
+    case 0n b:
+      FO.absurd({natle(b, 0n) == True{} : Bool}, tf(h))
+    case 1n+i 0n:
+      {==}
+    case 1n+i 1n+j:
+      natle_flip(i, j, h)
+
+# not a < b: b <= a
+def natle_of_nlt(a: Nat, b: Nat, h: {natle(1n+a, b) == False{} : Bool}) -> {natle(b, a) == True{} : Bool}:
+  match a b:
+    case a 0n:
+      {==}
+    case 0n 1n+k:
+      FO.absurd({natle(1n+k, 0n) == True{} : Bool}, tf(h))
+    case 1n+j 1n+k:
+      natle_of_nlt(j, k, h)
+
+# not a + 1 <= a
+def natlt_irr(a: Nat, h: {natle(1n+a, a) == True{} : Bool}) -> Empty:
+  match a:
+    case 0n:
+      ft(h)
+    case 1n+b:
+      natlt_irr(b, h)
+
+# a + 1 <= b: nateq(a, b) is false
+def natlt_ne(a: Nat, b: Nat, h: {natle(1n+a, b) == True{} : Bool}) -> {nateq(a, b) == False{} : Bool}:
+  match a b:
+    case 0n 0n:
+      FO.absurd({True{} == False{} : Bool}, ft(h))
+    case 0n 1n+j:
+      {==}
+    case 1n+i 0n:
+      {==}
+    case 1n+i 1n+j:
+      natlt_ne(i, j, h)
+
+# c + (1 + k) = n: c + 1 <= n
+def natlt_of_add(+c: Nat, +k: Nat, +n: Nat, hk: {Nat.add(c, 1n+k) == n : Nat}) -> {natle(1n+c, n) == True{} : Bool}:
+  %hk : {natle(1n+c, _) == True{} : Bool}
+  %LN.add_succ(c, k) : {natle(1n+c, _) == True{} : Bool}
+  natle_add_r(c, k)
+
+# a <= b and b = c: a <= c
+def natle_rw(+a: Nat, +b: Nat, +c: Nat, e: {b == c : Nat}, h: {natle(a, b) == True{} : Bool}) -> {natle(a, c) == True{} : Bool}:
+  %e : {natle(a, _) == True{} : Bool}
+  h
 
 # Vector verdicts in F
 # --------------------

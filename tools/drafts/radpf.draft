@@ -45,6 +45,7 @@ import ./qemb.bend as QE
 import ./apxpf.bend as AP
 import ./nwtpf.bend as NW
 import ./slope.bend as SL
+import ./nat.bend as LN
 
 # K's absolute value is F's
 # -------------------------
@@ -339,7 +340,7 @@ def bcen_zipb(~K: N.Num, cs: N.KVec(~K), rs: N.KVec(~K), hl: {KA.klen(~K, cs) ==
     case Con{c, ct} Nil{}:
       FO.absurd({KB.bcenters(~K, CK.zipb(~K, Con{c, ct}, Nil{})) == Con{c, ct} : N.KVec(~K)}, FV.succ_ne(KA.klen(~K, ct), hl))
     case Con{+c, +ct} Con{+r, +rt}:
-      %Equal.sym(N.KVec(~K), KB.bcenters(~K, CK.zipb(~K, ct, rt)), ct, bcen_zipb(~K, ct, rt, FV.succ_inj(KA.klen(~K, ct), KA.klen(~K, rt), hl))) : {Con{c, _} == Con{c, ct} : N.KVec(~K)}
+      %Equal.sym(N.KVec(~K), KB.bcenters(~K, CK.zipb(~K, ct, rt)), ct, bcen_zipb(~K, ct, rt, LN.succ_inj(KA.klen(~K, ct), KA.klen(~K, rt), hl))) : {Con{c, _} == Con{c, ct} : N.KVec(~K)}
       {==}
 
 # a zipped box whose centers are within bb - rho and radii in [0, rho] has grade (bb, 1)
@@ -357,7 +358,7 @@ def gbox_zip($KH, cs: N.KVec(~K), rs: N.KVec(~K), +rho: @T, +bb: @T, hc: M.vbnd.
       (hr1, hr2) = hr
       +hrl = NP.bnd_lo(~F, @H(r), rho, hr1)
       ((hn1, (FM.bnd_mono(~F, @H(c), @S(bb, rho), @S(bb, @H(r)), hc1, FM.nn_eq(~F, @S(@S(bb, @H(r)), @S(bb, rho)), @S(rho, @H(r)), FR.fring_eq(~F, [bb, rho, @H(r)], E.ZSub{E.ZVar{1n}, E.ZVar{2n}}, E.ZSub{E.ZSub{E.ZVar{0n}, E.ZVar{2n}}, E.ZSub{E.ZVar{0n}, E.ZVar{1n}}}, {==}), FM.sub_nonneg(~F, @H(r), rho, hrl))), DM.le_trans(~F, @H(r), rho, @M(@1, rho), hrl, AP.le_one_mul(~F, rho)))),
-       gbox_zip($KHA, ct, rt, rho, bb, hc2, hn2, hr2, FV.succ_inj(KA.klen(~K, ct), KA.klen(~K, rt), hl)))
+       gbox_zip($KHA, ct, rt, rho, bb, hc2, hn2, hr2, LN.succ_inj(KA.klen(~K, ct), KA.klen(~K, rt), hl)))
 
 # Slope radii over a graded box
 # -----------------------------
@@ -489,7 +490,7 @@ def bpair_zip($KH, +dl: @T, cs: N.KVec(~K), rs0: N.KVec(~K), rs1: N.KVec(~K), hp
       FO.absurd(bpair($KHA, dl, CK.zipb(~K, Con{c, ct}, Con{a, t0}), CK.zipb(~K, Con{c, ct}, Nil{})), hp)
     case Con{+c, +ct} Con{+a, +t0} Con{+b, +t1}:
       (h1, h2) = hp
-      (h1, bpair_zip($KHA, dl, ct, t0, t1, h2, FV.succ_inj(KA.klen(~K, ct), KA.klen(~K, t0), hl)))
+      (h1, bpair_zip($KHA, dl, ct, t0, t1, h2, LN.succ_inj(KA.klen(~K, ct), KA.klen(~K, t0), hl)))
 
 def rpair_app($KH, +dl: @T, u0: N.KVec(~K), u1: N.KVec(~K), +w: N.KVec(~K), hu: rpair($KHA, dl, u0, u1), hw: rpair($KHA, dl, w, w)) -> rpair($KHA, dl, KA.kapp(~K, u0, w), KA.kapp(~K, u1, w)):
   match u0 u1:
@@ -688,7 +689,7 @@ def klen_kvadd(~K: N.Num, u: N.KVec(~K), w: N.KVec(~K), +n: Nat, hu: {KA.klen(~K
     case Con{+a, +us} Con{+b, +ws} 0n:
       FO.absurd({KA.klen(~K, KA.kvadd(~K, Con{a, us}, Con{b, ws})) == 0n : Nat}, FV.succ_ne(KA.klen(~K, us), hu))
     case Con{+a, +us} Con{+b, +ws} 1n++k:
-      %Equal.sym(Nat, KA.klen(~K, KA.kvadd(~K, us, ws)), k, klen_kvadd(~K, us, ws, k, FV.succ_inj(KA.klen(~K, us), k, hu), FV.succ_inj(KA.klen(~K, ws), k, hw))) : {1n+_ == 1n+k : Nat}
+      %Equal.sym(Nat, KA.klen(~K, KA.kvadd(~K, us, ws)), k, klen_kvadd(~K, us, ws, k, LN.succ_inj(KA.klen(~K, us), k, hu), LN.succ_inj(KA.klen(~K, ws), k, hw))) : {1n+_ == 1n+k : Nat}
       {==}
 
 def klen_kmatvec(~K: N.Num, a: N.KMat(~K), +v: N.KVec(~K)) -> {KA.klen(~K, KA.kmatvec(~K, a, v)) == CK.mlen(~K, a) : Nat}:
@@ -757,7 +758,7 @@ def mlen_kmadd(~K: N.Num, a: N.KMat(~K), b: N.KMat(~K), +n: Nat, ha: {CK.mlen(~K
     case Con{+r, +rs} Con{+t, +ts} 0n:
       FO.absurd({CK.mlen(~K, KA.kmadd(~K, Con{r, rs}, Con{t, ts})) == 0n : Nat}, FV.succ_ne(CK.mlen(~K, rs), ha))
     case Con{+r, +rs} Con{+t, +ts} 1n++k:
-      %Equal.sym(Nat, CK.mlen(~K, KA.kmadd(~K, rs, ts)), k, mlen_kmadd(~K, rs, ts, k, FV.succ_inj(CK.mlen(~K, rs), k, ha), FV.succ_inj(CK.mlen(~K, ts), k, hb))) : {1n+_ == 1n+k : Nat}
+      %Equal.sym(Nat, CK.mlen(~K, KA.kmadd(~K, rs, ts)), k, mlen_kmadd(~K, rs, ts, k, LN.succ_inj(CK.mlen(~K, rs), k, ha), LN.succ_inj(CK.mlen(~K, ts), k, hb))) : {1n+_ == 1n+k : Nat}
       {==}
 
 def mlen_imm(~K: N.Num, +n: Nat, +a: N.KMat(~K), +b: N.KMat(~K), +ha: {CK.mlen(~K, a) == n : Nat}) -> {CK.mlen(~K, CK.imm(~K, n, a, b)) == n : Nat}:
@@ -844,10 +845,10 @@ def rle_of_all(~F: O.OField, u: M.Vec(~F), +n: Nat, +t: @T, +h: GJ.All(~(k => O.
       FO.absurd(FV.rle(~F, Con{a, us}, frep(~F, 0n, t)), FV.succ_ne(M.len(~F, us), lu))
     case Con{+a, +us} 1n++k:
       (GJ.all_at(~(j => O.le(~F, O.lookup(~F, Con{a, us}, j), t)), 1n+M.len(~F, us), h, 0n, {==}),
-       rle_of_all(~F, us, k, t, DG.all_shift(~(j => O.le(~F, O.lookup(~F, Con{a, us}, j), t)), M.len(~F, us), h), FV.succ_inj(M.len(~F, us), k, lu)))
+       rle_of_all(~F, us, k, t, DG.all_shift(~(j => O.le(~F, O.lookup(~F, Con{a, us}, j), t)), M.len(~F, us), h), LN.succ_inj(M.len(~F, us), k, lu)))
 
 def rle_rep(~F: O.OField, ~u: M.Vec(~F), ~t: @T, ~f: @k: Nat -> O.le(~F, O.lookup(~F, u, k), t), +n: Nat, lu: {M.len(~F, u) == n : Nat}) -> FV.rle(~F, u, frep(~F, n, t)):
-  rle_of_all(~F, u, n, t, GJ.all_mk(~M.len(~F, u), ~(k => O.le(~F, O.lookup(~F, u, k), t)), ~(k => hk => f(k)), M.len(~F, u), GJ.le_refl(M.len(~F, u))), lu)
+  rle_of_all(~F, u, n, t, GJ.all_mk(~M.len(~F, u), ~(k => O.le(~F, O.lookup(~F, u, k), t)), ~(k => hk => f(k)), M.len(~F, u), KA.natle_refl(M.len(~F, u))), lu)
 
 def lk3(~F: O.OField, +a: M.Vec(~F), +b: M.Vec(~F), +g: M.Vec(~F), +k: Nat) -> {O.lookup(~F, M.vadd(~F, M.vadd(~F, a, b), g), k) == @A(@A(O.lookup(~F, a, k), O.lookup(~F, b, k)), O.lookup(~F, g, k)) : @T}:
   %GJ.look_vadd(~F, M.vadd(~F, a, b), g, k) : {_ == @A(@A(O.lookup(~F, a, k), O.lookup(~F, b, k)), O.lookup(~F, g, k)) : @T}
@@ -1107,32 +1108,28 @@ def rle_nil_rnn(~F: O.OField, v: M.Vec(~F), h: FV.rnn(~F, v)) -> FV.rle(~F, Nil{
       (h1, h2) = h
       (h1, rle_nil_rnn(~F, as, h2))
 
-def nateq_of(+a: Nat, +b: Nat, e: {a == b : Nat}) -> {KA.nateq(a, b) == True{} : Bool}:
-  %e : {KA.nateq(a, _) == True{} : Bool}
-  GJ.nateq_refl(a)
-
 def shape_ok($WXP, +hym: {CK.mlen($DN, ym) == n : Nat}, +hab: {CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs) == True{} : Bool}, +r: S.D, +hr0: O.le(~F, @0, M.ofd(~F, r))) -> {CK.shape($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr) == True{} : Bool}:
-  AP.band_t(KA.nateq(CK.eqlen(eqs), n), KA.band(KA.nateq(CK.mlen($DN, ym), n), KA.band(KA.nateq(KA.klen($DN, yc), n), KA.band(KA.natle(KA.klen($DN, NU.dreps(n, r)), n), KA.band(KA.nateq(KA.klen($DN, pc), KA.klen($DN, pr)), KA.band(KA.kvle($DN, Nil{}, NU.dreps(n, r)), KA.band(KA.kvle($DN, Nil{}, pr), KA.band(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs)))))))), nateq_of(CK.eqlen(eqs), n, hn),
-  AP.band_t(KA.nateq(CK.mlen($DN, ym), n), KA.band(KA.nateq(KA.klen($DN, yc), n), KA.band(KA.natle(KA.klen($DN, NU.dreps(n, r)), n), KA.band(KA.nateq(KA.klen($DN, pc), KA.klen($DN, pr)), KA.band(KA.kvle($DN, Nil{}, NU.dreps(n, r)), KA.band(KA.kvle($DN, Nil{}, pr), KA.band(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs))))))), nateq_of(CK.mlen($DN, ym), n, hym),
-  AP.band_t(KA.nateq(KA.klen($DN, yc), n), KA.band(KA.natle(KA.klen($DN, NU.dreps(n, r)), n), KA.band(KA.nateq(KA.klen($DN, pc), KA.klen($DN, pr)), KA.band(KA.kvle($DN, Nil{}, NU.dreps(n, r)), KA.band(KA.kvle($DN, Nil{}, pr), KA.band(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs)))))), nateq_of(KA.klen($DN, yc), n, lyc),
-  AP.band_t(KA.natle(KA.klen($DN, NU.dreps(n, r)), n), KA.band(KA.nateq(KA.klen($DN, pc), KA.klen($DN, pr)), KA.band(KA.kvle($DN, Nil{}, NU.dreps(n, r)), KA.band(KA.kvle($DN, Nil{}, pr), KA.band(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs))))),
+  KA.band_i(KA.nateq(CK.eqlen(eqs), n), KA.band(KA.nateq(CK.mlen($DN, ym), n), KA.band(KA.nateq(KA.klen($DN, yc), n), KA.band(KA.natle(KA.klen($DN, NU.dreps(n, r)), n), KA.band(KA.nateq(KA.klen($DN, pc), KA.klen($DN, pr)), KA.band(KA.kvle($DN, Nil{}, NU.dreps(n, r)), KA.band(KA.kvle($DN, Nil{}, pr), KA.band(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs)))))))), KA.nateq_of(CK.eqlen(eqs), n, hn),
+  KA.band_i(KA.nateq(CK.mlen($DN, ym), n), KA.band(KA.nateq(KA.klen($DN, yc), n), KA.band(KA.natle(KA.klen($DN, NU.dreps(n, r)), n), KA.band(KA.nateq(KA.klen($DN, pc), KA.klen($DN, pr)), KA.band(KA.kvle($DN, Nil{}, NU.dreps(n, r)), KA.band(KA.kvle($DN, Nil{}, pr), KA.band(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs))))))), KA.nateq_of(CK.mlen($DN, ym), n, hym),
+  KA.band_i(KA.nateq(KA.klen($DN, yc), n), KA.band(KA.natle(KA.klen($DN, NU.dreps(n, r)), n), KA.band(KA.nateq(KA.klen($DN, pc), KA.klen($DN, pr)), KA.band(KA.kvle($DN, Nil{}, NU.dreps(n, r)), KA.band(KA.kvle($DN, Nil{}, pr), KA.band(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs)))))), KA.nateq_of(KA.klen($DN, yc), n, lyc),
+  KA.band_i(KA.natle(KA.klen($DN, NU.dreps(n, r)), n), KA.band(KA.nateq(KA.klen($DN, pc), KA.klen($DN, pr)), KA.band(KA.kvle($DN, Nil{}, NU.dreps(n, r)), KA.band(KA.kvle($DN, Nil{}, pr), KA.band(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs))))),
     (%Equal.sym(Nat, KA.klen($DN, NU.dreps(n, r)), n, klen_dreps(n, r)) : {KA.natle(_, n) == True{} : Bool}
-      GJ.le_refl(n)),
-  AP.band_t(KA.nateq(KA.klen($DN, pc), KA.klen($DN, pr)), KA.band(KA.kvle($DN, Nil{}, NU.dreps(n, r)), KA.band(KA.kvle($DN, Nil{}, pr), KA.band(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs)))), nateq_of(KA.klen($DN, pc), KA.klen($DN, pr), lpp),
-  AP.band_t(KA.kvle($DN, Nil{}, NU.dreps(n, r)), KA.band(KA.kvle($DN, Nil{}, pr), KA.band(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs))),
+      KA.natle_refl(n)),
+  KA.band_i(KA.nateq(KA.klen($DN, pc), KA.klen($DN, pr)), KA.band(KA.kvle($DN, Nil{}, NU.dreps(n, r)), KA.band(KA.kvle($DN, Nil{}, pr), KA.band(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs)))), KA.nateq_of(KA.klen($DN, pc), KA.klen($DN, pr), lpp),
+  KA.band_i(KA.kvle($DN, Nil{}, NU.dreps(n, r)), KA.band(KA.kvle($DN, Nil{}, pr), KA.band(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs))),
     AP.kvle_of($DH, Nil{}, NU.dreps(n, r),
       (%Equal.sym(M.Vec(~F), N.ofkv($DH, NU.dreps(n, r)), frep(~F, n, M.ofd(~F, r)), rf_eq(~F, ~H, n, r)) : FV.rle(~F, Nil{}, _)
         rle_nil_rep(~F, n, M.ofd(~F, r), hr0))),
-  AP.band_t(KA.kvle($DN, Nil{}, pr), KA.band(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs)),
+  KA.band_i(KA.kvle($DN, Nil{}, pr), KA.band(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs)),
     AP.kvle_of($DH, Nil{}, pr, rle_nil_rnn(~F, N.ofkv($DH, pr), rnn_kv(~F, ~H, pr, hpn))),
-  AP.band_t(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs), hh, hab))))))))
+  KA.band_i(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs), hh, hab))))))))
 
 # The window: every r with S <= r/2, r <= rb passes the block checker
 def window_ok($WXP, +hym: {CK.mlen($DN, ym) == n : Nat}, +hab: {CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs) == True{} : Bool}, +thR: @T, +hthr0: O.le(~F, @0, thR), +hthr: $THR, +hthr1: O.lt(F, thR, @1), +hw: O.le(~F, $CW, $QH), +r: S.D, +hr0: O.le(~F, @0, M.ofd(~F, r)), +hr1: O.le(~F, M.ofd(~F, r), rb), +hS: O.le(~F, $SD, @M($QH, M.ofd(~F, r)))) -> {NU.okr(eqs, n, yc, r, ym, pc, pr) == True{} : Bool}:
-  AP.band_t(CK.shape($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), CK.rest1($DN, eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr), shape_ok($WXA, hym, hab, r, hr0),
-  AP.band_t(CK.factor($DN, NU.half()), CK.rest2($DN, eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr), {==},
-  AP.band_t(CK.ccon($DN, eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr), CK.rest3($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), ccon_ok($WXA, hym, r, hr0, hr1, hw),
-  AP.band_t(CK.cself($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), CK.cinj($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), cself_ok($WXA, hym, r, hr0, hr1, hS, hw), cinj_ok($WXA, thR, hthr0, hthr, hthr1, r)))))
+  KA.band_i(CK.shape($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), CK.rest1($DN, eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr), shape_ok($WXA, hym, hab, r, hr0),
+  KA.band_i(CK.factor($DN, NU.half()), CK.rest2($DN, eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr), {==},
+  KA.band_i(CK.ccon($DN, eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr), CK.rest3($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), ccon_ok($WXA, hym, r, hr0, hr1, hw),
+  KA.band_i(CK.cself($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), CK.cinj($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), cself_ok($WXA, hym, r, hr0, hr1, hS, hw), cinj_ok($WXA, thR, hthr0, hthr, hthr1, r)))))
 
 # The radius search
 # -----------------

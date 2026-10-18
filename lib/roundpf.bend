@@ -467,17 +467,6 @@ def dround_err(~F: O.OField, x: S.D, +p: Nat) -> M.bnd(~F, O.sub(~F, M.ofd(~F, N
 # Rounding to b significant bits
 # ------------------------------
 
-def le_flip(a: Nat, b: Nat, h: {KA.natle(a, b) == False{} : Bool}) -> {KA.natle(b, a) == True{} : Bool}:
-  match a b:
-    case 0n 0n:
-      FO.absurd({KA.natle(0n, 0n) == True{} : Bool}, KA.ft(Equal.sym(Bool, True{}, False{}, h)))
-    case 0n 1n+j:
-      FO.absurd({KA.natle(1n+j, 0n) == True{} : Bool}, KA.ft(Equal.sym(Bool, True{}, False{}, h)))
-    case 1n+i 0n:
-      {==}
-    case 1n+i 1n+j:
-      le_flip(i, j, h)
-
 def sub_add_le(x: Nat, y: Nat, h: {KA.natle(y, x) == True{} : Bool}) -> {Nat.add(Nat.sub(x, y), y) == x : Nat}:
   match x y:
     case 0n 0n:
@@ -518,7 +507,7 @@ def dsh_val(~F: O.OField, le: Bool, +m: S.Z, +e: Nat, +k: Nat, h: {KA.natle(k, e
       %sub_add_le(e, k, h) : {M.ofd(~F, S.D{NU.zshr_round(m, k), Nat.sub(e, k)}) == O.mul(F, O.mul(F, O.ofz(~F, NU.zshr_round(m, k)), t2(~F, k)), O.inv(F, t2(~F, _))) : O.C(F)}
       valA(~F, NU.zshr_round(m, k), Nat.sub(e, k), k)
     case False{}:
-      %sub_add_le(k, e, le_flip(k, e, h)) : {M.ofd(~F, S.D{S.Z.mul(NU.zshr_round(m, k), S.Zpos{S.Pos.pow2(Nat.sub(k, e))}), 0n}) == O.mul(F, O.mul(F, O.ofz(~F, NU.zshr_round(m, k)), t2(~F, _)), O.inv(F, t2(~F, e))) : O.C(F)}
+      %sub_add_le(k, e, KA.natle_flip(k, e, h)) : {M.ofd(~F, S.D{S.Z.mul(NU.zshr_round(m, k), S.Zpos{S.Pos.pow2(Nat.sub(k, e))}), 0n}) == O.mul(F, O.mul(F, O.ofz(~F, NU.zshr_round(m, k)), t2(~F, _)), O.inv(F, t2(~F, e))) : O.C(F)}
       valB(~F, NU.zshr_round(m, k), Nat.sub(k, e), e)
 
 # zsr at k = j + 1
@@ -605,7 +594,7 @@ def qb_hi(~F: O.OField, +p: S.Pos, +d: S.Pos, +b: Nat, +h: {KA.natle(QRD.size(p)
       FO.mul_nonneg(~F, t2(~F, Nat.sub(Nat.add(b, QRD.size(d)), QRD.size(p))), O.sub(~F, O.add(F, O.ofp(~F, p), O.ofp(~F, p)), t2(~F, QRD.size(p))), ofp_nn(~F, S.Pos.pow2(Nat.sub(Nat.add(b, QRD.size(d)), QRD.size(p)))), FM.sub_nonneg(~F, t2(~F, QRD.size(p)), O.add(F, O.ofp(~F, p), O.ofp(~F, p)), size_lo(~F, p))))))
 
 def ts_mono(~F: O.OField, +p: S.Pos, +d: S.Pos, +b: Nat, +h: {KA.natle(QRD.size(p), Nat.add(b, QRD.size(d))) == False{} : Bool}) -> O.le(~F, t2(~F, Nat.add(b, QRD.size(d))), t2(~F, QRD.size(p))):
-  %sub_add_le(QRD.size(p), Nat.add(b, QRD.size(d)), le_flip(QRD.size(p), Nat.add(b, QRD.size(d)), h)) : O.le(~F, t2(~F, Nat.add(b, QRD.size(d))), t2(~F, _))
+  %sub_add_le(QRD.size(p), Nat.add(b, QRD.size(d)), KA.natle_flip(QRD.size(p), Nat.add(b, QRD.size(d)), h)) : O.le(~F, t2(~F, Nat.add(b, QRD.size(d))), t2(~F, _))
   t2_mono(~F, Nat.add(b, QRD.size(d)), Nat.sub(QRD.size(p), Nat.add(b, QRD.size(d))))
 
 

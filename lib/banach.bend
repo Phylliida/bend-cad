@@ -100,10 +100,10 @@ def rbnd_of_lk(~F: O.OField, d: M.Vec(~F), n: Nat, r: M.Vec(~F), hl: {M.len(~F, 
       FO.absurd(BX.rbnd(~F, Con{x, xs}, Con{s, rs}), FV.succ_ne(M.len(~F, xs), hl))
     case Con{+x, +xs} 1n++k Nil{}:
       (h0, hs) = h
-      (h0, rbnd_of_lk(~F, xs, k, Nil{}, FV.succ_inj(M.len(~F, xs), k, hl), lk_shift_nil(~F, x, xs, k, 0n, hs)))
+      (h0, rbnd_of_lk(~F, xs, k, Nil{}, LN.succ_inj(M.len(~F, xs), k, hl), lk_shift_nil(~F, x, xs, k, 0n, hs)))
     case Con{+x, +xs} 1n++k Con{+s, +rs}:
       (h0, hs) = h
-      (h0, rbnd_of_lk(~F, xs, k, rs, FV.succ_inj(M.len(~F, xs), k, hl), lk_shift_con(~F, x, xs, s, rs, k, 0n, hs)))
+      (h0, rbnd_of_lk(~F, xs, k, rs, LN.succ_inj(M.len(~F, xs), k, hl), lk_shift_con(~F, x, xs, s, rs, k, 0n, hs)))
 
 # bounds by nothing are bounds by 0
 def vall_of_rbnd(~F: O.OField, d: M.Vec(~F), h: BX.rbnd(~F, d, Nil{})) -> M.vbnd.all(~F, d, O.zero(F)):
@@ -144,7 +144,7 @@ def rbnd_look(~F: O.OField, d: M.Vec(~F), +r: M.Vec(~F), +h: BX.rbnd(~F, d, r), 
     case Con{+x, +xs} 1n+k 0n:
       bnd_rw_s(~F, x, FV.vhd(~F, r), O.lookup(~F, r, 0n), Equal.sym(O.C(F), O.lookup(~F, r, 0n), FV.vhd(~F, r), look_vhd(~F, r)), FV.rbnd_head(~F, x, xs, r, h))
     case Con{+x, +xs} 1n++k 1n++j:
-      bnd_rw_s(~F, O.lookup(~F, xs, j), O.lookup(~F, FV.vtl(~F, r), j), O.lookup(~F, r, 1n+j), Equal.sym(O.C(F), O.lookup(~F, r, 1n+j), O.lookup(~F, FV.vtl(~F, r), j), look_vtl(~F, r, j)), rbnd_look(~F, xs, FV.vtl(~F, r), FV.rbnd_tail(~F, x, xs, r, h), k, FV.succ_inj(M.len(~F, xs), k, hl), j, hi))
+      bnd_rw_s(~F, O.lookup(~F, xs, j), O.lookup(~F, FV.vtl(~F, r), j), O.lookup(~F, r, 1n+j), Equal.sym(O.C(F), O.lookup(~F, r, 1n+j), O.lookup(~F, FV.vtl(~F, r), j), look_vtl(~F, r, j)), rbnd_look(~F, xs, FV.vtl(~F, r), FV.rbnd_tail(~F, x, xs, r, h), k, LN.succ_inj(M.len(~F, xs), k, hl), j, hi))
 
 # The certificate's facts, unpacked
 # ---------------------------------

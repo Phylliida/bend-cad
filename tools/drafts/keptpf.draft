@@ -174,7 +174,7 @@ def geb_weak(xs: List<&2, Nat>, +m: Nat, +h: {geb(xs, 1n+m) == True{} : Bool}) -
     case Nil{}:
       {==}
     case Con{+x, +t}:
-      L.band_i(KA.natle(m, x), geb(t, m), L.le_pred(m, x, L.band_l(KA.natle(1n+m, x), geb(t, 1n+m), h)), geb_weak(t, m, L.band_r(KA.natle(1n+m, x), geb(t, 1n+m), h)))
+      L.band_i(KA.natle(m, x), geb(t, m), KA.natle_pred(m, x, L.band_l(KA.natle(1n+m, x), geb(t, 1n+m), h)), geb_weak(t, m, L.band_r(KA.natle(1n+m, x), geb(t, 1n+m), h)))
 
 
 def sel2_ge.go(b: Bool, +k: Nat, +r: List<&2, Nat>, +h: {geb(r, k) == True{} : Bool}) -> {geb(sel2.go(b, k, r), k) == True{} : Bool}:
@@ -182,7 +182,7 @@ def sel2_ge.go(b: Bool, +k: Nat, +r: List<&2, Nat>, +h: {geb(r, k) == True{} : B
     case True{}:
       h
     case False{}:
-      L.band_i(KA.natle(k, k), geb(r, k), L.le_refl(k), h)
+      L.band_i(KA.natle(k, k), geb(r, k), KA.natle_refl(k), h)
 
 def sel2_ge(ot: List<&2, Nat>, +k: Nat, +red: List<&2, Nat>) -> {geb(sel2(ot, k, red), k) == True{} : Bool}:
   match ot:
@@ -203,14 +203,14 @@ def minus_succ(k: Nat, j: Nat, h: {KA.natle(k, j) == True{} : Bool}) -> {PL.minu
     case 0n j:
       {==}
     case 1n+k2 0n:
-      absurd({PL.minus(1n+k2, 1n) == 1n+PL.minus(1n+k2, 0n) : Nat}, L.ft(h))
+      absurd({PL.minus(1n+k2, 1n) == 1n+PL.minus(1n+k2, 0n) : Nat}, KA.ft(h))
     case 1n+k2 1n+j2:
       minus_succ(k2, j2, h)
 
 def pk_elt(+e: E.QExpr, +et: List<&2, E.QExpr>, +k: Nat, j: Nat, h: {KA.natle(1n+k, j) == True{} : Bool}) -> {PL.eqget(Con{e, et}, PL.minus(k, j)) == PL.eqget(et, PL.minus(1n+k, j)) : E.QExpr}:
   match j:
     case 0n:
-      absurd({PL.eqget(Con{e, et}, PL.minus(k, 0n)) == PL.eqget(et, PL.minus(1n+k, 0n)) : E.QExpr}, L.ft(h))
+      absurd({PL.eqget(Con{e, et}, PL.minus(k, 0n)) == PL.eqget(et, PL.minus(1n+k, 0n)) : E.QExpr}, KA.ft(h))
     case 1n++j2:
       %Equal.sym(Nat, PL.minus(k, 1n+j2), 1n+PL.minus(k, j2), minus_succ(k, j2, h)) : {PL.eqget(Con{e, et}, _) == PL.eqget(et, PL.minus(k, j2)) : E.QExpr}
       {==}
@@ -238,20 +238,17 @@ def kq_go(+e: E.QExpr, +et: List<&2, E.QExpr>, +ot: List<&2, Nat>, +k: Nat, +red
       %Equal.sym(List<&2, E.QExpr>, keepq(et, ot, red), pickk(et, 1n+k, r), ih) : {Con{e, _} == Con{e, pickk(et, 1n+k, r)} : List<&2, E.QExpr>}
       {==}
 
-def succ_inj(+a: Nat, +b: Nat, h: {1n+a == 1n+b : Nat}) -> {a == b : Nat}:
-  L.eq_ok(a, b, D.eq_of(1n+a, 1n+b, h))
-
 # keeping by owner is picking the indices of non-red owners
 def kq_pick(et: List<&2, E.QExpr>, ot: List<&2, Nat>, +k: Nat, +red: List<&2, Nat>, hl: {SV.neqs(et) == SV.len(ot) : Nat}) -> {keepq(et, ot, red) == pickk(et, k, sel2(ot, k, red)) : List<&2, E.QExpr>}:
   match et ot:
     case Nil{} Nil{}:
       {==}
     case Nil{} Con{+o, +ot2}:
-      absurd({Nil{} == pickk(Nil{}, k, sel2(Con{o, ot2}, k, red)) : List<&2, E.QExpr>}, L.ft(D.eq_of(0n, 1n+SV.len(ot2), hl)))
+      absurd({Nil{} == pickk(Nil{}, k, sel2(Con{o, ot2}, k, red)) : List<&2, E.QExpr>}, KA.ft(D.eq_of(0n, 1n+SV.len(ot2), hl)))
     case Con{+e, +et2} Nil{}:
-      absurd({Nil{} == pickk(Con{e, et2}, k, Nil{}) : List<&2, E.QExpr>}, L.ft(D.eq_of(1n+SV.neqs(et2), 0n, hl)))
+      absurd({Nil{} == pickk(Con{e, et2}, k, Nil{}) : List<&2, E.QExpr>}, KA.ft(D.eq_of(1n+SV.neqs(et2), 0n, hl)))
     case Con{+e, +et2} Con{+o, +ot2}:
-      kq_go(e, et2, ot2, k, red, SV.mem(o, red), kq_pick(et2, ot2, 1n+k, red, succ_inj(SV.neqs(et2), SV.len(ot2), hl)))
+      kq_go(e, et2, ot2, k, red, SV.mem(o, red), kq_pick(et2, ot2, 1n+k, red, LN.succ_inj(SV.neqs(et2), SV.len(ot2), hl)))
 
 def pk_len(+et: List<&2, E.QExpr>, +k: Nat, xs: List<&2, Nat>) -> {SV.neqs(pickk(et, k, xs)) == SV.len(xs) : Nat}:
   match xs:
@@ -275,7 +272,7 @@ def sel2go_mem(b: Bool, +k: Nat, +r: List<&2, Nat>, +x: Nat, h: {SV.mem(x, r) ==
 def sel2_mem(ot: List<&2, Nat>, +k: Nat, i: Nat, +red: List<&2, Nat>, hi: {KA.natle(1n+i, SV.len(ot)) == True{} : Bool}, hn: {SV.mem(SV.nth(ot, i), red) == False{} : Bool}) -> {SV.mem(Nat.add(k, i), sel2(ot, k, red)) == True{} : Bool}:
   match ot i:
     case Nil{} i:
-      absurd({SV.mem(Nat.add(k, i), Nil{}) == True{} : Bool}, L.ft(hi))
+      absurd({SV.mem(Nat.add(k, i), Nil{}) == True{} : Bool}, KA.ft(hi))
     case Con{+o, +t} 0n:
       %Equal.sym(Bool, SV.mem(o, red), False{}, hn) : {SV.mem(Nat.add(k, 0n), sel2.go(_, k, sel2(t, 1n+k, red))) == True{} : Bool}
       %LN.add_zero(k) : {SV.mem(_, Con{k, sel2(t, 1n+k, red)}) == True{} : Bool}
@@ -332,20 +329,11 @@ def mag_sub(xs: List<&2, Nat>, +a: List<&2, Nat>, +b: List<&2, Nat>, +h1: {L.sub
 def ne_of_gt(j: Nat, k: Nat, h: {KA.natle(1n+k, j) == True{} : Bool}) -> {KA.nateq(j, k) == False{} : Bool}:
   match j k:
     case 0n k:
-      absurd({KA.nateq(0n, k) == False{} : Bool}, L.ft(h))
+      absurd({KA.nateq(0n, k) == False{} : Bool}, KA.ft(h))
     case 1n+j2 0n:
       {==}
     case 1n+j2 1n+k2:
       ne_of_gt(j2, k2, h)
-
-def ne_of_lt(k: Nat, j: Nat, h: {KA.natle(1n+k, j) == True{} : Bool}) -> {KA.nateq(k, j) == False{} : Bool}:
-  match k j:
-    case k 0n:
-      absurd({KA.nateq(k, 0n) == False{} : Bool}, L.ft(h))
-    case 0n 1n+j2:
-      {==}
-    case 1n+k2 1n+j2:
-      ne_of_lt(k2, j2, h)
 
 def mag_iota.hd(+j: Nat, +k: Nat, +y: List<&2, Nat>, h: {KA.natle(1n+k, j) == True{} : Bool}) -> {TJ.biff(ST.mem(j, Con{k, y}), ST.mem(j, y)) == True{} : Bool}:
   %Equal.sym(Bool, KA.nateq(j, k), False{}, ne_of_gt(j, k, h)) : {TJ.biff(ST.bor(_, ST.mem(j, y)), ST.mem(j, y)) == True{} : Bool}
@@ -357,7 +345,7 @@ def mag_iota(n: Nat, +j: Nat, +k: Nat, +y: List<&2, Nat>, +h: {KA.natle(1n+k, j)
     case 0n:
       {==}
     case 1n++m:
-      L.band_i(TJ.biff(ST.mem(j, Con{k, y}), ST.mem(j, y)), mag(ST.iota(m, 1n+j), Con{k, y}, y), mag_iota.hd(j, k, y, h), mag_iota(m, 1n+j, k, y, L.le_succ(1n+k, j, h)))
+      L.band_i(TJ.biff(ST.mem(j, Con{k, y}), ST.mem(j, y)), mag(ST.iota(m, 1n+j), Con{k, y}, y), mag_iota.hd(j, k, y, h), mag_iota(m, 1n+j, k, y, KA.natle_succ(1n+k, j, h)))
 
 # all of xs past k: k not in xs
 def notin_geb(xs: List<&2, Nat>, +k: Nat, +h: {geb(xs, 1n+k) == True{} : Bool}) -> {ST.mem(k, xs) == False{} : Bool}:
@@ -365,7 +353,7 @@ def notin_geb(xs: List<&2, Nat>, +k: Nat, +h: {geb(xs, 1n+k) == True{} : Bool}) 
     case Nil{}:
       {==}
     case Con{+x, +t}:
-      %Equal.sym(Bool, KA.nateq(k, x), False{}, ne_of_lt(k, x, L.band_l(KA.natle(1n+k, x), geb(t, 1n+k), h))) : {ST.bor(_, ST.mem(k, t)) == False{} : Bool}
+      %Equal.sym(Bool, KA.nateq(k, x), False{}, KA.natlt_ne(k, x, L.band_l(KA.natle(1n+k, x), geb(t, 1n+k), h))) : {ST.bor(_, ST.mem(k, t)) == False{} : Bool}
       notin_geb(t, k, L.band_r(KA.natle(1n+k, x), geb(t, 1n+k), h))
 
 def selfil.go(b: Bool, +k: Nat, +t: List<&2, Nat>, +red: List<&2, Nat>, ih: {ST.inter(ST.iota(SV.len(t), 1n+k), sel2(t, 1n+k, red)) == sel2(t, 1n+k, red) : List<&2, Nat>}) -> {ST.inter(Con{k, ST.iota(SV.len(t), 1n+k)}, sel2.go(b, k, sel2(t, 1n+k, red))) == sel2.go(b, k, sel2(t, 1n+k, red)) : List<&2, Nat>}:
@@ -376,8 +364,8 @@ def selfil.go(b: Bool, +k: Nat, +t: List<&2, Nat>, +red: List<&2, Nat>, ih: {ST.
       ih
     case False{}:
       +y = sel2(t, 1n+k, red)
-      %Equal.sym(Bool, KA.nateq(k, k), True{}, TJ.nateq_refl(k)) : {ST.minus.go(ST.bnot(ST.bor(_, ST.mem(k, y))), k, ST.inter(ST.iota(SV.len(t), 1n+k), Con{k, y})) == Con{k, y} : List<&2, Nat>}
-      %Equal.sym(List<&2, Nat>, ST.inter(ST.iota(SV.len(t), 1n+k), Con{k, y}), ST.inter(ST.iota(SV.len(t), 1n+k), y), inter_cong(ST.iota(SV.len(t), 1n+k), Con{k, y}, y, mag_iota(SV.len(t), 1n+k, k, y, L.le_refl(1n+k)))) : {Con{k, _} == Con{k, y} : List<&2, Nat>}
+      %Equal.sym(Bool, KA.nateq(k, k), True{}, KA.nateq_refl(k)) : {ST.minus.go(ST.bnot(ST.bor(_, ST.mem(k, y))), k, ST.inter(ST.iota(SV.len(t), 1n+k), Con{k, y})) == Con{k, y} : List<&2, Nat>}
+      %Equal.sym(List<&2, Nat>, ST.inter(ST.iota(SV.len(t), 1n+k), Con{k, y}), ST.inter(ST.iota(SV.len(t), 1n+k), y), inter_cong(ST.iota(SV.len(t), 1n+k), Con{k, y}, y, mag_iota(SV.len(t), 1n+k, k, y, KA.natle_refl(1n+k)))) : {Con{k, _} == Con{k, y} : List<&2, Nat>}
       %Equal.sym(List<&2, Nat>, ST.inter(ST.iota(SV.len(t), 1n+k), y), y, ih) : {Con{k, _} == Con{k, y} : List<&2, Nat>}
       {==}
 
@@ -395,7 +383,7 @@ def selfil(ot: List<&2, Nat>, +k: Nat, +red: List<&2, Nat>) -> {ST.inter(ST.iota
 def eqget_pick.go(+et: List<&2, E.QExpr>, +x: Nat, +y: Nat, +t: List<&2, Nat>, b: Bool, e: {KA.nateq(x, y) == b : Bool}, h: {SV.mem(x, Con{y, t}) == True{} : Bool}, ih: {SV.mem(x, t) == True{} : Bool} -> {PL.eqget(pickk(et, 0n, t), ST.pos(x, t)) == PL.eqget(et, x) : E.QExpr}) -> {PL.eqget(Con{PL.eqget(et, y), pickk(et, 0n, t)}, ST.pos.go(b, ST.pos(x, t))) == PL.eqget(et, x) : E.QExpr}:
   match b:
     case True{}:
-      %TJ.nateq_ok(x, y, e) : {PL.eqget(et, _) == PL.eqget(et, x) : E.QExpr}
+      %KA.nateq_ok(x, y, e) : {PL.eqget(et, _) == PL.eqget(et, x) : E.QExpr}
       {==}
     case False{}:
       ih(L.mem_tl_inv(x, y, t, h, SP.sv_ne(x, y, e)))
@@ -404,7 +392,7 @@ def eqget_pick.go(+et: List<&2, E.QExpr>, +x: Nat, +y: Nat, +t: List<&2, Nat>, b
 def eqget_pick(+et: List<&2, E.QExpr>, xs: List<&2, Nat>, +x: Nat, h: {SV.mem(x, xs) == True{} : Bool}) -> {PL.eqget(pickk(et, 0n, xs), ST.pos(x, xs)) == PL.eqget(et, x) : E.QExpr}:
   match xs:
     case Nil{}:
-      absurd({PL.eqget(Nil{}, 0n) == PL.eqget(et, x) : E.QExpr}, L.ft(h))
+      absurd({PL.eqget(Nil{}, 0n) == PL.eqget(et, x) : E.QExpr}, KA.ft(h))
     case Con{+y, +t}:
       eqget_pick.go(et, x, y, t, KA.nateq(x, y), {==}, h, p => eqget_pick(et, t, x, p))
 
