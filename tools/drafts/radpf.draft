@@ -1309,3 +1309,109 @@ def rs_init(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ) -> rgood(~F, ~H, n, eqs
     {==},
     (%Equal.sym(@T, @M(FR.ofn(~F, 16n), $T16), @1, n16_eq(~F)) : O.le(~F, @A($SD, $SD), @A(M.ofd(~F, r), @M(_, $SD)))
       FV.le_of_sub(~F, @A($SD, $SD), @A(M.ofd(~F, r), @M(@1, $SD)), FM.nn_eq(~F, @S(@A(M.ofd(~F, r), @M(@1, $SD)), @A($SD, $SD)), @S(M.ofd(~F, r), $SD), FR.fring_eq(~F, [M.ofd(~F, r), $SD], E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, E.ZSub{E.ZAdd{E.ZVar{0n}, E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{1n}}}, E.ZAdd{E.ZVar{1n}, E.ZVar{1n}}}, {==}), sub_nn(~F, $SD, M.ofd(~F, r), hRS)))))
+
+# In the box
+# ----------
+# With e = yc - x_b and f(x_b ++ x_z) = 0, along the path
+# yc ++ pc -> yc ++ x_z -> x_b ++ x_z: e = (e - Y S' e) + Y f(Z) with
+# S' e = f(Z) (unknowns' slopes, parameters at x_z), and
+# Y f(Z) = Y f(P) + Y (f(Z) - f(P)), the last over the radius-0 box (only
+# the parameters move), so its entries are at most B(0)'s. Hence
+# |e| <= S + |e - Y S' e| <= S + (thL + yn n lam rad) |e|, and |e| <= (65/64) S.
+
+def vz_at(~F: O.OField, +v: M.Vec(~F), +n: Nat, +k: Nat) -> {O.lookup(~F, BX.vsub(~F, v, GJ.zeros(~F, n)), k) == O.lookup(~F, v, k) : @T}:
+  %Equal.sym(@T, O.lookup(~F, BX.vsub(~F, v, GJ.zeros(~F, n)), k), @S(O.lookup(~F, v, k), O.lookup(~F, GJ.zeros(~F, n), k)), DG.look_diff(~F, v, GJ.zeros(~F, n), k)) : {_ == O.lookup(~F, v, k) : @T}
+  %GJ.look_zeros(~F, n, k) : {@S(O.lookup(~F, v, k), _) == O.lookup(~F, v, k) : @T}
+  FR.fring_eq(~F, [O.lookup(~F, v, k)], E.ZSub{E.ZVar{0n}, E.ZCst{S.Z0{}}}, E.ZVar{0n}, {==})
+
+def vsub_zeros(~F: O.OField, +v: M.Vec(~F), +n: Nat, +lv: {M.len(~F, v) == n : Nat}) -> {BX.vsub(~F, v, GJ.zeros(~F, n)) == v : M.Vec(~F)}:
+  AP.vext(~F, ~BX.vsub(~F, v, GJ.zeros(~F, n)), ~v, ~(k => vz_at(~F, v, n, k)), n, CP.len_vsub(~F, v, GJ.zeros(~F, n), n, lv, GJ.len_zeros_eq(~F, n)), lv)
+
+def rnn_at(~F: O.OField, r: M.Vec(~F), +k: Nat, h: FV.rnn(~F, r)) -> O.le(~F, @0, O.lookup(~F, r, k)):
+  match r k:
+    case Nil{} k:
+      FO.le_refl(~F, @0)
+    case Con{a, rs} 0n:
+      (h1, h2) = h
+      h1
+    case Con{a, rs} 1n+j:
+      (h1, h2) = h
+      rnn_at(~F, rs, j, h2)
+
+def bnd_z(~F: O.OField, +a: @T, +s: @T, ha: M.bnd(~F, a, @0), +hs: O.le(~F, @0, s)) -> M.bnd(~F, a, s):
+  FM.bnd_mono(~F, a, @0, s, ha, FM.nn_eq(~F, @S(s, @0), s, FR.fring_eq(~F, [s], E.ZVar{0n}, E.ZSub{E.ZVar{0n}, E.ZCst{S.Z0{}}}, {==}), hs))
+
+# entry k of an entrywise bound
+def rbnd_at(~F: O.OField, d: M.Vec(~F), +r: M.Vec(~F), +k: Nat, h: BX.rbnd(~F, d, r), hr: FV.rnn(~F, r)) -> M.bnd(~F, O.lookup(~F, d, k), O.lookup(~F, r, k)):
+  match d r k:
+    case Nil{} r k:
+      bnd_z(~F, @0, O.lookup(~F, r, k), FV.bnd_self(~F, @0, FO.le_refl(~F, @0)), rnn_at(~F, r, k, hr))
+    case Con{a, ds} Nil{} 0n:
+      (h1, h2) = h
+      h1
+    case Con{a, ds} Nil{} 1n+j:
+      (h1, h2) = h
+      rbnd_at(~F, ds, Nil{}, j, h2, Unit{})
+    case Con{a, ds} Con{s, rs} 0n:
+      (h1, h2) = h
+      h1
+    case Con{a, ds} Con{s, rs} 1n+j:
+      (h1, h2) = h
+      (g1, g2) = hr
+      rbnd_at(~F, ds, rs, j, h2, g2)
+
+def bnd_add0(~F: O.OField, +a: @T, +w: @T, +s: @T, ha: M.bnd(~F, a, @0), hw: M.bnd(~F, w, s)) -> M.bnd(~F, @A(a, w), s):
+  %FR.fring_eq(~F, [s], E.ZAdd{E.ZCst{S.Z0{}}, E.ZVar{0n}}, E.ZVar{0n}, {==}) : M.bnd(~F, @A(a, w), _)
+  FM.bnd_add(~F, a, @0, w, s, ha, hw)
+
+def rbnd_of_z(~F: O.OField, u: M.Vec(~F), r: M.Vec(~F), hu: M.vbnd.all(~F, u, @0), hr: FV.rnn(~F, r)) -> BX.rbnd(~F, u, r):
+  match u r:
+    case Nil{} r:
+      Unit{}
+    case Con{a, us} Nil{}:
+      (h1, h2) = hu
+      (h1, rbnd_of_z(~F, us, Nil{}, h2, Unit{}))
+    case Con{a, us} Con{s, rs}:
+      (h1, h2) = hu
+      (g1, g2) = hr
+      (bnd_z(~F, a, s, h1, g1), rbnd_of_z(~F, us, rs, h2, g2))
+
+# a vector of zeros (to within 0) added: the same bound
+def rbnd_add0(~F: O.OField, u: M.Vec(~F), w: M.Vec(~F), r: M.Vec(~F), hu: M.vbnd.all(~F, u, @0), hw: BX.rbnd(~F, w, r), hr: FV.rnn(~F, r)) -> BX.rbnd(~F, M.vadd(~F, u, w), r):
+  match u w r:
+    case Nil{} w r:
+      hw
+    case Con{+a, +us} Nil{} r:
+      rbnd_of_z(~F, Con{a, us}, r, hu, hr)
+    case Con{a, us} Con{b, ws} Nil{}:
+      (h1, h2) = hu
+      (k1, k2) = hw
+      (bnd_add0(~F, a, b, @0, h1, k1), rbnd_add0(~F, us, ws, Nil{}, h2, k2, Unit{}))
+    case Con{a, us} Con{b, ws} Con{s, rs}:
+      (h1, h2) = hu
+      (k1, k2) = hw
+      (g1, g2) = hr
+      (bnd_add0(~F, a, b, s, h1, k1), rbnd_add0(~F, us, ws, rs, h2, k2, g2))
+
+# |ek| <= S + D, from |ek - yz| <= D, |yz - yp| <= b, |yp| <= a, a + b + g <= S, |g| <= gb <= 0
+def in_ent(~F: O.OField, +ek: @T, +yz: @T, +yp: @T, +a: @T, +b: @T, +g: @T, +s: @T, +dd: @T, +gb: @T, hq: M.bnd(~F, @S(ek, yz), dd), ht: M.bnd(~F, @S(yz, yp), b), ha: M.bnd(~F, yp, a), +hs: O.le(~F, @A(@A(a, b), g), s), +hg: M.bnd(~F, g, gb), +hgb: O.le(~F, gb, @0)) -> M.bnd(~F, ek, @A(s, dd)):
+  (q1, q2) = hq
+  (t1, t2) = ht
+  (a1, a2) = ha
+  +g2 = AP.both_r(O.le(~F, @0, @S(gb, g)), O.le(~F, @0, @A(gb, g)), hg)
+  +hs2 = sub_nn(~F, @A(@A(a, b), g), s, hs)
+  +hgb2 = sub_nn(~F, gb, @0, hgb)
+  (FM.nn_eq(~F, @S(@A(s, dd), ek), @A(@A(@A(@A(@A(@S(dd, @S(ek, yz)), @S(b, @S(yz, yp))), @S(a, yp)), @S(s, @A(@A(a, b), g))), @A(gb, g)), @S(@0, gb)),
+     FR.fring_eq(~F, [ek, yz, yp, a, b, g, s, dd, gb], E.ZAdd{E.ZAdd{E.ZAdd{E.ZAdd{E.ZAdd{E.ZSub{E.ZVar{7n}, E.ZSub{E.ZVar{0n}, E.ZVar{1n}}}, E.ZSub{E.ZVar{4n}, E.ZSub{E.ZVar{1n}, E.ZVar{2n}}}}, E.ZSub{E.ZVar{3n}, E.ZVar{2n}}}, E.ZSub{E.ZVar{6n}, E.ZAdd{E.ZAdd{E.ZVar{3n}, E.ZVar{4n}}, E.ZVar{5n}}}}, E.ZAdd{E.ZVar{8n}, E.ZVar{5n}}}, E.ZSub{E.ZCst{S.Z0{}}, E.ZVar{8n}}}, E.ZSub{E.ZAdd{E.ZVar{6n}, E.ZVar{7n}}, E.ZVar{0n}}, {==}),
+     FO.nonneg_add(~F, @A(@A(@A(@A(@S(dd, @S(ek, yz)), @S(b, @S(yz, yp))), @S(a, yp)), @S(s, @A(@A(a, b), g))), @A(gb, g)), @S(@0, gb), FO.nonneg_add(~F, @A(@A(@A(@S(dd, @S(ek, yz)), @S(b, @S(yz, yp))), @S(a, yp)), @S(s, @A(@A(a, b), g))), @A(gb, g), FO.nonneg_add(~F, @A(@A(@S(dd, @S(ek, yz)), @S(b, @S(yz, yp))), @S(a, yp)), @S(s, @A(@A(a, b), g)), FO.nonneg_add(~F, @A(@S(dd, @S(ek, yz)), @S(b, @S(yz, yp))), @S(a, yp), FO.nonneg_add(~F, @S(dd, @S(ek, yz)), @S(b, @S(yz, yp)), q1, t1), a1), hs2), g2), hgb2)),
+   FM.nn_eq(~F, @A(@A(s, dd), ek), @A(@A(@A(@A(@A(@A(dd, @S(ek, yz)), @A(b, @S(yz, yp))), @A(a, yp)), @S(s, @A(@A(a, b), g))), @A(gb, g)), @S(@0, gb)),
+     FR.fring_eq(~F, [ek, yz, yp, a, b, g, s, dd, gb], E.ZAdd{E.ZAdd{E.ZAdd{E.ZAdd{E.ZAdd{E.ZAdd{E.ZVar{7n}, E.ZSub{E.ZVar{0n}, E.ZVar{1n}}}, E.ZAdd{E.ZVar{4n}, E.ZSub{E.ZVar{1n}, E.ZVar{2n}}}}, E.ZAdd{E.ZVar{3n}, E.ZVar{2n}}}, E.ZSub{E.ZVar{6n}, E.ZAdd{E.ZAdd{E.ZVar{3n}, E.ZVar{4n}}, E.ZVar{5n}}}}, E.ZAdd{E.ZVar{8n}, E.ZVar{5n}}}, E.ZSub{E.ZCst{S.Z0{}}, E.ZVar{8n}}}, E.ZAdd{E.ZAdd{E.ZVar{6n}, E.ZVar{7n}}, E.ZVar{0n}}, {==}),
+     FO.nonneg_add(~F, @A(@A(@A(@A(@A(dd, @S(ek, yz)), @A(b, @S(yz, yp))), @A(a, yp)), @S(s, @A(@A(a, b), g))), @A(gb, g)), @S(@0, gb), FO.nonneg_add(~F, @A(@A(@A(@A(dd, @S(ek, yz)), @A(b, @S(yz, yp))), @A(a, yp)), @S(s, @A(@A(a, b), g))), @A(gb, g), FO.nonneg_add(~F, @A(@A(@A(dd, @S(ek, yz)), @A(b, @S(yz, yp))), @A(a, yp)), @S(s, @A(@A(a, b), g)), FO.nonneg_add(~F, @A(@A(dd, @S(ek, yz)), @A(b, @S(yz, yp))), @A(a, yp), FO.nonneg_add(~F, @A(dd, @S(ek, yz)), @A(b, @S(yz, yp)), q2, t2), a2), hs2), g2), hgb2)))
+
+# E <= S + D, D <= (thL + yn nl) E and c65 (thL + yn nl) <= c65 - 1 give E <= S c65
+def in_fin(~F: O.OField, +ee: @T, +s: @T, +dd: @T, +thL: @T, +yn: @T, +nl: @T, +c65: @T, +hE: O.le(~F, ee, @A(s, dd)), +hD: O.le(~F, dd, @A(@M(thL, ee), @M(yn, @M(nl, ee)))), +hk: O.le(~F, @M(c65, @A(thL, @M(yn, nl))), @S(c65, @1)), +hc0: O.le(~F, @0, c65), +hE0: O.le(~F, @0, ee)) -> O.le(~F, ee, @M(s, c65)):
+  FV.le_of_sub(~F, ee, @M(s, c65), FM.nn_eq(~F, @S(@M(s, c65), ee), @A(@A(@M(c65, @S(@A(s, dd), ee)), @M(c65, @S(@A(@M(thL, ee), @M(yn, @M(nl, ee))), dd))), @M(@S(@S(c65, @1), @M(c65, @A(thL, @M(yn, nl)))), ee)),
+    FR.fring_eq(~F, [ee, s, dd, thL, yn, nl, c65], E.ZAdd{E.ZAdd{E.ZMul{E.ZVar{6n}, E.ZSub{E.ZAdd{E.ZVar{1n}, E.ZVar{2n}}, E.ZVar{0n}}}, E.ZMul{E.ZVar{6n}, E.ZSub{E.ZAdd{E.ZMul{E.ZVar{3n}, E.ZVar{0n}}, E.ZMul{E.ZVar{4n}, E.ZMul{E.ZVar{5n}, E.ZVar{0n}}}}, E.ZVar{2n}}}}, E.ZMul{E.ZSub{E.ZSub{E.ZVar{6n}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZMul{E.ZVar{6n}, E.ZAdd{E.ZVar{3n}, E.ZMul{E.ZVar{4n}, E.ZVar{5n}}}}}, E.ZVar{0n}}}, E.ZSub{E.ZMul{E.ZVar{1n}, E.ZVar{6n}}, E.ZVar{0n}}, {==}),
+    FO.nonneg_add(~F, @A(@M(c65, @S(@A(s, dd), ee)), @M(c65, @S(@A(@M(thL, ee), @M(yn, @M(nl, ee))), dd))), @M(@S(@S(c65, @1), @M(c65, @A(thL, @M(yn, nl)))), ee),
+      FO.nonneg_add(~F, @M(c65, @S(@A(s, dd), ee)), @M(c65, @S(@A(@M(thL, ee), @M(yn, @M(nl, ee))), dd)), FO.mul_nonneg(~F, c65, @S(@A(s, dd), ee), hc0, sub_nn(~F, ee, @A(s, dd), hE)), FO.mul_nonneg(~F, c65, @S(@A(@M(thL, ee), @M(yn, @M(nl, ee))), dd), hc0, sub_nn(~F, dd, @A(@M(thL, ee), @M(yn, @M(nl, ee))), hD))),
+      FO.mul_nonneg(~F, @S(@S(c65, @1), @M(c65, @A(thL, @M(yn, nl)))), ee, sub_nn(~F, @M(c65, @A(thL, @M(yn, nl))), @S(c65, @1), hk), hE0))))
