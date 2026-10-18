@@ -46,6 +46,8 @@ import ./radpf.bend as RD
 @MACRO KHA ~K, ~F, ~H
 @MACRO KP ~F: O.OField, +n: Nat, +m: Nat, +b: @T, +lam: @T, +ms: @T, +d: @T, +rho: @T, +p: Nat
 @MACRO KA ~F, n, m, b, lam, ms, d, rho, p
+@MACRO KPH ~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +m: Nat, +b: @T, +lam: @T, +ms: @T, +d: @T, +rho: @T, +p: Nat
+@MACRO KAH ~F, ~H, n, m, b, lam, ms, d, rho, p
 @MACRO NNP +hb0: O.le(~F, @0, b), +hl0: O.le(~F, @0, lam), +hm0: O.le(~F, @0, ms), +hd0: O.le(~F, @0, d), +hr0: O.le(~F, @0, rho)
 @MACRO NNA hb0, hl0, hm0, hd0, hr0
 @MACRO CXP ~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +m: Nat, +eqs: List<&2, E.QExpr>, +hn: {CK.eqlen(eqs) == n : Nat}, +hh: {CK.allheld(~KI.dnum(), eqs) == True{} : Bool}, +hbl: {CK.allbelow(Nat.add(n, m), eqs) == True{} : Bool}, +pc: List<&2, S.D>, +lpc: {M.len(~F, M.ofdv(~F, pc)) == m : Nat}, +p: Nat, +xb: M.Vec(~F), +xz: M.Vec(~F), +lxb: {M.len(~F, xb) == n : Nat}, +lxz: {M.len(~F, xz) == m : Nat}, +hz: {C.fvals(~F, eqs, C.app(~F, xb, xz)) == GJ.zeros(~F, n) : M.Vec(~F)}, +bb: @T, +lam: @T, +ms: @T, +b: @T, +d: @T, +rho: @T, $NNP, +hbb0: O.le(~F, @0, bb), +hbb: M.vbnd.all(~F, C.app(~F, xb, xz), @S(bb, @1)), +hq: AP.eqok(~F, bb, lam, ms, eqs), +hJ: NP.InvB(~F, NW.jc(~F, eqs, n, C.app(~F, xb, xz)), n, b), +hzc: M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, pc), xz), rho), +hsm: AP.small(~F, n, ms, NW.bt2(~F, b), NU.wbits(p)), +s1: O.le(~F, @A(NW.dx($KA), NW.dx($KA)), @1), +s2: O.le(~F, @A(@M(b, @M(FR.ofn(~F, n), @M(lam, NW.dx($KA)))), @M(b, @M(FR.ofn(~F, n), @M(lam, NW.dx($KA))))), @1), +s4: O.le(~F, NW.settle($KA), NW.h6(~F, p))
@@ -257,3 +259,125 @@ def s_bnd($CXP, $YCP, $PRP, $YMP, $RBP) -> O.le(~F, $SD, $TS):
               DM.le_trans(~F, NP.vn(~F, M.vadd(~F, av, bv)), @A(NP.vn(~F, av), NP.vn(~F, bv)), @A(@M(yn, $TF), $TB2), AP.vn_add(~F, av, bv),
                 RP.le_add2(~F, NP.vn(~F, av), @M(yn, $TF), NP.vn(~F, bv), $TB2, av_bnd($CXA, $YCA, pr, $YMA), b0_bnd($CXA, yc, lyc, $PRA, $YMA, $RBA))),
               RD.g0_bnd($SVA)))))))
+
+# Y = A rounded to p/2 bits
+# -------------------------
+
+def nrows_ofdm(~F: O.OField, a: List<&2, List<&2, S.D>>) -> {GJ.nrows(~F, M.ofdm(~F, a)) == CK.mlen($DN, a) : Nat}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{r, t}:
+      %Equal.sym(Nat, GJ.nrows(~F, M.ofdm(~F, t)), CK.mlen($DN, t), nrows_ofdm(~F, t)) : {1n+_ == 1n+CK.mlen($DN, t) : Nat}
+      {==}
+
+def mlen_ysig(+b: Nat, a: List<&2, List<&2, S.D>>) -> {CK.mlen($DN, NU.ysig(b, a)) == CK.mlen($DN, a) : Nat}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{r, t}:
+      %Equal.sym(Nat, CK.mlen($DN, NU.ysig(b, t)), CK.mlen($DN, t), mlen_ysig(b, t)) : {1n+_ == 1n+CK.mlen($DN, t) : Nat}
+      {==}
+
+@MACRO YY NU.ysig(Nat.div(p, 2n), inv)
+@MACRO JC NW.jc(~F, eqs, n, $PTC)
+@MACRO AIP +inv: List<&2, List<&2, S.D>>, +hA: {GJ.nrows(~F, M.ofdm(~F, inv)) == n : Nat}, +ha: DG.agood(~F, n, $JC, M.ofdm(~F, inv), NW.ea($KA))
+@MACRO AIA inv, hA, ha
+@MACRO AIQ +inv: List<&2, List<&2, S.D>>, +hA: {GJ.nrows(~F, M.ofdm(~F, inv)) == n : Nat}
+
+def hyc_all($CXP, $YCP) -> M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, yc), xb), NW.en($KA)):
+  NW.vall_of_vn(~F, BX.vsub(~F, M.ofdv(~F, yc), xb), NW.en($KA), hyc)
+
+def jc_inv($CXP, $YCP) -> NP.InvB(~F, $JC, n, NW.bt2(~F, b)):
+  NW.pt_inv($CXA, yc, lyc, NW.en($KA), hyc_all($CXA, $YCA), NW.en_le_dx($CXA))
+
+def jc_mn($CXP, $YCP) -> O.le(~F, NP.mnorm(~F, $JC, n), $JN):
+  NP.mnorm_lub(~F, $JC, n, $JN, AP.both_r(DG.mall(~F, $JC, ms), NP.rowsle(~F, $JC, n, $JN), NW.pt_maj($CXA, yc, lyc, NW.en($KA), hyc_all($CXA, $YCA), NW.en_le_dx($CXA))), FO.mul_nonneg(~F, FR.ofn(~F, n), ms, DG.ofn_nn(~F, n), hm0))
+
+def a_mn($CXP, $YCP, $AIP) -> O.le(~F, NP.mnorm(~F, M.ofdm(~F, inv), n), NW.al($KA)):
+  AP.amn(~F, n, $JC, M.ofdm(~F, inv), NW.ea($KA), NW.bt2(~F, b), NW.ea_nn($KA, $NNA), NW.bt2_nn(~F, b, hb0), ha, hA, AP.nrows_jacn(~F, $PTC, eqs, n, hn), jc_inv($CXA, $YCA))
+
+def vb_nn(~F: O.OField, +p: Nat) -> O.le(~F, @0, $VB):
+  DG.u_nn(~F, Nat.div(p, 2n))
+
+def y_mn($CXP, $YCP, $AIP) -> O.le(~F, NP.mnorm(~F, M.ofdm(~F, $YY), n), ync($KA)):
+  DM.le_trans(~F, NP.mnorm(~F, M.ofdm(~F, $YY), n), @M(@A(@1, $VB), NP.mnorm(~F, M.ofdm(~F, inv), n)), ync($KA), AP.ymn(~F, Nat.div(p, 2n), inv, n),
+    NW.mm_le(~F, @A(@1, $VB), @A(@1, $VB), NP.mnorm(~F, M.ofdm(~F, inv), n), NW.al($KA), NP.mnorm_nn(~F, M.ofdm(~F, inv), n), FO.nonneg_add(~F, @1, $VB, NP.one_nn(~F), vb_nn(~F, p)), FO.le_refl(~F, @A(@1, $VB)), a_mn($CXA, $YCA, $AIA)))
+
+def ya_mn($CXP, $YCP, $AIP) -> O.le(~F, NP.mnorm(~F, M.madd(~F, M.ofdm(~F, inv), M.mneg(~F, M.ofdm(~F, $YY))), n), @M($VB, NW.al($KA))):
+  DM.le_trans(~F, NP.mnorm(~F, M.madd(~F, M.ofdm(~F, inv), M.mneg(~F, M.ofdm(~F, $YY))), n), @M($VB, NP.mnorm(~F, M.ofdm(~F, inv), n)), @M($VB, NW.al($KA)), AP.ydmn(~F, Nat.div(p, 2n), inv, n),
+    NW.mm_le(~F, $VB, $VB, NP.mnorm(~F, M.ofdm(~F, inv), n), NW.al($KA), NP.mnorm_nn(~F, M.ofdm(~F, inv), n), vb_nn(~F, p), FO.le_refl(~F, $VB), a_mn($CXA, $YCA, $AIA)))
+
+def thl_ok($CXP, $YCP, $AIP) -> O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, M.ofdm(~F, $YY), $JC))), n), thlc($KA)):
+  AP.thl_mn(~F, n, $JC, M.ofdm(~F, inv), M.ofdm(~F, $YY), NW.ea($KA), NW.ea_nn($KA, $NNA), ha, hA, AP.nrows_jacn(~F, $PTC, eqs, n, hn), @M($VB, NW.al($KA)), ya_mn($CXA, $YCA, $AIA), $JN, jc_mn($CXA, $YCA), FO.mul_nonneg(~F, $VB, NW.al($KA), vb_nn(~F, p), NW.al_nn($KA, $NNA)), FO.mul_nonneg(~F, FR.ofn(~F, n), ms, DG.ofn_nn(~F, n), hm0))
+
+def nrows_y($CXP, $AIQ) -> {GJ.nrows(~F, M.ofdm(~F, $YY)) == n : Nat}:
+  Equal.trans(Nat, GJ.nrows(~F, M.ofdm(~F, $YY)), CK.mlen($DN, $YY), n, nrows_ofdm(~F, $YY), Equal.trans(Nat, CK.mlen($DN, $YY), CK.mlen($DN, inv), n, mlen_ysig(Nat.div(p, 2n), inv), Equal.trans(Nat, CK.mlen($DN, inv), GJ.nrows(~F, M.ofdm(~F, inv)), n, Equal.sym(Nat, GJ.nrows(~F, M.ofdm(~F, inv)), CK.mlen($DN, inv), nrows_ofdm(~F, inv)), hA)))
+
+def mlen_y($CXP, $AIQ) -> {CK.mlen($DN, $YY) == n : Nat}:
+  Equal.trans(Nat, CK.mlen($DN, $YY), CK.mlen($DN, inv), n, mlen_ysig(Nat.div(p, 2n), inv), Equal.trans(Nat, CK.mlen($DN, inv), GJ.nrows(~F, M.ofdm(~F, inv)), n, Equal.sym(Nat, GJ.nrows(~F, M.ofdm(~F, inv)), CK.mlen($DN, inv), nrows_ofdm(~F, inv)), hA))
+
+def thr_ok($CXP, $YCP, $AIP) -> O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, $JC, M.ofdm(~F, $YY)))), n), thrc($KA)):
+  AP.thr_mn(~F, n, $JC, M.ofdm(~F, inv), M.ofdm(~F, $YY), NW.ea($KA), NW.ea_nn($KA, $NNA), ha, hA, AP.nrows_jacn(~F, $PTC, eqs, n, hn), @M($VB, NW.al($KA)), ya_mn($CXA, $YCA, $AIA), $JN, jc_mn($CXA, $YCA), FO.mul_nonneg(~F, $VB, NW.al($KA), vb_nn(~F, p), NW.al_nn($KA, $NNA)), FO.mul_nonneg(~F, FR.ofn(~F, n), ms, DG.ofn_nn(~F, n), hm0), NW.bt2(~F, b), jc_inv($CXA, $YCA), nrows_y($CXA, inv, hA))
+
+def ync_nn($KP, $NNP) -> O.le(~F, @0, ync($KA)):
+  FO.mul_nonneg(~F, @A(@1, $VB), NW.al($KA), FO.nonneg_add(~F, @1, $VB, NP.one_nn(~F), vb_nn(~F, p)), NW.al_nn($KA, $NNA))
+
+def thlc_nn($KP, $NNP) -> O.le(~F, @0, thlc($KA)):
+  FO.nonneg_add(~F, @M(FR.ofn(~F, n), NW.ea($KA)), @M(@M($VB, NW.al($KA)), $JN), FO.mul_nonneg(~F, FR.ofn(~F, n), NW.ea($KA), DG.ofn_nn(~F, n), NW.ea_nn($KA, $NNA)), FO.mul_nonneg(~F, @M($VB, NW.al($KA)), $JN, FO.mul_nonneg(~F, $VB, NW.al($KA), vb_nn(~F, p), NW.al_nn($KA, $NNA)), FO.mul_nonneg(~F, FR.ofn(~F, n), ms, DG.ofn_nn(~F, n), hm0)))
+
+def thrc_nn($KP, $NNP) -> O.le(~F, @0, thrc($KA)):
+  +jn0 = FO.mul_nonneg(~F, FR.ofn(~F, n), ms, DG.ofn_nn(~F, n), hm0)
+  FO.nonneg_add(~F, @M($JN, @M(@M(FR.ofn(~F, n), NW.ea($KA)), NW.bt2(~F, b))), @M($JN, @M($VB, NW.al($KA))), FO.mul_nonneg(~F, $JN, @M(@M(FR.ofn(~F, n), NW.ea($KA)), NW.bt2(~F, b)), jn0, FO.mul_nonneg(~F, @M(FR.ofn(~F, n), NW.ea($KA)), NW.bt2(~F, b), FO.mul_nonneg(~F, FR.ofn(~F, n), NW.ea($KA), DG.ofn_nn(~F, n), NW.ea_nn($KA, $NNA)), NW.bt2_nn(~F, b, hb0))), FO.mul_nonneg(~F, $JN, @M($VB, NW.al($KA)), jn0, FO.mul_nonneg(~F, $VB, NW.al($KA), vb_nn(~F, p), NW.al_nn($KA, $NNA))))
+
+def sbc_nn($KP, $NNP) -> O.le(~F, @0, sbc($KA)):
+  +y0 = ync_nn($KA, $NNA)
+  +mm = FO.mul_nonneg(~F, @M(FR.ofn(~F, m), ms), rho, FO.mul_nonneg(~F, FR.ofn(~F, m), ms, DG.ofn_nn(~F, m), hm0), hr0)
+  FO.nonneg_add(~F, @M(ync($KA), $TF), @M(ync($KA), @M(@M(FR.ofn(~F, m), ms), rho)), FO.mul_nonneg(~F, ync($KA), $TF, y0, FO.nonneg_add(~F, @M(@M(FR.ofn(~F, n), ms), NW.en($KA)), @M(@M(FR.ofn(~F, m), ms), rho), FO.mul_nonneg(~F, @M(FR.ofn(~F, n), ms), NW.en($KA), FO.mul_nonneg(~F, FR.ofn(~F, n), ms, DG.ofn_nn(~F, n), hm0), NW.en_nn($KA, $NNA)), mm)), FO.mul_nonneg(~F, ync($KA), @M(@M(FR.ofn(~F, m), ms), rho), y0, mm))
+
+def c17e_nn(~F: O.OField, ~H: N.Emb<KI.dnum(), F>) -> O.le(~F, @0, @M($C17, @A(@1, $E8))):
+  FO.mul_nonneg(~F, $C17, @A(@1, $E8), RD.dnn(~F, ~H, S.D{S.Zpos{S.XI{S.XO{S.XO{S.XO{S.XH{}}}}}}, 4n}, {==}), FO.nonneg_add(~F, @1, $E8, NP.one_nn(~F), RD.dnn(~F, ~H, S.D{S.Zpos{S.XO{S.XH{}}}, 8n}, {==})))
+
+def rbc_nn($KPH, $NNP) -> O.le(~F, @0, rbc($KA)):
+  FO.nonneg_add(~F, ubc($KA), rho, FO.mul_nonneg(~F, @M($C17, @A(@1, $E8)), @A(sbc($KA), sbc($KA)), c17e_nn(~F, ~H), FO.nonneg_add(~F, sbc($KA), sbc($KA), sbc_nn($KA, $NNA), sbc_nn($KA, $NNA))), hr0)
+
+# The block's smallness conditions
+# --------------------------------
+# w1: the box of radius rb about the center keeps magnitude below bb;
+# w2: thR < 1; w3: the window, cw <= 1/2; w4: x_b in the box.
+
+@MACRO WSP +w1: O.le(~F, @A(NW.dx($KA), rbc($KA)), @1), +w2: O.lt(F, thrc($KA), @1), +w3: O.le(~F, @A(@A(thlc($KA), @M(ync($KA), @M(FR.ofn(~F, n), @M(lam, rbc($KA))))), @M(ync($KA), @M(FR.ofn(~F, m), @M(lam, rbc($KA))))), M.ofd(~F, NU.half())), +w4: O.le(~F, @M($C65, @A(thlc($KA), @M(ync($KA), @M(FR.ofn(~F, n), @M(lam, NW.dx($KA)))))), @S($C65, @1))
+@MACRO WSA w1, w2, w3, w4
+
+def w3k($CXP, $WSP) -> O.le(~F, @A(@A(thlc($KA), @M(ync($KA), @M(FR.ofn(~F, n), @M(lam, rbc($KA))))), @M(ync($KA), @M(FR.ofn(~F, $KPC), @M(lam, rbc($KA))))), M.ofd(~F, NU.half())):
+  %Equal.sym(Nat, $KPC, m, klen_m($CXA)) : O.le(~F, @A(@A(thlc($KA), @M(ync($KA), @M(FR.ofn(~F, n), @M(lam, rbc($KA))))), @M(ync($KA), @M(FR.ofn(~F, _), @M(lam, rbc($KA))))), M.ofd(~F, NU.half()))
+  w3
+
+def hab_k($CXP) -> {CK.allbelow(Nat.add(n, $KPC), eqs) == True{} : Bool}:
+  %Equal.sym(Nat, $KPC, m, klen_m($CXA)) : {CK.allbelow(Nat.add(n, _), eqs) == True{} : Bool}
+  hbl
+
+def lxz_k($CXP) -> {M.len(~F, xz) == $KPC : Nat}:
+  Equal.trans(Nat, M.len(~F, xz), m, $KPC, lxz, Equal.sym(Nat, $KPC, m, klen_m($CXA)))
+
+def lpp_k($CXP, $PRP) -> {$KPC == KA.klen($DN, pr) : Nat}:
+  Equal.trans(Nat, $KPC, m, KA.klen($DN, pr), klen_m($CXA), Equal.sym(Nat, KA.klen($DN, pr), m, Equal.trans(Nat, KA.klen($DN, pr), M.len(~F, M.ofdv(~F, pr)), m, RD.klen_d(~F, ~H, pr), lpr)))
+
+# the center's point and the parameters stay inside magnitude bb - t
+def cen_mag($CXP, $YCP, +t: @T, +hs: O.le(~F, @A(NW.dx($KA), t), @1)) -> M.vbnd.all(~F, $PTC, @S(bb, t)):
+  NW.gnear(~F, $PTC, $XS, bb, NW.dx($KA), t, hbb, NW.ptnear($CXA, yc, lyc, NW.en($KA), hyc_all($CXA, $YCA), NW.en_le_dx($CXA)), hs, NW.lpt_xs($CXA, yc, lyc))
+
+def rho_le_rb($CXP) -> O.le(~F, rho, rbc($KA)):
+  NW.le_addl(~F, ubc($KA), rho, FO.mul_nonneg(~F, @M($C17, @A(@1, $E8)), @A(sbc($KA), sbc($KA)), c17e_nn(~F, ~H), FO.nonneg_add(~F, sbc($KA), sbc($KA), sbc_nn($KA, $NNA), sbc_nn($KA, $NNA))))
+
+@MACRO S0Y CK.svec($DN, eqs, n, yc, Nil{}, $YY, pc, pr)
+@MACRO SDY M.ofd(~F, NU.dvmax($S0Y))
+@MACRO UBS @M(@M($C17, @A(@1, $E8)), @A($SDY, $SDY))
+
+# the search's upper bound U is below rb
+def ub_rb($CXP, $YCP, $PRP, $AIP, $WSP) -> O.le(~F, $UBS, rbc($KA)):
+  +rb = rbc($KA)
+  +hs = s_bnd($CXA, $YCA, $PRA, $YY, ync($KA), y_mn($CXA, $YCA, $AIA), ync_nn($KA, $NNA), rb, rbc_nn($KAH, $NNA), cen_mag($CXA, $YCA, rb, w1), NW.vall_le(~F, M.ofdv(~F, pr), rho, rb, hpr, rho_le_rb($CXA)))
+  DM.le_trans(~F, $UBS, ubc($KA), rb,
+    NW.mm_le(~F, @M($C17, @A(@1, $E8)), @M($C17, @A(@1, $E8)), @A($SDY, $SDY), @A(sbc($KA), sbc($KA)), FO.nonneg_add(~F, $SDY, $SDY, RD.dvmax_nn(~F, $S0Y), RD.dvmax_nn(~F, $S0Y)), c17e_nn(~F, ~H), FO.le_refl(~F, @M($C17, @A(@1, $E8))), RP.le_add2(~F, $SDY, sbc($KA), $SDY, sbc($KA), hs, hs)),
+    NW.le_addr(~F, ubc($KA), rho, hr0))
