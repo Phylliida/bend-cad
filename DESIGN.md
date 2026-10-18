@@ -1058,7 +1058,7 @@ solver as it stands, and both are provable.)
 | C3b | lib/roundpf.bend | **done 2026-10-15** (`div_ok`, `zfloor_ok`, `dround_err`, `dsig_err`, `qsig_err`, `dsigup_ok`; gated via tests/round_laws.bend): rounding in F: dround, dsig, qsig, dsigup (plan below) |
 | C3c | lib/normpf.bend | **done 2026-10-15** (`mv_n`, `InvB`, `lowb`, `pert`; gated via tests/norm_laws.bend): norms and the perturbation lemma (plan below) |
 | C4 | lib/dgjpf.bend | **done 2026-10-15** (`dinverse_ok`, `pivot_ok`, `kern`, `col_full`, `dgj_ok`; gated via tests/dgj_laws.bend): the rounded elimination (5), the solver's dinverse as it runs: Newton's and Y's inverses are good (plan below) |
-| C5 | lib/blockpf.bend | one block at P (3) |
+| C5 | lib/apxpf, nwtpf, radpf, blockpf.bend | one block at P (3) (plan below: C5a approximate inverses, C5b Newton, C5c radius and box, C5d block_ok) |
 | C6 | lib/completepf.bend | the blocks in turn, the verdict, local uniqueness, choosing l and d: `solve_complete` |
 
 **C3 plan** (2026-10-15). One idea carries C3a: F is its own computing
@@ -1165,6 +1165,85 @@ explicit K from n, g and β, once 2^-w ≤ ε for an explicit ε > 0.
 - `dinverse_ok`: dinverse(n, w, a) = Some A with n rows and every entry
   of I − A J at most (KD_n + KP_n) 2^-w (`dinv_res`/`agood`). The
   vector form |v − A J v| ≤ n(KD_n + KP_n) u |v| is left to C5.
+
+**C5 plan** (2026-10-17). One block, in its own numbering (unknowns
+0..n−1, then m parameters), the solver's `block(eqs, n, pc, pr, y0, p)`
+as it runs. No completeness of F is needed here: x_b is shown to be in
+the box directly, so C6 uses `Complete` only to choose P (arch).
+
+- *Statement* (`block_ok`). Given x_b (n entries) and x_z (m entries)
+  with f(x_b; x_z) = 0, InvB(J(x_b; x_z), n, β) for the Jacobian in the
+  unknowns, the parameters' balls holding x_z (|x_z − pc| ≤ pr ≤ ρ
+  entrywise), the drawing within d (|y0 − x_b| ≤ d), a magnitude bound bb
+  (|x_b ++ x_z| + 1 ≤ bb), and constants Λ ≥ ls(bb, e), M ≥ ms(bb, e) for
+  every equation e (C3a's slope grades), and the smallness hypotheses
+  below: block returns BOk of a certificate (yc, r, Y, pc, pr) that the
+  block checker accepts, with |yc − x_b| ≤ E_N, 0 ≤ r ≤ R and x_b in
+  [yc ± r]. C6 feeds r back as the next blocks' ρ (pins have radius 0).
+- *Notation.* h = 2^-(p+1) (Newton's rounding), u = 2^-(p+32)
+  (elimination), v = 2^-⌊p/2⌋ (Y's rounding). P(y) = y ++ pc, g(y) =
+  f(P(y)), J_y = J(P(y)). Every point visited lies within δ = d + ρ + E_N
+  of x_b ++ x_z, so with 2βnΛδ ≤ 1, C3c's pert gives InvB(J_y, 2β), and
+  |J_y entries| ≤ M. Each elimination at a visited point (C4) returns A
+  with |I − A J| ≤ ε_A entrywise, ε_A = (KD_n + KP_n) u at (n, M, 2β).
+- *Approximate inverses* (C5a). Vector form: |w − A J w| ≤ n ε_A |w|.
+  Norm: J = J Z w-wise (Z the exact inverse), so |A w| ≤ α |w| with
+  α = (1 + n ε_A) 2β; and by sign vectors (normpf's row walk, as a
+  template "every |M s| ≤ c for |s| ≤ 1"), mnorm(A) ≤ α. Right defect:
+  (I − J A) w = J (Zw − A J Zw), so mnorm(I − J A) ≤ nM n ε_A 2β. Y:
+  |Y − A| ≤ v |A| entrywise (dsig_err), so mnorm(I − Y J) ≤ θ_L =
+  n ε_A + v α n M and mnorm(I − J Y) ≤ θ_R = nM (n ε_A 2β + v α).
+- *Newton* (C5b). Step k: y_{k+1} = y_k − A_k g(y_k) + ε_k, |ε_k| ≤ h.
+  - Step 0. Since f(x_b; x_z) = 0, g(y0) = S0 (y0 − x_b) + T0 (pc − x_z)
+    (slopes, unknown part then parameter part), so |g(y0)| ≤ G0 =
+    nM d + mM ρ and |y1 − x_b| ≤ E1 = n ε_A d + α nΛ d² + α mM ρ + h
+    (A0 S0 = A0 J0 + A0 (S0 − J0), |S0 − J0| ≤ nΛ d by C3a's sl_lip).
+  - Step 1 settles even when ρ is many ulps: the parameter offset is
+    common to both steps and cancels. With g0 = J0 w (w = Z0 g0),
+    g(y1) = (J0 − S1) w + S1 (w − A0 g0) + S1 ε0, so |y2 − y1| ≤
+    2h + n ε_A h + α nΛ Δ0 h + α (nΛ Δ0 + n² M ε_A) 2β G0 (Δ0 = α G0 + h),
+    at most 8h = 2^-(p−2), the settle test, once the second-order terms
+    are below 6h. So newton returns y1 or y2, within E_N = 8h + E1.
+  - Control flow: nstep is Some (dinverse_ok), the 2^40 guard passes,
+    and the settle test is decided by the bound (K-level comparisons are
+    complete for dyadics: kle(a, b) = True from ofd a ≤ ofd b, by the
+    embedding's cmp law and trichotomy).
+- *Radius* (C5c). s0 = the checker's self-map vector at radius 0 (what
+  r0 reads), S = max s0, r0 ∈ [(65/64) S, (65/64)(129/128) S].
+  - Window: every r with 2S ≤ r ≤ U passes the checker, U =
+    ((65/64)(129/128) + 2 (17/16)(129/128)) S. Centers of the checker's
+    slope balls are the Jacobian at the box center (mcen_jac), so
+    |I − Y J0y| ≤ θ_L; their radii are at most Λ (r + ρ) (ksl_grade);
+    a new pair-grade lemma (radius over the radius-r box minus radius
+    over the radius-0 box ≤ ls · r, same induction as ksl_grade) bounds
+    svec(r) ≤ s0 + (2α mΛ ρ + θ_L + 2α nΛ (r + ρ)) r. Contraction (q =
+    1/2), self-map and injectivity (θ_R < 1) follow.
+  - Search: the first passing radius is reached by step 12
+    ((65/64)(17/16)^12 ≥ 2); a radius that fails is below 2S (it is at
+    most U), so the next is below 2 (17/16)(129/128) S ≤ U. So rsearch
+    returns r ≤ U =: R.
+- *In the box* (C5c). With e = yc − x_b, g(yc) = T δ + S' e, T the
+  parameter slopes between yc ++ pc and yc ++ x_z (both in the radius-0
+  box, so |T| ≤ |J0z| + Dz0 entrywise) and S' the unknown slopes from
+  x_b ++ x_z: |e| ≤ s0 + κ |e| with κ = θ_L + 2α nΛ (E_N + ρ) ≤ 1/65,
+  so |e| ≤ (65/64) S ≤ r0 ≤ r.
+- *Smallness* (hypotheses of block_ok, discharged in C6 for large p):
+  δ ≤ 1/4, U ≤ 1/4, 2βnΛδ ≤ 1, u acoef ≤ 1 per column (dinverse_ok),
+  n ε_A ≤ 1, v ≤ 1, the settle inequality, the window inequality
+  2α mΛ ρ + θ_L + 2α nΛ (U + ρ) ≤ 1/2, θ_R < 1, 65 κ ≤ 1, p ≥ 2.
+- Split:
+  - C5a lib/apxpf.bend: the vector form, |A w| ≤ α|w|, template
+    operator bound → mnorm, right defect, Y's rounding, θ_L, θ_R; F-boxes
+    for fnum (a center and one radius: gbox, inbox, cen); slope matrix vs
+    Jacobian at the center (nΛ ρ), slope and Jacobian norms (nM); the
+    dyadic Jacobian, values and dmatvec in F; complete comparisons
+    (kle/klt/kvle/kvlt from F inequalities); every visited point's
+    elimination (pert + dinverse_ok at J_y).
+  - C5b lib/nwtpf.bend: nstep in F, steps 0 and 1, newton's control
+    flow: `newton_ok`.
+  - C5c lib/radpf.bend: pair grades, the window, r0 and grow bounds,
+    rsearch, in the box.
+  - C5d lib/blockpf.bend: `block_ok`.
 
 **Risks.** Size: several thousand lines over several sessions (C4 is the
 largest single piece). Checker time on long inequality proofs: keep the
