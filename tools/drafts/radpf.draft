@@ -571,3 +571,41 @@ def mz_rows($KH, $PBP, +lam: @T, +ms: @T, +hl0: O.le(~F, @0, lam), eqs: List<&2,
 # |(|J0z| + Dz)(box1) - (|J0z| + Dz)(box0)| <= cnt lam dl
 def mz_mn($KH, $PBP, +lam: @T, +ms: @T, +hl0: O.le(~F, @0, lam), +eqs: List<&2, E.QExpr>, +hq: AP.eqok(~F, bb, lam, ms, eqs), +hh: {CK.allheld(~K, eqs) == True{} : Bool}, +cnt: Nat, +lo: Nat) -> O.le(~F, NP.mnorm(~F, M.madd(~F, N.ofkm($KHA, mzm($KHA, b1, cnt, lo, eqs)), M.mneg(~F, N.ofkm($KHA, mzm($KHA, b0, cnt, lo, eqs)))), cnt), @M(FR.ofn(~F, cnt), @M(lam, dl))):
   NP.mnorm_lub(~F, M.madd(~F, N.ofkm($KHA, mzm($KHA, b1, cnt, lo, eqs)), M.mneg(~F, N.ofkm($KHA, mzm($KHA, b0, cnt, lo, eqs)))), cnt, @M(FR.ofn(~F, cnt), @M(lam, dl)), mz_rows($KHA, $PBA, lam, ms, hl0, eqs, hq, hh, cnt, lo), AP.lr_nn(~F, cnt, lam, dl, hl0, hdl))
+
+# K's |M| entrywise has F norm at most M's
+# -----------------------------------------
+
+def kabs_ent($KH, +x: N.NC(K)) -> O.le(~F, FV.fabs(~F, @H(KA.kabs(~K, x))), FV.fabs(~F, @H(x))):
+  FV.fabs_le(~F, @H(KA.kabs(~K, x)), FV.fabs(~F, @H(x)),
+    (%Equal.sym(@T, @H(KA.kabs(~K, x)), FV.fabs(~F, @H(x)), kabs_eq($KHA, x)) : M.bnd(~F, _, FV.fabs(~F, @H(x)))
+      FV.bnd_self(~F, FV.fabs(~F, @H(x)), FV.fabs_nn(~F, @H(x)))))
+
+def kabs_row($KH, r: N.KVec(~K), n: Nat) -> O.le(~F, NP.rowabs(~F, N.ofkv($KHA, KA.kvabs(~K, r)), n), NP.rowabs(~F, N.ofkv($KHA, r), n)):
+  match r n:
+    case Nil{} 0n:
+      FO.le_refl(~F, @0)
+    case Nil{} 1n++k:
+      FO.le_refl(~F, @0)
+    case Con{+x, +t} 0n:
+      FO.le_refl(~F, @0)
+    case Con{+x, +t} 1n++k:
+      RP.le_add2(~F, FV.fabs(~F, @H(KA.kabs(~K, x))), FV.fabs(~F, @H(x)), NP.rowabs(~F, N.ofkv($KHA, KA.kvabs(~K, t)), k), NP.rowabs(~F, N.ofkv($KHA, t), k), kabs_ent($KHA, x), kabs_row($KHA, t, k))
+
+def kabs_rows($KH, a: N.KMat(~K), +n: Nat, +c: @T, +hc: O.le(~F, NP.mnorm(~F, N.ofkm($KHA, a), n), c)) -> NP.rowsle(~F, N.ofkm($KHA, KA.kmabs(~K, a)), n, c):
+  match a:
+    case Nil{}:
+      Unit{}
+    case Con{+r, +t}:
+      (DM.le_trans(~F, NP.rowabs(~F, N.ofkv($KHA, KA.kvabs(~K, r)), n), NP.rowabs(~F, N.ofkv($KHA, r), n), c, kabs_row($KHA, r, n), DM.le_trans(~F, NP.rowabs(~F, N.ofkv($KHA, r), n), NP.mnorm(~F, N.ofkm($KHA, Con{r, t}), n), c, AP.mnorm_ge_r(~F, N.ofkv($KHA, r), N.ofkm($KHA, t), n), hc)),
+       kabs_rows($KHA, t, n, c, DM.le_trans(~F, NP.mnorm(~F, N.ofkm($KHA, t), n), NP.mnorm(~F, N.ofkm($KHA, Con{r, t}), n), c, AP.mnorm_ge_t(~F, N.ofkv($KHA, r), N.ofkm($KHA, t), n), hc)))
+
+def kabs_mn($KH, +a: N.KMat(~K), +n: Nat, +c: @T, +hc0: O.le(~F, @0, c), +hc: O.le(~F, NP.mnorm(~F, N.ofkm($KHA, a), n), c)) -> O.le(~F, NP.mnorm(~F, N.ofkm($KHA, KA.kmabs(~K, a)), n), c):
+  NP.mnorm_lub(~F, N.ofkm($KHA, KA.kmabs(~K, a)), n, c, kabs_rows($KHA, a, n, c, hc), hc0)
+
+# the checker's I - A B in F
+def ofkm_imm($KH, +n: Nat, +a: N.KMat(~K), +b: N.KMat(~K)) -> {N.ofkm($KHA, CK.imm(~K, n, a, b)) == M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, N.ofkm($KHA, a), N.ofkm($KHA, b)))) : M.Mat(~F)}:
+  %KA.kmadd_ofk($KHA, KA.kident(~K, n), KA.kmneg(~K, KA.kmatmul(~K, a, b))) : {_ == M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, N.ofkm($KHA, a), N.ofkm($KHA, b)))) : M.Mat(~F)}
+  %KA.kident_ofk($KHA, n) : {M.madd(~F, _, N.ofkm($KHA, KA.kmneg(~K, KA.kmatmul(~K, a, b)))) == M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, N.ofkm($KHA, a), N.ofkm($KHA, b)))) : M.Mat(~F)}
+  %KA.kmneg_ofk($KHA, KA.kmatmul(~K, a, b)) : {M.madd(~F, M.ident(~F, n), _) == M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, N.ofkm($KHA, a), N.ofkm($KHA, b)))) : M.Mat(~F)}
+  %KA.kmatmul_ofk($KHA, a, b) : {M.madd(~F, M.ident(~F, n), M.mneg(~F, _)) == M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, N.ofkm($KHA, a), N.ofkm($KHA, b)))) : M.Mat(~F)}
+  {==}

@@ -564,3 +564,41 @@ def mz_rows(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +dl: O.C(F), +rho: O.C(F),
 # |(|J0z| + Dz)(box1) - (|J0z| + Dz)(box0)| <= cnt lam dl
 def mz_mn(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +dl: O.C(F), +rho: O.C(F), +bb: O.C(F), +hdl: O.le(~F, O.zero(F), dl), +hr: O.le(~F, O.zero(F), rho), +hb: O.le(~F, O.zero(F), bb), +b0: List<&2, KB.KB<K>>, +b1: List<&2, KB.KB<K>>, +hcen: {BP.cen(~K, ~F, ~H, b0) == BP.cen(~K, ~F, ~H, b1) : M.Vec(~F)}, +hp: bpair(~K, ~F, ~H, dl, b0, b1), +hg: BP.gbox(~K, ~F, ~H, rho, bb, b1), +lam: O.C(F), +ms: O.C(F), +hl0: O.le(~F, O.zero(F), lam), +eqs: List<&2, E.QExpr>, +hq: AP.eqok(~F, bb, lam, ms, eqs), +hh: {CK.allheld(~K, eqs) == True{} : Bool}, +cnt: Nat, +lo: Nat) -> O.le(~F, NP.mnorm(~F, M.madd(~F, N.ofkm(~K, ~F, ~H, mzm(~K, ~F, ~H, b1, cnt, lo, eqs)), M.mneg(~F, N.ofkm(~K, ~F, ~H, mzm(~K, ~F, ~H, b0, cnt, lo, eqs)))), cnt), O.mul(F, FR.ofn(~F, cnt), O.mul(F, lam, dl))):
   NP.mnorm_lub(~F, M.madd(~F, N.ofkm(~K, ~F, ~H, mzm(~K, ~F, ~H, b1, cnt, lo, eqs)), M.mneg(~F, N.ofkm(~K, ~F, ~H, mzm(~K, ~F, ~H, b0, cnt, lo, eqs)))), cnt, O.mul(F, FR.ofn(~F, cnt), O.mul(F, lam, dl)), mz_rows(~K, ~F, ~H, dl, rho, bb, hdl, hr, hb, b0, b1, hcen, hp, hg, lam, ms, hl0, eqs, hq, hh, cnt, lo), AP.lr_nn(~F, cnt, lam, dl, hl0, hdl))
+
+# K's |M| entrywise has F norm at most M's
+# -----------------------------------------
+
+def kabs_ent(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +x: N.NC(K)) -> O.le(~F, FV.fabs(~F, N.emap(K, F, H, KA.kabs(~K, x))), FV.fabs(~F, N.emap(K, F, H, x))):
+  FV.fabs_le(~F, N.emap(K, F, H, KA.kabs(~K, x)), FV.fabs(~F, N.emap(K, F, H, x)),
+    (%Equal.sym(O.C(F), N.emap(K, F, H, KA.kabs(~K, x)), FV.fabs(~F, N.emap(K, F, H, x)), kabs_eq(~K, ~F, ~H, x)) : M.bnd(~F, _, FV.fabs(~F, N.emap(K, F, H, x)))
+      FV.bnd_self(~F, FV.fabs(~F, N.emap(K, F, H, x)), FV.fabs_nn(~F, N.emap(K, F, H, x)))))
+
+def kabs_row(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, r: N.KVec(~K), n: Nat) -> O.le(~F, NP.rowabs(~F, N.ofkv(~K, ~F, ~H, KA.kvabs(~K, r)), n), NP.rowabs(~F, N.ofkv(~K, ~F, ~H, r), n)):
+  match r n:
+    case Nil{} 0n:
+      FO.le_refl(~F, O.zero(F))
+    case Nil{} 1n++k:
+      FO.le_refl(~F, O.zero(F))
+    case Con{+x, +t} 0n:
+      FO.le_refl(~F, O.zero(F))
+    case Con{+x, +t} 1n++k:
+      RP.le_add2(~F, FV.fabs(~F, N.emap(K, F, H, KA.kabs(~K, x))), FV.fabs(~F, N.emap(K, F, H, x)), NP.rowabs(~F, N.ofkv(~K, ~F, ~H, KA.kvabs(~K, t)), k), NP.rowabs(~F, N.ofkv(~K, ~F, ~H, t), k), kabs_ent(~K, ~F, ~H, x), kabs_row(~K, ~F, ~H, t, k))
+
+def kabs_rows(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, a: N.KMat(~K), +n: Nat, +c: O.C(F), +hc: O.le(~F, NP.mnorm(~F, N.ofkm(~K, ~F, ~H, a), n), c)) -> NP.rowsle(~F, N.ofkm(~K, ~F, ~H, KA.kmabs(~K, a)), n, c):
+  match a:
+    case Nil{}:
+      Unit{}
+    case Con{+r, +t}:
+      (DM.le_trans(~F, NP.rowabs(~F, N.ofkv(~K, ~F, ~H, KA.kvabs(~K, r)), n), NP.rowabs(~F, N.ofkv(~K, ~F, ~H, r), n), c, kabs_row(~K, ~F, ~H, r, n), DM.le_trans(~F, NP.rowabs(~F, N.ofkv(~K, ~F, ~H, r), n), NP.mnorm(~F, N.ofkm(~K, ~F, ~H, Con{r, t}), n), c, AP.mnorm_ge_r(~F, N.ofkv(~K, ~F, ~H, r), N.ofkm(~K, ~F, ~H, t), n), hc)),
+       kabs_rows(~K, ~F, ~H, t, n, c, DM.le_trans(~F, NP.mnorm(~F, N.ofkm(~K, ~F, ~H, t), n), NP.mnorm(~F, N.ofkm(~K, ~F, ~H, Con{r, t}), n), c, AP.mnorm_ge_t(~F, N.ofkv(~K, ~F, ~H, r), N.ofkm(~K, ~F, ~H, t), n), hc)))
+
+def kabs_mn(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.KMat(~K), +n: Nat, +c: O.C(F), +hc0: O.le(~F, O.zero(F), c), +hc: O.le(~F, NP.mnorm(~F, N.ofkm(~K, ~F, ~H, a), n), c)) -> O.le(~F, NP.mnorm(~F, N.ofkm(~K, ~F, ~H, KA.kmabs(~K, a)), n), c):
+  NP.mnorm_lub(~F, N.ofkm(~K, ~F, ~H, KA.kmabs(~K, a)), n, c, kabs_rows(~K, ~F, ~H, a, n, c, hc), hc0)
+
+# the checker's I - A B in F
+def ofkm_imm(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +n: Nat, +a: N.KMat(~K), +b: N.KMat(~K)) -> {N.ofkm(~K, ~F, ~H, CK.imm(~K, n, a, b)) == M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, N.ofkm(~K, ~F, ~H, a), N.ofkm(~K, ~F, ~H, b)))) : M.Mat(~F)}:
+  %KA.kmadd_ofk(~K, ~F, ~H, KA.kident(~K, n), KA.kmneg(~K, KA.kmatmul(~K, a, b))) : {_ == M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, N.ofkm(~K, ~F, ~H, a), N.ofkm(~K, ~F, ~H, b)))) : M.Mat(~F)}
+  %KA.kident_ofk(~K, ~F, ~H, n) : {M.madd(~F, _, N.ofkm(~K, ~F, ~H, KA.kmneg(~K, KA.kmatmul(~K, a, b)))) == M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, N.ofkm(~K, ~F, ~H, a), N.ofkm(~K, ~F, ~H, b)))) : M.Mat(~F)}
+  %KA.kmneg_ofk(~K, ~F, ~H, KA.kmatmul(~K, a, b)) : {M.madd(~F, M.ident(~F, n), _) == M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, N.ofkm(~K, ~F, ~H, a), N.ofkm(~K, ~F, ~H, b)))) : M.Mat(~F)}
+  %KA.kmatmul_ofk(~K, ~F, ~H, a, b) : {M.madd(~F, M.ident(~F, n), M.mneg(~F, _)) == M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, N.ofkm(~K, ~F, ~H, a), N.ofkm(~K, ~F, ~H, b)))) : M.Mat(~F)}
+  {==}
