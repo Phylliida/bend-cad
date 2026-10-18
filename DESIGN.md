@@ -1354,6 +1354,22 @@ is POk and accept is True at P, for every g within d of x.
   walk(final box) (block_ok's conjuncts transported along the prefix;
   pcont from kle(|c - c| + r, r)), pbox over all nv, radii ≤ T_K h.
   T_0 = 0, T_(k+1) = Φ_k(T_k).
+- *C6c as built* (2026-10-17; lib/pblkpf.bend, gated via
+  tests/blocks_laws.bend). The solver's dyadic list operations are the
+  checker's K-generic ones (`dl_kl`, `dapp_ka`, ...); pblocks' accumulator
+  moves out (`pb_acc`). Per block of the structure kb, `blk_sc` gives
+  block_sc every hypothesis: the local equations from the block-order
+  system (`tq_eq`, `dq_eq`), held (dyadic constants), below n + m
+  (`ren_below` from swalk's ecovs), zero at x locally (`zeros_blk`,
+  zeros_unsubst), Λ and M as the local equations' grades summed at
+  bb = |x| + 1 (`eqok_le`), hJ (`loc_invb`), the parameters' balls from
+  planpf's pin_pc with pcont on `dpick` (`pc_refl`), the drawing within
+  d at free variables (`near_bnd`), and the budget split off qch.
+  `pb_cert`/`pb_step` take the certificate apart and `pg_con` puts the
+  block in front of the rest's answer (`bo_fin`: the checker's block_ok
+  against the final box via its prefix, `kpre`/`kseg`). `pb_ok`: the
+  induction, the recursive call passed as a lambda; the chain functions
+  `qch` (budgets) and `tch` (radius scale) run over (kb, BInv, o, T).
 - *C6d, the verdict and the top* (lib/completepf.bend). held (pins: radius
   0, centers g's), explained and wf_dec (solve_total), within, check.r's
   permutations (vp from sfacts, ep from alleqs vs good), kperm of unperm,

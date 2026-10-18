@@ -25,6 +25,7 @@ the checker verifies the output.
 | `lib/scalepf.bend` | `python3 tools/expand.py tools/drafts/scalepf.draft lib/scalepf.bend` |
 | `lib/binvpf.bend` | `python3 tools/expand.py tools/drafts/binvpf.draft lib/binvpf.bend` |
 | `lib/locpf.bend` | `python3 tools/expand.py tools/drafts/locpf.draft lib/locpf.bend` |
+| `lib/pblkpf.bend` | `python3 tools/expand.py tools/drafts/pblkpf.draft lib/pblkpf.bend` |
 
 `@MACRO NAME text` (a line) makes every `$NAME` below stand for `text`
 (textual, longest names first, macros may use macros): long hypothesis lists

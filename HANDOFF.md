@@ -533,7 +533,30 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
     lib/locpf.bend (`loc_invb`: the block's local Jacobian, renumbered at
     its unknowns ++ parameters, has an inverse of norm `ibd`), gated via
     tests/binv_laws.bend. See DESIGN "C6b as built".
-  - Next: C6c (pblocks induction), C6d (the verdict and the top).
+  - C6c DONE: lib/pblkpf.bend (`pb_ok`: by induction over the solver's
+    structure, pblocks returns PBOk; the checker's walk accepts the final
+    box; x in it; radii at most h tch), gated via tests/blocks_laws.bend.
+    See DESIGN "C6c as built".
+  - Next: C6d lib/completepf.bend: the top. Instantiate pb_ok at offset
+    np with the pins' box (gc = dtake(np, dpick(g, vp)), gr = zeros),
+    from struct_ok/sfacts (vchain, lkb, distinct vp, alleqs ⊆ good),
+    block_invs, kept_good (Zeros at x), dyadic(sk); then plan.fin and
+    unperm (kperm ∘ unperm = id), held, explained/wf_dec (solve_total),
+    within, check.r's permutations, check_sides (Strict), inbox; choose
+    l from arch(Q) with Q = qch + the sides' term, d = h at P_l.
+- Bend lessons (C6c):
+  - `%E : P` with E : {L == R}: R is what the goal (or the expected type,
+    for a transported hypothesis) holds at the hole, L what the inner
+    term has. I inverted this many times; check which side the goal
+    holds before writing Equal.sym.
+  - A match must come first in a def body (a let before `match kb:` gave
+    "a match on a parameter or field").
+  - pblocks matches `Con{ST.SkB{es, vs, +pars}, +t} BOk{+c}`: a lemma
+    matching it must spell the SkB constructor in every case, or the
+    Retry/Stop cases do not reduce.
+  - Destructuring a pair with + on both binders cannot be inferred:
+    destructure plainly, then pass to a helper with + parameters
+    (pb_cert -> pb_cert.go).
 - Bend lessons (C6a):
   - A def's value can be reflected: `{C5_constant(...) == PM.peval(~F,
     atoms, r_X()) : @T}` checks by `{==}` when the atom list is concrete,
