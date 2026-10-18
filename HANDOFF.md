@@ -9,7 +9,11 @@ gotchas are in memory (`reference_bend2_idioms`).
 
 - **sk-00 done:** `bin/bend` (local `../bend` under bun, telemetry off, fixes
   CC), `check.sh` (gate: PROOF.bend + every `tests/*.bend` must check, no
-  unsafe/foreign code; negative-tested).
+  unsafe/foreign code; negative-tested). Each test is checked as its own
+  root, in parallel (`BEND_JOBS`, default one per core; ~50 s on this
+  machine): a root's unsafe/foreign report names only its own defs, so the
+  tests must not be merged into one importing root (memory:
+  `reference_bend2_idioms`).
 - **sk-P1 done** (untrusted prototype in `proto/`), results in
   `proto/RESULTS.md`; ink-metric proposer, pinning, decomposition and F32
   Gauss–Jordan in Bend are deferred to sk-09.

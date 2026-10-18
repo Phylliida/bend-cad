@@ -15,11 +15,24 @@ fi
 if ! printf '%s\n' "$out" | command grep -qx "All terms check."; then
   echo "GATE: FAIL (no clean verdict)"; exit 1
 fi
-# the demos in tests/ must keep checking too
+# the demos in tests/ must keep checking too. Each stays its own root (a
+# check reports reliance on unsafe or foreign code only for the root's own
+# defs), checked side by side: at most BEND_JOBS at once (default: one per
+# core), the verdicts read back in order.
+tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+jobs_max="${BEND_JOBS:-$(nproc)}"
 for t in tests/*.bend; do
   [ -e "$t" ] || continue
-  tout="$(bin/bend "$t" --check-only 2>&1)"; tcode=$?
-  if [ $tcode -ne 0 ] || ! printf '%s\n' "$tout" | command grep -qx "All terms check."; then
+  while [ "$(jobs -rp | wc -l)" -ge "$jobs_max" ]; do wait -n; done
+  b="$(basename "$t")"
+  ( bin/bend "$t" --check-only > "$tmp/$b.out" 2>&1; echo $? > "$tmp/$b.code" ) &
+done
+wait
+for t in tests/*.bend; do
+  [ -e "$t" ] || continue
+  b="$(basename "$t")"
+  tout="$(cat "$tmp/$b.out")"; tcode="$(cat "$tmp/$b.code")"
+  if [ "$tcode" -ne 0 ] || ! printf '%s\n' "$tout" | command grep -qx "All terms check."; then
     printf '%s\n' "$tout"
     echo "GATE: FAIL ($t)"; exit 1
   fi
