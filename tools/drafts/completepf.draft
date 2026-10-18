@@ -24,6 +24,7 @@ import ./kball.bend as KB
 import ./kinst.bend as KI
 import ./certdef.bend as C
 import ./cert.bend as CK
+import ./certpf.bend as CP
 import ./slope.bend as SL
 import ./numer.bend as NU
 import ./struct.bend as ST
@@ -662,3 +663,32 @@ def cr_ok($SKP, +hwf: {WF.wf_dec(sk) == True{} : Bool}, +cov: {BX.Sketch.within(
   AP.band_t(PL.eqs_below($KL, SO.kept(sk)), $CPK, (%ek : {PL.eqs_below(_, SO.kept(sk)) == True{} : Bool}
     kept_below(sk, hwf, cov)),
   cpk_ok($SKA, x, g, $PGA))))))
+
+# The answer holds x
+# ------------------
+
+def kv_of($SKP, +k: Nat, hk: {KA.natle(1n+k, PL.nlen($VP)) == True{} : Bool}) -> {KA.natle(1n+k, $NV) == True{} : Bool}:
+  %Equal.trans(Nat, PL.nlen($VP), SV.len($VP), $NV, PB.nlen_sv($VP), L.eq_ok(SV.len($VP), $NV, SP.sfacts_vpl($SFA))) : {KA.natle(1n+k, _) == True{} : Bool}
+  hk
+
+def nle_rw(+gcf: List<&2, S.D>, +nv: Nat, hlc: {KA.klen($DN, gcf) == nv : Nat}) -> {KA.natle(nv, KA.klen($DN, gcf)) == True{} : Bool}:
+  %Equal.sym(Nat, KA.klen($DN, gcf), nv, hlc) : {KA.natle(nv, _) == True{} : Bool}
+  L.le_refl(nv)
+
+# x_v sits in the read-back box at v: it is x read in block order at v's
+# position, in the blocks' box there
+def box_at($SKP, +x: M.Vec(~F), +g: List<&2, S.D>, $PGF, +v: Nat, +hv: {KA.natle(1n+v, $NV) == True{} : Bool}) -> M.bnd(~F, O.lookup(~F, BX.vsub(~F, x, N.ofkv($DN, ~F, ~H, $GCU)), v), O.lookup(~F, N.ofkv($DN, ~F, ~H, $GRU), v)):
+  +k = PL.pos(v, $VP)
+  +hk = LC.pos_lt(v, $VP, vp_has($SKA, v, hv))
+  +b0 = PP.pbox_at($DN, ~F, ~H, gcf, grf, $NV, $XV, hpb, nle_rw(gcf, $NV, hlc), k, kv_of($SKA, k, hk))
+  +ea = Equal.trans(O.C(F), O.lookup(~F, $XV, k), O.lookup(~F, x, PL.nthn($VP, k)), O.lookup(~F, x, v), LC.look_xperm(~F, x, $VP, k, hk), PP.look_vec_rw(~F, x, PL.nthn($VP, k), v, PP.pos_nth(v, $VP, hk)))
+  +ec = Equal.trans(O.C(F), N.emap(KI.dnum(), F, H, KB.klook($DN, gcf, k)), N.emap(KI.dnum(), F, H, KB.klook($DN, $GCU, v)), O.lookup(~F, N.ofkv($DN, ~F, ~H, $GCU), v), PP.emap_rw($DN, ~F, ~H, KB.klook($DN, gcf, k), KB.klook($DN, $GCU, v), Equal.sym(S.D, KB.klook($DN, $GCU, v), KB.klook($DN, gcf, k), up_kl0($NV, gcf, $VP, v, hv))), CP.klook_ofk($DN, ~F, ~H, $GCU, v))
+  +er = Equal.trans(O.C(F), N.emap(KI.dnum(), F, H, KB.klook($DN, grf, k)), N.emap(KI.dnum(), F, H, KB.klook($DN, $GRU, v)), O.lookup(~F, N.ofkv($DN, ~F, ~H, $GRU), v), PP.emap_rw($DN, ~F, ~H, KB.klook($DN, grf, k), KB.klook($DN, $GRU, v), Equal.sym(S.D, KB.klook($DN, $GRU, v), KB.klook($DN, grf, k), up_kl0($NV, grf, $VP, v, hv))), CP.klook_ofk($DN, ~F, ~H, $GRU, v))
+  PP.unent(~F, x, N.ofkv($DN, ~F, ~H, $GCU), N.ofkv($DN, ~F, ~H, $GRU), v, PP.btr(~F, O.lookup(~F, $XV, k), O.lookup(~F, x, v), N.emap(KI.dnum(), F, H, KB.klook($DN, gcf, k)), O.lookup(~F, N.ofkv($DN, ~F, ~H, $GCU), v), N.emap(KI.dnum(), F, H, KB.klook($DN, grf, k)), O.lookup(~F, N.ofkv($DN, ~F, ~H, $GRU), v), ea, ec, er, b0))
+
+def inbox_ans($SKP, +x: M.Vec(~F), +g: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, $PGF) -> BX.inbox($DN, ~F, ~H, $GCU, $GRU, x):
+  +lo = Equal.trans(Nat, M.len(~F, N.ofkv($DN, ~F, ~H, $GCU)), $KL, $NV, CP.len_ofkv($DN, ~F, ~H, $GCU), klen_up($NV, 0n, gcf, $VP))
+  +d = BX.vsub(~F, x, N.ofkv($DN, ~F, ~H, $GCU))
+  +hld = CP.len_vsub(~F, x, N.ofkv($DN, ~F, ~H, $GCU), $NV, hl, lo)
+  (Equal.trans(Nat, M.len(~F, x), $NV, M.len(~F, N.ofkv($DN, ~F, ~H, $GCU)), hl, Equal.sym(Nat, M.len(~F, N.ofkv($DN, ~F, ~H, $GCU)), $NV, lo)),
+   BA.rbnd_of_lk(~F, d, $NV, N.ofkv($DN, ~F, ~H, $GRU), hld, BA.lk_build(~F, ~d, ~N.ofkv($DN, ~F, ~H, $GRU), ~$NV, ~(v => hv => box_at($SKA, x, g, $PGA, v, hv)), $NV, 0n, BA.lk_end($NV))))
