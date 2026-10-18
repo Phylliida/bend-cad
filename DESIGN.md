@@ -1092,7 +1092,11 @@ in K, and serves both the checker's dyadic balls and the Newton analysis.
     PL.rename (v an unknown, pars distinct).
 - C3b, lib/roundpf.bend, in F through ofd:
   - |dround(x, p) − x| ≤ 2^-(p+1).
-  - |dsig(x, b) − x| ≤ 2^-b |x|.
+  - |dsig(x, b) − x| ≤ 2^-b |x|. (2026-10-18: dsig also returns zero at
+    exponent 0. A zero's exponent otherwise grew through products and
+    every sum with it shifted the other mantissa that far: in a sparse
+    11×11 elimination it reached ~90000 and one inverse took 13 s. The
+    value is unchanged, so only dsig_err's two fits cases moved.)
   - |qsig(q, b) − q| ≤ 2^-b |q| (so dsdiv too).
   - x ≤ dsigup(x, b) ≤ x + 2^(1−b) |x| (any sign).
   - From integer facts: Euclid's division (QRD.div), the size bounds

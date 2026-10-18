@@ -519,9 +519,10 @@ def bound_nn(~F: O.OField, +m: S.Z, +e: Nat, +b: Nat) -> O.le(~F, O.zero(F), O.m
   FO.mul_nonneg(~F, M.ofd(~F, S.D{M.zabs(m), e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b}), DM.dabs_nonneg(~F, S.D{m, e}), FO.lt_le(~F, O.zero(F), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b}), DM.dpos(~F, S.XH{}, b)))
 
 # m nonzero with |m| = p
-def dsig_go(~F: O.OField, le: Bool, +m: S.Z, +p: S.Pos, +e: Nat, +b: Nat, +h: {KA.natle(QRD.size(p), b) == le : Bool}, ea: {O.ofz(~F, M.zabs(m)) == O.ofp(~F, p) : O.C(F)}) -> M.bnd(~F, O.sub(~F, M.ofd(~F, NU.dsig.go(le, S.D{m, e}, Nat.sub(QRD.size(p), b))), M.ofd(~F, S.D{m, e})), O.mul(F, M.ofd(~F, S.D{M.zabs(m), e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b}))):
+def dsig_go(~F: O.OField, le: Bool, +m: S.Z, +p: S.Pos, +e: Nat, +b: Nat, +h: {KA.natle(QRD.size(p), b) == le : Bool}, ea: {O.ofz(~F, M.zabs(m)) == O.ofp(~F, p) : O.C(F)}, hn: {S.D{m, e} == NU.dznorm(S.D{m, e}) : S.D}) -> M.bnd(~F, O.sub(~F, M.ofd(~F, NU.dsig.go(le, S.D{m, e}, Nat.sub(QRD.size(p), b))), M.ofd(~F, S.D{m, e})), O.mul(F, M.ofd(~F, S.D{M.zabs(m), e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b}))):
   match le:
     case True{}:
+      %hn : M.bnd(~F, O.sub(~F, M.ofd(~F, _), M.ofd(~F, S.D{m, e})), O.mul(F, M.ofd(~F, S.D{M.zabs(m), e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b})))
       KB.bnd_subself(~F, M.ofd(~F, S.D{m, e}), O.mul(F, M.ofd(~F, S.D{M.zabs(m), e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b})), bound_nn(~F, m, e, b))
     case False{}:
       +k = Nat.sub(QRD.size(p), b)
@@ -541,7 +542,7 @@ def dsig_z2(~F: O.OField, le: Bool, +e: Nat, +k: Nat, +b: Nat) -> M.bnd(~F, O.su
 def dsig_z(~F: O.OField, le: Bool, +e: Nat, +b: Nat) -> M.bnd(~F, O.sub(~F, M.ofd(~F, NU.dsig.go(le, S.D{S.Z0{}, e}, Nat.sub(1n, b))), M.ofd(~F, S.D{S.Z0{}, e})), O.mul(F, M.ofd(~F, S.D{S.Z0{}, e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b}))):
   match le:
     case True{}:
-      KB.bnd_subself(~F, M.ofd(~F, S.D{S.Z0{}, e}), O.mul(F, M.ofd(~F, S.D{S.Z0{}, e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b})), bound_nn(~F, S.Z0{}, e, b))
+      KB.bnd_val(~F, O.zero(F), O.sub(~F, M.ofd(~F, S.D{S.Z0{}, 0n}), M.ofd(~F, S.D{S.Z0{}, e})), O.mul(F, M.ofd(~F, S.D{S.Z0{}, e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b})), FR.fring_eq(~F, [O.inv(F, O.one(F)), O.inv(F, t2(~F, e))], E.ZCst{S.Z0{}}, E.ZSub{E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{0n}}, E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{1n}}}, {==}), FM.bnd_zero(~F, O.mul(F, M.ofd(~F, S.D{S.Z0{}, e}), M.ofd(~F, S.D{S.Zpos{S.XH{}}, b})), bound_nn(~F, S.Z0{}, e, b)))
     case False{}:
       dsig_z2(~F, KA.natle(Nat.sub(1n, b), e), e, Nat.sub(1n, b), b)
 
@@ -551,9 +552,9 @@ def dsig_err(~F: O.OField, x: S.D, +b: Nat) -> M.bnd(~F, O.sub(~F, M.ofd(~F, NU.
     case S.D{S.Z0{}, +e}:
       dsig_z(~F, KA.natle(1n, b), e, b)
     case S.D{S.Zpos{+p}, +e}:
-      dsig_go(~F, KA.natle(QRD.size(p), b), S.Zpos{p}, p, e, b, {==}, {==})
+      dsig_go(~F, KA.natle(QRD.size(p), b), S.Zpos{p}, p, e, b, {==}, {==}, {==})
     case S.D{S.Zneg{+p}, +e}:
-      dsig_go(~F, KA.natle(QRD.size(p), b), S.Zneg{p}, p, e, b, {==}, {==})
+      dsig_go(~F, KA.natle(QRD.size(p), b), S.Zneg{p}, p, e, b, {==}, {==}, {==})
 
 # The exponent a rational is rounded at
 # -------------------------------------

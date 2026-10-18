@@ -425,10 +425,22 @@ def dsig.sh(le: Bool, m: S.Z, +e: Nat, +k: Nat) -> S.D:
     case False{}:
       S.D{S.Z.mul(zshr_round(m, k), S.Zpos{S.Pos.pow2(Nat.sub(k, e))}), 0n}
 
+# zero at exponent 0: a zero's exponent otherwise grows through products
+# (0 y has the sum of the exponents) and every sum with it shifts the other
+# mantissa that far; in a sparse elimination it compounded to ~90000
+def dznorm(x: S.D) -> S.D:
+  match x:
+    case S.D{S.Z0{}, e}:
+      S.D{S.Z0{}, 0n}
+    case S.D{S.Zpos{p}, e}:
+      S.D{S.Zpos{p}, e}
+    case S.D{S.Zneg{p}, e}:
+      S.D{S.Zneg{p}, e}
+
 def dsig.go(le: Bool, x: S.D, +k: Nat) -> S.D:
   match le x:
     case True{} x:
-      x
+      dznorm(x)
     case False{} S.D{m, +e}:
       dsig.sh(KA.natle(k, e), m, e, k)
 
