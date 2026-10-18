@@ -1,0 +1,321 @@
+# bend-cad: each block's Jacobian has an inverse, for solve_complete
+# (DESIGN §10.4 "C6 plan", C6b). Proofs only.
+# Generated: python3 tools/expand.py tools/drafts/binvpf.draft lib/binvpf.bend
+#
+# lib/permpf.bend's regular_blocks gives the block-order Jacobian at x an
+# inverse (rows: the kept equations block by block; columns: the blocks'
+# unknowns). It is block lower triangular: a block's equations use only
+# the pins, earlier unknowns and its own (lib/structpf.bend's vchain), and
+# an equation's derivative in a variable it does not use is 0 at every
+# point (dzero). So as a list it is [[A, 0], [C, D]], and GJ.block_inv
+# peels the blocks in turn (inv_blocks): every block's own Jacobian A has
+# an inverse (BInv).
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ../spec/mat.bend as M
+import ../spec/solve.bend as SV
+import ../spec/sketch.bend as SK
+import ../spec/deriv.bend as DV
+import ./karith.bend as KA
+import ./flaws.bend as FL
+import ./fring.bend as FR
+import ./ford.bend as FO
+import ./qemb.bend as QE
+import ./struct.bend as ST
+import ./plan.bend as PL
+import ./solve.bend as SO
+import ./listpf.bend as L
+import ./dfspf.bend as D
+import ./maxpf.bend as MX
+import ./tarjanpf.bend as TJ
+import ./structpf.bend as SP
+import ./keptpf.bend as KP
+import ./gjpf.bend as GJ
+import ./permpf.bend as PF
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+# The derivative in an unused variable
+# -----------------------------------
+
+def deq_sv(a: Nat, b: Nat) -> {DV.eq(a, b) == SV.eq(a, b) : Bool}:
+  match a b:
+    case 0n 0n:
+      {==}
+    case 0n 1n+j:
+      {==}
+    case 1n+i 0n:
+      {==}
+    case 1n+i 1n+j:
+      deq_sv(i, j)
+
+def ev0(~F: O.OField, +x: M.Vec(~F)) -> {O.eval(~F, x, DV.qc(S.Z0{})) == O.zero(F) : O.C(F)}:
+  QE.ofq_zero(~F)
+
+# e uses only variables of w, and v is not one: d e / d x_v is 0 at x
+def dzero(~F: O.OField, +x: M.Vec(~F), +w: List<&2, Nat>, +v: Nat, +hv: {SV.mem(v, w) == False{} : Bool}, e: E.QExpr, +hi: {SV.inside(e, w) == True{} : Bool}) -> {O.eval(~F, x, DV.deriv(e, v)) == O.zero(F) : O.C(F)}:
+  match e:
+    case E.QVar{+i}:
+      %Equal.sym(Bool, DV.eq(i, v), False{}, Equal.trans(Bool, DV.eq(i, v), SV.eq(i, v), False{}, deq_sv(i, v), L.mem_ne(i, v, w, hi, hv))) : {O.eval(~F, x, DV.dvar(_)) == O.zero(F) : O.C(F)}
+      ev0(~F, x)
+    case E.QCst{q}:
+      ev0(~F, x)
+    case E.QAdd{+a, +b}:
+      %Equal.sym(O.C(F), O.eval(~F, x, DV.deriv(a, v)), O.zero(F), dzero(~F, x, w, v, hv, a, L.band_l(SV.inside(a, w), SV.inside(b, w), hi))) : {O.add(F, _, O.eval(~F, x, DV.deriv(b, v))) == O.zero(F) : O.C(F)}
+      %Equal.sym(O.C(F), O.eval(~F, x, DV.deriv(b, v)), O.zero(F), dzero(~F, x, w, v, hv, b, L.band_r(SV.inside(a, w), SV.inside(b, w), hi))) : {O.add(F, O.zero(F), _) == O.zero(F) : O.C(F)}
+      O.add_zero(F)(O.zero(F))
+    case E.QSub{+a, +b}:
+      %Equal.sym(O.C(F), O.eval(~F, x, DV.deriv(a, v)), O.zero(F), dzero(~F, x, w, v, hv, a, L.band_l(SV.inside(a, w), SV.inside(b, w), hi))) : {O.sub(~F, _, O.eval(~F, x, DV.deriv(b, v))) == O.zero(F) : O.C(F)}
+      %Equal.sym(O.C(F), O.eval(~F, x, DV.deriv(b, v)), O.zero(F), dzero(~F, x, w, v, hv, b, L.band_r(SV.inside(a, w), SV.inside(b, w), hi))) : {O.sub(~F, O.zero(F), _) == O.zero(F) : O.C(F)}
+      FO.sub_of_eq(~F, O.zero(F), O.zero(F), {==})
+    case E.QMul{+a, +b}:
+      %Equal.sym(O.C(F), O.eval(~F, x, DV.deriv(a, v)), O.zero(F), dzero(~F, x, w, v, hv, a, L.band_l(SV.inside(a, w), SV.inside(b, w), hi))) : {O.add(F, O.mul(F, _, O.eval(~F, x, b)), O.mul(F, O.eval(~F, x, a), O.eval(~F, x, DV.deriv(b, v)))) == O.zero(F) : O.C(F)}
+      %Equal.sym(O.C(F), O.eval(~F, x, DV.deriv(b, v)), O.zero(F), dzero(~F, x, w, v, hv, b, L.band_r(SV.inside(a, w), SV.inside(b, w), hi))) : {O.add(F, O.mul(F, O.zero(F), O.eval(~F, x, b)), O.mul(F, O.eval(~F, x, a), _)) == O.zero(F) : O.C(F)}
+      FR.fring_eq(~F, [O.eval(~F, x, b), O.eval(~F, x, a)], E.ZAdd{E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{0n}}, E.ZMul{E.ZVar{1n}, E.ZCst{S.Z0{}}}}, E.ZCst{S.Z0{}}, {==})
+    case E.QNeg{+a}:
+      %Equal.sym(O.C(F), O.eval(~F, x, DV.deriv(a, v)), O.zero(F), dzero(~F, x, w, v, hv, a, hi)) : {O.neg(F, _) == O.zero(F) : O.C(F)}
+      Equal.sym(O.C(F), O.zero(F), O.neg(F, O.zero(F)), FL.neg_zero(~F))
+
+# Jacobians of appended lists
+# ---------------------------
+
+def eapp(xs: List<&2, E.QExpr>, ys: List<&2, E.QExpr>) -> List<&2, E.QExpr>:
+  match xs:
+    case Nil{}:
+      ys
+    case Con{e, t}:
+      Con{e, eapp(t, ys)}
+
+def pickk_app(+full: List<&2, E.QExpr>, +k: Nat, xs: List<&2, Nat>, +ys: List<&2, Nat>) -> {KP.pickk(full, k, ST.app(xs, ys)) == eapp(KP.pickk(full, k, xs), KP.pickk(full, k, ys)) : List<&2, E.QExpr>}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+j, t}:
+      %pickk_app(full, k, t, ys) : {Con{PL.eqget(full, PL.minus(k, j)), KP.pickk(full, k, ST.app(t, ys))} == Con{PL.eqget(full, PL.minus(k, j)), _} : List<&2, E.QExpr>}
+      {==}
+
+def jac_rows(~F: O.OField, +x: M.Vec(~F), p1: List<&2, E.QExpr>, +p2: List<&2, E.QExpr>, +us: List<&2, Nat>) -> {DV.jac(~F, x, eapp(p1, p2), us) == GJ.vcat(~F, DV.jac(~F, x, p1, us), DV.jac(~F, x, p2, us)) : M.Mat(~F)}:
+  match p1:
+    case Nil{}:
+      {==}
+    case Con{+e, t}:
+      %jac_rows(~F, x, t, p2, us) : {Con{DV.jrow(~F, x, e, us), DV.jac(~F, x, eapp(t, p2), us)} == Con{DV.jrow(~F, x, e, us), _} : M.Mat(~F)}
+      {==}
+
+def jrow_cols(~F: O.OField, +x: M.Vec(~F), +e: E.QExpr, u1: List<&2, Nat>, +u2: List<&2, Nat>) -> {DV.jrow(~F, x, e, ST.app(u1, u2)) == GJ.vapp(~F, DV.jrow(~F, x, e, u1), DV.jrow(~F, x, e, u2)) : M.Vec(~F)}:
+  match u1:
+    case Nil{}:
+      {==}
+    case Con{+u, t}:
+      %jrow_cols(~F, x, e, t, u2) : {Con{O.eval(~F, x, DV.deriv(e, u)), DV.jrow(~F, x, e, ST.app(t, u2))} == Con{O.eval(~F, x, DV.deriv(e, u)), _} : M.Vec(~F)}
+      {==}
+
+def jac_cols(~F: O.OField, +x: M.Vec(~F), p: List<&2, E.QExpr>, +u1: List<&2, Nat>, +u2: List<&2, Nat>) -> {DV.jac(~F, x, p, ST.app(u1, u2)) == GJ.hcat(~F, DV.jac(~F, x, p, u1), DV.jac(~F, x, p, u2)) : M.Mat(~F)}:
+  match p:
+    case Nil{}:
+      {==}
+    case Con{+e, t}:
+      %jrow_cols(~F, x, e, u1, u2) : {Con{DV.jrow(~F, x, e, ST.app(u1, u2)), DV.jac(~F, x, t, ST.app(u1, u2))} == Con{_, GJ.hcat(~F, DV.jac(~F, x, t, u1), DV.jac(~F, x, t, u2))} : M.Mat(~F)}
+      %jac_cols(~F, x, t, u1, u2) : {Con{DV.jrow(~F, x, e, ST.app(u1, u2)), DV.jac(~F, x, t, ST.app(u1, u2))} == Con{DV.jrow(~F, x, e, ST.app(u1, u2)), _} : M.Mat(~F)}
+      {==}
+
+# A row of zeros, a block of zeros
+# --------------------------------
+
+def jrow_z(~F: O.OField, +x: M.Vec(~F), +e: E.QExpr, +w: List<&2, Nat>, +hi: {SV.inside(e, w) == True{} : Bool}, us: List<&2, Nat>, +hd: {MX.disj(us, w) == True{} : Bool}) -> {DV.jrow(~F, x, e, us) == GJ.zeros(~F, SV.len(us)) : M.Vec(~F)}:
+  match us:
+    case Nil{}:
+      {==}
+    case Con{+u, +t}:
+      %dzero(~F, x, w, u, MX.disj_hd(u, t, w, hd), e, hi) : {Con{O.eval(~F, x, DV.deriv(e, u)), DV.jrow(~F, x, e, t)} == Con{_, GJ.zeros(~F, SV.len(t))} : M.Vec(~F)}
+      %jrow_z(~F, x, e, w, hi, t, MX.disj_tl(u, t, w, hd)) : {Con{O.eval(~F, x, DV.deriv(e, u)), DV.jrow(~F, x, e, t)} == Con{O.eval(~F, x, DV.deriv(e, u)), _} : M.Vec(~F)}
+      {==}
+
+# every listed equation uses only variables of w
+def allin(+full: List<&2, E.QExpr>, es: List<&2, Nat>, +w: List<&2, Nat>) -> Bool:
+  match es:
+    case Nil{}:
+      True{}
+    case Con{j, t}:
+      SV.band(SV.inside(PL.eqget(full, j), w), allin(full, t, w))
+
+def jac_z(~F: O.OField, +x: M.Vec(~F), +full: List<&2, E.QExpr>, es: List<&2, Nat>, +w: List<&2, Nat>, +hi: {allin(full, es, w) == True{} : Bool}, +us: List<&2, Nat>, +hd: {MX.disj(us, w) == True{} : Bool}) -> {DV.jac(~F, x, KP.pickk(full, 0n, es), us) == GJ.zmat(~F, SV.len(es), SV.len(us)) : M.Mat(~F)}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{+j, +t}:
+      %jrow_z(~F, x, PL.eqget(full, j), w, L.band_l(SV.inside(PL.eqget(full, j), w), allin(full, t, w), hi), us, hd) : {Con{DV.jrow(~F, x, PL.eqget(full, j), us), DV.jac(~F, x, KP.pickk(full, 0n, t), us)} == Con{_, GJ.zmat(~F, SV.len(t), SV.len(us))} : M.Mat(~F)}
+      %jac_z(~F, x, full, t, w, L.band_r(SV.inside(PL.eqget(full, j), w), allin(full, t, w), hi), us, hd) : {Con{DV.jrow(~F, x, PL.eqget(full, j), us), DV.jac(~F, x, KP.pickk(full, 0n, t), us)} == Con{DV.jrow(~F, x, PL.eqget(full, j), us), _} : M.Mat(~F)}
+      {==}
+
+# equation j's adjacency is its variables
+def nthl_adj(es: List<&2, E.QExpr>, j: Nat) -> {ST.nthl(ST.adj(es), j) == ST.rev(ST.evars(PL.eqget(es, j), Nil{})) : List<&2, Nat>}:
+  match es j:
+    case Nil{} j:
+      {==}
+    case Con{e, t} 0n:
+      {==}
+    case Con{e, t} 1n+k:
+      nthl_adj(t, k)
+
+def allin_sub(+full: List<&2, E.QExpr>, +es0: List<&2, Nat>, es: List<&2, Nat>, +w: List<&2, Nat>, +h: {L.subl(ST.uses(es0, ST.adj(full)), w) == True{} : Bool}, +hs: {L.subl(es, es0) == True{} : Bool}) -> {allin(full, es, w) == True{} : Bool}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{+j, +t}:
+      L.band_i(SV.inside(PL.eqget(full, j), w), allin(full, t, w), L.band_l(SV.inside(PL.eqget(full, j), w), L.subl(Nil{}, w), D.ev_inside(PL.eqget(full, j), Nil{}, w, D.rev_subl(ST.evars(PL.eqget(full, j), Nil{}), w, (%nthl_adj(full, j) : {L.subl(_, w) == True{} : Bool}
+        L.subl_trans(ST.nthl(ST.adj(full), j), ST.uses(es0, ST.adj(full)), w, SP.uses_has(es0, ST.adj(full), j, L.subl_hd(j, t, es0, hs)), h))))), allin_sub(full, es0, t, w, h, L.subl_tl(j, t, es0, hs)))
+
+def allin_of_uses(+full: List<&2, E.QExpr>, +es: List<&2, Nat>, +w: List<&2, Nat>, +h: {L.subl(ST.uses(es, ST.adj(full)), w) == True{} : Bool}) -> {allin(full, es, w) == True{} : Bool}:
+  allin_sub(full, es, es, w, h, L.subl_refl(es))
+
+# Distinct lists
+# --------------
+
+def dist_r(a: List<&2, Nat>, +b: List<&2, Nat>, +d: {SV.distinct(ST.app(a, b)) == True{} : Bool}) -> {SV.distinct(b) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      d
+    case Con{+x, +t}:
+      dist_r(t, b, L.dist_tl(x, ST.app(t, b), d))
+
+def notin_app.go(+x: Nat, +t: List<&2, Nat>, +b: List<&2, Nat>, c: Bool, e: {SV.mem(x, b) == c : Bool}, hn: {SV.mem(x, ST.app(t, b)) == False{} : Bool}) -> {c == False{} : Bool}:
+  match c:
+    case True{}:
+      absurd({True{} == False{} : Bool}, L.tnf(SV.mem(x, ST.app(t, b)), TJ.mem_app_r(x, t, b, e), hn))
+    case False{}:
+      {==}
+
+def dist_disj(a: List<&2, Nat>, +b: List<&2, Nat>, +d: {SV.distinct(ST.app(a, b)) == True{} : Bool}) -> {MX.disj(a, b) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      L.band_i(SV.bnot(SV.mem(x, b)), MX.disj(t, b), L.bnot_t(SV.mem(x, b), notin_app.go(x, t, b, SV.mem(x, b), {==}, L.dist_hd(x, ST.app(t, b), d))), dist_disj(t, b, L.dist_tl(x, ST.app(t, b), d)))
+
+def disj_mem.go(+x: Nat, +y: Nat, +t: List<&2, Nat>, +b: List<&2, Nat>, c: Bool, e: {SV.eq(x, y) == c : Bool}, hx: {SV.bor(c, SV.mem(x, t)) == True{} : Bool}, hy: {SV.mem(y, b) == False{} : Bool}, ih: {SV.mem(x, t) == True{} : Bool} -> {SV.mem(x, b) == False{} : Bool}) -> {SV.mem(x, b) == False{} : Bool}:
+  match c:
+    case True{}:
+      %Equal.sym(Nat, x, y, L.eq_ok(x, y, e)) : {SV.mem(_, b) == False{} : Bool}
+      hy
+    case False{}:
+      ih(hx)
+
+def disj_mem(a: List<&2, Nat>, +b: List<&2, Nat>, +h: {MX.disj(a, b) == True{} : Bool}, +x: Nat, hx: {SV.mem(x, a) == True{} : Bool}) -> {SV.mem(x, b) == False{} : Bool}:
+  match a:
+    case Nil{}:
+      absurd({SV.mem(x, b) == False{} : Bool}, L.mem_nil(x, hx))
+    case Con{+y, +t}:
+      disj_mem.go(x, y, t, b, SV.eq(x, y), {==}, hx, MX.disj_hd(y, t, b, h), hm => disj_mem(t, b, MX.disj_tl(y, t, b, h), x, hm))
+
+def swap.go(+y: Nat, +t: List<&2, Nat>, +a: List<&2, Nat>, c: Bool, e: {SV.mem(y, a) == c : Bool}, +h: {MX.disj(a, Con{y, t}) == True{} : Bool}) -> {c == False{} : Bool}:
+  match c:
+    case True{}:
+      absurd({True{} == False{} : Bool}, L.tnf(SV.mem(y, Con{y, t}), L.mem_hd(y, t), disj_mem(a, Con{y, t}, h, y, e)))
+    case False{}:
+      {==}
+
+def disj_swap(+a: List<&2, Nat>, b: List<&2, Nat>, +h: {MX.disj(a, b) == True{} : Bool}) -> {MX.disj(b, a) == True{} : Bool}:
+  match b:
+    case Nil{}:
+      {==}
+    case Con{+y, +t}:
+      L.band_i(SV.bnot(SV.mem(y, a)), MX.disj(t, a), L.bnot_t(SV.mem(y, a), swap.go(y, t, a, SV.mem(y, a), {==}, h)), disj_swap(a, t, MX.disj_sub(a, Con{y, t}, t, h, L.subl_cons_r(t, y, t, L.subl_refl(t)))))
+
+def disj_app_r(a: List<&2, Nat>, +b: List<&2, Nat>, +w: List<&2, Nat>, +h: {MX.disj(ST.app(a, b), w) == True{} : Bool}) -> {MX.disj(b, w) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      h
+    case Con{+x, +t}:
+      disj_app_r(t, b, w, MX.disj_tl(x, ST.app(t, b), w, h))
+
+def disj_app2(c: List<&2, Nat>, +a: List<&2, Nat>, +b: List<&2, Nat>, +h1: {MX.disj(c, a) == True{} : Bool}, +h2: {MX.disj(c, b) == True{} : Bool}) -> {MX.disj(c, ST.app(a, b)) == True{} : Bool}:
+  match c:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      L.band_i(SV.bnot(SV.mem(x, ST.app(a, b))), MX.disj(t, ST.app(a, b)), L.bnot_t(SV.mem(x, ST.app(a, b)), MX.mem_app_f(a, b, x, MX.disj_hd(x, t, a, h1), MX.disj_hd(x, t, b, h2))), disj_app2(t, a, b, MX.disj_tl(x, t, a, h1), MX.disj_tl(x, t, b, h2)))
+
+# the later blocks' unknowns are none of this block's or the known ones
+def disj_later(+known: List<&2, Nat>, +vs: List<&2, Nat>, +v2: List<&2, Nat>, +d: {SV.distinct(ST.app(known, ST.app(vs, v2))) == True{} : Bool}) -> {MX.disj(v2, ST.app(vs, known)) == True{} : Bool}:
+  disj_app2(v2, vs, known, disj_swap(vs, v2, dist_disj(vs, v2, dist_r(known, ST.app(vs, v2), d))), disj_app_r(vs, v2, known, disj_swap(known, ST.app(vs, v2), dist_disj(known, ST.app(vs, v2), d))))
+
+# Lengths
+# -------
+
+def len_es(+es: List<&2, Nat>, +vs: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +h: {SP.nleq(vs, ST.look(vm, es)) == True{} : Bool}) -> {SV.len(es) == SV.len(vs) : Nat}:
+  %Equal.sym(List<&2, Nat>, vs, ST.look(vm, es), SP.nleq_ok(vs, ST.look(vm, es), h)) : {SV.len(es) == SV.len(_) : Nat}
+  Equal.sym(Nat, SV.len(ST.look(vm, es)), SV.len(es), L.look_len(vm, es))
+
+def len_all(+vm: List<&2, Maybe<&2, Nat>>, +t: List<&2, ST.SB>, +h: {SP.lkb(vm, t) == True{} : Bool}) -> {SV.len(ST.alleqs(t)) == SV.len(ST.allvars(t)) : Nat}:
+  %Equal.sym(List<&2, Nat>, ST.allvars(t), ST.look(vm, ST.alleqs(t)), SP.lkb_vars(vm, t, h)) : {SV.len(ST.alleqs(t)) == SV.len(_) : Nat}
+  Equal.sym(Nat, SV.len(ST.look(vm, ST.alleqs(t))), SV.len(ST.alleqs(t)), L.look_len(vm, ST.alleqs(t)))
+
+def both_l(-A: Data, -B: Data, h: M.Both(A, B)) -> A:
+  (a, b) = h
+  a
+
+def both_r(-A: Data, -B: Data, h: M.Both(A, B)) -> B:
+  (a, b) = h
+  b
+
+# Peeling the blocks
+# ------------------
+
+
+# every block's own Jacobian (its equations in its unknowns) has an inverse
+def BInv(~F: O.OField, +x: M.Vec(~F), +full: List<&2, E.QExpr>, bs: List<&2, ST.SB>) -> Data:
+  match bs:
+    case Nil{}:
+      Unit
+    case Con{ST.SB{+es, +vs}, t}:
+      M.Both(GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), BInv(~F, x, full, t))
+
+# the block-order Jacobian as [[A, 0], [C, D]]
+def hm_of(~F: O.OField, +x: M.Vec(~F), +full: List<&2, E.QExpr>, +es: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +hlen: {SV.len(es) == SV.len(vs) : Nat}, +hz: {DV.jac(~F, x, KP.pickk(full, 0n, es), ST.allvars(t)) == GJ.zmat(~F, SV.len(es), SV.len(ST.allvars(t))) : M.Mat(~F)}, h: GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, ST.app(es, ST.alleqs(t))), ST.app(vs, ST.allvars(t))), SV.len(ST.app(vs, ST.allvars(t))))) -> GJ.InvN(~F, GJ.bm(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), vs), DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), ST.allvars(t)), SV.len(vs), SV.len(ST.allvars(t))), Nat.add(SV.len(vs), SV.len(ST.allvars(t)))):
+  %MX.len_app(vs, ST.allvars(t)) : GJ.InvN(~F, GJ.bm(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), vs), DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), ST.allvars(t)), SV.len(vs), SV.len(ST.allvars(t))), _)
+  %hlen : GJ.InvN(~F, GJ.vcat(~F, GJ.hcat(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), GJ.zmat(~F, _, SV.len(ST.allvars(t)))), GJ.hcat(~F, DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), vs), DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), ST.allvars(t)))), SV.len(ST.app(vs, ST.allvars(t))))
+  %hz : GJ.InvN(~F, GJ.vcat(~F, GJ.hcat(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), _), GJ.hcat(~F, DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), vs), DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), ST.allvars(t)))), SV.len(ST.app(vs, ST.allvars(t))))
+  %jac_cols(~F, x, KP.pickk(full, 0n, es), vs, ST.allvars(t)) : GJ.InvN(~F, GJ.vcat(~F, _, GJ.hcat(~F, DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), vs), DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), ST.allvars(t)))), SV.len(ST.app(vs, ST.allvars(t))))
+  %jac_cols(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), vs, ST.allvars(t)) : GJ.InvN(~F, GJ.vcat(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), ST.app(vs, ST.allvars(t))), _), SV.len(ST.app(vs, ST.allvars(t))))
+  %jac_rows(~F, x, KP.pickk(full, 0n, es), KP.pickk(full, 0n, ST.alleqs(t)), ST.app(vs, ST.allvars(t))) : GJ.InvN(~F, _, SV.len(ST.app(vs, ST.allvars(t))))
+  %pickk_app(full, 0n, es, ST.alleqs(t)) : GJ.InvN(~F, DV.jac(~F, x, _, ST.app(vs, ST.allvars(t))), SV.len(ST.app(vs, ST.allvars(t))))
+  h
+
+def inv_con(~F: O.OField, +x: M.Vec(~F), +full: List<&2, E.QExpr>, +es: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +known: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +hc1: {L.subl(ST.uses(es, ST.adj(full)), ST.app(vs, known)) == True{} : Bool}, +hd: {SV.distinct(ST.app(known, ST.app(vs, ST.allvars(t)))) == True{} : Bool}, +hl1: {SP.nleq(vs, ST.look(vm, es)) == True{} : Bool}, +hl2: {SP.lkb(vm, t) == True{} : Bool}, h: GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, ST.app(es, ST.alleqs(t))), ST.app(vs, ST.allvars(t))), SV.len(ST.app(vs, ST.allvars(t))))) -> M.Both(GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), ST.allvars(t)), SV.len(ST.allvars(t)))):
+  +hlen = len_es(es, vs, vm, hl1)
+  +hla = len_all(vm, t, hl2)
+  GJ.block_inv(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), vs), DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), ST.allvars(t)), SV.len(vs), SV.len(ST.allvars(t)),
+    Equal.trans(Nat, GJ.nrows(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs)), SV.len(es), SV.len(vs), PF.nrows_pick(~F, x, full, es, vs), hlen), PF.rl_jac(~F, x, KP.pickk(full, 0n, es), vs),
+    Equal.trans(Nat, GJ.nrows(~F, DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), vs)), SV.len(ST.alleqs(t)), SV.len(ST.allvars(t)), PF.nrows_pick(~F, x, full, ST.alleqs(t), vs), hla), PF.rl_jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), vs),
+    Equal.trans(Nat, GJ.nrows(~F, DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), ST.allvars(t))), SV.len(ST.alleqs(t)), SV.len(ST.allvars(t)), PF.nrows_pick(~F, x, full, ST.alleqs(t), ST.allvars(t)), hla), PF.rl_jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), ST.allvars(t)),
+    hm_of(~F, x, full, es, vs, t, hlen, jac_z(~F, x, full, es, ST.app(vs, known), allin_of_uses(full, es, ST.app(vs, known), hc1), ST.allvars(t), disj_later(known, vs, ST.allvars(t), hd)), h))
+
+# blocks in turn, known the variables before them (the pins first)
+def inv_blocks(~F: O.OField, +x: M.Vec(~F), +full: List<&2, E.QExpr>, bs: List<&2, ST.SB>, +known: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +hc: {SP.vchain(bs, known, ST.adj(full)) == True{} : Bool}, +hd: {SV.distinct(ST.app(known, ST.allvars(bs))) == True{} : Bool}, +hl: {SP.lkb(vm, bs) == True{} : Bool}, h: GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(bs)), ST.allvars(bs)), SV.len(ST.allvars(bs)))) -> BInv(~F, x, full, bs):
+  match bs:
+    case Nil{}:
+      Unit{}
+    case Con{ST.SB{+es, +vs}, +t}:
+      +hc1 = L.band_l(L.subl(ST.uses(es, ST.adj(full)), ST.app(vs, known)), SP.vchain(t, ST.app(known, vs), ST.adj(full)), hc)
+      +hc2 = L.band_r(L.subl(ST.uses(es, ST.adj(full)), ST.app(vs, known)), SP.vchain(t, ST.app(known, vs), ST.adj(full)), hc)
+      +hl1 = L.band_l(SP.nleq(vs, ST.look(vm, es)), SP.lkb(vm, t), hl)
+      +hl2 = L.band_r(SP.nleq(vs, ST.look(vm, es)), SP.lkb(vm, t), hl)
+      +bi = inv_con(~F, x, full, es, vs, t, known, vm, hc1, hd, hl1, hl2, h)
+      (both_l(GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), ST.allvars(t)), SV.len(ST.allvars(t))), bi), inv_blocks(~F, x, full, t, ST.app(known, vs), vm, hc2,
+        (%Equal.sym(List<&2, Nat>, ST.app(ST.app(known, vs), ST.allvars(t)), ST.app(known, ST.app(vs, ST.allvars(t))), TJ.app_assoc(known, vs, ST.allvars(t))) : {SV.distinct(_) == True{} : Bool}
+        hd), hl2, both_r(GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, ST.alleqs(t)), ST.allvars(t)), SV.len(ST.allvars(t))), bi)))
+
+# The solver's blocks
+# -------------------
+
+
+# a regular solution (in the solver's free variables): every block of the
+# solver's structure has an invertible Jacobian there
+def block_invs(~F: O.OField, +sk: SK.Sketch, +ha: {D.adjb(ST.adj(SK.Sketch.eqs(sk)), SO.nvars(sk)) == True{} : Bool}, +x: M.Vec(~F), hr: DV.Regular(~F, x, SO.kept(sk), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)))) -> BInv(~F, x, SK.Sketch.eqs(sk), SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))))):
+  +sf = SP.skok_sf(SK.Sketch.eqs(sk), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), SP.struct_ok(sk, ha))
+  inv_blocks(~F, x, SK.Sketch.eqs(sk), SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), SP.sfacts_ch(ST.adj(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), sf), SP.sfacts_vpd(ST.adj(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), sf), SP.sfacts_lk(ST.adj(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), sf), PF.regular_blocks(~F, sk, ha, x, hr))
