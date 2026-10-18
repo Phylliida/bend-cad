@@ -975,6 +975,9 @@ same pins is that one (with Z the Jacobian's inverse,
 0 = f(x') − f(x) = S (x' − x) gives |x' − x| ≤ |Z| |S − J| |x' − x|, at most
 half of |x' − x|). `Complete` is used twice: `exists_of` (Banach) and
 `arch` (to choose P).
+*(Superseded by C5, 2026-10-17: `block_ok` puts x_b in each block's box
+directly (|yc − x_b| ≤ (65/64) S ≤ r), so C6 needs neither local
+uniqueness nor `exists_of`; `Complete` is used only through `arch`.)*
 
 **Ingredients.**
 1. *Structure (the sketch alone).* vp lists the pins and then each block's
@@ -1059,7 +1062,7 @@ solver as it stands, and both are provable.)
 | C3c | lib/normpf.bend | **done 2026-10-15** (`mv_n`, `InvB`, `lowb`, `pert`; gated via tests/norm_laws.bend): norms and the perturbation lemma (plan below) |
 | C4 | lib/dgjpf.bend | **done 2026-10-15** (`dinverse_ok`, `pivot_ok`, `kern`, `col_full`, `dgj_ok`; gated via tests/dgj_laws.bend): the rounded elimination (5), the solver's dinverse as it runs: Newton's and Y's inverses are good (plan below) |
 | C5 | lib/apxpf, nwtpf, radpf, blockpf.bend | **done 2026-10-17** (`newton_ok`, `window_ok`, `rs_init`, `inbox_ok`, `block_ok`; gated via tests/block_laws.bend): one block at P (3), the solver's block as it runs (plan and "C5 as built" below) |
-| C6 | lib/completepf.bend | the blocks in turn, the verdict, local uniqueness, choosing l and d: `solve_complete` |
+| C6 | lib/completepf.bend | the blocks in turn (each block's rb is later blocks' ρ; pins radius 0), the plan check and the verdict, choosing l (then d ≤ 2^-(P_l+1)): `solve_complete`. C5 puts x_b in each box directly, so no uniqueness or Banach step is needed here. Needs (2026-10-17 audit): block_ok's smallness hypotheses in scale form (d ≤ h, ρ ≤ R h), per-block InvB from regular_blocks, SK.Zeros → fvals = zeros, balls through dpick/zmap, kle(|c − c| + r, r) for pcont, arch for 2^-p |
 
 **C3 plan** (2026-10-15). One idea carries C3a: F is its own computing
 numbers. `fnum(F)` compares by `lt_total` and holds every rational, and

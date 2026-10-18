@@ -786,7 +786,8 @@ def okr(+eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.D>, +r: S.D, +ym: List
 def grow(+r: S.D) -> S.D:
   dsigup(S.D.mul(r, S.D{S.Zpos{S.XI{S.XO{S.XO{S.XO{S.XH{}}}}}}, 4n}), 8n)
 
-# the first radius r (9/8)^i, i < k, that the block checker accepts
+# the first radius r (17/16)^i, i < k, that the block checker accepts (each
+# step rounded up)
 def rsearch(k: Nat, ok: Bool, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.D>, +r: S.D, +ym: List<&2, List<&2, S.D>>, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> Maybe<&2, S.D>:
   match k ok:
     case k True{}:

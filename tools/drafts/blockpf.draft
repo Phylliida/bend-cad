@@ -385,17 +385,18 @@ def ub_rb($CXP, $YCP, $PRP, $AIP, $WSP) -> O.le(~F, $UBS, rbc($KA)):
 # The block's outcome
 # -------------------
 # BOk of a certificate the checker accepts, whose box holds x_b, radii
-# in [0, rb].
+# in [0, rb], n of them, and whose parameters' balls are the inputs pc0,
+# pr0 (the plan checker reads them back).
 
-def bgc(~F: O.OField, +n: Nat, +eqs: List<&2, E.QExpr>, +xb: M.Vec(~F), +rb: @T, c: C.Cert<KI.dnum()>) -> Data:
+def bgc(~F: O.OField, +n: Nat, +eqs: List<&2, E.QExpr>, +xb: M.Vec(~F), +rb: @T, +pc0: List<&2, S.D>, +pr0: List<&2, S.D>, c: C.Cert<KI.dnum()>) -> Data:
   match c:
     case C.Cert{+yc, +yr, +q, +ym, +pc, +pr}:
-      M.Both({CK.check($DN, C.Block{eqs, n}, C.Cert{yc, yr, q, ym, pc, pr}) == True{} : Bool}, M.Both(BX.rbnd(~F, BX.vsub(~F, xb, M.ofdv(~F, yc)), M.ofdv(~F, yr)), M.Both(FV.rnn(~F, M.ofdv(~F, yr)), M.vbnd.all(~F, M.ofdv(~F, yr), rb))))
+      M.Both({CK.check($DN, C.Block{eqs, n}, C.Cert{yc, yr, q, ym, pc, pr}) == True{} : Bool}, M.Both(BX.rbnd(~F, BX.vsub(~F, xb, M.ofdv(~F, yc)), M.ofdv(~F, yr)), M.Both(FV.rnn(~F, M.ofdv(~F, yr)), M.Both(M.vbnd.all(~F, M.ofdv(~F, yr), rb), M.Both({KA.klen($DN, yr) == n : Nat}, M.Both({pc == pc0 : List<&2, S.D>}, {pr == pr0 : List<&2, S.D>}))))))
 
-def bgood(~F: O.OField, +n: Nat, +eqs: List<&2, E.QExpr>, +xb: M.Vec(~F), +rb: @T, br: NU.BR) -> Data:
+def bgood(~F: O.OField, +n: Nat, +eqs: List<&2, E.QExpr>, +xb: M.Vec(~F), +rb: @T, +pc0: List<&2, S.D>, +pr0: List<&2, S.D>, br: NU.BR) -> Data:
   match br:
     case NU.BOk{c}:
-      bgc(~F, n, eqs, xb, rb, c)
+      bgc(~F, n, eqs, xb, rb, pc0, pr0, c)
     case NU.BRetry{}:
       Empty
     case NU.BStop{}:
@@ -414,10 +415,10 @@ def rbnd_vall(~F: O.OField, v: M.Vec(~F), +n: Nat, +t: @T, lv: {M.len(~F, v) == 
 @MACRO RG RD.rgood(~F, ~H, n, eqs, yc, pc, pr, $YY, mr)
 
 # the search's radius makes the certificate
-def br_ok($CXP, $YCP, $PRP, $AIP, $WSP, +hU: O.le(~F, $UBS, rbc($KA)), +hib: O.le(~F, NP.vn(~F, BX.vsub(~F, M.ofdv(~F, yc), xb)), @M($SDY, $C65)), mr: Maybe<&2, S.D>, +hg: $RG) -> bgood(~F, n, eqs, xb, rbc($KA), NU.block.r(mr, n, yc, $YY, pc, pr)):
+def br_ok($CXP, $YCP, $PRP, $AIP, $WSP, +hU: O.le(~F, $UBS, rbc($KA)), +hib: O.le(~F, NP.vn(~F, BX.vsub(~F, M.ofdv(~F, yc), xb)), @M($SDY, $C65)), mr: Maybe<&2, S.D>, +hg: $RG) -> bgood(~F, n, eqs, xb, rbc($KA), pc, pr, NU.block.r(mr, n, yc, $YY, pc, pr)):
   match mr:
     case None{}:
-      FO.absurd(bgood(~F, n, eqs, xb, rbc($KA), NU.block.r(None{}, n, yc, $YY, pc, pr)), hg)
+      FO.absurd(bgood(~F, n, eqs, xb, rbc($KA), pc, pr, NU.block.r(None{}, n, yc, $YY, pc, pr)), hg)
     case Some{+r}:
       +hok = AP.both_l({NU.okr(eqs, n, yc, r, $YY, pc, pr) == True{} : Bool}, M.Both(O.le(~F, @M($SDY, $C65), M.ofd(~F, r)), O.le(~F, M.ofd(~F, r), $UBS)), hg)
       +hb2 = AP.both_r({NU.okr(eqs, n, yc, r, $YY, pc, pr) == True{} : Bool}, M.Both(O.le(~F, @M($SDY, $C65), M.ofd(~F, r)), O.le(~F, M.ofd(~F, r), $UBS)), hg)
@@ -431,14 +432,15 @@ def br_ok($CXP, $YCP, $PRP, $AIP, $WSP, +hU: O.le(~F, $UBS, rbc($KA)), +hib: O.l
           rbnd_vall(~F, BX.vsub(~F, xb, M.ofdv(~F, yc)), n, R, CP.len_vsub(~F, xb, M.ofdv(~F, yc), n, lxb, lyc), NW.vall_swap(~F, M.ofdv(~F, yc), xb, R, NW.vall_of_vn(~F, BX.vsub(~F, M.ofdv(~F, yc), xb), R, DM.le_trans(~F, NP.vn(~F, BX.vsub(~F, M.ofdv(~F, yc), xb)), @M($SDY, $C65), R, hib, hlo))))),
         ((%Equal.sym(M.Vec(~F), M.ofdv(~F, NU.dreps(n, r)), RD.frep(~F, n, R), RD.ofdv_dreps(~F, n, r)) : FV.rnn(~F, _)
            RD.frep_nn(~F, n, R, hr0r)),
-         (%Equal.sym(M.Vec(~F), M.ofdv(~F, NU.dreps(n, r)), RD.frep(~F, n, R), RD.ofdv_dreps(~F, n, r)) : M.vbnd.all(~F, _, rbc($KA))
-           NW.vall_le(~F, RD.frep(~F, n, R), R, rbc($KA), RD.frep_all(~F, n, R, hr0r), hrbr)))))
+         ((%Equal.sym(M.Vec(~F), M.ofdv(~F, NU.dreps(n, r)), RD.frep(~F, n, R), RD.ofdv_dreps(~F, n, r)) : M.vbnd.all(~F, _, rbc($KA))
+            NW.vall_le(~F, RD.frep(~F, n, R), R, rbc($KA), RD.frep_all(~F, n, R, hr0r), hrbr)),
+          (RD.klen_dreps(n, r), ({==}, {==}))))))
 
 def zx_dx($CXP) -> M.vbnd.all(~F, BX.vsub(~F, xz, M.ofdv(~F, pc)), NW.dx($KA)):
   NW.vall_le(~F, BX.vsub(~F, xz, M.ofdv(~F, pc)), rho, NW.dx($KA), NW.vall_swap(~F, M.ofdv(~F, pc), xz, rho, hzc), NW.rho_le_dx($CXA))
 
 # Y fixed: the window, the search and x_b in the box
-def bym_ok($CXP, $YCP, $PRP, $AIP, $WSP) -> bgood(~F, n, eqs, xb, rbc($KA), NU.block.ym($YY, eqs, n, yc, pc, pr)):
+def bym_ok($CXP, $YCP, $PRP, $AIP, $WSP) -> bgood(~F, n, eqs, xb, rbc($KA), pc, pr, NU.block.ym($YY, eqs, n, yc, pc, pr)):
   +rb = rbc($KA)
   +lycK = lyck(~F, ~H, n, yc, lyc)
   +lpp = lpp_k($CXA, $PRA)
@@ -458,22 +460,22 @@ def bym_ok($CXP, $YCP, $PRP, $AIP, $WSP) -> bgood(~F, n, eqs, xb, rbc($KA), NU.b
     RD.rs_init(~F, ~H, n, eqs, hn, hh, yc, pc, pr, lycK, lpp, $YY, bb, lam, ms, rb, hbb0, hl0, hrb, hq, hcr, hpn, hprb, ync($KA), thlc($KA), hyn, hthl, ync_nn($KA, $NNA), thlc_nn($KA, $NNA), mlen_y($CXA, inv, hA), hab, thrc($KA), thrc_nn($KA, $NNA), hthr, w2, hw, hU))
 
 # the elimination at the center succeeded
-def by2_ok($CXP, $YCP, $PRP, $WSP, minv: Maybe<&2, List<&2, List<&2, S.D>>>, hres: DG.dinv_res(~F, n, $JC, NW.ea($KA), minv)) -> bgood(~F, n, eqs, xb, rbc($KA), NU.block.y2(minv, p, eqs, n, yc, pc, pr)):
+def by2_ok($CXP, $YCP, $PRP, $WSP, minv: Maybe<&2, List<&2, List<&2, S.D>>>, hres: DG.dinv_res(~F, n, $JC, NW.ea($KA), minv)) -> bgood(~F, n, eqs, xb, rbc($KA), pc, pr, NU.block.y2(minv, p, eqs, n, yc, pc, pr)):
   match minv:
     case None{}:
-      FO.absurd(bgood(~F, n, eqs, xb, rbc($KA), NU.block.y2(None{}, p, eqs, n, yc, pc, pr)), hres)
+      FO.absurd(bgood(~F, n, eqs, xb, rbc($KA), pc, pr, NU.block.y2(None{}, p, eqs, n, yc, pc, pr)), hres)
     case Some{+inv}:
       (hA, ha) = hres
       bym_ok($CXA, $YCA, $PRA, inv, hA, ha, $WSA)
 
 # Newton returned a center yc
-def by_yc($CXP, $YCP, $PRP, $WSP) -> bgood(~F, n, eqs, xb, rbc($KA), NU.block.y(Some{yc}, p, eqs, n, pc, pr)):
+def by_yc($CXP, $YCP, $PRP, $WSP) -> bgood(~F, n, eqs, xb, rbc($KA), pc, pr, NU.block.y(Some{yc}, p, eqs, n, pc, pr)):
   by2_ok($CXA, $YCA, $PRA, $WSA, NU.dinverse(n, NU.wbits(p), NU.jac(eqs, n, NU.dapp(yc, pc))), NW.elim_pt(~F, ~H, n, NU.wbits(p), eqs, hn, hh, pc, yc, ms, NW.bt2(~F, b), hm0, NW.bt2_nn(~F, b, hb0), jc_inv($CXA, $YCA), AP.both_l(DG.mall(~F, $JC, ms), NP.rowsle(~F, $JC, n, $JN), NW.pt_maj($CXA, yc, lyc, NW.en($KA), hyc_all($CXA, $YCA), NW.en_le_dx($CXA))), hsm))
 
-def by_ok($CXP, $PRP, $WSP, mN: Maybe<&2, List<&2, S.D>>, hN: NW.NOK($KA, xb, mN)) -> bgood(~F, n, eqs, xb, rbc($KA), NU.block.y(mN, p, eqs, n, pc, pr)):
+def by_ok($CXP, $PRP, $WSP, mN: Maybe<&2, List<&2, S.D>>, hN: NW.NOK($KA, xb, mN)) -> bgood(~F, n, eqs, xb, rbc($KA), pc, pr, NU.block.y(mN, p, eqs, n, pc, pr)):
   match mN:
     case None{}:
-      FO.absurd(bgood(~F, n, eqs, xb, rbc($KA), NU.block.y(None{}, p, eqs, n, pc, pr)), hN)
+      FO.absurd(bgood(~F, n, eqs, xb, rbc($KA), pc, pr, NU.block.y(None{}, p, eqs, n, pc, pr)), hN)
     case Some{+yc}:
       (hyc, lyc) = hN
       by_yc($CXA, yc, lyc, hyc, $PRA, $WSA)
@@ -487,5 +489,5 @@ def by_ok($CXP, $PRP, $WSP, mN: Maybe<&2, List<&2, S.D>>, hN: NW.NOK($KA, xb, mN
 # (parameters x_z in the balls pc +- pr, pr <= rho), the solver's block
 # returns BOk of a certificate the checker accepts, x_b in its box, radii
 # in [0, rb] with rb = (17/16)(1 + 2^-7) 2 sbar + rho.
-def block_ok($CXP, $Y0P, $PQP, $PRP, $WSP) -> bgood(~F, n, eqs, xb, rbc($KA), NU.block(eqs, n, pc, pr, y0, p)):
+def block_ok($CXP, $Y0P, $PQP, $PRP, $WSP) -> bgood(~F, n, eqs, xb, rbc($KA), pc, pr, NU.block(eqs, n, pc, pr, y0, p)):
   by_ok($CXA, $PRA, $WSA, NU.newton(40n, eqs, n, pc, p, NU.NMore{y0}), NW.newton_ok($CXA, $Y0A, $PQA))
