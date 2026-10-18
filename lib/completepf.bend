@@ -46,6 +46,10 @@ import ./maxpf.bend as MX
 import ./structpf.bend as SP
 import ./keptpf.bend as KP
 import ./redpf.bend as RP
+import ./roundpf.bend as RO
+import ./natord.bend as NO
+import ./qemb.bend as QE
+import ./dgjpf.bend as DG
 import ./wfcpf.bend as WC
 import ./covpf.bend as CV
 import ./wfdec.bend as WF
@@ -909,3 +913,88 @@ def plan_is(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +ha: {D.adjb(
 def plan_ans(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +ha: {D.adjb(ST.adj(SK.Sketch.eqs(sk)), SO.nvars(sk)) == True{} : Bool}, +x: M.Vec(~F), +g: List<&2, S.D>, +g0: List<&2, S.D>, +p: Nat, +q2: Nat, +hp2: {p == 1n+(1n+q2) : Nat}, +d: O.C(F), +hd0: O.le(~F, O.zero(F), d), +hdh: O.le(~F, d, NW.hnw(~F, p)), +hdy: {SV.dyeqs(SK.Sketch.eqs(sk)) == True{} : Bool}, +hz: SK.Zeros(~F, x, SO.kept(sk)), +hN: SV.Near(~KI.dnum(), ~F, ~H, SO.nvars(sk), 0n, g, x, d, SO.pins_of(sk), g0), +hpa: SV.PinnedAt(~KI.dnum(), ~F, ~H, x, SO.pins_of(sk), g0), +binv: BI.BInv(~F, x, SK.Sketch.eqs(sk), SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))))), +hsq: O.lt(F, O.mul(F, AP.vbit(~F, Nat.div(p, 2n)), PB.qch(~F, SK.Sketch.eqs(sk), SO.good_of(sk), ST.app(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.allvars(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))))), x, SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), binv, ST.len(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), O.zero(F))), O.one(F)), +hwf: {WF.wf_dec(sk) == True{} : Bool}, +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +dy: {SV.dyadic(sk) == True{} : Bool}, +hl: {M.len(~F, x) == SO.nvars(sk) : Nat}, +hr1: O.le(~F, O.mul(F, NW.hnw(~F, p), PB.tch(~F, SK.Sketch.eqs(sk), SO.good_of(sk), ST.app(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.allvars(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))))), x, SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), binv, ST.len(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), O.zero(F))), O.one(F)), +hbud: SBud(~F, O.add(F, O.add(F, NP.vn(~F, x), O.one(F)), O.one(F)), O.mul(F, NW.hnw(~F, p), PB.tch(~F, SK.Sketch.eqs(sk), SO.good_of(sk), ST.app(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.allvars(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))))), x, SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), binv, ST.len(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), O.zero(F))), x, SK.Sketch.sides(SV.mark(SO.red_of(sk), sk)))) -> AnsOK(~F, ~H, sk, g, x, NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, p)):
   %Equal.sym(NU.PR, NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, p), pgo(sk, g, p, PL.reorder(ST.app(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.allvars(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))))), SK.Sketch.eqs(sk), ST.alleqs(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))))))), plan_is(~F, ~H, sk, ha, g, p)) : AnsOK(~F, ~H, sk, g, x, _)
   ans_r(~F, ~H, sk, ha, hwf, cov, dy, x, g, hl, p, PB.tch(~F, SK.Sketch.eqs(sk), SO.good_of(sk), ST.app(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.allvars(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))))), x, SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), binv, ST.len(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), O.zero(F)), PB.tch_nn(~F, ~H, SK.Sketch.eqs(sk), SO.good_of(sk), ST.app(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.allvars(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))))), x, SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), binv, ST.len(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), O.zero(F), FO.le_refl(~F, O.zero(F))), hr1, hbud, NU.pblocks(ST.renum.bs(ST.skbs(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), ST.adj(SK.Sketch.eqs(sk)), ST.app(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.allvars(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))))))), SO.good_of(sk)), NU.bcert(ST.renum.bs(ST.skbs(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), ST.adj(SK.Sketch.eqs(sk)), ST.app(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.allvars(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))))))), SO.good_of(sk)), PL.reorder(ST.app(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.allvars(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))))), SK.Sketch.eqs(sk), ST.alleqs(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))))), NU.dpick(g, ST.app(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.allvars(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))))))), p, ST.len(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), NU.dtake(ST.len(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), NU.dpick(g, ST.app(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.allvars(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))))))), NU.dreps(ST.len(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), NU.dzero())), PL.reorder(ST.app(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.allvars(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))))), SK.Sketch.eqs(sk), ST.alleqs(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))))), NU.dpick(g, ST.app(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.allvars(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))))))), p, ST.len(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), NU.dtake(ST.len(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), NU.dpick(g, ST.app(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.allvars(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))))))), NU.dreps(ST.len(ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))), NU.dzero()), Nil{}), plan_pg(~F, ~H, sk, ha, x, g, g0, p, q2, hp2, d, hd0, hdh, hdy, hz, hN, hpa, binv, hsq))
+
+# The top (C6d-4)
+# ---------------
+# Level l's precisions start at P_l = pfirst(l, 64, 96) >= 64 + 2l, so
+# t = 2^-floor(P_l/2) <= 2^-l, and l 2^-l <= 1: with Q < l, t Q < 1.
+
+def pfirst(l: Nat, +p: Nat, +q: Nat) -> Nat:
+  match l:
+    case 0n:
+      p
+    case 1n+m:
+      pfirst(m, q, Nat.add(p, p))
+
+def ptail(l: Nat, +c: Nat, +p: Nat, +q: Nat) -> List<&2, Nat>:
+  match l:
+    case 0n:
+      SO.precs(c, q, Nat.add(p, p))
+    case 1n+m:
+      ptail(m, c, q, Nat.add(p, p))
+
+def pf_head(l: Nat, +c: Nat, +p: Nat, +q: Nat) -> {SO.precs.from(l, 1n+c, p, q) == Con{pfirst(l, p, q), ptail(l, c, p, q)} : List<&2, Nat>}:
+  match l:
+    case 0n:
+      {==}
+    case 1n+m:
+      pf_head(m, c, q, Nat.add(p, p))
+
+def le_addl(c: Nat, +a: Nat, +b: Nat, h: {KA.natle(a, b) == True{} : Bool}) -> {KA.natle(Nat.add(c, a), Nat.add(c, b)) == True{} : Bool}:
+  match c:
+    case 0n:
+      h
+    case 1n+k:
+      le_addl(k, a, b, h)
+
+def pf_h2(+p: Nat, +q: Nat, +h1: {KA.natle(1n+(1n+p), q) == True{} : Bool}) -> {KA.natle(1n+(1n+Nat.add(p, p)), Nat.add(q, q)) == True{} : Bool}:
+  +a3 = L.le_trans(Nat.add(1n+(1n+p), 1n+(1n+p)), Nat.add(q, 1n+(1n+p)), Nat.add(q, q), MX.le_add_rr(1n+(1n+p), q, 1n+(1n+p), h1), le_addl(q, 1n+(1n+p), q, h1))
+  L.le_trans(1n+(1n+Nat.add(p, p)), Nat.add(1n+(1n+p), 1n+(1n+p)), Nat.add(q, q), le_addl(p, p, 1n+(1n+p), L.le_succ(p, 1n+p, L.le_succ(p, p, L.le_refl(p)))), a3)
+
+def pf_rw(+k: Nat, +m: Nat, +pf: Nat, h: {KA.natle(1n+(1n+Nat.add(k, Nat.add(m, m))), pf) == True{} : Bool}) -> {KA.natle(Nat.add(k, Nat.add(1n+m, 1n+m)), pf) == True{} : Bool}:
+  %LN.add_succ(m, m) : {KA.natle(Nat.add(k, 1n+_), pf) == True{} : Bool}
+  %LN.add_succ(k, 1n+Nat.add(m, m)) : {KA.natle(_, pf) == True{} : Bool}
+  %LN.add_succ(k, Nat.add(m, m)) : {KA.natle(1n+_, pf) == True{} : Bool}
+  h
+
+# the first components grow by at least 2 a step
+def pf_ge(m: Nat, +p: Nat, +q: Nat, +k: Nat, +hk: {KA.natle(k, p) == True{} : Bool}, +h1: {KA.natle(1n+(1n+p), q) == True{} : Bool}, +h2: {KA.natle(1n+(1n+q), Nat.add(p, p)) == True{} : Bool}) -> {KA.natle(Nat.add(k, Nat.add(m, m)), pfirst(m, p, q)) == True{} : Bool}:
+  match m:
+    case 0n:
+      %LN.add_zero(k) : {KA.natle(_, p) == True{} : Bool}
+      hk
+    case 1n++j:
+      pf_rw(k, j, pfirst(j, q, Nat.add(p, p)), pf_ge(j, q, Nat.add(p, p), 1n+(1n+k), L.le_trans(1n+(1n+k), 1n+(1n+p), q, hk, h1), h2, pf_h2(p, q, h1)))
+
+
+def pl_ge(+l: Nat) -> {KA.natle(Nat.add(64n, Nat.add(l, l)), pfirst(l, 64n, 96n)) == True{} : Bool}:
+  pf_ge(l, 64n, 96n, 64n, L.le_refl(64n), {==}, {==})
+
+def half_le(l: Nat, d: Nat, h: {KA.natle(Nat.add(l, l), 1n+Nat.add(d, d)) == True{} : Bool}) -> {KA.natle(l, d) == True{} : Bool}:
+  match l d:
+    case 0n d:
+      {==}
+    case 1n++i 0n:
+      FO.absurd({KA.natle(1n+i, 0n) == True{} : Bool}, KA.ft((%Equal.sym(Nat, 1n+Nat.add(i, i), Nat.add(i, 1n+i), LN.add_succ(i, i)) : {KA.natle(_, 0n) == True{} : Bool}
+        h)))
+    case 1n++i 1n++j:
+      half_le(i, j, (%Equal.sym(Nat, 1n+Nat.add(i, i), Nat.add(i, 1n+i), LN.add_succ(i, i)) : {KA.natle(_, 1n+(1n+Nat.add(j, j))) == True{} : Bool}
+        (%Equal.sym(Nat, 1n+Nat.add(j, j), Nat.add(j, 1n+j), LN.add_succ(j, j)) : {KA.natle(Nat.add(i, 1n+i), 1n+_) == True{} : Bool}
+          h)))
+
+def mul2(+d: Nat) -> {Nat.mul(d, 2n) == Nat.add(d, d) : Nat}:
+  %Equal.sym(Nat, d, Nat.mul(d, 1n), LN.mul_one(d)) : {Nat.mul(d, 2n) == Nat.add(d, _) : Nat}
+  Equal.sym(Nat, Nat.add(d, Nat.mul(d, 1n)), Nat.mul(d, 2n), LN.mul_succ(d, 1n))
+
+def dm_le(+s: Nat) -> {KA.natle(s, 1n+Nat.add(Nat.div(s, 2n), Nat.div(s, 2n))) == True{} : Bool}:
+  %Equal.sym(Nat, s, Nat.add(Nat.mod(s, 2n), Nat.mul(Nat.div(s, 2n), 2n)), NO.divmod_eq(s, 1n)) : {KA.natle(_, 1n+Nat.add(Nat.div(s, 2n), Nat.div(s, 2n))) == True{} : Bool}
+  %mul2(Nat.div(s, 2n)) : {KA.natle(Nat.add(Nat.mod(s, 2n), Nat.mul(Nat.div(s, 2n), 2n)), 1n+_) == True{} : Bool}
+  MX.le_add_rr(Nat.mod(s, 2n), 1n, Nat.mul(Nat.div(s, 2n), 2n), SC.le_of_Le(Nat.mod(s, 2n), 1n, NO.mod_le(s, 1n)))
+
+# floor(s/2) >= l for s >= 2l
+def div_ge(+l: Nat, +s: Nat, h: {KA.natle(Nat.add(l, l), s) == True{} : Bool}) -> {KA.natle(l, Nat.div(s, 2n)) == True{} : Bool}:
+  half_le(l, Nat.div(s, 2n), L.le_trans(Nat.add(l, l), s, 1n+Nat.add(Nat.div(s, 2n), Nat.div(s, 2n)), h, dm_le(s)))
+
+def pl_half(+l: Nat) -> {KA.natle(l, Nat.div(pfirst(l, 64n, 96n), 2n)) == True{} : Bool}:
+  div_ge(l, pfirst(l, 64n, 96n), L.le_trans(Nat.add(l, l), Nat.add(64n, Nat.add(l, l)), pfirst(l, 64n, 96n), (%LN.add_comm(Nat.add(l, l), 64n) : {KA.natle(Nat.add(l, l), _) == True{} : Bool}
+    L.le_add_r(Nat.add(l, l), 64n)), pl_ge(l)))
