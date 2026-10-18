@@ -1267,3 +1267,108 @@ def pb_step(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +vp: List<&2, Nat>, +nv: Nat,
       absurd(PG(~F, ~H, vp, nv, x, p, o, gc, gr, sys, tf, NU.pblocks(Con{ST.SkB{qs, vs, pars}, bst}, NU.BRetry{}, sys, NU.dpick(g, vp), p, o, gc, gr, Nil{})), hg)
     case NU.BStop{}:
       absurd(PG(~F, ~H, vp, nv, x, p, o, gc, gr, sys, tf, NU.pblocks(Con{ST.SkB{qs, vs, pars}, bst}, NU.BStop{}, sys, NU.dpick(g, vp), p, o, gc, gr, Nil{})), hg)
+
+# Splitting the structure's facts at a block
+# ------------------------------------------
+
+def subl_app_l(a: List<&2, Nat>, +b: List<&2, Nat>, +w: List<&2, Nat>, +h: {L.subl(ST.app(a, b), w) == True{} : Bool}) -> {L.subl(a, w) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      L.subl_con(x, t, w, L.subl_hd(x, ST.app(t, b), w, h), subl_app_l(t, b, w, L.subl_tl(x, ST.app(t, b), w, h)))
+
+def subl_app_r(a: List<&2, Nat>, +b: List<&2, Nat>, +w: List<&2, Nat>, +h: {L.subl(ST.app(a, b), w) == True{} : Bool}) -> {L.subl(b, w) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      h
+    case Con{+x, +t}:
+      subl_app_r(t, b, w, L.subl_tl(x, ST.app(t, b), w, h))
+
+def subl_app2(a: List<&2, Nat>, +b: List<&2, Nat>, +w: List<&2, Nat>, +ha: {L.subl(a, w) == True{} : Bool}, +hb: {L.subl(b, w) == True{} : Bool}) -> {L.subl(ST.app(a, b), w) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      hb
+    case Con{+x, +t}:
+      L.subl_con(x, ST.app(t, b), w, L.subl_hd(x, t, w, ha), subl_app2(t, b, w, L.subl_tl(x, t, w, ha), hb))
+
+def subl_pre(+a: List<&2, Nat>, +r: List<&2, Nat>) -> {L.subl(a, ST.app(a, r)) == True{} : Bool}:
+  subl_mid(a, Nil{}, a, r, L.subl_refl(a))
+
+def disj_app_l(a: List<&2, Nat>, +b: List<&2, Nat>, +w: List<&2, Nat>, +h: {MX.disj(ST.app(a, b), w) == True{} : Bool}) -> {MX.disj(a, w) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      L.band_i(SV.bnot(SV.mem(x, w)), MX.disj(t, w), L.band_l(SV.bnot(SV.mem(x, w)), MX.disj(ST.app(t, b), w), h), disj_app_l(t, b, w, MX.disj_tl(x, ST.app(t, b), w, h)))
+
+def below_app_l(a: List<&2, Nat>, +b: List<&2, Nat>, +n: Nat, +h: {SV.below(ST.app(a, b), n) == True{} : Bool}) -> {SV.below(a, n) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      L.band_i(SV.lt(x, n), SV.below(t, n), L.band_l(SV.lt(x, n), SV.below(ST.app(t, b), n), h), below_app_l(t, b, n, L.band_r(SV.lt(x, n), SV.below(ST.app(t, b), n), h)))
+
+def below_app_r(a: List<&2, Nat>, +b: List<&2, Nat>, +n: Nat, +h: {SV.below(ST.app(a, b), n) == True{} : Bool}) -> {SV.below(b, n) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      h
+    case Con{+x, +t}:
+      below_app_r(t, b, n, L.band_r(SV.lt(x, n), SV.below(ST.app(t, b), n), h))
+
+# The block's inputs
+# ------------------
+
+
+def hn_of(+full: List<&2, E.QExpr>, +good: List<&2, Nat>, +vp: List<&2, Nat>, +es: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +o: Nat) -> {CK.eqlen(PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))) == ST.len(ST.positions(es, good)) : Nat}:
+  %Equal.sym(Nat, CK.eqlen(PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))), CK.eqlen(PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t))))), eqlen_renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))) : {_ == ST.len(ST.positions(es, good)) : Nat}
+  %Equal.sym(List<&2, E.QExpr>, PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))), PL.reorder(vp, full, es), tq_eq(vp, full, es, ST.alleqs(t), good)) : {CK.eqlen(_) == ST.len(ST.positions(es, good)) : Nat}
+  Equal.sym(Nat, ST.len(ST.positions(es, good)), CK.eqlen(PL.reorder(vp, full, es)), nq_eq(es, good, vp, full))
+
+def hh_of(+full: List<&2, E.QExpr>, +good: List<&2, Nat>, +vp: List<&2, Nat>, +es: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +o: Nat, +hdy: {SV.dyeqs(full) == True{} : Bool}) -> {CK.allheld(~KI.dnum(), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))) == True{} : Bool}:
+  %Equal.sym(List<&2, E.QExpr>, PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))), PL.reorder(vp, full, es), tq_eq(vp, full, es, ST.alleqs(t), good)) : {CK.allheld(~KI.dnum(), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), _)) == True{} : Bool}
+  held_blk(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), vp, full, hdy, es)
+
+def eqb_of(+full: List<&2, E.QExpr>, +good: List<&2, Nat>, +vp: List<&2, Nat>, +es: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +o: Nat, +h: {PL.eqs_below(Nat.add(o, ST.len(ST.positions(es, good))), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t))))) == True{} : Bool}) -> {PL.eqs_below(Nat.add(o, ST.len(ST.positions(es, good))), PL.reorder(vp, full, es)) == True{} : Bool}:
+  %Equal.sym(List<&2, E.QExpr>, PL.reorder(vp, full, es), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))), Equal.sym(List<&2, E.QExpr>, PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))), PL.reorder(vp, full, es), tq_eq(vp, full, es, ST.alleqs(t), good))) : {PL.eqs_below(Nat.add(o, ST.len(ST.positions(es, good))), _) == True{} : Bool}
+  h
+
+def alb_of(+full: List<&2, E.QExpr>, +good: List<&2, Nat>, +vp: List<&2, Nat>, +es: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +o: Nat, +h: {CK.allbelow(Nat.add(ST.len(ST.positions(es, good)), PL.nlen(ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp))), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))) == True{} : Bool}) -> {CK.allbelow(Nat.add(ST.len(ST.positions(es, good)), PL.nlen(ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp))), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.reorder(vp, full, es))) == True{} : Bool}:
+  %Equal.sym(List<&2, E.QExpr>, PL.reorder(vp, full, es), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))), Equal.sym(List<&2, E.QExpr>, PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))), PL.reorder(vp, full, es), tq_eq(vp, full, es, ST.alleqs(t), good))) : {CK.allbelow(Nat.add(ST.len(ST.positions(es, good)), PL.nlen(ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp))), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), _)) == True{} : Bool}
+  h
+
+
+def svs_of(+vp: List<&2, Nat>, +known: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +hvp: {vp == ST.app(known, ST.app(vs, ST.allvars(t))) : List<&2, Nat>}) -> {L.subl(vs, vp) == True{} : Bool}:
+  %Equal.sym(List<&2, Nat>, vp, ST.app(known, ST.app(vs, ST.allvars(t))), hvp) : {L.subl(vs, _) == True{} : Bool}
+  subl_mid(vs, known, vs, ST.allvars(t), L.subl_refl(vs))
+
+def svk_of(+vp: List<&2, Nat>, +known: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +hvp: {vp == ST.app(known, ST.app(vs, ST.allvars(t))) : List<&2, Nat>}) -> {L.subl(ST.app(vs, known), vp) == True{} : Bool}:
+  %Equal.sym(List<&2, Nat>, vp, ST.app(known, ST.app(vs, ST.allvars(t))), hvp) : {L.subl(ST.app(vs, known), _) == True{} : Bool}
+  subl_app2(vs, known, ST.app(known, ST.app(vs, ST.allvars(t))), subl_mid(vs, known, vs, ST.allvars(t), L.subl_refl(vs)), subl_pre(known, ST.app(vs, ST.allvars(t))))
+
+def rowsok_blk(+full: List<&2, E.QExpr>, +good: List<&2, Nat>, +vp: List<&2, Nat>, +es: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +o: Nat, +known: List<&2, Nat>, +hvp: {vp == ST.app(known, ST.app(vs, ST.allvars(t))) : List<&2, Nat>}, +c1: {L.subl(ST.uses(es, ST.adj(full)), ST.app(vs, known)) == True{} : Bool}, +h4: {PL.eqs_below(Nat.add(o, ST.len(ST.positions(es, good))), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t))))) == True{} : Bool}, +hbl: {CK.allbelow(Nat.add(ST.len(ST.positions(es, good)), PL.nlen(ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp))), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))) == True{} : Bool}) -> {LC.rowsok(full, vp, o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), es) == True{} : Bool}:
+  rowsok_of(full, vp, o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), es, allin_mono(full, es, ST.app(vs, known), vp, BI.allin_of_uses(full, es, ST.app(vs, known), c1), svk_of(vp, known, vs, t, hvp)), eqb_of(full, good, vp, es, vs, t, o, h4), alb_of(full, good, vp, es, vs, t, o, hbl))
+
+def len_rw(~F: O.OField, +o: Nat, +x: M.Vec(~F), +vp: List<&2, Nat>, +n: Nat, +hX: {KA.natle(Nat.add(o, n), M.len(~F, LC.xperm(~F, x, vp))) == True{} : Bool}) -> {KA.natle(o, M.len(~F, LC.xperm(~F, x, vp))) == True{} : Bool}:
+  L.le_trans(o, Nat.add(o, n), M.len(~F, LC.xperm(~F, x, vp)), L.le_add_r(o, n), hX)
+
+def hz_of(~F: O.OField, +full: List<&2, E.QExpr>, +good: List<&2, Nat>, +vp: List<&2, Nat>, +es: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +o: Nat, +x: M.Vec(~F), +hzg: SK.Zeros(~F, x, KP.pickk(full, 0n, good)), +hes: {L.subl(es, good) == True{} : Bool}, +hr: {LC.rowsok(full, vp, o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), es) == True{} : Bool}, +h4: {PL.eqs_below(Nat.add(o, ST.len(ST.positions(es, good))), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t))))) == True{} : Bool}, +hbl: {CK.allbelow(Nat.add(ST.len(ST.positions(es, good)), PL.nlen(ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp))), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))) == True{} : Bool}, +hX: {KA.natle(Nat.add(o, ST.len(ST.positions(es, good))), M.len(~F, LC.xperm(~F, x, vp))) == True{} : Bool}) -> {C.fvals(~F, PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t))))), C.app(~F, PP.ftake(~F, ST.len(ST.positions(es, good)), PP.fdrop(~F, o, LC.xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, LC.xperm(~F, x, vp)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp)))) == GJ.zeros(~F, ST.len(ST.positions(es, good))) : M.Vec(~F)}:
+  %Equal.sym(List<&2, E.QExpr>, PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))), PL.reorder(vp, full, es), tq_eq(vp, full, es, ST.alleqs(t), good)) : {C.fvals(~F, PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), _), C.app(~F, PP.ftake(~F, ST.len(ST.positions(es, good)), PP.fdrop(~F, o, LC.xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, LC.xperm(~F, x, vp)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp)))) == GJ.zeros(~F, ST.len(ST.positions(es, good))) : M.Vec(~F)}
+  %Equal.trans(Nat, CK.eqlen(PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.reorder(vp, full, es))), CK.eqlen(PL.reorder(vp, full, es)), ST.len(ST.positions(es, good)), eqlen_renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.reorder(vp, full, es)), Equal.sym(Nat, ST.len(ST.positions(es, good)), CK.eqlen(PL.reorder(vp, full, es)), nq_eq(es, good, vp, full))) : {C.fvals(~F, PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.reorder(vp, full, es)), C.app(~F, PP.ftake(~F, ST.len(ST.positions(es, good)), PP.fdrop(~F, o, LC.xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, LC.xperm(~F, x, vp)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp)))) == GJ.zeros(~F, _) : M.Vec(~F)}
+  zeros_fv(~F, C.app(~F, PP.ftake(~F, ST.len(ST.positions(es, good)), PP.fdrop(~F, o, LC.xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, LC.xperm(~F, x, vp)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp))), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.reorder(vp, full, es)), PP.zeros_unsubst(~F, o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PP.ftake(~F, o, LC.xperm(~F, x, vp)), PP.ftake(~F, ST.len(ST.positions(es, good)), PP.fdrop(~F, o, LC.xperm(~F, x, vp))), PL.reorder(vp, full, es), PP.len_ftake(~F, o, LC.xperm(~F, x, vp), len_rw(~F, o, x, vp, ST.len(ST.positions(es, good)), hX)), PP.len_ftake(~F, ST.len(ST.positions(es, good)), PP.fdrop(~F, o, LC.xperm(~F, x, vp)), LC.ld_le(~F, o, ST.len(ST.positions(es, good)), LC.xperm(~F, x, vp), hX)), eqb_of(full, good, vp, es, vs, t, o, h4), alb_of(full, good, vp, es, vs, t, o, hbl), zeros_blk(~F, x, vp, o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), full, good, hzg, es, hes, hr, hX)))
+
+def hJ_of(~F: O.OField, +full: List<&2, E.QExpr>, +good: List<&2, Nat>, +vp: List<&2, Nat>, +es: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +o: Nat, +x: M.Vec(~F), +known: List<&2, Nat>, h: GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), +hvp: {vp == ST.app(known, ST.app(vs, ST.allvars(t))) : List<&2, Nat>}, +hvd: {SV.distinct(vp) == True{} : Bool}, +ho: {SV.len(known) == o : Nat}, +hnv: {SV.len(vs) == ST.len(ST.positions(es, good)) : Nat}, +hr: {LC.rowsok(full, vp, o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), es) == True{} : Bool}, +hX: {KA.natle(Nat.add(o, ST.len(ST.positions(es, good))), M.len(~F, LC.xperm(~F, x, vp))) == True{} : Bool}) -> NP.InvB(~F, NW.jc(~F, PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t))))), ST.len(ST.positions(es, good)), C.app(~F, PP.ftake(~F, ST.len(ST.positions(es, good)), PP.fdrop(~F, o, LC.xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, LC.xperm(~F, x, vp)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp)))), ST.len(ST.positions(es, good)), LC.ibd(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs), h)):
+  %Equal.sym(List<&2, E.QExpr>, PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))), PL.reorder(vp, full, es), tq_eq(vp, full, es, ST.alleqs(t), good)) : NP.InvB(~F, NW.jc(~F, PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), _), ST.len(ST.positions(es, good)), C.app(~F, PP.ftake(~F, ST.len(ST.positions(es, good)), PP.fdrop(~F, o, LC.xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, LC.xperm(~F, x, vp)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp)))), ST.len(ST.positions(es, good)), LC.ibd(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs), h))
+  LC.loc_invb(~F, x, vp, o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), full, es, vs, posrun_of(vp, vs, known, ST.allvars(t), o, 0n, hvp, (%LN.add_zero(o) : {SV.len(known) == _ : Nat}
+    ho), hvd), svs_of(vp, known, vs, t, hvp), hnv, hr, hX, h)
+
+def ly0_of(~F: O.OField, +g: List<&2, S.D>, +vp: List<&2, Nat>, +known: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +o: Nat, +n: Nat, +hvp: {vp == ST.app(known, ST.app(vs, ST.allvars(t))) : List<&2, Nat>}, +ho: {SV.len(known) == o : Nat}, +hnv: {SV.len(vs) == n : Nat}) -> {M.len(~F, M.ofdv(~F, NU.dtake(n, NU.ddrop(o, NU.dpick(g, vp))))) == n : Nat}:
+  %Equal.sym(List<&2, Nat>, vp, ST.app(known, ST.app(vs, ST.allvars(t))), hvp) : {M.len(~F, M.ofdv(~F, NU.dtake(n, NU.ddrop(o, NU.dpick(g, _))))) == n : Nat}
+  %Equal.sym(List<&2, S.D>, NU.dtake(n, NU.ddrop(o, NU.dpick(g, ST.app(known, ST.app(vs, ST.allvars(t)))))), NU.dpick(g, vs), y0_eq(g, known, vs, ST.allvars(t), o, n, ho, hnv)) : {M.len(~F, M.ofdv(~F, _)) == n : Nat}
+  Equal.trans(Nat, M.len(~F, M.ofdv(~F, NU.dpick(g, vs))), PL.nlen(vs), n, len_pick(~F, g, vs), Equal.trans(Nat, PL.nlen(vs), SV.len(vs), n, nlen_sv(vs), hnv))
+
+def hy0_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +nv: Nat, +g: List<&2, S.D>, +x: M.Vec(~F), +d: O.C(F), +pins: List<&2, Nat>, +g0: List<&2, S.D>, +hN: SV.Near(~KI.dnum(), ~F, ~H, nv, 0n, g, x, d, pins, g0), +vp: List<&2, Nat>, +known: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +o: Nat, +n: Nat, +hvp: {vp == ST.app(known, ST.app(vs, ST.allvars(t))) : List<&2, Nat>}, +ho: {SV.len(known) == o : Nat}, +hnv: {SV.len(vs) == n : Nat}, +hfv: {MX.disj(vs, pins) == True{} : Bool}, +hbv: {SV.below(vs, nv) == True{} : Bool}) -> M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, NU.dtake(n, NU.ddrop(o, NU.dpick(g, vp)))), PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, vp)))), d):
+  %Equal.sym(List<&2, Nat>, vp, ST.app(known, ST.app(vs, ST.allvars(t))), hvp) : M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, NU.dtake(n, NU.ddrop(o, NU.dpick(g, _)))), PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, _)))), d)
+  %Equal.sym(List<&2, S.D>, NU.dtake(n, NU.ddrop(o, NU.dpick(g, ST.app(known, ST.app(vs, ST.allvars(t)))))), NU.dpick(g, vs), y0_eq(g, known, vs, ST.allvars(t), o, n, ho, hnv)) : M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, _), PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, ST.app(known, ST.app(vs, ST.allvars(t))))))), d)
+  %Equal.sym(M.Vec(~F), PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, ST.app(known, ST.app(vs, ST.allvars(t)))))), LC.xperm(~F, x, vs), yb_eq(~F, x, known, vs, ST.allvars(t), o, n, ho, hnv)) : M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, NU.dpick(g, vs)), _), d)
+  y0_close(~F, ~H, nv, g, x, d, pins, g0, hN, vs, hfv, hbv)

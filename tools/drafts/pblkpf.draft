@@ -1321,3 +1321,118 @@ def pb_step($STP, cur: NU.BR, hg: BK.bgood(~F, $N0, $EQ0, $YB0, rb, NU.dpick(gc,
       absurd(PG($PGA, o, gc, gr, sys, tf, NU.pblocks($BS0, NU.BRetry{}, sys, $G0B, p, o, gc, gr, Nil{})), hg)
     case NU.BStop{}:
       absurd(PG($PGA, o, gc, gr, sys, tf, NU.pblocks($BS0, NU.BStop{}, sys, $G0B, p, o, gc, gr, Nil{})), hg)
+
+# Splitting the structure's facts at a block
+# ------------------------------------------
+
+def subl_app_l(a: List<&2, Nat>, +b: List<&2, Nat>, +w: List<&2, Nat>, +h: {L.subl(ST.app(a, b), w) == True{} : Bool}) -> {L.subl(a, w) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      L.subl_con(x, t, w, L.subl_hd(x, ST.app(t, b), w, h), subl_app_l(t, b, w, L.subl_tl(x, ST.app(t, b), w, h)))
+
+def subl_app_r(a: List<&2, Nat>, +b: List<&2, Nat>, +w: List<&2, Nat>, +h: {L.subl(ST.app(a, b), w) == True{} : Bool}) -> {L.subl(b, w) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      h
+    case Con{+x, +t}:
+      subl_app_r(t, b, w, L.subl_tl(x, ST.app(t, b), w, h))
+
+def subl_app2(a: List<&2, Nat>, +b: List<&2, Nat>, +w: List<&2, Nat>, +ha: {L.subl(a, w) == True{} : Bool}, +hb: {L.subl(b, w) == True{} : Bool}) -> {L.subl(ST.app(a, b), w) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      hb
+    case Con{+x, +t}:
+      L.subl_con(x, ST.app(t, b), w, L.subl_hd(x, t, w, ha), subl_app2(t, b, w, L.subl_tl(x, t, w, ha), hb))
+
+def subl_pre(+a: List<&2, Nat>, +r: List<&2, Nat>) -> {L.subl(a, ST.app(a, r)) == True{} : Bool}:
+  subl_mid(a, Nil{}, a, r, L.subl_refl(a))
+
+def disj_app_l(a: List<&2, Nat>, +b: List<&2, Nat>, +w: List<&2, Nat>, +h: {MX.disj(ST.app(a, b), w) == True{} : Bool}) -> {MX.disj(a, w) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      L.band_i(SV.bnot(SV.mem(x, w)), MX.disj(t, w), L.band_l(SV.bnot(SV.mem(x, w)), MX.disj(ST.app(t, b), w), h), disj_app_l(t, b, w, MX.disj_tl(x, ST.app(t, b), w, h)))
+
+def below_app_l(a: List<&2, Nat>, +b: List<&2, Nat>, +n: Nat, +h: {SV.below(ST.app(a, b), n) == True{} : Bool}) -> {SV.below(a, n) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      L.band_i(SV.lt(x, n), SV.below(t, n), L.band_l(SV.lt(x, n), SV.below(ST.app(t, b), n), h), below_app_l(t, b, n, L.band_r(SV.lt(x, n), SV.below(ST.app(t, b), n), h)))
+
+def below_app_r(a: List<&2, Nat>, +b: List<&2, Nat>, +n: Nat, +h: {SV.below(ST.app(a, b), n) == True{} : Bool}) -> {SV.below(b, n) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      h
+    case Con{+x, +t}:
+      below_app_r(t, b, n, L.band_r(SV.lt(x, n), SV.below(ST.app(t, b), n), h))
+
+# The block's inputs
+# ------------------
+
+@MACRO BKP +full: List<&2, E.QExpr>, +good: List<&2, Nat>, +vp: List<&2, Nat>, +es: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +o: Nat
+@MACRO BKA full, good, vp, es, vs, t, o
+@MACRO RBK PL.reorder(vp, full, es)
+@MACRO TQE Equal.sym(List<&2, E.QExpr>, PL.takeq($NN, $SYSK), $RBK, tq_eq(vp, full, es, ST.alleqs(t), good))
+
+def hn_of($BKP) -> {CK.eqlen($EQL) == $NN : Nat}:
+  %Equal.sym(Nat, CK.eqlen($EQL), CK.eqlen(PL.takeq($NN, $SYSK)), eqlen_renames(o, $NN, $PARS, PL.takeq($NN, $SYSK))) : {_ == $NN : Nat}
+  %$TQE : {CK.eqlen(_) == $NN : Nat}
+  Equal.sym(Nat, $NN, CK.eqlen($RBK), nq_eq(es, good, vp, full))
+
+def hh_of($BKP, +hdy: {SV.dyeqs(full) == True{} : Bool}) -> {CK.allheld($DN, $EQL) == True{} : Bool}:
+  %$TQE : {CK.allheld($DN, PL.renames(o, $NN, $PARS, _)) == True{} : Bool}
+  held_blk(o, $NN, $PARS, vp, full, hdy, es)
+
+def eqb_of($BKP, +h: {PL.eqs_below(Nat.add(o, $NN), PL.takeq($NN, $SYSK)) == True{} : Bool}) -> {PL.eqs_below(Nat.add(o, $NN), $RBK) == True{} : Bool}:
+  %Equal.sym(List<&2, E.QExpr>, $RBK, PL.takeq($NN, $SYSK), Equal.sym(List<&2, E.QExpr>, PL.takeq($NN, $SYSK), $RBK, tq_eq(vp, full, es, ST.alleqs(t), good))) : {PL.eqs_below(Nat.add(o, $NN), _) == True{} : Bool}
+  h
+
+def alb_of($BKP, +h: {CK.allbelow(Nat.add($NN, $MM), $EQL) == True{} : Bool}) -> {CK.allbelow(Nat.add($NN, $MM), PL.renames(o, $NN, $PARS, $RBK)) == True{} : Bool}:
+  %Equal.sym(List<&2, E.QExpr>, $RBK, PL.takeq($NN, $SYSK), Equal.sym(List<&2, E.QExpr>, PL.takeq($NN, $SYSK), $RBK, tq_eq(vp, full, es, ST.alleqs(t), good))) : {CK.allbelow(Nat.add($NN, $MM), PL.renames(o, $NN, $PARS, _)) == True{} : Bool}
+  h
+
+@MACRO VPT ST.app(known, ST.app(vs, ST.allvars(t)))
+@MACRO HVP +hvp: {vp == $VPT : List<&2, Nat>}
+@MACRO YBN PP.ftake(~F, $NN, PP.fdrop(~F, o, $XV))
+@MACRO PBN PP.ftake(~F, o, $XV)
+@MACRO ENV C.app(~F, $YBN, PP.zmap(~F, $PBN, $PARS))
+@MACRO HXN +hX: {KA.natle(Nat.add(o, $NN), M.len(~F, $XV)) == True{} : Bool}
+
+def svs_of(+vp: List<&2, Nat>, +known: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, $HVP) -> {L.subl(vs, vp) == True{} : Bool}:
+  %Equal.sym(List<&2, Nat>, vp, $VPT, hvp) : {L.subl(vs, _) == True{} : Bool}
+  subl_mid(vs, known, vs, ST.allvars(t), L.subl_refl(vs))
+
+def svk_of(+vp: List<&2, Nat>, +known: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, $HVP) -> {L.subl(ST.app(vs, known), vp) == True{} : Bool}:
+  %Equal.sym(List<&2, Nat>, vp, $VPT, hvp) : {L.subl(ST.app(vs, known), _) == True{} : Bool}
+  subl_app2(vs, known, $VPT, subl_mid(vs, known, vs, ST.allvars(t), L.subl_refl(vs)), subl_pre(known, ST.app(vs, ST.allvars(t))))
+
+def rowsok_blk($BKP, +known: List<&2, Nat>, $HVP, +c1: {L.subl(ST.uses(es, ST.adj(full)), ST.app(vs, known)) == True{} : Bool}, +h4: {PL.eqs_below(Nat.add(o, $NN), PL.takeq($NN, $SYSK)) == True{} : Bool}, +hbl: {CK.allbelow(Nat.add($NN, $MM), $EQL) == True{} : Bool}) -> {LC.rowsok(full, vp, o, $NN, $PARS, es) == True{} : Bool}:
+  rowsok_of(full, vp, o, $NN, $PARS, es, allin_mono(full, es, ST.app(vs, known), vp, BI.allin_of_uses(full, es, ST.app(vs, known), c1), svk_of(vp, known, vs, t, hvp)), eqb_of($BKA, h4), alb_of($BKA, hbl))
+
+def len_rw(~F: O.OField, +o: Nat, +x: M.Vec(~F), +vp: List<&2, Nat>, +n: Nat, +hX: {KA.natle(Nat.add(o, n), M.len(~F, $XV)) == True{} : Bool}) -> {KA.natle(o, M.len(~F, $XV)) == True{} : Bool}:
+  L.le_trans(o, Nat.add(o, n), M.len(~F, $XV), L.le_add_r(o, n), hX)
+
+def hz_of(~F: O.OField, $BKP, +x: M.Vec(~F), +hzg: SK.Zeros(~F, x, KP.pickk(full, 0n, good)), +hes: {L.subl(es, good) == True{} : Bool}, +hr: {LC.rowsok(full, vp, o, $NN, $PARS, es) == True{} : Bool}, +h4: {PL.eqs_below(Nat.add(o, $NN), PL.takeq($NN, $SYSK)) == True{} : Bool}, +hbl: {CK.allbelow(Nat.add($NN, $MM), $EQL) == True{} : Bool}, $HXN) -> {C.fvals(~F, $EQL, $ENV) == GJ.zeros(~F, $NN) : M.Vec(~F)}:
+  %$TQE : {C.fvals(~F, PL.renames(o, $NN, $PARS, _), $ENV) == GJ.zeros(~F, $NN) : M.Vec(~F)}
+  %Equal.trans(Nat, CK.eqlen(PL.renames(o, $NN, $PARS, $RBK)), CK.eqlen($RBK), $NN, eqlen_renames(o, $NN, $PARS, $RBK), Equal.sym(Nat, $NN, CK.eqlen($RBK), nq_eq(es, good, vp, full))) : {C.fvals(~F, PL.renames(o, $NN, $PARS, $RBK), $ENV) == GJ.zeros(~F, _) : M.Vec(~F)}
+  zeros_fv(~F, $ENV, PL.renames(o, $NN, $PARS, $RBK), PP.zeros_unsubst(~F, o, $NN, $PARS, $PBN, $YBN, $RBK, PP.len_ftake(~F, o, $XV, len_rw(~F, o, x, vp, $NN, hX)), PP.len_ftake(~F, $NN, PP.fdrop(~F, o, $XV), LC.ld_le(~F, o, $NN, $XV, hX)), eqb_of($BKA, h4), alb_of($BKA, hbl), zeros_blk(~F, x, vp, o, $NN, $PARS, full, good, hzg, es, hes, hr, hX)))
+
+def hJ_of(~F: O.OField, $BKP, +x: M.Vec(~F), +known: List<&2, Nat>, h: GJ.InvN(~F, $JSK, SV.len(vs)), $HVP, +hvd: {SV.distinct(vp) == True{} : Bool}, +ho: {SV.len(known) == o : Nat}, +hnv: {SV.len(vs) == $NN : Nat}, +hr: {LC.rowsok(full, vp, o, $NN, $PARS, es) == True{} : Bool}, $HXN) -> NP.InvB(~F, NW.jc(~F, $EQL, $NN, $ENV), $NN, LC.ibd(~F, $JSK, SV.len(vs), h)):
+  %$TQE : NP.InvB(~F, NW.jc(~F, PL.renames(o, $NN, $PARS, _), $NN, $ENV), $NN, LC.ibd(~F, $JSK, SV.len(vs), h))
+  LC.loc_invb(~F, x, vp, o, $NN, $PARS, full, es, vs, posrun_of(vp, vs, known, ST.allvars(t), o, 0n, hvp, (%LN.add_zero(o) : {SV.len(known) == _ : Nat}
+    ho), hvd), svs_of(vp, known, vs, t, hvp), hnv, hr, hX, h)
+
+def ly0_of(~F: O.OField, +g: List<&2, S.D>, +vp: List<&2, Nat>, +known: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +o: Nat, +n: Nat, $HVP, +ho: {SV.len(known) == o : Nat}, +hnv: {SV.len(vs) == n : Nat}) -> {M.len(~F, M.ofdv(~F, NU.dtake(n, NU.ddrop(o, NU.dpick(g, vp))))) == n : Nat}:
+  %Equal.sym(List<&2, Nat>, vp, $VPT, hvp) : {M.len(~F, M.ofdv(~F, NU.dtake(n, NU.ddrop(o, NU.dpick(g, _))))) == n : Nat}
+  %Equal.sym(List<&2, S.D>, NU.dtake(n, NU.ddrop(o, NU.dpick(g, $VPT))), NU.dpick(g, vs), y0_eq(g, known, vs, ST.allvars(t), o, n, ho, hnv)) : {M.len(~F, M.ofdv(~F, _)) == n : Nat}
+  Equal.trans(Nat, M.len(~F, M.ofdv(~F, NU.dpick(g, vs))), PL.nlen(vs), n, len_pick(~F, g, vs), Equal.trans(Nat, PL.nlen(vs), SV.len(vs), n, nlen_sv(vs), hnv))
+
+def hy0_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +nv: Nat, +g: List<&2, S.D>, +x: M.Vec(~F), +d: @T, +pins: List<&2, Nat>, +g0: List<&2, S.D>, +hN: SV.Near($DN, ~F, ~H, nv, 0n, g, x, d, pins, g0), +vp: List<&2, Nat>, +known: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +o: Nat, +n: Nat, $HVP, +ho: {SV.len(known) == o : Nat}, +hnv: {SV.len(vs) == n : Nat}, +hfv: {MX.disj(vs, pins) == True{} : Bool}, +hbv: {SV.below(vs, nv) == True{} : Bool}) -> M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, NU.dtake(n, NU.ddrop(o, NU.dpick(g, vp)))), PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, vp)))), d):
+  %Equal.sym(List<&2, Nat>, vp, $VPT, hvp) : M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, NU.dtake(n, NU.ddrop(o, NU.dpick(g, _)))), PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, _)))), d)
+  %Equal.sym(List<&2, S.D>, NU.dtake(n, NU.ddrop(o, NU.dpick(g, $VPT))), NU.dpick(g, vs), y0_eq(g, known, vs, ST.allvars(t), o, n, ho, hnv)) : M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, _), PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, $VPT)))), d)
+  %Equal.sym(M.Vec(~F), PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, $VPT))), LC.xperm(~F, x, vs), yb_eq(~F, x, known, vs, ST.allvars(t), o, n, ho, hnv)) : M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, NU.dpick(g, vs)), _), d)
+  y0_close(~F, ~H, nv, g, x, d, pins, g0, hN, vs, hfv, hbv)
