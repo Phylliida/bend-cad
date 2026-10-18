@@ -51,6 +51,7 @@ import ./locpf.bend as LC
 import ./nat.bend as LN
 import ./tarjanpf.bend as TJ
 import ./maxpf.bend as MX
+import ./scalepf.bend as SC
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -913,3 +914,77 @@ def rowsok_of(+full: List<&2, E.QExpr>, +vp: List<&2, Nat>, +o: Nat, +n: Nat, +p
         L.band_i(SL.below(Nat.add(o, n), rj), SV.band(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, rj)), LC.rowsok(full, vp, o, n, pars, t)), KA.band_l(SL.below(Nat.add(o, n), rj), PL.eqs_below(Nat.add(o, n), PL.reorder(vp, full, t)), h2),
           L.band_i(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, rj)), LC.rowsok(full, vp, o, n, pars, t), KA.band_l(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, rj)), CK.allbelow(Nat.add(n, PL.nlen(pars)), PL.renames(o, n, pars, PL.reorder(vp, full, t))), h3),
             rowsok_of(full, vp, o, n, pars, t, L.band_r(SV.inside(PL.eqget(full, j), vp), BI.allin(full, t, vp), h1), KA.band_r(SL.below(Nat.add(o, n), rj), PL.eqs_below(Nat.add(o, n), PL.reorder(vp, full, t)), h2), KA.band_r(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, rj)), CK.allbelow(Nat.add(n, PL.nlen(pars)), PL.renames(o, n, pars, PL.reorder(vp, full, t))), h3)))))
+
+# The blocks' constants, in turn
+# ------------------------------
+# For the solver's structure kb from offset o: each block's n and m, its
+# local equations, Lambda and M (their grades summed at bb = |x| + 1),
+# beta (its inverse's norm), its smallness budget qblk and radius scale
+# phib at T; T then moves on to phib. qch sums the budgets, tch is the
+# last T.
+
+
+def qch(~F: O.OField, +full: List<&2, E.QExpr>, +good: List<&2, Nat>, +vp: List<&2, Nat>, +x: M.Vec(~F), kb: List<&2, ST.SB>, +binv: BI.BInv(~F, x, full, kb), +o: Nat, +tt: O.C(F)) -> O.C(F):
+  match kb:
+    case Nil{}:
+      O.zero(F)
+    case Con{ST.SB{+es, +vs}, +t}:
+      O.add(F, SC.qblk(~F, ST.len(ST.positions(es, good)), PL.nlen(ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp)), LC.ibd(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs), BI.both_l(GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), BI.BInv(~F, x, full, t), binv)), lsum(~F, O.add(F, NP.vn(~F, x), O.one(F)), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))), msum(~F, O.add(F, NP.vn(~F, x), O.one(F)), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))), tt), qch(~F, full, good, vp, x, t, BI.both_r(GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), BI.BInv(~F, x, full, t), binv), Nat.add(o, ST.len(ST.positions(es, good))), SC.phib(~F, ST.len(ST.positions(es, good)), PL.nlen(ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp)), LC.ibd(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs), BI.both_l(GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), BI.BInv(~F, x, full, t), binv)), lsum(~F, O.add(F, NP.vn(~F, x), O.one(F)), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))), msum(~F, O.add(F, NP.vn(~F, x), O.one(F)), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))), tt)))
+
+def tch(~F: O.OField, +full: List<&2, E.QExpr>, +good: List<&2, Nat>, +vp: List<&2, Nat>, +x: M.Vec(~F), kb: List<&2, ST.SB>, +binv: BI.BInv(~F, x, full, kb), +o: Nat, +tt: O.C(F)) -> O.C(F):
+  match kb:
+    case Nil{}:
+      tt
+    case Con{ST.SB{+es, +vs}, +t}:
+      tch(~F, full, good, vp, x, t, BI.both_r(GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), BI.BInv(~F, x, full, t), binv), Nat.add(o, ST.len(ST.positions(es, good))), SC.phib(~F, ST.len(ST.positions(es, good)), PL.nlen(ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp)), LC.ibd(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs), BI.both_l(GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), BI.BInv(~F, x, full, t), binv)), lsum(~F, O.add(F, NP.vn(~F, x), O.one(F)), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))), msum(~F, O.add(F, NP.vn(~F, x), O.one(F)), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))), tt))
+
+def ibd_nn(~F: O.OField, +a: M.Mat(~F), +n: Nat, h: GJ.InvN(~F, a, n)) -> O.le(~F, O.zero(F), LC.ibd(~F, a, n, h)):
+  match h:
+    case (z, q):
+      NP.mnorm_nn(~F, z, n)
+
+def qch_nn(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +full: List<&2, E.QExpr>, +good: List<&2, Nat>, +vp: List<&2, Nat>, +x: M.Vec(~F), kb: List<&2, ST.SB>, +binv: BI.BInv(~F, x, full, kb), +o: Nat, +tt: O.C(F), +htt: O.le(~F, O.zero(F), tt)) -> O.le(~F, O.zero(F), qch(~F, full, good, vp, x, kb, binv, o, tt)):
+  match kb:
+    case Nil{}:
+      FO.le_refl(~F, O.zero(F))
+    case Con{ST.SB{+es, +vs}, +t}:
+      +hbb = FO.nonneg_add(~F, NP.vn(~F, x), O.one(F), FV.vmax_nn(~F, x), NP.one_nn(~F))
+      +hb = ibd_nn(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs), BI.both_l(GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), BI.BInv(~F, x, full, t), binv))
+      +hl = lsum_nn(~F, O.add(F, NP.vn(~F, x), O.one(F)), hbb, PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t))))))
+      +hm = msum_nn(~F, O.add(F, NP.vn(~F, x), O.one(F)), hbb, PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t))))))
+      FO.nonneg_add(~F, SC.qblk(~F, ST.len(ST.positions(es, good)), PL.nlen(ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp)), LC.ibd(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs), BI.both_l(GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), BI.BInv(~F, x, full, t), binv)), lsum(~F, O.add(F, NP.vn(~F, x), O.one(F)), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))), msum(~F, O.add(F, NP.vn(~F, x), O.one(F)), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))), tt), qch(~F, full, good, vp, x, t, BI.both_r(GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), BI.BInv(~F, x, full, t), binv), Nat.add(o, ST.len(ST.positions(es, good))), SC.phib(~F, ST.len(ST.positions(es, good)), PL.nlen(ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp)), LC.ibd(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs), BI.both_l(GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), BI.BInv(~F, x, full, t), binv)), lsum(~F, O.add(F, NP.vn(~F, x), O.one(F)), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))), msum(~F, O.add(F, NP.vn(~F, x), O.one(F)), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))), tt)), SC.qblk_nn(~F, ~H, ST.len(ST.positions(es, good)), PL.nlen(ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp)), LC.ibd(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs), BI.both_l(GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), BI.BInv(~F, x, full, t), binv)), lsum(~F, O.add(F, NP.vn(~F, x), O.one(F)), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))), msum(~F, O.add(F, NP.vn(~F, x), O.one(F)), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))), tt, hb, hl, hm, htt), qch_nn(~F, ~H, full, good, vp, x, t, BI.both_r(GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), BI.BInv(~F, x, full, t), binv), Nat.add(o, ST.len(ST.positions(es, good))), SC.phib(~F, ST.len(ST.positions(es, good)), PL.nlen(ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp)), LC.ibd(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs), BI.both_l(GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), BI.BInv(~F, x, full, t), binv)), lsum(~F, O.add(F, NP.vn(~F, x), O.one(F)), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))), msum(~F, O.add(F, NP.vn(~F, x), O.one(F)), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))), tt), SC.phib_nn(~F, ~H, ST.len(ST.positions(es, good)), PL.nlen(ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp)), LC.ibd(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs), BI.both_l(GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs)), BI.BInv(~F, x, full, t), binv)), lsum(~F, O.add(F, NP.vn(~F, x), O.one(F)), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))), msum(~F, O.add(F, NP.vn(~F, x), O.one(F)), PL.renames(o, ST.len(ST.positions(es, good)), ST.positions(ST.minus(ST.uses(es, ST.adj(full)), vs), vp), PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, ST.alleqs(t)))))), tt, hb, hl, hm, htt)))
+
+# Lists of K, a prefix at a time
+# ------------------------------
+
+def ktake_ktake(~K: N.Num, o: Nat, +n: Nat, u: N.KVec(~K)) -> {PL.ktake(~K, o, PL.ktake(~K, Nat.add(o, n), u)) == PL.ktake(~K, o, u) : N.KVec(~K)}:
+  match o u:
+    case 0n u:
+      {==}
+    case 1n+k Nil{}:
+      {==}
+    case 1n+k Con{+a, t}:
+      %ktake_ktake(~K, k, n, t) : {Con{a, PL.ktake(~K, k, PL.ktake(~K, Nat.add(k, n), t))} == Con{a, _} : N.KVec(~K)}
+      {==}
+
+def kd_kt(~K: N.Num, o: Nat, +n: Nat, u: N.KVec(~K)) -> {PL.kdrop(~K, o, PL.ktake(~K, Nat.add(o, n), u)) == PL.ktake(~K, n, PL.kdrop(~K, o, u)) : N.KVec(~K)}:
+  match o u:
+    case 0n u:
+      {==}
+    case 1n+k Nil{}:
+      Equal.sym(N.KVec(~K), PL.ktake(~K, n, Nil{}), Nil{}, PP.ktake_nil(~K, n))
+    case 1n+k Con{a, t}:
+      kd_kt(~K, k, n, t)
+
+# u's first o + n entries are a ++ b, |a| = o: its first o are a, the next n are b
+def kpre(~K: N.Num, +o: Nat, +n: Nat, +u: N.KVec(~K), +a: N.KVec(~K), +b: N.KVec(~K), +h: {PL.ktake(~K, Nat.add(o, n), u) == KA.kapp(~K, a, b) : N.KVec(~K)}, +ha: {KA.klen(~K, a) == o : Nat}) -> {PL.ktake(~K, o, u) == a : N.KVec(~K)}:
+  %ktake_ktake(~K, o, n, u) : {_ == a : N.KVec(~K)}
+  %Equal.sym(N.KVec(~K), PL.ktake(~K, Nat.add(o, n), u), KA.kapp(~K, a, b), h) : {PL.ktake(~K, o, _) == a : N.KVec(~K)}
+  %ha : {PL.ktake(~K, _, KA.kapp(~K, a, b)) == a : N.KVec(~K)}
+  kt_app(~K, a, b)
+
+def kseg(~K: N.Num, +o: Nat, +n: Nat, +u: N.KVec(~K), +a: N.KVec(~K), +b: N.KVec(~K), +h: {PL.ktake(~K, Nat.add(o, n), u) == KA.kapp(~K, a, b) : N.KVec(~K)}, +ha: {KA.klen(~K, a) == o : Nat}) -> {PL.ktake(~K, n, PL.kdrop(~K, o, u)) == b : N.KVec(~K)}:
+  %kd_kt(~K, o, n, u) : {_ == b : N.KVec(~K)}
+  %Equal.sym(N.KVec(~K), PL.ktake(~K, Nat.add(o, n), u), KA.kapp(~K, a, b), h) : {PL.kdrop(~K, o, _) == b : N.KVec(~K)}
+  %ha : {PL.kdrop(~K, _, KA.kapp(~K, a, b)) == b : N.KVec(~K)}
+  kd_app(~K, a, b)

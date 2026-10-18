@@ -540,3 +540,10 @@ def rb_sc($KPH, $NNP, $SCP) -> O.le(~F, BK.rbc($KA), @M($HH, phib($QA))):
 # d <= h, the parameters' radii rho <= h T, and t qblk < 1
 def block_sc($CXQ, $Y0P, $PQP, $PRP, $SCP, +hsq: O.lt(F, @M($VB, qblk($QA)), @1)) -> BK.bgood(~F, n, eqs, xb, BK.rbc($KA), pc, pr, NU.block(eqs, n, pc, pr, y0, p)):
   BK.block_ok($CXQA, hsm_sc($SHA), s1_sc($SHA), s2_sc($SHA), s4_sc($SHA), y0, ly0, hy0, q2, hp2, pr, lpr, hpn, hzr, hpr, w1_sc($SHA), w2_sc($SHA), w3_sc($SHA), w4_sc($SHA))
+
+# qblk and phib are not negative
+def qblk_nn($QPH, $QNP) -> O.le(~F, @0, qblk($QA)):
+  FO.nonneg_add(~F, $QS1, $Q2, qnn($QAH, $QNA, r_s1()), nn2($QAH, $QNA))
+
+def phib_nn($QPH, $QNP) -> O.le(~F, @0, phib($QA)):
+  qnn($QAH, $QNA, r_rbc())
