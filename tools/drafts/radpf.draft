@@ -609,3 +609,69 @@ def ofkm_imm($KH, +n: Nat, +a: N.KMat(~K), +b: N.KMat(~K)) -> {N.ofkm($KHA, CK.i
   %KA.kmneg_ofk($KHA, KA.kmatmul(~K, a, b)) : {M.madd(~F, M.ident(~F, n), _) == M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, N.ofkm($KHA, a), N.ofkm($KHA, b)))) : M.Mat(~F)}
   %KA.kmatmul_ofk($KHA, a, b) : {M.madd(~F, M.ident(~F, n), M.mneg(~F, _)) == M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, N.ofkm($KHA, a), N.ofkm($KHA, b)))) : M.Mat(~F)}
   {==}
+
+# The window
+# ----------
+# Every radius r with 2S <= r and r + rho <= rb passes the checker, given
+# |Y| <= yn, |I - Y Jc| <= thL, |I - Jc Y| <= thR < 1 and the smallness
+# thL + yn n lam rb + yn m lam rho <= 1/2 (S the largest entry of the
+# self-map bound at radius 0).
+
+@MACRO WXP ~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +eqs: List<&2, E.QExpr>, +hn: {CK.eqlen(eqs) == n : Nat}, +hh: {CK.allheld($DN, eqs) == True{} : Bool}, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +lyc: {KA.klen($DN, yc) == n : Nat}, +lpp: {KA.klen($DN, pc) == KA.klen($DN, pr) : Nat}, +ym: List<&2, List<&2, S.D>>, +bb: @T, +lam: @T, +ms: @T, +rb: @T, +hb: O.le(~F, @0, bb), +hl0: O.le(~F, @0, lam), +hrb: O.le(~F, @0, rb), +hq: AP.eqok(~F, bb, lam, ms, eqs), +hc: M.vbnd.all(~F, $PTC, @S(bb, rb)), +hpn: FV.rnn(~F, M.ofdv(~F, pr)), +hpr: M.vbnd.all(~F, M.ofdv(~F, pr), rb), +yn: @T, +thL: @T, +hyn: O.le(~F, NP.mnorm(~F, M.ofdm(~F, ym), n), yn), +hthl: O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, M.ofdm(~F, ym), NW.jc(~F, eqs, n, $PTC)))), n), thL), +hyn0: O.le(~F, @0, yn), +hthl0: O.le(~F, @0, thL)
+@MACRO WXA ~F, ~H, n, eqs, hn, hh, yc, pc, pr, lyc, lpp, ym, bb, lam, ms, rb, hb, hl0, hrb, hq, hc, hpn, hpr, yn, thL, hyn, hthl, hyn0, hthl0
+
+def nrows_srm($KH, +box: List<&2, KB.KB<K>>, +cnt: Nat, +lo: Nat, eqs: List<&2, E.QExpr>) -> {GJ.nrows(~F, N.ofkm($KHA, CK.mradii(~K, CK.srows(~K, box, cnt, lo, eqs)))) == CK.eqlen(eqs) : Nat}:
+  match eqs:
+    case Nil{}:
+      {==}
+    case Con{e, es}:
+      %Equal.sym(Nat, GJ.nrows(~F, N.ofkm($KHA, CK.mradii(~K, CK.srows(~K, box, cnt, lo, es)))), CK.eqlen(es), nrows_srm($KHA, box, cnt, lo, es)) : {1n+_ == 1n+CK.eqlen(es) : Nat}
+      {==}
+
+def rf_eq(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +r: S.D) -> {N.ofkv($DH, NU.dreps(n, r)) == frep(~F, n, M.ofd(~F, r)) : M.Vec(~F)}:
+  Equal.trans(M.Vec(~F), N.ofkv($DH, NU.dreps(n, r)), M.ofdv(~F, NU.dreps(n, r)), frep(~F, n, M.ofd(~F, r)), AP.ofkv_d(~F, ~H, NU.dreps(n, r)), ofdv_dreps(~F, n, r))
+
+def lrf(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +r: S.D) -> {M.len(~F, N.ofkv($DH, NU.dreps(n, r))) == n : Nat}:
+  %Equal.sym(M.Vec(~F), N.ofkv($DH, NU.dreps(n, r)), frep(~F, n, M.ofd(~F, r)), rf_eq(~F, ~H, n, r)) : {M.len(~F, _) == n : Nat}
+  len_frep(~F, n, M.ofd(~F, r))
+
+def vnrf(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +r: S.D, +hr0: O.le(~F, @0, M.ofd(~F, r))) -> O.le(~F, NP.vn(~F, N.ofkv($DH, NU.dreps(n, r))), M.ofd(~F, r)):
+  %Equal.sym(M.Vec(~F), N.ofkv($DH, NU.dreps(n, r)), frep(~F, n, M.ofd(~F, r)), rf_eq(~F, ~H, n, r)) : O.le(~F, NP.vn(~F, _), M.ofd(~F, r))
+  vn_frep(~F, n, M.ofd(~F, r), hr0)
+
+# the checker's Jacobian centers at its box: Jc
+def jc_ckb($WXP, +yr: List<&2, S.D>) -> {N.ofkm($DH, CK.mcenters($DN, CK.rowsy($DN, eqs, n, yc, yr, pc, pr))) == NW.jc(~F, eqs, n, $PTC) : M.Mat(~F)}:
+  %cen_ckb(~F, ~H, n, yc, yr, pc, pr, lyc, lpp) : {N.ofkm($DH, CK.mcenters($DN, CK.rowsy($DN, eqs, n, yc, yr, pc, pr))) == DV.jac(~F, _, eqs, ST.iota(n, 0n)) : M.Mat(~F)}
+  BP.mcen_jac($DH, CK.box($DN, n, yc, yr, pc, pr), n, 0n, eqs, hh)
+
+# |I - Y J0y| in the checker's numbers is at most thL
+def imm_mn($WXP, +yr: List<&2, S.D>) -> O.le(~F, NP.mnorm(~F, N.ofkm($DH, CK.imm($DN, n, ym, CK.mcenters($DN, CK.rowsy($DN, eqs, n, yc, yr, pc, pr)))), n), thL):
+  %Equal.sym(M.Mat(~F), N.ofkm($DH, CK.imm($DN, n, ym, CK.mcenters($DN, CK.rowsy($DN, eqs, n, yc, yr, pc, pr)))), M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, N.ofkm($DH, ym), N.ofkm($DH, CK.mcenters($DN, CK.rowsy($DN, eqs, n, yc, yr, pc, pr)))))), ofkm_imm($DH, n, ym, CK.mcenters($DN, CK.rowsy($DN, eqs, n, yc, yr, pc, pr)))) : O.le(~F, NP.mnorm(~F, _, n), thL)
+  %Equal.sym(M.Mat(~F), N.ofkm($DH, ym), M.ofdm(~F, ym), AP.ofkm_d(~F, ~H, ym)) : O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, _, N.ofkm($DH, CK.mcenters($DN, CK.rowsy($DN, eqs, n, yc, yr, pc, pr)))))), n), thL)
+  %Equal.sym(M.Mat(~F), N.ofkm($DH, CK.mcenters($DN, CK.rowsy($DN, eqs, n, yc, yr, pc, pr))), NW.jc(~F, eqs, n, $PTC), jc_ckb($WXA, yr)) : O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, M.ofdm(~F, ym), _))), n), thL)
+  hthl
+
+def ym_mn($WXP) -> O.le(~F, NP.mnorm(~F, N.ofkm($DH, KA.kmabs($DN, ym)), n), yn):
+  kabs_mn($DH, ym, n, yn, hyn0, (%Equal.sym(M.Mat(~F), N.ofkm($DH, ym), M.ofdm(~F, ym), AP.ofkm_d(~F, ~H, ym)) : O.le(~F, NP.mnorm(~F, _, n), yn)
+    hyn))
+
+# the contraction vector at radius r: |g| <= thL r + yn n lam rb r
+def gvec_bnd($WXP, +r: S.D, +hr0: O.le(~F, @0, M.ofd(~F, r)), +hr1: O.le(~F, M.ofd(~F, r), rb)) -> O.le(~F, NP.vn(~F, N.ofkv($DH, CK.gvec($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr))), @A(@M(thL, M.ofd(~F, r)), @M(yn, @M(@M(FR.ofn(~F, n), @M(lam, rb)), M.ofd(~F, r))))):
+  +yrr = NU.dreps(n, r)
+  +rF = N.ofkv($DH, yrr)
+  +aK = CK.imm($DN, n, ym, CK.mcenters($DN, CK.rowsy($DN, eqs, n, yc, yrr, pc, pr)))
+  +dK = CK.mradii($DN, CK.rowsy($DN, eqs, n, yc, yrr, pc, pr))
+  +pP = M.matvec(~F, N.ofkm($DH, KA.kmabs($DN, aK)), rF)
+  +qQ = M.matvec(~F, N.ofkm($DH, KA.kmabs($DN, ym)), M.matvec(~F, N.ofkm($DH, dK), rF))
+  +ldk = Equal.trans(Nat, M.len(~F, M.matvec(~F, N.ofkm($DH, dK), rF)), GJ.nrows(~F, N.ofkm($DH, dK)), n, Equal.sym(Nat, GJ.nrows(~F, N.ofkm($DH, dK)), M.len(~F, M.matvec(~F, N.ofkm($DH, dK), rF)), GJ.len_matvec(~F, N.ofkm($DH, dK), rF)), Equal.trans(Nat, GJ.nrows(~F, N.ofkm($DH, dK)), CK.eqlen(eqs), n, nrows_srm($DH, CK.box($DN, n, yc, yrr, pc, pr), n, 0n, eqs), hn))
+  +gb = gbox_ckb(~F, ~H, n, yc, yrr, pc, pr, lyc, lpp, r, kfit_dreps(n, r), rb, bb, hc, hr0, hr1, hpn, hpr)
+  %Equal.sym(M.Vec(~F), N.ofkv($DH, CK.gvec($DN, eqs, n, yc, yrr, ym, pc, pr)), M.vadd(~F, pP, qQ), CP.gF_ok($DH, eqs, n, yc, yrr, ym, pc, pr)) : O.le(~F, NP.vn(~F, _), @A(@M(thL, M.ofd(~F, r)), @M(yn, @M(@M(FR.ofn(~F, n), @M(lam, rb)), M.ofd(~F, r)))))
+  DM.le_trans(~F, NP.vn(~F, M.vadd(~F, pP, qQ)), @A(NP.vn(~F, pP), NP.vn(~F, qQ)), @A(@M(thL, M.ofd(~F, r)), @M(yn, @M(@M(FR.ofn(~F, n), @M(lam, rb)), M.ofd(~F, r)))),
+    AP.vn_add(~F, pP, qQ),
+    RP.le_add2(~F, NP.vn(~F, pP), @M(thL, M.ofd(~F, r)), NP.vn(~F, qQ), @M(yn, @M(@M(FR.ofn(~F, n), @M(lam, rb)), M.ofd(~F, r))),
+      DM.le_trans(~F, NP.vn(~F, pP), @M(NP.mnorm(~F, N.ofkm($DH, KA.kmabs($DN, aK)), n), NP.vn(~F, rF)), @M(thL, M.ofd(~F, r)), NP.mv_n(~F, N.ofkm($DH, KA.kmabs($DN, aK)), n, rF, lrf(~F, ~H, n, r)),
+        NW.mm_le(~F, NP.mnorm(~F, N.ofkm($DH, KA.kmabs($DN, aK)), n), thL, NP.vn(~F, rF), M.ofd(~F, r), FV.vmax_nn(~F, rF), hthl0, kabs_mn($DH, aK, n, thL, hthl0, imm_mn($WXA, yrr)), vnrf(~F, ~H, n, r, hr0))),
+      DM.le_trans(~F, NP.vn(~F, qQ), @M(NP.mnorm(~F, N.ofkm($DH, KA.kmabs($DN, ym)), n), NP.vn(~F, M.matvec(~F, N.ofkm($DH, dK), rF))), @M(yn, @M(@M(FR.ofn(~F, n), @M(lam, rb)), M.ofd(~F, r))), NP.mv_n(~F, N.ofkm($DH, KA.kmabs($DN, ym)), n, M.matvec(~F, N.ofkm($DH, dK), rF), ldk),
+        NW.mm_le(~F, NP.mnorm(~F, N.ofkm($DH, KA.kmabs($DN, ym)), n), yn, NP.vn(~F, M.matvec(~F, N.ofkm($DH, dK), rF)), @M(@M(FR.ofn(~F, n), @M(lam, rb)), M.ofd(~F, r)), FV.vmax_nn(~F, M.matvec(~F, N.ofkm($DH, dK), rF)), hyn0, ym_mn($WXA),
+          DM.le_trans(~F, NP.vn(~F, M.matvec(~F, N.ofkm($DH, dK), rF)), @M(NP.mnorm(~F, N.ofkm($DH, dK), n), NP.vn(~F, rF)), @M(@M(FR.ofn(~F, n), @M(lam, rb)), M.ofd(~F, r)), NP.mv_n(~F, N.ofkm($DH, dK), n, rF, lrf(~F, ~H, n, r)),
+            NW.mm_le(~F, NP.mnorm(~F, N.ofkm($DH, dK), n), @M(FR.ofn(~F, n), @M(lam, rb)), NP.vn(~F, rF), M.ofd(~F, r), FV.vmax_nn(~F, rF), AP.lr_nn(~F, n, lam, rb, hl0, hrb), srad_mn($DH, rb, bb, hrb, hb, CK.box($DN, n, yc, yrr, pc, pr), gb, lam, ms, hl0, eqs, hq, hh, n, 0n), vnrf(~F, ~H, n, r, hr0)))))))
