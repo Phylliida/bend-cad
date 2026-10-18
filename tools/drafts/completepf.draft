@@ -54,6 +54,8 @@ import ./apxpf.bend as AP
 import ./banach.bend as BA
 import ./nwtpf.bend as NW
 import ./scalepf.bend as SC
+import ./bndpf.bend as BP
+import ./radpf.bend as RD
 import ./binvpf.bend as BI
 import ./locpf.bend as LC
 import ./pblkpf.bend as PB
@@ -692,3 +694,71 @@ def inbox_ans($SKP, +x: M.Vec(~F), +g: List<&2, S.D>, +hl: {M.len(~F, x) == $NV 
   +hld = CP.len_vsub(~F, x, N.ofkv($DN, ~F, ~H, $GCU), $NV, hl, lo)
   (Equal.trans(Nat, M.len(~F, x), $NV, M.len(~F, N.ofkv($DN, ~F, ~H, $GCU)), hl, Equal.sym(Nat, M.len(~F, N.ofkv($DN, ~F, ~H, $GCU)), $NV, lo)),
    BA.rbnd_of_lk(~F, d, $NV, N.ofkv($DN, ~F, ~H, $GRU), hld, BA.lk_build(~F, ~d, ~N.ofkv($DN, ~F, ~H, $GRU), ~$NV, ~(v => hv => box_at($SKA, x, g, $PGA, v, hv)), $NV, 0n, BA.lk_end($NV))))
+
+# The side conditions (C6d-3)
+# ---------------------------
+# Over a box whose balls have radius at most rho and centers and radii
+# within bb (gbox), kball's center is e at the box's centers (kball_c),
+# within lp rho of e(x) (eval_lip), and its radius is at most lp rho
+# (kball_grade): c - r >= e(x) - 2 lp rho.
+
+@MACRO KBE KB.kball($DN, box, e)
+@MACRO LPR O.mul(F, BP.lp(~F, bb, e), rho)
+@MACRO BXP +box: List<&2, KB.KB<KI.dnum()>>, +rho: O.C(F), +bb: O.C(F), +hr: O.le(~F, O.zero(F), rho), +hb: O.le(~F, O.zero(F), bb), +hg: BP.gbox($DN, ~F, ~H, rho, bb, box), +x: M.Vec(~F), +hx: KB.inbox($DN, ~F, ~H, x, box)
+@MACRO BXA box, rho, bb, hr, hb, hg, x, hx
+
+def held_e(e: E.QExpr, +h: {SV.dyconst(e) == True{} : Bool}) -> {KB.held($DN, e) == True{} : Bool}:
+  match e:
+    case E.QVar{v}:
+      {==}
+    case E.QCst{+q}:
+      PB.held_c(q, h)
+    case E.QAdd{+a, +b}:
+      PB.kband_i(KB.held($DN, a), KB.held($DN, b), held_e(a, L.band_l(SV.dyconst(a), SV.dyconst(b), h)), held_e(b, L.band_r(SV.dyconst(a), SV.dyconst(b), h)))
+    case E.QSub{+a, +b}:
+      PB.kband_i(KB.held($DN, a), KB.held($DN, b), held_e(a, L.band_l(SV.dyconst(a), SV.dyconst(b), h)), held_e(b, L.band_r(SV.dyconst(a), SV.dyconst(b), h)))
+    case E.QMul{+a, +b}:
+      PB.kband_i(KB.held($DN, a), KB.held($DN, b), held_e(a, L.band_l(SV.dyconst(a), SV.dyconst(b), h)), held_e(b, L.band_r(SV.dyconst(a), SV.dyconst(b), h)))
+    case E.QNeg{+a}:
+      held_e(a, h)
+
+def side_lb.c(~F: O.OField, +ec: O.C(F), +rv: O.C(F), +ex: O.C(F), +m: O.C(F), hl: M.bnd(~F, O.sub(~F, ex, ec), m), hrm: O.le(~F, rv, m)) -> O.le(~F, O.sub(~F, ex, O.add(F, m, m)), O.sub(~F, ec, rv)):
+  FV.le_of_sub(~F, O.sub(~F, ex, O.add(F, m, m)), O.sub(~F, ec, rv), FM.nn_eq(~F, O.sub(~F, O.sub(~F, ec, rv), O.sub(~F, ex, O.add(F, m, m))), O.add(F, O.sub(~F, m, O.sub(~F, ex, ec)), O.sub(~F, m, rv)), @ZEQ[ec,, rv,, ex,, m | (m - (ex - ec)) + (m - rv) | (ec - rv) - (ex - (m + m))], FO.nonneg_add(~F, O.sub(~F, m, O.sub(~F, ex, ec)), O.sub(~F, m, rv), AP.both_l(O.le(~F, O.zero(F), O.sub(~F, m, O.sub(~F, ex, ec))), O.le(~F, O.zero(F), O.add(F, m, O.sub(~F, ex, ec))), hl), FM.sub_nonneg(~F, rv, m, hrm))))
+
+# c - r >= e(x) - 2 lp rho
+def side_lb(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $BXP, +e: E.QExpr, +hh: {KB.held($DN, e) == True{} : Bool}) -> O.le(~F, O.sub(~F, O.eval(~F, x, e), O.add(F, $LPR, $LPR)), N.emap(KI.dnum(), F, H, KA.ksub($DN, KB.KB.c(KI.dnum(), $KBE), KB.KB.r(KI.dnum(), $KBE)))):
+  +ec = O.eval(~F, BP.cen($DN, ~F, ~H, box), e)
+  +rv = N.emap(KI.dnum(), F, H, KB.KB.r(KI.dnum(), $KBE))
+  %KA.es($DN, ~F, ~H, KB.KB.c(KI.dnum(), $KBE), KB.KB.r(KI.dnum(), $KBE)) : O.le(~F, O.sub(~F, O.eval(~F, x, e), O.add(F, $LPR, $LPR)), _)
+  %Equal.sym(O.C(F), N.emap(KI.dnum(), F, H, KB.KB.c(KI.dnum(), $KBE)), ec, BP.kball_c($DN, ~F, ~H, box, e, hh)) : O.le(~F, O.sub(~F, O.eval(~F, x, e), O.add(F, $LPR, $LPR)), O.sub(~F, _, rv))
+  side_lb.c(~F, ec, rv, O.eval(~F, x, e), $LPR, BP.eval_lip($DN, ~F, ~H, rho, bb, hr, hb, box, hg, x, hx, e, hh), BP.gf_l(~F, rho, N.emap(KI.dnum(), F, H, KB.KB.c(KI.dnum(), $KBE)), rv, BP.mj(~F, bb, e), BP.lp(~F, bb, e), BP.kball_grade($DN, ~F, ~H, rho, bb, hr, hb, box, hg, e, hh)))
+
+# each side condition with room 2 lp rho at x
+def SBud(~F: O.OField, +bb: O.C(F), +rho: O.C(F), +x: M.Vec(~F), ss: List<&2, SK.Side>) -> Data:
+  match ss:
+    case Nil{}:
+      Unit
+    case Con{SK.Gt0{+e}, t}:
+      M.Both(O.lt(F, O.add(F, $LPR, $LPR), O.eval(~F, x, e)), SBud(~F, bb, rho, x, t))
+    case Con{SK.Ge0{+e}, t}:
+      M.Both(O.le(~F, O.add(F, $LPR, $LPR), O.eval(~F, x, e)), SBud(~F, bb, rho, x, t))
+
+@MACRO KCR KA.ksub($DN, KB.KB.c(KI.dnum(), $KBE), KB.KB.r(KI.dnum(), $KBE))
+
+def gt_ok(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $BXP, +e: E.QExpr, +hh: {KB.held($DN, e) == True{} : Bool}, hs: O.lt(F, O.add(F, $LPR, $LPR), O.eval(~F, x, e))) -> {KA.klt($DN, N.nzero(KI.dnum()), $KCR) == True{} : Bool}:
+  AP.klt_of($DN, ~F, ~H, N.nzero(KI.dnum()), $KCR, FO.lt_subst_l(~F, O.zero(F), N.emap(KI.dnum(), F, H, N.nzero(KI.dnum())), N.emap(KI.dnum(), F, H, $KCR), KA.ez($DN, ~F, ~H), FO.lt_le_trans(~F, O.zero(F), O.sub(~F, O.eval(~F, x, e), O.add(F, $LPR, $LPR)), N.emap(KI.dnum(), F, H, $KCR), RL.sub_pos(~F, O.add(F, $LPR, $LPR), O.eval(~F, x, e), hs), side_lb(~F, ~H, $BXA, e, hh))))
+
+def ge_ok(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $BXP, +e: E.QExpr, +hh: {KB.held($DN, e) == True{} : Bool}, hs: O.le(~F, O.add(F, $LPR, $LPR), O.eval(~F, x, e))) -> {KA.kle($DN, N.nzero(KI.dnum()), $KCR) == True{} : Bool}:
+  AP.kle_of($DN, ~F, ~H, N.nzero(KI.dnum()), $KCR, RL.le_rw_l(~F, O.zero(F), N.emap(KI.dnum(), F, H, N.nzero(KI.dnum())), N.emap(KI.dnum(), F, H, $KCR), KA.ez($DN, ~F, ~H), DM.le_trans(~F, O.zero(F), O.sub(~F, O.eval(~F, x, e), O.add(F, $LPR, $LPR)), N.emap(KI.dnum(), F, H, $KCR), FM.sub_nonneg(~F, O.add(F, $LPR, $LPR), O.eval(~F, x, e), hs), side_lb(~F, ~H, $BXA, e, hh))))
+
+# with room at x, every side condition checks over the box
+def sides_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $BXP, ss: List<&2, SK.Side>, +hd: {SV.dysides(ss) == True{} : Bool}, +hs: SBud(~F, bb, rho, x, ss)) -> {PL.sides_ok($DN, box, ss) == True{} : Bool}:
+  match ss:
+    case Nil{}:
+      {==}
+    case Con{SK.Gt0{+e}, +t}:
+      +hh = held_e(e, L.band_l(SV.dyconst(e), SV.dysides(t), hd))
+      AP.band_t(PL.side_ok($DN, box, SK.Gt0{e}), PL.sides_ok($DN, box, t), AP.band_t(KB.held($DN, e), KA.klt($DN, N.nzero(KI.dnum()), $KCR), hh, gt_ok(~F, ~H, $BXA, e, hh, AP.both_l(O.lt(F, O.add(F, $LPR, $LPR), O.eval(~F, x, e)), SBud(~F, bb, rho, x, t), hs))), sides_of(~F, ~H, $BXA, t, L.band_r(SV.dyconst(e), SV.dysides(t), hd), AP.both_r(O.lt(F, O.add(F, $LPR, $LPR), O.eval(~F, x, e)), SBud(~F, bb, rho, x, t), hs)))
+    case Con{SK.Ge0{+e}, +t}:
+      +hh = held_e(e, L.band_l(SV.dyconst(e), SV.dysides(t), hd))
+      AP.band_t(PL.side_ok($DN, box, SK.Ge0{e}), PL.sides_ok($DN, box, t), AP.band_t(KB.held($DN, e), KA.kle($DN, N.nzero(KI.dnum()), $KCR), hh, ge_ok(~F, ~H, $BXA, e, hh, AP.both_l(O.le(~F, O.add(F, $LPR, $LPR), O.eval(~F, x, e)), SBud(~F, bb, rho, x, t), hs))), sides_of(~F, ~H, $BXA, t, L.band_r(SV.dyconst(e), SV.dysides(t), hd), AP.both_r(O.le(~F, O.add(F, $LPR, $LPR), O.eval(~F, x, e)), SBud(~F, bb, rho, x, t), hs)))
