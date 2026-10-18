@@ -1064,3 +1064,57 @@ def bo_fin(~F: O.OField, +gcf: List<&2, S.D>, +grf: List<&2, S.D>, +es: List<&2,
   kband_i(CK.check(~KI.dnum(), C.Block{PL.renames(o, n, pars, e1), n}, C.Cert{yc, yr, q, ym, pc, pr}), KA.band(PL.kveq(~KI.dnum(), yc, PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, gcf))), KA.band(PL.kveq(~KI.dnum(), KA.kfit(~KI.dnum(), n, yr), PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, grf))), PL.pcont(~KI.dnum(), gcf, grf, pars, pc, pr))), h5,
   kband_i(PL.kveq(~KI.dnum(), yc, PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, gcf))), KA.band(PL.kveq(~KI.dnum(), KA.kfit(~KI.dnum(), n, yr), PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, grf))), PL.pcont(~KI.dnum(), gcf, grf, pars, pc, pr)), k6,
   kband_i(PL.kveq(~KI.dnum(), KA.kfit(~KI.dnum(), n, yr), PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, grf))), PL.pcont(~KI.dnum(), gcf, grf, pars, pc, pr), k7, h9)))))))
+
+def kl_pre(+gcf: List<&2, S.D>, +gc: List<&2, S.D>, +o: Nat, +v: Nat, +hc: {PL.ktake(~KI.dnum(), o, gcf) == gc : List<&2, S.D>}, +hv: {KA.natle(1n+v, o) == True{} : Bool}) -> {KB.klook(~KI.dnum(), gcf, v) == NU.dlook(gc, v) : S.D}:
+  Equal.trans(S.D, KB.klook(~KI.dnum(), gcf, v), KB.klook(~KI.dnum(), gc, v), NU.dlook(gc, v), (%hc : {KB.klook(~KI.dnum(), gcf, v) == KB.klook(~KI.dnum(), _, v) : S.D}
+    Equal.sym(S.D, KB.klook(~KI.dnum(), PL.ktake(~KI.dnum(), o, gcf), v), KB.klook(~KI.dnum(), gcf, v), PP.klook_ktake(~KI.dnum(), o, gcf, v, hv))), Equal.sym(S.D, NU.dlook(gc, v), KB.klook(~KI.dnum(), gc, v), dl_kl(gc, v)))
+
+def pc_one(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +gcf: List<&2, S.D>, +grf: List<&2, S.D>, +gc: List<&2, S.D>, +gr: List<&2, S.D>, +o: Nat, +v: Nat, +hc: {PL.ktake(~KI.dnum(), o, gcf) == gc : List<&2, S.D>}, +hr: {PL.ktake(~KI.dnum(), o, grf) == gr : List<&2, S.D>}, +hv: {KA.natle(1n+v, o) == True{} : Bool}) -> {KA.kle(~KI.dnum(), N.nadd(KI.dnum(), KA.kabs(~KI.dnum(), KA.ksub(~KI.dnum(), KB.klook(~KI.dnum(), gcf, v), NU.dlook(gc, v))), KB.klook(~KI.dnum(), grf, v)), NU.dlook(gr, v)) == True{} : Bool}:
+  %Equal.sym(S.D, KB.klook(~KI.dnum(), gcf, v), NU.dlook(gc, v), kl_pre(gcf, gc, o, v, hc, hv)) : {KA.kle(~KI.dnum(), N.nadd(KI.dnum(), KA.kabs(~KI.dnum(), KA.ksub(~KI.dnum(), _, NU.dlook(gc, v))), KB.klook(~KI.dnum(), grf, v)), NU.dlook(gr, v)) == True{} : Bool}
+  %Equal.sym(S.D, KB.klook(~KI.dnum(), grf, v), NU.dlook(gr, v), kl_pre(grf, gr, o, v, hr, hv)) : {KA.kle(~KI.dnum(), N.nadd(KI.dnum(), KA.kabs(~KI.dnum(), KA.ksub(~KI.dnum(), NU.dlook(gc, v), NU.dlook(gc, v))), _), NU.dlook(gr, v)) == True{} : Bool}
+  pc_refl(~F, ~H, NU.dlook(gc, v), NU.dlook(gr, v))
+
+# the parameters' balls, read from the final box, are the box so far's
+def pcont_pre(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +gcf: List<&2, S.D>, +grf: List<&2, S.D>, +gc: List<&2, S.D>, +gr: List<&2, S.D>, +o: Nat, +hc: {PL.ktake(~KI.dnum(), o, gcf) == gc : List<&2, S.D>}, +hr: {PL.ktake(~KI.dnum(), o, grf) == gr : List<&2, S.D>}, pars: List<&2, Nat>, +hpo: {PL.pars_ok(o, pars) == True{} : Bool}) -> {PL.pcont(~KI.dnum(), gcf, grf, pars, NU.dpick(gc, pars), NU.dpick(gr, pars)) == True{} : Bool}:
+  match pars:
+    case Nil{}:
+      {==}
+    case Con{+v, +t}:
+      kband_i(KA.kle(~KI.dnum(), N.nadd(KI.dnum(), KA.kabs(~KI.dnum(), KA.ksub(~KI.dnum(), KB.klook(~KI.dnum(), gcf, v), NU.dlook(gc, v))), KB.klook(~KI.dnum(), grf, v)), NU.dlook(gr, v)), PL.pcont(~KI.dnum(), gcf, grf, t, NU.dpick(gc, t), NU.dpick(gr, t)),
+        pc_one(~F, ~H, gcf, grf, gc, gr, o, v, hc, hr, KA.band_l(KA.natle(1n+v, o), PL.pars_ok(o, t), hpo)),
+        pcont_pre(~F, ~H, gcf, grf, gc, gr, o, hc, hr, t, KA.band_r(KA.natle(1n+v, o), PL.pars_ok(o, t), hpo)))
+
+def ka_of(+o: Nat, +n: Nat, +u: List<&2, S.D>, +a: List<&2, S.D>, +b: List<&2, S.D>, +h: {PL.ktake(~KI.dnum(), Nat.add(o, n), u) == NU.dapp(a, b) : List<&2, S.D>}) -> {PL.ktake(~KI.dnum(), Nat.add(o, n), u) == KA.kapp(~KI.dnum(), a, b) : List<&2, S.D>}:
+  %dapp_ka(a, b) : {PL.ktake(~KI.dnum(), Nat.add(o, n), u) == _ : List<&2, S.D>}
+  h
+
+
+def pg_con.ok(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +vp: List<&2, Nat>, +nv: Nat, +x: M.Vec(~F), +p: Nat, +o: Nat, +n: Nat, +pars: List<&2, Nat>, +gc: List<&2, S.D>, +gr: List<&2, S.D>, +sys: List<&2, E.QExpr>, +syst: List<&2, E.QExpr>, +tf: O.C(F), +yc: List<&2, S.D>, +yr: List<&2, S.D>, +q: S.D, +ym: List<&2, List<&2, S.D>>, +bsf: List<&2, PL.PBlock<KI.dnum()>>, +gcf: List<&2, S.D>, +grf: List<&2, S.D>, hih: PG(~F, ~H, vp, nv, x, p, Nat.add(o, n), NU.dapp(gc, yc), NU.dapp(gr, NU.dtake(n, yr)), syst, tf, NU.PBOk{NU.PB{bsf, gcf, grf}}), +hdq: {PL.dropq(n, sys) == syst : List<&2, E.QExpr>}, +h1: {KA.natle(n, CK.eqlen(sys)) == True{} : Bool}, +h2n: {KA.natle(Nat.add(o, n), nv) == True{} : Bool}, +h3: {PL.pars_ok(o, pars) == True{} : Bool}, +h4: {PL.eqs_below(Nat.add(o, n), PL.takeq(n, sys)) == True{} : Bool}, +h5: {CK.check(~KI.dnum(), C.Block{PL.renames(o, n, pars, PL.takeq(n, sys)), n}, C.Cert{yc, yr, q, ym, NU.dpick(gc, pars), NU.dpick(gr, pars)}) == True{} : Bool}, +hlyr: {KA.klen(~KI.dnum(), yr) == n : Nat}, +hlc: {KA.klen(~KI.dnum(), gc) == o : Nat}, +hlr: {KA.klen(~KI.dnum(), gr) == o : Nat}) -> PG(~F, ~H, vp, nv, x, p, o, gc, gr, sys, tf, NU.PBOk{NU.PB{Con{PL.PBlock{n, pars, C.Cert{yc, yr, q, ym, NU.dpick(gc, pars), NU.dpick(gr, pars)}}, bsf}, gcf, grf}}):
+  match hih:
+    case (hw, r1):
+      match r1:
+        case (hc, r2):
+          match r2:
+            case (hr, r3):
+              match r3:
+                case (+hlcf, r4):
+                  +kc = ka_of(o, n, gcf, gc, yc, hc)
+                  +kr = ka_of(o, n, grf, gr, NU.dtake(n, yr), hr)
+                  +prc = kpre(~KI.dnum(), o, n, gcf, gc, yc, kc, hlc)
+                  +prr = kpre(~KI.dnum(), o, n, grf, gr, NU.dtake(n, yr), kr, hlr)
+                  +sgc = kseg(~KI.dnum(), o, n, gcf, gc, yc, kc, hlc)
+                  +sgr = Equal.trans(List<&2, S.D>, PL.ktake(~KI.dnum(), n, PL.kdrop(~KI.dnum(), o, grf)), NU.dtake(n, yr), yr, kseg(~KI.dnum(), o, n, grf, gr, NU.dtake(n, yr), kr, hlr), dtake_eq(n, yr, hlyr))
+                  +bo = bo_fin(~F, gcf, grf, sys, o, n, pars, yc, yr, q, ym, NU.dpick(gc, pars), NU.dpick(gr, pars), h1, (%Equal.sym(Nat, KA.klen(~KI.dnum(), gcf), nv, hlcf) : {KA.natle(Nat.add(o, n), _) == True{} : Bool}
+                    h2n), h3, h4, h5, sgc, sgr, hlyr, pcont_pre(~F, ~H, gcf, grf, gc, gr, o, prc, prr, pars, h3))
+                  (kband_i(PL.block_ok(~KI.dnum(), gcf, grf, sys, o, n, pars, C.Cert{yc, yr, q, ym, NU.dpick(gc, pars), NU.dpick(gr, pars)}), PL.walk(~KI.dnum(), gcf, grf, bsf, PL.dropq(n, sys), Nat.add(o, n)), bo, (%Equal.sym(List<&2, E.QExpr>, PL.dropq(n, sys), syst, hdq) : {PL.walk(~KI.dnum(), gcf, grf, bsf, _, Nat.add(o, n)) == True{} : Bool}
+                    hw)), (prc, (prr, (hlcf, r4))))
+
+# one more block in front of the rest's answer
+def pg_con(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +vp: List<&2, Nat>, +nv: Nat, +x: M.Vec(~F), +p: Nat, +o: Nat, +n: Nat, +pars: List<&2, Nat>, +gc: List<&2, S.D>, +gr: List<&2, S.D>, +sys: List<&2, E.QExpr>, +syst: List<&2, E.QExpr>, +tf: O.C(F), +yc: List<&2, S.D>, +yr: List<&2, S.D>, +q: S.D, +ym: List<&2, List<&2, S.D>>, r: NU.PBR, hih: PG(~F, ~H, vp, nv, x, p, Nat.add(o, n), NU.dapp(gc, yc), NU.dapp(gr, NU.dtake(n, yr)), syst, tf, r), +hdq: {PL.dropq(n, sys) == syst : List<&2, E.QExpr>}, +h1: {KA.natle(n, CK.eqlen(sys)) == True{} : Bool}, +h2n: {KA.natle(Nat.add(o, n), nv) == True{} : Bool}, +h3: {PL.pars_ok(o, pars) == True{} : Bool}, +h4: {PL.eqs_below(Nat.add(o, n), PL.takeq(n, sys)) == True{} : Bool}, +h5: {CK.check(~KI.dnum(), C.Block{PL.renames(o, n, pars, PL.takeq(n, sys)), n}, C.Cert{yc, yr, q, ym, NU.dpick(gc, pars), NU.dpick(gr, pars)}) == True{} : Bool}, +hlyr: {KA.klen(~KI.dnum(), yr) == n : Nat}, +hlc: {KA.klen(~KI.dnum(), gc) == o : Nat}, +hlr: {KA.klen(~KI.dnum(), gr) == o : Nat}) -> PG(~F, ~H, vp, nv, x, p, o, gc, gr, sys, tf, pbacc(Con{PL.PBlock{n, pars, C.Cert{yc, yr, q, ym, NU.dpick(gc, pars), NU.dpick(gr, pars)}}, Nil{}}, r)):
+  match r:
+    case NU.PBOk{NU.PB{+bsf, +gcf, +grf}}:
+      pg_con.ok(~F, ~H, vp, nv, x, p, o, n, pars, gc, gr, sys, syst, tf, yc, yr, q, ym, bsf, gcf, grf, hih, hdq, h1, h2n, h3, h4, h5, hlyr, hlc, hlr)
+    case NU.PBRetry{}:
+      absurd(Empty, hih)
+    case NU.PBStop{}:
+      absurd(Empty, hih)
