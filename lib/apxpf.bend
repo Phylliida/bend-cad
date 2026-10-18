@@ -37,6 +37,7 @@ import ./dgjpf.bend as DG
 import ./bndpf.bend as BP
 import ./roundpf.bend as RP
 import ./slope.bend as SL
+import ./real.bend as RL
 
 # The dyadics through any embedding
 # ---------------------------------
@@ -535,3 +536,90 @@ def elim_at(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +w: Nat, +eqs: List<
     (%Equal.sym(M.Mat(~F), M.ofdm(~F, NU.jac(eqs, n, env)), DV.jac(~F, M.ofdv(~F, env), eqs, ST.iota(n, 0n)), djac_ofd(~F, ~H, eqs, n, env, hh)) : DG.mall(~F, _, g)
       hj),
     hg, hb, hsm)
+
+# The checker's comparisons are complete
+# --------------------------------------
+# In any K: when H a <= H b in F, K's comparison cannot say GT (the
+# embedding's comparisons are sound and F is ordered), so kle is True;
+# likewise klt from H a < H b. So an inequality proved in F passes the
+# checker.
+
+def cmp_gt(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.NC(K), +b: N.NC(K), e: {N.ncmp(K, a, b) == GT{} : Cmp}) -> O.lt(F, N.emap(K, F, H, b), N.emap(K, F, H, a)):
+  %e : N.cmeans(F, _, N.emap(K, F, H, a), N.emap(K, F, H, b))
+  N.e_cmp(K, F, H)(a)(b)
+
+def cmp_eq(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.NC(K), +b: N.NC(K), e: {N.ncmp(K, a, b) == EQ{} : Cmp}) -> {N.emap(K, F, H, a) == N.emap(K, F, H, b) : O.C(F)}:
+  %e : N.cmeans(F, _, N.emap(K, F, H, a), N.emap(K, F, H, b))
+  N.e_cmp(K, F, H)(a)(b)
+
+def kle_of.go(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.NC(K), +b: N.NC(K), c: Cmp, e: {N.ncmp(K, a, b) == c : Cmp}, h: O.le(~F, N.emap(K, F, H, a), N.emap(K, F, H, b))) -> {KA.kle.go(c) == True{} : Bool}:
+  match c:
+    case LT{}:
+      {==}
+    case EQ{}:
+      {==}
+    case GT{}:
+      FO.absurd({KA.kle.go(GT{}) == True{} : Bool}, RL.le_lt_absurd(~F, N.emap(K, F, H, a), N.emap(K, F, H, b), h, cmp_gt(~K, ~F, ~H, a, b, e)))
+
+def kle_of(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.NC(K), +b: N.NC(K), h: O.le(~F, N.emap(K, F, H, a), N.emap(K, F, H, b))) -> {KA.kle(~K, a, b) == True{} : Bool}:
+  kle_of.go(~K, ~F, ~H, a, b, N.ncmp(K, a, b), {==}, h)
+
+def lt_self(~F: O.OField, +x: O.C(F), +y: O.C(F), e: {x == y : O.C(F)}, h: O.lt(F, x, y)) -> Empty:
+  O.lt_irrefl(F)(x)((%Equal.sym(O.C(F), x, y, e) : O.lt(F, x, _)
+    h))
+
+def klt_of.go(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.NC(K), +b: N.NC(K), c: Cmp, e: {N.ncmp(K, a, b) == c : Cmp}, +h: O.lt(F, N.emap(K, F, H, a), N.emap(K, F, H, b))) -> {KA.klt.go(c) == True{} : Bool}:
+  match c:
+    case LT{}:
+      {==}
+    case EQ{}:
+      FO.absurd({KA.klt.go(EQ{}) == True{} : Bool}, lt_self(~F, N.emap(K, F, H, a), N.emap(K, F, H, b), cmp_eq(~K, ~F, ~H, a, b, e), h))
+    case GT{}:
+      FO.absurd({KA.klt.go(GT{}) == True{} : Bool}, O.lt_irrefl(F)(N.emap(K, F, H, a))(O.lt_trans(F)(N.emap(K, F, H, a))(N.emap(K, F, H, b))(N.emap(K, F, H, a))(h)(cmp_gt(~K, ~F, ~H, a, b, e))))
+
+def klt_of(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.NC(K), +b: N.NC(K), +h: O.lt(F, N.emap(K, F, H, a), N.emap(K, F, H, b))) -> {KA.klt(~K, a, b) == True{} : Bool}:
+  klt_of.go(~K, ~F, ~H, a, b, N.ncmp(K, a, b), {==}, h)
+
+def le_zl(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +b: N.NC(K), h: O.le(~F, O.zero(F), N.emap(K, F, H, b))) -> O.le(~F, N.emap(K, F, H, N.nzero(K)), N.emap(K, F, H, b)):
+  %Equal.sym(O.C(F), N.emap(K, F, H, N.nzero(K)), O.zero(F), N.e_zero(K, F, H)) : O.le(~F, _, N.emap(K, F, H, b))
+  h
+
+def le_zr(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.NC(K), h: O.le(~F, N.emap(K, F, H, a), O.zero(F))) -> O.le(~F, N.emap(K, F, H, a), N.emap(K, F, H, N.nzero(K))):
+  %Equal.sym(O.C(F), N.emap(K, F, H, N.nzero(K)), O.zero(F), N.e_zero(K, F, H)) : O.le(~F, N.emap(K, F, H, a), _)
+  h
+
+def band_t(+a: Bool, +b: Bool, ha: {a == True{} : Bool}, hb: {b == True{} : Bool}) -> {KA.band(a, b) == True{} : Bool}:
+  %Equal.sym(Bool, a, True{}, ha) : {KA.band(_, b) == True{} : Bool}
+  hb
+
+# entrywise H u <= H w (zeros past each end) passes kvle
+def kvle_of(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: N.KVec(~K), w: N.KVec(~K), h: FV.rle(~F, N.ofkv(~K, ~F, ~H, u), N.ofkv(~K, ~F, ~H, w))) -> {KA.kvle(~K, u, w) == True{} : Bool}:
+  match u w:
+    case Nil{} Nil{}:
+      {==}
+    case Nil{} Con{+b, +ws}:
+      (h1, h2) = h
+      band_t(KA.kle(~K, N.nzero(K), b), KA.kvle(~K, Nil{}, ws), kle_of(~K, ~F, ~H, N.nzero(K), b, le_zl(~K, ~F, ~H, b, h1)), kvle_of(~K, ~F, ~H, Nil{}, ws, h2))
+    case Con{+a, +us} Nil{}:
+      (h1, h2) = h
+      band_t(KA.kle(~K, a, N.nzero(K)), KA.kvle(~K, us, Nil{}), kle_of(~K, ~F, ~H, a, N.nzero(K), le_zr(~K, ~F, ~H, a, h1)), kvle_of(~K, ~F, ~H, us, Nil{}, h2))
+    case Con{+a, +us} Con{+b, +ws}:
+      (h1, h2) = h
+      band_t(KA.kle(~K, a, b), KA.kvle(~K, us, ws), kle_of(~K, ~F, ~H, a, b, h1), kvle_of(~K, ~F, ~H, us, ws, h2))
+
+def lt_one(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +a: N.NC(K), h: O.lt(F, N.emap(K, F, H, a), O.one(F))) -> O.lt(F, N.emap(K, F, H, a), N.emap(K, F, H, N.none(K))):
+  %Equal.sym(O.C(F), N.emap(K, F, H, N.none(K)), O.one(F), N.e_one(K, F, H)) : O.lt(F, N.emap(K, F, H, a), _)
+  h
+
+# n entries, each below 1 in F, pass kvlt against kones
+def kvlt_ones_of(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: N.KVec(~K), n: Nat, hl: {KA.klen(~K, u) == n : Nat}, h: FV.vlt_all(~F, N.ofkv(~K, ~F, ~H, u), O.one(F))) -> {KA.kvlt(~K, u, KA.kones(~K, n)) == True{} : Bool}:
+  match u n:
+    case Nil{} 0n:
+      {==}
+    case Nil{} 1n++k:
+      FO.absurd({KA.kvlt(~K, Nil{}, KA.kones(~K, 1n+k)) == True{} : Bool}, FV.zero_ne(k, hl))
+    case Con{+a, +us} 0n:
+      FO.absurd({KA.kvlt(~K, Con{a, us}, KA.kones(~K, 0n)) == True{} : Bool}, FV.succ_ne(KA.klen(~K, us), hl))
+    case Con{+a, +us} 1n++k:
+      (h1, h2) = h
+      band_t(KA.klt(~K, a, N.none(K)), KA.kvlt(~K, us, KA.kones(~K, k)), klt_of(~K, ~F, ~H, a, N.none(K), lt_one(~K, ~F, ~H, a, h1)), kvlt_ones_of(~K, ~F, ~H, us, k, FV.succ_inj(KA.klen(~K, us), k, hl), h2))
