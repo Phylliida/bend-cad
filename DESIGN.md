@@ -736,7 +736,9 @@ the balls), checked by the reflective normalizer.
   localized certificate search for the rest.
 - Coincidental redundancy (two dimensions that merely agree) has no such
   identity. The constraint is dropped from the exact system and **flagged red**;
-  the user deletes it, marks it driven, or fixes the sketch.
+  the user deletes it, marks it driven, or fixes the sketch. With the
+  dimensions as given constants rather than symbols it does have one when
+  the agreement is exact, and §8.11's exact decision finds it.
 
 ### 8.8 Singular configurations
 
@@ -853,25 +855,48 @@ family gets a law.
     kernel holds every generic dependency, and perhaps some accidental ones.
   - Its support localizes each dependency to a few constraints (two to
     five in practice).
-  - For each, a certificate h·g_c = Σ qᵢgᵢ, with h ≠ 0 over the box (Wu's
-    form), is searched by linear algebra with a degree bound (Macaulay
-    matrices, starting at degree 1). That is polynomial for each bound,
-    with no Gröbner basis of the whole sketch.
-  - A dependency with no certificate within the bound is reported as
-    found, as a diagnostic, and not flagged red.
-  - An exact witness is itself a constraint problem. A first version can
-    use the relaxed drawing with a rank tolerance. That can miss or invent
-    dependencies; soundness is unaffected, since only certificates make a
-    constraint red, but completeness for this layer stays an open law (D7's
-    rule for a checked search).
+  - The witness only proposes candidates and their order. It can be the
+    relaxed drawing with a rank tolerance: if it misses a candidate, the
+    solver falls back to every constraint of the failing block, which is a
+    finite search. Exactness and completeness come from the decision
+    below, not from the witness.
+- **Exact decision per candidate (Danielle, 2026-10-18: exact and
+  complete).** It uses no degree bound.
+  - A bound that guarantees completeness exists (the effective
+    Nullstellensatz: degrees up to about dⁿ), but the linear algebra at
+    such a degree is far too large outside tiny systems.
+  - Instead: remove the candidate c and certify the rest of its block (the
+    blocks it depends on included) at a solution x*. That point is regular.
+  - At a regular point, c holds at x* exactly if and only if
+    h·g_c = Σ qᵢgᵢ for some h with h(x*) ≠ 0. There the kept equations
+    generate every polynomial that vanishes at x*.
+  - Two searches run side by side, and exactly one succeeds:
+    - **Holds.** Buchberger's algorithm (a Gröbner basis) on the subsystem
+      c depends on gives the colon ideal (I : g_c). A generator h with
+      h(x*) ≠ 0 is found and proven nonzero over the box by ball
+      arithmetic. The cofactors qᵢ then follow by division.
+    - **Fails.** Ball arithmetic shows g_c(x*) ≠ 0 once the box is refined
+      enough.
+  - The result is implied (amber) or conflict (red), never unknown.
+  - This also covers coincidental redundancy: dimensions that agree exactly
+    by accident, which §8.7 had excluded.
+  - If removing no single constraint leaves a regular block, the
+    configuration is singular (§8.8), or there are several dependencies.
+    The corank says how many constraints to remove together.
+  - For D7, Buchberger's termination and completeness are proven in Bend
+    (Dickson's lemma). That is a substantial proof, but a well-trodden one:
+    it is formalized in Coq, Isabelle and Lean. The certificate itself is
+    checked by the ring normalizer either way.
 
 **Cost.**
 - The linear layer: one exact elimination of small dyadics.
 - The direction and length layers: near-linear.
-- The witness layer: one rank-revealing elimination at working precision,
-  plus a certificate search per dependency, polynomial in its local size
-  for a fixed degree.
-- No step searches the ideal of the whole sketch.
+- The witness layer: one rank-revealing elimination at working precision.
+- The exact decision: a Gröbner basis of the localized subsystem. That is
+  worst-case doubly exponential, but it runs only on what the cheap
+  layers leave, on a few constraints and the blocks they depend on, never
+  on the ideal of the whole sketch.
+- A pathological sketch can be slow, but never wrong or unknown.
 
 **Order in the solver.** Linear, then directions, then lengths, then
 today's structural stage, then blocks; the witness layer runs only on a
@@ -898,7 +923,8 @@ order rule and a user's "the one I just added".
 - sk-13a: `Why` as a sum type, `explained₂`, the linear layer.
 - sk-13b: directions: the path lemma, cycle certificates, conflicts.
 - sk-13c: lengths.
-- sk-13d: the witness layer, and the three-way refusal in the page.
+- sk-13d: the witness layer, the exact decision (Buchberger proven
+  complete), and the three-way refusal in the page.
 
 The GUI sketches of 2026-10-18 join `tools/regress.sh`. Open choices are
 Q20–Q23 (§16).
@@ -1709,7 +1735,7 @@ random sketches.
 | sk-10 | Bulge arcs, tangency, joins, trim/split (§5.2–5.3) | sk-07 | laws closed |
 | sk-11 | Exact constants: algebraic roots, constructive π / cos / sin / tan (§7.1–7.3) | sk-06 | laws closed; typed angles exact |
 | sk-12 | Guaranteed-digit queries (§9) | sk-09, sk-11 | demo |
-| sk-13 | Redundancy certificates (§8.7), as layers in the solver (§8.11, proposal 2026-10-18): 13a `Why` as a sum type + linear layer; 13b directions (gain cycles, path lemma); 13c lengths; 13d witness layer + three-way refusal | sk-07, sk-09 | `solve_red` v2, `solve_implied`, `solve_conflict`, per-family `solve_red_complete` |
+| sk-13 | Redundancy certificates (§8.7), as layers in the solver (§8.11, proposal 2026-10-18): 13a `Why` as a sum type + linear layer; 13b directions (gain cycles, path lemma); 13c lengths; 13d witness layer + exact decision (Buchberger, proven complete) + three-way refusal | sk-07, sk-09 | `solve_red` v2, `solve_implied`, `solve_conflict`, per-family `solve_red_complete` |
 | sk-14 | Proposer v2: drag previews (§6 checks), continuation, incremental re-certification | sk-09 | interactive drag; commit within target |
 | sk-15 | Splines, NURBS, conic arcs, offsets, G2 (Q6) | sk-07 | laws closed |
 | sk-16 | Regions: arrangement with exact intersections (incl. spline root isolation), certified topology, point location | sk-10, sk-15 | region laws closed |
@@ -1847,25 +1873,27 @@ sk-02 and sk-03 can run in parallel after sk-01.
   equations is the over-determined one (the `Why`'s equation j, labelled
   as the k-th equation of its constraint, e.g. a midpoint's y equation).
 
+**Decided (Danielle, 2026-10-18, §8.11):** the layered design, made
+comprehensive and exact.
+- **Q20** Implied red constraints are shown in amber ("redundant, holds
+  anyway"), conflicts in red, structural over-determination as today. A
+  singular configuration is a status message naming the block.
+- **Q21** The flagged constraint of a dependency is the last in constraint
+  order.
+- **Q22** Exact: every red flag and every refusal is decided exactly. The
+  witness only proposes candidates, with every constraint of the failing
+  block as the fallback.
+- **Q23** No degree bound. A guaranteed bound exists but is impractical,
+  so each candidate is decided by Buchberger's algorithm (complete,
+  terminating) run side by side with a ball-arithmetic nonzero test.
+  Exactly one succeeds, so the answer is never unknown.
+
 **Open for Danielle:**
 - **sk-09 statements** (ROADMAP.bend): `solve_exists`, `solve_unique`,
   `solve_red`, `solve_pins`, and `spec/solve.bend` (`mark` by constraint
   position, `owners`, `overdet`, `explained` with its no-spare-flag
   condition, `held`). All four are proven; an independent audit found no
   blocker, and its two fixes are in (§10.2).
-- **§8.11, generic dependencies (proposal, 2026-10-18).** Approve the
-  layered design, then:
-  - **Q20** How the page shows the kinds: implied red constraints in amber
-    ("redundant, holds anyway"), conflicts in red, structural
-    over-determination as today, and a singular configuration as a status
-    message naming the block?
-  - **Q21** Which constraint of a dependency is flagged: the last in
-    constraint order (proposed), or let the user choose among the cycle?
-  - **Q22** The witness layer's witness: the relaxed drawing with a rank
-    tolerance first (completeness an open law), or an exact witness
-    construction first (a research step)?
-  - **Q23** The certificate search's degree bound for the witness layer
-    (proposed: try 1, then 2, then report unproven).
 
 
 ---
@@ -1933,7 +1961,11 @@ sk-02 and sk-03 can run in parallel after sk-01.
   lengths, then the witness configuration method with a localized,
   degree-bounded certificate search.
 - §8.7: the untrusted Gröbner search is superseded by §8.11. §8.8 points
-  to it. §15: sk-13 split into 13a–13d. §16: Q20–Q23.
+  to it. §15: sk-13 split into 13a–13d.
+- §16: Q20–Q23 decided (Danielle): amber for implied, the last constraint
+  flagged, exact. There is no degree bound: each candidate is decided
+  exactly, by Buchberger's algorithm run side by side with a nonzero test
+  at the certified point. Coincidental redundancy is covered too (§8.7).
 
 **v0.12 → v0.13 (sk-06 reviewed; the proposer becomes verified):**
 - §8.3, §8.4, §14: the sk-06 laws are in LAWS.bend; the block laws are
