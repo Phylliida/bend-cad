@@ -1245,6 +1245,37 @@ the box directly, so C6 uses `Complete` only to choose P (arch).
     rsearch, in the box.
   - C5d lib/blockpf.bend: `block_ok`.
 
+**C5a–C5c as built** (2026-10-17; lib/apxpf.bend, lib/nwtpf.bend,
+lib/radpf.bend, ~8 s together; tests/block_laws.bend restates pieces of
+each so the gate checks them).
+- C5a and C5b as planned; `newton_ok` returns yc within E_N = 8h + E1.
+- C5c, in lib/radpf.bend:
+  - *Pair grades* (`kb_pd`, `ks_pd`): over two boxes with the same
+    centers, radii r0 ≤ r1 ≤ r0 + dl, each ball's radius grows by at most
+    lp·dl (values) or ls·dl (slopes); `mz_mn`: the parameters' |J0z| + Dz
+    grows by at most m Λ r when the unknowns' radius goes from 0 to r.
+  - *Window* (`window_ok`): every dyadic r with S ≤ r/2 and r ≤ r_b passes
+    `okr` (shape, factor 1/2, contraction, self-map, injectivity), given
+    |Y| ≤ y_n, |I − Y Jc| ≤ θ_L, |I − Jc Y| ≤ θ_R < 1, the box's grade at
+    r_b (|Pc| ≤ bb − r_b, ρ ≤ r_b), and cw = θ_L + y_n n Λ r_b + y_n m Λ r_b
+    ≤ 1/2. The self-map is compared entry by entry with radius 0:
+    svec(r) ≤ s0 + (B(r) − B(0)) + G(r) − G(0), G(0) = 0, so every entry is
+    at most S + cw·r ≤ r. The plan's α-form constants became y_n and r_b.
+  - *Search* (`rs_init`): from r0 the solver's `rsearch` returns a passing
+    r with (65/64) S ≤ r ≤ U = (17/16)(1 + 2^-7)·2S (given U ≤ r_b). The
+    proof carries m, the steps still needed (R + m·S/16 ≥ 2S, m ≤ fuel,
+    m = 16 at the start); a failing radius is below 2S by the window's
+    contrapositive (`lt_total`), so the next is below U. Dyadic constants
+    are compared in K (`kle_ok`); 16·(1/16) = 1 and 17/16 = 1 + 1/16 by
+    @CERTEQ, so no large numeral enters F.
+  - *In the box* (`inbox_ok`): |yc − x_b| ≤ (65/64) S given
+    (65/64)(θ_L + y_n n Λ rad) ≤ 1/64, with rad bounding the distances of
+    yc ++ x_z and x_b ++ x_z from Pc. The path is two-step: the parameters
+    move first, inside the radius-0 box, so their slopes are bounded by
+    exactly B(0)'s entries; then the unknowns move with the parameters at
+    x_z, slopes S' within n Λ rad of Jc (`smat_lip_mn`). Per entry,
+    |e_k| ≤ S + |e − Y S' e|.
+
 **Risks.** Size: several thousand lines over several sessions (C4 is the
 largest single piece). Checker time on long inequality proofs: keep the
 files small. Rounding lemmas on binary positives. (Lists read with

@@ -504,13 +504,34 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
     |y2 - y1| <= 8h: the parameter offset cancels), `newton_ok` (the
     control flow; `t8_eq` the settle threshold is 8h; the 2^40 guard
     through K-level comparisons).
-  - C5c lib/radpf.bend (started): `kabs_eq`, pair grades `kb_pd`/`ks_pd`.
-    Next: the checker's box at radius r (cen, gbox), the window (okr(r)
-    = True for 2S <= R <= U via kvle_of + certpf's gF_ok/svec_ok), r0
-    and grow bounds, rsearch (Bernoulli invariant R (1 + i/16) >= 2S over
-    16 steps), x_b in the box (|e| <= s0 + kappa |e|). Then C5d
-    lib/blockpf.bend `block_ok` and its restatement in tests/.
+  - C5c lib/radpf.bend (tools/drafts/radpf.draft), DONE: pair grades
+    (`kb_pd`, `ks_pd`, `mz_mn`); the checker's box at radius r (`cen_ckb`,
+    `gbox_ckb`, `bpair_ckb`); lengths of the checker's vectors; the
+    window `window_ok` (every r <= rb with S <= r/2 passes okr, given
+    |Y| <= yn, thL, thR < 1, cw <= 1/2); the search `rs_init` (rgood:
+    passes, (65/64) S <= r <= U = (17/16)(1 + 2^-7) 2S, given U <= rb);
+    `inbox_ok` (|yc - x_b| <= (65/64) S, two-step slope path). See
+    DESIGN "C5a–C5c as built".
+  - Next: C5d lib/blockpf.bend `block_ok`: newton_ok gives yc; elim_at at
+    dapp(yc, pc) (pt_inv, pt_maj) gives A (agood); ymn/ydmn/thl_mn/thr_mn
+    give yn, thL, thR for Y = ysig(p/2, A); bound S = dvmax(s0) by given
+    constants (|Y f(Pc)| <= yn (n M en + m M rho), B(0) <= yn m M rho),
+    so U <= Ubar; then rb := Ubar + rho, window and in-box hypotheses from
+    smallness; assemble block.y / block.y2 / block.ym / block.r into BOk
+    of a certificate accepted by the checker with x_b in [yc +- r]. thl
+    and thr take proofs as arguments but are n e + va jn and
+    jn (n e b) + jn va. Then restate in tests/block_laws.bend.
 - Bend lessons (C5):
+  - Template (`~`) parameters must lead the signature; to recurse with
+    a template over a list, build a GJ.All (all_mk, all_at, all_shift)
+    as DG.vall_by does (radpf's rle_rep).
+  - A multi-scrutinee match splits on the first scrutinee first: a goal
+    with rsearch(k, True, ...) does not reduce while k is a variable;
+    split k as well (rs_ok).
+  - Forward references fail ("expected a term, observed '~'"): define
+    before use.
+  - Order dichotomies come from O.lt_total(F)(a, b) passed to a `.go`
+    def that matches Inl / Inr{Inl} / Inr{Inr} (fail_lt.go).
   - expand.py `@MACRO NAME text` for long shared hypothesis lists
     (whole-name matches).
   - Never let an F term contain a big concrete integer: ofp(p) unfolds
