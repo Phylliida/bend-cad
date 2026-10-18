@@ -1312,6 +1312,16 @@ is POk and accept is True at P, for every g within d of x.
   constants and T), and r_b ≤ Φ(T) h with Φ(T) ≥ T. Two scales: t for
   the w's, s1, s2 and C4's acoef (u ≤ t); h for the radius and the settle
   test (settle ≤ h² Q').
+- *C6a as built* (2026-10-17; lib/pmono.bend ~330 lines, lib/scalepf.bend
+  ~560, gated via tests/scale_laws.bend). Atoms are records (value,
+  bound, small?) in one list (`PM.Atm`, `Bnd`); `pe_mono`, `pe_lin`,
+  `pe_quad` by induction, the flag cases passed as lambdas. Each C5
+  constant converts to its reflection by `{==}` (`cv_*`; a swapped atom is
+  refused). `qblk` sums the parts each hypothesis needs (w3 twice for the
+  1/2, 64 w4 for the 1/64 = 65/64 − 1, C4's acoef over the columns), so
+  `block_sc` takes one hypothesis t qblk < 1; `rb_sc` r_b ≤ h phib,
+  `phib_ge` phib ≥ T. The scales: u ≤ h ≤ t ≤ 1 (`pw_le`, 2^-b ≤ 2^-a
+  for a ≤ b; ⌊p/2⌋ ≤ p + 1 from natord's divb_le).
 - *C6b, per-block inverses* (lib/binvpf.bend). regular_blocks gives InvN
   of the block-order Jacobian; it is [[A, 0], [C, D]] as a list once the
   upper-right entries are rewritten to 0 (an equation that does not use

@@ -517,11 +517,28 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
     Y facts (y_mn, thl_ok, thr_ok), smallness w1-w4, `ub_rb`, the match
     chain by_ok / by_yc / by2_ok / bym_ok / br_ok. See DESIGN "C5 as
     built".
-- **C5 COMPLETE (2026-10-17).** Next: C6 lib/completepf.bend
+- **C5 COMPLETE (2026-10-17).** Then C6 lib/completepf.bend
   (`solve_complete`): blocks in turn (each block's rb feeds the next
   blocks' rho; pins radius 0), the plan checker accepts, the smallness
   conditions hold for large p (arch picks P), the precision loop reaches
   that level.
+- **C6 (2026-10-17)**, plan in DESIGN §10.4 "C6 plan" (C6a-C6d).
+  - C6a DONE: lib/pmono.bend (tools/drafts/pmono.draft; reflected
+    monotone polynomials: pe_mono, pe_lin, pe_quad) and lib/scalepf.bend
+    (tools/drafts/scalepf.draft; `block_sc`: block_ok with d <= h,
+    rho <= h T, t qblk < 1; `rb_sc` r_b <= h phib; `phib_ge`), gated via
+    tests/scale_laws.bend. See DESIGN "C6a as built".
+  - Next: C6b lib/binvpf.bend (per-block InvB from regular_blocks), then
+    C6c (pblocks induction), C6d (the verdict and the top).
+- Bend lessons (C6a):
+  - A def's value can be reflected: `{C5_constant(...) == PM.peval(~F,
+    atoms, r_X()) : @T}` checks by `{==}` when the atom list is concrete,
+    and a swapped atom is refused. Types also convert, so a lemma about
+    peval can be returned where the constant's statement is expected.
+  - expand.py macros take no parameters (`@MACRO NAME text` only).
+  - A match with nested constructor patterns plus a tuple destructure in
+    the same def fails ("a match on a parameter or field"): take the
+    components in helpers (pmono's bnd_hd / bnd_tl).
 - Bend lessons (C5):
   - A Type-valued hypothesis (NOK, dinv_res) can't be a `+` parameter:
     destructure it once and pass the parts to a helper whose parameters

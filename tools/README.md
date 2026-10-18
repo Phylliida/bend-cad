@@ -21,6 +21,8 @@ the checker verifies the output.
 | `lib/nwtpf.bend` | `python3 tools/expand.py tools/drafts/nwtpf.draft lib/nwtpf.bend` |
 | `lib/radpf.bend` | `python3 tools/expand.py tools/drafts/radpf.draft lib/radpf.bend` |
 | `lib/blockpf.bend` | `python3 tools/expand.py tools/drafts/blockpf.draft lib/blockpf.bend` |
+| `lib/pmono.bend` | `python3 tools/expand.py tools/drafts/pmono.draft lib/pmono.bend` |
+| `lib/scalepf.bend` | `python3 tools/expand.py tools/drafts/scalepf.draft lib/scalepf.bend` |
 
 `@MACRO NAME text` (a line) makes every `$NAME` below stand for `text`
 (textual, longest names first, macros may use macros): long hypothesis lists
