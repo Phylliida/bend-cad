@@ -762,3 +762,139 @@ def sides_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $BXP, ss: List<&2, SK.Side>,
     case Con{SK.Ge0{+e}, +t}:
       +hh = held_e(e, L.band_l(SV.dyconst(e), SV.dysides(t), hd))
       AP.band_t(PL.side_ok($DN, box, SK.Ge0{e}), PL.sides_ok($DN, box, t), AP.band_t(KB.held($DN, e), KA.kle($DN, N.nzero(KI.dnum()), $KCR), hh, ge_ok(~F, ~H, $BXA, e, hh, AP.both_l(O.le(~F, O.add(F, $LPR, $LPR), O.eval(~F, x, e)), SBud(~F, bb, rho, x, t), hs))), sides_of(~F, ~H, $BXA, t, L.band_r(SV.dyconst(e), SV.dysides(t), hd), AP.both_r(O.le(~F, O.add(F, $LPR, $LPR), O.eval(~F, x, e)), SBud(~F, bb, rho, x, t), hs)))
+
+# Marking constraints driven only drops side conditions
+# ----------------------------------------------------
+
+def ds_l(a: List<&2, SK.Side>, +b: List<&2, SK.Side>, +h: {SV.dysides(SK.cats(a, b)) == True{} : Bool}) -> {SV.dysides(a) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{SK.Gt0{+e}, +t}:
+      L.band_i(SV.dyconst(e), SV.dysides(t), L.band_l(SV.dyconst(e), SV.dysides(SK.cats(t, b)), h), ds_l(t, b, L.band_r(SV.dyconst(e), SV.dysides(SK.cats(t, b)), h)))
+    case Con{SK.Ge0{+e}, +t}:
+      L.band_i(SV.dyconst(e), SV.dysides(t), L.band_l(SV.dyconst(e), SV.dysides(SK.cats(t, b)), h), ds_l(t, b, L.band_r(SV.dyconst(e), SV.dysides(SK.cats(t, b)), h)))
+
+def ds_r(a: List<&2, SK.Side>, +b: List<&2, SK.Side>, +h: {SV.dysides(SK.cats(a, b)) == True{} : Bool}) -> {SV.dysides(b) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      h
+    case Con{SK.Gt0{+e}, +t}:
+      ds_r(t, b, L.band_r(SV.dyconst(e), SV.dysides(SK.cats(t, b)), h))
+    case Con{SK.Ge0{+e}, +t}:
+      ds_r(t, b, L.band_r(SV.dyconst(e), SV.dysides(SK.cats(t, b)), h))
+
+def ds_cat(a: List<&2, SK.Side>, +b: List<&2, SK.Side>, +ha: {SV.dysides(a) == True{} : Bool}, +hb: {SV.dysides(b) == True{} : Bool}) -> {SV.dysides(SK.cats(a, b)) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      hb
+    case Con{SK.Gt0{+e}, +t}:
+      L.band_i(SV.dyconst(e), SV.dysides(SK.cats(t, b)), L.band_l(SV.dyconst(e), SV.dysides(t), ha), ds_cat(t, b, L.band_r(SV.dyconst(e), SV.dysides(t), ha), hb))
+    case Con{SK.Ge0{+e}, +t}:
+      L.band_i(SV.dyconst(e), SV.dysides(SK.cats(t, b)), L.band_l(SV.dyconst(e), SV.dysides(t), ha), ds_cat(t, b, L.band_r(SV.dyconst(e), SV.dysides(t), ha), hb))
+
+def ds_go(+es: List<&2, SK.Ent>, +id: Nat, b: Bool, +k: SK.Constraint, +rest: List<&2, SK.Rec>, +ha: {SV.dysides(SK.Constraint.sides(es, k)) == True{} : Bool}, +hr: {SV.dysides(SK.Sketch.sides.cons(es, rest)) == True{} : Bool}) -> {SV.dysides(SK.Sketch.sides.cons(es, Con{SK.Rec{id, b, k}, rest})) == True{} : Bool}:
+  match b:
+    case True{}:
+      hr
+    case False{}:
+      ds_cat(SK.Constraint.sides(es, k), SK.Sketch.sides.cons(es, rest), ha, hr)
+
+def ds_mark(+es: List<&2, SK.Ent>, +red: List<&2, Nat>, cs: List<&2, SK.Rec>, +i: Nat, +h: {SV.dysides(SK.Sketch.sides.cons(es, cs)) == True{} : Bool}) -> {SV.dysides(SK.Sketch.sides.cons(es, SV.mark.cons(red, cs, i))) == True{} : Bool}:
+  match cs:
+    case Nil{}:
+      {==}
+    case Con{SK.Rec{+id, True{}, +k}, +t}:
+      ds_mark(es, red, t, 1n+i, h)
+    case Con{SK.Rec{+id, False{}, +k}, +t}:
+      ds_go(es, id, SV.mem(i, red), k, SV.mark.cons(red, t, 1n+i), ds_l(SK.Constraint.sides(es, k), SK.Sketch.sides.cons(es, t), h), ds_mark(es, red, t, 1n+i, ds_r(SK.Constraint.sides(es, k), SK.Sketch.sides.cons(es, t), h)))
+
+def ds_sk(+red: List<&2, Nat>, sk: SK.Sketch, +h: {SV.dysides(SK.Sketch.sides(sk)) == True{} : Bool}) -> {SV.dysides(SK.Sketch.sides(SV.mark(red, sk))) == True{} : Bool}:
+  match sk:
+    case SK.Sketch{vs, +es, +cs}:
+      ds_cat(SK.Sketch.sides.ents(es), SK.Sketch.sides.cons(es, SV.mark.cons(red, cs, 0n)), ds_l(SK.Sketch.sides.ents(es), SK.Sketch.sides.cons(es, cs), h), ds_mark(es, red, cs, 0n, ds_r(SK.Sketch.sides.ents(es), SK.Sketch.sides.cons(es, cs), h)))
+
+# The read-back box is graded and holds x
+# ---------------------------------------
+
+def sposl(n: Nat, +k: Nat, +vp: List<&2, Nat>) -> List<&2, Nat>:
+  match n:
+    case 0n:
+      Nil{}
+    case 1n+m:
+      Con{ST.pos(k, vp), sposl(m, 1n+k, vp)}
+
+# reading back is picking at the variables' positions
+def up_pick(n: Nat, +k: Nat, +u: List<&2, S.D>, +vp: List<&2, Nat>) -> {NU.unperm(n, k, u, vp) == NU.dpick(u, sposl(n, k, vp)) : List<&2, S.D>}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+m:
+      %up_pick(m, 1n+k, u, vp) : {Con{NU.dlook(u, ST.pos(k, vp)), NU.unperm(m, 1n+k, u, vp)} == Con{NU.dlook(u, ST.pos(k, vp)), _} : List<&2, S.D>}
+      {==}
+
+def up_rnn(~F: O.OField, +n: Nat, +u: List<&2, S.D>, +vp: List<&2, Nat>, +h: FV.rnn(~F, M.ofdv(~F, u))) -> FV.rnn(~F, M.ofdv(~F, NU.unperm(n, 0n, u, vp))):
+  %Equal.sym(List<&2, S.D>, NU.unperm(n, 0n, u, vp), NU.dpick(u, sposl(n, 0n, vp)), up_pick(n, 0n, u, vp)) : FV.rnn(~F, M.ofdv(~F, _))
+  PB.rnn_pick(~F, u, sposl(n, 0n, vp), h)
+
+def up_vall(~F: O.OField, +n: Nat, +u: List<&2, S.D>, +vp: List<&2, Nat>, +c: O.C(F), +hc: O.le(~F, O.zero(F), c), +h: M.vbnd.all(~F, M.ofdv(~F, u), c)) -> M.vbnd.all(~F, M.ofdv(~F, NU.unperm(n, 0n, u, vp)), c):
+  %Equal.sym(List<&2, S.D>, NU.unperm(n, 0n, u, vp), NU.dpick(u, sposl(n, 0n, vp)), up_pick(n, 0n, u, vp)) : M.vbnd.all(~F, M.ofdv(~F, _), c)
+  PB.vall_pick(~F, u, sposl(n, 0n, vp), c, hc, h)
+
+def vk_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +u: List<&2, S.D>, +c: O.C(F), h: M.vbnd.all(~F, M.ofdv(~F, u), c)) -> M.vbnd.all(~F, N.ofkv($DN, ~F, ~H, u), c):
+  %Equal.sym(M.Vec(~F), N.ofkv($DN, ~F, ~H, u), M.ofdv(~F, u), AP.ofkv_d(~F, ~H, u)) : M.vbnd.all(~F, _, c)
+  h
+
+def rk_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +u: List<&2, S.D>, h: FV.rnn(~F, M.ofdv(~F, u))) -> FV.rnn(~F, N.ofkv($DN, ~F, ~H, u)):
+  %Equal.sym(M.Vec(~F), N.ofkv($DN, ~F, ~H, u), M.ofdv(~F, u), AP.ofkv_d(~F, ~H, u)) : FV.rnn(~F, _)
+  h
+
+# |d| <= r <= c entrywise gives |d| <= c
+def rbv(~F: O.OField, d: M.Vec(~F), r: M.Vec(~F), +c: O.C(F), +h: BX.rbnd(~F, d, r), +hr: M.vbnd.all(~F, r, c), +hl: {M.len(~F, d) == M.len(~F, r) : Nat}) -> M.vbnd.all(~F, d, c):
+  match d r:
+    case Nil{} r:
+      Unit{}
+    case Con{a, t} Nil{}:
+      absurd(M.vbnd.all(~F, Con{a, t}, c), FV.succ_ne(M.len(~F, t), hl))
+    case Con{+a, +t} Con{+s, +rs}:
+      (FM.bnd_mono(~F, a, s, c, AP.both_l(M.bnd(~F, a, s), BX.rbnd(~F, t, rs), h), AP.both_l(O.le(~F, O.zero(F), O.sub(~F, c, s)), O.le(~F, O.zero(F), O.add(F, c, s)), AP.both_l(M.bnd(~F, s, c), M.vbnd.all(~F, rs, c), hr))),
+      rbv(~F, t, rs, c, AP.both_r(M.bnd(~F, a, s), BX.rbnd(~F, t, rs), h), AP.both_r(M.bnd(~F, s, c), M.vbnd.all(~F, rs, c), hr), FV.succ_inj(M.len(~F, t), M.len(~F, rs), hl)))
+
+def rb_of($SKP, +x: M.Vec(~F), +gcf: List<&2, S.D>, +grf: List<&2, S.D>, +hlc: {KA.klen($DN, gcf) == $NV : Nat}, +hlr: {KA.klen($DN, grf) == $NV : Nat}, hpb: PP.pbox($DN, ~F, ~H, gcf, grf, $NV, $XV)) -> BX.rbnd(~F, BX.vsub(~F, $XV, M.ofdv(~F, gcf)), M.ofdv(~F, grf)):
+  %AP.ofkv_d(~F, ~H, gcf) : BX.rbnd(~F, BX.vsub(~F, $XV, _), M.ofdv(~F, grf))
+  %AP.ofkv_d(~F, ~H, grf) : BX.rbnd(~F, BX.vsub(~F, $XV, N.ofkv($DN, ~F, ~H, gcf)), _)
+  %kt_eq(gcf, $NV, hlc) : BX.rbnd(~F, BX.vsub(~F, $XV, N.ofkv($DN, ~F, ~H, _)), N.ofkv($DN, ~F, ~H, grf))
+  %kt_eq(grf, $NV, hlr) : BX.rbnd(~F, BX.vsub(~F, $XV, N.ofkv($DN, ~F, ~H, PL.ktake($DN, $NV, gcf))), N.ofkv($DN, ~F, ~H, _))
+  AP.both_r({M.len(~F, $XV) == $NV : Nat}, BX.rbnd(~F, BX.vsub(~F, $XV, N.ofkv($DN, ~F, ~H, PL.ktake($DN, $NV, gcf))), N.ofkv($DN, ~F, ~H, PL.ktake($DN, $NV, grf))), hpb)
+
+# the blocks' centers are within |x| + rho
+def cen_b($SKP, +x: M.Vec(~F), +g: List<&2, S.D>, $PGF, +rho: O.C(F), +hvr: M.vbnd.all(~F, M.ofdv(~F, grf), rho)) -> M.vbnd.all(~F, M.ofdv(~F, gcf), O.add(F, NP.vn(~F, x), rho)):
+  +lx = AP.both_l({M.len(~F, $XV) == $NV : Nat}, BX.rbnd(~F, BX.vsub(~F, $XV, N.ofkv($DN, ~F, ~H, PL.ktake($DN, $NV, gcf))), N.ofkv($DN, ~F, ~H, PL.ktake($DN, $NV, grf))), hpb)
+  +hl = Equal.trans(Nat, M.len(~F, BX.vsub(~F, $XV, M.ofdv(~F, gcf))), $NV, M.len(~F, M.ofdv(~F, grf)), CP.len_vsub(~F, $XV, M.ofdv(~F, gcf), $NV, lx, Equal.trans(Nat, M.len(~F, M.ofdv(~F, gcf)), KA.klen($DN, gcf), $NV, PB.len_ofdv(~F, gcf), hlc)), Equal.sym(Nat, M.len(~F, M.ofdv(~F, grf)), $NV, Equal.trans(Nat, M.len(~F, M.ofdv(~F, grf)), KA.klen($DN, grf), $NV, PB.len_ofdv(~F, grf), hlr)))
+  NP.vsub_bound(~F, $XV, M.ofdv(~F, gcf), NP.vn(~F, x), rho, FV.vmax_nn(~F, x), PB.vall_xp(~F, x, $VP), rbv(~F, BX.vsub(~F, $XV, M.ofdv(~F, gcf)), M.ofdv(~F, grf), rho, rb_of($SKA, x, gcf, grf, hlc, hlr, hpb), hvr, hl))
+
+@MACRO BBS O.add(F, O.add(F, NP.vn(~F, x), O.one(F)), O.one(F))
+
+def bb_le(~F: O.OField, +v: O.C(F), +rho: O.C(F), +h: O.le(~F, rho, O.one(F))) -> O.le(~F, O.add(F, v, rho), O.sub(~F, O.add(F, O.add(F, v, O.one(F)), O.one(F)), rho)):
+  FV.le_of_sub(~F, O.add(F, v, rho), O.sub(~F, O.add(F, O.add(F, v, O.one(F)), O.one(F)), rho), FM.nn_eq(~F, O.sub(~F, O.sub(~F, O.add(F, O.add(F, v, O.one(F)), O.one(F)), rho), O.add(F, v, rho)), O.add(F, O.sub(~F, O.one(F), rho), O.sub(~F, O.one(F), rho)), @ZEQ[v,, rho | (1 - rho) + (1 - rho) | (((v + 1) + 1) - rho) - (v + rho)], FO.nonneg_add(~F, O.sub(~F, O.one(F), rho), O.sub(~F, O.one(F), rho), FM.sub_nonneg(~F, rho, O.one(F), h), FM.sub_nonneg(~F, rho, O.one(F), h))))
+
+def bbs_nn(~F: O.OField, +x: M.Vec(~F)) -> O.le(~F, O.zero(F), $BBS):
+  FO.nonneg_add(~F, O.add(F, NP.vn(~F, x), O.one(F)), O.one(F), FO.nonneg_add(~F, NP.vn(~F, x), O.one(F), FV.vmax_nn(~F, x), NP.one_nn(~F)), NP.one_nn(~F))
+
+@MACRO RBP +rho: O.C(F), +hr0: O.le(~F, O.zero(F), rho), +hr1: O.le(~F, rho, O.one(F)), +hvr: M.vbnd.all(~F, M.ofdv(~F, grf), rho)
+@MACRO RBA rho, hr0, hr1, hvr
+
+# the read-back box: graded at rho and bb = |x| + 2
+def gbox_ans($SKP, +x: M.Vec(~F), +g: List<&2, S.D>, $PGF, $RBP) -> BP.gbox($DN, ~F, ~H, rho, $BBS, CK.zipb($DN, $GCU, $GRU)):
+  +hc0 = DM.le_trans(~F, O.zero(F), O.add(F, NP.vn(~F, x), rho), O.sub(~F, $BBS, rho), FO.nonneg_add(~F, NP.vn(~F, x), rho, FV.vmax_nn(~F, x), hr0), bb_le(~F, NP.vn(~F, x), rho, hr1))
+  +hc = up_vall(~F, $NV, gcf, $VP, O.sub(~F, $BBS, rho), hc0, PB.vall_mono(~F, M.ofdv(~F, gcf), O.add(F, NP.vn(~F, x), rho), O.sub(~F, $BBS, rho), cen_b($SKA, x, g, $PGA, rho, hvr), bb_le(~F, NP.vn(~F, x), rho, hr1)))
+  RD.gbox_zip($DN, ~F, ~H, $GCU, $GRU, rho, $BBS, vk_of(~F, ~H, $GCU, O.sub(~F, $BBS, rho), hc), rk_of(~F, ~H, $GRU, up_rnn(~F, $NV, grf, $VP, hrn)), vk_of(~F, ~H, $GRU, rho, up_vall(~F, $NV, grf, $VP, rho, hr0, hvr)), Equal.trans(Nat, KA.klen($DN, $GCU), $NV, KA.klen($DN, $GRU), klen_up($NV, 0n, gcf, $VP), Equal.sym(Nat, KA.klen($DN, $GRU), $NV, klen_up($NV, 0n, grf, $VP))))
+
+@MACRO SDK SK.Sketch.sides(SV.mark(SO.red_of(sk), sk))
+
+# the side conditions over the read-back box
+def sides_ans($SKP, +x: M.Vec(~F), +g: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, $PGF, $RBP, +dy: {SV.dyadic(sk) == True{} : Bool}, +hbud: SBud(~F, $BBS, rho, x, $SDK)) -> {PL.check_sides($DN, $SDK, $GCU, $GRU) == True{} : Bool}:
+  +hrk = rk_of(~F, ~H, $GRU, up_rnn(~F, $NV, grf, $VP, hrn))
+  +inb = inbox_ans($SKA, x, g, hl, $PGA)
+  +hx = CP.rbnd_inbox($DN, ~F, ~H, x, $GCU, $GRU, AP.both_r({M.len(~F, x) == M.len(~F, N.ofkv($DN, ~F, ~H, $GCU)) : Nat}, BX.rbnd(~F, BX.vsub(~F, x, N.ofkv($DN, ~F, ~H, $GCU)), N.ofkv($DN, ~F, ~H, $GRU)), inb), hrk)
+  AP.band_t(KA.kvle($DN, Nil{}, $GRU), PL.sides_ok($DN, CK.zipb($DN, $GCU, $GRU), $SDK), kvle_nil(~F, ~H, $GRU, up_rnn(~F, $NV, grf, $VP, hrn)), sides_of(~F, ~H, CK.zipb($DN, $GCU, $GRU), rho, $BBS, hr0, bbs_nn(~F, x), gbox_ans($SKA, x, g, $PGA, $RBA), x, hx, $SDK, ds_sk(SO.red_of(sk), sk, L.band_r(SV.dyeqs(SK.Sketch.eqs(sk)), SV.dysides(SK.Sketch.sides(sk)), dy)), hbud))

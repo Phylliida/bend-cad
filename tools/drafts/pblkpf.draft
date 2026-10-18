@@ -981,6 +981,17 @@ def qch_nn(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +full: List<&2, E.QExpr>, +goo
       +hm = msum_nn(~F, $BB, hbb, $EQL)
       FO.nonneg_add(~F, $QK, qch($CA, t, $IVT, Nat.add(o, $NN), $PK), SC.qblk_nn(~F, ~H, $NN, $MM, $BET, $LAM, $MSS, tt, hb, hl, hm, htt), qch_nn(~F, ~H, full, good, vp, x, t, $IVT, Nat.add(o, $NN), $PK, SC.phib_nn(~F, ~H, $NN, $MM, $BET, $LAM, $MSS, tt, hb, hl, hm, htt)))
 
+def tch_nn(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +full: List<&2, E.QExpr>, +good: List<&2, Nat>, +vp: List<&2, Nat>, +x: M.Vec(~F), kb: List<&2, ST.SB>, +binv: BI.BInv(~F, x, full, kb), +o: Nat, +tt: @T, +htt: O.le(~F, @0, tt)) -> O.le(~F, @0, tch($CA, kb, binv, o, tt)):
+  match kb:
+    case Nil{}:
+      htt
+    case Con{ST.SB{+es, +vs}, +t}:
+      +hbb = FO.nonneg_add(~F, NP.vn(~F, x), @1, FV.vmax_nn(~F, x), NP.one_nn(~F))
+      +hb = ibd_nn(~F, $JSK, SV.len(vs), $IV0)
+      +hl = lsum_nn(~F, $BB, hbb, $EQL)
+      +hm = msum_nn(~F, $BB, hbb, $EQL)
+      tch_nn(~F, ~H, full, good, vp, x, t, $IVT, Nat.add(o, $NN), $PK, SC.phib_nn(~F, ~H, $NN, $MM, $BET, $LAM, $MSS, tt, hb, hl, hm, htt))
+
 # Lists of K, a prefix at a time
 # ------------------------------
 
