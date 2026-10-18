@@ -283,3 +283,255 @@ def le_by1(~F: O.OField, +x: O.C(F), +c: O.C(F), +s: O.C(F), +hc: O.le(~F, O.zer
 # mnorm(A) <= alpha
 def amn(~F: O.OField, +n: Nat, +jm: M.Mat(~F), +A: M.Mat(~F), +e: O.C(F), +b: O.C(F), +he: O.le(~F, O.zero(F), e), +hb: O.le(~F, O.zero(F), b), +ha: DG.agood(~F, n, jm, A, e), +hA: {GJ.nrows(~F, A) == n : Nat}, +hj: {GJ.nrows(~F, jm) == n : Nat}, +hJ: NP.InvB(~F, jm, n, b)) -> O.le(~F, NP.mnorm(~F, A, n), alf(~F, n, e, b)):
   op_mn(~F, ~A, ~n, ~alf(~F, n, e, b), ~(s => ls => hs => le_by1(~F, NP.vn(~F, M.matvec(~F, A, s)), alf(~F, n, e, b), NP.vn(~F, s), alf_nn(~F, n, e, b, he, hb), abound(~F, n, jm, A, e, b, he, ha, hA, hj, hJ, s, ls), hs)), alf_nn(~F, n, e, b, he, hb))
+
+# F-boxes
+# -------
+# A box of F's own balls (BP.fnum): a center and one radius for every
+# variable, so C3a's Lipschitz lemmas compare slopes between points of
+# the box with the Jacobian at its center.
+
+def fbx(~F: O.OField, c: M.Vec(~F), +rad: O.C(F)) -> List<&2, KB.KB<BP.fnum(~F)>>:
+  match c:
+    case Nil{}:
+      Nil{}
+    case Con{a, t}:
+      Con{KB.KB{a, rad}, fbx(~F, t, rad)}
+
+def bcen_fbx(~F: O.OField, c: M.Vec(~F), +rad: O.C(F)) -> {KB.bcenters(~BP.fnum(~F), fbx(~F, c, rad)) == c : M.Vec(~F)}:
+  match c:
+    case Nil{}:
+      {==}
+    case Con{+a, t}:
+      %Equal.sym(M.Vec(~F), KB.bcenters(~BP.fnum(~F), fbx(~F, t, rad)), t, bcen_fbx(~F, t, rad)) : {Con{a, _} == Con{a, t} : M.Vec(~F)}
+      {==}
+
+def cen_fbx(~F: O.OField, +c: M.Vec(~F), +rad: O.C(F)) -> {BP.cen(~BP.fnum(~F), ~F, ~BP.femb(~F), fbx(~F, c, rad)) == c : M.Vec(~F)}:
+  %Equal.sym(M.Vec(~F), KB.bcenters(~BP.fnum(~F), fbx(~F, c, rad)), c, bcen_fbx(~F, c, rad)) : {N.ofkv(~BP.fnum(~F), ~F, ~BP.femb(~F), _) == c : M.Vec(~F)}
+  BP.ofkv_id(~F, c)
+
+def le_one_mul(~F: O.OField, +x: O.C(F)) -> O.le(~F, x, O.mul(F, O.one(F), x)):
+  FV.le_rw_r(~F, x, x, O.mul(F, O.one(F), x), FR.fring_eq(~F, [x], E.ZVar{0n}, E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{0n}}, {==}), FO.le_refl(~F, x))
+
+# every center within bb - rad: the box has grade (bb, 1) at rad
+def gbox_fbx(~F: O.OField, c: M.Vec(~F), +rad: O.C(F), +bb: O.C(F), +hr: O.le(~F, O.zero(F), rad), hc: M.vbnd.all(~F, c, O.sub(~F, bb, rad))) -> BP.gbox(~BP.fnum(~F), ~F, ~BP.femb(~F), rad, bb, fbx(~F, c, rad)):
+  match c:
+    case Nil{}:
+      Unit{}
+    case Con{+a, +t}:
+      (h1, h2) = hc
+      ((hr, (h1, le_one_mul(~F, rad))), gbox_fbx(~F, t, rad, bb, hr, h2))
+
+# x within rad of the center c, entry by entry, lies in the box
+def inbox_fbx(~F: O.OField, x: M.Vec(~F), c: M.Vec(~F), +rad: O.C(F), h: M.vbnd.all(~F, BX.vsub(~F, x, c), rad), hl: {M.len(~F, x) == M.len(~F, c) : Nat}) -> KB.inbox(~BP.fnum(~F), ~F, ~BP.femb(~F), x, fbx(~F, c, rad)):
+  match x c:
+    case Nil{} Nil{}:
+      Unit{}
+    case Nil{} Con{b, cs}:
+      FO.absurd(KB.inbox(~BP.fnum(~F), ~F, ~BP.femb(~F), Nil{}, fbx(~F, Con{b, cs}, rad)), FV.zero_ne(M.len(~F, cs), hl))
+    case Con{a, xs} Nil{}:
+      FO.absurd(KB.inbox(~BP.fnum(~F), ~F, ~BP.femb(~F), Con{a, xs}, Nil{}), FV.succ_ne(M.len(~F, xs), hl))
+    case Con{+a, +xs} Con{+b, +cs}:
+      (h1, h2) = h
+      (h1, inbox_fbx(~F, xs, cs, rad, h2, FV.succ_inj(M.len(~F, xs), M.len(~F, cs), hl)))
+
+# The equations' constants
+# ------------------------
+# lam and ms bound every equation's slope grades ls and ms (C3a) at bb.
+
+def eqok(~F: O.OField, +bb: O.C(F), +lam: O.C(F), +ms: O.C(F), eqs: List<&2, E.QExpr>) -> Data:
+  match eqs:
+    case Nil{}:
+      Unit
+    case Con{e, es}:
+      M.Both(O.le(~F, BP.ls(~F, bb, e), lam), M.Both(O.le(~F, BP.ms(~F, bb, e), ms), eqok(~F, bb, lam, ms, es)))
+
+def eqok_ls(~F: O.OField, +bb: O.C(F), +lam: O.C(F), +ms: O.C(F), +e: E.QExpr, +es: List<&2, E.QExpr>, h: eqok(~F, bb, lam, ms, Con{e, es})) -> O.le(~F, BP.ls(~F, bb, e), lam):
+  (h1, h2) = h
+  h1
+
+def eqok_ms.go(~F: O.OField, +bb: O.C(F), +lam: O.C(F), +ms: O.C(F), +e: E.QExpr, +es: List<&2, E.QExpr>, h: M.Both(O.le(~F, BP.ms(~F, bb, e), ms), eqok(~F, bb, lam, ms, es))) -> O.le(~F, BP.ms(~F, bb, e), ms):
+  (h1, h2) = h
+  h1
+
+def eqok_tl.go(~F: O.OField, +bb: O.C(F), +lam: O.C(F), +ms: O.C(F), +e: E.QExpr, +es: List<&2, E.QExpr>, h: M.Both(O.le(~F, BP.ms(~F, bb, e), ms), eqok(~F, bb, lam, ms, es))) -> eqok(~F, bb, lam, ms, es):
+  (h1, h2) = h
+  h2
+
+def eqok_rest(~F: O.OField, +bb: O.C(F), +lam: O.C(F), +ms: O.C(F), +e: E.QExpr, +es: List<&2, E.QExpr>, h: eqok(~F, bb, lam, ms, Con{e, es})) -> M.Both(O.le(~F, BP.ms(~F, bb, e), ms), eqok(~F, bb, lam, ms, es)):
+  (h1, h2) = h
+  h2
+
+def eqok_ms(~F: O.OField, +bb: O.C(F), +lam: O.C(F), +ms: O.C(F), +e: E.QExpr, +es: List<&2, E.QExpr>, +h: eqok(~F, bb, lam, ms, Con{e, es})) -> O.le(~F, BP.ms(~F, bb, e), ms):
+  eqok_ms.go(~F, bb, lam, ms, e, es, eqok_rest(~F, bb, lam, ms, e, es, h))
+
+def eqok_tl(~F: O.OField, +bb: O.C(F), +lam: O.C(F), +ms: O.C(F), +e: E.QExpr, +es: List<&2, E.QExpr>, +h: eqok(~F, bb, lam, ms, Con{e, es})) -> eqok(~F, bb, lam, ms, es):
+  eqok_tl.go(~F, bb, lam, ms, e, es, eqok_rest(~F, bb, lam, ms, e, es, h))
+
+# Slopes against the Jacobian at the center
+# ------------------------------------------
+
+def le_mul_r(~F: O.OField, +a: O.C(F), +b: O.C(F), +s: O.C(F), +hs: O.le(~F, O.zero(F), s), h: O.le(~F, a, b)) -> O.le(~F, O.zero(F), O.sub(~F, O.mul(F, b, s), O.mul(F, a, s))):
+  FM.sub_nonneg(~F, O.mul(F, a, s), O.mul(F, b, s), FV.mul_le_r(~F, a, b, s, hs, h))
+
+# one equation's slopes between x1 and x2 differ from those at the center by lam rad
+def srow_lip(~F: O.OField, +rad: O.C(F), +bb: O.C(F), +hr: O.le(~F, O.zero(F), rad), +hb: O.le(~F, O.zero(F), bb), +box: List<&2, KB.KB<BP.fnum(~F)>>, +hg: BP.gbox(~BP.fnum(~F), ~F, ~BP.femb(~F), rad, bb, box), +x1: M.Vec(~F), +x2: M.Vec(~F), +h1: KB.inbox(~BP.fnum(~F), ~F, ~BP.femb(~F), x1, box), +h2: KB.inbox(~BP.fnum(~F), ~F, ~BP.femb(~F), x2, box), +e: E.QExpr, +lam: O.C(F), +hl: O.le(~F, BP.ls(~F, bb, e), lam), cnt: Nat, +lo: Nat) -> M.vbnd.all(~F, BX.vsub(~F, SL.srange(~F, x1, x2, e, cnt, lo), SL.srange(~F, BP.cen(~BP.fnum(~F), ~F, ~BP.femb(~F), box), BP.cen(~BP.fnum(~F), ~F, ~BP.femb(~F), box), e, cnt, lo)), O.mul(F, lam, rad)):
+  match cnt:
+    case 0n:
+      Unit{}
+    case 1n+k:
+      (FM.bnd_mono(~F, O.sub(~F, SL.sl(~F, lo, x1, x2, e), SL.sl(~F, lo, BP.cen(~BP.fnum(~F), ~F, ~BP.femb(~F), box), BP.cen(~BP.fnum(~F), ~F, ~BP.femb(~F), box), e)), O.mul(F, BP.ls(~F, bb, e), rad), O.mul(F, lam, rad),
+         BP.sl_lip(~BP.fnum(~F), ~F, ~BP.femb(~F), rad, bb, hr, hb, box, hg, lo, x1, x2, h1, h2, e, BP.held_f(~F, e)),
+         le_mul_r(~F, BP.ls(~F, bb, e), lam, rad, hr, hl)),
+       srow_lip(~F, rad, bb, hr, hb, box, hg, x1, x2, h1, h2, e, lam, hl, k, 1n+lo))
+
+# one equation's slopes are at most ms
+def srow_maj(~F: O.OField, +rad: O.C(F), +bb: O.C(F), +hr: O.le(~F, O.zero(F), rad), +hb: O.le(~F, O.zero(F), bb), +box: List<&2, KB.KB<BP.fnum(~F)>>, +hg: BP.gbox(~BP.fnum(~F), ~F, ~BP.femb(~F), rad, bb, box), +x1: M.Vec(~F), +x2: M.Vec(~F), +h1: KB.inbox(~BP.fnum(~F), ~F, ~BP.femb(~F), x1, box), +h2: KB.inbox(~BP.fnum(~F), ~F, ~BP.femb(~F), x2, box), +e: E.QExpr, +ms: O.C(F), +hm: O.le(~F, BP.ms(~F, bb, e), ms), cnt: Nat, +lo: Nat) -> M.vbnd.all(~F, SL.srange(~F, x1, x2, e, cnt, lo), ms):
+  match cnt:
+    case 0n:
+      Unit{}
+    case 1n+k:
+      (FM.bnd_mono(~F, SL.sl(~F, lo, x1, x2, e), BP.ms(~F, bb, e), ms, BP.sl_maj(~BP.fnum(~F), ~F, ~BP.femb(~F), rad, bb, hr, hb, box, hg, lo, x1, x2, h1, h2, e, BP.held_f(~F, e)), FM.sub_nonneg(~F, BP.ms(~F, bb, e), ms, hm)),
+       srow_maj(~F, rad, bb, hr, hb, box, hg, x1, x2, h1, h2, e, ms, hm, k, 1n+lo))
+
+def lr_nn(~F: O.OField, +cnt: Nat, +lam: O.C(F), +rad: O.C(F), +hl: O.le(~F, O.zero(F), lam), +hr: O.le(~F, O.zero(F), rad)) -> O.le(~F, O.zero(F), O.mul(F, FR.ofn(~F, cnt), O.mul(F, lam, rad))):
+  FO.mul_nonneg(~F, FR.ofn(~F, cnt), O.mul(F, lam, rad), DG.ofn_nn(~F, cnt), FO.mul_nonneg(~F, lam, rad, hl, hr))
+
+# S - J(center): every row's first cnt entries sum to at most cnt lam rad
+def smat_lip(~F: O.OField, +rad: O.C(F), +bb: O.C(F), +hr: O.le(~F, O.zero(F), rad), +hb: O.le(~F, O.zero(F), bb), +box: List<&2, KB.KB<BP.fnum(~F)>>, +hg: BP.gbox(~BP.fnum(~F), ~F, ~BP.femb(~F), rad, bb, box), +x1: M.Vec(~F), +x2: M.Vec(~F), +h1: KB.inbox(~BP.fnum(~F), ~F, ~BP.femb(~F), x1, box), +h2: KB.inbox(~BP.fnum(~F), ~F, ~BP.femb(~F), x2, box), +lam: O.C(F), +ms: O.C(F), +hl0: O.le(~F, O.zero(F), lam), eqs: List<&2, E.QExpr>, +hq: eqok(~F, bb, lam, ms, eqs), +cnt: Nat, +lo: Nat) -> NP.rowsle(~F, M.madd(~F, CP.smat(~F, x1, x2, eqs, cnt, lo), M.mneg(~F, DV.jac(~F, BP.cen(~BP.fnum(~F), ~F, ~BP.femb(~F), box), eqs, ST.iota(cnt, lo)))), cnt, O.mul(F, FR.ofn(~F, cnt), O.mul(F, lam, rad))):
+  match eqs:
+    case Nil{}:
+      Unit{}
+    case Con{+e, +es}:
+      +c = BP.cen(~BP.fnum(~F), ~F, ~BP.femb(~F), box)
+      ((%BP.srange_jrow(~F, c, e, cnt, lo) : O.le(~F, NP.rowabs(~F, BX.vsub(~F, SL.srange(~F, x1, x2, e, cnt, lo), _), cnt), O.mul(F, FR.ofn(~F, cnt), O.mul(F, lam, rad)))
+          DG.rowabs_le(~F, BX.vsub(~F, SL.srange(~F, x1, x2, e, cnt, lo), SL.srange(~F, c, c, e, cnt, lo)), cnt, O.mul(F, lam, rad), srow_lip(~F, rad, bb, hr, hb, box, hg, x1, x2, h1, h2, e, lam, eqok_ls(~F, bb, lam, ms, e, es, hq), cnt, lo), FO.mul_nonneg(~F, lam, rad, hl0, hr))),
+       smat_lip(~F, rad, bb, hr, hb, box, hg, x1, x2, h1, h2, lam, ms, hl0, es, eqok_tl(~F, bb, lam, ms, e, es, hq), cnt, lo))
+
+def smat_lip_mn(~F: O.OField, +rad: O.C(F), +bb: O.C(F), +hr: O.le(~F, O.zero(F), rad), +hb: O.le(~F, O.zero(F), bb), +box: List<&2, KB.KB<BP.fnum(~F)>>, +hg: BP.gbox(~BP.fnum(~F), ~F, ~BP.femb(~F), rad, bb, box), +x1: M.Vec(~F), +x2: M.Vec(~F), +h1: KB.inbox(~BP.fnum(~F), ~F, ~BP.femb(~F), x1, box), +h2: KB.inbox(~BP.fnum(~F), ~F, ~BP.femb(~F), x2, box), +lam: O.C(F), +ms: O.C(F), +hl0: O.le(~F, O.zero(F), lam), +eqs: List<&2, E.QExpr>, +hq: eqok(~F, bb, lam, ms, eqs), +cnt: Nat, +lo: Nat) -> O.le(~F, NP.mnorm(~F, M.madd(~F, CP.smat(~F, x1, x2, eqs, cnt, lo), M.mneg(~F, DV.jac(~F, BP.cen(~BP.fnum(~F), ~F, ~BP.femb(~F), box), eqs, ST.iota(cnt, lo)))), cnt), O.mul(F, FR.ofn(~F, cnt), O.mul(F, lam, rad))):
+  NP.mnorm_lub(~F, M.madd(~F, CP.smat(~F, x1, x2, eqs, cnt, lo), M.mneg(~F, DV.jac(~F, BP.cen(~BP.fnum(~F), ~F, ~BP.femb(~F), box), eqs, ST.iota(cnt, lo)))), cnt, O.mul(F, FR.ofn(~F, cnt), O.mul(F, lam, rad)), smat_lip(~F, rad, bb, hr, hb, box, hg, x1, x2, h1, h2, lam, ms, hl0, eqs, hq, cnt, lo), lr_nn(~F, cnt, lam, rad, hl0, hr))
+
+def smaj_cons(~F: O.OField, +r: M.Vec(~F), +t: M.Mat(~F), +ms: O.C(F), +cnt: Nat, +hm0: O.le(~F, O.zero(F), ms), +hr: M.vbnd.all(~F, r, ms), h: M.Both(DG.mall(~F, t, ms), NP.rowsle(~F, t, cnt, O.mul(F, FR.ofn(~F, cnt), ms)))) -> M.Both(DG.mall(~F, Con{r, t}, ms), NP.rowsle(~F, Con{r, t}, cnt, O.mul(F, FR.ofn(~F, cnt), ms))):
+  (ha, hb) = h
+  ((hr, ha), (DG.rowabs_le(~F, r, cnt, ms, hr, hm0), hb))
+
+# |S| <= cnt ms
+def smat_maj(~F: O.OField, +rad: O.C(F), +bb: O.C(F), +hr: O.le(~F, O.zero(F), rad), +hb: O.le(~F, O.zero(F), bb), +box: List<&2, KB.KB<BP.fnum(~F)>>, +hg: BP.gbox(~BP.fnum(~F), ~F, ~BP.femb(~F), rad, bb, box), +x1: M.Vec(~F), +x2: M.Vec(~F), +h1: KB.inbox(~BP.fnum(~F), ~F, ~BP.femb(~F), x1, box), +h2: KB.inbox(~BP.fnum(~F), ~F, ~BP.femb(~F), x2, box), +lam: O.C(F), +ms: O.C(F), +hm0: O.le(~F, O.zero(F), ms), eqs: List<&2, E.QExpr>, +hq: eqok(~F, bb, lam, ms, eqs), +cnt: Nat, +lo: Nat) -> M.Both(DG.mall(~F, CP.smat(~F, x1, x2, eqs, cnt, lo), ms), NP.rowsle(~F, CP.smat(~F, x1, x2, eqs, cnt, lo), cnt, O.mul(F, FR.ofn(~F, cnt), ms))):
+  match eqs:
+    case Nil{}:
+      (Unit{}, Unit{})
+    case Con{+e, +es}:
+      +hrow = srow_maj(~F, rad, bb, hr, hb, box, hg, x1, x2, h1, h2, e, ms, eqok_ms(~F, bb, lam, ms, e, es, hq), cnt, lo)
+      smaj_cons(~F, SL.srange(~F, x1, x2, e, cnt, lo), CP.smat(~F, x1, x2, es, cnt, lo), ms, cnt, hm0, hrow, smat_maj(~F, rad, bb, hr, hb, box, hg, x1, x2, h1, h2, lam, ms, hm0, es, eqok_tl(~F, bb, lam, ms, e, es, hq), cnt, lo))
+
+# The Jacobian at a point
+# -----------------------
+
+# the Jacobian is the slope matrix from a point to itself
+def jac_smat(~F: O.OField, +x: M.Vec(~F), eqs: List<&2, E.QExpr>, +cnt: Nat, +lo: Nat) -> {DV.jac(~F, x, eqs, ST.iota(cnt, lo)) == CP.smat(~F, x, x, eqs, cnt, lo) : M.Mat(~F)}:
+  match eqs:
+    case Nil{}:
+      {==}
+    case Con{+e, +es}:
+      %BP.srange_jrow(~F, x, e, cnt, lo) : {Con{_, DV.jac(~F, x, es, ST.iota(cnt, lo))} == CP.smat(~F, x, x, Con{e, es}, cnt, lo) : M.Mat(~F)}
+      %Equal.sym(M.Mat(~F), DV.jac(~F, x, es, ST.iota(cnt, lo)), CP.smat(~F, x, x, es, cnt, lo), jac_smat(~F, x, es, cnt, lo)) : {Con{SL.srange(~F, x, x, e, cnt, lo), _} == CP.smat(~F, x, x, Con{e, es}, cnt, lo) : M.Mat(~F)}
+      {==}
+
+def nrows_jac(~F: O.OField, +x: M.Vec(~F), eqs: List<&2, E.QExpr>, +us: List<&2, Nat>) -> {GJ.nrows(~F, DV.jac(~F, x, eqs, us)) == CK.eqlen(eqs) : Nat}:
+  match eqs:
+    case Nil{}:
+      {==}
+    case Con{e, es}:
+      %Equal.sym(Nat, GJ.nrows(~F, DV.jac(~F, x, es, us)), CK.eqlen(es), nrows_jac(~F, x, es, us)) : {1n+_ == 1n+CK.eqlen(es) : Nat}
+      {==}
+
+def len_jrow(~F: O.OField, +x: M.Vec(~F), +e: E.QExpr, us: List<&2, Nat>) -> {M.len(~F, DV.jrow(~F, x, e, us)) == DV.nlen(us) : Nat}:
+  match us:
+    case Nil{}:
+      {==}
+    case Con{u, t}:
+      %Equal.sym(Nat, M.len(~F, DV.jrow(~F, x, e, t)), DV.nlen(t), len_jrow(~F, x, e, t)) : {1n+_ == 1n+DV.nlen(t) : Nat}
+      {==}
+
+def nlen_iota(n: Nat, +k: Nat) -> {DV.nlen(ST.iota(n, k)) == n : Nat}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+m:
+      %Equal.sym(Nat, DV.nlen(ST.iota(m, 1n+k)), m, nlen_iota(m, 1n+k)) : {1n+_ == 1n+m : Nat}
+      {==}
+
+# row i < (number of equations) of the Jacobian has cnt entries
+def len_mrow_jac(~F: O.OField, +x: M.Vec(~F), eqs: List<&2, E.QExpr>, +cnt: Nat, +lo: Nat, i: Nat, hi: {KA.natle(1n+i, CK.eqlen(eqs)) == True{} : Bool}) -> {M.len(~F, DV.mrow(~F, DV.jac(~F, x, eqs, ST.iota(cnt, lo)), i)) == cnt : Nat}:
+  match eqs i:
+    case Nil{} i:
+      FO.absurd({M.len(~F, DV.mrow(~F, DV.jac(~F, x, Nil{}, ST.iota(cnt, lo)), i)) == cnt : Nat}, KA.ft(hi))
+    case Con{+e, es} 0n:
+      Equal.trans(Nat, M.len(~F, DV.jrow(~F, x, e, ST.iota(cnt, lo))), DV.nlen(ST.iota(cnt, lo)), cnt, len_jrow(~F, x, e, ST.iota(cnt, lo)), nlen_iota(cnt, lo))
+    case Con{+e, es} 1n+j:
+      len_mrow_jac(~F, x, es, cnt, lo, j, hi)
+
+def le_eq_r(+a: Nat, +b: Nat, +c: Nat, e: {b == c : Nat}, h: {KA.natle(a, b) == True{} : Bool}) -> {KA.natle(a, c) == True{} : Bool}:
+  %e : {KA.natle(a, _) == True{} : Bool}
+  h
+
+# every row of the n x n Jacobian has n entries
+def rows_jac(~F: O.OField, +x: M.Vec(~F), +eqs: List<&2, E.QExpr>, +n: Nat, +hn: {CK.eqlen(eqs) == n : Nat}) -> GJ.All(~(i => GJ.roww(~F, DV.jac(~F, x, eqs, ST.iota(n, 0n)), n, i)), n):
+  GJ.all_mk(~n, ~(i => GJ.roww(~F, DV.jac(~F, x, eqs, ST.iota(n, 0n)), n, i)), ~(i => hi => len_mrow_jac(~F, x, eqs, n, 0n, i, le_eq_r(1n+i, n, CK.eqlen(eqs), Equal.sym(Nat, CK.eqlen(eqs), n, hn), hi))), n, GJ.le_refl(n))
+
+def nrows_jacn(~F: O.OField, +x: M.Vec(~F), +eqs: List<&2, E.QExpr>, +n: Nat, +hn: {CK.eqlen(eqs) == n : Nat}) -> {GJ.nrows(~F, DV.jac(~F, x, eqs, ST.iota(n, 0n))) == n : Nat}:
+  Equal.trans(Nat, GJ.nrows(~F, DV.jac(~F, x, eqs, ST.iota(n, 0n))), CK.eqlen(eqs), n, nrows_jac(~F, x, eqs, ST.iota(n, 0n)), hn)
+
+# the Jacobian at a point of the box: entries at most ms, rows summing to n ms
+def jac_maj(~F: O.OField, +rad: O.C(F), +bb: O.C(F), +hr: O.le(~F, O.zero(F), rad), +hb: O.le(~F, O.zero(F), bb), +xs: M.Vec(~F), +hg: BP.gbox(~BP.fnum(~F), ~F, ~BP.femb(~F), rad, bb, fbx(~F, xs, rad)), +x: M.Vec(~F), +hx: KB.inbox(~BP.fnum(~F), ~F, ~BP.femb(~F), x, fbx(~F, xs, rad)), +lam: O.C(F), +ms: O.C(F), +hm0: O.le(~F, O.zero(F), ms), +eqs: List<&2, E.QExpr>, +hq: eqok(~F, bb, lam, ms, eqs), +cnt: Nat, +lo: Nat) -> M.Both(DG.mall(~F, DV.jac(~F, x, eqs, ST.iota(cnt, lo)), ms), NP.rowsle(~F, DV.jac(~F, x, eqs, ST.iota(cnt, lo)), cnt, O.mul(F, FR.ofn(~F, cnt), ms))):
+  %Equal.sym(M.Mat(~F), DV.jac(~F, x, eqs, ST.iota(cnt, lo)), CP.smat(~F, x, x, eqs, cnt, lo), jac_smat(~F, x, eqs, cnt, lo)) : M.Both(DG.mall(~F, _, ms), NP.rowsle(~F, _, cnt, O.mul(F, FR.ofn(~F, cnt), ms)))
+  smat_maj(~F, rad, bb, hr, hb, fbx(~F, xs, rad), hg, x, x, hx, hx, lam, ms, hm0, eqs, hq, cnt, lo)
+
+def both_l(-A: Data, -B: Data, h: M.Both(A, B)) -> A:
+  (a, b) = h
+  a
+
+def both_r(-A: Data, -B: Data, h: M.Both(A, B)) -> B:
+  (a, b) = h
+  b
+
+# |J(x) - J(xs)| <= n lam rad for x in the box around xs
+def jac_lip(~F: O.OField, +rad: O.C(F), +bb: O.C(F), +hr: O.le(~F, O.zero(F), rad), +hb: O.le(~F, O.zero(F), bb), +xs: M.Vec(~F), +hg: BP.gbox(~BP.fnum(~F), ~F, ~BP.femb(~F), rad, bb, fbx(~F, xs, rad)), +x: M.Vec(~F), +hx: KB.inbox(~BP.fnum(~F), ~F, ~BP.femb(~F), x, fbx(~F, xs, rad)), +lam: O.C(F), +ms: O.C(F), +hl0: O.le(~F, O.zero(F), lam), +eqs: List<&2, E.QExpr>, +hq: eqok(~F, bb, lam, ms, eqs), +cnt: Nat, +lo: Nat) -> O.le(~F, NP.mnorm(~F, M.madd(~F, DV.jac(~F, x, eqs, ST.iota(cnt, lo)), M.mneg(~F, DV.jac(~F, xs, eqs, ST.iota(cnt, lo)))), cnt), O.mul(F, FR.ofn(~F, cnt), O.mul(F, lam, rad))):
+  %Equal.sym(M.Mat(~F), DV.jac(~F, x, eqs, ST.iota(cnt, lo)), CP.smat(~F, x, x, eqs, cnt, lo), jac_smat(~F, x, eqs, cnt, lo)) : O.le(~F, NP.mnorm(~F, M.madd(~F, _, M.mneg(~F, DV.jac(~F, xs, eqs, ST.iota(cnt, lo)))), cnt), O.mul(F, FR.ofn(~F, cnt), O.mul(F, lam, rad)))
+  %cen_fbx(~F, xs, rad) : O.le(~F, NP.mnorm(~F, M.madd(~F, CP.smat(~F, x, x, eqs, cnt, lo), M.mneg(~F, DV.jac(~F, _, eqs, ST.iota(cnt, lo)))), cnt), O.mul(F, FR.ofn(~F, cnt), O.mul(F, lam, rad)))
+  smat_lip_mn(~F, rad, bb, hr, hb, fbx(~F, xs, rad), hg, x, x, hx, hx, lam, ms, hl0, eqs, hq, cnt, lo)
+
+# a point of the box keeps the Jacobian invertible, with twice the norm
+def invb_at(~F: O.OField, +n: Nat, +eqs: List<&2, E.QExpr>, +hn: {CK.eqlen(eqs) == n : Nat}, +rad: O.C(F), +bb: O.C(F), +hr: O.le(~F, O.zero(F), rad), +hb: O.le(~F, O.zero(F), bb), +xs: M.Vec(~F), +hg: BP.gbox(~BP.fnum(~F), ~F, ~BP.femb(~F), rad, bb, fbx(~F, xs, rad)), +x: M.Vec(~F), +hx: KB.inbox(~BP.fnum(~F), ~F, ~BP.femb(~F), x, fbx(~F, xs, rad)), +lam: O.C(F), +ms: O.C(F), +hl0: O.le(~F, O.zero(F), lam), +hq: eqok(~F, bb, lam, ms, eqs), +b: O.C(F), +hJ: NP.InvB(~F, DV.jac(~F, xs, eqs, ST.iota(n, 0n)), n, b), +hbd: O.le(~F, O.add(F, O.mul(F, b, O.mul(F, FR.ofn(~F, n), O.mul(F, lam, rad))), O.mul(F, b, O.mul(F, FR.ofn(~F, n), O.mul(F, lam, rad)))), O.one(F))) -> NP.InvB(~F, DV.jac(~F, x, eqs, ST.iota(n, 0n)), n, O.add(F, b, b)):
+  NP.pert(~F, DV.jac(~F, xs, eqs, ST.iota(n, 0n)), DV.jac(~F, x, eqs, ST.iota(n, 0n)), n, b, O.mul(F, FR.ofn(~F, n), O.mul(F, lam, rad)), hJ, nrows_jacn(~F, xs, eqs, n, hn), nrows_jacn(~F, x, eqs, n, hn), rows_jac(~F, x, eqs, n, hn),
+    jac_lip(~F, rad, bb, hr, hb, xs, hg, x, hx, lam, ms, hl0, eqs, hq, n, 0n), hbd)
+
+# Elimination at a point
+# ----------------------
+
+# C4's bound on I - A J at w bits, for g and b
+def epsa(~F: O.OField, +n: Nat, +g: O.C(F), +b: O.C(F), +w: Nat) -> O.C(F):
+  O.add(F, O.mul(F, DG.kd(~F, DG.kst(~F, n, g, b, n)), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), O.mul(F, DG.kp(~F, DG.kst(~F, n, g, b, n)), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})))
+
+def epsa_nn(~F: O.OField, +n: Nat, +g: O.C(F), +b: O.C(F), +w: Nat, +hg: O.le(~F, O.zero(F), g), +hb: O.le(~F, O.zero(F), b)) -> O.le(~F, O.zero(F), epsa(~F, n, g, b, w)):
+  +k = DG.kst_nn(~F, n, g, b, hg, hb, n)
+  FO.nonneg_add(~F, O.mul(F, DG.kd(~F, DG.kst(~F, n, g, b, n)), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})), O.mul(F, DG.kp(~F, DG.kst(~F, n, g, b, n)), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w})),
+    FO.mul_nonneg(~F, DG.kd(~F, DG.kst(~F, n, g, b, n)), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}), DG.knn_d(~F, DG.kst(~F, n, g, b, n), k), DG.u_nn(~F, w)),
+    FO.mul_nonneg(~F, DG.kp(~F, DG.kst(~F, n, g, b, n)), M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}), DG.knn_p(~F, DG.kst(~F, n, g, b, n), k), DG.u_nn(~F, w)))
+
+# u acoef <= 1 for every column (C4's smallness)
+def small(~F: O.OField, +n: Nat, +g: O.C(F), +b: O.C(F), +w: Nat) -> Data:
+  GJ.All(~(q => O.le(~F, O.mul(F, M.ofd(~F, S.D{S.Zpos{S.XH{}}, w}), DG.acoef(~F, n, b, q, DG.kst(~F, n, g, b, q))), O.one(F))), n)
+
+# the solver's elimination at the dyadic point env
+def elim_at(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +w: Nat, +eqs: List<&2, E.QExpr>, +hn: {CK.eqlen(eqs) == n : Nat}, +hh: {CK.allheld(~KI.dnum(), eqs) == True{} : Bool}, +env: List<&2, S.D>, +g: O.C(F), +b: O.C(F), +hg: O.le(~F, O.zero(F), g), +hb: O.le(~F, O.zero(F), b), +hJ: NP.InvB(~F, DV.jac(~F, M.ofdv(~F, env), eqs, ST.iota(n, 0n)), n, b), +hj: DG.mall(~F, DV.jac(~F, M.ofdv(~F, env), eqs, ST.iota(n, 0n)), g), +hsm: small(~F, n, g, b, w)) -> DG.dinv_res(~F, n, DV.jac(~F, M.ofdv(~F, env), eqs, ST.iota(n, 0n)), epsa(~F, n, g, b, w), NU.dinverse(n, w, NU.jac(eqs, n, env))):
+  %djac_ofd(~F, ~H, eqs, n, env, hh) : DG.dinv_res(~F, n, _, epsa(~F, n, g, b, w), NU.dinverse(n, w, NU.jac(eqs, n, env)))
+  DG.dinverse_ok(~F, n, w, NU.jac(eqs, n, env), g, b,
+    (%Equal.sym(M.Mat(~F), M.ofdm(~F, NU.jac(eqs, n, env)), DV.jac(~F, M.ofdv(~F, env), eqs, ST.iota(n, 0n)), djac_ofd(~F, ~H, eqs, n, env, hh)) : GJ.All(~(i => GJ.roww(~F, _, n, i)), n)
+      rows_jac(~F, M.ofdv(~F, env), eqs, n, hn)),
+    (%Equal.sym(M.Mat(~F), M.ofdm(~F, NU.jac(eqs, n, env)), DV.jac(~F, M.ofdv(~F, env), eqs, ST.iota(n, 0n)), djac_ofd(~F, ~H, eqs, n, env, hh)) : {GJ.nrows(~F, _) == n : Nat}
+      nrows_jacn(~F, M.ofdv(~F, env), eqs, n, hn)),
+    (%Equal.sym(M.Mat(~F), M.ofdm(~F, NU.jac(eqs, n, env)), DV.jac(~F, M.ofdv(~F, env), eqs, ST.iota(n, 0n)), djac_ofd(~F, ~H, eqs, n, env, hh)) : NP.InvB(~F, _, n, b)
+      hJ),
+    (%Equal.sym(M.Mat(~F), M.ofdm(~F, NU.jac(eqs, n, env)), DV.jac(~F, M.ofdv(~F, env), eqs, ST.iota(n, 0n)), djac_ofd(~F, ~H, eqs, n, env, hh)) : DG.mall(~F, _, g)
+      hj),
+    hg, hb, hsm)
