@@ -42,6 +42,14 @@ import ./listpf.bend as L
 import ./gjpf.bend as GJ
 import ./normpf.bend as NP
 import ./apxpf.bend as AP
+import ./bndpf.bend as BP
+import ./nwtpf.bend as NW
+import ./keptpf.bend as KP
+import ./structpf.bend as SP
+import ./binvpf.bend as BI
+import ./locpf.bend as LC
+import ./nat.bend as LN
+import ./tarjanpf.bend as TJ
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -216,3 +224,312 @@ def pb_acc(bs: List<&2, ST.SkB>, cur: NU.BR, +sys: List<&2, E.QExpr>, +g0b: List
         pb_acc(t, cur2, sys2, g0b, p, Nat.add(o, n), gc2, gr2, Con{b, acc}),
         (%Equal.sym(NU.PBR, NU.pblocks(t, cur2, sys2, g0b, p, Nat.add(o, n), gc2, gr2, Con{b, Nil{}}), pbacc(Con{b, Nil{}}, r0), pb_acc(t, cur2, sys2, g0b, p, Nat.add(o, n), gc2, gr2, Con{b, Nil{}})) : {pbacc(Con{b, acc}, r0) == pbacc(acc, _) : NU.PBR}
         pbacc_con(b, acc, r0)))
+
+# The block's equations
+# ---------------------
+
+def reorder_app(+vp: List<&2, Nat>, +full: List<&2, E.QExpr>, a: List<&2, Nat>, +b: List<&2, Nat>) -> {PL.reorder(vp, full, ST.app(a, b)) == BI.eapp(PL.reorder(vp, full, a), PL.reorder(vp, full, b)) : List<&2, E.QExpr>}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+j, t}:
+      %reorder_app(vp, full, t, b) : {Con{PL.rnv(vp, PL.eqget(full, j)), PL.reorder(vp, full, ST.app(t, b))} == Con{PL.rnv(vp, PL.eqget(full, j)), _} : List<&2, E.QExpr>}
+      {==}
+
+def eqlen_reorder(+vp: List<&2, Nat>, +full: List<&2, E.QExpr>, a: List<&2, Nat>) -> {CK.eqlen(PL.reorder(vp, full, a)) == ST.len(a) : Nat}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{j, t}:
+      %eqlen_reorder(vp, full, t) : {1n+CK.eqlen(PL.reorder(vp, full, t)) == 1n+_ : Nat}
+      {==}
+
+def takeq_eapp(a: List<&2, E.QExpr>, +b: List<&2, E.QExpr>) -> {PL.takeq(CK.eqlen(a), BI.eapp(a, b)) == a : List<&2, E.QExpr>}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+e, t}:
+      %takeq_eapp(t, b) : {Con{e, PL.takeq(CK.eqlen(t), BI.eapp(t, b))} == Con{e, _} : List<&2, E.QExpr>}
+      {==}
+
+def dropq_eapp(a: List<&2, E.QExpr>, +b: List<&2, E.QExpr>) -> {PL.dropq(CK.eqlen(a), BI.eapp(a, b)) == b : List<&2, E.QExpr>}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{e, t}:
+      dropq_eapp(t, b)
+
+def eqlen_renames(+o: Nat, +n: Nat, +pars: List<&2, Nat>, es: List<&2, E.QExpr>) -> {CK.eqlen(PL.renames(o, n, pars, es)) == CK.eqlen(es) : Nat}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{e, t}:
+      %eqlen_renames(o, n, pars, t) : {1n+CK.eqlen(PL.renames(o, n, pars, t)) == 1n+_ : Nat}
+      {==}
+
+
+def nq_eq(+es: List<&2, Nat>, +good: List<&2, Nat>, +vp: List<&2, Nat>, +full: List<&2, E.QExpr>) -> {ST.len(ST.positions(es, good)) == CK.eqlen(PL.reorder(vp, full, es)) : Nat}:
+  Equal.trans(Nat, ST.len(ST.positions(es, good)), ST.len(es), CK.eqlen(PL.reorder(vp, full, es)), SP.positions_len(es, good), Equal.sym(Nat, CK.eqlen(PL.reorder(vp, full, es)), ST.len(es), eqlen_reorder(vp, full, es)))
+
+# the block's n equations, and the rest
+def tq_eq(+vp: List<&2, Nat>, +full: List<&2, E.QExpr>, +es: List<&2, Nat>, +rest: List<&2, Nat>, +good: List<&2, Nat>) -> {PL.takeq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, rest))) == PL.reorder(vp, full, es) : List<&2, E.QExpr>}:
+  %Equal.sym(Nat, ST.len(ST.positions(es, good)), CK.eqlen(PL.reorder(vp, full, es)), nq_eq(es, good, vp, full)) : {PL.takeq(_, PL.reorder(vp, full, ST.app(es, rest))) == PL.reorder(vp, full, es) : List<&2, E.QExpr>}
+  %Equal.sym(List<&2, E.QExpr>, PL.reorder(vp, full, ST.app(es, rest)), BI.eapp(PL.reorder(vp, full, es), PL.reorder(vp, full, rest)), reorder_app(vp, full, es, rest)) : {PL.takeq(CK.eqlen(PL.reorder(vp, full, es)), _) == PL.reorder(vp, full, es) : List<&2, E.QExpr>}
+  takeq_eapp(PL.reorder(vp, full, es), PL.reorder(vp, full, rest))
+
+def dq_eq(+vp: List<&2, Nat>, +full: List<&2, E.QExpr>, +es: List<&2, Nat>, +rest: List<&2, Nat>, +good: List<&2, Nat>) -> {PL.dropq(ST.len(ST.positions(es, good)), PL.reorder(vp, full, ST.app(es, rest))) == PL.reorder(vp, full, rest) : List<&2, E.QExpr>}:
+  %Equal.sym(Nat, ST.len(ST.positions(es, good)), CK.eqlen(PL.reorder(vp, full, es)), nq_eq(es, good, vp, full)) : {PL.dropq(_, PL.reorder(vp, full, ST.app(es, rest))) == PL.reorder(vp, full, rest) : List<&2, E.QExpr>}
+  %Equal.sym(List<&2, E.QExpr>, PL.reorder(vp, full, ST.app(es, rest)), BI.eapp(PL.reorder(vp, full, es), PL.reorder(vp, full, rest)), reorder_app(vp, full, es, rest)) : {PL.dropq(CK.eqlen(PL.reorder(vp, full, es)), _) == PL.reorder(vp, full, rest) : List<&2, E.QExpr>}
+  dropq_eapp(PL.reorder(vp, full, es), PL.reorder(vp, full, rest))
+
+# Constants held exactly
+# ----------------------
+
+def ps.go(+z: S.Z, m: Maybe<&2, Nat>, ih: {KB.held.go(~KI.dnum(), KI.dofq.go(z, m)) == True{} : Bool}) -> {KB.held.go(~KI.dnum(), KI.dofq.go(z, KI.plog.succ(m))) == True{} : Bool}:
+  match m:
+    case None{}:
+      absurd({KB.held.go(~KI.dnum(), KI.dofq.go(z, KI.plog.succ(None{}))) == True{} : Bool}, KA.ft(ih))
+    case Some{e}:
+      {==}
+
+# a power-of-two denominator is held
+def ps(+z: S.Z, p: S.Pos, h: {SV.pow2(p) == True{} : Bool}) -> {KB.held.go(~KI.dnum(), KI.dofq.go(z, KI.plog(p))) == True{} : Bool}:
+  match p:
+    case S.XH{}:
+      {==}
+    case S.XO{+q}:
+      ps.go(z, KI.plog(q), ps(z, q, h))
+    case S.XI{q}:
+      absurd({KB.held.go(~KI.dnum(), KI.dofq.go(z, KI.plog(S.XI{q}))) == True{} : Bool}, KA.ft(h))
+
+def held_c(q: S.Q, h: {SV.dyconst(E.QCst{q}) == True{} : Bool}) -> {KB.held(~KI.dnum(), E.QCst{q}) == True{} : Bool}:
+  match q:
+    case S.Q{+z, +d}:
+      ps(z, d, h)
+
+
+def held_rn(+o: Nat, +n: Nat, +pars: List<&2, Nat>, +vp: List<&2, Nat>, e: E.QExpr, +h: {SV.dyconst(e) == True{} : Bool}) -> {KB.held(~KI.dnum(), PL.rename(o, n, pars, PL.rnv(vp, e))) == True{} : Bool}:
+  match e:
+    case E.QVar{v}:
+      {==}
+    case E.QCst{+q}:
+      held_c(q, h)
+    case E.QAdd{+a, +b}:
+      kband_i(KB.held(~KI.dnum(), PL.rename(o, n, pars, PL.rnv(vp, a))), KB.held(~KI.dnum(), PL.rename(o, n, pars, PL.rnv(vp, b))), held_rn(o, n, pars, vp, a, L.band_l(SV.dyconst(a), SV.dyconst(b), h)), held_rn(o, n, pars, vp, b, L.band_r(SV.dyconst(a), SV.dyconst(b), h)))
+    case E.QSub{+a, +b}:
+      kband_i(KB.held(~KI.dnum(), PL.rename(o, n, pars, PL.rnv(vp, a))), KB.held(~KI.dnum(), PL.rename(o, n, pars, PL.rnv(vp, b))), held_rn(o, n, pars, vp, a, L.band_l(SV.dyconst(a), SV.dyconst(b), h)), held_rn(o, n, pars, vp, b, L.band_r(SV.dyconst(a), SV.dyconst(b), h)))
+    case E.QMul{+a, +b}:
+      kband_i(KB.held(~KI.dnum(), PL.rename(o, n, pars, PL.rnv(vp, a))), KB.held(~KI.dnum(), PL.rename(o, n, pars, PL.rnv(vp, b))), held_rn(o, n, pars, vp, a, L.band_l(SV.dyconst(a), SV.dyconst(b), h)), held_rn(o, n, pars, vp, b, L.band_r(SV.dyconst(a), SV.dyconst(b), h)))
+    case E.QNeg{+a}:
+      held_rn(o, n, pars, vp, a, h)
+
+def dyget(full: List<&2, E.QExpr>, j: Nat, h: {SV.dyeqs(full) == True{} : Bool}) -> {SV.dyconst(PL.eqget(full, j)) == True{} : Bool}:
+  match full j:
+    case Nil{} j:
+      {==}
+    case Con{+e, +t} 0n:
+      L.band_l(SV.dyconst(e), SV.dyeqs(t), h)
+    case Con{+e, +t} 1n+k:
+      dyget(t, k, L.band_r(SV.dyconst(e), SV.dyeqs(t), h))
+
+def held_blk(+o: Nat, +n: Nat, +pars: List<&2, Nat>, +vp: List<&2, Nat>, +full: List<&2, E.QExpr>, +hd: {SV.dyeqs(full) == True{} : Bool}, es: List<&2, Nat>) -> {CK.allheld(~KI.dnum(), PL.renames(o, n, pars, PL.reorder(vp, full, es))) == True{} : Bool}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{+j, +t}:
+      kband_i(KB.held(~KI.dnum(), PL.rename(o, n, pars, PL.rnv(vp, PL.eqget(full, j)))), CK.allheld(~KI.dnum(), PL.renames(o, n, pars, PL.reorder(vp, full, t))), held_rn(o, n, pars, vp, PL.eqget(full, j), dyget(full, j, hd)), held_blk(o, n, pars, vp, full, hd, t))
+
+# Renumbered equations stay below n + m
+# -------------------------------------
+
+# v < o: not o <= v
+def ren_nlt(o: Nat, v: Nat, h: {KA.natle(1n+v, o) == True{} : Bool}) -> {KA.natle(o, v) == False{} : Bool}:
+  match o v:
+    case 0n v:
+      absurd({KA.natle(0n, v) == False{} : Bool}, KA.ft(h))
+    case 1n+i 0n:
+      {==}
+    case 1n+i 1n+j:
+      ren_nlt(i, j, h)
+
+def ren_var.go(+o: Nat, +n: Nat, +pars: List<&2, Nat>, +v: Nat, b: Bool, e: {KA.natle(1n+v, o) == b : Bool}, hb: {KA.natle(1n+v, Nat.add(o, n)) == True{} : Bool}, hc: {SV.bor(KA.natle(o, v), SV.mem(v, pars)) == True{} : Bool}) -> {KA.natle(1n+PL.loc.go(b, o, n, pars, v), Nat.add(n, PL.nlen(pars))) == True{} : Bool}:
+  match b:
+    case True{}:
+      LC.succ_le(n, PL.pos(v, pars), Nat.add(n, PL.nlen(pars)), L.le_add_mono(n, 1n+PL.pos(v, pars), PL.nlen(pars), LC.pos_lt(v, pars, L.bor_rf(KA.natle(o, v), SV.mem(v, pars), hc, ren_nlt(o, v, e)))))
+    case False{}:
+      L.le_trans(1n+PL.minus(o, v), n, Nat.add(n, PL.nlen(pars)), PP.natle_minus(o, v, n, hb, e), L.le_add_r(n, PL.nlen(pars)))
+
+def ren_below1(+o: Nat, +n: Nat, +pars: List<&2, Nat>, r: E.QExpr, +hb: {SL.below(Nat.add(o, n), r) == True{} : Bool}, +hc: {SP.ecov(o, pars, r) == True{} : Bool}) -> {SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, r)) == True{} : Bool}:
+  match r:
+    case E.QVar{+v}:
+      ren_var.go(o, n, pars, v, KA.natle(1n+v, o), {==}, hb, hc)
+    case E.QCst{q}:
+      {==}
+    case E.QAdd{+a, +b}:
+      kband_i(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, a)), SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, b)), ren_below1(o, n, pars, a, KA.band_l(SL.below(Nat.add(o, n), a), SL.below(Nat.add(o, n), b), hb), L.band_l(SP.ecov(o, pars, a), SP.ecov(o, pars, b), hc)), ren_below1(o, n, pars, b, KA.band_r(SL.below(Nat.add(o, n), a), SL.below(Nat.add(o, n), b), hb), L.band_r(SP.ecov(o, pars, a), SP.ecov(o, pars, b), hc)))
+    case E.QSub{+a, +b}:
+      kband_i(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, a)), SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, b)), ren_below1(o, n, pars, a, KA.band_l(SL.below(Nat.add(o, n), a), SL.below(Nat.add(o, n), b), hb), L.band_l(SP.ecov(o, pars, a), SP.ecov(o, pars, b), hc)), ren_below1(o, n, pars, b, KA.band_r(SL.below(Nat.add(o, n), a), SL.below(Nat.add(o, n), b), hb), L.band_r(SP.ecov(o, pars, a), SP.ecov(o, pars, b), hc)))
+    case E.QMul{+a, +b}:
+      kband_i(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, a)), SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, b)), ren_below1(o, n, pars, a, KA.band_l(SL.below(Nat.add(o, n), a), SL.below(Nat.add(o, n), b), hb), L.band_l(SP.ecov(o, pars, a), SP.ecov(o, pars, b), hc)), ren_below1(o, n, pars, b, KA.band_r(SL.below(Nat.add(o, n), a), SL.below(Nat.add(o, n), b), hb), L.band_r(SP.ecov(o, pars, a), SP.ecov(o, pars, b), hc)))
+    case E.QNeg{+a}:
+      ren_below1(o, n, pars, a, hb, hc)
+
+def ren_below(+o: Nat, +n: Nat, +pars: List<&2, Nat>, rs: List<&2, E.QExpr>, +hb: {PL.eqs_below(Nat.add(o, n), rs) == True{} : Bool}, +hc: {SP.ecovs(o, pars, rs) == True{} : Bool}) -> {CK.allbelow(Nat.add(n, PL.nlen(pars)), PL.renames(o, n, pars, rs)) == True{} : Bool}:
+  match rs:
+    case Nil{}:
+      {==}
+    case Con{+r, +t}:
+      kband_i(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, r)), CK.allbelow(Nat.add(n, PL.nlen(pars)), PL.renames(o, n, pars, t)), ren_below1(o, n, pars, r, KA.band_l(SL.below(Nat.add(o, n), r), PL.eqs_below(Nat.add(o, n), t), hb), L.band_l(SP.ecov(o, pars, r), SP.ecovs(o, pars, t), hc)), ren_below(o, n, pars, t, KA.band_r(SL.below(Nat.add(o, n), r), PL.eqs_below(Nat.add(o, n), t), hb), L.band_r(SP.ecov(o, pars, r), SP.ecovs(o, pars, t), hc)))
+
+# The block's equations vanish at x
+# ---------------------------------
+
+def zat.go(~F: O.OField, +x: M.Vec(~F), +full: List<&2, E.QExpr>, +j: Nat, +g: Nat, +t: List<&2, Nat>, b: Bool, e: {SV.eq(j, g) == b : Bool}, hm: {SV.bor(b, SV.mem(j, t)) == True{} : Bool}, hg: {O.eval(~F, x, PL.eqget(full, g)) == O.zero(F) : O.C(F)}, ih: {SV.mem(j, t) == True{} : Bool} -> {O.eval(~F, x, PL.eqget(full, j)) == O.zero(F) : O.C(F)}) -> {O.eval(~F, x, PL.eqget(full, j)) == O.zero(F) : O.C(F)}:
+  match b:
+    case True{}:
+      %Equal.sym(Nat, j, g, L.eq_ok(j, g, e)) : {O.eval(~F, x, PL.eqget(full, _)) == O.zero(F) : O.C(F)}
+      hg
+    case False{}:
+      ih(hm)
+
+# x solves the kept equations, so each kept one
+def zat(~F: O.OField, +x: M.Vec(~F), +full: List<&2, E.QExpr>, good: List<&2, Nat>, +j: Nat, h: SK.Zeros(~F, x, KP.pickk(full, 0n, good)), hj: {SV.mem(j, good) == True{} : Bool}) -> {O.eval(~F, x, PL.eqget(full, j)) == O.zero(F) : O.C(F)}:
+  match good:
+    case Nil{}:
+      absurd({O.eval(~F, x, PL.eqget(full, j)) == O.zero(F) : O.C(F)}, L.mem_nil(j, hj))
+    case Con{+g, +t}:
+      match h:
+        case (hg, ht):
+          zat.go(~F, x, full, j, g, t, SV.eq(j, g), {==}, hj, hg, hm => zat(~F, x, full, t, j, ht, hm))
+
+
+def zero_rw(~F: O.OField, +a: O.C(F), +b: O.C(F), e: {a == b : O.C(F)}, h: {b == O.zero(F) : O.C(F)}) -> {a == O.zero(F) : O.C(F)}:
+  %Equal.sym(O.C(F), a, b, e) : {_ == O.zero(F) : O.C(F)}
+  h
+
+# the block's equations in block order vanish at X's first o + n entries
+def zeros_blk(~F: O.OField, +x: M.Vec(~F), +vp: List<&2, Nat>, +o: Nat, +n: Nat, +pars: List<&2, Nat>, +full: List<&2, E.QExpr>, +good: List<&2, Nat>, +hzg: SK.Zeros(~F, x, KP.pickk(full, 0n, good)), es: List<&2, Nat>, +hes: {L.subl(es, good) == True{} : Bool}, +hr: {LC.rowsok(full, vp, o, n, pars, es) == True{} : Bool}, +hX: {KA.natle(Nat.add(o, n), M.len(~F, LC.xperm(~F, x, vp))) == True{} : Bool}) -> SK.Zeros(~F, C.app(~F, PP.ftake(~F, o, LC.xperm(~F, x, vp)), PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, vp)))), PL.reorder(vp, full, es)):
+  match es:
+    case Nil{}:
+      Unit{}
+    case Con{+j, +t}:
+      +rj = PL.rnv(vp, PL.eqget(full, j))
+      +h1 = L.band_l(SV.inside(PL.eqget(full, j), vp), SV.band(SL.below(Nat.add(o, n), rj), SV.band(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, rj)), LC.rowsok(full, vp, o, n, pars, t))), hr)
+      +h2 = L.band_r(SV.inside(PL.eqget(full, j), vp), SV.band(SL.below(Nat.add(o, n), rj), SV.band(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, rj)), LC.rowsok(full, vp, o, n, pars, t))), hr)
+      +h3 = L.band_l(SL.below(Nat.add(o, n), rj), SV.band(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, rj)), LC.rowsok(full, vp, o, n, pars, t)), h2)
+      +h4 = L.band_r(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, rj)), LC.rowsok(full, vp, o, n, pars, t), L.band_r(SL.below(Nat.add(o, n), rj), SV.band(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, rj)), LC.rowsok(full, vp, o, n, pars, t)), h2))
+      (zero_rw(~F, O.eval(~F, C.app(~F, PP.ftake(~F, o, LC.xperm(~F, x, vp)), PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, vp)))), rj), O.eval(~F, x, PL.eqget(full, j)),
+        (%Equal.sym(M.Vec(~F), C.app(~F, PP.ftake(~F, o, LC.xperm(~F, x, vp)), PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, vp)))), PP.ftake(~F, Nat.add(o, n), LC.xperm(~F, x, vp)), LC.app_take(~F, o, n, LC.xperm(~F, x, vp))) : {O.eval(~F, _, rj) == O.eval(~F, x, PL.eqget(full, j)) : O.C(F)}
+        Equal.trans(O.C(F), O.eval(~F, PP.ftake(~F, Nat.add(o, n), LC.xperm(~F, x, vp)), rj), O.eval(~F, LC.xperm(~F, x, vp), rj), O.eval(~F, x, PL.eqget(full, j)), LC.eval_ftake(~F, LC.xperm(~F, x, vp), Nat.add(o, n), hX, rj, h3), LC.eval_rnv(~F, x, vp, PL.eqget(full, j), h1))),
+        zat(~F, x, full, good, j, hzg, L.subl_hd(j, t, good, hes))),
+      zeros_blk(~F, x, vp, o, n, pars, full, good, hzg, t, L.subl_tl(j, t, good, hes), h4, hX))
+
+def zeros_fv(~F: O.OField, +env: M.Vec(~F), es: List<&2, E.QExpr>, h: SK.Zeros(~F, env, es)) -> {C.fvals(~F, es, env) == GJ.zeros(~F, CK.eqlen(es)) : M.Vec(~F)}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{+e, +t}:
+      match h:
+        case (he, ht):
+          LC.con_eq(~F, O.eval(~F, env, e), O.zero(F), C.fvals(~F, t, env), GJ.zeros(~F, CK.eqlen(t)), he, zeros_fv(~F, env, t, ht))
+
+# Slope grades
+# ------------
+
+def mj_nn(~F: O.OField, +bb: O.C(F), +hb: O.le(~F, O.zero(F), bb), e: E.QExpr) -> O.le(~F, O.zero(F), BP.mj(~F, bb, e)):
+  match e:
+    case E.QVar{i}:
+      hb
+    case E.QCst{+q}:
+      FV.fabs_nn(~F, O.ofq(~F, q))
+    case E.QAdd{+a, +b}:
+      FO.nonneg_add(~F, BP.mj(~F, bb, a), BP.mj(~F, bb, b), mj_nn(~F, bb, hb, a), mj_nn(~F, bb, hb, b))
+    case E.QSub{+a, +b}:
+      FO.nonneg_add(~F, BP.mj(~F, bb, a), BP.mj(~F, bb, b), mj_nn(~F, bb, hb, a), mj_nn(~F, bb, hb, b))
+    case E.QMul{+a, +b}:
+      FO.mul_nonneg(~F, BP.mj(~F, bb, a), BP.mj(~F, bb, b), mj_nn(~F, bb, hb, a), mj_nn(~F, bb, hb, b))
+    case E.QNeg{+a}:
+      mj_nn(~F, bb, hb, a)
+
+def lp_nn(~F: O.OField, +bb: O.C(F), +hb: O.le(~F, O.zero(F), bb), e: E.QExpr) -> O.le(~F, O.zero(F), BP.lp(~F, bb, e)):
+  match e:
+    case E.QVar{i}:
+      NP.one_nn(~F)
+    case E.QCst{q}:
+      FO.le_refl(~F, O.zero(F))
+    case E.QAdd{+a, +b}:
+      FO.nonneg_add(~F, BP.lp(~F, bb, a), BP.lp(~F, bb, b), lp_nn(~F, bb, hb, a), lp_nn(~F, bb, hb, b))
+    case E.QSub{+a, +b}:
+      FO.nonneg_add(~F, BP.lp(~F, bb, a), BP.lp(~F, bb, b), lp_nn(~F, bb, hb, a), lp_nn(~F, bb, hb, b))
+    case E.QMul{+a, +b}:
+      FO.nonneg_add(~F, O.mul(F, BP.mj(~F, bb, a), BP.lp(~F, bb, b)), O.mul(F, BP.mj(~F, bb, b), BP.lp(~F, bb, a)), FO.mul_nonneg(~F, BP.mj(~F, bb, a), BP.lp(~F, bb, b), mj_nn(~F, bb, hb, a), lp_nn(~F, bb, hb, b)), FO.mul_nonneg(~F, BP.mj(~F, bb, b), BP.lp(~F, bb, a), mj_nn(~F, bb, hb, b), lp_nn(~F, bb, hb, a)))
+    case E.QNeg{+a}:
+      lp_nn(~F, bb, hb, a)
+
+def ms_nn(~F: O.OField, +bb: O.C(F), +hb: O.le(~F, O.zero(F), bb), e: E.QExpr) -> O.le(~F, O.zero(F), BP.ms(~F, bb, e)):
+  match e:
+    case E.QVar{i}:
+      NP.one_nn(~F)
+    case E.QCst{q}:
+      FO.le_refl(~F, O.zero(F))
+    case E.QAdd{+a, +b}:
+      FO.nonneg_add(~F, BP.ms(~F, bb, a), BP.ms(~F, bb, b), ms_nn(~F, bb, hb, a), ms_nn(~F, bb, hb, b))
+    case E.QSub{+a, +b}:
+      FO.nonneg_add(~F, BP.ms(~F, bb, a), BP.ms(~F, bb, b), ms_nn(~F, bb, hb, a), ms_nn(~F, bb, hb, b))
+    case E.QMul{+a, +b}:
+      FO.nonneg_add(~F, O.mul(F, BP.mj(~F, bb, a), BP.ms(~F, bb, b)), O.mul(F, BP.mj(~F, bb, b), BP.ms(~F, bb, a)), FO.mul_nonneg(~F, BP.mj(~F, bb, a), BP.ms(~F, bb, b), mj_nn(~F, bb, hb, a), ms_nn(~F, bb, hb, b)), FO.mul_nonneg(~F, BP.mj(~F, bb, b), BP.ms(~F, bb, a), mj_nn(~F, bb, hb, b), ms_nn(~F, bb, hb, a)))
+    case E.QNeg{+a}:
+      ms_nn(~F, bb, hb, a)
+
+def ls_nn(~F: O.OField, +bb: O.C(F), +hb: O.le(~F, O.zero(F), bb), e: E.QExpr) -> O.le(~F, O.zero(F), BP.ls(~F, bb, e)):
+  match e:
+    case E.QVar{i}:
+      FO.le_refl(~F, O.zero(F))
+    case E.QCst{q}:
+      FO.le_refl(~F, O.zero(F))
+    case E.QAdd{+a, +b}:
+      FO.nonneg_add(~F, BP.ls(~F, bb, a), BP.ls(~F, bb, b), ls_nn(~F, bb, hb, a), ls_nn(~F, bb, hb, b))
+    case E.QSub{+a, +b}:
+      FO.nonneg_add(~F, BP.ls(~F, bb, a), BP.ls(~F, bb, b), ls_nn(~F, bb, hb, a), ls_nn(~F, bb, hb, b))
+    case E.QMul{+a, +b}:
+      FO.nonneg_add(~F, O.add(F, O.mul(F, BP.mj(~F, bb, a), BP.ls(~F, bb, b)), O.mul(F, BP.ms(~F, bb, b), BP.lp(~F, bb, a))), O.add(F, O.mul(F, BP.mj(~F, bb, b), BP.ls(~F, bb, a)), O.mul(F, BP.ms(~F, bb, a), BP.lp(~F, bb, b))), FO.nonneg_add(~F, O.mul(F, BP.mj(~F, bb, a), BP.ls(~F, bb, b)), O.mul(F, BP.ms(~F, bb, b), BP.lp(~F, bb, a)), FO.mul_nonneg(~F, BP.mj(~F, bb, a), BP.ls(~F, bb, b), mj_nn(~F, bb, hb, a), ls_nn(~F, bb, hb, b)), FO.mul_nonneg(~F, BP.ms(~F, bb, b), BP.lp(~F, bb, a), ms_nn(~F, bb, hb, b), lp_nn(~F, bb, hb, a))), FO.nonneg_add(~F, O.mul(F, BP.mj(~F, bb, b), BP.ls(~F, bb, a)), O.mul(F, BP.ms(~F, bb, a), BP.lp(~F, bb, b)), FO.mul_nonneg(~F, BP.mj(~F, bb, b), BP.ls(~F, bb, a), mj_nn(~F, bb, hb, b), ls_nn(~F, bb, hb, a)), FO.mul_nonneg(~F, BP.ms(~F, bb, a), BP.lp(~F, bb, b), ms_nn(~F, bb, hb, a), lp_nn(~F, bb, hb, b))))
+    case E.QNeg{+a}:
+      ls_nn(~F, bb, hb, a)
+
+# the block's Lambda and M: its equations' grades summed
+def lsum(~F: O.OField, +bb: O.C(F), es: List<&2, E.QExpr>) -> O.C(F):
+  match es:
+    case Nil{}:
+      O.zero(F)
+    case Con{e, t}:
+      O.add(F, BP.ls(~F, bb, e), lsum(~F, bb, t))
+
+def msum(~F: O.OField, +bb: O.C(F), es: List<&2, E.QExpr>) -> O.C(F):
+  match es:
+    case Nil{}:
+      O.zero(F)
+    case Con{e, t}:
+      O.add(F, BP.ms(~F, bb, e), msum(~F, bb, t))
+
+def lsum_nn(~F: O.OField, +bb: O.C(F), +hb: O.le(~F, O.zero(F), bb), es: List<&2, E.QExpr>) -> O.le(~F, O.zero(F), lsum(~F, bb, es)):
+  match es:
+    case Nil{}:
+      FO.le_refl(~F, O.zero(F))
+    case Con{+e, +t}:
+      FO.nonneg_add(~F, BP.ls(~F, bb, e), lsum(~F, bb, t), ls_nn(~F, bb, hb, e), lsum_nn(~F, bb, hb, t))
+
+def msum_nn(~F: O.OField, +bb: O.C(F), +hb: O.le(~F, O.zero(F), bb), es: List<&2, E.QExpr>) -> O.le(~F, O.zero(F), msum(~F, bb, es)):
+  match es:
+    case Nil{}:
+      FO.le_refl(~F, O.zero(F))
+    case Con{+e, +t}:
+      FO.nonneg_add(~F, BP.ms(~F, bb, e), msum(~F, bb, t), ms_nn(~F, bb, hb, e), msum_nn(~F, bb, hb, t))
+
+def eqok_le(~F: O.OField, +bb: O.C(F), +hb: O.le(~F, O.zero(F), bb), +lam: O.C(F), +ms: O.C(F), es: List<&2, E.QExpr>, +hl: O.le(~F, lsum(~F, bb, es), lam), +hm: O.le(~F, msum(~F, bb, es), ms)) -> AP.eqok(~F, bb, lam, ms, es):
+  match es:
+    case Nil{}:
+      Unit{}
+    case Con{+e, +t}:
+      (DM.le_trans(~F, BP.ls(~F, bb, e), lsum(~F, bb, Con{e, t}), lam, NW.le_addr(~F, BP.ls(~F, bb, e), lsum(~F, bb, t), lsum_nn(~F, bb, hb, t)), hl),
+      (DM.le_trans(~F, BP.ms(~F, bb, e), msum(~F, bb, Con{e, t}), ms, NW.le_addr(~F, BP.ms(~F, bb, e), msum(~F, bb, t), msum_nn(~F, bb, hb, t)), hm),
+      eqok_le(~F, bb, hb, lam, ms, t, DM.le_trans(~F, lsum(~F, bb, t), lsum(~F, bb, Con{e, t}), lam, NW.le_addl(~F, BP.ls(~F, bb, e), lsum(~F, bb, t), ls_nn(~F, bb, hb, e)), hl), DM.le_trans(~F, msum(~F, bb, t), msum(~F, bb, Con{e, t}), ms, NW.le_addl(~F, BP.ms(~F, bb, e), msum(~F, bb, t), ms_nn(~F, bb, hb, e)), hm))))
