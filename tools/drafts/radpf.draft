@@ -358,3 +358,45 @@ def gbox_zip($KH, cs: N.KVec(~K), rs: N.KVec(~K), +rho: @T, +bb: @T, hc: M.vbnd.
       +hrl = NP.bnd_lo(~F, @H(r), rho, hr1)
       ((hn1, (FM.bnd_mono(~F, @H(c), @S(bb, rho), @S(bb, @H(r)), hc1, FM.nn_eq(~F, @S(@S(bb, @H(r)), @S(bb, rho)), @S(rho, @H(r)), FR.fring_eq(~F, [bb, rho, @H(r)], E.ZSub{E.ZVar{1n}, E.ZVar{2n}}, E.ZSub{E.ZSub{E.ZVar{0n}, E.ZVar{2n}}, E.ZSub{E.ZVar{0n}, E.ZVar{1n}}}, {==}), FM.sub_nonneg(~F, @H(r), rho, hrl))), DM.le_trans(~F, @H(r), rho, @M(@1, rho), hrl, AP.le_one_mul(~F, rho)))),
        gbox_zip($KHA, ct, rt, rho, bb, hc2, hn2, hr2, FV.succ_inj(KA.klen(~K, ct), KA.klen(~K, rt), hl)))
+
+# Slope radii over a graded box
+# -----------------------------
+
+def bnd_of01(~F: O.OField, +x: @T, +t: @T, +h0: O.le(~F, @0, x), +h1: O.le(~F, x, t)) -> M.bnd(~F, x, t):
+  (FM.sub_nonneg(~F, x, t, h1), FO.nonneg_add(~F, t, x, DM.le_trans(~F, @0, x, t, h0, h1), h0))
+
+def srad_cons($KH, +x: @T, +t: M.Vec(~F), +s: @T, +hb: M.bnd(~F, x, s), +h0: O.le(~F, @0, x), h: M.Both(M.vbnd.all(~F, t, s), FV.rnn(~F, t))) -> M.Both(M.vbnd.all(~F, Con{x, t}, s), FV.rnn(~F, Con{x, t})):
+  (h1, h2) = h
+  ((hb, h1), (h0, h2))
+
+# one equation's slope radii: in [0, lam rho]
+def srad_row($KH, +rho: @T, +bb: @T, +hr: O.le(~F, @0, rho), +hb: O.le(~F, @0, bb), +box: List<&2, KB.KB<K>>, +hg: BP.gbox($KHA, rho, bb, box), +e: E.QExpr, +hh: {KB.held(~K, e) == True{} : Bool}, +lam: @T, +hl: O.le(~F, BP.ls(~F, bb, e), lam), +hl0: O.le(~F, @0, lam), cnt: Nat, +lo: Nat) -> M.Both(M.vbnd.all(~F, N.ofkv($KHA, KB.bradii(~K, KB.krange(~K, box, e, cnt, lo))), @M(lam, rho)), FV.rnn(~F, N.ofkv($KHA, KB.bradii(~K, KB.krange(~K, box, e, cnt, lo))))):
+  match cnt:
+    case 0n:
+      (Unit{}, Unit{})
+    case 1n++k:
+      +g = BP.ksl_grade($KHA, rho, bb, hr, hb, box, hg, lo, e, hh)
+      +r0 = BP.gf_0(~F, rho, @H(KB.KB.c(K, KB.ksl(~K, lo, box, e))), @H(KB.KB.r(K, KB.ksl(~K, lo, box, e))), BP.ms(~F, bb, e), BP.ls(~F, bb, e), g)
+      +r1 = DM.le_trans(~F, @H(KB.KB.r(K, KB.ksl(~K, lo, box, e))), @M(BP.ls(~F, bb, e), rho), @M(lam, rho), BP.gf_l(~F, rho, @H(KB.KB.c(K, KB.ksl(~K, lo, box, e))), @H(KB.KB.r(K, KB.ksl(~K, lo, box, e))), BP.ms(~F, bb, e), BP.ls(~F, bb, e), g), FV.mul_le_r(~F, BP.ls(~F, bb, e), lam, rho, hr, hl))
+      srad_cons($KHA, @H(KB.KB.r(K, KB.ksl(~K, lo, box, e))), N.ofkv($KHA, KB.bradii(~K, KB.krange(~K, box, e, k, 1n+lo))), @M(lam, rho), bnd_of01(~F, @H(KB.KB.r(K, KB.ksl(~K, lo, box, e))), @M(lam, rho), r0, r1), r0, srad_row($KHA, rho, bb, hr, hb, box, hg, e, hh, lam, hl, hl0, k, 1n+lo))
+
+def srad_mcons($KH, +r: M.Vec(~F), +t: M.Mat(~F), +cnt: Nat, +c: @T, +hr: O.le(~F, NP.rowabs(~F, r, cnt), c), +hn: FV.rnn(~F, r), h: M.Both(NP.rowsle(~F, t, cnt, c), FV.mnn(~F, t))) -> M.Both(NP.rowsle(~F, Con{r, t}, cnt, c), FV.mnn(~F, Con{r, t})):
+  (h1, h2) = h
+  ((hr, h1), (hn, h2))
+
+# the slope radius matrix: rows sum to at most cnt lam rho, entries >= 0
+def srad_mat($KH, +rho: @T, +bb: @T, +hr: O.le(~F, @0, rho), +hb: O.le(~F, @0, bb), +box: List<&2, KB.KB<K>>, +hg: BP.gbox($KHA, rho, bb, box), +lam: @T, +ms: @T, +hl0: O.le(~F, @0, lam), eqs: List<&2, E.QExpr>, +hq: AP.eqok(~F, bb, lam, ms, eqs), +hh: {CK.allheld(~K, eqs) == True{} : Bool}, +cnt: Nat, +lo: Nat) -> M.Both(NP.rowsle(~F, N.ofkm($KHA, CK.mradii(~K, CK.srows(~K, box, cnt, lo, eqs))), cnt, @M(FR.ofn(~F, cnt), @M(lam, rho))), FV.mnn(~F, N.ofkm($KHA, CK.mradii(~K, CK.srows(~K, box, cnt, lo, eqs))))):
+  match eqs:
+    case Nil{}:
+      (Unit{}, Unit{})
+    case Con{+e, +es}:
+      +he = KA.band_l(KB.held(~K, e), CK.allheld(~K, es), hh)
+      +hes = KA.band_r(KB.held(~K, e), CK.allheld(~K, es), hh)
+      +row = srad_row($KHA, rho, bb, hr, hb, box, hg, e, he, lam, AP.eqok_ls(~F, bb, lam, ms, e, es, hq), hl0, cnt, lo)
+      srad_mcons($KHA, N.ofkv($KHA, KB.bradii(~K, KB.krange(~K, box, e, cnt, lo))), N.ofkm($KHA, CK.mradii(~K, CK.srows(~K, box, cnt, lo, es))), cnt, @M(FR.ofn(~F, cnt), @M(lam, rho)),
+        DG.rowabs_le(~F, N.ofkv($KHA, KB.bradii(~K, KB.krange(~K, box, e, cnt, lo))), cnt, @M(lam, rho), AP.both_l(M.vbnd.all(~F, N.ofkv($KHA, KB.bradii(~K, KB.krange(~K, box, e, cnt, lo))), @M(lam, rho)), FV.rnn(~F, N.ofkv($KHA, KB.bradii(~K, KB.krange(~K, box, e, cnt, lo)))), row), FO.mul_nonneg(~F, lam, rho, hl0, hr)),
+        AP.both_r(M.vbnd.all(~F, N.ofkv($KHA, KB.bradii(~K, KB.krange(~K, box, e, cnt, lo))), @M(lam, rho)), FV.rnn(~F, N.ofkv($KHA, KB.bradii(~K, KB.krange(~K, box, e, cnt, lo)))), row),
+        srad_mat($KHA, rho, bb, hr, hb, box, hg, lam, ms, hl0, es, AP.eqok_tl(~F, bb, lam, ms, e, es, hq), hes, cnt, lo))
+
+def srad_mn($KH, +rho: @T, +bb: @T, +hr: O.le(~F, @0, rho), +hb: O.le(~F, @0, bb), +box: List<&2, KB.KB<K>>, +hg: BP.gbox($KHA, rho, bb, box), +lam: @T, +ms: @T, +hl0: O.le(~F, @0, lam), +eqs: List<&2, E.QExpr>, +hq: AP.eqok(~F, bb, lam, ms, eqs), +hh: {CK.allheld(~K, eqs) == True{} : Bool}, +cnt: Nat, +lo: Nat) -> O.le(~F, NP.mnorm(~F, N.ofkm($KHA, CK.mradii(~K, CK.srows(~K, box, cnt, lo, eqs))), cnt), @M(FR.ofn(~F, cnt), @M(lam, rho))):
+  NP.mnorm_lub(~F, N.ofkm($KHA, CK.mradii(~K, CK.srows(~K, box, cnt, lo, eqs))), cnt, @M(FR.ofn(~F, cnt), @M(lam, rho)), AP.both_l(NP.rowsle(~F, N.ofkm($KHA, CK.mradii(~K, CK.srows(~K, box, cnt, lo, eqs))), cnt, @M(FR.ofn(~F, cnt), @M(lam, rho))), FV.mnn(~F, N.ofkm($KHA, CK.mradii(~K, CK.srows(~K, box, cnt, lo, eqs)))), srad_mat($KHA, rho, bb, hr, hb, box, hg, lam, ms, hl0, eqs, hq, hh, cnt, lo)), AP.lr_nn(~F, cnt, lam, rho, hl0, hr))
