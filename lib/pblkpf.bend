@@ -50,6 +50,7 @@ import ./binvpf.bend as BI
 import ./locpf.bend as LC
 import ./nat.bend as LN
 import ./tarjanpf.bend as TJ
+import ./maxpf.bend as MX
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -678,3 +679,59 @@ def hzc_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +gc: List<&2, S.D>, +gr: List<
   rbs(~F, PP.zmap(~F, p, pars), M.ofdv(~F, NU.dpick(gc, pars)), M.ofdv(~F, NU.dpick(gr, pars)), rho, hzr_of(~F, ~H, gc, gr, o, p, hpb, hgc, pars, hpo), hpr,
     Equal.trans(Nat, M.len(~F, PP.zmap(~F, p, pars)), PL.nlen(pars), M.len(~F, M.ofdv(~F, NU.dpick(gc, pars))), PP.len_zmap(~F, p, pars), Equal.sym(Nat, M.len(~F, M.ofdv(~F, NU.dpick(gc, pars))), PL.nlen(pars), len_pick(~F, gc, pars))),
     Equal.trans(Nat, M.len(~F, M.ofdv(~F, NU.dpick(gc, pars))), PL.nlen(pars), M.len(~F, M.ofdv(~F, NU.dpick(gr, pars))), len_pick(~F, gc, pars), Equal.sym(Nat, M.len(~F, M.ofdv(~F, NU.dpick(gr, pars))), PL.nlen(pars), len_pick(~F, gr, pars))))
+
+# The drawing near x
+# ------------------
+
+def lt_k(+k: Nat, +v: Nat, hk: {KA.natle(k, v) == True{} : Bool}, hv: {KA.natle(1n+v, k) == True{} : Bool}) -> Empty:
+  L.lt_irr(v, L.le_trans(1n+v, k, v, hv, hk))
+
+def near_at.go(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +m: Nat, +k: Nat, +v: Nat, +g: List<&2, S.D>, +x: M.Vec(~F), +d: O.C(F), +pins: List<&2, Nat>, +g0: List<&2, S.D>, b: Bool, e: {KA.nateq(k, v) == b : Bool}, hk: {KA.natle(k, v) == True{} : Bool}, h0: SV.Near.go(~KI.dnum(), ~F, ~H, SV.mem(k, pins), g, x, d, g0, k), ih: {KA.natle(1n+k, v) == True{} : Bool} -> SV.Near.go(~KI.dnum(), ~F, ~H, SV.mem(v, pins), g, x, d, g0, v)) -> SV.Near.go(~KI.dnum(), ~F, ~H, SV.mem(v, pins), g, x, d, g0, v):
+  match b:
+    case True{}:
+      %GJ.nateq_ok(k, v, e) : SV.Near.go(~KI.dnum(), ~F, ~H, SV.mem(_, pins), g, x, d, g0, _)
+      h0
+    case False{}:
+      ih(GJ.le_ne(k, v, hk, e))
+
+def add1_le(+v: Nat, +k: Nat, +m: Nat, h: {KA.natle(1n+v, Nat.add(k, 1n+m)) == True{} : Bool}) -> {KA.natle(1n+v, 1n+Nat.add(k, m)) == True{} : Bool}:
+  %Equal.sym(Nat, 1n+Nat.add(k, m), Nat.add(k, 1n+m), LN.add_succ(k, m)) : {KA.natle(1n+v, _) == True{} : Bool}
+  h
+
+def add0_le(+v: Nat, +k: Nat, h: {KA.natle(1n+v, Nat.add(k, 0n)) == True{} : Bool}) -> {KA.natle(1n+v, k) == True{} : Bool}:
+  %Equal.sym(Nat, k, Nat.add(k, 0n), LN.add_zero(k)) : {KA.natle(1n+v, _) == True{} : Bool}
+  h
+
+# Near at one variable v (k <= v < k + m)
+def near_at(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, m: Nat, +k: Nat, +v: Nat, +g: List<&2, S.D>, +x: M.Vec(~F), +d: O.C(F), +pins: List<&2, Nat>, +g0: List<&2, S.D>, +hk: {KA.natle(k, v) == True{} : Bool}, +hv: {KA.natle(1n+v, Nat.add(k, m)) == True{} : Bool}, h: SV.Near(~KI.dnum(), ~F, ~H, m, k, g, x, d, pins, g0)) -> SV.Near.go(~KI.dnum(), ~F, ~H, SV.mem(v, pins), g, x, d, g0, v):
+  match m:
+    case 0n:
+      absurd(SV.Near.go(~KI.dnum(), ~F, ~H, SV.mem(v, pins), g, x, d, g0, v), lt_k(k, v, hk, add0_le(v, k, hv)))
+    case 1n++j:
+      match h:
+        case (h0, h1):
+          near_at.go(~F, ~H, j, k, v, g, x, d, pins, g0, KA.nateq(k, v), {==}, hk, h0, hk1 => near_at(~F, ~H, j, 1n+k, v, g, x, d, pins, g0, hk1, add1_le(v, k, j, hv), h1))
+
+def close_bnd(~F: O.OField, +a: O.C(F), +b: O.C(F), +d: O.C(F), h: SV.Close(~F, a, b, d)) -> M.bnd(~F, O.sub(~F, a, b), d):
+  match h:
+    case (h1, h2):
+      (FO.lt_le(~F, O.zero(F), O.sub(~F, d, O.sub(~F, a, b)), RL.sub_pos(~F, O.sub(~F, a, b), d, h1)), FM.nn_eq(~F, O.add(F, d, O.sub(~F, a, b)), O.sub(~F, d, O.sub(~F, b, a)), FR.fring_eq(~F, [a, b, d], E.ZSub{E.ZVar{2n}, E.ZSub{E.ZVar{1n}, E.ZVar{0n}}}, E.ZAdd{E.ZVar{2n}, E.ZSub{E.ZVar{0n}, E.ZVar{1n}}}, {==}), FO.lt_le(~F, O.zero(F), O.sub(~F, d, O.sub(~F, b, a)), RL.sub_pos(~F, O.sub(~F, b, a), d, h2))))
+
+def lk_kv(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +g: List<&2, S.D>, +w: Nat) -> {O.lookup(~F, N.ofkv(~KI.dnum(), ~F, ~H, g), w) == M.ofd(~F, NU.dlook(g, w)) : O.C(F)}:
+  %Equal.sym(M.Vec(~F), N.ofkv(~KI.dnum(), ~F, ~H, g), M.ofdv(~F, g), AP.ofkv_d(~F, ~H, g)) : {O.lookup(~F, _, w) == M.ofd(~F, NU.dlook(g, w)) : O.C(F)}
+  look_ofdv(~F, g, w)
+
+# a free variable's drawn value is within d of x
+def near_bnd(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +nv: Nat, +w: Nat, +g: List<&2, S.D>, +x: M.Vec(~F), +d: O.C(F), +pins: List<&2, Nat>, +g0: List<&2, S.D>, +hf: {SV.mem(w, pins) == False{} : Bool}, +hw: {KA.natle(1n+w, nv) == True{} : Bool}, +hN: SV.Near(~KI.dnum(), ~F, ~H, nv, 0n, g, x, d, pins, g0)) -> M.bnd(~F, O.sub(~F, M.ofd(~F, NU.dlook(g, w)), O.lookup(~F, x, w)), d):
+  close_bnd(~F, M.ofd(~F, NU.dlook(g, w)), O.lookup(~F, x, w), d, (%lk_kv(~F, ~H, g, w) : SV.Close(~F, _, O.lookup(~F, x, w), d)
+    (%hf : SV.Near.go(~KI.dnum(), ~F, ~H, _, g, x, d, g0, w)
+    near_at(~F, ~H, nv, 0n, w, g, x, d, pins, g0, {==}, hw, hN))))
+
+def y0_close(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +nv: Nat, +g: List<&2, S.D>, +x: M.Vec(~F), +d: O.C(F), +pins: List<&2, Nat>, +g0: List<&2, S.D>, +hN: SV.Near(~KI.dnum(), ~F, ~H, nv, 0n, g, x, d, pins, g0), ws: List<&2, Nat>, +hf: {MX.disj(ws, pins) == True{} : Bool}, +hb: {SV.below(ws, nv) == True{} : Bool}) -> M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, NU.dpick(g, ws)), LC.xperm(~F, x, ws)), d):
+  match ws:
+    case Nil{}:
+      Unit{}
+    case Con{+w, +t}:
+      (near_bnd(~F, ~H, nv, w, g, x, d, pins, g0, MX.disj_hd(w, t, pins, hf), (%L.lt_sv(w, nv) : {_ == True{} : Bool}
+        L.band_l(SV.lt(w, nv), SV.below(t, nv), hb)), hN),
+      y0_close(~F, ~H, nv, g, x, d, pins, g0, hN, t, MX.disj_tl(w, t, pins, hf), L.band_r(SV.lt(w, nv), SV.below(t, nv), hb)))
