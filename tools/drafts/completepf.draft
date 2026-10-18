@@ -508,3 +508,87 @@ def eqsb_of(es: List<&2, E.QExpr>, +n: Nat, +h: {CV.ewithin(es, n) == True{} : B
 
 def kept_below(+sk: SK.Sketch, +hwf: {WF.wf_dec(sk) == True{} : Bool}, +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}) -> {PL.eqs_below(SO.nvars(sk), SO.kept(sk)) == True{} : Bool}:
   eqsb_of(SO.kept(sk), SO.nvars(sk), ew_sk(SV.mark(SO.red_of(sk), sk), SO.nvars(sk), w_mark(SO.red_of(sk), sk, SO.nvars(sk), cov), WC.wf_mark(SO.red_of(sk), sk, hwf)))
+
+# The pins are held
+# -----------------
+
+def deq_go(~F: O.OField, +a: S.D, c: Cmp, e: {KI.dcmp(a, a) == c : Cmp}) -> {SV.iseq(c) == True{} : Bool}:
+  match c:
+    case LT{}:
+      FO.absurd({SV.iseq(LT{}) == True{} : Bool}, O.lt_irrefl(F)(M.ofd(~F, a))(KI.dcmp_sound.go(~F, a, a, LT{}, e)))
+    case EQ{}:
+      {==}
+    case GT{}:
+      FO.absurd({SV.iseq(GT{}) == True{} : Bool}, O.lt_irrefl(F)(M.ofd(~F, a))(KI.dcmp_sound.go(~F, a, a, GT{}, e)))
+
+# a = a as numbers (read in any ordered field)
+def deq_self(~F: O.OField, +a: S.D) -> {SV.deq(a, a) == True{} : Bool}:
+  deq_go(~F, a, KI.dcmp(a, a), {==})
+
+def pa_go(+v: Nat, +h: Nat, +t: List<&2, Nat>, +b2: List<&2, Nat>, b: Bool, e: {KA.nateq(v, h) == b : Bool}, hm: {SV.bor(SV.eq(v, h), SV.mem(v, t)) == True{} : Bool}, ih: {SV.mem(v, t) == True{} : Bool} -> {PL.pos(v, ST.app(t, b2)) == PL.pos(v, t) : Nat}) -> {PL.pos.go(b, PL.pos(v, ST.app(t, b2))) == PL.pos.go(b, PL.pos(v, t)) : Nat}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      %Equal.sym(Nat, PL.pos(v, ST.app(t, b2)), PL.pos(v, t), ih(L.bor_rf(SV.eq(v, h), SV.mem(v, t), hm, (%Equal.sym(Bool, SV.eq(v, h), KA.nateq(v, h), L.eq_sv(v, h)) : {_ == False{} : Bool}
+        e)))) : {1n+_ == 1n+PL.pos(v, t) : Nat}
+      {==}
+
+# a member of a sits at the same position in a ++ b
+def pos_app_l(+v: Nat, a: List<&2, Nat>, +b: List<&2, Nat>, h: {SV.mem(v, a) == True{} : Bool}) -> {PL.pos(v, ST.app(a, b)) == PL.pos(v, a) : Nat}:
+  match a:
+    case Nil{}:
+      absurd({PL.pos(v, b) == 0n : Nat}, L.mem_nil(v, h))
+    case Con{+hd, +t}:
+      pa_go(v, hd, t, b, KA.nateq(v, hd), {==}, h, hm => pos_app_l(v, t, b, hm))
+
+@MACRO GCU NU.unperm($NV, 0n, gcf, $VP)
+@MACRO GRU NU.unperm($NV, 0n, grf, $VP)
+
+# the read-back box at a pin is the blocks' box at the pin's place
+def up_pin($SKP, +u: List<&2, S.D>, +v: Nat, +hvf: {SV.mem(v, $FS) == True{} : Bool}) -> {NU.dlook(NU.unperm($NV, 0n, u, $VP), v) == KB.klook($DN, u, PL.pos(v, $FS)) : S.D}:
+  +hvn = TJ.lt_nq(v, $FS, $NV, hvf, PB.below_app_l($FS, ST.allvars($KB), $NV, SP.sfacts_vpb($SFA)))
+  %Equal.sym(S.D, NU.dlook(NU.unperm($NV, 0n, u, $VP), v), KB.klook($DN, NU.unperm($NV, 0n, u, $VP), v), PB.dl_kl(NU.unperm($NV, 0n, u, $VP), v)) : {_ == KB.klook($DN, u, PL.pos(v, $FS)) : S.D}
+  %Equal.sym(S.D, KB.klook($DN, NU.unperm($NV, 0n, u, $VP), v), KB.klook($DN, u, PL.pos(v, $VP)), up_kl0($NV, u, $VP, v, hvn)) : {_ == KB.klook($DN, u, PL.pos(v, $FS)) : S.D}
+  %Equal.sym(Nat, PL.pos(v, $VP), PL.pos(v, $FS), pos_app_l(v, $FS, ST.allvars($KB), hvf)) : {KB.klook($DN, u, _) == KB.klook($DN, u, PL.pos(v, $FS)) : S.D}
+  {==}
+
+def hj_of($SKP, +v: Nat, hvf: {SV.mem(v, $FS) == True{} : Bool}) -> {KA.natle(1n+PL.pos(v, $FS), $NP) == True{} : Bool}:
+  %nlen_st($FS) : {KA.natle(1n+PL.pos(v, $FS), _) == True{} : Bool}
+  LC.pos_lt(v, $FS, hvf)
+
+def cu_eq($SKP, +g: List<&2, S.D>, +gcf: List<&2, S.D>, +hkc: {PL.ktake($DN, $NP, gcf) == $GC0 : List<&2, S.D>}, +v: Nat, +hvf: {SV.mem(v, $FS) == True{} : Bool}) -> {NU.dlook($GCU, v) == NU.dlook(g, v) : S.D}:
+  +j = PL.pos(v, $FS)
+  +hj = LC.pos_lt(v, $FS, hvf)
+  %Equal.sym(S.D, NU.dlook($GCU, v), KB.klook($DN, gcf, j), up_pin($SKA, gcf, v, hvf)) : {_ == NU.dlook(g, v) : S.D}
+  %Equal.sym(S.D, KB.klook($DN, gcf, j), NU.dlook($GC0, j), PB.kl_pre(gcf, $GC0, $NP, j, hkc, hj_of($SKA, v, hvf))) : {_ == NU.dlook(g, v) : S.D}
+  %Equal.sym(List<&2, S.D>, $GC0, NU.dpick(g, $FS), dtake_pick(g, $FS, ST.allvars($KB))) : {NU.dlook(_, j) == NU.dlook(g, v) : S.D}
+  %Equal.sym(S.D, NU.dlook(NU.dpick(g, $FS), j), NU.dlook(g, PL.nthn($FS, j)), dlook_pick(g, $FS, j, hj)) : {_ == NU.dlook(g, v) : S.D}
+  %Equal.sym(Nat, PL.nthn($FS, j), v, PP.pos_nth(v, $FS, hj)) : {NU.dlook(g, _) == NU.dlook(g, v) : S.D}
+  {==}
+
+def ru_eq($SKP, +g: List<&2, S.D>, +grf: List<&2, S.D>, +hkr: {PL.ktake($DN, $NP, grf) == $GR0 : List<&2, S.D>}, +v: Nat, +hvf: {SV.mem(v, $FS) == True{} : Bool}) -> {NU.dlook($GRU, v) == NU.dzero() : S.D}:
+  +j = PL.pos(v, $FS)
+  +hjn = hj_of($SKA, v, hvf)
+  %Equal.sym(S.D, NU.dlook($GRU, v), KB.klook($DN, grf, j), up_pin($SKA, grf, v, hvf)) : {_ == NU.dzero() : S.D}
+  %Equal.sym(S.D, KB.klook($DN, grf, j), NU.dlook($GR0, j), PB.kl_pre(grf, $GR0, $NP, j, hkr, hjn)) : {_ == NU.dzero() : S.D}
+  dlook_dreps($NP, NU.dzero(), j, hjn)
+
+def held_r($SKP, +g: List<&2, S.D>, +grf: List<&2, S.D>, +hkr: {PL.ktake($DN, $NP, grf) == $GR0 : List<&2, S.D>}, +v: Nat, +hvf: {SV.mem(v, $FS) == True{} : Bool}) -> {SV.deq(SV.dnth($GRU, v), SV.dzero()) == True{} : Bool}:
+  %Equal.sym(S.D, SV.dnth($GRU, v), NU.dlook($GRU, v), dnth_dl($GRU, v)) : {SV.deq(_, SV.dzero()) == True{} : Bool}
+  %Equal.sym(S.D, NU.dlook($GRU, v), NU.dzero(), ru_eq($SKA, g, grf, hkr, v, hvf)) : {SV.deq(_, SV.dzero()) == True{} : Bool}
+  deq_self(~F, NU.dzero())
+
+def held_c($SKP, +g: List<&2, S.D>, +gcf: List<&2, S.D>, +hkc: {PL.ktake($DN, $NP, gcf) == $GC0 : List<&2, S.D>}, +v: Nat, +hvf: {SV.mem(v, $FS) == True{} : Bool}) -> {SV.deq(SV.dnth($GCU, v), SV.dnth(g, v)) == True{} : Bool}:
+  %Equal.sym(S.D, SV.dnth($GCU, v), NU.dlook($GCU, v), dnth_dl($GCU, v)) : {SV.deq(_, SV.dnth(g, v)) == True{} : Bool}
+  %Equal.sym(S.D, SV.dnth(g, v), NU.dlook(g, v), dnth_dl(g, v)) : {SV.deq(NU.dlook($GCU, v), _) == True{} : Bool}
+  %Equal.sym(S.D, NU.dlook($GCU, v), NU.dlook(g, v), cu_eq($SKA, g, gcf, hkc, v, hvf)) : {SV.deq(_, NU.dlook(g, v)) == True{} : Bool}
+  deq_self(~F, NU.dlook(g, v))
+
+def held_go($SKP, +g: List<&2, S.D>, +gcf: List<&2, S.D>, +grf: List<&2, S.D>, +hkc: {PL.ktake($DN, $NP, gcf) == $GC0 : List<&2, S.D>}, +hkr: {PL.ktake($DN, $NP, grf) == $GR0 : List<&2, S.D>}, ws: List<&2, Nat>, +hs: {L.subl(ws, $FS) == True{} : Bool}) -> {SV.held(ws, g, $GCU, $GRU) == True{} : Bool}:
+  match ws:
+    case Nil{}:
+      {==}
+    case Con{+v, +t}:
+      +hvf = L.subl_hd(v, t, $FS, hs)
+      L.band_i(SV.deq(SV.dnth($GRU, v), SV.dzero()), SV.band(SV.deq(SV.dnth($GCU, v), SV.dnth(g, v)), SV.held(t, g, $GCU, $GRU)), held_r($SKA, g, grf, hkr, v, hvf), L.band_i(SV.deq(SV.dnth($GCU, v), SV.dnth(g, v)), SV.held(t, g, $GCU, $GRU), held_c($SKA, g, gcf, hkc, v, hvf), held_go($SKA, g, gcf, grf, hkc, hkr, t, L.subl_tl(v, t, $FS, hs))))
