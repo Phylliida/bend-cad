@@ -485,7 +485,7 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
   v1 also needs the drawing near a solution, which the relaxation
   provides; D13's least-ink KKT solve (§10.3) is the verified
   replacement.
-- **C5 IN PROGRESS (2026-10-17)**, plan in DESIGN §10.4 "C5 plan". Gated
+- **C5 (2026-10-17)**, plan in DESIGN §10.4 "C5 plan". Gated
   so far via tests/block_laws.bend (importing a module checks all of it).
   - C5a lib/apxpf.bend (tools/drafts/apxpf.draft): every Emb<dnum, F> is
     ofd (`hofd`; stay generic in ~H, naming KI.demb in a signature blows
@@ -512,16 +512,21 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
     passes, (65/64) S <= r <= U = (17/16)(1 + 2^-7) 2S, given U <= rb);
     `inbox_ok` (|yc - x_b| <= (65/64) S, two-step slope path). See
     DESIGN "C5a–C5c as built".
-  - Next: C5d lib/blockpf.bend `block_ok`: newton_ok gives yc; elim_at at
-    dapp(yc, pc) (pt_inv, pt_maj) gives A (agood); ymn/ydmn/thl_mn/thr_mn
-    give yn, thL, thR for Y = ysig(p/2, A); bound S = dvmax(s0) by given
-    constants (|Y f(Pc)| <= yn (n M en + m M rho), B(0) <= yn m M rho),
-    so U <= Ubar; then rb := Ubar + rho, window and in-box hypotheses from
-    smallness; assemble block.y / block.y2 / block.ym / block.r into BOk
-    of a certificate accepted by the checker with x_b in [yc +- r]. thl
-    and thr take proofs as arguments but are n e + va jn and
-    jn (n e b) + jn va. Then restate in tests/block_laws.bend.
+  - C5d lib/blockpf.bend (tools/drafts/blockpf.draft), DONE: `block_ok`
+    (restated in tests/block_laws.bend as one_block): S bound `s_bnd`,
+    Y facts (y_mn, thl_ok, thr_ok), smallness w1-w4, `ub_rb`, the match
+    chain by_ok / by_yc / by2_ok / bym_ok / br_ok. See DESIGN "C5 as
+    built".
+- **C5 COMPLETE (2026-10-17).** Next: C6 lib/completepf.bend
+  (`solve_complete`): blocks in turn (each block's rb feeds the next
+  blocks' rho; pins radius 0), the plan checker accepts, the smallness
+  conditions hold for large p (arch picks P), the precision loop reaches
+  that level.
 - Bend lessons (C5):
+  - A Type-valued hypothesis (NOK, dinv_res) can't be a `+` parameter:
+    destructure it once and pass the parts to a helper whose parameters
+    are `+` (by_ok -> by_yc). Pattern binders can't be reused either;
+    take components with AP.both_l / both_r from a `+` Data parameter.
   - Template (`~`) parameters must lead the signature; to recurse with
     a template over a list, build a GJ.All (all_mk, all_at, all_shift)
     as DG.vall_by does (radpf's rle_rep).

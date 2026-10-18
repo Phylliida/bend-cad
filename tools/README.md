@@ -20,6 +20,7 @@ the checker verifies the output.
 | `lib/apxpf.bend` | `python3 tools/expand.py tools/drafts/apxpf.draft lib/apxpf.bend` |
 | `lib/nwtpf.bend` | `python3 tools/expand.py tools/drafts/nwtpf.draft lib/nwtpf.bend` |
 | `lib/radpf.bend` | `python3 tools/expand.py tools/drafts/radpf.draft lib/radpf.bend` |
+| `lib/blockpf.bend` | `python3 tools/expand.py tools/drafts/blockpf.draft lib/blockpf.bend` |
 
 `@MACRO NAME text` (a line) makes every `$NAME` below stand for `text`
 (textual, longest names first, macros may use macros): long hypothesis lists

@@ -1058,7 +1058,7 @@ solver as it stands, and both are provable.)
 | C3b | lib/roundpf.bend | **done 2026-10-15** (`div_ok`, `zfloor_ok`, `dround_err`, `dsig_err`, `qsig_err`, `dsigup_ok`; gated via tests/round_laws.bend): rounding in F: dround, dsig, qsig, dsigup (plan below) |
 | C3c | lib/normpf.bend | **done 2026-10-15** (`mv_n`, `InvB`, `lowb`, `pert`; gated via tests/norm_laws.bend): norms and the perturbation lemma (plan below) |
 | C4 | lib/dgjpf.bend | **done 2026-10-15** (`dinverse_ok`, `pivot_ok`, `kern`, `col_full`, `dgj_ok`; gated via tests/dgj_laws.bend): the rounded elimination (5), the solver's dinverse as it runs: Newton's and Y's inverses are good (plan below) |
-| C5 | lib/apxpf, nwtpf, radpf, blockpf.bend | one block at P (3) (plan below: C5a approximate inverses, C5b Newton, C5c radius and box, C5d block_ok) |
+| C5 | lib/apxpf, nwtpf, radpf, blockpf.bend | **done 2026-10-17** (`newton_ok`, `window_ok`, `rs_init`, `inbox_ok`, `block_ok`; gated via tests/block_laws.bend): one block at P (3), the solver's block as it runs (plan and "C5 as built" below) |
 | C6 | lib/completepf.bend | the blocks in turn, the verdict, local uniqueness, choosing l and d: `solve_complete` |
 
 **C3 plan** (2026-10-15). One idea carries C3a: F is its own computing
@@ -1245,9 +1245,9 @@ the box directly, so C6 uses `Complete` only to choose P (arch).
     rsearch, in the box.
   - C5d lib/blockpf.bend: `block_ok`.
 
-**C5a–C5c as built** (2026-10-17; lib/apxpf.bend, lib/nwtpf.bend,
-lib/radpf.bend, ~8 s together; tests/block_laws.bend restates pieces of
-each so the gate checks them).
+**C5 as built** (2026-10-17; lib/apxpf.bend, lib/nwtpf.bend,
+lib/radpf.bend, lib/blockpf.bend, ~11 s together; tests/block_laws.bend
+restates pieces of each and block_ok in full, so the gate checks them).
 - C5a and C5b as planned; `newton_ok` returns yc within E_N = 8h + E1.
 - C5c, in lib/radpf.bend:
   - *Pair grades* (`kb_pd`, `ks_pd`): over two boxes with the same
@@ -1275,6 +1275,17 @@ each so the gate checks them).
     exactly B(0)'s entries; then the unknowns move with the parameters at
     x_z, slopes S' within n Λ rad of Jc (`smat_lip_mn`). Per entry,
     |e_k| ≤ S + |e − Y S' e|.
+- C5d, in lib/blockpf.bend: `block_ok`, following the solver's own
+  matches (newton → block.y → dinverse → block.y2 → ysig → block.ym →
+  rsearch → block.r), each computed result passed to a lemma that
+  matches it. Its outcome predicate `bgood(n, eqs, x_b, rb, ·)`: BOk of a
+  certificate the block checker accepts, |x_b − yc| ≤ yr entrywise,
+  0 ≤ yr ≤ rb. The constants are explicit in the given ones (yn =
+  (1 + v) α, θ_L = n ε_A + v α nM, θ_R = nM (n ε_A 2β) + nM v α, S̄ =
+  yn (nM E_N + mM ρ) + yn mM ρ bounds S, r_b = (17/16)(1 + 2^-7) 2S̄ + ρ),
+  and the smallness hypotheses beyond C5b's are w1 dx + r_b ≤ 1, w2 θ_R <
+  1, w3 the window's cw ≤ 1/2, w4 (65/64)(θ_L + yn nΛ dx) ≤ 1/64.
+  C6 discharges them for large p.
 
 **Risks.** Size: several thousand lines over several sessions (C4 is the
 largest single piece). Checker time on long inequality proofs: keep the
