@@ -998,3 +998,120 @@ def div_ge(+l: Nat, +s: Nat, h: {KA.natle(Nat.add(l, l), s) == True{} : Bool}) -
 def pl_half(+l: Nat) -> {KA.natle(l, Nat.div(pfirst(l, 64n, 96n), 2n)) == True{} : Bool}:
   div_ge(l, pfirst(l, 64n, 96n), L.le_trans(Nat.add(l, l), Nat.add(64n, Nat.add(l, l)), pfirst(l, 64n, 96n), (%LN.add_comm(Nat.add(l, l), 64n) : {KA.natle(Nat.add(l, l), _) == True{} : Bool}
     L.le_add_r(Nat.add(l, l), 64n)), pl_ge(l)))
+
+
+def nv_s(~F: O.OField, +n: O.C(F), +v: O.C(F), hI: O.le(~F, O.mul(F, n, v), O.one(F)), hv: O.le(~F, v, O.one(F))) -> O.le(~F, O.mul(F, O.add(F, n, O.one(F)), O.mul(F, M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n}), v)), O.one(F)):
+  +hi = RO.inv_nn(~F, S.Pos.pow2(1n))
+  FV.le_of_sub(~F, O.mul(F, O.add(F, n, O.one(F)), O.mul(F, M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n}), v)), O.one(F), FM.nn_eq(~F, O.sub(~F, O.one(F), O.mul(F, O.add(F, n, O.one(F)), O.mul(F, M.ofd(~F, S.D{S.Zpos{S.XH{}}, 1n}), v))), O.add(F, O.mul(F, O.inv(F, O.ofp(~F, S.Pos.pow2(1n))), O.sub(~F, O.one(F), O.mul(F, n, v))), O.mul(F, O.inv(F, O.ofp(~F, S.Pos.pow2(1n))), O.sub(~F, O.one(F), v))),
+    FO.eq_of_sub(~F, O.add(F, O.mul(F, O.inv(F, O.ofp(~F, S.Pos.pow2(1n))), O.sub(~F, O.one(F), O.mul(F, n, v))), O.mul(F, O.inv(F, O.ofp(~F, S.Pos.pow2(1n))), O.sub(~F, O.one(F), v))), O.sub(~F, O.one(F), O.mul(F, O.add(F, n, O.one(F)), O.mul(F, O.mul(F, O.one(F), O.inv(F, O.ofp(~F, S.Pos.pow2(1n)))), v))), FO.cert1(~F, O.sub(~F, O.add(F, O.mul(F, O.inv(F, O.ofp(~F, S.Pos.pow2(1n))), O.sub(~F, O.one(F), O.mul(F, n, v))), O.mul(F, O.inv(F, O.ofp(~F, S.Pos.pow2(1n))), O.sub(~F, O.one(F), v))), O.sub(~F, O.one(F), O.mul(F, O.add(F, n, O.one(F)), O.mul(F, O.mul(F, O.one(F), O.inv(F, O.ofp(~F, S.Pos.pow2(1n)))), v)))), O.one(F), O.sub(~F, O.mul(F, O.add(F, O.one(F), O.one(F)), O.inv(F, O.ofp(~F, S.Pos.pow2(1n)))), O.one(F)), FR.fring_eq(~F, [n, v, O.inv(F, O.ofp(~F, S.Pos.pow2(1n)))], E.ZSub{E.ZAdd{E.ZMul{E.ZVar{2n}, E.ZSub{E.ZCst{S.Zpos{S.XH{}}}, E.ZMul{E.ZVar{0n}, E.ZVar{1n}}}}, E.ZMul{E.ZVar{2n}, E.ZSub{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{1n}}}}, E.ZSub{E.ZCst{S.Zpos{S.XH{}}}, E.ZMul{E.ZAdd{E.ZVar{0n}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZMul{E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{2n}}, E.ZVar{1n}}}}}, E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZSub{E.ZMul{E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZCst{S.Zpos{S.XH{}}}}, E.ZVar{2n}}, E.ZCst{S.Zpos{S.XH{}}}}}, {==}), QE.ofp_rel(~F, S.Pos.pow2(1n)))),
+    FO.nonneg_add(~F, O.mul(F, O.inv(F, O.ofp(~F, S.Pos.pow2(1n))), O.sub(~F, O.one(F), O.mul(F, n, v))), O.mul(F, O.inv(F, O.ofp(~F, S.Pos.pow2(1n))), O.sub(~F, O.one(F), v)), FO.mul_nonneg(~F, O.inv(F, O.ofp(~F, S.Pos.pow2(1n))), O.sub(~F, O.one(F), O.mul(F, n, v)), hi, FM.sub_nonneg(~F, O.mul(F, n, v), O.one(F), hI)), FO.mul_nonneg(~F, O.inv(F, O.ofp(~F, S.Pos.pow2(1n))), O.sub(~F, O.one(F), v), hi, FM.sub_nonneg(~F, v, O.one(F), hv)))))
+
+# l 2^-l <= 1
+def nv_le(~F: O.OField, l: Nat) -> O.le(~F, O.mul(F, CR.nat(~F, l), AP.vbit(~F, l)), O.one(F)):
+  match l:
+    case 0n:
+      FV.le_of_sub(~F, O.mul(F, O.zero(F), AP.vbit(~F, 0n)), O.one(F), FM.nn_eq(~F, O.sub(~F, O.one(F), O.mul(F, O.zero(F), AP.vbit(~F, 0n))), O.one(F), FR.fring_eq(~F, [AP.vbit(~F, 0n)], E.ZCst{S.Zpos{S.XH{}}}, E.ZSub{E.ZCst{S.Zpos{S.XH{}}}, E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{0n}}}, {==}), NP.one_nn(~F)))
+    case 1n++m:
+      %DM.ofd_mul(~F, S.D{S.Zpos{S.XH{}}, 1n}, S.D{S.Zpos{S.XH{}}, m}) : O.le(~F, O.mul(F, O.add(F, CR.nat(~F, m), O.one(F)), _), O.one(F))
+      nv_s(~F, CR.nat(~F, m), AP.vbit(~F, m), nv_le(~F, m), DG.u_le1(~F, m))
+
+# a variable-free expression moves nowhere: lp = 0
+def lp_closed(~F: O.OField, +bb: O.C(F), e: E.QExpr, +h: {BX.QExpr.within(e, 0n) == True{} : Bool}) -> {BP.lp(~F, bb, e) == O.zero(F) : O.C(F)}:
+  match e:
+    case E.QVar{i}:
+      FO.absurd({O.one(F) == O.zero(F) : O.C(F)}, KA.ft((%bxlt(i, 0n) : {_ == True{} : Bool}
+        h)))
+    case E.QCst{q}:
+      {==}
+    case E.QAdd{+a, +b}:
+      FO.cert2(~F, O.add(F, BP.lp(~F, bb, a), BP.lp(~F, bb, b)), O.one(F), BP.lp(~F, bb, a), O.one(F), BP.lp(~F, bb, b), FR.fring_eq(~F, [BP.lp(~F, bb, a), BP.lp(~F, bb, b)], E.ZAdd{E.ZVar{0n}, E.ZVar{1n}}, E.ZAdd{E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{0n}}, E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{1n}}}, {==}), lp_closed(~F, bb, a, CV.and_l(BX.QExpr.within(a, 0n), BX.QExpr.within(b, 0n), h)), lp_closed(~F, bb, b, CV.and_r(BX.QExpr.within(a, 0n), BX.QExpr.within(b, 0n), h)))
+    case E.QSub{+a, +b}:
+      FO.cert2(~F, O.add(F, BP.lp(~F, bb, a), BP.lp(~F, bb, b)), O.one(F), BP.lp(~F, bb, a), O.one(F), BP.lp(~F, bb, b), FR.fring_eq(~F, [BP.lp(~F, bb, a), BP.lp(~F, bb, b)], E.ZAdd{E.ZVar{0n}, E.ZVar{1n}}, E.ZAdd{E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{0n}}, E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{1n}}}, {==}), lp_closed(~F, bb, a, CV.and_l(BX.QExpr.within(a, 0n), BX.QExpr.within(b, 0n), h)), lp_closed(~F, bb, b, CV.and_r(BX.QExpr.within(a, 0n), BX.QExpr.within(b, 0n), h)))
+    case E.QMul{+a, +b}:
+      FO.cert2(~F, O.add(F, O.mul(F, BP.mj(~F, bb, a), BP.lp(~F, bb, b)), O.mul(F, BP.mj(~F, bb, b), BP.lp(~F, bb, a))), BP.mj(~F, bb, a), BP.lp(~F, bb, b), BP.mj(~F, bb, b), BP.lp(~F, bb, a), FR.fring_eq(~F, [BP.mj(~F, bb, a), BP.mj(~F, bb, b), BP.lp(~F, bb, a), BP.lp(~F, bb, b)], E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{3n}}, E.ZMul{E.ZVar{1n}, E.ZVar{2n}}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{3n}}, E.ZMul{E.ZVar{1n}, E.ZVar{2n}}}, {==}), lp_closed(~F, bb, b, CV.and_r(BX.QExpr.within(a, 0n), BX.QExpr.within(b, 0n), h)), lp_closed(~F, bb, a, CV.and_l(BX.QExpr.within(a, 0n), BX.QExpr.within(b, 0n), h)))
+    case E.QNeg{a}:
+      lp_closed(~F, bb, a, h)
+
+# The side budget
+# ---------------
+# a side with variables needs 2 lp T / e(x) of the budget: then
+# t (2 lp T / e(x)) < 1 gives 2 lp h T <= 2 lp t T < e(x)
+
+
+def sbg(~F: O.OField, b: Bool, +bb: O.C(F), +tf: O.C(F), +x: M.Vec(~F), +e: E.QExpr) -> O.C(F):
+  match b:
+    case True{}:
+      O.zero(F)
+    case False{}:
+      O.mul(F, O.mul(F, O.add(F, BP.lp(~F, bb, e), BP.lp(~F, bb, e)), tf), O.inv(F, O.eval(~F, x, e)))
+
+def sbs(~F: O.OField, +bb: O.C(F), +tf: O.C(F), +x: M.Vec(~F), ss: List<&2, SK.Side>) -> O.C(F):
+  match ss:
+    case Nil{}:
+      O.zero(F)
+    case Con{SK.Gt0{+e}, t}:
+      O.add(F, O.mul(F, O.mul(F, O.add(F, BP.lp(~F, bb, e), BP.lp(~F, bb, e)), tf), O.inv(F, O.eval(~F, x, e))), sbs(~F, bb, tf, x, t))
+    case Con{SK.Ge0{+e}, t}:
+      O.add(F, sbg(~F, BX.QExpr.within(e, 0n), bb, tf, x, e), sbs(~F, bb, tf, x, t))
+
+
+def sbe_nn(~F: O.OField, +bb: O.C(F), +hb: O.le(~F, O.zero(F), bb), +tf: O.C(F), +htf: O.le(~F, O.zero(F), tf), +x: M.Vec(~F), +e: E.QExpr, +hex: O.lt(F, O.zero(F), O.eval(~F, x, e))) -> O.le(~F, O.zero(F), O.mul(F, O.mul(F, O.add(F, BP.lp(~F, bb, e), BP.lp(~F, bb, e)), tf), O.inv(F, O.eval(~F, x, e)))):
+  +hl = PB.lp_nn(~F, bb, hb, e)
+  FO.mul_nonneg(~F, O.mul(F, O.add(F, BP.lp(~F, bb, e), BP.lp(~F, bb, e)), tf), O.inv(F, O.eval(~F, x, e)), FO.mul_nonneg(~F, O.add(F, BP.lp(~F, bb, e), BP.lp(~F, bb, e)), tf, FO.nonneg_add(~F, BP.lp(~F, bb, e), BP.lp(~F, bb, e), hl, hl), htf), FO.lt_le(~F, O.zero(F), O.inv(F, O.eval(~F, x, e)), FO.inv_pos(~F, O.eval(~F, x, e), hex)))
+
+def sbg_nn(~F: O.OField, +bb: O.C(F), +hb: O.le(~F, O.zero(F), bb), +tf: O.C(F), +htf: O.le(~F, O.zero(F), tf), +x: M.Vec(~F), +e: E.QExpr, b: Bool, hs: SV.Strict.ge(~F, b, x, e)) -> O.le(~F, O.zero(F), sbg(~F, b, bb, tf, x, e)):
+  match b:
+    case True{}:
+      FO.le_refl(~F, O.zero(F))
+    case False{}:
+      sbe_nn(~F, bb, hb, tf, htf, x, e, hs)
+
+def sbs_nn(~F: O.OField, +bb: O.C(F), +hb: O.le(~F, O.zero(F), bb), +tf: O.C(F), +htf: O.le(~F, O.zero(F), tf), +x: M.Vec(~F), ss: List<&2, SK.Side>, hs: SV.Strict(~F, x, ss)) -> O.le(~F, O.zero(F), sbs(~F, bb, tf, x, ss)):
+  match ss:
+    case Nil{}:
+      FO.le_refl(~F, O.zero(F))
+    case Con{SK.Gt0{+e}, +t}:
+      (h1, h2) = hs
+      FO.nonneg_add(~F, O.mul(F, O.mul(F, O.add(F, BP.lp(~F, bb, e), BP.lp(~F, bb, e)), tf), O.inv(F, O.eval(~F, x, e))), sbs(~F, bb, tf, x, t), sbe_nn(~F, bb, hb, tf, htf, x, e, h1), sbs_nn(~F, bb, hb, tf, htf, x, t, h2))
+    case Con{SK.Ge0{+e}, +t}:
+      (h1, h2) = hs
+      FO.nonneg_add(~F, sbg(~F, BX.QExpr.within(e, 0n), bb, tf, x, e), sbs(~F, bb, tf, x, t), sbg_nn(~F, bb, hb, tf, htf, x, e, BX.QExpr.within(e, 0n), h1), sbs_nn(~F, bb, hb, tf, htf, x, t, h2))
+
+
+# one side's room: 2 lp h T < e(x)
+def gt_side(~F: O.OField, +lp: O.C(F), +h: O.C(F), +tf: O.C(F), +t: O.C(F), +ex: O.C(F), +hlp: O.le(~F, O.zero(F), lp), +htf: O.le(~F, O.zero(F), tf), +hht: O.le(~F, h, t), +hex: O.lt(F, O.zero(F), ex), hts: O.lt(F, O.mul(F, t, O.mul(F, O.mul(F, O.add(F, lp, lp), tf), O.inv(F, ex))), O.one(F))) -> O.lt(F, O.add(F, O.mul(F, lp, O.mul(F, h, tf)), O.mul(F, lp, O.mul(F, h, tf))), ex):
+  +hw = FO.mul_nonneg(~F, O.add(F, lp, lp), tf, FO.nonneg_add(~F, lp, lp, hlp, hlp), htf)
+  +h1 = FV.le_of_sub(~F, O.add(F, O.mul(F, lp, O.mul(F, h, tf)), O.mul(F, lp, O.mul(F, h, tf))), O.mul(F, t, O.mul(F, O.add(F, lp, lp), tf)), FM.nn_eq(~F, O.sub(~F, O.mul(F, t, O.mul(F, O.add(F, lp, lp), tf)), O.add(F, O.mul(F, lp, O.mul(F, h, tf)), O.mul(F, lp, O.mul(F, h, tf)))), O.mul(F, O.sub(~F, t, h), O.mul(F, O.add(F, lp, lp), tf)), FR.fring_eq(~F, [lp, h, tf, t], E.ZMul{E.ZSub{E.ZVar{3n}, E.ZVar{1n}}, E.ZMul{E.ZAdd{E.ZVar{0n}, E.ZVar{0n}}, E.ZVar{2n}}}, E.ZSub{E.ZMul{E.ZVar{3n}, E.ZMul{E.ZAdd{E.ZVar{0n}, E.ZVar{0n}}, E.ZVar{2n}}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZMul{E.ZVar{1n}, E.ZVar{2n}}}, E.ZMul{E.ZVar{0n}, E.ZMul{E.ZVar{1n}, E.ZVar{2n}}}}}, {==}), FO.mul_nonneg(~F, O.sub(~F, t, h), O.mul(F, O.add(F, lp, lp), tf), FM.sub_nonneg(~F, h, t, hht), hw)))
+  +pr = O.mul(F, ex, O.sub(~F, O.one(F), O.mul(F, t, O.mul(F, O.mul(F, O.add(F, lp, lp), tf), O.inv(F, ex)))))
+  +h2 = QE.lt_of_sub(~F, O.mul(F, t, O.mul(F, O.add(F, lp, lp), tf)), ex, FO.lt_subst_r(~F, pr, O.sub(~F, ex, O.mul(F, t, O.mul(F, O.add(F, lp, lp), tf))), O.zero(F), FO.eq_of_sub(~F, O.mul(F, ex, O.sub(~F, O.one(F), O.mul(F, t, O.mul(F, O.mul(F, O.add(F, lp, lp), tf), O.inv(F, ex))))), O.sub(~F, ex, O.mul(F, t, O.mul(F, O.add(F, lp, lp), tf))), FO.cert1(~F, O.sub(~F, O.mul(F, ex, O.sub(~F, O.one(F), O.mul(F, t, O.mul(F, O.mul(F, O.add(F, lp, lp), tf), O.inv(F, ex))))), O.sub(~F, ex, O.mul(F, t, O.mul(F, O.add(F, lp, lp), tf)))), O.neg(F, O.mul(F, t, O.mul(F, O.add(F, lp, lp), tf))), O.sub(~F, O.mul(F, ex, O.inv(F, ex)), O.one(F)), FR.fring_eq(~F, [ex, t, lp, tf, O.inv(F, ex)], E.ZSub{E.ZMul{E.ZVar{0n}, E.ZSub{E.ZCst{S.Zpos{S.XH{}}}, E.ZMul{E.ZVar{1n}, E.ZMul{E.ZMul{E.ZAdd{E.ZVar{2n}, E.ZVar{2n}}, E.ZVar{3n}}, E.ZVar{4n}}}}}, E.ZSub{E.ZVar{0n}, E.ZMul{E.ZVar{1n}, E.ZMul{E.ZAdd{E.ZVar{2n}, E.ZVar{2n}}, E.ZVar{3n}}}}}, E.ZMul{E.ZNeg{E.ZMul{E.ZVar{1n}, E.ZMul{E.ZAdd{E.ZVar{2n}, E.ZVar{2n}}, E.ZVar{3n}}}}, E.ZSub{E.ZMul{E.ZVar{0n}, E.ZVar{4n}}, E.ZCst{S.Zpos{S.XH{}}}}}, {==}), FO.inv_rel(~F, ex, FO.ne_of_gt(~F, ex, O.zero(F), hex)))), O.lt_mul(F)(ex, O.sub(~F, O.one(F), O.mul(F, t, O.mul(F, O.mul(F, O.add(F, lp, lp), tf), O.inv(F, ex)))), hex, RL.sub_pos(~F, O.mul(F, t, O.mul(F, O.mul(F, O.add(F, lp, lp), tf), O.inv(F, ex))), O.one(F), hts))))
+  FO.le_lt_trans(~F, O.add(F, O.mul(F, lp, O.mul(F, h, tf)), O.mul(F, lp, O.mul(F, h, tf))), O.mul(F, t, O.mul(F, O.add(F, lp, lp), tf)), ex, h1, h2)
+
+# a variable-free side has no spread
+def ge_closed(~F: O.OField, +lp: O.C(F), +h: O.C(F), +tf: O.C(F), +ex: O.C(F), hl0: {lp == O.zero(F) : O.C(F)}, hex: O.le(~F, O.zero(F), ex)) -> O.le(~F, O.add(F, O.mul(F, lp, O.mul(F, h, tf)), O.mul(F, lp, O.mul(F, h, tf))), ex):
+  FV.le_of_sub(~F, O.add(F, O.mul(F, lp, O.mul(F, h, tf)), O.mul(F, lp, O.mul(F, h, tf))), ex, FM.nn_eq(~F, O.sub(~F, ex, O.add(F, O.mul(F, lp, O.mul(F, h, tf)), O.mul(F, lp, O.mul(F, h, tf)))), ex, FO.eq_of_sub(~F, ex, O.sub(~F, ex, O.add(F, O.mul(F, lp, O.mul(F, h, tf)), O.mul(F, lp, O.mul(F, h, tf)))), FO.cert1(~F, O.sub(~F, ex, O.sub(~F, ex, O.add(F, O.mul(F, lp, O.mul(F, h, tf)), O.mul(F, lp, O.mul(F, h, tf))))), O.add(F, O.mul(F, h, tf), O.mul(F, h, tf)), lp, FR.fring_eq(~F, [lp, h, tf, ex], E.ZSub{E.ZVar{3n}, E.ZSub{E.ZVar{3n}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZMul{E.ZVar{1n}, E.ZVar{2n}}}, E.ZMul{E.ZVar{0n}, E.ZMul{E.ZVar{1n}, E.ZVar{2n}}}}}}, E.ZMul{E.ZAdd{E.ZMul{E.ZVar{1n}, E.ZVar{2n}}, E.ZMul{E.ZVar{1n}, E.ZVar{2n}}}, E.ZVar{0n}}, {==}), hl0)), hex))
+
+def ge_go(~F: O.OField, +bb: O.C(F), +hb: O.le(~F, O.zero(F), bb), +tf: O.C(F), +htf: O.le(~F, O.zero(F), tf), +x: M.Vec(~F), +h: O.C(F), +t: O.C(F), +hht: O.le(~F, h, t), +ht0: O.le(~F, O.zero(F), t), +e: E.QExpr, b: Bool, eb: {BX.QExpr.within(e, 0n) == b : Bool}, hs1: SV.Strict.ge(~F, b, x, e), +S: O.C(F), hle: O.le(~F, sbg(~F, b, bb, tf, x, e), S), +hq: O.lt(F, O.mul(F, t, S), O.one(F))) -> O.le(~F, O.add(F, O.mul(F, BP.lp(~F, bb, e), O.mul(F, h, tf)), O.mul(F, BP.lp(~F, bb, e), O.mul(F, h, tf))), O.eval(~F, x, e)):
+  match b:
+    case True{}:
+      ge_closed(~F, BP.lp(~F, bb, e), h, tf, O.eval(~F, x, e), lp_closed(~F, bb, e, eb), hs1)
+    case False{}:
+      FO.lt_le(~F, O.add(F, O.mul(F, BP.lp(~F, bb, e), O.mul(F, h, tf)), O.mul(F, BP.lp(~F, bb, e), O.mul(F, h, tf))), O.eval(~F, x, e), gt_side(~F, BP.lp(~F, bb, e), h, tf, t, O.eval(~F, x, e), PB.lp_nn(~F, bb, hb, e), htf, hht, hs1, FO.le_lt_trans(~F, O.mul(F, t, O.mul(F, O.mul(F, O.add(F, BP.lp(~F, bb, e), BP.lp(~F, bb, e)), tf), O.inv(F, O.eval(~F, x, e)))), O.mul(F, t, S), O.one(F), FV.mul_le(~F, t, O.mul(F, O.mul(F, O.add(F, BP.lp(~F, bb, e), BP.lp(~F, bb, e)), tf), O.inv(F, O.eval(~F, x, e))), S, ht0, hle), hq)))
+
+# t S < 1 with the sides' budget within S: every side has its room
+def sbud_of(~F: O.OField, +bb: O.C(F), +hb: O.le(~F, O.zero(F), bb), +tf: O.C(F), +htf: O.le(~F, O.zero(F), tf), +x: M.Vec(~F), +h: O.C(F), +t: O.C(F), +hht: O.le(~F, h, t), +ht0: O.le(~F, O.zero(F), t), ss: List<&2, SK.Side>, +hs: SV.Strict(~F, x, ss), +S: O.C(F), +hS: O.le(~F, sbs(~F, bb, tf, x, ss), S), +hq: O.lt(F, O.mul(F, t, S), O.one(F))) -> SBud(~F, bb, O.mul(F, h, tf), x, ss):
+  match ss:
+    case Nil{}:
+      Unit{}
+    case Con{SK.Gt0{+e}, +r}:
+      +h1 = AP.both_l(O.lt(F, O.zero(F), O.eval(~F, x, e)), SV.Strict(~F, x, r), hs)
+      +h2 = AP.both_r(O.lt(F, O.zero(F), O.eval(~F, x, e)), SV.Strict(~F, x, r), hs)
+      +hle = DM.le_trans(~F, O.mul(F, O.mul(F, O.add(F, BP.lp(~F, bb, e), BP.lp(~F, bb, e)), tf), O.inv(F, O.eval(~F, x, e))), O.add(F, O.mul(F, O.mul(F, O.add(F, BP.lp(~F, bb, e), BP.lp(~F, bb, e)), tf), O.inv(F, O.eval(~F, x, e))), sbs(~F, bb, tf, x, r)), S, NW.le_addr(~F, O.mul(F, O.mul(F, O.add(F, BP.lp(~F, bb, e), BP.lp(~F, bb, e)), tf), O.inv(F, O.eval(~F, x, e))), sbs(~F, bb, tf, x, r), sbs_nn(~F, bb, hb, tf, htf, x, r, h2)), hS)
+      +hlr = DM.le_trans(~F, sbs(~F, bb, tf, x, r), O.add(F, O.mul(F, O.mul(F, O.add(F, BP.lp(~F, bb, e), BP.lp(~F, bb, e)), tf), O.inv(F, O.eval(~F, x, e))), sbs(~F, bb, tf, x, r)), S, NW.le_addl(~F, O.mul(F, O.mul(F, O.add(F, BP.lp(~F, bb, e), BP.lp(~F, bb, e)), tf), O.inv(F, O.eval(~F, x, e))), sbs(~F, bb, tf, x, r), sbe_nn(~F, bb, hb, tf, htf, x, e, h1)), hS)
+      (gt_side(~F, BP.lp(~F, bb, e), h, tf, t, O.eval(~F, x, e), PB.lp_nn(~F, bb, hb, e), htf, hht, h1, FO.le_lt_trans(~F, O.mul(F, t, O.mul(F, O.mul(F, O.add(F, BP.lp(~F, bb, e), BP.lp(~F, bb, e)), tf), O.inv(F, O.eval(~F, x, e)))), O.mul(F, t, S), O.one(F), FV.mul_le(~F, t, O.mul(F, O.mul(F, O.add(F, BP.lp(~F, bb, e), BP.lp(~F, bb, e)), tf), O.inv(F, O.eval(~F, x, e))), S, ht0, hle), hq)), sbud_of(~F, bb, hb, tf, htf, x, h, t, hht, ht0, r, h2, S, hlr, hq))
+    case Con{SK.Ge0{+e}, +r}:
+      +gb = sbg(~F, BX.QExpr.within(e, 0n), bb, tf, x, e)
+      +h1 = AP.both_l(SV.Strict.ge(~F, BX.QExpr.within(e, 0n), x, e), SV.Strict(~F, x, r), hs)
+      +h2 = AP.both_r(SV.Strict.ge(~F, BX.QExpr.within(e, 0n), x, e), SV.Strict(~F, x, r), hs)
+      +hle = DM.le_trans(~F, gb, O.add(F, gb, sbs(~F, bb, tf, x, r)), S, NW.le_addr(~F, gb, sbs(~F, bb, tf, x, r), sbs_nn(~F, bb, hb, tf, htf, x, r, h2)), hS)
+      +hlr = DM.le_trans(~F, sbs(~F, bb, tf, x, r), O.add(F, gb, sbs(~F, bb, tf, x, r)), S, NW.le_addl(~F, gb, sbs(~F, bb, tf, x, r), sbg_nn(~F, bb, hb, tf, htf, x, e, BX.QExpr.within(e, 0n), h1)), hS)
+      (ge_go(~F, bb, hb, tf, htf, x, h, t, hht, ht0, e, BX.QExpr.within(e, 0n), {==}, h1, S, hle, hq), sbud_of(~F, bb, hb, tf, htf, x, h, t, hht, ht0, r, h2, S, hlr, hq))
