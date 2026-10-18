@@ -1133,3 +1133,179 @@ def window_ok($WXP, +hym: {CK.mlen($DN, ym) == n : Nat}, +hab: {CK.allbelow(Nat.
   AP.band_t(CK.factor($DN, NU.half()), CK.rest2($DN, eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr), {==},
   AP.band_t(CK.ccon($DN, eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr), CK.rest3($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), ccon_ok($WXA, hym, r, hr0, hr1, hw),
   AP.band_t(CK.cself($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), CK.cinj($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), cself_ok($WXA, hym, r, hr0, hr1, hS, hw), cinj_ok($WXA, thR, hthr0, hthr, hthr1, r)))))
+
+# The radius search
+# -----------------
+# r0 = (65/64) S rounded up at 8 bits, each step r (17/16) rounded up. A
+# radius that fails is below 2S (it is at most U <= rb, so the window
+# would pass it), so the next is at most U = (17/16)(1 + 2^-7) 2S; and
+# each failing step adds at least S/16, so after 16 steps r >= 2S: the
+# search (fuel 64) returns a passing r with (65/64) S <= r <= U.
+
+@MACRO D17 S.D{S.Zpos{S.XI{S.XO{S.XO{S.XO{S.XH{}}}}}}, 4n}
+@MACRO D65 S.D{S.Zpos{S.XI{S.XO{S.XO{S.XO{S.XO{S.XO{S.XH{}}}}}}}}, 6n}
+@MACRO D8 S.D{S.Zpos{S.XO{S.XH{}}}, 8n}
+@MACRO D16 S.D{S.Zpos{S.XH{}}, 4n}
+@MACRO C17 M.ofd(~F, $D17)
+@MACRO C65 M.ofd(~F, $D65)
+@MACRO E8 M.ofd(~F, $D8)
+@MACRO T16 M.ofd(~F, $D16)
+@MACRO UB @M(@M($C17, @A(@1, $E8)), @A($SD, $SD))
+
+# dyadic constants compared in K
+def dle(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +a: S.D, +b: S.D, h: {KA.kle($DN, a, b) == True{} : Bool}) -> O.le(~F, M.ofd(~F, a), M.ofd(~F, b)):
+  %AP.hofd(~F, ~H, a) : O.le(~F, _, M.ofd(~F, b))
+  %AP.hofd(~F, ~H, b) : O.le(~F, N.emap(KI.dnum(), F, H, a), _)
+  KA.kle_ok($DH, a, b, h)
+
+def dnn(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +b: S.D, h: {KA.kle($DN, M.d0(), b) == True{} : Bool}) -> O.le(~F, @0, M.ofd(~F, b)):
+  %Equal.sym(@T, @0, M.ofd(~F, M.d0()), DM.ofd_zero(~F)) : O.le(~F, _, M.ofd(~F, b))
+  dle(~F, ~H, M.d0(), b, h)
+
+def one_le(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +b: S.D, h: {KA.kle($DN, M.d1(), b) == True{} : Bool}) -> O.le(~F, @1, M.ofd(~F, b)):
+  %Equal.sym(@T, @1, M.ofd(~F, M.d1()), DM.ofd_one(~F)) : O.le(~F, _, M.ofd(~F, b))
+  dle(~F, ~H, M.d1(), b, h)
+
+def c17_eq(~F: O.OField) -> {$C17 == @A(@1, $T16) : @T}:
+  @CERTEQ[i=O.inv(F, O.ofp(~F, S.Pos.pow2(4n))) | 17*i | 1 + 1*i | 1 ; 16*i - 1 || QE.ofp_rel(~F, S.Pos.pow2(4n))]
+
+def n16_eq(~F: O.OField) -> {@M(FR.ofn(~F, 16n), $T16) == @1 : @T}:
+  @CERTEQ[i=O.inv(F, O.ofp(~F, S.Pos.pow2(4n))) | (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + (1 + 0))))))))))))))))*(1*i) | 1 | 1 ; 16*i - 1 || QE.ofp_rel(~F, S.Pos.pow2(4n))]
+
+def c65_le(~F: O.OField, ~H: N.Emb<KI.dnum(), F>) -> O.le(~F, $C65, @A($C17, $C17)):
+  %Equal.sym(@T, @A($C17, $C17), M.ofd(~F, S.D.add($D17, $D17)), DM.ofd_add(~F, $D17, $D17)) : O.le(~F, $C65, _)
+  dle(~F, ~H, $D65, S.D.add($D17, $D17), {==})
+
+def c65_nn(~F: O.OField, ~H: N.Emb<KI.dnum(), F>) -> O.le(~F, @0, $C65):
+  DM.le_trans(~F, @0, @1, $C65, NP.one_nn(~F), one_le(~F, ~H, $D65, {==}))
+
+def qq_r(~F: O.OField, +x: @T) -> {@M(@A($QH, $QH), x) == x : @T}:
+  %Equal.sym(@T, @A($QH, $QH), @1, half_two(~F)) : {@M(_, x) == x : @T}
+  FR.fring_eq(~F, [x], E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{0n}}, E.ZVar{0n}, {==})
+
+# S + S <= R gives S <= R/2, and R/2 < S gives R <= S + S
+def half_le(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +s: @T, +R: @T, +h: O.le(~F, @A(s, s), R)) -> O.le(~F, s, @M($QH, R)):
+  %qq_r(~F, s) : O.le(~F, _, @M($QH, R))
+  FV.le_of_sub(~F, @M(@A($QH, $QH), s), @M($QH, R), FM.nn_eq(~F, @S(@M($QH, R), @M(@A($QH, $QH), s)), @M($QH, @S(R, @A(s, s))), FR.fring_eq(~F, [$QH, s, R], E.ZMul{E.ZVar{0n}, E.ZSub{E.ZVar{2n}, E.ZAdd{E.ZVar{1n}, E.ZVar{1n}}}}, E.ZSub{E.ZMul{E.ZVar{0n}, E.ZVar{2n}}, E.ZMul{E.ZAdd{E.ZVar{0n}, E.ZVar{0n}}, E.ZVar{1n}}}, {==}), FO.mul_nonneg(~F, $QH, @S(R, @A(s, s)), dnn(~F, ~H, NU.half(), {==}), sub_nn(~F, @A(s, s), R, h))))
+
+def lt2(~F: O.OField, +s: @T, +R: @T, +g: O.lt(F, @M($QH, R), s)) -> O.le(~F, R, @A(s, s)):
+  %qq_r(~F, R) : O.le(~F, _, @A(s, s))
+  FV.le_of_sub(~F, @M(@A($QH, $QH), R), @A(s, s), FM.nn_eq(~F, @S(@A(s, s), @M(@A($QH, $QH), R)), @A(@S(s, @M($QH, R)), @S(s, @M($QH, R))), FR.fring_eq(~F, [$QH, s, R], E.ZAdd{E.ZSub{E.ZVar{1n}, E.ZMul{E.ZVar{0n}, E.ZVar{2n}}}, E.ZSub{E.ZVar{1n}, E.ZMul{E.ZVar{0n}, E.ZVar{2n}}}}, E.ZSub{E.ZAdd{E.ZVar{1n}, E.ZVar{1n}}, E.ZMul{E.ZAdd{E.ZVar{0n}, E.ZVar{0n}}, E.ZVar{2n}}}, {==}), FO.nonneg_add(~F, @S(s, @M($QH, R)), @S(s, @M($QH, R)), sub_nn(~F, @M($QH, R), s, FO.lt_le(~F, @M($QH, R), s, g)), sub_nn(~F, @M($QH, R), s, FO.lt_le(~F, @M($QH, R), s, g)))))
+
+# a c rounded up at 8 bits: between a c and a c (1 + 2^-7), for a, c >= 0
+def dsig_lo(~F: O.OField, +a: S.D, +c: S.D) -> O.le(~F, @M(M.ofd(~F, a), M.ofd(~F, c)), M.ofd(~F, NU.dsigup(S.D.mul(a, c), 8n))):
+  %Equal.sym(@T, @M(M.ofd(~F, a), M.ofd(~F, c)), M.ofd(~F, S.D.mul(a, c)), DM.ofd_mul(~F, a, c)) : O.le(~F, _, M.ofd(~F, NU.dsigup(S.D.mul(a, c), 8n)))
+  AP.both_l(O.le(~F, M.ofd(~F, S.D.mul(a, c)), M.ofd(~F, NU.dsigup(S.D.mul(a, c), 8n))), O.le(~F, O.sub(~F, M.ofd(~F, NU.dsigup(S.D.mul(a, c), 8n)), M.ofd(~F, S.D.mul(a, c))), @M(M.ofd(~F, M.dabs(S.D.mul(a, c))), $E8)), RP.dsigup_ok(~F, S.D.mul(a, c), 8n))
+
+def dmul_nn(~F: O.OField, +a: S.D, +c: S.D, +ha: O.le(~F, @0, M.ofd(~F, a)), +hc: O.le(~F, @0, M.ofd(~F, c))) -> O.le(~F, @0, M.ofd(~F, S.D.mul(a, c))):
+  %DM.ofd_mul(~F, a, c) : O.le(~F, @0, _)
+  FO.mul_nonneg(~F, M.ofd(~F, a), M.ofd(~F, c), ha, hc)
+
+def dsig_hi(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +a: S.D, +c: S.D, +ha: O.le(~F, @0, M.ofd(~F, a)), +hc: O.le(~F, @0, M.ofd(~F, c))) -> O.le(~F, M.ofd(~F, NU.dsigup(S.D.mul(a, c), 8n)), @M(@M(M.ofd(~F, a), M.ofd(~F, c)), @A(@1, $E8))):
+  +x = S.D.mul(a, c)
+  +hx = dmul_nn(~F, a, c, ha, hc)
+  %Equal.sym(@T, @M(M.ofd(~F, a), M.ofd(~F, c)), M.ofd(~F, x), DM.ofd_mul(~F, a, c)) : O.le(~F, M.ofd(~F, NU.dsigup(x, 8n)), @M(_, @A(@1, $E8)))
+  FV.le_of_sub(~F, M.ofd(~F, NU.dsigup(x, 8n)), @M(M.ofd(~F, x), @A(@1, $E8)), FM.nn_eq(~F, @S(@M(M.ofd(~F, x), @A(@1, $E8)), M.ofd(~F, NU.dsigup(x, 8n))), @S(@M(M.ofd(~F, x), $E8), @S(M.ofd(~F, NU.dsigup(x, 8n)), M.ofd(~F, x))),
+    FR.fring_eq(~F, [M.ofd(~F, x), M.ofd(~F, NU.dsigup(x, 8n)), $E8], E.ZSub{E.ZMul{E.ZVar{0n}, E.ZVar{2n}}, E.ZSub{E.ZVar{1n}, E.ZVar{0n}}}, E.ZSub{E.ZMul{E.ZVar{0n}, E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{2n}}}, E.ZVar{1n}}, {==}),
+    sub_nn(~F, @S(M.ofd(~F, NU.dsigup(x, 8n)), M.ofd(~F, x)), @M(M.ofd(~F, x), $E8),
+      DM.le_trans(~F, @S(M.ofd(~F, NU.dsigup(x, 8n)), M.ofd(~F, x)), @M(M.ofd(~F, M.dabs(x)), $E8), @M(M.ofd(~F, x), $E8),
+        AP.both_r(O.le(~F, M.ofd(~F, x), M.ofd(~F, NU.dsigup(x, 8n))), O.le(~F, O.sub(~F, M.ofd(~F, NU.dsigup(x, 8n)), M.ofd(~F, x)), @M(M.ofd(~F, M.dabs(x)), $E8)), RP.dsigup_ok(~F, x, 8n)),
+        FV.mul_le_r(~F, M.ofd(~F, M.dabs(x)), M.ofd(~F, x), $E8, dnn(~F, ~H, $D8, {==}), DG.dabs_le(~F, x, M.ofd(~F, x), FV.bnd_self(~F, M.ofd(~F, x), hx)))))))
+
+# the next radius is at least r (1 + 1/16)
+def grow_lo(~F: O.OField, +r: S.D) -> O.le(~F, @M(M.ofd(~F, r), @A(@1, $T16)), M.ofd(~F, NU.grow(r))):
+  %c17_eq(~F) : O.le(~F, @M(M.ofd(~F, r), _), M.ofd(~F, NU.grow(r)))
+  dsig_lo(~F, r, $D17)
+
+def s_le_sc(~F: O.OField, +x: @T, +c: @T, +hx: O.le(~F, @0, x), +hc: O.le(~F, @1, c)) -> O.le(~F, x, @M(x, c)):
+  FV.le_of_sub(~F, x, @M(x, c), FM.nn_eq(~F, @S(@M(x, c), x), @M(x, @S(c, @1)), FR.fring_eq(~F, [x, c], E.ZMul{E.ZVar{0n}, E.ZSub{E.ZVar{1n}, E.ZCst{S.Zpos{S.XH{}}}}}, E.ZSub{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{0n}}, {==}), FO.mul_nonneg(~F, x, @S(c, @1), hx, sub_nn(~F, @1, c, hc))))
+
+def r_le(~F: O.OField, +x: @T, +t: @T, +hx: O.le(~F, @0, x), +ht: O.le(~F, @0, t)) -> O.le(~F, x, @M(x, @A(@1, t))):
+  FV.le_of_sub(~F, x, @M(x, @A(@1, t)), FM.nn_eq(~F, @S(@M(x, @A(@1, t)), x), @M(x, t), FR.fring_eq(~F, [x, t], E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZSub{E.ZMul{E.ZVar{0n}, E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{1n}}}, E.ZVar{0n}}, {==}), FO.mul_nonneg(~F, x, t, hx, ht)))
+
+# one failing step: S + S <= R + (1 + o) S/16 gives S + S <= G + o S/16
+def step_inv(~F: O.OField, +G: @T, +R: @T, +s: @T, +t: @T, +o: @T, +hG: O.le(~F, @M(R, @A(@1, t)), G), +hinv: O.le(~F, @A(s, s), @A(R, @M(@M(@A(@1, o), t), s))), +hRS: O.le(~F, s, R), +ht: O.le(~F, @0, t)) -> O.le(~F, @A(s, s), @A(G, @M(@M(o, t), s))):
+  FV.le_of_sub(~F, @A(s, s), @A(G, @M(@M(o, t), s)), FM.nn_eq(~F, @S(@A(G, @M(@M(o, t), s)), @A(s, s)), @A(@A(@S(G, @M(R, @A(@1, t))), @S(@A(R, @M(@M(@A(@1, o), t), s)), @A(s, s))), @M(t, @S(R, s))),
+    FR.fring_eq(~F, [G, R, s, t, o], E.ZAdd{E.ZAdd{E.ZSub{E.ZVar{0n}, E.ZMul{E.ZVar{1n}, E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{3n}}}}, E.ZSub{E.ZAdd{E.ZVar{1n}, E.ZMul{E.ZMul{E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{4n}}, E.ZVar{3n}}, E.ZVar{2n}}}, E.ZAdd{E.ZVar{2n}, E.ZVar{2n}}}}, E.ZMul{E.ZVar{3n}, E.ZSub{E.ZVar{1n}, E.ZVar{2n}}}}, E.ZSub{E.ZAdd{E.ZVar{0n}, E.ZMul{E.ZMul{E.ZVar{4n}, E.ZVar{3n}}, E.ZVar{2n}}}, E.ZAdd{E.ZVar{2n}, E.ZVar{2n}}}, {==}),
+    FO.nonneg_add(~F, @A(@S(G, @M(R, @A(@1, t))), @S(@A(R, @M(@M(@A(@1, o), t), s)), @A(s, s))), @M(t, @S(R, s)), FO.nonneg_add(~F, @S(G, @M(R, @A(@1, t))), @S(@A(R, @M(@M(@A(@1, o), t), s)), @A(s, s)), sub_nn(~F, @M(R, @A(@1, t)), G, hG), sub_nn(~F, @A(s, s), @A(R, @M(@M(@A(@1, o), t), s)), hinv)), FO.mul_nonneg(~F, t, @S(R, s), ht, sub_nn(~F, s, R, hRS)))))
+
+# R <= S + S keeps the next radius below U
+def ub_step(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +R: @T, +s: @T, +h: O.le(~F, R, @A(s, s))) -> O.le(~F, @M(@M(R, $C17), @A(@1, $E8)), @M(@M($C17, @A(@1, $E8)), @A(s, s))):
+  FV.le_of_sub(~F, @M(@M(R, $C17), @A(@1, $E8)), @M(@M($C17, @A(@1, $E8)), @A(s, s)), FM.nn_eq(~F, @S(@M(@M($C17, @A(@1, $E8)), @A(s, s)), @M(@M(R, $C17), @A(@1, $E8))), @M(@M($C17, @A(@1, $E8)), @S(@A(s, s), R)),
+    FR.fring_eq(~F, [R, s, $C17, $E8], E.ZMul{E.ZMul{E.ZVar{2n}, E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{3n}}}, E.ZSub{E.ZAdd{E.ZVar{1n}, E.ZVar{1n}}, E.ZVar{0n}}}, E.ZSub{E.ZMul{E.ZMul{E.ZVar{2n}, E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{3n}}}, E.ZAdd{E.ZVar{1n}, E.ZVar{1n}}}, E.ZMul{E.ZMul{E.ZVar{0n}, E.ZVar{2n}}, E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{3n}}}}, {==}),
+    FO.mul_nonneg(~F, @M($C17, @A(@1, $E8)), @S(@A(s, s), R), FO.mul_nonneg(~F, $C17, @A(@1, $E8), dnn(~F, ~H, $D17, {==}), FO.nonneg_add(~F, @1, $E8, NP.one_nn(~F), dnn(~F, ~H, $D8, {==}))), sub_nn(~F, R, @A(s, s), h))))
+
+# r0 is below U
+def ub0(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +s: @T, +hs: O.le(~F, @0, s)) -> O.le(~F, @M(@M(s, $C65), @A(@1, $E8)), @M(@M($C17, @A(@1, $E8)), @A(s, s))):
+  FV.le_of_sub(~F, @M(@M(s, $C65), @A(@1, $E8)), @M(@M($C17, @A(@1, $E8)), @A(s, s)), FM.nn_eq(~F, @S(@M(@M($C17, @A(@1, $E8)), @A(s, s)), @M(@M(s, $C65), @A(@1, $E8))), @M(@M(@A(@1, $E8), s), @S(@A($C17, $C17), $C65)),
+    FR.fring_eq(~F, [s, $C65, $C17, $E8], E.ZMul{E.ZMul{E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{3n}}, E.ZVar{0n}}, E.ZSub{E.ZAdd{E.ZVar{2n}, E.ZVar{2n}}, E.ZVar{1n}}}, E.ZSub{E.ZMul{E.ZMul{E.ZVar{2n}, E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{3n}}}, E.ZAdd{E.ZVar{0n}, E.ZVar{0n}}}, E.ZMul{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{3n}}}}, {==}),
+    FO.mul_nonneg(~F, @M(@A(@1, $E8), s), @S(@A($C17, $C17), $C65), FO.mul_nonneg(~F, @A(@1, $E8), s, FO.nonneg_add(~F, @1, $E8, NP.one_nn(~F), dnn(~F, ~H, $D8, {==})), hs), sub_nn(~F, $C65, @A($C17, $C17), c65_le(~F, ~H)))))
+
+def rgood($SVP, m: Maybe<&2, S.D>) -> Data:
+  match m:
+    case None{}:
+      Empty
+    case Some{+r}:
+      M.Both({NU.okr(eqs, n, yc, r, ym, pc, pr) == True{} : Bool}, M.Both(O.le(~F, @M($SD, $C65), M.ofd(~F, r)), O.le(~F, M.ofd(~F, r), $UB)))
+
+@MACRO WXQ +n: Nat, +eqs: List<&2, E.QExpr>, +hn: {CK.eqlen(eqs) == n : Nat}, +hh: {CK.allheld($DN, eqs) == True{} : Bool}, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +lyc: {KA.klen($DN, yc) == n : Nat}, +lpp: {KA.klen($DN, pc) == KA.klen($DN, pr) : Nat}, +ym: List<&2, List<&2, S.D>>, +bb: @T, +lam: @T, +ms: @T, +rb: @T, +hb: O.le(~F, @0, bb), +hl0: O.le(~F, @0, lam), +hrb: O.le(~F, @0, rb), +hq: AP.eqok(~F, bb, lam, ms, eqs), +hc: M.vbnd.all(~F, $PTC, @S(bb, rb)), +hpn: FV.rnn(~F, M.ofdv(~F, pr)), +hpr: M.vbnd.all(~F, M.ofdv(~F, pr), rb), +yn: @T, +thL: @T, +hyn: O.le(~F, NP.mnorm(~F, M.ofdm(~F, ym), n), yn), +hthl: O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, M.ofdm(~F, ym), NW.jc(~F, eqs, n, $PTC)))), n), thL), +hyn0: O.le(~F, @0, yn), +hthl0: O.le(~F, @0, thL)
+@MACRO WXB n, eqs, hn, hh, yc, pc, pr, lyc, lpp, ym, bb, lam, ms, rb, hb, hl0, hrb, hq, hc, hpn, hpr, yn, thL, hyn, hthl, hyn0, hthl0
+@MACRO RSQ $WXQ, +hym: {CK.mlen($DN, ym) == n : Nat}, +hab: {CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs) == True{} : Bool}, +thR: @T, +hthr0: O.le(~F, @0, thR), +hthr: $THR, +hthr1: O.lt(F, thR, @1), +hw: O.le(~F, $CW, $QH), +hU: O.le(~F, $UB, rb)
+@MACRO RSB $WXB, hym, hab, thR, hthr0, hthr, hthr1, hw, hU
+
+def r_nn(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +hlo: O.le(~F, @M($SD, $C65), M.ofd(~F, r))) -> O.le(~F, @0, M.ofd(~F, r)):
+  DM.le_trans(~F, @0, @M($SD, $C65), M.ofd(~F, r), FO.mul_nonneg(~F, $SD, $C65, dvmax_nn(~F, $S0), c65_nn(~F, ~H)), hlo)
+
+# a radius that passes the window but failed: impossible
+def no_fail(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +eok: {NU.okr(eqs, n, yc, r, ym, pc, pr) == False{} : Bool}, +hlo: O.le(~F, @M($SD, $C65), M.ofd(~F, r)), +hhi: O.le(~F, M.ofd(~F, r), $UB), hS: O.le(~F, $SD, @M($QH, M.ofd(~F, r)))) -> Empty:
+  KA.ft(Equal.trans(Bool, False{}, NU.okr(eqs, n, yc, r, ym, pc, pr), True{}, Equal.sym(Bool, NU.okr(eqs, n, yc, r, ym, pc, pr), False{}, eok), window_ok(~F, ~H, $WXB, hym, hab, thR, hthr0, hthr, hthr1, hw, r, r_nn(~F, ~H, $RSB, r, hlo), DM.le_trans(~F, M.ofd(~F, r), $UB, rb, hhi, hU), hS)))
+
+def fail_lt.go(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +eok: {NU.okr(eqs, n, yc, r, ym, pc, pr) == False{} : Bool}, +hlo: O.le(~F, @M($SD, $C65), M.ofd(~F, r)), +hhi: O.le(~F, M.ofd(~F, r), $UB), t: Or(O.lt(F, $SD, @M($QH, M.ofd(~F, r))), Or({$SD == @M($QH, M.ofd(~F, r)) : @T}, O.lt(F, @M($QH, M.ofd(~F, r)), $SD)))) -> O.lt(F, @M($QH, M.ofd(~F, r)), $SD):
+  match t:
+    case Inl{l}:
+      FO.absurd(O.lt(F, @M($QH, M.ofd(~F, r)), $SD), no_fail(~F, ~H, $RSB, r, eok, hlo, hhi, Inl{l}))
+    case Inr{Inl{e}}:
+      FO.absurd(O.lt(F, @M($QH, M.ofd(~F, r)), $SD), no_fail(~F, ~H, $RSB, r, eok, hlo, hhi, Inr{e}))
+    case Inr{Inr{+g}}:
+      g
+
+# a failing radius is at most S + S
+def fail_le(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +eok: {NU.okr(eqs, n, yc, r, ym, pc, pr) == False{} : Bool}, +hlo: O.le(~F, @M($SD, $C65), M.ofd(~F, r)), +hhi: O.le(~F, M.ofd(~F, r), $UB)) -> O.le(~F, M.ofd(~F, r), @A($SD, $SD)):
+  lt2(~F, $SD, M.ofd(~F, r), fail_lt.go(~F, ~H, $RSB, r, eok, hlo, hhi, O.lt_total(F)($SD, @M($QH, M.ofd(~F, r)))))
+
+@MACRO INV O.le(~F, @A($SD, $SD), @A(M.ofd(~F, r), @M(@M(FR.ofn(~F, m), $T16), $SD)))
+
+# the search from r with fuel k, m steps (m <= k) from certain success
+def rs_ok(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, k: Nat, ok: Bool, m: Nat, $RSQ, +r: S.D, eok: {NU.okr(eqs, n, yc, r, ym, pc, pr) == ok : Bool}, +hlo: O.le(~F, @M($SD, $C65), M.ofd(~F, r)), +hhi: O.le(~F, M.ofd(~F, r), $UB), hm: {KA.natle(m, k) == True{} : Bool}, hinv: $INV) -> rgood(~F, ~H, n, eqs, yc, pc, pr, ym, NU.rsearch(k, ok, eqs, n, yc, r, ym, pc, pr)):
+  match k ok m:
+    case 0n True{} m:
+      (eok, (hlo, hhi))
+    case 1n+j True{} m:
+      (eok, (hlo, hhi))
+    case 0n False{} 0n:
+      FO.absurd(rgood(~F, ~H, n, eqs, yc, pc, pr, ym, NU.rsearch(0n, False{}, eqs, n, yc, r, ym, pc, pr)), no_fail(~F, ~H, $RSB, r, eok, hlo, hhi, half_le(~F, ~H, $SD, M.ofd(~F, r), FV.le_rw_r(~F, @A($SD, $SD), @A(M.ofd(~F, r), @M(@M(@0, $T16), $SD)), M.ofd(~F, r), FR.fring_eq(~F, [M.ofd(~F, r), $T16, $SD], E.ZAdd{E.ZVar{0n}, E.ZMul{E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{1n}}, E.ZVar{2n}}}, E.ZVar{0n}, {==}), hinv))))
+    case 0n False{} 1n+mm:
+      FO.absurd(rgood(~F, ~H, n, eqs, yc, pc, pr, ym, NU.rsearch(0n, False{}, eqs, n, yc, r, ym, pc, pr)), KA.ft(hm))
+    case 1n+j False{} 0n:
+      FO.absurd(rgood(~F, ~H, n, eqs, yc, pc, pr, ym, NU.rsearch(1n+j, False{}, eqs, n, yc, r, ym, pc, pr)), no_fail(~F, ~H, $RSB, r, eok, hlo, hhi, half_le(~F, ~H, $SD, M.ofd(~F, r), FV.le_rw_r(~F, @A($SD, $SD), @A(M.ofd(~F, r), @M(@M(@0, $T16), $SD)), M.ofd(~F, r), FR.fring_eq(~F, [M.ofd(~F, r), $T16, $SD], E.ZAdd{E.ZVar{0n}, E.ZMul{E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{1n}}, E.ZVar{2n}}}, E.ZVar{0n}, {==}), hinv))))
+    case 1n++j False{} 1n++mm:
+      +R = M.ofd(~F, r)
+      +G = M.ofd(~F, NU.grow(r))
+      +hR0 = r_nn(~F, ~H, $RSB, r, hlo)
+      +hG = grow_lo(~F, r)
+      +hRS = DM.le_trans(~F, $SD, @M($SD, $C65), R, s_le_sc(~F, $SD, $C65, dvmax_nn(~F, $S0), one_le(~F, ~H, $D65, {==})), hlo)
+      +hlo2 = DM.le_trans(~F, @M($SD, $C65), R, G, hlo, DM.le_trans(~F, R, @M(R, @A(@1, $T16)), G, r_le(~F, R, $T16, hR0, dnn(~F, ~H, $D16, {==})), hG))
+      +hhi2 = DM.le_trans(~F, G, @M(@M(R, $C17), @A(@1, $E8)), $UB, dsig_hi(~F, ~H, r, $D17, hR0, dnn(~F, ~H, $D17, {==})), ub_step(~F, ~H, R, $SD, fail_le(~F, ~H, $RSB, r, eok, hlo, hhi)))
+      rs_ok(~F, ~H, j, NU.okr(eqs, n, yc, NU.grow(r), ym, pc, pr), mm, $RSB, NU.grow(r), {==}, hlo2, hhi2, hm, step_inv(~F, G, R, $SD, $T16, FR.ofn(~F, mm), hG, hinv, hRS, dnn(~F, ~H, $D16, {==})))
+
+# the solver's search from r0 returns a passing radius between (65/64) S and U
+def rs_init(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ) -> rgood(~F, ~H, n, eqs, yc, pc, pr, ym, NU.rsearch(64n, NU.okr(eqs, n, yc, NU.r0(eqs, n, yc, ym, pc, pr), ym, pc, pr), eqs, n, yc, NU.r0(eqs, n, yc, ym, pc, pr), ym, pc, pr)):
+  +r = NU.r0(eqs, n, yc, ym, pc, pr)
+  +hS0 = dvmax_nn(~F, $S0)
+  +hlo = dsig_lo(~F, NU.dvmax($S0), $D65)
+  +hRS = DM.le_trans(~F, $SD, @M($SD, $C65), M.ofd(~F, r), s_le_sc(~F, $SD, $C65, hS0, one_le(~F, ~H, $D65, {==})), hlo)
+  rs_ok(~F, ~H, 64n, NU.okr(eqs, n, yc, r, ym, pc, pr), 16n, $RSB, r, {==}, hlo,
+    DM.le_trans(~F, M.ofd(~F, r), @M(@M($SD, $C65), @A(@1, $E8)), $UB, dsig_hi(~F, ~H, NU.dvmax($S0), $D65, hS0, c65_nn(~F, ~H)), ub0(~F, ~H, $SD, hS0)),
+    {==},
+    (%Equal.sym(@T, @M(FR.ofn(~F, 16n), $T16), @1, n16_eq(~F)) : O.le(~F, @A($SD, $SD), @A(M.ofd(~F, r), @M(_, $SD)))
+      FV.le_of_sub(~F, @A($SD, $SD), @A(M.ofd(~F, r), @M(@1, $SD)), FM.nn_eq(~F, @S(@A(M.ofd(~F, r), @M(@1, $SD)), @A($SD, $SD)), @S(M.ofd(~F, r), $SD), FR.fring_eq(~F, [M.ofd(~F, r), $SD], E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, E.ZSub{E.ZAdd{E.ZVar{0n}, E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{1n}}}, E.ZAdd{E.ZVar{1n}, E.ZVar{1n}}}, {==}), sub_nn(~F, $SD, M.ofd(~F, r), hRS)))))
