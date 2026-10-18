@@ -3,9 +3,30 @@
 # shorthand @A( @M( @N( @S( (field add, mul, neg, sub), @0 @1 @T (zero, one,
 # carrier), @LK( @EM( @EP( @OZ( @ON( @ZE( (lookups and evaluations), @H( (a
 # computing number's image in F).
+# @MACRO NAME text lines define textual macros used as $NAME.
 # Usage: python3 tools/expand.py tools/drafts/X.draft lib/X.bend
 import sys
 src = open(sys.argv[1]).read()
+import re as _re
+# @MACRO NAME text: every $NAME below is replaced by text (macros may use
+# macros; the longest names are replaced first)
+_macros = {}
+_lines = []
+for _l in src.split("\n"):
+    if _l.startswith("@MACRO "):
+        _name, _body = _l[len("@MACRO "):].split(" ", 1)
+        _macros[_name] = _body
+    else:
+        _lines.append(_l)
+src = "\n".join(_lines)
+for _ in range(20):
+    _new = src
+    for _name in sorted(_macros, key=len, reverse=True):
+        _new = _new.replace("$" + _name, _macros[_name])
+    if _new == src:
+        break
+    src = _new
+assert not _re.search(r'\$[A-Za-z_]', src), "unknown macro"
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import zexpr
