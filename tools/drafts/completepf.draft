@@ -1180,3 +1180,136 @@ def sbud_of(~F: O.OField, $SBP, +h: O.C(F), +t: O.C(F), +hht: O.le(~F, h, t), +h
       +hle = DM.le_trans(~F, gb, O.add(F, gb, sbs(~F, bb, tf, x, r)), S, NW.le_addr(~F, gb, sbs(~F, bb, tf, x, r), sbs_nn(~F, $SBA, r, h2)), hS)
       +hlr = DM.le_trans(~F, sbs(~F, bb, tf, x, r), O.add(F, gb, sbs(~F, bb, tf, x, r)), S, NW.le_addl(~F, gb, sbs(~F, bb, tf, x, r), sbg_nn(~F, $SBA, e, BX.QExpr.within(e, 0n), h1)), hS)
       (ge_go(~F, $SBA, h, t, hht, ht0, e, BX.QExpr.within(e, 0n), {==}, h1, S, hle, hq), sbud_of(~F, $SBA, h, t, hht, ht0, r, h2, S, hlr, hq))
+
+# The whole budget
+# ----------------
+# Q = the blocks' smallness + T + the sides' budget; t Q < 1 gives all
+# three facts plan_ans needs.
+
+@MACRO QCH PB.qch($CA, $KB, binv, $NP, @0)
+@MACRO SBX sbs(~F, $BBS, $TCH, x, $SDK)
+@MACRO QQ O.add(F, $QCH, O.add(F, $TCH, $SBX))
+
+def mul_le_r(~F: O.OField, +a: O.C(F), +b: O.C(F), +c: O.C(F), hc: O.le(~F, O.zero(F), c), h: O.le(~F, a, b)) -> O.le(~F, O.mul(F, a, c), O.mul(F, b, c)):
+  FV.le_of_sub(~F, O.mul(F, a, c), O.mul(F, b, c), FM.nn_eq(~F, O.sub(~F, O.mul(F, b, c), O.mul(F, a, c)), O.mul(F, O.sub(~F, b, a), c), @ZEQ[a,, b,, c | (b - a)*c | b*c - a*c], FO.mul_nonneg(~F, O.sub(~F, b, a), c, FM.sub_nonneg(~F, a, b, h), hc)))
+
+def budget($SKP, +x: M.Vec(~F), +binv: BI.BInv(~F, x, $FULL, $KB), +hs: SV.Strict(~F, x, $SDK), +p: Nat, +ht: O.lt(F, O.mul(F, $VB, $QQ), O.one(F))) -> M.Both(O.lt(F, O.mul(F, $VB, $QCH), O.one(F)), M.Both(O.le(~F, O.mul(F, NW.hnw(~F, p), $TCH), O.one(F)), SBud(~F, $BBS, O.mul(F, NW.hnw(~F, p), $TCH), x, $SDK))):
+  +hq0 = PB.qch_nn(~F, ~H, $FULL, $GOOD, $VP, x, $KB, binv, $NP, @0, FO.le_refl(~F, @0))
+  +htc = PB.tch_nn(~F, ~H, $FULL, $GOOD, $VP, x, $KB, binv, $NP, @0, FO.le_refl(~F, @0))
+  +hsb = sbs_nn(~F, $BBS, bbs_nn(~F, x), $TCH, htc, x, $SDK, hs)
+  +ht0 = SC.t_nn(~F, p)
+  +hht = SC.h_le_t(~F, p)
+  +hlq = NW.le_addl(~F, $QCH, O.add(F, $TCH, $SBX), hq0)
+  (FO.le_lt_trans(~F, O.mul(F, $VB, $QCH), O.mul(F, $VB, $QQ), O.one(F), FV.mul_le(~F, $VB, $QCH, $QQ, ht0, NW.le_addr(~F, $QCH, O.add(F, $TCH, $SBX), FO.nonneg_add(~F, $TCH, $SBX, htc, hsb))), ht),
+  (FO.lt_le(~F, O.mul(F, NW.hnw(~F, p), $TCH), O.one(F), FO.le_lt_trans(~F, O.mul(F, NW.hnw(~F, p), $TCH), O.mul(F, $VB, $QQ), O.one(F), DM.le_trans(~F, O.mul(F, NW.hnw(~F, p), $TCH), O.mul(F, $VB, $TCH), O.mul(F, $VB, $QQ), mul_le_r(~F, NW.hnw(~F, p), $VB, $TCH, htc, hht), FV.mul_le(~F, $VB, $TCH, $QQ, ht0, DM.le_trans(~F, $TCH, O.add(F, $TCH, $SBX), $QQ, NW.le_addr(~F, $TCH, $SBX, hsb), hlq))), ht)),
+  sbud_of(~F, $BBS, bbs_nn(~F, x), $TCH, htc, x, NW.hnw(~F, p), $VB, hht, ht0, $SDK, hs, $QQ, DM.le_trans(~F, $SBX, O.add(F, $TCH, $SBX), $QQ, NW.le_addl(~F, $TCH, $SBX, htc), hlq), ht)))
+
+# at level l = arch(Q): t Q < 1 at l's first precision
+def tq_lt(~F: O.OField, ~R: CR.Complete<F>, +q: O.C(F)) -> O.lt(F, O.mul(F, AP.vbit(~F, Nat.div(pfirst(CR.arch(F, R, q), 64n, 96n), 2n)), q), O.one(F)):
+  +l = CR.arch(F, R, q)
+  +t = AP.vbit(~F, Nat.div(pfirst(l, 64n, 96n), 2n))
+  RL.lt_rw_l(~F, O.mul(F, q, t), O.mul(F, t, q), O.one(F), O.mul_comm(F)(q, t), FO.lt_le_trans(~F, O.mul(F, q, t), O.mul(F, CR.nat(~F, l), t), O.one(F), RL.lt_mul_r(~F, q, CR.nat(~F, l), t, CR.arch_ok(F, R)(q), DM.dpos(~F, S.XH{}, Nat.div(pfirst(l, 64n, 96n), 2n))), DM.le_trans(~F, O.mul(F, CR.nat(~F, l), t), O.mul(F, CR.nat(~F, l), AP.vbit(~F, l)), O.one(F), FV.mul_le(~F, CR.nat(~F, l), t, AP.vbit(~F, l), RL.nat_nn(~F, l), SC.pw_le(~F, l, Nat.div(pfirst(l, 64n, 96n), 2n), pl_half(l))), nv_le(~F, l))))
+
+# The answer at P, from the budget
+# --------------------------------
+
+def sub1(n: Nat) -> Nat:
+  match n:
+    case 0n:
+      0n
+    case 1n+m:
+      m
+
+def sub_eq1(m: Nat, h: {KA.natle(1n, m) == True{} : Bool}) -> {m == 1n+sub1(m) : Nat}:
+  match m:
+    case 0n:
+      FO.absurd({0n == 1n+sub1(0n) : Nat}, KA.ft(h))
+    case 1n+k:
+      {==}
+
+def sub2_eq(n: Nat, h: {KA.natle(2n, n) == True{} : Bool}) -> {n == 1n+(1n+sub1(sub1(n))) : Nat}:
+  match n:
+    case 0n:
+      FO.absurd({0n == 1n+(1n+sub1(sub1(0n))) : Nat}, KA.ft(h))
+    case 1n+m:
+      %sub_eq1(m, h) : {1n+m == 1n+_ : Nat}
+      {==}
+
+@MACRO BUA O.lt(F, O.mul(F, $VB, $QCH), O.one(F))
+@MACRO BUB O.le(~F, O.mul(F, NW.hnw(~F, p), $TCH), O.one(F))
+@MACRO BUC SBud(~F, $BBS, O.mul(F, NW.hnw(~F, p), $TCH), x, $SDK)
+
+def plan_top($SKP, $VXP, +x: M.Vec(~F), +g: List<&2, S.D>, +g0: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, +hz: SK.Zeros(~F, x, SO.kept(sk)), +hpa: SV.PinnedAt($DN, ~F, ~H, x, $PINS, g0), +hs: SV.Strict(~F, x, $SDK), +binv: BI.BInv(~F, x, $FULL, $KB), +p: Nat, +hp2: {KA.natle(2n, p) == True{} : Bool}, +hN: SV.Near($DN, ~F, ~H, $NV, 0n, g, x, NW.hnw(~F, p), $PINS, g0), +ht: O.lt(F, O.mul(F, $VB, $QQ), O.one(F))) -> AnsOK(~F, ~H, sk, g, x, NU.plan(SO.kept(sk), $NV, SO.skel_of(sk), g, p)):
+  +bu = budget($SKA, x, binv, hs, p, ht)
+  +bu2 = AP.both_r($BUA, M.Both($BUB, $BUC), bu)
+  plan_ans($SKA, x, g, g0, p, sub1(sub1(p)), sub2_eq(p, hp2), NW.hnw(~F, p), NW.hnw_nn(~F, p), FO.le_refl(~F, NW.hnw(~F, p)), L.band_l(SV.dyeqs($FULL), SV.dysides(SK.Sketch.sides(sk)), dy), hz, hN, hpa, binv, AP.both_l($BUA, M.Both($BUB, $BUC), bu), $VXA, hl, AP.both_l($BUB, $BUC, bu2), AP.both_r($BUB, $BUC, bu2))
+
+# The precision loop
+# ------------------
+
+def ploop_true(t: List<&2, Nat>, +cur: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {SO.ploop(t, True{}, cur, sk, g0, red, why, pins, es, nv, skel) == cur : NU.PR}:
+  match t:
+    case Nil{}:
+      {==}
+    case Con{p, r}:
+      {==}
+
+def final_of(nx: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, +pins: List<&2, Nat>, h: {SO.accept(nx, sk, g0, red, why, pins) == True{} : Bool}) -> {SO.final(sk, g0, SO.found(red, why, pins, nx)) == True{} : Bool}:
+  match nx:
+    case NU.POk{+y}:
+      h
+    case NU.PRetry{}:
+      FO.absurd({SO.final(sk, g0, SO.found(red, why, pins, NU.PRetry{})) == True{} : Bool}, KA.ft(h))
+    case NU.PStop{}:
+      FO.absurd({SO.final(sk, g0, SO.found(red, why, pins, NU.PStop{})) == True{} : Bool}, KA.ft(h))
+
+# the answer the solver gives, and it holds x
+def Fin(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +x: M.Vec(~F), o: SO.Out) -> Data:
+  M.Both({SO.Out.ok(o) == True{} : Bool}, BX.inbox($DN, ~F, ~H, SO.Out.gc(o), SO.Out.gr(o), x))
+
+def slp(+sk: SK.Sketch, +g: List<&2, S.D>, +ps: List<&2, Nat>) -> SO.Out:
+  SO.seal(sk, g, SO.found(SO.red_of(sk), SO.why_of(sk), SO.pins_of(sk), SO.ploop.start(ps, sk, g, SO.red_of(sk), SO.why_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk))))
+
+@MACRO NXL NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, $PL0)
+@MACRO RWP SO.red_of(sk), SO.why_of(sk), SO.pins_of(sk)
+@MACRO RST SO.kept(sk), SO.nvars(sk), SO.skel_of(sk)
+
+def fin_go(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g: List<&2, S.D>, +x: M.Vec(~F), +l: Nat, +hacc: {SO.accept($NXL, sk, g, $RWP) == True{} : Bool}, inb: BX.inbox($DN, ~F, ~H, SO.pr.gc($NXL), SO.pr.gr($NXL), x)) -> Fin(~F, ~H, x, SO.solve_l(sk, g, l)):
+  %Equal.sym(List<&2, Nat>, SO.precs.from(l, 1n+6n, 64n, 96n), Con{$PL0, ptail(l, 6n, 64n, 96n)}, pf_head(l, 6n, 64n, 96n)) : Fin(~F, ~H, x, slp(sk, g, _))
+  %Equal.sym(Bool, SO.accept($NXL, sk, g, $RWP), True{}, hacc) : Fin(~F, ~H, x, SO.seal(sk, g, SO.found($RWP, SO.ploop(ptail(l, 6n, 64n, 96n), _, $NXL, sk, g, $RWP, $RST))))
+  %Equal.sym(NU.PR, SO.ploop(ptail(l, 6n, 64n, 96n), True{}, $NXL, sk, g, $RWP, $RST), $NXL, ploop_true(ptail(l, 6n, 64n, 96n), $NXL, sk, g, $RWP, $RST)) : Fin(~F, ~H, x, SO.seal(sk, g, SO.found($RWP, _)))
+  (final_of($NXL, sk, g, $RWP, hacc), inb)
+
+# level l's search stops at its first precision, with that answer
+def fin_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g: List<&2, S.D>, +x: M.Vec(~F), +l: Nat, h: AnsOK(~F, ~H, sk, g, x, $NXL)) -> Fin(~F, ~H, x, SO.solve_l(sk, g, l)):
+  (hacc, inb) = h
+  fin_go(~F, ~H, sk, g, x, l, hacc, inb)
+
+# The top
+# -------
+
+# Fin as the law states it
+def top_pair(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +x: M.Vec(~F), +o: SO.Out, h: Fin(~F, ~H, x, o)) -> ({SO.Out.ok(o) == True{} : Bool} & BX.inbox($DN, ~F, ~H, SO.Out.gc(o), SO.Out.gr(o), x)):
+  (h1, h2) = h
+  (h1, h2)
+
+@MACRO LQ CR.arch(F, R, $QQ)
+
+def top(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +ha: {D.adjb($ADJ, $NV) == True{} : Bool}, $VXP, +x: M.Vec(~F), +g0: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, +hz: SK.Zeros(~F, x, SO.kept(sk)), +hpa: SV.PinnedAt($DN, ~F, ~H, x, $PINS, g0), +hs: SV.Strict(~F, x, $SDK), +binv: BI.BInv(~F, x, $FULL, $KB), +g: List<&2, S.D>, +hN: SV.Near($DN, ~F, ~H, $NV, 0n, g, x, NW.hnw(~F, pfirst($LQ, 64n, 96n)), $PINS, g0)) -> Fin(~F, ~H, x, SO.solve_l(sk, g, $LQ)):
+  +l = $LQ
+  fin_of(~F, ~H, sk, g, x, l, plan_top(~F, ~H, sk, ha, $VXA, x, g, g0, hl, hz, hpa, hs, binv, pfirst(l, 64n, 96n), L.le_trans(2n, Nat.add(64n, Nat.add(l, l)), pfirst(l, 64n, 96n), {==}, pl_ge(l)), hN, tq_lt(~F, ~R, $QQ)))
+
+def top_at(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +ha: {D.adjb($ADJ, $NV) == True{} : Bool}, $VXP, +x: M.Vec(~F), +g0: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, +hz: SK.Zeros(~F, x, SO.kept(sk)), +hpa: SV.PinnedAt($DN, ~F, ~H, x, $PINS, g0), +hs: SV.Strict(~F, x, $SDK), +binv: BI.BInv(~F, x, $FULL, $KB), +g: List<&2, S.D>, +hN: SV.Near($DN, ~F, ~H, $NV, 0n, g, x, NW.hnw(~F, pfirst($LQ, 64n, 96n)), $PINS, g0)) -> ({SO.Out.ok(SO.solve_l(sk, g, $LQ)) == True{} : Bool} & BX.inbox($DN, ~F, ~H, SO.Out.gc(SO.solve_l(sk, g, $LQ)), SO.Out.gr(SO.solve_l(sk, g, $LQ)), x)):
+  top_pair(~F, ~H, x, SO.solve_l(sk, g, $LQ), top(~F, ~R, ~H, sk, ha, $VXA, x, g0, hl, hz, hpa, hs, binv, g, hN))
+
+# LAW solve_complete: near a regular solution x (the pins at their drawn
+# values, side conditions strict), every drawing close enough to x at the
+# pins' complement gives, at some level, a verdict that passes and a box
+# that holds x
+def solve_complete(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +dy: {SV.dyadic(sk) == True{} : Bool}, +g0: List<&2, S.D>, +x: M.Vec(~F), +hl: {M.len(~F, x) == SO.nvars(sk) : Nat}, +hp: SV.PinnedAt(~KI.dnum(), ~F, ~H, x, SO.pins_of(sk), g0), +hz: SK.Zeros(~F, x, SK.Sketch.eqs(SV.mark(SO.red_of(sk), sk))), +hs: SV.Strict(~F, x, SK.Sketch.sides(SV.mark(SO.red_of(sk), sk))), hr: DV.Regular(~F, x, SK.Sketch.eqs(SV.mark(SO.red_of(sk), sk)), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)))) -> &d: O.C(F) -> (O.lt(F, O.zero(F), d) & (&l: Nat -> (@g: List<&2, S.D> -> SV.Near(~KI.dnum(), ~F, ~H, SO.nvars(sk), 0n, g, x, d, SO.pins_of(sk), g0) -> ({SO.Out.ok(SO.solve_l(sk, g, l)) == True{} : Bool} & BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g, l)), SO.Out.gr(SO.solve_l(sk, g, l)), x))))):
+  +hwf = WC.wf_dec_ok(sk, w)
+  +ha = CV.cov(sk, SO.nvars(sk), cov, hwf)
+  +binv = BI.block_invs(~F, sk, ha, x, hr)
+  +l = $LQ
+  +d = NW.hnw(~F, pfirst(l, 64n, 96n))
+  (d, (DM.dpos(~F, S.XH{}, 1n+pfirst(l, 64n, 96n)), (l, g => hN => top_at(~F, ~R, ~H, sk, ha, hwf, cov, dy, x, g0, hl, hz, hp, hs, binv, g, hN))))
