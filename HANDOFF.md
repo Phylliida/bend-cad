@@ -528,8 +528,12 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
     (tools/drafts/scalepf.draft; `block_sc`: block_ok with d <= h,
     rho <= h T, t qblk < 1; `rb_sc` r_b <= h phib; `phib_ge`), gated via
     tests/scale_laws.bend. See DESIGN "C6a as built".
-  - Next: C6b lib/binvpf.bend (per-block InvB from regular_blocks), then
-    C6c (pblocks induction), C6d (the verdict and the top).
+  - C6b DONE: lib/binvpf.bend (`block_invs`: every block's Jacobian
+    invertible at a regular solution, block_inv peeled block by block) and
+    lib/locpf.bend (`loc_invb`: the block's local Jacobian, renumbered at
+    its unknowns ++ parameters, has an inverse of norm `ibd`), gated via
+    tests/binv_laws.bend. See DESIGN "C6b as built".
+  - Next: C6c (pblocks induction), C6d (the verdict and the top).
 - Bend lessons (C6a):
   - A def's value can be reflected: `{C5_constant(...) == PM.peval(~F,
     atoms, r_X()) : @T}` checks by `{==}` when the atom list is concrete,

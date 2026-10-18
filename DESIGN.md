@@ -1329,6 +1329,20 @@ is POk and accept is True at P, for every g within d of x.
   peels block by block. Each A is the block's local Jacobian
   (deriv_rename, deriv_rnv, kept_reorder), and InvN gives InvB with
   β = its inverse's mnorm.
+- *C6b as built* (2026-10-17; lib/binvpf.bend, lib/locpf.bend, gated via
+  tests/binv_laws.bend). `dzero`: an equation inside w has derivative 0
+  in any v outside w, at every point. The block-order Jacobian of blocks
+  b :: t splits as hcat/vcat (`pickk_app`, `jac_rows`, `jac_cols`) and
+  its upper-right block is zmat (`jac_z`, from vchain, `uses_has`,
+  `ev_inside` and the distinctness of vp), so it is `GJ.bm(A, C, D)` as a
+  list and `block_inv` peels it (`inv_blocks`, `block_invs`: BInv, an
+  InvN per block in the sketch's numbering). Locally (`jac_loc`): with X
+  = xperm(x, vp), the block's renumbered Jacobian at (X's unknowns ++ its
+  parameters' values) equals the sketch-numbered one entry by entry
+  (`ent`: deriv_rename, planpf's subst, deriv_rnv, `eval_ftake`,
+  `eval_rnv`), given `posrun` (the unknowns at positions o, o+1, ...) and
+  `rowsok` (each equation inside vp, below o + n, below n + m renamed);
+  `loc_invb` is C5's hJ with β = `ibd` (the inverse's mnorm).
 - *C6c, the blocks in turn* (lib/pblkpf.bend). The induction over
   pblocks (accumulator moved out: pblocks(.., acc) = pbacc(acc,
   pblocks(.., Nil))). Invariant at offset o: the box so far (gc, gr) has

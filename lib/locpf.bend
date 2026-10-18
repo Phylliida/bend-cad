@@ -1,0 +1,331 @@
+# bend-cad: a block seen locally, for solve_complete (DESIGN §10.4 "C6
+# plan", C6b/C6c). Proofs only.
+# Generated: python3 tools/expand.py tools/drafts/locpf.draft lib/locpf.bend
+#
+# The plan reads the system in block order: variable v at its position in
+# vp (rnv), the point x as X = xperm(x, vp). A block at offset o, with n
+# unknowns and parameters pars (positions in vp), renumbers its equations
+# locally (rename): unknowns 0 .. n-1, then the parameters. Here: X
+# evaluates every block-order equation as x evaluates the original
+# (eval_rnv); a prefix of X evaluates what lies below it (eval_ftake);
+# derivatives keep the variable bounds (below_deriv, ren_deriv_below); and
+# the block's local Jacobian at (its unknowns ++ its parameters' values)
+# is its Jacobian at x in the sketch's numbering, entry by entry (jc_loc).
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ../spec/mat.bend as M
+import ../spec/solve.bend as SV
+import ../spec/deriv.bend as DV
+import ./karith.bend as KA
+import ./certdef.bend as C
+import ./cert.bend as CK
+import ./slope.bend as SL
+import ./struct.bend as ST
+import ./plan.bend as PL
+import ./planpf.bend as PP
+import ./listpf.bend as L
+import ./nat.bend as LN
+import ./bndpf.bend as BP
+import ./keptpf.bend as KP
+import ./gjpf.bend as GJ
+import ./ford.bend as FO
+import ./normpf.bend as NP
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+def kband_i(a: Bool, +b: Bool, ha: {a == True{} : Bool}, hb: {b == True{} : Bool}) -> {KA.band(a, b) == True{} : Bool}:
+  match a:
+    case True{}:
+      hb
+    case False{}:
+      absurd({KA.band(False{}, b) == True{} : Bool}, KA.ft(ha))
+
+# The point in block order
+# ------------------------
+
+def xperm(~F: O.OField, +x: M.Vec(~F), vp: List<&2, Nat>) -> M.Vec(~F):
+  match vp:
+    case Nil{}:
+      Nil{}
+    case Con{v, t}:
+      Con{O.lookup(~F, x, v), xperm(~F, x, t)}
+
+def look_xperm(~F: O.OField, +x: M.Vec(~F), vp: List<&2, Nat>, i: Nat, h: {KA.natle(1n+i, PL.nlen(vp)) == True{} : Bool}) -> {O.lookup(~F, xperm(~F, x, vp), i) == O.lookup(~F, x, PL.nthn(vp, i)) : O.C(F)}:
+  match vp i:
+    case Nil{} i:
+      absurd({O.lookup(~F, Nil{}, i) == O.lookup(~F, x, PL.nthn(Nil{}, i)) : O.C(F)}, KA.ft(h))
+    case Con{v, t} 0n:
+      {==}
+    case Con{v, t} 1n+j:
+      look_xperm(~F, x, t, j, h)
+
+def pos_lt.go(+v: Nat, +h: Nat, +t: List<&2, Nat>, b: Bool, e: {KA.nateq(v, h) == b : Bool}, hm: {SV.bor(SV.eq(v, h), SV.mem(v, t)) == True{} : Bool}, ih: {SV.mem(v, t) == True{} : Bool} -> {KA.natle(1n+PL.pos(v, t), PL.nlen(t)) == True{} : Bool}) -> {KA.natle(1n+PL.pos.go(b, PL.pos(v, t)), 1n+PL.nlen(t)) == True{} : Bool}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      ih(L.bor_rf(SV.eq(v, h), SV.mem(v, t), hm, (%Equal.sym(Bool, SV.eq(v, h), KA.nateq(v, h), L.eq_sv(v, h)) : {_ == False{} : Bool}
+        e)))
+
+# a member's position is inside the list
+def pos_lt(+v: Nat, xs: List<&2, Nat>, h: {SV.mem(v, xs) == True{} : Bool}) -> {KA.natle(1n+PL.pos(v, xs), PL.nlen(xs)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      absurd({KA.natle(1n+PL.pos(v, Nil{}), PL.nlen(Nil{})) == True{} : Bool}, L.mem_nil(v, h))
+    case Con{+hd, +t}:
+      pos_lt.go(v, hd, t, KA.nateq(v, hd), {==}, h, hm => pos_lt(v, t, hm))
+
+# X evaluates an equation in block order as x evaluates it
+def eval_rnv(~F: O.OField, +x: M.Vec(~F), +vp: List<&2, Nat>, e: E.QExpr, +hin: {SV.inside(e, vp) == True{} : Bool}) -> {O.eval(~F, xperm(~F, x, vp), PL.rnv(vp, e)) == O.eval(~F, x, e) : O.C(F)}:
+  match e:
+    case E.QVar{+u}:
+      Equal.trans(O.C(F), O.lookup(~F, xperm(~F, x, vp), PL.pos(u, vp)), O.lookup(~F, x, PL.nthn(vp, PL.pos(u, vp))), O.lookup(~F, x, u), look_xperm(~F, x, vp, PL.pos(u, vp), pos_lt(u, vp, hin)), PP.look_rw(~F, x, PL.nthn(vp, PL.pos(u, vp)), u, PP.pos_nth(u, vp, pos_lt(u, vp, hin))))
+    case E.QCst{q}:
+      {==}
+    case E.QAdd{+a, +b}:
+      PP.cadd(~F, O.eval(~F, xperm(~F, x, vp), PL.rnv(vp, a)), O.eval(~F, x, a), O.eval(~F, xperm(~F, x, vp), PL.rnv(vp, b)), O.eval(~F, x, b), eval_rnv(~F, x, vp, a, L.band_l(SV.inside(a, vp), SV.inside(b, vp), hin)), eval_rnv(~F, x, vp, b, L.band_r(SV.inside(a, vp), SV.inside(b, vp), hin)))
+    case E.QSub{+a, +b}:
+      PP.csub(~F, O.eval(~F, xperm(~F, x, vp), PL.rnv(vp, a)), O.eval(~F, x, a), O.eval(~F, xperm(~F, x, vp), PL.rnv(vp, b)), O.eval(~F, x, b), eval_rnv(~F, x, vp, a, L.band_l(SV.inside(a, vp), SV.inside(b, vp), hin)), eval_rnv(~F, x, vp, b, L.band_r(SV.inside(a, vp), SV.inside(b, vp), hin)))
+    case E.QMul{+a, +b}:
+      PP.cmul(~F, O.eval(~F, xperm(~F, x, vp), PL.rnv(vp, a)), O.eval(~F, x, a), O.eval(~F, xperm(~F, x, vp), PL.rnv(vp, b)), O.eval(~F, x, b), eval_rnv(~F, x, vp, a, L.band_l(SV.inside(a, vp), SV.inside(b, vp), hin)), eval_rnv(~F, x, vp, b, L.band_r(SV.inside(a, vp), SV.inside(b, vp), hin)))
+    case E.QNeg{+a}:
+      PP.cneg(~F, O.eval(~F, xperm(~F, x, vp), PL.rnv(vp, a)), O.eval(~F, x, a), eval_rnv(~F, x, vp, a, hin))
+
+# a prefix evaluates what lies below its length
+def eval_ftake(~F: O.OField, +y: M.Vec(~F), +m: Nat, +hm: {KA.natle(m, M.len(~F, y)) == True{} : Bool}, e: E.QExpr, +hb: {SL.below(m, e) == True{} : Bool}) -> {O.eval(~F, PP.ftake(~F, m, y), e) == O.eval(~F, y, e) : O.C(F)}:
+  %PP.app_td(~F, m, y) : {O.eval(~F, PP.ftake(~F, m, y), e) == O.eval(~F, _, e) : O.C(F)}
+  Equal.sym(O.C(F), O.eval(~F, C.app(~F, PP.ftake(~F, m, y), PP.fdrop(~F, m, y)), e), O.eval(~F, PP.ftake(~F, m, y), e), PP.eval_prefix(~F, PP.ftake(~F, m, y), PP.fdrop(~F, m, y), e, (%Equal.sym(Nat, M.len(~F, PP.ftake(~F, m, y)), m, PP.len_ftake(~F, m, y, hm)) : {SL.below(_, e) == True{} : Bool}
+    hb)))
+
+# Derivatives keep variable bounds
+# --------------------------------
+
+def below_dvar(+k: Nat, b: Bool) -> {SL.below(k, DV.dvar(b)) == True{} : Bool}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def below_deriv(+k: Nat, e: E.QExpr, +v: Nat, +h: {SL.below(k, e) == True{} : Bool}) -> {SL.below(k, DV.deriv(e, v)) == True{} : Bool}:
+  match e:
+    case E.QVar{+i}:
+      below_dvar(k, DV.eq(i, v))
+    case E.QCst{q}:
+      {==}
+    case E.QAdd{+a, +b}:
+      kband_i(SL.below(k, DV.deriv(a, v)), SL.below(k, DV.deriv(b, v)), below_deriv(k, a, v, KA.band_l(SL.below(k, a), SL.below(k, b), h)), below_deriv(k, b, v, KA.band_r(SL.below(k, a), SL.below(k, b), h)))
+    case E.QSub{+a, +b}:
+      kband_i(SL.below(k, DV.deriv(a, v)), SL.below(k, DV.deriv(b, v)), below_deriv(k, a, v, KA.band_l(SL.below(k, a), SL.below(k, b), h)), below_deriv(k, b, v, KA.band_r(SL.below(k, a), SL.below(k, b), h)))
+    case E.QMul{+a, +b}:
+      +ha = KA.band_l(SL.below(k, a), SL.below(k, b), h)
+      +hb = KA.band_r(SL.below(k, a), SL.below(k, b), h)
+      kband_i(KA.band(SL.below(k, DV.deriv(a, v)), SL.below(k, b)), KA.band(SL.below(k, a), SL.below(k, DV.deriv(b, v))), kband_i(SL.below(k, DV.deriv(a, v)), SL.below(k, b), below_deriv(k, a, v, ha), hb), kband_i(SL.below(k, a), SL.below(k, DV.deriv(b, v)), ha, below_deriv(k, b, v, hb)))
+    case E.QNeg{+a}:
+      below_deriv(k, a, v, h)
+
+def ren_dvar_below(+o: Nat, +n: Nat, +pars: List<&2, Nat>, +m: Nat, b: Bool) -> {SL.below(m, PL.rename(o, n, pars, DV.dvar(b))) == True{} : Bool}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+
+def ren_deriv_below(+o: Nat, +n: Nat, +pars: List<&2, Nat>, +m: Nat, e: E.QExpr, +v: Nat, +h: {SL.below(m, PL.rename(o, n, pars, e)) == True{} : Bool}) -> {SL.below(m, PL.rename(o, n, pars, DV.deriv(e, v))) == True{} : Bool}:
+  match e:
+    case E.QVar{+i}:
+      ren_dvar_below(o, n, pars, m, DV.eq(i, v))
+    case E.QCst{q}:
+      {==}
+    case E.QAdd{+a, +b}:
+      kband_i(SL.below(m, PL.rename(o, n, pars, DV.deriv(a, v))), SL.below(m, PL.rename(o, n, pars, DV.deriv(b, v))), ren_deriv_below(o, n, pars, m, a, v, KA.band_l(SL.below(m, PL.rename(o, n, pars, a)), SL.below(m, PL.rename(o, n, pars, b)), h)), ren_deriv_below(o, n, pars, m, b, v, KA.band_r(SL.below(m, PL.rename(o, n, pars, a)), SL.below(m, PL.rename(o, n, pars, b)), h)))
+    case E.QSub{+a, +b}:
+      kband_i(SL.below(m, PL.rename(o, n, pars, DV.deriv(a, v))), SL.below(m, PL.rename(o, n, pars, DV.deriv(b, v))), ren_deriv_below(o, n, pars, m, a, v, KA.band_l(SL.below(m, PL.rename(o, n, pars, a)), SL.below(m, PL.rename(o, n, pars, b)), h)), ren_deriv_below(o, n, pars, m, b, v, KA.band_r(SL.below(m, PL.rename(o, n, pars, a)), SL.below(m, PL.rename(o, n, pars, b)), h)))
+    case E.QMul{+a, +b}:
+      +ha = KA.band_l(SL.below(m, PL.rename(o, n, pars, a)), SL.below(m, PL.rename(o, n, pars, b)), h)
+      +hb = KA.band_r(SL.below(m, PL.rename(o, n, pars, a)), SL.below(m, PL.rename(o, n, pars, b)), h)
+      kband_i(KA.band(SL.below(m, PL.rename(o, n, pars, DV.deriv(a, v))), SL.below(m, PL.rename(o, n, pars, b))), KA.band(SL.below(m, PL.rename(o, n, pars, a)), SL.below(m, PL.rename(o, n, pars, DV.deriv(b, v)))), kband_i(SL.below(m, PL.rename(o, n, pars, DV.deriv(a, v))), SL.below(m, PL.rename(o, n, pars, b)), ren_deriv_below(o, n, pars, m, a, v, ha), hb), kband_i(SL.below(m, PL.rename(o, n, pars, a)), SL.below(m, PL.rename(o, n, pars, DV.deriv(b, v))), ha, ren_deriv_below(o, n, pars, m, b, v, hb)))
+    case E.QNeg{+a}:
+      ren_deriv_below(o, n, pars, m, a, v, h)
+
+# Prefixes of the block-order point
+# ---------------------------------
+
+def ftake_nil(~F: O.OField, n: Nat) -> {PP.ftake(~F, n, Nil{}) == Nil{} : M.Vec(~F)}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+k:
+      {==}
+
+def app_take(~F: O.OField, o: Nat, +n: Nat, X: M.Vec(~F)) -> {C.app(~F, PP.ftake(~F, o, X), PP.ftake(~F, n, PP.fdrop(~F, o, X))) == PP.ftake(~F, Nat.add(o, n), X) : M.Vec(~F)}:
+  match o X:
+    case 0n X:
+      {==}
+    case 1n+k Nil{}:
+      ftake_nil(~F, n)
+    case 1n+k Con{+a, t}:
+      %app_take(~F, k, n, t) : {Con{a, C.app(~F, PP.ftake(~F, k, t), PP.ftake(~F, n, PP.fdrop(~F, k, t)))} == Con{a, _} : M.Vec(~F)}
+      {==}
+
+def ld_le(~F: O.OField, o: Nat, +n: Nat, X: M.Vec(~F), h: {KA.natle(Nat.add(o, n), M.len(~F, X)) == True{} : Bool}) -> {KA.natle(n, M.len(~F, PP.fdrop(~F, o, X))) == True{} : Bool}:
+  match o X:
+    case 0n X:
+      h
+    case 1n+k Nil{}:
+      absurd({KA.natle(n, M.len(~F, PP.fdrop(~F, 1n+k, Nil{}))) == True{} : Bool}, KA.ft(h))
+    case 1n+k Con{a, t}:
+      ld_le(~F, k, n, t, h)
+
+# the local number of the block's k-th unknown is k
+def loc_unk(+o: Nat, +n: Nat, +pars: List<&2, Nat>, +k: Nat) -> {PL.loc(o, n, pars, Nat.add(o, k)) == k : Nat}:
+  %Equal.sym(Bool, KA.natle(1n+Nat.add(o, k), o), False{}, PP.natle_add_f(o, k)) : {PL.loc.go(_, o, n, pars, Nat.add(o, k)) == k : Nat}
+  PP.minus_add(o, k)
+
+def inside_dvar(+w: List<&2, Nat>, b: Bool) -> {SV.inside(DV.dvar(b), w) == True{} : Bool}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def inside_deriv(e: E.QExpr, +w: List<&2, Nat>, +v: Nat, +h: {SV.inside(e, w) == True{} : Bool}) -> {SV.inside(DV.deriv(e, v), w) == True{} : Bool}:
+  match e:
+    case E.QVar{+i}:
+      inside_dvar(w, DV.eq(i, v))
+    case E.QCst{q}:
+      {==}
+    case E.QAdd{+a, +b}:
+      L.band_i(SV.inside(DV.deriv(a, v), w), SV.inside(DV.deriv(b, v), w), inside_deriv(a, w, v, L.band_l(SV.inside(a, w), SV.inside(b, w), h)), inside_deriv(b, w, v, L.band_r(SV.inside(a, w), SV.inside(b, w), h)))
+    case E.QSub{+a, +b}:
+      L.band_i(SV.inside(DV.deriv(a, v), w), SV.inside(DV.deriv(b, v), w), inside_deriv(a, w, v, L.band_l(SV.inside(a, w), SV.inside(b, w), h)), inside_deriv(b, w, v, L.band_r(SV.inside(a, w), SV.inside(b, w), h)))
+    case E.QMul{+a, +b}:
+      +ha = L.band_l(SV.inside(a, w), SV.inside(b, w), h)
+      +hb = L.band_r(SV.inside(a, w), SV.inside(b, w), h)
+      L.band_i(SV.band(SV.inside(DV.deriv(a, v), w), SV.inside(b, w)), SV.band(SV.inside(a, w), SV.inside(DV.deriv(b, v), w)), L.band_i(SV.inside(DV.deriv(a, v), w), SV.inside(b, w), inside_deriv(a, w, v, ha), hb), L.band_i(SV.inside(a, w), SV.inside(DV.deriv(b, v), w), ha, inside_deriv(b, w, v, hb)))
+    case E.QNeg{+a}:
+      inside_deriv(a, w, v, h)
+
+# The block's entries
+# -------------------
+
+
+def ent.r(~F: O.OField, +x: M.Vec(~F), +vp: List<&2, Nat>, +o: Nat, +n: Nat, +e: E.QExpr, +w: Nat, +k: Nat, +hpos: {PL.pos(w, vp) == Nat.add(o, k) : Nat}, +hw: {SV.mem(w, vp) == True{} : Bool}, +hin: {SV.inside(e, vp) == True{} : Bool}, +hb: {SL.below(Nat.add(o, n), PL.rnv(vp, e)) == True{} : Bool}, +hX: {KA.natle(Nat.add(o, n), M.len(~F, xperm(~F, x, vp))) == True{} : Bool}) -> {O.eval(~F, C.app(~F, PP.ftake(~F, o, xperm(~F, x, vp)), PP.ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp)))), DV.deriv(PL.rnv(vp, e), Nat.add(o, k))) == O.eval(~F, x, DV.deriv(e, w)) : O.C(F)}:
+  %Equal.sym(M.Vec(~F), C.app(~F, PP.ftake(~F, o, xperm(~F, x, vp)), PP.ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp)))), PP.ftake(~F, Nat.add(o, n), xperm(~F, x, vp)), app_take(~F, o, n, xperm(~F, x, vp))) : {O.eval(~F, _, DV.deriv(PL.rnv(vp, e), Nat.add(o, k))) == O.eval(~F, x, DV.deriv(e, w)) : O.C(F)}
+  %hpos : {O.eval(~F, PP.ftake(~F, Nat.add(o, n), xperm(~F, x, vp)), DV.deriv(PL.rnv(vp, e), _)) == O.eval(~F, x, DV.deriv(e, w)) : O.C(F)}
+  %Equal.sym(E.QExpr, DV.deriv(PL.rnv(vp, e), PL.pos(w, vp)), PL.rnv(vp, DV.deriv(e, w)), BP.deriv_rnv(vp, w, hw, e)) : {O.eval(~F, PP.ftake(~F, Nat.add(o, n), xperm(~F, x, vp)), _) == O.eval(~F, x, DV.deriv(e, w)) : O.C(F)}
+  Equal.trans(O.C(F), O.eval(~F, PP.ftake(~F, Nat.add(o, n), xperm(~F, x, vp)), PL.rnv(vp, DV.deriv(e, w))), O.eval(~F, xperm(~F, x, vp), PL.rnv(vp, DV.deriv(e, w))), O.eval(~F, x, DV.deriv(e, w)),
+    eval_ftake(~F, xperm(~F, x, vp), Nat.add(o, n), hX, PL.rnv(vp, DV.deriv(e, w)), (%BP.deriv_rnv(vp, w, hw, e) : {SL.below(Nat.add(o, n), _) == True{} : Bool}
+      below_deriv(Nat.add(o, n), PL.rnv(vp, e), PL.pos(w, vp), hb))),
+    eval_rnv(~F, x, vp, DV.deriv(e, w), inside_deriv(e, vp, w, hin)))
+
+# d/dx_k of the renamed equation is the renamed d/dx_(o+k)
+def dk_eq(+o: Nat, +n: Nat, +pars: List<&2, Nat>, +r: E.QExpr, +k: Nat, +hk: {KA.natle(1n+k, n) == True{} : Bool}) -> {DV.deriv(PL.rename(o, n, pars, r), k) == PL.rename(o, n, pars, DV.deriv(r, Nat.add(o, k))) : E.QExpr}:
+  %loc_unk(o, n, pars, k) : {DV.deriv(PL.rename(o, n, pars, r), _) == PL.rename(o, n, pars, DV.deriv(r, Nat.add(o, k))) : E.QExpr}
+  BP.deriv_rename(o, n, pars, Nat.add(o, k), PP.natle_add_f(o, k), (%Equal.sym(Nat, 1n+Nat.add(o, k), Nat.add(o, 1n+k), LN.add_succ(o, k)) : {KA.natle(_, Nat.add(o, n)) == True{} : Bool}
+    L.le_add_mono(o, 1n+k, n, hk)), r)
+
+# entry (row e, column k) of the local Jacobian is d e / d x_w at x, w the
+# block's k-th unknown
+def ent(~F: O.OField, +x: M.Vec(~F), +vp: List<&2, Nat>, +o: Nat, +n: Nat, +pars: List<&2, Nat>, +e: E.QExpr, +hin: {SV.inside(e, vp) == True{} : Bool}, +hb: {SL.below(Nat.add(o, n), PL.rnv(vp, e)) == True{} : Bool}, +hl: {SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, PL.rnv(vp, e))) == True{} : Bool}, +w: Nat, +k: Nat, +hk: {KA.natle(1n+k, n) == True{} : Bool}, +hpos: {PL.pos(w, vp) == Nat.add(o, k) : Nat}, +hw: {SV.mem(w, vp) == True{} : Bool}, +hX: {KA.natle(Nat.add(o, n), M.len(~F, xperm(~F, x, vp))) == True{} : Bool}) -> {O.eval(~F, C.app(~F, PP.ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, xperm(~F, x, vp)), pars)), DV.deriv(PL.rename(o, n, pars, PL.rnv(vp, e)), k)) == O.eval(~F, x, DV.deriv(e, w)) : O.C(F)}:
+  +ok = Nat.add(o, k)
+  +hoX = L.le_trans(o, Nat.add(o, n), M.len(~F, xperm(~F, x, vp)), L.le_add_r(o, n), hX)
+  +dk = dk_eq(o, n, pars, PL.rnv(vp, e), k, hk)
+  %Equal.sym(E.QExpr, DV.deriv(PL.rename(o, n, pars, PL.rnv(vp, e)), k), PL.rename(o, n, pars, DV.deriv(PL.rnv(vp, e), ok)), dk) : {O.eval(~F, C.app(~F, PP.ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, xperm(~F, x, vp)), pars)), _) == O.eval(~F, x, DV.deriv(e, w)) : O.C(F)}
+  Equal.trans(O.C(F), O.eval(~F, C.app(~F, PP.ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, xperm(~F, x, vp)), pars)), PL.rename(o, n, pars, DV.deriv(PL.rnv(vp, e), ok))), O.eval(~F, C.app(~F, PP.ftake(~F, o, xperm(~F, x, vp)), PP.ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp)))), DV.deriv(PL.rnv(vp, e), ok)), O.eval(~F, x, DV.deriv(e, w)),
+    PP.subst(~F, o, n, pars, PP.ftake(~F, o, xperm(~F, x, vp)), PP.ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp))), DV.deriv(PL.rnv(vp, e), ok), PP.len_ftake(~F, o, xperm(~F, x, vp), hoX), PP.len_ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp)), ld_le(~F, o, n, xperm(~F, x, vp), hX)), below_deriv(Nat.add(o, n), PL.rnv(vp, e), ok, hb), ren_deriv_below(o, n, pars, Nat.add(n, PL.nlen(pars)), PL.rnv(vp, e), ok, hl)),
+    ent.r(~F, x, vp, o, n, e, w, k, hpos, hw, hin, hb, hX))
+
+def con_eq(~F: O.OField, +a1: O.C(F), +a2: O.C(F), +r1: M.Vec(~F), +r2: M.Vec(~F), ea: {a1 == a2 : O.C(F)}, er: {r1 == r2 : M.Vec(~F)}) -> {Con{a1, r1} == Con{a2, r2} : M.Vec(~F)}:
+  %ea : {Con{a1, r1} == Con{_, r2} : M.Vec(~F)}
+  %er : {Con{a1, r1} == Con{a1, _} : M.Vec(~F)}
+  {==}
+
+def con_eqm(~F: O.OField, +a1: M.Vec(~F), +a2: M.Vec(~F), +r1: M.Mat(~F), +r2: M.Mat(~F), ea: {a1 == a2 : M.Vec(~F)}, er: {r1 == r2 : M.Mat(~F)}) -> {Con{a1, r1} == Con{a2, r2} : M.Mat(~F)}:
+  %ea : {Con{a1, r1} == Con{_, r2} : M.Mat(~F)}
+  %er : {Con{a1, r1} == Con{a1, _} : M.Mat(~F)}
+  {==}
+
+# ws sit at positions o + k, o + k + 1, ... of vp
+def posrun(+vp: List<&2, Nat>, ws: List<&2, Nat>, +o: Nat, +k: Nat) -> Bool:
+  match ws:
+    case Nil{}:
+      True{}
+    case Con{+w, t}:
+      SV.band(KA.nateq(PL.pos(w, vp), Nat.add(o, k)), posrun(vp, t, o, 1n+k))
+
+def succ_le(+k: Nat, +l: Nat, +n: Nat, h: {KA.natle(Nat.add(k, 1n+l), n) == True{} : Bool}) -> {KA.natle(1n+Nat.add(k, l), n) == True{} : Bool}:
+  %Equal.sym(Nat, 1n+Nat.add(k, l), Nat.add(k, 1n+l), LN.add_succ(k, l)) : {KA.natle(_, n) == True{} : Bool}
+  h
+
+def jrow_loc(~F: O.OField, +x: M.Vec(~F), +vp: List<&2, Nat>, +o: Nat, +n: Nat, +pars: List<&2, Nat>, +e: E.QExpr, +hin: {SV.inside(e, vp) == True{} : Bool}, +hb: {SL.below(Nat.add(o, n), PL.rnv(vp, e)) == True{} : Bool}, +hl: {SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, PL.rnv(vp, e))) == True{} : Bool}, ws: List<&2, Nat>, +k: Nat, +hrun: {posrun(vp, ws, o, k) == True{} : Bool}, +hws: {L.subl(ws, vp) == True{} : Bool}, +hkn: {KA.natle(Nat.add(k, SV.len(ws)), n) == True{} : Bool}, +hX: {KA.natle(Nat.add(o, n), M.len(~F, xperm(~F, x, vp))) == True{} : Bool}) -> {DV.jrow(~F, C.app(~F, PP.ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, xperm(~F, x, vp)), pars)), PL.rename(o, n, pars, PL.rnv(vp, e)), ST.iota(SV.len(ws), k)) == DV.jrow(~F, x, e, ws) : M.Vec(~F)}:
+  match ws:
+    case Nil{}:
+      {==}
+    case Con{+w, +t}:
+      +hkn2 = succ_le(k, SV.len(t), n, hkn)
+      +hk = L.le_trans(1n+k, 1n+Nat.add(k, SV.len(t)), n, L.le_add_r(k, SV.len(t)), hkn2)
+      +hp = GJ.nateq_ok(PL.pos(w, vp), Nat.add(o, k), L.band_l(KA.nateq(PL.pos(w, vp), Nat.add(o, k)), posrun(vp, t, o, 1n+k), hrun))
+      con_eq(~F, O.eval(~F, C.app(~F, PP.ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, xperm(~F, x, vp)), pars)), DV.deriv(PL.rename(o, n, pars, PL.rnv(vp, e)), k)), O.eval(~F, x, DV.deriv(e, w)), DV.jrow(~F, C.app(~F, PP.ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, xperm(~F, x, vp)), pars)), PL.rename(o, n, pars, PL.rnv(vp, e)), ST.iota(SV.len(t), 1n+k)), DV.jrow(~F, x, e, t),
+        ent(~F, x, vp, o, n, pars, e, hin, hb, hl, w, k, hk, hp, L.subl_hd(w, t, vp, hws), hX),
+        jrow_loc(~F, x, vp, o, n, pars, e, hin, hb, hl, t, 1n+k, L.band_r(KA.nateq(PL.pos(w, vp), Nat.add(o, k)), posrun(vp, t, o, 1n+k), hrun), L.subl_tl(w, t, vp, hws), hkn2, hX))
+
+
+# each of the block's equations uses only variables of vp, lies below
+# o + n in block order and below n + m once renumbered
+def rowsok(+full: List<&2, E.QExpr>, +vp: List<&2, Nat>, +o: Nat, +n: Nat, +pars: List<&2, Nat>, es: List<&2, Nat>) -> Bool:
+  match es:
+    case Nil{}:
+      True{}
+    case Con{+j, t}:
+      SV.band(SV.inside(PL.eqget(full, j), vp), SV.band(SL.below(Nat.add(o, n), PL.rnv(vp, PL.eqget(full, j))), SV.band(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, PL.rnv(vp, PL.eqget(full, j)))), rowsok(full, vp, o, n, pars, t))))
+
+def jrow_blk(~F: O.OField, +x: M.Vec(~F), +vp: List<&2, Nat>, +o: Nat, +n: Nat, +pars: List<&2, Nat>, +full: List<&2, E.QExpr>, +j: Nat, +vs: List<&2, Nat>, +hrun: {posrun(vp, vs, o, 0n) == True{} : Bool}, +hvs: {L.subl(vs, vp) == True{} : Bool}, +hn: {SV.len(vs) == n : Nat}, +hin: {SV.inside(PL.eqget(full, j), vp) == True{} : Bool}, +hb: {SL.below(Nat.add(o, n), PL.rnv(vp, PL.eqget(full, j))) == True{} : Bool}, +hl: {SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, PL.rnv(vp, PL.eqget(full, j)))) == True{} : Bool}, +hX: {KA.natle(Nat.add(o, n), M.len(~F, xperm(~F, x, vp))) == True{} : Bool}) -> {DV.jrow(~F, C.app(~F, PP.ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, xperm(~F, x, vp)), pars)), PL.rename(o, n, pars, PL.rnv(vp, PL.eqget(full, j))), ST.iota(n, 0n)) == DV.jrow(~F, x, PL.eqget(full, j), vs) : M.Vec(~F)}:
+  %hn : {DV.jrow(~F, C.app(~F, PP.ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, xperm(~F, x, vp)), pars)), PL.rename(o, n, pars, PL.rnv(vp, PL.eqget(full, j))), ST.iota(_, 0n)) == DV.jrow(~F, x, PL.eqget(full, j), vs) : M.Vec(~F)}
+  jrow_loc(~F, x, vp, o, n, pars, PL.eqget(full, j), hin, hb, hl, vs, 0n, hrun, hvs, (%Equal.sym(Nat, SV.len(vs), n, hn) : {KA.natle(_, n) == True{} : Bool}
+    L.le_refl(n)), hX)
+
+# the block's local Jacobian at (its unknowns ++ its parameters' values)
+# is its Jacobian at x (equations es, unknowns vs, sketch numbering)
+def jac_loc(~F: O.OField, +x: M.Vec(~F), +vp: List<&2, Nat>, +o: Nat, +n: Nat, +pars: List<&2, Nat>, +full: List<&2, E.QExpr>, es: List<&2, Nat>, +vs: List<&2, Nat>, +hrun: {posrun(vp, vs, o, 0n) == True{} : Bool}, +hvs: {L.subl(vs, vp) == True{} : Bool}, +hn: {SV.len(vs) == n : Nat}, +hr: {rowsok(full, vp, o, n, pars, es) == True{} : Bool}, +hX: {KA.natle(Nat.add(o, n), M.len(~F, xperm(~F, x, vp))) == True{} : Bool}) -> {DV.jac(~F, C.app(~F, PP.ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, xperm(~F, x, vp)), pars)), PL.renames(o, n, pars, PL.reorder(vp, full, es)), ST.iota(n, 0n)) == DV.jac(~F, x, KP.pickk(full, 0n, es), vs) : M.Mat(~F)}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{+j, +t}:
+      +h1 = L.band_l(SV.inside(PL.eqget(full, j), vp), SV.band(SL.below(Nat.add(o, n), PL.rnv(vp, PL.eqget(full, j))), SV.band(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, PL.rnv(vp, PL.eqget(full, j)))), rowsok(full, vp, o, n, pars, t))), hr)
+      +h2 = L.band_r(SV.inside(PL.eqget(full, j), vp), SV.band(SL.below(Nat.add(o, n), PL.rnv(vp, PL.eqget(full, j))), SV.band(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, PL.rnv(vp, PL.eqget(full, j)))), rowsok(full, vp, o, n, pars, t))), hr)
+      +h3 = L.band_l(SL.below(Nat.add(o, n), PL.rnv(vp, PL.eqget(full, j))), SV.band(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, PL.rnv(vp, PL.eqget(full, j)))), rowsok(full, vp, o, n, pars, t)), h2)
+      +h4 = L.band_r(SL.below(Nat.add(o, n), PL.rnv(vp, PL.eqget(full, j))), SV.band(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, PL.rnv(vp, PL.eqget(full, j)))), rowsok(full, vp, o, n, pars, t)), h2)
+      +h5 = L.band_l(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, PL.rnv(vp, PL.eqget(full, j)))), rowsok(full, vp, o, n, pars, t), h4)
+      +h6 = L.band_r(SL.below(Nat.add(n, PL.nlen(pars)), PL.rename(o, n, pars, PL.rnv(vp, PL.eqget(full, j)))), rowsok(full, vp, o, n, pars, t), h4)
+      con_eqm(~F, DV.jrow(~F, C.app(~F, PP.ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, xperm(~F, x, vp)), pars)), PL.rename(o, n, pars, PL.rnv(vp, PL.eqget(full, j))), ST.iota(n, 0n)), DV.jrow(~F, x, PL.eqget(full, j), vs), DV.jac(~F, C.app(~F, PP.ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, xperm(~F, x, vp)), pars)), PL.renames(o, n, pars, PL.reorder(vp, full, t)), ST.iota(n, 0n)), DV.jac(~F, x, KP.pickk(full, 0n, t), vs),
+        jrow_blk(~F, x, vp, o, n, pars, full, j, vs, hrun, hvs, hn, h1, h3, h5, hX),
+        jac_loc(~F, x, vp, o, n, pars, full, t, vs, hrun, hvs, hn, h6, hX))
+
+# The block's inverse, locally
+# ----------------------------
+
+# an inverse's norm (over n columns)
+def ibd(~F: O.OField, +a: M.Mat(~F), +n: Nat, h: GJ.InvN(~F, a, n)) -> O.C(F):
+  match h:
+    case (z, p):
+      NP.mnorm(~F, z, n)
+
+def invb_of(~F: O.OField, +a: M.Mat(~F), +n: Nat, h: GJ.InvN(~F, a, n)) -> NP.InvB(~F, a, n, ibd(~F, a, n, h)):
+  match h:
+    case (+z, p):
+      match p:
+        case (hinv, hz):
+          (z, (hinv, (hz, FO.le_refl(~F, NP.mnorm(~F, z, n)))))
+
+
+# the block's local Jacobian has an inverse of norm ibd(...) (C5's hJ)
+def loc_invb(~F: O.OField, +x: M.Vec(~F), +vp: List<&2, Nat>, +o: Nat, +n: Nat, +pars: List<&2, Nat>, +full: List<&2, E.QExpr>, +es: List<&2, Nat>, +vs: List<&2, Nat>, +hrun: {posrun(vp, vs, o, 0n) == True{} : Bool}, +hvs: {L.subl(vs, vp) == True{} : Bool}, +hn: {SV.len(vs) == n : Nat}, +hr: {rowsok(full, vp, o, n, pars, es) == True{} : Bool}, +hX: {KA.natle(Nat.add(o, n), M.len(~F, xperm(~F, x, vp))) == True{} : Bool}, h: GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs))) -> NP.InvB(~F, DV.jac(~F, C.app(~F, PP.ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, xperm(~F, x, vp)), pars)), PL.renames(o, n, pars, PL.reorder(vp, full, es)), ST.iota(n, 0n)), n, ibd(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs), h)):
+  %Equal.sym(M.Mat(~F), DV.jac(~F, C.app(~F, PP.ftake(~F, n, PP.fdrop(~F, o, xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, xperm(~F, x, vp)), pars)), PL.renames(o, n, pars, PL.reorder(vp, full, es)), ST.iota(n, 0n)), DV.jac(~F, x, KP.pickk(full, 0n, es), vs), jac_loc(~F, x, vp, o, n, pars, full, es, vs, hrun, hvs, hn, hr, hX)) : NP.InvB(~F, _, n, ibd(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs), h))
+  %hn : NP.InvB(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), _, ibd(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs), h))
+  invb_of(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs), h)
