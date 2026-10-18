@@ -400,3 +400,62 @@ def srad_mat($KH, +rho: @T, +bb: @T, +hr: O.le(~F, @0, rho), +hb: O.le(~F, @0, b
 
 def srad_mn($KH, +rho: @T, +bb: @T, +hr: O.le(~F, @0, rho), +hb: O.le(~F, @0, bb), +box: List<&2, KB.KB<K>>, +hg: BP.gbox($KHA, rho, bb, box), +lam: @T, +ms: @T, +hl0: O.le(~F, @0, lam), +eqs: List<&2, E.QExpr>, +hq: AP.eqok(~F, bb, lam, ms, eqs), +hh: {CK.allheld(~K, eqs) == True{} : Bool}, +cnt: Nat, +lo: Nat) -> O.le(~F, NP.mnorm(~F, N.ofkm($KHA, CK.mradii(~K, CK.srows(~K, box, cnt, lo, eqs))), cnt), @M(FR.ofn(~F, cnt), @M(lam, rho))):
   NP.mnorm_lub(~F, N.ofkm($KHA, CK.mradii(~K, CK.srows(~K, box, cnt, lo, eqs))), cnt, @M(FR.ofn(~F, cnt), @M(lam, rho)), AP.both_l(NP.rowsle(~F, N.ofkm($KHA, CK.mradii(~K, CK.srows(~K, box, cnt, lo, eqs))), cnt, @M(FR.ofn(~F, cnt), @M(lam, rho))), FV.mnn(~F, N.ofkm($KHA, CK.mradii(~K, CK.srows(~K, box, cnt, lo, eqs)))), srad_mat($KHA, rho, bb, hr, hb, box, hg, lam, ms, hl0, eqs, hq, hh, cnt, lo)), AP.lr_nn(~F, cnt, lam, rho, hl0, hr))
+
+# The checker's box
+# -----------------
+# CK.box(n, yc, yr, pc, pr): centers yc ++ pc, radii kfit(n, yr) ++ pr.
+
+@MACRO CBX(yr) CK.box($DN, n, yc, yr, pc, pr)
+@MACRO PTC C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc))
+
+def klen_ckb($KH, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +pc: N.KVec(~K), +pr: N.KVec(~K), +lyc: {KA.klen(~K, yc) == n : Nat}, +lpp: {KA.klen(~K, pc) == KA.klen(~K, pr) : Nat}) -> {KA.klen(~K, KA.kapp(~K, yc, pc)) == KA.klen(~K, KA.kapp(~K, KA.kfit(~K, n, yr), pr)) : Nat}:
+  %Equal.sym(Nat, KA.klen(~K, KA.kapp(~K, yc, pc)), Nat.add(KA.klen(~K, yc), KA.klen(~K, pc)), klen_app(~K, yc, pc)) : {_ == KA.klen(~K, KA.kapp(~K, KA.kfit(~K, n, yr), pr)) : Nat}
+  %Equal.sym(Nat, KA.klen(~K, KA.kapp(~K, KA.kfit(~K, n, yr), pr)), Nat.add(KA.klen(~K, KA.kfit(~K, n, yr)), KA.klen(~K, pr)), klen_app(~K, KA.kfit(~K, n, yr), pr)) : {Nat.add(KA.klen(~K, yc), KA.klen(~K, pc)) == _ : Nat}
+  %Equal.sym(Nat, KA.klen(~K, yc), n, lyc) : {Nat.add(_, KA.klen(~K, pc)) == Nat.add(KA.klen(~K, KA.kfit(~K, n, yr)), KA.klen(~K, pr)) : Nat}
+  %Equal.sym(Nat, KA.klen(~K, KA.kfit(~K, n, yr)), n, CP.klen_kfit(~K, n, yr)) : {Nat.add(n, KA.klen(~K, pc)) == Nat.add(_, KA.klen(~K, pr)) : Nat}
+  %Equal.sym(Nat, KA.klen(~K, pc), KA.klen(~K, pr), lpp) : {Nat.add(n, _) == Nat.add(n, KA.klen(~K, pr)) : Nat}
+  {==}
+
+# the box's centers are yc's point, whatever the radii
+def cen_ckb(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +yc: List<&2, S.D>, +yr: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +lyc: {KA.klen($DN, yc) == n : Nat}, +lpp: {KA.klen($DN, pc) == KA.klen($DN, pr) : Nat}) -> {BP.cen($DH, CK.box($DN, n, yc, yr, pc, pr)) == $PTC : M.Vec(~F)}:
+  %Equal.sym(List<&2, S.D>, KB.bcenters($DN, CK.zipb($DN, KA.kapp($DN, yc, pc), KA.kapp($DN, KA.kfit($DN, n, yr), pr))), KA.kapp($DN, yc, pc), bcen_zipb($DN, KA.kapp($DN, yc, pc), KA.kapp($DN, KA.kfit($DN, n, yr), pr), klen_ckb($DH, n, yc, yr, pc, pr, lyc, lpp))) : {N.ofkv($DH, _) == $PTC : M.Vec(~F)}
+  %Equal.sym(M.Vec(~F), N.ofkv($DH, KA.kapp($DN, yc, pc)), C.app(~F, N.ofkv($DH, yc), N.ofkv($DH, pc)), CP.kapp_ofk($DH, yc, pc)) : {_ == $PTC : M.Vec(~F)}
+  %Equal.sym(M.Vec(~F), N.ofkv($DH, yc), M.ofdv(~F, yc), AP.ofkv_d(~F, ~H, yc)) : {C.app(~F, _, N.ofkv($DH, pc)) == $PTC : M.Vec(~F)}
+  %Equal.sym(M.Vec(~F), N.ofkv($DH, pc), M.ofdv(~F, pc), AP.ofkv_d(~F, ~H, pc)) : {C.app(~F, M.ofdv(~F, yc), _) == $PTC : M.Vec(~F)}
+  {==}
+
+def ofkv_kapp_d(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +u: List<&2, S.D>, +w: List<&2, S.D>) -> {N.ofkv($DH, KA.kapp($DN, u, w)) == C.app(~F, M.ofdv(~F, u), M.ofdv(~F, w)) : M.Vec(~F)}:
+  %Equal.sym(M.Vec(~F), N.ofkv($DH, KA.kapp($DN, u, w)), C.app(~F, N.ofkv($DH, u), N.ofkv($DH, w)), CP.kapp_ofk($DH, u, w)) : {_ == C.app(~F, M.ofdv(~F, u), M.ofdv(~F, w)) : M.Vec(~F)}
+  %Equal.sym(M.Vec(~F), N.ofkv($DH, u), M.ofdv(~F, u), AP.ofkv_d(~F, ~H, u)) : {C.app(~F, _, N.ofkv($DH, w)) == C.app(~F, M.ofdv(~F, u), M.ofdv(~F, w)) : M.Vec(~F)}
+  %Equal.sym(M.Vec(~F), N.ofkv($DH, w), M.ofdv(~F, w), AP.ofkv_d(~F, ~H, w)) : {C.app(~F, M.ofdv(~F, u), _) == C.app(~F, M.ofdv(~F, u), M.ofdv(~F, w)) : M.Vec(~F)}
+  {==}
+
+def rnn_app(~F: O.OField, u: M.Vec(~F), +w: M.Vec(~F), hu: FV.rnn(~F, u), hw: FV.rnn(~F, w)) -> FV.rnn(~F, C.app(~F, u, w)):
+  match u:
+    case Nil{}:
+      hw
+    case Con{+a, +us}:
+      (h1, h2) = hu
+      (h1, rnn_app(~F, us, w, h2, hw))
+
+def klen_ckw(+n: Nat, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +w: S.D, +lyc: {KA.klen($DN, yc) == n : Nat}, +lpp: {KA.klen($DN, pc) == KA.klen($DN, pr) : Nat}) -> {KA.klen($DN, KA.kapp($DN, yc, pc)) == KA.klen($DN, KA.kapp($DN, NU.dreps(n, w), pr)) : Nat}:
+  %Equal.sym(Nat, KA.klen($DN, KA.kapp($DN, yc, pc)), Nat.add(KA.klen($DN, yc), KA.klen($DN, pc)), klen_app($DN, yc, pc)) : {_ == KA.klen($DN, KA.kapp($DN, NU.dreps(n, w), pr)) : Nat}
+  %Equal.sym(Nat, KA.klen($DN, KA.kapp($DN, NU.dreps(n, w), pr)), Nat.add(KA.klen($DN, NU.dreps(n, w)), KA.klen($DN, pr)), klen_app($DN, NU.dreps(n, w), pr)) : {Nat.add(KA.klen($DN, yc), KA.klen($DN, pc)) == _ : Nat}
+  %Equal.sym(Nat, KA.klen($DN, yc), n, lyc) : {Nat.add(_, KA.klen($DN, pc)) == Nat.add(KA.klen($DN, NU.dreps(n, w)), KA.klen($DN, pr)) : Nat}
+  %Equal.sym(Nat, KA.klen($DN, NU.dreps(n, w)), n, klen_dreps(n, w)) : {Nat.add(n, KA.klen($DN, pc)) == Nat.add(_, KA.klen($DN, pr)) : Nat}
+  %Equal.sym(Nat, KA.klen($DN, pc), KA.klen($DN, pr), lpp) : {Nat.add(n, _) == Nat.add(n, KA.klen($DN, pr)) : Nat}
+  {==}
+
+# the checker's box with unknowns' radii w has grade (bb, 1) at rb
+def gbox_ckb(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +yc: List<&2, S.D>, +yr: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +lyc: {KA.klen($DN, yc) == n : Nat}, +lpp: {KA.klen($DN, pc) == KA.klen($DN, pr) : Nat}, +w: S.D, +hyr: {KA.kfit($DN, n, yr) == NU.dreps(n, w) : List<&2, S.D>}, +rb: @T, +bb: @T, hc: M.vbnd.all(~F, $PTC, @S(bb, rb)), +hw0: O.le(~F, @0, M.ofd(~F, w)), +hw1: O.le(~F, M.ofd(~F, w), rb), hpn: FV.rnn(~F, M.ofdv(~F, pr)), hpr: M.vbnd.all(~F, M.ofdv(~F, pr), rb)) -> BP.gbox($DH, rb, bb, CK.box($DN, n, yc, yr, pc, pr)):
+  %Equal.sym(List<&2, S.D>, KA.kfit($DN, n, yr), NU.dreps(n, w), hyr) : BP.gbox($DH, rb, bb, CK.zipb($DN, KA.kapp($DN, yc, pc), KA.kapp($DN, _, pr)))
+  gbox_zip($DH, KA.kapp($DN, yc, pc), KA.kapp($DN, NU.dreps(n, w), pr), rb, bb,
+    (%Equal.sym(M.Vec(~F), N.ofkv($DH, KA.kapp($DN, yc, pc)), C.app(~F, M.ofdv(~F, yc), M.ofdv(~F, pc)), ofkv_kapp_d(~F, ~H, yc, pc)) : M.vbnd.all(~F, _, @S(bb, rb))
+      hc),
+    (%Equal.sym(M.Vec(~F), N.ofkv($DH, KA.kapp($DN, NU.dreps(n, w), pr)), C.app(~F, M.ofdv(~F, NU.dreps(n, w)), M.ofdv(~F, pr)), ofkv_kapp_d(~F, ~H, NU.dreps(n, w), pr)) : FV.rnn(~F, _)
+      (%Equal.sym(M.Vec(~F), M.ofdv(~F, NU.dreps(n, w)), frep(~F, n, M.ofd(~F, w)), ofdv_dreps(~F, n, w)) : FV.rnn(~F, C.app(~F, _, M.ofdv(~F, pr)))
+        rnn_app(~F, frep(~F, n, M.ofd(~F, w)), M.ofdv(~F, pr), frep_nn(~F, n, M.ofd(~F, w), hw0), hpn))),
+    (%Equal.sym(M.Vec(~F), N.ofkv($DH, KA.kapp($DN, NU.dreps(n, w), pr)), C.app(~F, M.ofdv(~F, NU.dreps(n, w)), M.ofdv(~F, pr)), ofkv_kapp_d(~F, ~H, NU.dreps(n, w), pr)) : M.vbnd.all(~F, _, rb)
+      (%Equal.sym(M.Vec(~F), M.ofdv(~F, NU.dreps(n, w)), frep(~F, n, M.ofd(~F, w)), ofdv_dreps(~F, n, w)) : M.vbnd.all(~F, C.app(~F, _, M.ofdv(~F, pr)), rb)
+        NW.vall_app(~F, frep(~F, n, M.ofd(~F, w)), M.ofdv(~F, pr), rb, NW.vall_le(~F, frep(~F, n, M.ofd(~F, w)), M.ofd(~F, w), rb, frep_all(~F, n, M.ofd(~F, w), hw0), hw1), hpr))),
+    klen_ckw(n, yc, pc, pr, w, lyc, lpp))
