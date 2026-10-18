@@ -1,4 +1,4 @@
-# HANDOFF — bend-cad (2026-10-14, sk-06 done; sk-09 verified solver built, solve_total proven, drafts awaiting review)
+# HANDOFF — bend-cad (2026-10-18, sk-06 done; sk-09 verified solver built, solve_total and solve_complete proven, drafts awaiting review)
 
 Read first: `DESIGN.md` (v0.9: the plan, Danielle's decisions, §3 spec
 numbers, §4–§5 typed IR, forms and meanings as built), `proto/RESULTS.md`
@@ -328,8 +328,9 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
 - Independent audit of the drafts: no blocker; fixed: red flags could be
   spare (padding an over-determined set; the real search over-flagged a
   midpoint sketch), pins were promised but not reported.
-- Completeness drafts (open, type-checked by tools/stmtcheck.py in the
-  gate): solve_total and solve_complete in ROADMAP; spec/deriv.bend
+- Completeness drafts (both proven now, awaiting review: solve_total in
+  lib/totalpf.bend, solve_complete in lib/completepf.bend, restated in
+  tests/solve_laws.bend): solve_total and solve_complete in ROADMAP; spec/deriv.bend
   (deriv, jac, Inverse entrywise, Regular) and spec/solve.bend's
   completeness part (free, dyadic, PinnedAt, Near, Strict);
   tests/regular_demo.bend proves Regular holds in Q (non-vacuity of the
@@ -537,13 +538,27 @@ Danielle: "we don't want untrusted proposer, we want trusted everything"
     structure, pblocks returns PBOk; the checker's walk accepts the final
     box; x in it; radii at most h tch), gated via tests/blocks_laws.bend.
     See DESIGN "C6c as built".
-  - Next: C6d lib/completepf.bend: the top. Instantiate pb_ok at offset
-    np with the pins' box (gc = dtake(np, dpick(g, vp)), gr = zeros),
-    from struct_ok/sfacts (vchain, lkb, distinct vp, alleqs ⊆ good),
-    block_invs, kept_good (Zeros at x), dyadic(sk); then plan.fin and
-    unperm (kperm ∘ unperm = id), held, explained/wf_dec (solve_total),
-    within, check.r's permutations, check_sides (Strict), inbox; choose
-    l from arch(Q) with Q = qch + the sides' term, d = h at P_l.
+  - C6d DONE (2026-10-18): lib/completepf.bend
+    (tools/drafts/completepf.draft), `solve_complete` proven, restated in
+    tests/solve_laws.bend (lawsync: in sync). At level l = arch(Q) the
+    loop's first precision P_l passes the whole verdict, so it stops
+    there, and the read-back box holds x; d = 2^-(P_l+1). See DESIGN
+    "C6d as built". pblkpf gained `tch_nn`.
+  - **C6 COMPLETE: every law in ROADMAP.bend is proven.** The six solver
+    laws are drafts awaiting Danielle's review (statements in ROADMAP,
+    proofs gated).
+- Bend lessons (C6d):
+  - A def body line starting `(name, ...` parses fine, but a return type
+    with one `)` too few makes the parser swallow the body and report
+    "a name (a parallel or typed let ...)" at the def line: count the
+    closing parentheses when copying a law's conclusion (lawsync strips
+    the law's outer pair).
+  - A lambda's binder is single-use: `g => hN => f(.., g, .., hN)` with g
+    used twice fails; route it through a helper with `+g` (top_at).
+  - Nested tuple destructuring of a parameter works in one line:
+    `(hw, (hkc, (hkr, ...))) = hpg` (ans_r).
+  - To rewrite a term that occurs several times in a goal, name a
+    predicate over it (AnsOK, Fin, pgo, slp) so the motive has one hole.
 - Bend lessons (C6c):
   - `%E : P` with E : {L == R}: R is what the goal (or the expected type,
     for a transported hypothesis) holds at the hole, L what the inner

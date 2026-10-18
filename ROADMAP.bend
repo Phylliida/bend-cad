@@ -96,8 +96,9 @@ law solve_pins:
 
 # Completeness (sk-09, DESIGN §10.2). DRAFTS FOR REVIEW, with
 # spec/deriv.bend and the "for completeness" part of spec/solve.bend.
-# solve_total is proven (lib/totalpf.bend; restated with its proof in
-# tests/solve_laws.bend); solve_complete is open.
+# Both are proven (solve_total: lib/totalpf.bend; solve_complete:
+# lib/completepf.bend; restated with their proofs in
+# tests/solve_laws.bend).
 # --------------------------------------------------------------------
 # solve_l(sk, g, l) is the solver at level l: it tries seven precisions
 # of 64, 96, 128, 192, ... (doubling every two), starting at the l-th, and
@@ -126,7 +127,8 @@ law solve_total:
   for +l: Nat
   M.Both({SO.Out.red(SO.solve_l(sk, g0, l)) == SO.red_of(sk) : List<&2, Nat>}, M.Both({SO.Out.why(SO.solve_l(sk, g0, l)) == SO.why_of(sk) : List<&2, SV.Why>}, M.Both({SO.Out.pins(SO.solve_l(sk, g0, l)) == SO.pins_of(sk) : List<&2, Nat>}, M.Both({SV.explained(sk, SO.red_of(sk), SO.why_of(sk)) == True{} : Bool}, M.Both({WF.wf_dec(SV.mark(SO.red_of(sk), sk)) == True{} : Bool}, M.Both({SV.distinct(SO.pins_of(sk)) == True{} : Bool}, M.Both({SV.below(SO.pins_of(sk), SO.nvars(sk)) == True{} : Bool}, {Nat.add(SV.neqs(SK.Sketch.eqs(SV.mark(SO.red_of(sk), sk))), SV.len(SO.pins_of(sk))) == SO.nvars(sk) : Nat})))))))
 
-# LAW (open, the hard one): a regular solution near the drawing is
+# LAW (the hard one; proven 2026-10-18, lib/completepf.bend, C6 in DESIGN
+# §10.4): a regular solution near the drawing is
 # certified. In a complete ordered field F, take a well-formed sketch
 # whose variables cover it and whose constants are dyadic, a drawing g0,
 # and a point x with one entry per variable that equals g0 at the pins,

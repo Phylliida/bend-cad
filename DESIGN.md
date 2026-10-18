@@ -1403,6 +1403,33 @@ is POk and accept is True at P, for every g within d of x.
   Choosing: Q = Σ_k Q_k + the sides' 4 lp T_K / σ, l = arch(Q) (P_l ≥ 2l,
   so t ≤ 2^-l < 1/Q), d = h.
 
+- *C6d as built* (2026-10-18; lib/completepf.bend, restated in
+  tests/solve_laws.bend). The plan at P (`plan_is`, `plan_pg`): skel_of
+  computes, kept_reorder turns the system into reorder(vp, full, alleqs
+  kb) (one hole through `pgo`), pb_ok runs from the pins' box (`pbox0`).
+  The blocks' result (`ans_r`) gives the verdict on the read-back answer
+  (`ans_ok`): held (`held_go`: the pin's place in vp is its place in fs;
+  `deq_self` by dcmp_sound and lt_irrefl), explained and wf_dec as in
+  solve_total, within (`w_mark`: marking moves no variable; length of
+  unperm), check.r (`cr_ok`: `vp_pres` by pigeonhole, `ep_pres` and
+  `pp_of` through positions and `pos_nth_d`, `kept_below` from within
+  via covpf's `eqs_go`, check.p in block order with `kp_vp`: kperm of
+  unperm along vp is the blocks' box), check_sides (`sides_ans`) and the
+  inbox (`inbox_ans`, entry by entry: x_v is X at v's position). Sides
+  (`side_lb`): over a graded box c - r >= e(x) - 2 lp ρ, so a side checks
+  with room 2 lp ρ < e(x) (≤ for Ge0; `SBud`). The read-back box is
+  graded at ρ = h T, bb = |x| + 2 (`gbox_ans`: centers within |x| + ρ by
+  vsub_bound, radii picked from the blocks' by `up_pick`; ρ ≤ 1). The
+  budget: Q = qch + T + Σ 2 lp T / e(x) over the sides with variables
+  (`sbs`; a variable-free Ge0 needs none: lp = 0, `lp_closed`); t Q < 1
+  gives t qch < 1, h T ≤ 1 and every side's room (`budget`, `sbud_of`).
+  The top: l = arch(Q); P_l = pfirst(l, 64, 96) >= 64 + 2l (`pf_ge`), so
+  floor(P_l/2) >= l (`div_ge` from divmod_eq and mod_le), t <= 2^-l, and
+  l 2^-l <= 1 (`nv_le`) gives t Q < 1 (`tq_lt`); precisions(l, 7) starts
+  with P_l (`pf_head`), accept is True there, so ploop returns that
+  answer (`ploop_true`) and seal's ok is its verdict (`final_of`). The
+  plan's 4 lp T / σ became 2 lp T / e(x) (strictness is enough).
+
 **Risks.** Size: several thousand lines over several sessions (C4 is the
 largest single piece). Checker time on long inequality proofs: keep the
 files small. Rounding lemmas on binary positives. (Lists read with
