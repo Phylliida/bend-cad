@@ -45,6 +45,7 @@ import ./tarjanpf.bend as TJ
 import ./maxpf.bend as MX
 import ./structpf.bend as SP
 import ./keptpf.bend as KP
+import ./redpf.bend as RP
 import ./wfcpf.bend as WC
 import ./covpf.bend as CV
 import ./wfdec.bend as WF
@@ -898,3 +899,70 @@ def sides_ans($SKP, +x: M.Vec(~F), +g: List<&2, S.D>, +hl: {M.len(~F, x) == $NV 
   +inb = inbox_ans($SKA, x, g, hl, $PGA)
   +hx = CP.rbnd_inbox($DN, ~F, ~H, x, $GCU, $GRU, AP.both_r({M.len(~F, x) == M.len(~F, N.ofkv($DN, ~F, ~H, $GCU)) : Nat}, BX.rbnd(~F, BX.vsub(~F, x, N.ofkv($DN, ~F, ~H, $GCU)), N.ofkv($DN, ~F, ~H, $GRU)), inb), hrk)
   AP.band_t(KA.kvle($DN, Nil{}, $GRU), PL.sides_ok($DN, CK.zipb($DN, $GCU, $GRU), $SDK), kvle_nil(~F, ~H, $GRU, up_rnn(~F, $NV, grf, $VP, hrn)), sides_of(~F, ~H, CK.zipb($DN, $GCU, $GRU), rho, $BBS, hr0, bbs_nn(~F, x), gbox_ans($SKA, x, g, $PGA, $RBA), x, hx, $SDK, ds_sk(SO.red_of(sk), sk, L.band_r(SV.dyeqs(SK.Sketch.eqs(sk)), SV.dysides(SK.Sketch.sides(sk)), dy)), hbud))
+
+# The verdict at P
+# ----------------
+
+@MACRO PLF PL.Plan{$VP, $EP, $NP, bsf}
+@MACRO VH SV.held(SO.pins_of(sk), g, $GCU, $GRU)
+@MACRO VE SV.explained(sk, SO.red_of(sk), SO.why_of(sk))
+@MACRO VW WF.wf_dec(SV.mark(SO.red_of(sk), sk))
+@MACRO VI BX.Sketch.within(SV.mark(SO.red_of(sk), sk), List.length(&2, N.NC(KI.dnum()), $GCU))
+@MACRO VC PL.check($DN, SK.Sketch.eqs(SV.mark(SO.red_of(sk), sk)), $GCU, $GRU, $PLF)
+@MACRO VS PL.check_sides($DN, $SDK, $GCU, $GRU)
+@MACRO VXP +hwf: {WF.wf_dec(sk) == True{} : Bool}, +cov: {BX.Sketch.within(sk, $NV) == True{} : Bool}, +dy: {SV.dyadic(sk) == True{} : Bool}
+@MACRO VXA hwf, cov, dy
+
+def held_ans($SKP, +g: List<&2, S.D>, +gcf: List<&2, S.D>, +grf: List<&2, S.D>, +hkc: {PL.ktake($DN, $NP, gcf) == $GC0 : List<&2, S.D>}, +hkr: {PL.ktake($DN, $NP, grf) == $GR0 : List<&2, S.D>}) -> {$VH == True{} : Bool}:
+  %Equal.sym(List<&2, Nat>, SO.ntake($NP, $VP), $FS, fs_pins($SKA)) : {SV.held(_, g, $GCU, $GRU) == True{} : Bool}
+  held_go($SKA, g, gcf, grf, hkc, hkr, $FS, L.subl_refl($FS))
+
+def within_ans($SKP, +cov: {BX.Sketch.within(sk, $NV) == True{} : Bool}, +gcf: List<&2, S.D>) -> {$VI == True{} : Bool}:
+  %Equal.sym(Nat, List.length(&2, S.D, $GCU), $NV, length_up($NV, 0n, gcf, $VP)) : {BX.Sketch.within(SV.mark(SO.red_of(sk), sk), _) == True{} : Bool}
+  w_mark(SO.red_of(sk), sk, $NV, cov)
+
+# the whole verdict on the answer read back from the blocks' result
+def ans_ok($SKP, $VXP, +x: M.Vec(~F), +g: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, $PGF, $RBP, +hbud: SBud(~F, $BBS, rho, x, $SDK)) -> {SO.accept(NU.POk{NU.NP{$PLF, $GCU, $GRU}}, sk, g, SO.red_of(sk), SO.why_of(sk), SO.pins_of(sk)) == True{} : Bool}:
+  AP.band_t($VH, KA.band($VE, KA.band($VW, KA.band($VI, KA.band($VC, $VS)))), held_ans($SKA, g, gcf, grf, hkc, hkr),
+  AP.band_t($VE, KA.band($VW, KA.band($VI, KA.band($VC, $VS))), RP.explained_of(sk, SO.red_of(sk), SO.why_of(sk), RP.red_good(sk, $NV, ha)),
+  AP.band_t($VW, KA.band($VI, KA.band($VC, $VS)), WC.wf_mark(SO.red_of(sk), sk, hwf),
+  AP.band_t($VI, KA.band($VC, $VS), within_ans($SKA, cov, gcf),
+  AP.band_t($VC, $VS, cr_ok($SKA, hwf, cov, x, g, $PGA),
+  sides_ans($SKA, x, g, hl, $PGA, $RBA, dy, hbud))))))
+
+# the answer at one precision passes the verdict and holds x
+def AnsOK(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g: List<&2, S.D>, +x: M.Vec(~F), nx: NU.PR) -> Data:
+  M.Both({SO.accept(nx, sk, g, SO.red_of(sk), SO.why_of(sk), SO.pins_of(sk)) == True{} : Bool}, BX.inbox($DN, ~F, ~H, SO.pr.gc(nx), SO.pr.gr(nx), x))
+
+@MACRO RHT O.mul(F, NW.hnw(~F, p), tf)
+
+def ans_r.go($SKP, $VXP, +x: M.Vec(~F), +g: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, +p: Nat, +tf: O.C(F), +htf: O.le(~F, O.zero(F), tf), +hr1: O.le(~F, $RHT, O.one(F)), +hbud: SBud(~F, $BBS, $RHT, x, $SDK), +bsf: List<&2, PL.PBlock<KI.dnum()>>, +gcf: List<&2, S.D>, +grf: List<&2, S.D>, +hw: {PL.walk($DN, gcf, grf, bsf, $SYS, $NP) == True{} : Bool}, +hkc: {PL.ktake($DN, $NP, gcf) == $GC0 : List<&2, S.D>}, +hkr: {PL.ktake($DN, $NP, grf) == $GR0 : List<&2, S.D>}, +hlc: {KA.klen($DN, gcf) == $NV : Nat}, +hlr: {KA.klen($DN, grf) == $NV : Nat}, +hpb: PP.pbox($DN, ~F, ~H, gcf, grf, $NV, $XV), +hrn: FV.rnn(~F, M.ofdv(~F, grf)), +hvb: M.vbnd.all(~F, M.ofdv(~F, grf), $RHT)) -> AnsOK(~F, ~H, sk, g, x, NU.plan.fin($VP, $EP, $NP, $NV, NU.PBOk{NU.PB{bsf, gcf, grf}})):
+  +hr0 = FO.mul_nonneg(~F, NW.hnw(~F, p), tf, NW.hnw_nn(~F, p), htf)
+  (ans_ok($SKA, $VXA, x, g, hl, $PGA, $RHT, hr0, hr1, hvb, hbud), inbox_ans($SKA, x, g, hl, $PGA))
+
+def ans_r($SKP, $VXP, +x: M.Vec(~F), +g: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, +p: Nat, +tf: O.C(F), +htf: O.le(~F, O.zero(F), tf), +hr1: O.le(~F, $RHT, O.one(F)), +hbud: SBud(~F, $BBS, $RHT, x, $SDK), r: NU.PBR, hpg: PB.PG(~F, ~H, $VP, $NV, x, p, $NP, $GC0, $GR0, $SYS, tf, r)) -> AnsOK(~F, ~H, sk, g, x, NU.plan.fin($VP, $EP, $NP, $NV, r)):
+  match r:
+    case NU.PBOk{NU.PB{+bsf, +gcf, +grf}}:
+      (hw, (hkc, (hkr, (hlc, (hlr, (hpb, (hrn, hvb))))))) = hpg
+      ans_r.go($SKA, $VXA, x, g, hl, p, tf, htf, hr1, hbud, bsf, gcf, grf, hw, hkc, hkr, hlc, hlr, hpb, hrn, hvb)
+    case NU.PBRetry{}:
+      absurd(AnsOK(~F, ~H, sk, g, x, NU.plan.fin($VP, $EP, $NP, $NV, NU.PBRetry{})), hpg)
+    case NU.PBStop{}:
+      absurd(AnsOK(~F, ~H, sk, g, x, NU.plan.fin($VP, $EP, $NP, $NV, NU.PBStop{})), hpg)
+
+# the plan at precision p, over a system s in block order
+def pgo(+sk: SK.Sketch, +g: List<&2, S.D>, +p: Nat, +s: List<&2, E.QExpr>) -> NU.PR:
+  NU.plan.fin($VP, $EP, $NP, $NV, NU.pblocks($BSS, NU.bcert($BSS, s, $G0B, p, $NP, $GC0, $GR0), s, $G0B, p, $NP, $GC0, $GR0, Nil{}))
+
+# the solver's plan at p is the blocks in turn over the full system's
+# reordering
+def plan_is($SKP, +g: List<&2, S.D>, +p: Nat) -> {NU.plan(SO.kept(sk), $NV, SO.skel_of(sk), g, p) == pgo(sk, g, p, $SYS) : NU.PR}:
+  %KP.kept_reorder(sk, ha, $VP, ST.alleqs($KB), SP.sfacts_gc($SFA)) : {pgo(sk, g, p, PL.reorder($VP, SO.kept(sk), $EP)) == pgo(sk, g, p, _) : NU.PR}
+  {==}
+
+@MACRO TCH PB.tch($CA, $KB, binv, $NP, @0)
+
+# at P: the answer passes the verdict and holds x
+def plan_ans($TP, $VXP, +hl: {M.len(~F, x) == $NV : Nat}, +hr1: O.le(~F, O.mul(F, NW.hnw(~F, p), $TCH), O.one(F)), +hbud: SBud(~F, $BBS, O.mul(F, NW.hnw(~F, p), $TCH), x, $SDK)) -> AnsOK(~F, ~H, sk, g, x, NU.plan(SO.kept(sk), $NV, SO.skel_of(sk), g, p)):
+  %Equal.sym(NU.PR, NU.plan(SO.kept(sk), $NV, SO.skel_of(sk), g, p), pgo(sk, g, p, $SYS), plan_is($SKA, g, p)) : AnsOK(~F, ~H, sk, g, x, _)
+  ans_r($SKA, $VXA, x, g, hl, p, $TCH, PB.tch_nn(~F, ~H, $FULL, $GOOD, $VP, x, $KB, binv, $NP, @0, FO.le_refl(~F, @0)), hr1, hbud, NU.pblocks($BSS, NU.bcert($BSS, $SYS, $G0B, p, $NP, $GC0, $GR0), $SYS, $G0B, p, $NP, $GC0, $GR0, Nil{}), plan_pg($TA))
