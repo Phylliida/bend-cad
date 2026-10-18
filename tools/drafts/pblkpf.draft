@@ -1436,3 +1436,40 @@ def hy0_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +nv: Nat, +g: List<&2, S.D>, +
   %Equal.sym(List<&2, S.D>, NU.dtake(n, NU.ddrop(o, NU.dpick(g, $VPT))), NU.dpick(g, vs), y0_eq(g, known, vs, ST.allvars(t), o, n, ho, hnv)) : M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, _), PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, $VPT)))), d)
   %Equal.sym(M.Vec(~F), PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, $VPT))), LC.xperm(~F, x, vs), yb_eq(~F, x, known, vs, ST.allvars(t), o, n, ho, hnv)) : M.vbnd.all(~F, BX.vsub(~F, M.ofdv(~F, NU.dpick(g, vs)), _), d)
   y0_close(~F, ~H, nv, g, x, d, pins, g0, hN, vs, hfv, hbv)
+
+# block_sc at a block of the structure
+# ------------------------------------
+
+@MACRO OKP ~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +full: List<&2, E.QExpr>, +good: List<&2, Nat>, +vp: List<&2, Nat>, +nv: Nat, +vm: List<&2, Maybe<&2, Nat>>, +x: M.Vec(~F), +g: List<&2, S.D>, +g0: List<&2, S.D>, +pins: List<&2, Nat>, +p: Nat, +q2: Nat, +hp2: {p == 1n+(1n+q2) : Nat}, +d: @T, +hd0: O.le(~F, @0, d), +hdh: O.le(~F, d, $HH), +hdy: {SV.dyeqs(full) == True{} : Bool}, +hzg: SK.Zeros(~F, x, KP.pickk(full, 0n, good)), +hN: SV.Near($DN, ~F, ~H, nv, 0n, g, x, d, pins, g0), +hvd: {SV.distinct(vp) == True{} : Bool}, +hvl: {SV.len(vp) == nv : Nat}
+@MACRO OKA ~F, ~H, full, good, vp, nv, vm, x, g, g0, pins, p, q2, hp2, d, hd0, hdh, hdy, hzg, hN, hvd, hvl
+@MACRO VB AP.vbit(~F, Nat.div(p, 2n))
+@MACRO RHO @M($HH, tt)
+@MACRO BE0 LC.ibd(~F, $JSK, SV.len(vs), h0)
+@MACRO SW1 KA.natle($NN, CK.eqlen($SYSK))
+@MACRO SW2 KA.natle(Nat.add(o, $NN), nv)
+@MACRO SW3 PL.pars_ok(o, $PARS)
+@MACRO SW4 PL.eqs_below(Nat.add(o, $NN), PL.takeq($NN, $SYSK))
+@MACRO SW5 SP.ecovs(o, $PARS, PL.takeq($NN, $SYSK))
+@MACRO BSKT ST.renum.bs(ST.skbs(t, ST.adj(full), vp), good)
+@MACRO SW6 SP.swalk($BSKT, PL.dropq($NN, $SYSK), Nat.add(o, $NN), nv)
+
+def blk_sc($OKP, +es: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +known: List<&2, Nat>, +o: Nat, +h0: GJ.InvN(~F, $JSK, SV.len(vs)), $HVP, +ho: {SV.len(known) == o : Nat}, +hnv: {SV.len(vs) == $NN : Nat}, +c1: {L.subl(ST.uses(es, ST.adj(full)), ST.app(vs, known)) == True{} : Bool}, +hes: {L.subl(es, good) == True{} : Bool}, +hfv: {MX.disj(vs, pins) == True{} : Bool}, +hbv: {SV.below(vs, nv) == True{} : Bool}, +s2: {$SW2 == True{} : Bool}, +s3: {$SW3 == True{} : Bool}, +s4: {$SW4 == True{} : Bool}, +s5: {$SW5 == True{} : Bool}, +gc: List<&2, S.D>, +gr: List<&2, S.D>, $BXP, +hsqk: O.lt(F, @M($VB, SC.qblk(~F, $NN, $MM, $BE0, $LAM, $MSS, tt)), @1)) -> BK.bgood(~F, $NN, $EQL, $YBN, BK.rbc(~F, $NN, $MM, $BE0, $LAM, $MSS, d, $RHO, p), NU.dpick(gc, $PARS), NU.dpick(gr, $PARS), NU.block($EQL, $NN, NU.dpick(gc, $PARS), NU.dpick(gr, $PARS), NU.dtake($NN, NU.ddrop(o, NU.dpick(g, vp))), p)):
+  +hlx = Equal.trans(Nat, M.len(~F, $XV), SV.len(vp), nv, len_xperm(~F, x, vp), hvl)
+  +hX = natle_r(Nat.add(o, $NN), nv, M.len(~F, $XV), Equal.sym(Nat, M.len(~F, $XV), nv, hlx), s2)
+  +hbl = ren_below(o, $NN, $PARS, PL.takeq($NN, $SYSK), s4, s5)
+  +hr = rowsok_blk($BKA, known, hvp, c1, s4, hbl)
+  +hbb0 = FO.nonneg_add(~F, NP.vn(~F, x), @1, FV.vmax_nn(~F, x), NP.one_nn(~F))
+  +hr0 = FO.mul_nonneg(~F, $HH, tt, NW.hnw_nn(~F, p), htt)
+  +hgc = natle_r(o, o, KA.klen($DN, gc), Equal.sym(Nat, KA.klen($DN, gc), o, hlc), L.le_refl(o))
+  SC.block_sc(~F, ~H, $NN, $MM, $EQL, hn_of($BKA), hh_of($BKA, hdy), hbl, NU.dpick(gc, $PARS), len_pick(~F, gc, $PARS), p, $YBN, PP.zmap(~F, $PBN, $PARS), PP.len_ftake(~F, $NN, PP.fdrop(~F, o, $XV), LC.ld_le(~F, o, $NN, $XV, hX)), PP.len_zmap(~F, $PBN, $PARS),
+    hz_of(~F, $BKA, x, hzg, hes, hr, s4, hbl, hX),
+    $BB, $LAM, $MSS, $BE0, d, $RHO,
+    ibd_nn(~F, $JSK, SV.len(vs), h0), lsum_nn(~F, $BB, hbb0, $EQL), msum_nn(~F, $BB, hbb0, $EQL), hd0, hr0,
+    hbb0, hbb_of(~F, x, vp, o, $NN, $PARS), eqok_le(~F, $BB, hbb0, $LAM, $MSS, $EQL, FO.le_refl(~F, $LAM), FO.le_refl(~F, $MSS)),
+    hJ_of(~F, $BKA, x, known, h0, hvp, hvd, ho, hnv, hr, hX),
+    hzc_of(~F, ~H, gc, gr, o, $PBN, hpb, hgc, $PARS, s3, $RHO, vall_pick(~F, gr, $PARS, $RHO, hr0, hrb)),
+    NU.dtake($NN, NU.ddrop(o, NU.dpick(g, vp))), ly0_of(~F, g, vp, known, vs, t, o, $NN, hvp, ho, hnv), hy0_of(~F, ~H, nv, g, x, d, pins, g0, hN, vp, known, vs, t, o, $NN, hvp, ho, hnv, hfv, hbv),
+    q2, hp2,
+    NU.dpick(gr, $PARS), len_pick(~F, gr, $PARS), rnn_pick(~F, gr, $PARS, hrn), hzr_of(~F, ~H, gc, gr, o, $PBN, hpb, hgc, $PARS, s3), vall_pick(~F, gr, $PARS, $RHO, hr0, hrb),
+    tt, htt, hdh, FO.le_refl(~F, $RHO),
+    hsqk)
