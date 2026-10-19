@@ -80,7 +80,13 @@ the plan as written.
 Revised 2026-10-18 for Q24 (DESIGN §8.11, §16): implied equations are
 dropped inside the solve, never whole constraints; amber constraints stay
 in the meaning; side conditions are never dropped. Red is Conflict or
-Over, dropped whole.
+Over, dropped whole. **Superseded in detail by SK13A-REVIEW.md v2** (after
+AUDIT-sk13a-drafts.md, on Q28's principle: judgments as (in)feasibility
+with certificates): the laws are solve_amber, a box-free solve_drop,
+solve_conflict with a support, and solve_deg0; the first layer eliminates
+over all equations (degree 0) and decides side conditions by
+Fourier–Motzkin. Where the bullets below differ, the review document
+wins.
 
 - **The answer** gains one field, `drop`: the dropped equations (in the
   sketch's numbering, `SK.Sketch.eqs(sk)`) with their certificates
