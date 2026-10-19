@@ -1,118 +1,139 @@
-# sk-13a: the trusted part, for review (2026-10-18)
+# sk-13a: the trusted part, for review (v2, 2026-10-18)
 
-What "correct" means once the solver drops implied equations and reports
-conflicts (DESIGN §8.11, Q24). Nothing here is wired in yet: the new spec
-is `spec/_draft13a.bend` (a copy of `spec/solve.bend` with one section
-replaced; it type-checks), and the laws below are drafts for
-ROADMAP.bend. Once you are happy with them, the spec replaces
-`spec/solve.bend` and the solver and proofs get built on it.
+What "correct" means once the solver reports redundant and conflicting
+constraints (DESIGN §8.11, Q24). v1 of this document was audited
+(AUDIT-sk13a-drafts.md); v2 rebuilds it on one principle, chosen with
+Danielle the same day. Nothing is wired in yet: the spec is
+`spec/_draft13a.bend` (`spec/solve.bend` with one section replaced; it
+type-checks and its definitions were run on examples), and the laws below
+are drafts for ROADMAP.bend.
+
+## The principle: every judgment is an (in)feasibility, with a certificate
+
+What the solver says about a constraint is a statement about **solution
+sets**, never about its box. The box is how a solution is certified; v1's
+`solve_drop` was stated inside the box, where the solved system has exactly
+one solution, so it said nothing beyond "holds at that point". That was
+the hole.
+
+- The laws say "in every ordered field". For statements of the form "for
+  all x, these imply that", this is the same as over the reals (every
+  ordered field sits inside a real closed field, and Tarski showed those
+  all agree), so the laws speak about real geometry.
+- Each judgment is an infeasibility question:
+  - **Redundant (amber)**: "the others, with c failing" has no solution.
+  - **Conflict (red)**: "c with its support" has no solution.
+- The classical *theorems of the alternative* say such a question is
+  decided by a certificate, and they are complete (a certificate exists
+  exactly when the system is infeasible):
+  - for linear equations and inequalities, **Farkas** (1902) and
+    **Motzkin** (1936): a nonnegative combination of the rows is a
+    contradiction;
+  - for polynomials, the **Positivstellensatz** (Krivine 1964, Stengle
+    1974), the same with sums of squares.
+- One certificate format, one checker (`lib/qnorm.bend`), every phase. The
+  layers are truncations of this hierarchy: sk-13a uses constant
+  multipliers ("degree 0"), directions and lengths use lemma-shaped
+  multipliers, Phase 4 raises the degree (Gröbner bases).
+- **Over** stays as the structural reason: the over-determined part of
+  the Dulmage–Mendelsohn decomposition, infeasible for *generic* values.
+  It claims exactly that until Phase 4 decides those exactly.
+- **Nondegeneracy** (from sk-13b, where a chain of parallels says nothing
+  about a segment of length 0): as in geometric theorem proving (Wu,
+  Chou), explicit conditions in geometric form, from a fixed vocabulary in
+  the spec, never a polynomial chosen by the solver (one could vanish on
+  the other solutions and empty the law again).
 
 ## The answer
 
-`Out` gains one field, `drop`: the dropped equations, each with its
-position in `Sketch.eqs` and a certificate. Everything else stays.
+`Out` gains two fields:
+- **amber**: constraint positions, the redundant ones (the user-facing
+  claim; `solve_amber`).
+- **drop**: equations the solver leaves out of the system it solves, each
+  with a certificate (the solver's own reduction; `solve_drop`). An
+  equation can be dropped without its constraint being amber: a midpoint
+  whose x equation follows from others, or an angle whose equation follows
+  but whose side condition still picks the orientation.
 
-- **red** (dropped whole, made driven): the constraints that do not hold,
-  each with a `Why`.
-- **drop**: equations left out of the system solved because the solved
-  ones imply them. Their constraints are not made driven, so they still
-  hold at the certified geometry.
-- **amber**, for the page only: a constraint all of whose equations are
-  dropped.
+**red** keeps its meaning (dropped whole, made driven), with a `Why`.
 
-## The spec (`spec/_draft13a.bend`, the section "Dropped equations")
+## The spec (`spec/_draft13a.bend`, "Judgments as (in)feasibility")
 
-- **`solved(sk, red, ds)`**: the system the solver solves. These are the
-  sketch's equations whose constraint is not red and that are not dropped,
-  in order. With nothing dropped it is the system of `mark(red, sk)`.
-- **`picked(es, js)`**: the equations at the positions `js`, for example
-  the dropped ones.
-- **`Cert{h, qs, k}`**: a certificate h·g = Σ qᵢ·g_{iᵢ} + k, an identity of
-  polynomials over the sketch's equations.
-  - It is data only. The verdict checks the certificate of each dropped
-    equation (k = 0, and h nonzero over the box). The laws say what
-    passing buys.
-  - In sk-13a, h = 1 and the qᵢ are constants. Later phases reuse the
-    type: h = |b|² for directions, Gröbner cofactors in Phase 4.
-- **`Drop{j, c}`**: dropped equation j and its certificate. `drops(ds)`
-  gives their positions.
-- **`Why`**: now three reasons.
-  - `Over{j, s, w}`, today's: equation j lies in an over-determined set s.
-  - `Conflict{j, c}`: equation j cannot hold together with the solved
-    equations; c is a certificate with k ≠ 0.
-  - `Side{i}`: its i-th side condition has no variables and is false, for
-    example a distance of −5. It is checked exactly, over ℚ.
-- **`clean`** (no red flag is spare) now requires the other equations of
-  an Over set to be *solved*, not just owned by a kept constraint. Without
-  that, a repeated Fix whose copy was dropped would still count as two
-  equations.
-- **`explained(sk, red, ds, why)`**: `distinct(red)` (a review item), and
-  each red constraint's reason holds.
-  - `Over`: as today, with the new `clean`.
-  - `Conflict`: j is that constraint's equation. What a conflict means is
-    the law `solve_conflict`, not a Bool check, so no normalizer is
-    trusted.
-  - `Side`: the failing side is checked here.
-- **`conflicts(red, why)`**: the red constraints whose reason is
-  `Conflict` or `Side`. `unmark(c, red)` is red without c.
-- **`perfect(es, vs, m)`**: m matches the equations es one to one with the
-  variables vs, each equation with a variable it mentions, and every
-  variable of vs is used exactly once. This replaces `solve_total`'s count
-  (review item 2).
+- `solved(sk, red, ds)`: the sketch's equations whose constraint is not
+  red and that are not dropped, in order. With nothing dropped it is the
+  system of `mark(red, sk)`.
+- `picked(es, js)`: the equations at the positions js.
+- `only(cs, sk)`: the sketch with only the constraints at positions cs
+  driving.
+- `Cert{h, qs}`, `Drop{j, c}`, `drops`: a dropped equation's certificate,
+  h·g_j = Σ qᵢ·g_{iᵢ}. Data only: the verdict checks it with `qzero` and
+  that h ≠ 0 over the box (h = 1 in sk-13a), and `solve_drop` says what
+  dropping means.
+- `Why`: `Over{j, s, w}` (as today) or `Conflict{s}`: it cannot hold with
+  the constraints at positions s, all kept; s is empty when it cannot hold
+  at all (a distance of −5).
+- `explained(sk, red, ds, why)`: red has no repeats; the dropped equations
+  are distinct equations of kept constraints (`dropped_ok`); each red
+  constraint's reason is well formed.
+  - `Over`: as today, with `clean` now excluding dropped equations.
+  - `Conflict{s}`: the constraint drives an equation, and s is distinct,
+    in range, without it, and without red constraints.
+- `amber_ok(sk, red, amber)`: no repeats, none red, each drives an
+  equation. That excludes merges, which are shared variables with no
+  equations, and driven constraints.
+- `conflicts(red, why)` and `support(c, red, why)`: which red constraints
+  conflict, and with what.
+- `perfect(es, vs, m)`: a one-to-one matching of equations with
+  variables, each equation with one it mentions.
+- `lin(ls, es)`, `AllZero(ls)`: a combination with constant coefficients,
+  and "all coefficients 0".
 
-Ran on small examples (all as expected):
-- `fails`: −5 ≥ 0 fails, 5 ≥ 0 and 0 ≥ 0 hold, 0 > 0 fails, and x > 0 is
-  never "failing" because it has a variable.
-- `solved`: it counts right with red and dropped equations.
-- `explained`: Side explains the −5 distance and not a Fix. A constraint
-  listed red twice is rejected. An Over set using a dropped equation is
-  rejected.
-- `perfect`: true for the right matching; false for a swapped one, a
-  repeated variable, or a variable left over.
+Examples run (all as expected):
+- `only` keeps the named constraints and keeps driven ones driven.
+- A Conflict naming itself, a red constraint, or a position past the end
+  is rejected.
+- A dropped equation of a red constraint, a drop listed twice, and a drop
+  past the end are rejected.
+- A merge or a driven constraint can't be amber.
+- `support` returns the right set.
 
 ## The laws (drafts for ROADMAP.bend)
 
-**Unchanged in statement:** `solve_exists`, `solve_unique`, `solve_pins`.
-Amber constraints are never marked, so "holds anyway" is `solve_exists`.
+Unchanged: `solve_exists`, `solve_unique`, `solve_pins` (amber
+constraints are never marked, so the certified geometry satisfies them).
 
-**`solve_red` v2**: the same, with the dropped equations passed to
-`explained`.
+**`solve_amber`**: deleting every amber constraint changes no solution.
 
 ```
-law solve_red:
+law solve_amber:
+  for ~F: O.OField
   for +sk: SK.Sketch
+  for  w: SK.Sketch.wf(sk)
   for +g0: List<&2, S.D>
   for +l: Nat
-  for +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}
-  {SV.explained(sk, SO.Out.red(SO.solve_l(sk, g0, l)), SV.drops(SO.Out.drop(SO.solve_l(sk, g0, l))), SO.Out.why(SO.solve_l(sk, g0, l))) == True{} : Bool}
+  for +x: M.Vec(~F)
+  for  m: SK.Sketch.means(~F, x, SV.mark(SV.cat(SO.Out.red(SO.solve_l(sk, g0, l)), SO.Out.amber(SO.solve_l(sk, g0, l))), sk))
+  SK.Sketch.means(~F, x, SV.mark(SO.Out.red(SO.solve_l(sk, g0, l)), sk))
 ```
 
-**`solve_drop`** (new): every dropped equation is redundant. In the box,
-the equations solved imply it. This is what makes amber's "redundant"
-true; that it *holds* is `solve_exists`.
+**`solve_drop`**: every dropped equation is implied, everywhere, by the
+equations solved.
 
 ```
 law solve_drop:
   for ~F: O.OField
-  for ~H: N.Emb<KI.dnum(), F>
   for +sk: SK.Sketch
+  for  w: SK.Sketch.wf(sk)
   for +g0: List<&2, S.D>
   for +l: Nat
-  for +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}
   for +x: M.Vec(~F)
-  for  hb: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), x)
   for  hz: SK.Zeros(~F, x, SV.solved(sk, SO.Out.red(SO.solve_l(sk, g0, l)), SV.drops(SO.Out.drop(SO.solve_l(sk, g0, l)))))
   SK.Zeros(~F, x, SV.picked(SK.Sketch.eqs(sk), SV.drops(SO.Out.drop(SO.solve_l(sk, g0, l)))))
 ```
 
-In sk-13a the certificates hold everywhere (h = 1), but the box is in the
-statement so the law keeps its shape when directions bring h = |b|².
-
-**`solve_conflict`** (new): a conflicting constraint cannot be restored.
-Bring it back, with every other red constraint still dropped, and no
-geometry in any ordered field means the sketch. There is no `ok`
-hypothesis: it holds whenever the solver answers, so a refused sketch's
-conflicts are proven too.
+**`solve_conflict`**: a conflicting constraint cannot hold together with
+its support. It follows that it cannot be restored into the kept sketch
+either, since more constraints mean fewer solutions.
 
 ```
 law solve_conflict:
@@ -124,81 +145,147 @@ law solve_conflict:
   for +c: Nat
   for  hc: {SV.mem(c, SV.conflicts(SO.Out.red(SO.solve_l(sk, g0, l)), SO.Out.why(SO.solve_l(sk, g0, l)))) == True{} : Bool}
   for +x: M.Vec(~F)
-  for  m: SK.Sketch.means(~F, x, SV.mark(SV.unmark(c, SO.Out.red(SO.solve_l(sk, g0, l))), sk))
+  for  m: SK.Sketch.means(~F, x, SV.only(Con{c, SV.support(c, SO.Out.red(SO.solve_l(sk, g0, l)), SO.Out.why(SO.solve_l(sk, g0, l)))}, sk))
   Empty
 ```
 
-**`solve_total` v2**: as today, plus `drop` = `drop_of(sk)`. The count is
-replaced by a one-to-one matching of the solved system with the free
-variables:
+**`solve_deg0`** (the first layer is complete): no combination of the
+solved equations with constant coefficients, not all 0, is constant.
+Repeats, chains of dimensions, and constraints that are identically 0 or
+constant are all such combinations, so none of them survives into the
+system solved.
 
 ```
-  ... M.Both({SO.Out.drop(SO.solve_l(sk, g0, l)) == SO.drop_of(sk) : List<&2, SV.Drop>}, ...
-  ... M.Both({SV.explained(sk, SO.red_of(sk), SV.drops(SO.drop_of(sk)), SO.why_of(sk)) == True{} : Bool}, ...
-  ... (&m: List<&2, Nat> -> {SV.perfect(SV.solved(sk, SO.red_of(sk), SV.drops(SO.drop_of(sk))), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)), m) == True{} : Bool})
+law solve_deg0:
+  for +sk: SK.Sketch
+  for  w: SK.Sketch.wf(sk)
+  for +g0: List<&2, S.D>
+  for +l: Nat
+  for +ls: List<&2, S.Q>
+  for  hl: {SV.qlen(ls) == SV.neqs(SV.solved(sk, SO.Out.red(SO.solve_l(sk, g0, l)), SV.drops(SO.Out.drop(SO.solve_l(sk, g0, l))))) : Nat}
+  for +k: S.Q
+  for  hk: @x: List<&2, S.Q> -> S.Q.eq(E.qeval(x, SV.lin(ls, SV.solved(sk, SO.Out.red(SO.solve_l(sk, g0, l)), SV.drops(SO.Out.drop(SO.solve_l(sk, g0, l)))))), k)
+  SV.AllZero(ls)
 ```
 
-**`solve_complete` v2**: two hypotheses change.
-- `hr`: Regular for the *solved* system, `SV.solved(sk, SO.red_of(sk),
-  SV.drops(SO.drop_of(sk)))`. The full kept system has implied rows, so it
-  is never regular.
-- `dy`: the constants of the kept constraints only,
-  `SV.dyadic(SV.mark(SO.red_of(sk), sk))` (review item 7). This is a
-  weaker hypothesis, so the law is stronger.
+**`solve_red` v2**: when ok, `explained(sk, red, drops(drop), why)` and
+`amber_ok(sk, red, amber)`.
 
-`hz` still asks x to satisfy every kept equation, dropped ones included.
-Since they are implied, that's no extra condition.
+**`solve_total` v2**:
+- as today, plus amber = `amber_of(sk)` and drop = `drop_of(sk)`;
+- `explained` and `amber_ok` for them;
+- in place of the count, a one-to-one matching of the solved system with
+  the free variables:
+  `&m -> SV.perfect(SV.solved(sk, red_of, drops(drop_of)), SV.free(nvars, 0n, pins_of), m)`.
+
+**`solve_complete` v2**:
+- `hr`: Regular for the solved system.
+- `dy`: only the kept constraints' constants need be dyadic.
+
+**How they close the audit's lazy solvers:**
+- Dropping everything and pinning everything fails `solve_drop`: the
+  empty system implies nothing.
+- A conflict shown amber fails `solve_amber`: deleting it changes the
+  solutions.
+- An innocent constraint blamed for someone else's conflict (HDistance 1
+  and 2 kept, Fix x7 = 5 blamed) fails `solve_deg0`: the two HDistances
+  combine to a constant, so they cannot both be solved.
+- Today's solver with nothing dropped fails `solve_deg0` on any repeat.
+
+**What `solve_conflict` does not claim:** that the support is itself
+consistent in general. That would need a feasibility certificate for a
+nonlinear set, which has no rational point in general. What holds:
+- the support is free of constant-multiplier contradictions, by
+  `solve_deg0`;
+- when the answer is ok, the kept sketch is certified consistent, so c
+  conflicts with a consistent sketch.
 
 ## How the solver finds them (not trusted; for orientation)
 
 One pass over the constraints, in order, extending today's red stage
-(`kuhnc`). For each constraint:
-1. If a side condition with no variables fails, it is red with `Side`.
-2. Its linear equations are reduced exactly, over ℚ, against the solved
-   linear equations kept so far.
-   - A residual with a variable: the equation is solved.
-   - Residual 0: it is dropped, with the certificate (the multipliers of
-     the reduction).
-   - A nonzero constant: the constraint is red with `Conflict`.
-3. Its remaining equations are matched as a unit, as today. If that fails,
-   it is red with `Over`.
+(`kuhnc`). Each constraint is judged against what was kept before it, and
+nothing kept is revisited, so every certificate stays valid at the end.
+For each constraint c:
+1. Its equations and side conditions are written as integer coefficient
+   vectors over their monomials (clear denominators and normalize, as in
+   `lib/qnorm.bend`).
+2. **Equations, degree 0.** Each equation is reduced against the solved
+   equations kept so far, by exact fraction-free elimination that tracks
+   each row's combination.
+   - Residual 0: dropped, with that combination as its certificate (h = 1).
+   - Residual a nonzero constant: c is red, `Conflict`, with the
+     combination's owners as its support.
+   - Otherwise: tentatively solved.
+   This is the first step of F4 (the Macaulay matrix with constant
+   multipliers). It catches every repeat, including nonlinear ones (a
+   repeated OnCircle), at the cost of one Gaussian elimination.
+3. **Side conditions, degree 0** (Fourier–Motzkin over the same vectors,
+   with the solved equations).
+   - If c's sides make the kept sides and equations infeasible, c is red,
+     `Conflict`, with the Motzkin certificate's owners as its support.
+     This covers Radius −1 against the circle's r > 0, an angle against
+     its opposite, and a distance of −5.
+   - Each side of c that the kept ones imply is recorded.
+4. **Structure.** Every tentatively solved equation of c goes through the
+   matching as a unit (the matching step takes a list of equations now,
+   not a contiguous run). On failure c is red, `Over`. Only when c
+   survives are its basis additions and drops kept.
+5. **Amber.** c is amber when it drives an equation, all its equations
+   were dropped, and all its side conditions are implied.
 
-Each constraint is judged against what was kept *before* it, and nothing
-kept is revisited. So a certificate never leans on a constraint that is
-flagged later. That was a real hazard: with a linear stage followed by a
-separate structural stage, a conflict could be proven against a Fix the
-structural stage then flagged. Processing in order also gives Q21: the
-last constraint of a dependency is the one dropped or flagged.
+The page shows amber as "redundant". It adds "holds anyway" only when the
+answer is ok, since only then is there a solution for "holds" to refer to.
 
-The certificates are checked with a new normalizer for polynomials with
-rational coefficients, proven in every ordered field (the existing ones
-are ℤ in every field, `fring_eq`, and ℚ over ℚ, `qring_eq`). Every later
-phase needs it too.
+## The audit's findings, and where each went
 
-## Review items left as they are, with reasons
+1. `solve_drop` empty: restated box-free (`solve_drop`). Amber is now its
+   own law (`solve_amber`).
+2. `solve_conflict` vacuous: the support is named, and `solve_deg0` stops
+   blame landing on an innocent constraint. The claim's limits are stated
+   above.
+3. No law for the linear layer: `solve_deg0`, which also covers nonlinear
+   repeats.
+4. The algorithm must match every equation it does not drop: step 4.
+5. Side conditions fixed by linear equations: step 3, as Fourier–Motzkin
+   (the principled general case, not evaluation of fixed variables).
+6. Identically constant equations: the degree-0 elimination drops them
+   (residual 0) or flags them (`Conflict{[]}`); `solve_deg0` requires it.
+7. Unchecked drops: `dropped_ok`. Amber is defined by `amber_ok`
+   (it drives an equation).
+8. Conflict naming the wrong equation: Conflict now names its constraint
+   and support, not an equation. The page can show "conflicts with #3,
+   #7".
+9. Nondegeneracy for later conflicts: the principle above (a fixed
+   geometric vocabulary, from sk-13b).
 
-- **A drawing shorter than nvars** (review 7) reads missing entries as 0,
-  the same in `held`, `PinnedAt` and `Near`. That's a consistent
-  convention (the drawing padded with zeros), not a gap, and checking the
-  length would add a hypothesis on every nearby drawing in
-  `solve_complete`. I'd leave it.
-- **The plan's pins against the reported pins** (review 6) is checked by
-  no law either way. It's worth a `solve_regular` law later: the box's
-  solution is regular, the converse of `solve_complete`. Not in sk-13a.
+## Left as they are, or for later, with reasons
 
-## An extension I'd suggest, not yet in the plan
-
-A constraint whose variables are all fixed by linear equations (two fixed
-points and a Distance between them, which is common in a GUI) can be
-decided by substituting: its equation becomes a constant, which is 0
-(dropped) or not (`Conflict`). The certificate has polynomial
-multipliers, which the same `Cert` and normalizer cover. It's cheap, and
-it turns today's Over for that case into amber or conflict, as Q22 asks.
-It could go in sk-13a or wait.
+- A drawing shorter than nvars reads as zeros consistently. It's a
+  convention, not a gap.
+- The plan's pins against the reported pins: for a later `solve_regular`
+  law.
+- `Strict` asking > 0 for a ≥ 0 side whose variables are all pins: a
+  `solve_complete` refinement, harmless (it only narrows what that law
+  covers). Later.
+- A completeness law for side conditions (no Motzkin certificate left
+  among the kept sides): comes with Fourier–Motzkin.
+- Blame on a refused sketch: `solve_conflict` says c and its support
+  cannot all hold, but a dishonest solver could name a support that is
+  infeasible beyond degree 0 (three distances breaking the triangle
+  inequality) and blame an innocent c. When the answer is ok the
+  certified geometry shows the support consistent, so this is only about
+  refusals. The principled fix is a feasibility witness for the support
+  (a certified box for it alone, from the existing block machinery).
+  Later, with the nonlinear layers.
+- Branch-selecting constraints (hold here, pick this solution among
+  several) and real-only implications (sums of squares, for example
+  Distance 0 forcing coincidence): Phase 4, where the real solutions can
+  be computed exactly.
 
 ## Questions
 
 1. The spec and laws above: changes?
-2. `solve_conflict` without `ok`, so conflicts are proven even on a
-   refused sketch: right?
-3. The substitution extension: in sk-13a, or later?
+2. sk-13a in two steps: (a) equations at degree 0, with only variable-free
+   sides; (b) Fourier–Motzkin for the rest of the sides. Or both at once?
+3. Should branch-selecting constraints (later) look different from amber
+   in the page?

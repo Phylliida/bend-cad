@@ -214,16 +214,24 @@ def mark(+red: List<&2, Nat>, sk: SK.Sketch) -> SK.Sketch:
     case SK.Sketch{vs, es, cs}:
       SK.Sketch{vs, es, mark.cons(red, cs, 0n)}
 
-# Dropped equations (sk-13a, DESIGN §8.11, Q24)
-# ---------------------------------------------
-# The solver may drop an equation of a kept constraint from the system it
-# solves, when the equations it does solve imply it. The constraint is not
-# made driven: it stays in the sketch's meaning, so the certified geometry
-# satisfies it (solve_exists), and its side conditions are checked like
-# every other. solve_drop says the dropped equations follow from the
-# solved ones in the box. A constraint all of whose equations are dropped
-# is redundant (the page shows it amber); one with only some dropped just
-# holds, and nothing in it can be removed.
+# Judgments as (in)feasibility (sk-13a, DESIGN §8.11, Q24)
+# --------------------------------------------------------
+# What the solver says about a constraint is a statement about solution
+# sets, in every ordered field (the same, for these statements, as over the
+# reals), never about its box:
+# - amber (redundant): the other constraints imply it, its side conditions
+#   included, so deleting every amber constraint changes no solution
+#   (solve_amber);
+# - red, Conflict: it cannot hold together with its support, a set of kept
+#   constraints (solve_conflict);
+# - red, Over: one of its equations lies in an over-determined set
+#   (infeasible for generic values; v1's structural reason).
+# Inside its solve the solver may also drop an equation of a kept
+# constraint that the equations it solves imply, everywhere (solve_drop).
+# The constraint is not made driven: it still holds at the certified
+# geometry (solve_exists), and its side conditions are checked as any
+# other's. A constraint whose equations are all dropped need not be amber:
+# a side condition may still do work (an angle's orientation).
 
 # the equations of es at the positions in js, in the order of js
 def picked(+es: List<&2, E.QExpr>, js: List<&2, Nat>) -> List<&2, E.QExpr>:
@@ -256,20 +264,33 @@ def solved.go(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +red: List<&2, Nat>, +
 def solved(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>) -> List<&2, E.QExpr>:
   solved.go(SK.Sketch.eqs(sk), owners(sk), red, ds, 0n)
 
-# Certificates
-# ------------
+# The sketch with only the constraints at the positions in cs driving
+def only.cons(+cs: List<&2, Nat>, rs: List<&2, SK.Rec>, +i: Nat) -> List<&2, SK.Rec>:
+  match rs:
+    case Nil{}:
+      Nil{}
+    case Con{SK.Rec{id, dr, k}, t}:
+      Con{SK.Rec{id, bor(dr, bnot(mem(i, cs))), k}, only.cons(cs, t, 1n+i)}
+
+def only(+cs: List<&2, Nat>, sk: SK.Sketch) -> SK.Sketch:
+  match sk:
+    case SK.Sketch{vs, es, rs}:
+      SK.Sketch{vs, es, only.cons(cs, rs, 0n)}
+
+# Certificates for dropped equations
+# ----------------------------------
 
 # q times the sketch's equation i
 type Mul is Data:
   Mul{i: Nat, q: E.QExpr}
 
-# a certificate for an equation g: h g = q_1 g_i1 + ... + q_n g_in + k, an
-# identity of polynomials (the g_i the sketch's equations). Data only:
-# the verdict checks a dropped equation's (k = 0, h nonzero over the box)
-# and the laws solve_drop and solve_conflict say what passing buys, so
-# nothing here is trusted beyond its shape.
+# a certificate for an equation g: h g = q_1 g_i1 + ... + q_n g_in, an
+# identity of polynomials (the g_i the sketch's equations). Data only: the
+# verdict checks it, and that h is nonzero over the box (h = 1 in the first
+# layer); solve_drop says what dropping means, so nothing here is trusted
+# beyond its shape.
 type Cert is Data:
-  Cert{h: E.QExpr, qs: List<&2, Mul>, k: S.Q}
+  Cert{h: E.QExpr, qs: List<&2, Mul>}
 
 # a dropped equation, by its position in Sketch.eqs, and its certificate
 type Drop is Data:
@@ -283,8 +304,8 @@ def drops(ds: List<&2, Drop>) -> List<&2, Nat>:
     case Con{Drop{j, c}, t}:
       Con{j, drops(t)}
 
-# Red constraints
-# ---------------
+# Red and amber constraints
+# -------------------------
 
 # every equation of s is c's own, or solved (its constraint not red, and
 # it not dropped)
@@ -300,84 +321,63 @@ type Why is Data:
   # its equation j lies in the over-determined set s (whose variables are
   # among w), made of its own and solved equations
   Over{j: Nat, s: List<&2, Nat>, w: List<&2, Nat>}
-  # its equation j cannot hold together with the solved equations: c is
-  # a certificate with k nonzero (solve_conflict)
-  Conflict{j: Nat, c: Cert}
-  # its i-th side condition mentions no variable and fails (a distance of
-  # -5)
-  Side{i: Nat}
+  # it cannot hold together with the constraints at the positions s, all
+  # kept (solve_conflict); s is empty when it cannot hold at all (a
+  # distance of -5)
+  Conflict{s: List<&2, Nat>}
 
-# e mentions no variable
-def novar(e: E.QExpr) -> Bool:
-  match e:
-    case E.QVar{v}:
-      False{}
-    case E.QCst{q}:
+# no entry of xs is in ys
+def none_in(xs: List<&2, Nat>, +ys: List<&2, Nat>) -> Bool:
+  match xs:
+    case Nil{}:
       True{}
-    case E.QAdd{a, b}:
-      band(novar(a), novar(b))
-    case E.QSub{a, b}:
-      band(novar(a), novar(b))
-    case E.QMul{a, b}:
-      band(novar(a), novar(b))
-    case E.QNeg{a}:
-      novar(a)
+    case Con{h, t}:
+      band(bnot(mem(h, ys)), none_in(t, ys))
 
-def islt(c: Cmp) -> Bool:
-  match c:
-    case LT{}:
-      True{}
-    case EQ{}:
-      False{}
-    case GT{}:
-      False{}
+def clen(cs: List<&2, SK.Rec>) -> Nat:
+  match cs:
+    case Nil{}:
+      0n
+    case Con{c, t}:
+      1n+clen(t)
 
-def qzero() -> S.Q:
-  S.Q{S.Z0{}, S.XH{}}
+# the number of constraints
+def ncons(sk: SK.Sketch) -> Nat:
+  match sk:
+    case SK.Sketch{vs, es, cs}:
+      clen(cs)
 
-# a side condition that mentions no variable and is false (over the
-# rationals, so in every ordered field)
-def fails(s: SK.Side) -> Bool:
-  match s:
-    case SK.Gt0{+e}:
-      band(novar(e), bnot(islt(S.Q.cmp(qzero(), E.qeval([], e)))))
-    case SK.Ge0{+e}:
-      band(novar(e), islt(S.Q.cmp(E.qeval([], e), qzero())))
+# a driven constraint has none
+def ceqs.rec(+es: List<&2, SK.Ent>, r: SK.Rec) -> Nat:
+  match r:
+    case SK.Rec{id, True{}, k}:
+      0n
+    case SK.Rec{id, False{}, k}:
+      neqs(SK.Constraint.eqs(es, k))
 
-# the i-th of ss fails
-def fails_at(ss: List<&2, SK.Side>, i: Nat) -> Bool:
-  match ss i:
-    case Nil{} i:
-      False{}
-    case Con{s, t} 0n:
-      fails(s)
-    case Con{s, t} 1n+m:
-      fails_at(t, m)
-
-def sides.at(+es: List<&2, SK.Ent>, cs: List<&2, SK.Rec>, c: Nat) -> List<&2, SK.Side>:
+def ceqs.at(+es: List<&2, SK.Ent>, cs: List<&2, SK.Rec>, c: Nat) -> Nat:
   match cs c:
     case Nil{} c:
-      Nil{}
-    case Con{SK.Rec{id, dr, k}, t} 0n:
-      SK.Constraint.sides(es, k)
-    case Con{h, t} 1n+m:
-      sides.at(es, t, m)
+      0n
+    case Con{r, t} 0n:
+      ceqs.rec(es, r)
+    case Con{r, t} 1n+m:
+      ceqs.at(es, t, m)
 
-# the side conditions of the constraint at position c
-def sides_of(sk: SK.Sketch, c: Nat) -> List<&2, SK.Side>:
+# the number of equations the constraint at position c contributes (0 if
+# it is driven)
+def ceqs(sk: SK.Sketch, c: Nat) -> Nat:
   match sk:
     case SK.Sketch{vs, +es, cs}:
-      sides.at(es, cs, c)
+      ceqs.at(es, cs, c)
 
 # the reason y explains the constraint at position c
 def why_ok(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, y: Why) -> Bool:
   match y:
     case Over{+j, +s, +w}:
       band(eq(nth(owners(sk), j), c), band(mem(j, s), band(overdet(SK.Sketch.eqs(sk), s, w), clean(owners(sk), red, ds, c, s))))
-    case Conflict{j, cert}:
-      eq(nth(owners(sk), j), c)
-    case Side{i}:
-      fails_at(sides_of(sk, c), i)
+    case Conflict{+s}:
+      band(lt(0n, ceqs(sk, c)), band(distinct(s), band(below(s, ncons(sk)), band(bnot(mem(c, s)), none_in(s, red)))))
 
 # each red constraint (rs, in order) is explained by the matching Why,
 # red being the whole list and ds the dropped equations
@@ -392,20 +392,43 @@ def explained.go(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, rs: Li
     case Con{+c, rt} Con{y, yt}:
       band(why_ok(sk, red, ds, c, y), explained.go(sk, red, ds, rt, yt))
 
-# no constraint is red twice, and each is explained
+# every dropped equation is a kept constraint's
+def owners_kept(+own: List<&2, Nat>, +red: List<&2, Nat>, ds: List<&2, Nat>) -> Bool:
+  match ds:
+    case Nil{}:
+      True{}
+    case Con{k, t}:
+      band(bnot(mem(nth(own, k), red)), owners_kept(own, red, t))
+
+# the dropped equations are distinct equations of kept constraints
+def dropped_ok(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>) -> Bool:
+  band(distinct(ds), band(below(ds, neqs(SK.Sketch.eqs(sk))), owners_kept(owners(sk), red, ds)))
+
+# no constraint is red twice, the dropped equations are kept ones, and each
+# red constraint is explained
 def explained(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, why: List<&2, Why>) -> Bool:
-  band(distinct(red), explained.go(sk, red, ds, red, why))
+  band(distinct(red), band(dropped_ok(sk, red, ds), explained.go(sk, red, ds, red, why)))
+
+def has_eqs(+sk: SK.Sketch, cs: List<&2, Nat>) -> Bool:
+  match cs:
+    case Nil{}:
+      True{}
+    case Con{c, t}:
+      band(lt(0n, ceqs(sk, c)), has_eqs(sk, t))
+
+# the amber constraints are distinct, kept, and each drives an equation (a
+# merge has none: it is realized by shared variables, not by equations)
+def amber_ok(+sk: SK.Sketch, +red: List<&2, Nat>, +amber: List<&2, Nat>) -> Bool:
+  band(distinct(amber), band(none_in(amber, red), has_eqs(sk, amber)))
 
 def conflicts.of(c: Nat, y: Why, rest: List<&2, Nat>) -> List<&2, Nat>:
   match y:
     case Over{j, s, w}:
       rest
-    case Conflict{j, cert}:
-      Con{c, rest}
-    case Side{i}:
+    case Conflict{s}:
       Con{c, rest}
 
-# the red constraints whose reason is a conflict (Conflict or Side)
+# the red constraints whose reason is a conflict
 def conflicts(red: List<&2, Nat>, why: List<&2, Why>) -> List<&2, Nat>:
   match red why:
     case Con{c, rt} Con{y, yt}:
@@ -413,6 +436,30 @@ def conflicts(red: List<&2, Nat>, why: List<&2, Why>) -> List<&2, Nat>:
     case Nil{} why:
       Nil{}
     case Con{c, rt} Nil{}:
+      Nil{}
+
+def support.pick(b: Bool, s: List<&2, Nat>, rest: List<&2, Nat>) -> List<&2, Nat>:
+  match b:
+    case True{}:
+      s
+    case False{}:
+      rest
+
+def support.of(+c: Nat, +r: Nat, y: Why, rest: List<&2, Nat>) -> List<&2, Nat>:
+  match y:
+    case Over{j, s, w}:
+      rest
+    case Conflict{s}:
+      support.pick(eq(r, c), s, rest)
+
+# the support of the red constraint c's conflict
+def support(+c: Nat, red: List<&2, Nat>, why: List<&2, Why>) -> List<&2, Nat>:
+  match red why:
+    case Con{+r, rt} Con{y, yt}:
+      support.of(c, r, y, support(c, rt, yt))
+    case Nil{} why:
+      Nil{}
+    case Con{r, rt} Nil{}:
       Nil{}
 
 def unmark.go(b: Bool, h: Nat, rest: List<&2, Nat>) -> List<&2, Nat>:
@@ -429,6 +476,34 @@ def unmark(+c: Nat, xs: List<&2, Nat>) -> List<&2, Nat>:
       Nil{}
     case Con{+h, t}:
       unmark.go(eq(h, c), h, unmark(c, t))
+
+# Completeness of the first layer
+# -------------------------------
+
+def qlen(xs: List<&2, S.Q>) -> Nat:
+  match xs:
+    case Nil{}:
+      0n
+    case Con{h, t}:
+      1n+qlen(t)
+
+# l_1 e_1 + ... + l_n e_n
+def lin(ls: List<&2, S.Q>, es: List<&2, E.QExpr>) -> E.QExpr:
+  match ls es:
+    case Con{l, lt} Con{e, et}:
+      E.QAdd{E.QMul{E.QCst{l}, e}, lin(lt, et)}
+    case Nil{} es:
+      E.QCst{S.Q{S.Z0{}, S.XH{}}}
+    case Con{l, lt} Nil{}:
+      E.QCst{S.Q{S.Z0{}, S.XH{}}}
+
+# every entry is 0 (its numerator is)
+def AllZero(ls: List<&2, S.Q>) -> Data:
+  match ls:
+    case Nil{}:
+      Unit
+    case Con{l, t}:
+      M.Both({S.Q.num(l) == S.Z0{} : S.Z}, AllZero(t))
 
 # A one-to-one matching (for solve_total)
 # ---------------------------------------
