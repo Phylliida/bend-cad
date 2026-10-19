@@ -206,6 +206,8 @@ export function qval(x, dyadic) {
   return m + "/" + 2 ** e;
 }
 
+// opts.repeats keeps the repeats duplicateOf finds (for diagnosis: the
+// solver's answer to the sketch as drawn, tools/diag)
 export function toSolver(sk, opts = { dyadic: true }) {
   const dy = opts.dyadic;
   const find = classes(sk);
@@ -231,7 +233,7 @@ export function toSolver(sk, opts = { dyadic: true }) {
   });
   const cons = [], owner = [];
   for (const c of sk.cons) {
-    if (duplicateOf(sk, c)) continue;
+    if (!opts.repeats && duplicateOf(sk, c)) continue;
     const k = CK[c.kind], E = c.ents.map(i => eid.get(i));
     const dr = c.driven ? 1 : 0;
     const v = c.value;

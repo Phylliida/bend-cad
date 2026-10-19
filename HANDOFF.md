@@ -175,8 +175,11 @@ laws):
 §8.11 (v0.14; Q20–Q23 decided by Danielle). The order of work, phase exit
 criteria, downloaded references (`refs/`, git-ignored) and risks are in
 **PLAN-sk13.md**. Diagnosis tools for slow or refused sketches are in
-`tools/diag/` and `proto/probe_*.bend`. Before sk-13a, ask Danielle about
-her review of the six sk-09 law drafts. Same day, before the design:
+`tools/diag/` and `proto/probe_*.bend`. Danielle has read the six sk-09
+law drafts and thinks they look good; an independent agent review was run
+the same day. Phase 0 is done: the GUI sketches are in `proto/sketches/`
+and `tools/regress.sh` (about 2 min now, set by the slowest refusal).
+Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);
 - `dsig` normalises zero (a zero's exponent had compounded to ~90000);

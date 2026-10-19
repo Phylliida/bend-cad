@@ -11,6 +11,7 @@ of these tools is in the gate; they only read the solver's behaviour.
 
 ```
 $BUN tools/diag/replay.mjs sketch.json req.json      # relax, order, dyadics
+$BUN tools/diag/replay.mjs sketch.json raw.json --repeats   # keep repeats
 python3 tools/diag/totext.py req.json > sketch.in    # solve_cli's input
 ```
 

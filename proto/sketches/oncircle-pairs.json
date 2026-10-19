@@ -1,0 +1,649 @@
+{
+ "nextVar": 35,
+ "nextEnt": 37,
+ "nextCon": 37,
+ "vars": {
+  "0": {
+   "kind": 0,
+   "val": 0
+  },
+  "1": {
+   "kind": 0,
+   "val": 0
+  },
+  "2": {
+   "kind": 0,
+   "val": 6
+  },
+  "3": {
+   "kind": 0,
+   "val": 0.2
+  },
+  "4": {
+   "kind": 0,
+   "val": 6.1
+  },
+  "5": {
+   "kind": 0,
+   "val": 3.8
+  },
+  "6": {
+   "kind": 0,
+   "val": 0.2
+  },
+  "7": {
+   "kind": 0,
+   "val": 4
+  },
+  "8": {
+   "kind": 0,
+   "val": 3.058606099693532
+  },
+  "9": {
+   "kind": 0,
+   "val": 2.039070733129021
+  },
+  "10": {
+   "kind": 1,
+   "val": 1.4609292668709788
+  },
+  "11": {
+   "kind": 0,
+   "val": 4.74999999999961
+  },
+  "12": {
+   "kind": 0,
+   "val": 6.165063509460872
+  },
+  "13": {
+   "kind": 0,
+   "val": 3
+  },
+  "14": {
+   "kind": 0,
+   "val": 0
+  },
+  "15": {
+   "kind": 0,
+   "val": 4.03613626233297
+  },
+  "16": {
+   "kind": 0,
+   "val": 2.690757524246451
+  },
+  "17": {
+   "kind": 0,
+   "val": 1.8430394731867636
+  },
+  "18": {
+   "kind": 0,
+   "val": 1.2286929821245092
+  },
+  "19": {
+   "kind": 0,
+   "val": 4.2741727262003
+  },
+  "20": {
+   "kind": 0,
+   "val": 2.8494484841335335
+  },
+  "21": {
+   "kind": 0,
+   "val": 3.058606099693532
+  },
+  "22": {
+   "kind": 0,
+   "val": 3.5
+  },
+  "23": {
+   "kind": 0,
+   "val": 3.058606099693532
+  },
+  "24": {
+   "kind": 0,
+   "val": 4
+  },
+  "25": {
+   "kind": 0,
+   "val": 4.597413512280582
+  },
+  "26": {
+   "kind": 0,
+   "val": 2.00755086198933
+  },
+  "27": {
+   "kind": 1,
+   "val": 0.7911702687661091
+  },
+  "28": {
+   "kind": 0,
+   "val": 1.5621400012332742
+  },
+  "29": {
+   "kind": 0,
+   "val": 2.0368417629351825
+  },
+  "30": {
+   "kind": 1,
+   "val": 1.3965554740325388
+  },
+  "31": {
+   "kind": 0,
+   "val": 1.5621400012332742
+  },
+  "32": {
+   "kind": 0,
+   "val": 3.4333972369677213
+  },
+  "33": {
+   "kind": 0,
+   "val": 4.597413512280582
+  },
+  "34": {
+   "kind": 0,
+   "val": 2.798721130755439
+  }
+ },
+ "ents": [
+  {
+   "id": 0,
+   "kind": "pt",
+   "construction": false,
+   "x": 0,
+   "y": 1
+  },
+  {
+   "id": 1,
+   "kind": "pt",
+   "construction": false,
+   "x": 2,
+   "y": 3
+  },
+  {
+   "id": 2,
+   "kind": "pt",
+   "construction": false,
+   "x": 4,
+   "y": 5
+  },
+  {
+   "id": 3,
+   "kind": "pt",
+   "construction": false,
+   "x": 6,
+   "y": 7
+  },
+  {
+   "id": 4,
+   "kind": "seg",
+   "construction": false,
+   "p": 0,
+   "q": 1
+  },
+  {
+   "id": 5,
+   "kind": "seg",
+   "construction": false,
+   "p": 1,
+   "q": 2
+  },
+  {
+   "id": 6,
+   "kind": "seg",
+   "construction": false,
+   "p": 2,
+   "q": 3
+  },
+  {
+   "id": 7,
+   "kind": "seg",
+   "construction": false,
+   "p": 3,
+   "q": 0
+  },
+  {
+   "id": 8,
+   "kind": "pt",
+   "construction": false,
+   "x": 8,
+   "y": 9
+  },
+  {
+   "id": 9,
+   "kind": "circ",
+   "construction": false,
+   "c": 8,
+   "r": 10
+  },
+  {
+   "id": 10,
+   "kind": "pt",
+   "construction": false,
+   "x": 11,
+   "y": 12
+  },
+  {
+   "id": 11,
+   "kind": "seg",
+   "construction": false,
+   "p": 2,
+   "q": 10
+  },
+  {
+   "id": 12,
+   "kind": "pt",
+   "construction": false,
+   "x": 13,
+   "y": 14
+  },
+  {
+   "id": 16,
+   "kind": "pt",
+   "construction": false,
+   "x": 17,
+   "y": 18
+  },
+  {
+   "id": 17,
+   "kind": "seg",
+   "construction": false,
+   "p": 8,
+   "q": 16
+  },
+  {
+   "id": 18,
+   "kind": "seg",
+   "construction": false,
+   "p": 16,
+   "q": 0
+  },
+  {
+   "id": 20,
+   "kind": "pt",
+   "construction": false,
+   "x": 19,
+   "y": 20
+  },
+  {
+   "id": 21,
+   "kind": "seg",
+   "construction": false,
+   "p": 8,
+   "q": 20
+  },
+  {
+   "id": 22,
+   "kind": "seg",
+   "construction": false,
+   "p": 20,
+   "q": 2
+  },
+  {
+   "id": 23,
+   "kind": "seg",
+   "construction": false,
+   "p": 8,
+   "q": 3
+  },
+  {
+   "id": 24,
+   "kind": "seg",
+   "construction": false,
+   "p": 8,
+   "q": 1
+  },
+  {
+   "id": 25,
+   "kind": "pt",
+   "construction": false,
+   "x": 21,
+   "y": 22
+  },
+  {
+   "id": 26,
+   "kind": "pt",
+   "construction": false,
+   "x": 23,
+   "y": 24
+  },
+  {
+   "id": 27,
+   "kind": "seg",
+   "construction": false,
+   "p": 25,
+   "q": 26
+  },
+  {
+   "id": 28,
+   "kind": "seg",
+   "construction": false,
+   "p": 25,
+   "q": 8
+  },
+  {
+   "id": 29,
+   "kind": "pt",
+   "construction": false,
+   "x": 25,
+   "y": 26
+  },
+  {
+   "id": 30,
+   "kind": "circ",
+   "construction": false,
+   "c": 29,
+   "r": 27
+  },
+  {
+   "id": 31,
+   "kind": "pt",
+   "construction": false,
+   "x": 28,
+   "y": 29
+  },
+  {
+   "id": 32,
+   "kind": "circ",
+   "construction": false,
+   "c": 31,
+   "r": 30
+  },
+  {
+   "id": 33,
+   "kind": "pt",
+   "construction": false,
+   "x": 31,
+   "y": 32
+  },
+  {
+   "id": 34,
+   "kind": "pt",
+   "construction": false,
+   "x": 33,
+   "y": 34
+  },
+  {
+   "id": 35,
+   "kind": "seg",
+   "construction": false,
+   "p": 29,
+   "q": 34
+  },
+  {
+   "id": 36,
+   "kind": "seg",
+   "construction": false,
+   "p": 31,
+   "q": 33
+  }
+ ],
+ "cons": [
+  {
+   "id": 0,
+   "kind": "fix",
+   "ents": [
+    0
+   ],
+   "driven": false,
+   "fx": 0,
+   "fy": 0
+  },
+  {
+   "id": 1,
+   "kind": "horizontal",
+   "ents": [
+    0,
+    1
+   ],
+   "driven": false
+  },
+  {
+   "id": 2,
+   "kind": "horizontal",
+   "ents": [
+    3,
+    2
+   ],
+   "driven": false
+  },
+  {
+   "id": 3,
+   "kind": "vertical",
+   "ents": [
+    1,
+    2
+   ],
+   "driven": false
+  },
+  {
+   "id": 4,
+   "kind": "vertical",
+   "ents": [
+    0,
+    3
+   ],
+   "driven": false
+  },
+  {
+   "id": 5,
+   "kind": "distance",
+   "ents": [
+    0,
+    1
+   ],
+   "driven": false,
+   "value": 6
+  },
+  {
+   "id": 6,
+   "kind": "distance",
+   "ents": [
+    1,
+    2
+   ],
+   "driven": false,
+   "value": 4
+  },
+  {
+   "id": 10,
+   "kind": "angle",
+   "ents": [
+    4,
+    11
+   ],
+   "driven": false,
+   "value": 120
+  },
+  {
+   "id": 11,
+   "kind": "distance",
+   "ents": [
+    2,
+    10
+   ],
+   "driven": false,
+   "value": 2.5
+  },
+  {
+   "id": 12,
+   "kind": "midpoint",
+   "ents": [
+    12,
+    4
+   ],
+   "driven": false
+  },
+  {
+   "id": 15,
+   "kind": "onCircle",
+   "ents": [
+    16,
+    9
+   ],
+   "driven": false
+  },
+  {
+   "id": 16,
+   "kind": "parallel",
+   "ents": [
+    17,
+    18
+   ],
+   "driven": false
+  },
+  {
+   "id": 20,
+   "kind": "onCircle",
+   "ents": [
+    20,
+    9
+   ],
+   "driven": false
+  },
+  {
+   "id": 21,
+   "kind": "parallel",
+   "ents": [
+    17,
+    22
+   ],
+   "driven": false
+  },
+  {
+   "id": 22,
+   "kind": "parallel",
+   "ents": [
+    17,
+    21
+   ],
+   "driven": false
+  },
+  {
+   "id": 23,
+   "kind": "onLine",
+   "ents": [
+    26,
+    6
+   ],
+   "driven": false
+  },
+  {
+   "id": 24,
+   "kind": "onCircle",
+   "ents": [
+    25,
+    9
+   ],
+   "driven": false
+  },
+  {
+   "id": 25,
+   "kind": "perpendicular",
+   "ents": [
+    27,
+    6
+   ],
+   "driven": false
+  },
+  {
+   "id": 26,
+   "kind": "distance",
+   "ents": [
+    25,
+    26
+   ],
+   "driven": false,
+   "value": 0.5
+  },
+  {
+   "id": 27,
+   "kind": "parallel",
+   "ents": [
+    28,
+    27
+   ],
+   "driven": false
+  },
+  {
+   "id": 28,
+   "kind": "onCircle",
+   "ents": [
+    34,
+    30
+   ],
+   "driven": false
+  },
+  {
+   "id": 29,
+   "kind": "onCircle",
+   "ents": [
+    33,
+    32
+   ],
+   "driven": false
+  },
+  {
+   "id": 30,
+   "kind": "onCircle",
+   "ents": [
+    34,
+    30
+   ],
+   "driven": false
+  },
+  {
+   "id": 31,
+   "kind": "vertical",
+   "ents": [
+    29,
+    34
+   ],
+   "driven": false
+  },
+  {
+   "id": 32,
+   "kind": "onCircle",
+   "ents": [
+    33,
+    32
+   ],
+   "driven": false
+  },
+  {
+   "id": 33,
+   "kind": "onLine",
+   "ents": [
+    33,
+    23
+   ],
+   "driven": false
+  },
+  {
+   "id": 34,
+   "kind": "onLine",
+   "ents": [
+    34,
+    22
+   ],
+   "driven": false
+  },
+  {
+   "id": 35,
+   "kind": "onCircle",
+   "ents": [
+    29,
+    9
+   ],
+   "driven": false
+  },
+  {
+   "id": 36,
+   "kind": "onCircle",
+   "ents": [
+    31,
+    9
+   ],
+   "driven": false
+  }
+ ]
+}

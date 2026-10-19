@@ -6,7 +6,7 @@ import { relax, chooseOrder, permute } from "./relax.js";
 
 // heavy: base variable ids that should resist moving (a dragged point)
 export function prepare(sk, opts, heavy = []) {
-  const map = M.toSolver(sk, { dyadic: opts.dyadic });
+  const map = M.toSolver(sk, { dyadic: opts.dyadic, repeats: opts.repeats });
   let residual = 0;
   if (opts.relax) {
     const find = M.classes(sk);

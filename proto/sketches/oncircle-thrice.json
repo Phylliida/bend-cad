@@ -1,0 +1,369 @@
+{
+ "nextVar": 19,
+ "nextEnt": 20,
+ "nextCon": 20,
+ "vars": {
+  "0": {
+   "kind": 0,
+   "val": -2.2154935609972963e-19
+  },
+  "1": {
+   "kind": 0,
+   "val": 3.3232280714903157e-19
+  },
+  "2": {
+   "kind": 0,
+   "val": 6
+  },
+  "3": {
+   "kind": 0,
+   "val": 0.2
+  },
+  "4": {
+   "kind": 0,
+   "val": 6.1
+  },
+  "5": {
+   "kind": 0,
+   "val": 3.8
+  },
+  "6": {
+   "kind": 0,
+   "val": 0.2
+  },
+  "7": {
+   "kind": 0,
+   "val": 4
+  },
+  "8": {
+   "kind": 0,
+   "val": 3.000000015231853
+  },
+  "9": {
+   "kind": 0,
+   "val": 2.0000000220653193
+  },
+  "10": {
+   "kind": 1,
+   "val": 1.245280791378516
+  },
+  "11": {
+   "kind": 0,
+   "val": 4.74999999999961
+  },
+  "12": {
+   "kind": 0,
+   "val": 6.165063509460872
+  },
+  "13": {
+   "kind": 0,
+   "val": 3
+  },
+  "14": {
+   "kind": 0,
+   "val": 3.323227907814031e-19
+  },
+  "15": {
+   "kind": 0,
+   "val": 4.03613626233297
+  },
+  "16": {
+   "kind": 0,
+   "val": 2.690757524246451
+  },
+  "17": {
+   "kind": 0,
+   "val": 1.963863768130735
+  },
+  "18": {
+   "kind": 0,
+   "val": 1.309242519884188
+  }
+ },
+ "ents": [
+  {
+   "id": 0,
+   "kind": "pt",
+   "construction": false,
+   "x": 0,
+   "y": 1
+  },
+  {
+   "id": 1,
+   "kind": "pt",
+   "construction": false,
+   "x": 2,
+   "y": 3
+  },
+  {
+   "id": 2,
+   "kind": "pt",
+   "construction": false,
+   "x": 4,
+   "y": 5
+  },
+  {
+   "id": 3,
+   "kind": "pt",
+   "construction": false,
+   "x": 6,
+   "y": 7
+  },
+  {
+   "id": 4,
+   "kind": "seg",
+   "construction": false,
+   "p": 0,
+   "q": 1
+  },
+  {
+   "id": 5,
+   "kind": "seg",
+   "construction": false,
+   "p": 1,
+   "q": 2
+  },
+  {
+   "id": 6,
+   "kind": "seg",
+   "construction": false,
+   "p": 2,
+   "q": 3
+  },
+  {
+   "id": 7,
+   "kind": "seg",
+   "construction": false,
+   "p": 3,
+   "q": 0
+  },
+  {
+   "id": 8,
+   "kind": "pt",
+   "construction": false,
+   "x": 8,
+   "y": 9
+  },
+  {
+   "id": 9,
+   "kind": "circ",
+   "construction": false,
+   "c": 8,
+   "r": 10
+  },
+  {
+   "id": 10,
+   "kind": "pt",
+   "construction": false,
+   "x": 11,
+   "y": 12
+  },
+  {
+   "id": 11,
+   "kind": "seg",
+   "construction": false,
+   "p": 2,
+   "q": 10
+  },
+  {
+   "id": 12,
+   "kind": "pt",
+   "construction": false,
+   "x": 13,
+   "y": 14
+  },
+  {
+   "id": 13,
+   "kind": "pt",
+   "construction": false,
+   "x": 15,
+   "y": 16
+  },
+  {
+   "id": 15,
+   "kind": "seg",
+   "construction": false,
+   "p": 13,
+   "q": 8
+  },
+  {
+   "id": 16,
+   "kind": "pt",
+   "construction": false,
+   "x": 17,
+   "y": 18
+  },
+  {
+   "id": 17,
+   "kind": "seg",
+   "construction": false,
+   "p": 8,
+   "q": 16
+  },
+  {
+   "id": 18,
+   "kind": "seg",
+   "construction": false,
+   "p": 16,
+   "q": 0
+  },
+  {
+   "id": 19,
+   "kind": "seg",
+   "construction": false,
+   "p": 13,
+   "q": 2
+  }
+ ],
+ "cons": [
+  {
+   "id": 0,
+   "kind": "fix",
+   "ents": [
+    0
+   ],
+   "driven": false,
+   "fx": 0,
+   "fy": 0
+  },
+  {
+   "id": 1,
+   "kind": "horizontal",
+   "ents": [
+    0,
+    1
+   ],
+   "driven": false
+  },
+  {
+   "id": 2,
+   "kind": "horizontal",
+   "ents": [
+    3,
+    2
+   ],
+   "driven": false
+  },
+  {
+   "id": 3,
+   "kind": "vertical",
+   "ents": [
+    1,
+    2
+   ],
+   "driven": false
+  },
+  {
+   "id": 4,
+   "kind": "vertical",
+   "ents": [
+    0,
+    3
+   ],
+   "driven": false
+  },
+  {
+   "id": 5,
+   "kind": "distance",
+   "ents": [
+    0,
+    1
+   ],
+   "driven": false,
+   "value": 6
+  },
+  {
+   "id": 6,
+   "kind": "distance",
+   "ents": [
+    1,
+    2
+   ],
+   "driven": false,
+   "value": 4
+  },
+  {
+   "id": 10,
+   "kind": "angle",
+   "ents": [
+    4,
+    11
+   ],
+   "driven": false,
+   "value": 120
+  },
+  {
+   "id": 11,
+   "kind": "distance",
+   "ents": [
+    2,
+    10
+   ],
+   "driven": false,
+   "value": 2.5
+  },
+  {
+   "id": 12,
+   "kind": "midpoint",
+   "ents": [
+    12,
+    4
+   ],
+   "driven": false
+  },
+  {
+   "id": 13,
+   "kind": "onCircle",
+   "ents": [
+    13,
+    9
+   ],
+   "driven": false
+  },
+  {
+   "id": 14,
+   "kind": "onCircle",
+   "ents": [
+    13,
+    9
+   ],
+   "driven": false
+  },
+  {
+   "id": 15,
+   "kind": "onCircle",
+   "ents": [
+    16,
+    9
+   ],
+   "driven": false
+  },
+  {
+   "id": 16,
+   "kind": "parallel",
+   "ents": [
+    17,
+    18
+   ],
+   "driven": false
+  },
+  {
+   "id": 17,
+   "kind": "parallel",
+   "ents": [
+    17,
+    15
+   ],
+   "driven": false
+  },
+  {
+   "id": 19,
+   "kind": "onCircle",
+   "ents": [
+    13,
+    9
+   ],
+   "driven": false
+  }
+ ]
+}

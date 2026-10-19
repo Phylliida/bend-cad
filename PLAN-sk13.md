@@ -34,7 +34,8 @@ side by side with a ball-arithmetic nonzero test.
     edit the draft, never the generated lib file.
   - The gate is `./check.sh`: about 50 s, with tests checked in parallel,
     each its own root.
-  - The native regression is `tools/regress.sh` (about 40 s).
+  - The native regression is `tools/regress.sh` (about 2 min, set by the
+    slowest GUI sketch).
   - Commit freely in bend-cad. Implement code yourself, not with agents.
 - **Bend idioms** are in memory (`reference_bend2_idioms`):
   - rewrite orientation;
@@ -42,11 +43,17 @@ side by side with a ball-arithmetic nonzero test.
   - `+` for reused parameters, `1n++j` for a reused predecessor;
   - a check fully checks all imports, but the unsafe report covers the
     root's own defs only.
-- **Before sk-13a:** ask Danielle about her review of the six sk-09 law
-  drafts in ROADMAP.bend. sk-13a replaces `solve_red`, so its new
-  statement should build on the reviewed one.
+- **Before sk-13a:** Danielle has read the six sk-09 law drafts in
+  ROADMAP.bend and thinks they look good (2026-10-18); an independent
+  agent review was run the same day (outcome noted in HANDOFF). sk-13a
+  replaces `solve_red`, so its new statement builds on the reviewed one.
 
-## Phase 0: evidence and the regression set (small)
+## Phase 0: evidence and the regression set (done 2026-10-18)
+
+Done: `proto/sketches/` (README there), in `tools/regress.sh`; the raw
+inputs are made with `tools/diag/replay.mjs --repeats`. What follows is
+the plan as written.
+
 
 - Copy the GUI sketches into the repo, as `proto/sketches/` or similar:
   `/home/bepis/prog/verus-cad/slowsketches/` holds `sketch.json` and
