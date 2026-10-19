@@ -20,6 +20,7 @@ import Base
 import ../spec/ring.bend as E
 import ../spec/sketch.bend as SK
 import ../spec/solve.bend as SV
+import ./why.bend as WY
 import ./karith.bend as KA
 import ./struct.bend as ST
 import ./nat.bend as LN
@@ -179,7 +180,7 @@ def okown_self(+own: List<&2, Nat>, +red: List<&2, Nat>, +i: Nat, +k: Nat, h: {S
 def fgood(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +red: List<&2, Nat>, +i: Nat, r: ST.Red) -> Bool:
   match r:
     case ST.Red{+j, +s, +w}:
-      SV.band(SV.eq(SV.nth(own, j), i), SV.band(SV.mem(j, s), SV.band(SV.overdet(full, s, w), allown(own, red, i, s))))
+      SV.band(SV.eq(SV.nth(own, j), i), SV.band(SV.mem(j, s), SV.band(WY.overdet(full, s, w), allown(own, red, i, s))))
 
 # The group of constraint i
 # -------------------------
@@ -257,7 +258,7 @@ def grp_step(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +red: List<&2, Nat>,
       +hv = L.band_l(D.vis_ok(vm, adj, Nil{}, f, vis), SV.band(L.subl(ST.nthl(adj, k), vis), True{}), hres)
       +hn = L.band_l(L.subl(ST.nthl(adj, k), vis), True{}, L.band_r(D.vis_ok(vm, adj, Nil{}, f, vis), SV.band(L.subl(ST.nthl(adj, k), vis), True{}), hres))
       +lk = ST.look(vm, vis)
-      L.band_i(SV.eq(SV.nth(own, k), i), SV.band(SV.mem(k, Con{k, lk}), SV.band(SV.overdet(full, Con{k, lk}, vis), allown(own, red, i, Con{k, lk}))), D.eq_of(SV.nth(own, k), i, hown), L.band_i(SV.mem(k, Con{k, lk}), SV.band(SV.overdet(full, Con{k, lk}, vis), allown(own, red, i, Con{k, lk})), L.mem_hd(k, lk), L.band_i(SV.overdet(full, Con{k, lk}, vis), allown(own, red, i, Con{k, lk}), D.wit_ok(full, vm, k, f, vis, below_notmem(k, ST.somes(vm), gok_b(own, red, i, nv, k, vm, hg)), gok_d(own, red, i, nv, k, vm, hg), below_mono(ST.somes(vm), k, SV.neqs(full), gok_b(own, red, i, nv, k, vm, hg), lt_le(k, SV.neqs(full), hlt)), hlt, hv, hn), L.band_i(okown(own, red, i, k), allown(own, red, i, lk), okown_self(own, red, i, k, hown), allown_subl(own, red, i, lk, ST.somes(vm), L.look_subl(vm, vis, D.vo_a(vm, adj, Nil{}, f, vis, hv)), gok_o(own, red, i, nv, k, vm, hg))))))
+      L.band_i(SV.eq(SV.nth(own, k), i), SV.band(SV.mem(k, Con{k, lk}), SV.band(WY.overdet(full, Con{k, lk}, vis), allown(own, red, i, Con{k, lk}))), D.eq_of(SV.nth(own, k), i, hown), L.band_i(SV.mem(k, Con{k, lk}), SV.band(WY.overdet(full, Con{k, lk}, vis), allown(own, red, i, Con{k, lk})), L.mem_hd(k, lk), L.band_i(WY.overdet(full, Con{k, lk}, vis), allown(own, red, i, Con{k, lk}), D.wit_ok(full, vm, k, f, vis, below_notmem(k, ST.somes(vm), gok_b(own, red, i, nv, k, vm, hg)), gok_d(own, red, i, nv, k, vm, hg), below_mono(ST.somes(vm), k, SV.neqs(full), gok_b(own, red, i, nv, k, vm, hg), lt_le(k, SV.neqs(full), hlt)), hlt, hv, hn), L.band_i(okown(own, red, i, k), allown(own, red, i, lk), okown_self(own, red, i, k, hown), allown_subl(own, red, i, lk, ST.somes(vm), L.look_subl(vm, vis, D.vo_a(vm, adj, Nil{}, f, vis, hv)), gok_o(own, red, i, nv, k, vm, hg))))))
 
 def gend(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +red: List<&2, Nat>, +i: Nat, +nv: Nat, +c: Nat, +k: Nat, +kend: Nat, +vm: List<&2, Maybe<&2, Nat>>, hk: {Nat.add(k, 0n) == kend : Nat}, +hg: {SV.band(gok(own, red, i, nv, k, vm), SV.eq(Nat.add(SV.len(ST.somes(vm)), 0n), c)) == True{} : Bool}) -> {SV.band(gok(own, red, i, nv, kend, vm), SV.eq(SV.len(ST.somes(vm)), c)) == True{} : Bool}:
   %Equal.trans(Nat, k, Nat.add(k, 0n), kend, LN.add_zero(k), hk) : {SV.band(gok(own, red, i, nv, _, vm), SV.eq(SV.len(ST.somes(vm)), c)) == True{} : Bool}
@@ -426,7 +427,7 @@ def below_le(xs: List<&2, Nat>, +a: Nat, +b: Nat, +h: {SV.below(xs, a) == True{}
 
 # the red constraints (newest first) and why: each one's record is good,
 # with the constraints red before it, which are all earlier
-def good(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, rs: List<&2, Nat>, ws: List<&2, SV.Why>) -> Bool:
+def good(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, rs: List<&2, Nat>, ws: List<&2, WY.Why>) -> Bool:
   match rs ws:
     case Nil{} Nil{}:
       True{}
@@ -434,8 +435,8 @@ def good(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, rs: List<&2, Nat>, ws: L
       False{}
     case Con{c, rt} Nil{}:
       False{}
-    case Con{+c, +rt} Con{SV.Why{+j, +s, +w}, yt}:
-      SV.band(SV.eq(SV.nth(own, j), c), SV.band(SV.mem(j, s), SV.band(SV.overdet(full, s, w), SV.band(allown(own, rt, c, s), SV.band(SV.below(rt, c), good(full, own, rt, yt))))))
+    case Con{+c, +rt} Con{WY.Why{+j, +s, +w}, yt}:
+      SV.band(SV.eq(SV.nth(own, j), c), SV.band(SV.mem(j, s), SV.band(WY.overdet(full, s, w), SV.band(allown(own, rt, c, s), SV.band(SV.below(rt, c), good(full, own, rt, yt))))))
 
 # the walk's state at constraint i, equation k
 def kin(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, st: SO.CS) -> Bool:
@@ -451,37 +452,37 @@ def kres(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +es: List<&2, 
     case SO.CS{+vmf, +redf, +whyf}:
       SV.band(good(full, own, redf, whyf), SV.band(SV.eq(L.mlen(vmf), nv), SV.band(SV.eq(SV.len(ST.somes(vmf)), Nat.add(l0, SV.neqs(SK.Sketch.eqs.go(es, SV.mark.cons(redf, cs, i))))), SV.band(SV.distinct(ST.somes(vmf)), SV.band(nred(own, redf, ST.somes(vmf)), SV.below(ST.somes(vmf), SV.neqs(full)))))))
 
-def kin_r1(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {SV.band(SV.below(ST.somes(vm), k), SV.band(SV.eq(L.mlen(vm), nv), SV.band(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i))))) == True{} : Bool}:
+def kin_r1(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, WY.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {SV.band(SV.below(ST.somes(vm), k), SV.band(SV.eq(L.mlen(vm), nv), SV.band(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i))))) == True{} : Bool}:
   L.band_r(SV.distinct(ST.somes(vm)), SV.band(SV.below(ST.somes(vm), k), SV.band(SV.eq(L.mlen(vm), nv), SV.band(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i))))), h)
 
-def kin_r2(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {SV.band(SV.eq(L.mlen(vm), nv), SV.band(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i)))) == True{} : Bool}:
+def kin_r2(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, WY.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {SV.band(SV.eq(L.mlen(vm), nv), SV.band(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i)))) == True{} : Bool}:
   L.band_r(SV.below(ST.somes(vm), k), SV.band(SV.eq(L.mlen(vm), nv), SV.band(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i)))), kin_r1(full, own, nv, i, k, vm, red, why, h))
 
-def kin_r3(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {SV.band(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i))) == True{} : Bool}:
+def kin_r3(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, WY.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {SV.band(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i))) == True{} : Bool}:
   L.band_r(SV.eq(L.mlen(vm), nv), SV.band(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i))), kin_r2(full, own, nv, i, k, vm, red, why, h))
 
-def kin_r4(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {SV.band(good(full, own, red, why), SV.below(red, i)) == True{} : Bool}:
+def kin_r4(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, WY.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {SV.band(good(full, own, red, why), SV.below(red, i)) == True{} : Bool}:
   L.band_r(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i)), kin_r3(full, own, nv, i, k, vm, red, why, h))
 
-def kin_d(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {SV.distinct(ST.somes(vm)) == True{} : Bool}:
+def kin_d(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, WY.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {SV.distinct(ST.somes(vm)) == True{} : Bool}:
   L.band_l(SV.distinct(ST.somes(vm)), SV.band(SV.below(ST.somes(vm), k), SV.band(SV.eq(L.mlen(vm), nv), SV.band(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i))))), h)
 
-def kin_b(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {SV.below(ST.somes(vm), k) == True{} : Bool}:
+def kin_b(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, WY.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {SV.below(ST.somes(vm), k) == True{} : Bool}:
   L.band_l(SV.below(ST.somes(vm), k), SV.band(SV.eq(L.mlen(vm), nv), SV.band(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i)))), kin_r1(full, own, nv, i, k, vm, red, why, h))
 
-def kin_m(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {SV.eq(L.mlen(vm), nv) == True{} : Bool}:
+def kin_m(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, WY.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {SV.eq(L.mlen(vm), nv) == True{} : Bool}:
   L.band_l(SV.eq(L.mlen(vm), nv), SV.band(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i))), kin_r2(full, own, nv, i, k, vm, red, why, h))
 
-def kin_p(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {pre(own, red, i, ST.somes(vm)) == True{} : Bool}:
+def kin_p(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, WY.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {pre(own, red, i, ST.somes(vm)) == True{} : Bool}:
   L.band_l(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i)), kin_r3(full, own, nv, i, k, vm, red, why, h))
 
-def kin_g(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {good(full, own, red, why) == True{} : Bool}:
+def kin_g(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, WY.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {good(full, own, red, why) == True{} : Bool}:
   L.band_l(good(full, own, red, why), SV.below(red, i), kin_r4(full, own, nv, i, k, vm, red, why, h))
 
-def kin_rb(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {SV.below(red, i) == True{} : Bool}:
+def kin_rb(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, WY.Why>, h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {SV.below(red, i) == True{} : Bool}:
   L.band_r(good(full, own, red, why), SV.below(red, i), kin_r4(full, own, nv, i, k, vm, red, why, h))
 
-def kin_mk(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, hd: {SV.distinct(ST.somes(vm)) == True{} : Bool}, hb: {SV.below(ST.somes(vm), k) == True{} : Bool}, hm: {SV.eq(L.mlen(vm), nv) == True{} : Bool}, hp: {pre(own, red, i, ST.somes(vm)) == True{} : Bool}, hg: {good(full, own, red, why) == True{} : Bool}, hr: {SV.below(red, i) == True{} : Bool}) -> {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}:
+def kin_mk(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, WY.Why>, hd: {SV.distinct(ST.somes(vm)) == True{} : Bool}, hb: {SV.below(ST.somes(vm), k) == True{} : Bool}, hm: {SV.eq(L.mlen(vm), nv) == True{} : Bool}, hp: {pre(own, red, i, ST.somes(vm)) == True{} : Bool}, hg: {good(full, own, red, why) == True{} : Bool}, hr: {SV.below(red, i) == True{} : Bool}) -> {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}:
   L.band_i(SV.distinct(ST.somes(vm)), SV.band(SV.below(ST.somes(vm), k), SV.band(SV.eq(L.mlen(vm), nv), SV.band(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i))))), hd, L.band_i(SV.below(ST.somes(vm), k), SV.band(SV.eq(L.mlen(vm), nv), SV.band(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i)))), hb, L.band_i(SV.eq(L.mlen(vm), nv), SV.band(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i))), hm, L.band_i(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i)), hp, L.band_i(good(full, own, red, why), SV.below(red, i), hg, hr)))))
 
 def lt_up(+o: Nat, +i: Nat, h: {SV.lt(o, i) == True{} : Bool}) -> {SV.lt(o, 1n+i) == True{} : Bool}:
@@ -556,23 +557,23 @@ def neqs_cat(a: List<&2, E.QExpr>, +b: List<&2, E.QExpr>) -> {SV.neqs(SK.cat(a, 
       {==}
 
 # a driven constraint: nothing changes but the position
-def kin_drv(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, +h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {kin(full, own, nv, 1n+i, k, SO.CS{vm, red, why}) == True{} : Bool}:
+def kin_drv(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, WY.Why>, +h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {kin(full, own, nv, 1n+i, k, SO.CS{vm, red, why}) == True{} : Bool}:
   kin_mk(full, own, nv, 1n+i, k, vm, red, why, kin_d(full, own, nv, i, k, vm, red, why, h), kin_b(full, own, nv, i, k, vm, red, why, h), kin_m(full, own, nv, i, k, vm, red, why, h), pre_weak(own, red, i, ST.somes(vm), kin_p(full, own, nv, i, k, vm, red, why, h)), kin_g(full, own, nv, i, k, vm, red, why, h), below_mono(red, i, 1n+i, kin_rb(full, own, nv, i, k, vm, red, why, h), KA.natle_succ(i, i, KA.natle_refl(i))))
 
 # after constraint i's group ended with g
-def kin_step(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +n: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, g: ST.GS, +hg: {gres(full, own, red, i, nv, Nat.add(SV.len(ST.somes(vm)), n), Nat.add(k, n), g) == True{} : Bool}, +h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {kin(full, own, nv, 1n+i, Nat.add(k, n), SO.cfin(i, g, SO.CS{vm, red, why})) == True{} : Bool}:
+def kin_step(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +i: Nat, +k: Nat, +n: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, WY.Why>, g: ST.GS, +hg: {gres(full, own, red, i, nv, Nat.add(SV.len(ST.somes(vm)), n), Nat.add(k, n), g) == True{} : Bool}, +h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}) -> {kin(full, own, nv, 1n+i, Nat.add(k, n), SO.cfin(i, g, SO.CS{vm, red, why})) == True{} : Bool}:
   match g:
     case ST.GOk{+vm2}:
       +ho = L.band_l(gok(own, red, i, nv, Nat.add(k, n), vm2), SV.eq(SV.len(ST.somes(vm2)), Nat.add(SV.len(ST.somes(vm)), n)), hg)
       kin_mk(full, own, nv, 1n+i, Nat.add(k, n), vm2, red, why, gok_d(own, red, i, nv, Nat.add(k, n), vm2, ho), gok_b(own, red, i, nv, Nat.add(k, n), vm2, ho), D.eq_of(L.mlen(vm2), nv, gok_m(own, red, i, nv, Nat.add(k, n), vm2, ho)), own_step(own, red, i, ST.somes(vm2), gok_o(own, red, i, nv, Nat.add(k, n), vm2, ho), kin_rb(full, own, nv, i, k, vm, red, why, h)), kin_g(full, own, nv, i, k, vm, red, why, h), below_mono(red, i, 1n+i, kin_rb(full, own, nv, i, k, vm, red, why, h), KA.natle_succ(i, i, KA.natle_refl(i))))
     case ST.GFail{ST.Red{+j, +s, +w}}:
       +hr = kin_rb(full, own, nv, i, k, vm, red, why, h)
-      +h1 = L.band_r(SV.eq(SV.nth(own, j), i), SV.band(SV.mem(j, s), SV.band(SV.overdet(full, s, w), allown(own, red, i, s))), hg)
-      +h2 = L.band_r(SV.mem(j, s), SV.band(SV.overdet(full, s, w), allown(own, red, i, s)), h1)
-      kin_mk(full, own, nv, 1n+i, Nat.add(k, n), vm, Con{i, red}, Con{SV.Why{j, s, w}, why}, kin_d(full, own, nv, i, k, vm, red, why, h), below_mono(ST.somes(vm), k, Nat.add(k, n), kin_b(full, own, nv, i, k, vm, red, why, h), KA.natle_add_r(k, n)), kin_m(full, own, nv, i, k, vm, red, why, h), pre_fail(own, red, i, ST.somes(vm), kin_p(full, own, nv, i, k, vm, red, why, h)), L.band_i(SV.eq(SV.nth(own, j), i), SV.band(SV.mem(j, s), SV.band(SV.overdet(full, s, w), SV.band(allown(own, red, i, s), SV.band(SV.below(red, i), good(full, own, red, why))))), L.band_l(SV.eq(SV.nth(own, j), i), SV.band(SV.mem(j, s), SV.band(SV.overdet(full, s, w), allown(own, red, i, s))), hg), L.band_i(SV.mem(j, s), SV.band(SV.overdet(full, s, w), SV.band(allown(own, red, i, s), SV.band(SV.below(red, i), good(full, own, red, why)))), L.band_l(SV.mem(j, s), SV.band(SV.overdet(full, s, w), allown(own, red, i, s)), h1), L.band_i(SV.overdet(full, s, w), SV.band(allown(own, red, i, s), SV.band(SV.below(red, i), good(full, own, red, why))), L.band_l(SV.overdet(full, s, w), allown(own, red, i, s), h2), L.band_i(allown(own, red, i, s), SV.band(SV.below(red, i), good(full, own, red, why)), L.band_r(SV.overdet(full, s, w), allown(own, red, i, s), h2), L.band_i(SV.below(red, i), good(full, own, red, why), hr, kin_g(full, own, nv, i, k, vm, red, why, h)))))), L.band_i(SV.lt(i, 1n+i), SV.below(red, 1n+i), lt_succ(i), below_mono(red, i, 1n+i, hr, KA.natle_succ(i, i, KA.natle_refl(i)))))
+      +h1 = L.band_r(SV.eq(SV.nth(own, j), i), SV.band(SV.mem(j, s), SV.band(WY.overdet(full, s, w), allown(own, red, i, s))), hg)
+      +h2 = L.band_r(SV.mem(j, s), SV.band(WY.overdet(full, s, w), allown(own, red, i, s)), h1)
+      kin_mk(full, own, nv, 1n+i, Nat.add(k, n), vm, Con{i, red}, Con{WY.Why{j, s, w}, why}, kin_d(full, own, nv, i, k, vm, red, why, h), below_mono(ST.somes(vm), k, Nat.add(k, n), kin_b(full, own, nv, i, k, vm, red, why, h), KA.natle_add_r(k, n)), kin_m(full, own, nv, i, k, vm, red, why, h), pre_fail(own, red, i, ST.somes(vm), kin_p(full, own, nv, i, k, vm, red, why, h)), L.band_i(SV.eq(SV.nth(own, j), i), SV.band(SV.mem(j, s), SV.band(WY.overdet(full, s, w), SV.band(allown(own, red, i, s), SV.band(SV.below(red, i), good(full, own, red, why))))), L.band_l(SV.eq(SV.nth(own, j), i), SV.band(SV.mem(j, s), SV.band(WY.overdet(full, s, w), allown(own, red, i, s))), hg), L.band_i(SV.mem(j, s), SV.band(WY.overdet(full, s, w), SV.band(allown(own, red, i, s), SV.band(SV.below(red, i), good(full, own, red, why)))), L.band_l(SV.mem(j, s), SV.band(WY.overdet(full, s, w), allown(own, red, i, s)), h1), L.band_i(WY.overdet(full, s, w), SV.band(allown(own, red, i, s), SV.band(SV.below(red, i), good(full, own, red, why))), L.band_l(WY.overdet(full, s, w), allown(own, red, i, s), h2), L.band_i(allown(own, red, i, s), SV.band(SV.below(red, i), good(full, own, red, why)), L.band_r(WY.overdet(full, s, w), allown(own, red, i, s), h2), L.band_i(SV.below(red, i), good(full, own, red, why), hr, kin_g(full, own, nv, i, k, vm, red, why, h)))))), L.band_i(SV.lt(i, 1n+i), SV.below(red, 1n+i), lt_succ(i), below_mono(red, i, 1n+i, hr, KA.natle_succ(i, i, KA.natle_refl(i)))))
 
 # the walk's end
-def kfin_nil(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +es: List<&2, SK.Ent>, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, +h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}, hk: {KA.natle(Nat.add(k, 0n), SV.neqs(full)) == True{} : Bool}) -> {kres(full, own, nv, es, Nil{}, i, SV.len(ST.somes(vm)), SO.CS{vm, red, why}) == True{} : Bool}:
+def kfin_nil(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +es: List<&2, SK.Ent>, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, WY.Why>, +h: {kin(full, own, nv, i, k, SO.CS{vm, red, why}) == True{} : Bool}, hk: {KA.natle(Nat.add(k, 0n), SV.neqs(full)) == True{} : Bool}) -> {kres(full, own, nv, es, Nil{}, i, SV.len(ST.somes(vm)), SO.CS{vm, red, why}) == True{} : Bool}:
   L.band_i(good(full, own, red, why), SV.band(SV.eq(L.mlen(vm), nv), SV.band(SV.eq(SV.len(ST.somes(vm)), Nat.add(SV.len(ST.somes(vm)), 0n)), SV.band(SV.distinct(ST.somes(vm)), SV.band(nred(own, red, ST.somes(vm)), SV.below(ST.somes(vm), SV.neqs(full)))))), kin_g(full, own, nv, i, k, vm, red, why, h), L.band_i(SV.eq(L.mlen(vm), nv), SV.band(SV.eq(SV.len(ST.somes(vm)), Nat.add(SV.len(ST.somes(vm)), 0n)), SV.band(SV.distinct(ST.somes(vm)), SV.band(nred(own, red, ST.somes(vm)), SV.below(ST.somes(vm), SV.neqs(full))))), kin_m(full, own, nv, i, k, vm, red, why, h), L.band_i(SV.eq(SV.len(ST.somes(vm)), Nat.add(SV.len(ST.somes(vm)), 0n)), SV.band(SV.distinct(ST.somes(vm)), SV.band(nred(own, red, ST.somes(vm)), SV.below(ST.somes(vm), SV.neqs(full)))), %LN.add_zero(SV.len(ST.somes(vm))) : {SV.eq(SV.len(ST.somes(vm)), _) == True{} : Bool}
     L.eq_refl(SV.len(ST.somes(vm))), L.band_i(SV.distinct(ST.somes(vm)), SV.band(nred(own, red, ST.somes(vm)), SV.below(ST.somes(vm), SV.neqs(full))), kin_d(full, own, nv, i, k, vm, red, why, h), L.band_i(nred(own, red, ST.somes(vm)), SV.below(ST.somes(vm), SV.neqs(full)), pre_nred(own, red, i, ST.somes(vm), L.band_l(pre(own, red, i, ST.somes(vm)), SV.band(good(full, own, red, why), SV.below(red, i)), kin_r3(full, own, nv, i, k, vm, red, why, h))), below_le(ST.somes(vm), k, SV.neqs(full), kin_b(full, own, nv, i, k, vm, red, why, h), (%Equal.sym(Nat, k, Nat.add(k, 0n), LN.add_zero(k)) : {KA.natle(_, SV.neqs(full)) == True{} : Bool}
       hk)))))))
@@ -584,7 +585,7 @@ def kfin_drv(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +es: List<
       h
 
 # constraint i (kept: its equations counted) walked over
-def kfin_step(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +es: List<&2, SK.Ent>, +id: Nat, +kd: SK.Constraint, +t: List<&2, SK.Rec>, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, SV.Why>, g: ST.GS, fin: SO.CS, +hres: {kres(full, own, nv, es, t, 1n+i, SV.len(ST.somes(SO.CS.vm(SO.cfin(i, g, SO.CS{vm, red, why})))), fin) == True{} : Bool}, +hs1: {L.subl(SO.CS.red(SO.cfin(i, g, SO.CS{vm, red, why})), SO.CS.red(fin)) == True{} : Bool}, +hs2: {allge(SO.CS.red(fin), SO.CS.red(SO.cfin(i, g, SO.CS{vm, red, why})), 1n+i) == True{} : Bool}, +hg: {gres(full, own, red, i, nv, Nat.add(SV.len(ST.somes(vm)), SV.neqs(SK.Constraint.eqs(es, kd))), Nat.add(k, SV.neqs(SK.Constraint.eqs(es, kd))), g) == True{} : Bool}, +hr: {SV.below(red, i) == True{} : Bool}) -> {kres(full, own, nv, es, Con{SK.Rec{id, False{}, kd}, t}, i, SV.len(ST.somes(vm)), fin) == True{} : Bool}:
+def kfin_step(+full: List<&2, E.QExpr>, +own: List<&2, Nat>, +nv: Nat, +es: List<&2, SK.Ent>, +id: Nat, +kd: SK.Constraint, +t: List<&2, SK.Rec>, +i: Nat, +k: Nat, +vm: List<&2, Maybe<&2, Nat>>, +red: List<&2, Nat>, +why: List<&2, WY.Why>, g: ST.GS, fin: SO.CS, +hres: {kres(full, own, nv, es, t, 1n+i, SV.len(ST.somes(SO.CS.vm(SO.cfin(i, g, SO.CS{vm, red, why})))), fin) == True{} : Bool}, +hs1: {L.subl(SO.CS.red(SO.cfin(i, g, SO.CS{vm, red, why})), SO.CS.red(fin)) == True{} : Bool}, +hs2: {allge(SO.CS.red(fin), SO.CS.red(SO.cfin(i, g, SO.CS{vm, red, why})), 1n+i) == True{} : Bool}, +hg: {gres(full, own, red, i, nv, Nat.add(SV.len(ST.somes(vm)), SV.neqs(SK.Constraint.eqs(es, kd))), Nat.add(k, SV.neqs(SK.Constraint.eqs(es, kd))), g) == True{} : Bool}, +hr: {SV.below(red, i) == True{} : Bool}) -> {kres(full, own, nv, es, Con{SK.Rec{id, False{}, kd}, t}, i, SV.len(ST.somes(vm)), fin) == True{} : Bool}:
   match g fin:
     case ST.GOk{+vm2} SO.CS{+vmf, +redf, +whyf}:
       +n = SV.neqs(SK.Constraint.eqs(es, kd))
@@ -817,15 +818,15 @@ def clean1(a: Bool, +o: Nat, +c: Nat, +rt: List<&2, Nat>, +r: List<&2, Nat>, +h:
       L.bnot_t(SV.mem(o, r), notr(o, c, rt, r, hq, L.band_l(SV.lt(o, c), SV.bnot(SV.mem(o, rt)), h), L.bnot_f(SV.mem(o, rt), L.band_r(SV.lt(o, c), SV.bnot(SV.mem(o, rt)), h))))
 
 # the witness is clean against the whole red list r
-def clean_of(+own: List<&2, Nat>, +r: List<&2, Nat>, +c: Nat, +rt: List<&2, Nat>, s: List<&2, Nat>, +ha: {allown(own, rt, c, s) == True{} : Bool}, +hq: {q(r, Con{c, rt}) == True{} : Bool}) -> {SV.clean(own, r, c, s) == True{} : Bool}:
+def clean_of(+own: List<&2, Nat>, +r: List<&2, Nat>, +c: Nat, +rt: List<&2, Nat>, s: List<&2, Nat>, +ha: {allown(own, rt, c, s) == True{} : Bool}, +hq: {q(r, Con{c, rt}) == True{} : Bool}) -> {WY.clean(own, r, c, s) == True{} : Bool}:
   match s:
     case Nil{}:
       {==}
     case Con{+m, +t}:
       +o = SV.nth(own, m)
-      L.band_i(SV.bor(SV.eq(o, c), SV.bnot(SV.mem(o, r))), SV.clean(own, r, c, t), clean1(SV.eq(o, c), o, c, rt, r, L.band_l(okown(own, rt, c, m), allown(own, rt, c, t), ha), hq), clean_of(own, r, c, rt, t, L.band_r(okown(own, rt, c, m), allown(own, rt, c, t), ha), hq))
+      L.band_i(SV.bor(SV.eq(o, c), SV.bnot(SV.mem(o, r))), WY.clean(own, r, c, t), clean1(SV.eq(o, c), o, c, rt, r, L.band_l(okown(own, rt, c, m), allown(own, rt, c, t), ha), hq), clean_of(own, r, c, rt, t, L.band_r(okown(own, rt, c, m), allown(own, rt, c, t), ha), hq))
 
-def expl_go(+sk: SK.Sketch, +r: List<&2, Nat>, rs: List<&2, Nat>, ws: List<&2, SV.Why>, +hg: {good(SK.Sketch.eqs(sk), SV.owners(sk), rs, ws) == True{} : Bool}, +hq: {q(r, rs) == True{} : Bool}) -> {SV.explained.go(sk, r, rs, ws) == True{} : Bool}:
+def expl_go(+sk: SK.Sketch, +r: List<&2, Nat>, rs: List<&2, Nat>, ws: List<&2, WY.Why>, +hg: {good(SK.Sketch.eqs(sk), SV.owners(sk), rs, ws) == True{} : Bool}, +hq: {q(r, rs) == True{} : Bool}) -> {WY.explained.go(sk, r, rs, ws) == True{} : Bool}:
   match rs ws:
     case Nil{} Nil{}:
       {==}
@@ -833,16 +834,16 @@ def expl_go(+sk: SK.Sketch, +r: List<&2, Nat>, rs: List<&2, Nat>, ws: List<&2, S
       absurd({False{} == True{} : Bool}, KA.ft(hg))
     case Con{c, rt} Nil{}:
       absurd({False{} == True{} : Bool}, KA.ft(hg))
-    case Con{+c, +rt} Con{SV.Why{+j, +s, +w}, +yt}:
+    case Con{+c, +rt} Con{WY.Why{+j, +s, +w}, +yt}:
       +full = SK.Sketch.eqs(sk)
       +own = SV.owners(sk)
-      +g1 = L.band_r(SV.eq(SV.nth(own, j), c), SV.band(SV.mem(j, s), SV.band(SV.overdet(full, s, w), SV.band(allown(own, rt, c, s), SV.band(SV.below(rt, c), good(full, own, rt, yt))))), hg)
-      +g2 = L.band_r(SV.mem(j, s), SV.band(SV.overdet(full, s, w), SV.band(allown(own, rt, c, s), SV.band(SV.below(rt, c), good(full, own, rt, yt)))), g1)
-      +g3 = L.band_r(SV.overdet(full, s, w), SV.band(allown(own, rt, c, s), SV.band(SV.below(rt, c), good(full, own, rt, yt))), g2)
+      +g1 = L.band_r(SV.eq(SV.nth(own, j), c), SV.band(SV.mem(j, s), SV.band(WY.overdet(full, s, w), SV.band(allown(own, rt, c, s), SV.band(SV.below(rt, c), good(full, own, rt, yt))))), hg)
+      +g2 = L.band_r(SV.mem(j, s), SV.band(WY.overdet(full, s, w), SV.band(allown(own, rt, c, s), SV.band(SV.below(rt, c), good(full, own, rt, yt)))), g1)
+      +g3 = L.band_r(WY.overdet(full, s, w), SV.band(allown(own, rt, c, s), SV.band(SV.below(rt, c), good(full, own, rt, yt))), g2)
       +g4 = L.band_r(allown(own, rt, c, s), SV.band(SV.below(rt, c), good(full, own, rt, yt)), g3)
       +hb = L.band_l(SV.below(rt, c), good(full, own, rt, yt), g4)
-      L.band_i(SV.eq(SV.nth(own, j), c), SV.band(SV.mem(j, s), SV.band(SV.overdet(full, s, w), SV.band(SV.clean(own, r, c, s), SV.explained.go(sk, r, rt, yt)))), L.band_l(SV.eq(SV.nth(own, j), c), SV.band(SV.mem(j, s), SV.band(SV.overdet(full, s, w), SV.band(allown(own, rt, c, s), SV.band(SV.below(rt, c), good(full, own, rt, yt))))), hg), L.band_i(SV.mem(j, s), SV.band(SV.overdet(full, s, w), SV.band(SV.clean(own, r, c, s), SV.explained.go(sk, r, rt, yt))), L.band_l(SV.mem(j, s), SV.band(SV.overdet(full, s, w), SV.band(allown(own, rt, c, s), SV.band(SV.below(rt, c), good(full, own, rt, yt)))), g1), L.band_i(SV.overdet(full, s, w), SV.band(SV.clean(own, r, c, s), SV.explained.go(sk, r, rt, yt)), L.band_l(SV.overdet(full, s, w), SV.band(allown(own, rt, c, s), SV.band(SV.below(rt, c), good(full, own, rt, yt))), g2), L.band_i(SV.clean(own, r, c, s), SV.explained.go(sk, r, rt, yt), clean_of(own, r, c, rt, s, L.band_l(allown(own, rt, c, s), SV.band(SV.below(rt, c), good(full, own, rt, yt)), g3), hq), expl_go(sk, r, rt, yt, L.band_r(SV.below(rt, c), good(full, own, rt, yt), g4), q_step(r, c, rt, hq, hb))))))
+      L.band_i(SV.eq(SV.nth(own, j), c), SV.band(SV.mem(j, s), SV.band(WY.overdet(full, s, w), SV.band(WY.clean(own, r, c, s), WY.explained.go(sk, r, rt, yt)))), L.band_l(SV.eq(SV.nth(own, j), c), SV.band(SV.mem(j, s), SV.band(WY.overdet(full, s, w), SV.band(allown(own, rt, c, s), SV.band(SV.below(rt, c), good(full, own, rt, yt))))), hg), L.band_i(SV.mem(j, s), SV.band(WY.overdet(full, s, w), SV.band(WY.clean(own, r, c, s), WY.explained.go(sk, r, rt, yt))), L.band_l(SV.mem(j, s), SV.band(WY.overdet(full, s, w), SV.band(allown(own, rt, c, s), SV.band(SV.below(rt, c), good(full, own, rt, yt)))), g1), L.band_i(WY.overdet(full, s, w), SV.band(WY.clean(own, r, c, s), WY.explained.go(sk, r, rt, yt)), L.band_l(WY.overdet(full, s, w), SV.band(allown(own, rt, c, s), SV.band(SV.below(rt, c), good(full, own, rt, yt))), g2), L.band_i(WY.clean(own, r, c, s), WY.explained.go(sk, r, rt, yt), clean_of(own, r, c, rt, s, L.band_l(allown(own, rt, c, s), SV.band(SV.below(rt, c), good(full, own, rt, yt)), g3), hq), expl_go(sk, r, rt, yt, L.band_r(SV.below(rt, c), good(full, own, rt, yt), g4), q_step(r, c, rt, hq, hb))))))
 
 # good records explain the red constraints
-def explained_of(+sk: SK.Sketch, +r: List<&2, Nat>, +ws: List<&2, SV.Why>, hg: {good(SK.Sketch.eqs(sk), SV.owners(sk), r, ws) == True{} : Bool}) -> {SV.explained(sk, r, ws) == True{} : Bool}:
+def explained_of(+sk: SK.Sketch, +r: List<&2, Nat>, +ws: List<&2, WY.Why>, hg: {good(SK.Sketch.eqs(sk), SV.owners(sk), r, ws) == True{} : Bool}) -> {WY.explained(sk, r, ws) == True{} : Bool}:
   expl_go(sk, r, r, ws, hg, q_of(r, r, L.subl_refl(r)))

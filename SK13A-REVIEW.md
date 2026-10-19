@@ -14,10 +14,10 @@ keeps v4's logic and simplifies its form (Danielle, 2026-10-19):
 v5 also folds in the fourth audit's fixes. Danielle's standing rules:
 verified and complete; the principled way; all limits proved, not stated.
 
-The spec is in two draft files:
-- `spec/_draft13a.bend`: `spec/solve.bend` with its classification
+The spec was drafted in two files, now in place (S0a, S0b):
+- `spec/solve.bend` (was `spec/_draft13a.bend`): the classification
   section replaced and `Strict` refined;
-- `spec/_draft_sketch13a.bend`: `spec/sketch.bend` with merges as
+- `spec/sketch.bend` (was `spec/_draft_sketch13a.bend`): merges as
   equations.
 
 Both type-check; planted errors are rejected; the Bool helpers were run
@@ -64,7 +64,7 @@ derived, so the laws that use `mark(red, sk)` read as before.
 
 ## The spec
 
-**`spec/_draft_sketch13a.bend`** (Q29, D3 revised):
+**`spec/sketch.bend`** (Q29, D3 revised):
 - Coincident is x_a − x_b, y_a − y_b; Horizontal is y_a − y_b; Vertical
   is x_a − x_b; Concentric is the centres' differences; EqualRadius is
   r_a − r_b.
@@ -75,7 +75,7 @@ derived, so the laws that use `mark(red, sk)` read as before.
   `sketch_*` are unaffected, and a sketch that still shares variables
   means the same thing (its merges come out amber).
 
-**`spec/_draft13a.bend`: systems.**
+**`spec/solve.bend`: systems.**
 - `solved`;
 - `presolved(sk, red, ds, c)`: the solved equations of constraints before
   c;
@@ -85,13 +85,13 @@ derived, so the laws that use `mark(red, sk)` read as before.
   constraints before it plus the entity sides;
 - `neg_pre`, `only`, `picked`, `side_at`, `negate`.
 
-**`spec/_draft13a.bend`: derivations.**
+**`spec/solve.bend`: derivations.**
 - `Ident`: the same polynomial, equal at every rational point.
 - `lin`, `slin`, `AllZero`.
 - `Refutes0`, Motzkin's form: Σ lᵢeᵢ + Σ mₖsₖ = k identically, every
   mₖ ≥ 0, and k < 0, or k = 0 with a strict side's mₖ > 0.
 
-**`spec/_draft13a.bend`: dependence (Q30).** Structure is about what an
+**`spec/solve.bend`: dependence (Q30).** Structure is about what an
 equation depends on, not how it is written:
 - `Depends(e, v)`: the derivative of e in v (`spec/deriv.bend`) is not
   identically 0. In x − x + y, x doesn't count.
@@ -107,7 +107,7 @@ This needs no new trust: it uses only the trusted derivative and `Ident`.
 The solver builds its adjacency from normal forms, and the non-root lemma
 proves the two notions agree.
 
-**`spec/_draft13a.bend`: classes.** `Ref`, `Class`, `class_at`, `kind`, `reds`,
+**`spec/solve.bend`: classes.** `Ref`, `Class`, `class_at`, `kind`, `reds`,
 `ambers`, `conflicts`, `dropped`, `support`, `driving`, `all_driving`,
 `alldrop.go`, `unmark`.
 
@@ -214,6 +214,37 @@ balls.
 11. `solve_refused`: if no level certifies, the drawing itself is not a
     regular solution of the solved system in the solver's free variables.
     That's all it says; the stronger forms are open laws.
+
+## As written in ROADMAP (S0b, 2026-10-19)
+
+The spec is now `spec/solve.bend` and `spec/sketch.bend`, and laws 1–11
+are written out in ROADMAP.bend; `tools/stmtcheck.py` type-checks the open
+ones. Choices made while writing them, for the S9 audit:
+- **`Cert` is `Comb`.** The drop certificate's constructor clashed with
+  the block certificate's (`lib/certdef.bend`); Bend's constructor names
+  are global.
+- **`cov`** (the sketch's variables are below `nvars`) is a hypothesis of
+  `solve_honest`, `solve_drop`, `solve_amber` and `solve_conflict`, as it
+  is of `solve_total`: the solver's structure stage assumes it.
+- **`solve_regular`** is about any x in the box meaning the sketch less
+  its red constraints (by `solve_unique`, the certified geometry).
+- **`solve_blame`** holds for every position c: a constraint that is not
+  a conflict has an empty support, which the certified geometry meets
+  too.
+- **`solve_refused`** takes x to be the drawing read in F
+  (`N.ofkv(g0)`), with law 10's hypotheses at x and every level refusing.
+- **`solve_complete`**'s `dy` is `dyadic(mark(red, sk))`: the constants
+  of the kept constraints (amber ones included) only.
+
+Until the sk-13a stage lands (PLAN S4), the solver's classes come from
+sk-09's red stage (Over with its old syntactic witness at each red
+constraint, Kept with nothing dropped elsewhere). The verdict laws
+(`solve_exists`, `solve_unique`, `solve_pins`) are proven over
+`reds(cls)`; sk-09's totality and completeness are proven in interim forms
+over the classes (`total_now`, `complete_now` in tests/solve_laws.bend),
+the latter with `Strict` and no pins. sk-09's `explained` and its witness
+type live on in `lib/why.bend` as facts about the old stage; no law
+mentions them, and the verdict no longer checks them.
 
 ## Open laws (in ROADMAP when their phase starts)
 

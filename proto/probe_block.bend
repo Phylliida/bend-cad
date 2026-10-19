@@ -532,8 +532,8 @@ def nshow(xs: List<&2, Nat>) -> String:
 
 def show(o: SO.Out) -> String:
   match o:
-    case SO.Out{ok, red, why, pins, gc, gr, plan}:
-      "ok " ++ Bool.show(ok) ++ "\nred" ++ nshow(red) ++ "\npins" ++ nshow(pins) ++ "\ngc" ++ dsshow(gc) ++ "\ngr" ++ dsshow(gr)
+    case SO.Out{ok, +cls, pins, gc, gr, plan}:
+      "ok " ++ Bool.show(ok) ++ "\nred" ++ nshow(SV.reds(cls)) ++ "\npins" ++ nshow(pins) ++ "\ngc" ++ dsshow(gc) ++ "\ngr" ++ dsshow(gr)
 
 # The probe
 # ---------

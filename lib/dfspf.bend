@@ -18,6 +18,7 @@
 
 import Base
 import ../spec/solve.bend as SV
+import ./why.bend as WY
 import ../spec/ring.bend as E
 import ./karith.bend as KA
 import ./struct.bend as ST
@@ -686,17 +687,17 @@ def lt_self(n: Nat) -> {SV.lt(n, 1n+n) == True{} : Bool}:
       lt_self(m)
 
 # the mates of xs (all closed, over the base Nil) are inside w
-def look_inside(+es: List<&2, E.QExpr>, +vm: List<&2, Maybe<&2, Nat>>, xs: List<&2, Nat>, +w: List<&2, Nat>, +h: {closed(vm, ST.adj(es), Nil{}, w, xs) == True{} : Bool}) -> {SV.all_inside(es, ST.look(vm, xs), w) == True{} : Bool}:
+def look_inside(+es: List<&2, E.QExpr>, +vm: List<&2, Maybe<&2, Nat>>, xs: List<&2, Nat>, +w: List<&2, Nat>, +h: {closed(vm, ST.adj(es), Nil{}, w, xs) == True{} : Bool}) -> {WY.all_inside(es, ST.look(vm, xs), w) == True{} : Bool}:
   match xs:
     case Nil{}:
       {==}
     case Con{+v, +t}:
-      L.band_i(SV.inside(SV.eqat(es, mate(vm, v)), w), SV.all_inside(es, ST.look(vm, t), w), adj_inside(es, mate(vm, v), w, L.band_l(L.subl(ST.nthl(ST.adj(es), mate(vm, v)), w), closed(vm, ST.adj(es), Nil{}, w, t), h)), look_inside(es, vm, t, w, L.band_r(L.subl(ST.nthl(ST.adj(es), mate(vm, v)), w), closed(vm, ST.adj(es), Nil{}, w, t), h)))
+      L.band_i(SV.inside(SV.eqat(es, mate(vm, v)), w), WY.all_inside(es, ST.look(vm, t), w), adj_inside(es, mate(vm, v), w, L.band_l(L.subl(ST.nthl(ST.adj(es), mate(vm, v)), w), closed(vm, ST.adj(es), Nil{}, w, t), h)), look_inside(es, vm, t, w, L.band_r(L.subl(ST.nthl(ST.adj(es), mate(vm, v)), w), closed(vm, ST.adj(es), Nil{}, w, t), h)))
 
 # a failed search from j: its witness over-determines its variables
-def wit_ok(+es: List<&2, E.QExpr>, +vm: List<&2, Maybe<&2, Nat>>, +j: Nat, +f: Nat, +vis: List<&2, Nat>, +h1: {SV.mem(j, ST.somes(vm)) == False{} : Bool}, +h2: {SV.distinct(ST.somes(vm)) == True{} : Bool}, hb: {SV.below(ST.somes(vm), SV.neqs(es)) == True{} : Bool}, hj: {SV.lt(j, SV.neqs(es)) == True{} : Bool}, +hv: {vis_ok(vm, ST.adj(es), Nil{}, f, vis) == True{} : Bool}, hn: {L.subl(ST.nthl(ST.adj(es), j), vis) == True{} : Bool}) -> {SV.overdet(es, Con{j, ST.look(vm, vis)}, vis) == True{} : Bool}:
+def wit_ok(+es: List<&2, E.QExpr>, +vm: List<&2, Maybe<&2, Nat>>, +j: Nat, +f: Nat, +vis: List<&2, Nat>, +h1: {SV.mem(j, ST.somes(vm)) == False{} : Bool}, +h2: {SV.distinct(ST.somes(vm)) == True{} : Bool}, hb: {SV.below(ST.somes(vm), SV.neqs(es)) == True{} : Bool}, hj: {SV.lt(j, SV.neqs(es)) == True{} : Bool}, +hv: {vis_ok(vm, ST.adj(es), Nil{}, f, vis) == True{} : Bool}, hn: {L.subl(ST.nthl(ST.adj(es), j), vis) == True{} : Bool}) -> {WY.overdet(es, Con{j, ST.look(vm, vis)}, vis) == True{} : Bool}:
   +adj = ST.adj(es)
   +lk = ST.look(vm, vis)
   +ha = vo_a(vm, adj, Nil{}, f, vis, hv)
-  L.band_i(SV.distinct(Con{j, lk}), SV.band(SV.below(Con{j, lk}, SV.neqs(es)), SV.band(SV.lt(SV.len(vis), SV.len(Con{j, lk})), SV.all_inside(es, Con{j, lk}, vis))), L.dist_con(j, lk, L.notin_subl(j, lk, ST.somes(vm), h1, L.look_subl(vm, vis, ha)), L.look_dist(vm, vis, vo_d(vm, adj, Nil{}, f, vis, hv), ha, h2)), L.band_i(SV.below(Con{j, lk}, SV.neqs(es)), SV.band(SV.lt(SV.len(vis), SV.len(Con{j, lk})), SV.all_inside(es, Con{j, lk}, vis)), L.band_i(SV.lt(j, SV.neqs(es)), SV.below(lk, SV.neqs(es)), hj, below_subl(lk, ST.somes(vm), SV.neqs(es), L.look_subl(vm, vis, ha), hb)), L.band_i(SV.lt(SV.len(vis), SV.len(Con{j, lk})), SV.all_inside(es, Con{j, lk}, vis), %Equal.sym(Nat, SV.len(ST.look(vm, vis)), SV.len(vis), L.look_len(vm, vis)) : {SV.lt(SV.len(vis), 1n+_) == True{} : Bool}
-    lt_self(SV.len(vis)), L.band_i(SV.inside(SV.eqat(es, j), vis), SV.all_inside(es, lk, vis), adj_inside(es, j, vis, hn), look_inside(es, vm, vis, vis, vo_c(vm, adj, Nil{}, f, vis, hv))))))
+  L.band_i(SV.distinct(Con{j, lk}), SV.band(SV.below(Con{j, lk}, SV.neqs(es)), SV.band(SV.lt(SV.len(vis), SV.len(Con{j, lk})), WY.all_inside(es, Con{j, lk}, vis))), L.dist_con(j, lk, L.notin_subl(j, lk, ST.somes(vm), h1, L.look_subl(vm, vis, ha)), L.look_dist(vm, vis, vo_d(vm, adj, Nil{}, f, vis, hv), ha, h2)), L.band_i(SV.below(Con{j, lk}, SV.neqs(es)), SV.band(SV.lt(SV.len(vis), SV.len(Con{j, lk})), WY.all_inside(es, Con{j, lk}, vis)), L.band_i(SV.lt(j, SV.neqs(es)), SV.below(lk, SV.neqs(es)), hj, below_subl(lk, ST.somes(vm), SV.neqs(es), L.look_subl(vm, vis, ha), hb)), L.band_i(SV.lt(SV.len(vis), SV.len(Con{j, lk})), WY.all_inside(es, Con{j, lk}, vis), %Equal.sym(Nat, SV.len(ST.look(vm, vis)), SV.len(vis), L.look_len(vm, vis)) : {SV.lt(SV.len(vis), 1n+_) == True{} : Bool}
+    lt_self(SV.len(vis)), L.band_i(SV.inside(SV.eqat(es, j), vis), WY.all_inside(es, lk, vis), adj_inside(es, j, vis, hn), look_inside(es, vm, vis, vis, vo_c(vm, adj, Nil{}, f, vis, hv))))))

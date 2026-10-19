@@ -21,6 +21,7 @@ import Base
 import ../spec/num.bend as S
 import ../spec/ring.bend as E
 import ../spec/sketch.bend as SK
+import ../spec/solve.bend as SV
 import ../lib/solve.bend as SO
 import ../proto/block.bend as B
 import ../lib/numer.bend as NU
@@ -528,8 +529,8 @@ def nshow(xs: List<&2, Nat>) -> String:
 
 def show(o: SO.Out) -> String:
   match o:
-    case SO.Out{ok, red, why, pins, gc, gr, plan}:
-      "ok " ++ Bool.show(ok) ++ "\nred" ++ nshow(red) ++ "\npins" ++ nshow(pins) ++ "\ngc" ++ dsshow(gc) ++ "\ngr" ++ dsshow(gr)
+    case SO.Out{ok, +cls, pins, gc, gr, plan}:
+      "ok " ++ Bool.show(ok) ++ "\nred" ++ nshow(SV.reds(cls)) ++ "\npins" ++ nshow(pins) ++ "\ngc" ++ dsshow(gc) ++ "\ngr" ++ dsshow(gr)
 
 # The probe
 # ---------
@@ -586,7 +587,7 @@ def plan.at(+s: String, +p: Nat) -> NU.PR:
 def pick4(k: Nat, +p: Nat, +s: String) -> String:
   match k:
     case 0n:
-      "accept " ++ Nat.show(p) ++ " " ++ Bool.show(SO.accept(plan.at(s, p), sk.of(s), g0.of(s), SO.red_of(sk.of(s)), SO.why_of(sk.of(s)), SO.pins_of(sk.of(s))))
+      "accept " ++ Nat.show(p) ++ " " ++ Bool.show(SO.accept(plan.at(s, p), sk.of(s), g0.of(s), SO.cls_of(sk.of(s)), SO.pins_of(sk.of(s))))
     case 1n+a:
       show(SO.solve(sk.of(s), g0.of(s)))
 

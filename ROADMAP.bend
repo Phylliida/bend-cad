@@ -19,41 +19,52 @@ import ./lib/kinst.bend as KI
 import ./lib/wfdec.bend as WF
 import ./lib/solve.bend as SO
 
-# The verified solver (sk-09, DESIGN §10). DRAFTS FOR REVIEW, with
-# spec/solve.bend. All four are proven (lib/solvepf.bend; restated with
-# their proofs in tests/solve_laws.bend). Audited by a fresh agent
-# (2026-10-14): no blocker; its two fixes are in (red flags must leave
-# no spare: each red constraint's witness uses only kept constraints and
-# itself; pins are reported and held at the drawing). Read by Danielle
-# (2026-10-18) and reviewed again (AUDIT-sk09-laws.md): the four were
-# stated for level 0 only, while solve_complete certifies at some level
-# l, so a solver could lie above level 0; they now hold at every level.
+# The verified solver (sk-09, DESIGN §10), with sk-13a's classes (v5,
+# SK13A-REVIEW.md, after four audits; spec/solve.bend). History: the
+# sk-09 drafts were audited (2026-10-14), read by Danielle and reviewed
+# again (AUDIT-sk09-laws.md: they now hold at every level); sk-13a v5
+# replaced the red list and its syntactic witnesses (solve_red) with one
+# class per constraint and the honesty laws below (S0b, 2026-10-19).
 # ----------------------------------------------------------------------
 # solve_l(sk, g0, l) (lib/solve.bend) takes a sketch, a drawing (one
 # dyadic value per variable) and a level (how hard to try; solve is level
-# 0, below) and answers with ok, a box (centers gc and radii gr, dyadics),
-# a plan (input to the checker; it never appears in a claim), the
-# variables it pinned, and the constraints it flagged red (by position)
-# with their reasons. When ok is True, at every level:
+# 0) and answers with ok, a box (centers gc and radii gr, dyadics), a plan
+# (input to the checker; it never appears in a claim), the variables it
+# pinned, and a class for each constraint (cls: Kept, Amber, Over,
+# Conflict). Below, CLS is its classes, RED = reds(CLS) the red
+# constraints and DS = dropped(CLS) the dropped equations; solved(sk,
+# RED, DS) is the system solved.
+#
+# From the verdict (when ok is True, at every level; solve recomputes its
+# verdict from its answer alone, lib/solve.bend: seal, so these use
+# nothing about how the answer was found):
 # - solve_exists: in every complete ordered field some geometry in the
-#   box means the sketch with the red constraints made driven
-#   (spec/solve.bend: mark);
+#   box means the sketch with the red constraints made driven;
 # - solve_unique: in every ordered field only one does (given the box's
 #   radius-0 coordinates: the pins and anything solved exactly);
-# - solve_red: every red constraint is explained, and none is spare
-#   (spec/solve.bend: explained);
-# - solve_pins: every pin has radius 0 and sits exactly at its drawn value
-#   (spec/solve.bend: held), so pinning never moves what the user drew.
-# The laws say nothing yet about where the box is relative to the drawing
-# (it could be a mirrored branch), nor about a red constraint at the
-# solution (its deviation, sk-19). H is any ring map from the dyadics into
-# F with sound comparisons: KI.demb is one, and e_ofq makes every such map
-# agree with it on every dyadic, so the box is read at its own numbers.
-# The statements also use lib/solve.bend's Out type and its projections
-# (Out.ok, Out.gc, ...), one-line field reads: part of what is reviewed.
+# - solve_pins: every pin has radius 0 and sits exactly at its drawn
+#   value, so pinning never moves what the user drew;
+# - solve_regular: that geometry is a regular point of the system solved,
+#   in the free variables;
+# - solve_blame: every conflict's support holds at some geometry.
+# H is any ring map from the dyadics into F with sound comparisons:
+# KI.demb is one, and e_ofq makes every such map agree with it on every
+# dyadic. The statements also use lib/solve.bend's Out type and its
+# projections, one-line field reads: part of what is reviewed.
 #
-# solve recomputes its verdict from its answer alone (lib/solve.bend:
-# seal), so the proofs use nothing about how the answer was found.
+# About the search (every well-formed sketch, ok or not): solve_honest
+# (each constraint's class is the honest one given the classes before it,
+# spec/solve.bend: Honest) and solve_total; the spec alone: honest_unique
+# (honest classes agree, so the sketch determines them); semantic
+# corollaries: solve_drop, solve_amber, solve_conflict; completeness:
+# solve_complete, and solve_refused, what a refusal means today.
+#
+# Proven: solve_exists, solve_unique, solve_pins (lib/solvepf.bend,
+# restated in tests/solve_laws.bend). Until sk-13a's stage lands the
+# classes come from sk-09's red stage, and its facts are proven in their
+# sk-09 forms (lib/totalpf.bend: total_now; lib/completepf.bend:
+# complete_now; restated in tests/solve_laws.bend); the rest is open
+# (PLAN-sk13a.md S1-S7).
 
 # LAW: in a complete ordered field, the solver's box holds a geometry
 # meaning the sketch less its red constraints
@@ -65,7 +76,7 @@ law solve_exists:
   for +g0: List<&2, S.D>
   for +l: Nat
   for +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}
-  (&x: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), x) & SK.Sketch.means(~F, x, SV.mark(SO.Out.red(SO.solve_l(sk, g0, l)), sk))))
+  (&x: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), x) & SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk))))
 
 # LAW: in every ordered field, only one geometry in the solver's box means
 # it
@@ -78,21 +89,11 @@ law solve_unique:
   for +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}
   for +x1: M.Vec(~F)
   for  h1: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), x1)
-  for  m1: SK.Sketch.means(~F, x1, SV.mark(SO.Out.red(SO.solve_l(sk, g0, l)), sk))
+  for  m1: SK.Sketch.means(~F, x1, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk))
   for +x2: M.Vec(~F)
   for  h2: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), x2)
-  for  m2: SK.Sketch.means(~F, x2, SV.mark(SO.Out.red(SO.solve_l(sk, g0, l)), sk))
+  for  m2: SK.Sketch.means(~F, x2, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk))
   {x1 == x2 : M.Vec(~F)}
-
-# LAW: every red constraint is explained: it owns an equation in a set of
-# the sketch's equations that uses fewer variables than it has equations,
-# made only of its own and kept constraints' equations
-law solve_red:
-  for +sk: SK.Sketch
-  for +g0: List<&2, S.D>
-  for +l: Nat
-  for +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}
-  {SV.explained(sk, SO.Out.red(SO.solve_l(sk, g0, l)), SO.Out.why(SO.solve_l(sk, g0, l))) == True{} : Bool}
 
 # LAW: every pin is held at the drawing's value, with radius 0
 law solve_pins:
@@ -102,63 +103,141 @@ law solve_pins:
   for +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}
   {SV.held(SO.Out.pins(SO.solve_l(sk, g0, l)), g0, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l))) == True{} : Bool}
 
-# Completeness (sk-09, DESIGN §10.2). DRAFTS FOR REVIEW, with
-# spec/deriv.bend and the "for completeness" part of spec/solve.bend.
-# Both are proven (solve_total: lib/totalpf.bend; solve_complete:
-# lib/completepf.bend; restated with their proofs in
-# tests/solve_laws.bend).
-# --------------------------------------------------------------------
+# LAW: the certified geometry is a regular point of the system solved, in
+# the free variables (the verdict checks that the plan's pins are the
+# reported pins and that its orders cover exactly the variables and the
+# solved equations)
+law solve_regular:
+  for ~F: O.OField
+  for ~H: N.Emb<KI.dnum(), F>
+  for +sk: SK.Sketch
+  for +g0: List<&2, S.D>
+  for +l: Nat
+  for +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}
+  for +x: M.Vec(~F)
+  for  h: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), x)
+  for  m: SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk))
+  DV.Regular(~F, x, SV.solved(sk, SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), SV.dropped(SO.Out.cls(SO.solve_l(sk, g0, l)))), SV.free(SO.nvars(sk), 0n, SO.Out.pins(SO.solve_l(sk, g0, l))))
+
+# LAW: every conflict's support is consistent: the certified geometry
+# satisfies it (blame is earned)
+law solve_blame:
+  for ~F: O.OField
+  for ~R: CR.Complete<F>
+  for ~H: N.Emb<KI.dnum(), F>
+  for +sk: SK.Sketch
+  for +g0: List<&2, S.D>
+  for +l: Nat
+  for +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}
+  for +c: Nat
+  (&x: M.Vec(~F) -> SK.Sketch.means(~F, x, SV.only(SV.support(SO.Out.cls(SO.solve_l(sk, g0, l)), c), sk)))
+
+# LAW: the classification is honest, at every level, ok or not: each
+# constraint's class is the honest one given the classes before it
+# (spec/solve.bend: Honest; v4's solve_red is part of it)
+law solve_honest:
+  for +sk: SK.Sketch
+  for  w: SK.Sketch.wf(sk)
+  for  cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}
+  for +g0: List<&2, S.D>
+  for +l: Nat
+  SV.Honest(sk, SO.Out.cls(SO.solve_l(sk, g0, l)))
+
+# LAW (about the spec alone): honest classifications agree. Every
+# constraint gets the same kind, and every equation is dropped in both or
+# in neither; only the Over witnesses, which irreducible support is shown,
+# the pins and the box may differ between solvers
+law honest_unique:
+  for +sk: SK.Sketch
+  for  w: SK.Sketch.wf(sk)
+  for +c1: List<&2, SV.Class>
+  for  h1: SV.Honest(sk, c1)
+  for +c2: List<&2, SV.Class>
+  for  h2: SV.Honest(sk, c2)
+  for +c: Nat
+  for +j: Nat
+  M.Both({SV.kind(SV.class_at(c1, c)) == SV.kind(SV.class_at(c2, c)) : Nat}, {SV.mem(j, SV.dropped(c1)) == SV.mem(j, SV.dropped(c2)) : Bool})
+
+# LAW: in every ordered field, wherever the solved equations hold, every
+# dropped equation holds
+law solve_drop:
+  for ~F: O.OField
+  for +sk: SK.Sketch
+  for  w: SK.Sketch.wf(sk)
+  for  cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}
+  for +g0: List<&2, S.D>
+  for +l: Nat
+  for +x: M.Vec(~F)
+  for  hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), SV.dropped(SO.Out.cls(SO.solve_l(sk, g0, l)))))
+  SK.Zeros(~F, x, SV.picked(SK.Sketch.eqs(sk), SV.dropped(SO.Out.cls(SO.solve_l(sk, g0, l)))))
+
+# LAW: deleting every amber constraint changes no solution
+law solve_amber:
+  for ~F: O.OField
+  for +sk: SK.Sketch
+  for  w: SK.Sketch.wf(sk)
+  for  cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}
+  for +g0: List<&2, S.D>
+  for +l: Nat
+  for +x: M.Vec(~F)
+  for  m: SK.Sketch.means(~F, x, SV.mark(SV.cat(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), SV.ambers(SO.Out.cls(SO.solve_l(sk, g0, l)))), sk))
+  SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk))
+
+# LAW: in every ordered field, a conflicting constraint and its support
+# cannot all hold, so it cannot be restored
+law solve_conflict:
+  for ~F: O.OField
+  for +sk: SK.Sketch
+  for  w: SK.Sketch.wf(sk)
+  for  cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}
+  for +g0: List<&2, S.D>
+  for +l: Nat
+  for +c: Nat
+  for  hc: {SV.is_conflict(SV.class_at(SO.Out.cls(SO.solve_l(sk, g0, l)), c)) == True{} : Bool}
+  for +x: M.Vec(~F)
+  for  m: SK.Sketch.means(~F, x, SV.only(Con{c, SV.support(SO.Out.cls(SO.solve_l(sk, g0, l)), c)}, sk))
+  Empty
+
+# Completeness (sk-09, DESIGN §10.2, with sk-13a's classes)
+# --------------------------------------------------------
 # solve_l(sk, g, l) is the solver at level l: it tries seven precisions
 # of 64, 96, 128, 192, ... (doubling every two), starting at the l-th, and
 # takes the first whose answer passes the whole verdict; solve is level 0
 # (64 .. 512 bits), and a higher level is "try harder" (it never tries the
-# coarse precisions, which can lose a drawing's detail). red_of(sk),
-# why_of(sk) and pins_of(sk) are its red constraints, their reasons and
-# its pins, computed from the sketch alone (lib/solve.bend).
+# coarse precisions, which can lose a drawing's detail). cls_of(sk) and
+# pins_of(sk) are its classes and pins, computed from the sketch alone
+# (lib/solve.bend).
 
-# LAW: the structure stage never fails. For a well-formed sketch
-# whose variables cover it, whatever the drawing and the level: the red
-# constraints, reasons and pins solve reports are those of the sketch
-# alone; every red constraint is explained; the sketch less them passes
-# the solver's well-formedness check; the pins are distinct variables;
-# and with the pins held the kept system is square (as many equations as
-# free variables). (Proof: lib/dfspf.bend, the augmenting-path search and
-# its witness; lib/redpf.bend, the red stage; lib/wfcpf.bend and
-# lib/covpf.bend, well-formedness and coverage; lib/maxpf.bend, the
-# pins: the variable side's matching is maximum, so the variables it
-# leaves over make the kept system square; lib/totalpf.bend, the law.)
+# LAW: the structure stage never fails. For a well-formed sketch whose
+# variables cover it, whatever the drawing and the level: the classes and
+# pins solve reports are those of the sketch alone; the sketch less the
+# red constraints passes the solver's well-formedness check; the pins are
+# distinct variables; and the system solved has a perfect matching onto
+# the free variables, by dependence (so with the pins held it is square)
 law solve_total:
   for +sk: SK.Sketch
   for  w: SK.Sketch.wf(sk)
   for  cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}
   for +g0: List<&2, S.D>
   for +l: Nat
-  M.Both({SO.Out.red(SO.solve_l(sk, g0, l)) == SO.red_of(sk) : List<&2, Nat>}, M.Both({SO.Out.why(SO.solve_l(sk, g0, l)) == SO.why_of(sk) : List<&2, SV.Why>}, M.Both({SO.Out.pins(SO.solve_l(sk, g0, l)) == SO.pins_of(sk) : List<&2, Nat>}, M.Both({SV.explained(sk, SO.red_of(sk), SO.why_of(sk)) == True{} : Bool}, M.Both({WF.wf_dec(SV.mark(SO.red_of(sk), sk)) == True{} : Bool}, M.Both({SV.distinct(SO.pins_of(sk)) == True{} : Bool}, M.Both({SV.below(SO.pins_of(sk), SO.nvars(sk)) == True{} : Bool}, {Nat.add(SV.neqs(SK.Sketch.eqs(SV.mark(SO.red_of(sk), sk))), SV.len(SO.pins_of(sk))) == SO.nvars(sk) : Nat})))))))
+  ({SO.Out.cls(SO.solve_l(sk, g0, l)) == SO.cls_of(sk) : List<&2, SV.Class>} & ({SO.Out.pins(SO.solve_l(sk, g0, l)) == SO.pins_of(sk) : List<&2, Nat>} & ({WF.wf_dec(SV.mark(SV.reds(SO.cls_of(sk)), sk)) == True{} : Bool} & ({SV.distinct(SO.pins_of(sk)) == True{} : Bool} & ({SV.below(SO.pins_of(sk), SO.nvars(sk)) == True{} : Bool} & (&m: List<&2, Nat> -> SV.Perfect(SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)), m)))))))
 
-# LAW (the hard one; proven 2026-10-18, lib/completepf.bend, C6 in DESIGN
-# §10.4): a regular solution near the drawing is
-# certified. In a complete ordered field F, take a well-formed sketch
-# whose variables cover it and whose constants are dyadic, a drawing g0,
-# and a point x with one entry per variable that equals g0 at the pins,
-# solves the sketch less its red constraints, meets its side conditions
-# strictly (spec/solve.bend: Strict), and is a regular point of that
-# system in the free variables the solver chose (spec/deriv.bend: the
-# Jacobian has an inverse; the free variables are chosen structurally,
-# from the order of the variables, so a solution that is regular only in
-# other free variables is not covered. This is common: a segment with
-# only a length, drawn horizontal, has p1.x, p1.y and p2.x pinned, and
-# the length does not depend on p2.y there; a point on a vertical line
-# whose only unknown is the line's far end is another. Pins chosen from
-# the drawing are planned after sk-13a, AUDIT-sk09-laws.md 3). Then
-# there are d > 0 and a level l such that from every drawing within d of
-# x (at every free variable) that agrees with g0 at the pins, solve_l
-# certifies, and x is in its box (so, by solve_unique at that level, x
-# is the geometry it certifies).
-# (Audited 2026-10-14: the first draft was false for two reasons, both
-# fixed in the solver: side conditions were checked only after the
-# precision loop, so a box too wide for one was never retried; and every
-# budget began at 64 bits, where rounding can lose the drawing's detail and
-# certify a neighbouring solution, which levels now skip.)
+# LAW: a regular solution near the drawing is certified. In a complete
+# ordered field F, take a well-formed sketch whose variables cover it and
+# whose kept constraints' constants are dyadic, a drawing g0, and a point
+# x with one entry per variable that equals g0 at the pins, solves the
+# system solved, meets the side conditions of the kept constraints that
+# are not amber strictly (spec/solve.bend: Strict, where a >= 0 side whose
+# variables are all pins may hold with equality; amber sides are
+# certified by their refutations instead), and is a regular point of the
+# system solved in the free variables the solver chose (spec/deriv.bend;
+# the free variables are chosen structurally, from the order of the
+# variables: a segment with only a length, drawn horizontal, has p1.x,
+# p1.y and p2.x pinned, and the length does not depend on p2.y there; pins
+# chosen from the drawing are planned after sk-13a, Q26). Then there are
+# d > 0 and a level l such that from every drawing within d of x (at
+# every free variable) that agrees with g0 at the pins, solve_l certifies,
+# and x is in its box.
 law solve_complete:
   for ~F: O.OField
   for ~R: CR.Complete<F>
@@ -166,12 +245,34 @@ law solve_complete:
   for +sk: SK.Sketch
   for  w: SK.Sketch.wf(sk)
   for  cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}
-  for  dy: {SV.dyadic(sk) == True{} : Bool}
+  for  dy: {SV.dyadic(SV.mark(SV.reds(SO.cls_of(sk)), sk)) == True{} : Bool}
   for +g0: List<&2, S.D>
   for +x: M.Vec(~F)
   for  hl: {M.len(~F, x) == SO.nvars(sk) : Nat}
   for  hp: SV.PinnedAt(~KI.dnum(), ~F, ~H, x, SO.pins_of(sk), g0)
-  for  hz: SK.Zeros(~F, x, SK.Sketch.eqs(SV.mark(SO.red_of(sk), sk)))
-  for  hs: SV.Strict(~F, x, SK.Sketch.sides(SV.mark(SO.red_of(sk), sk)))
-  for  hr: DV.Regular(~F, x, SK.Sketch.eqs(SV.mark(SO.red_of(sk), sk)), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)))
+  for  hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))))
+  for  hs: SV.Strict(~F, x, SK.Sketch.sides(SV.mark(SV.cat(SV.reds(SO.cls_of(sk)), SV.ambers(SO.cls_of(sk))), sk)), SO.pins_of(sk))
+  for  hr: DV.Regular(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)))
   (&d: O.C(F) -> (O.lt(F, O.zero(F), d) & (&l: Nat -> (@g: List<&2, S.D> -> SV.Near(~KI.dnum(), ~F, ~H, SO.nvars(sk), 0n, g, x, d, SO.pins_of(sk), g0) -> ({SO.Out.ok(SO.solve_l(sk, g, l)) == True{} : Bool} & BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g, l)), SO.Out.gr(SO.solve_l(sk, g, l)), x))))))
+
+# LAW: what a refusal means today: if no level certifies, the drawing
+# itself is not a regular solution of the system solved in the solver's
+# free variables (as solve_complete reads it). That is all it says;
+# solve_refusal_explained (sk-13e) is the stronger form.
+law solve_refused:
+  for ~F: O.OField
+  for ~R: CR.Complete<F>
+  for ~H: N.Emb<KI.dnum(), F>
+  for +sk: SK.Sketch
+  for  w: SK.Sketch.wf(sk)
+  for  cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}
+  for  dy: {SV.dyadic(SV.mark(SV.reds(SO.cls_of(sk)), sk)) == True{} : Bool}
+  for +g0: List<&2, S.D>
+  for  hn: @l: Nat -> {SO.Out.ok(SO.solve_l(sk, g0, l)) == False{} : Bool}
+  for +x: M.Vec(~F)
+  for  hx: {x == N.ofkv(~KI.dnum(), ~F, ~H, g0) : M.Vec(~F)}
+  for  hl: {M.len(~F, x) == SO.nvars(sk) : Nat}
+  for  hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))))
+  for  hs: SV.Strict(~F, x, SK.Sketch.sides(SV.mark(SV.cat(SV.reds(SO.cls_of(sk)), SV.ambers(SO.cls_of(sk))), sk)), SO.pins_of(sk))
+  for  hr: DV.Regular(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)))
+  Empty

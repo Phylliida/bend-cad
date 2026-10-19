@@ -8,8 +8,8 @@
 #   here; an instance is left out of the gate: its type names the solve
 #   six times, ~30 s to check).
 # - Two points fixed at (0, 0) plus a distance of 3 between them: the
-#   distance (the fifth constraint, position 4) is red, explained by 5
-#   equations over 4 variables; the rest is certified.
+#   distance (the fifth constraint, position 4) is red, its class Over
+#   (5 equations over 4 variables); the rest is kept and certified.
 # - The circle demo with |PB| = 10, more than |AB| + r = 7: no geometry
 #   exists, and the solver refuses (natively at the full budget too:
 #   proto/solve_run.bend).
@@ -32,6 +32,7 @@ import ../spec/solve.bend as SV
 import ../lib/kinst.bend as KI
 import ../lib/solve.bend as SO
 import ../lib/solvepf.bend as SP
+import ../lib/why.bend as WY
 import ../proto/struct_run.bend as SR
 import ../proto/solve_run.bend as R
 
@@ -54,7 +55,14 @@ def circle_ok() -> {SO.Out.ok(SO.solve(SR.circle(), R.circle_g0())) == True{} : 
 def over_ok() -> {SO.Out.ok(SO.solve(SR.over(), zeros4())) == True{} : Bool}:
   {==}
 
-def over_red() -> {SO.Out.red(SO.solve(SR.over(), zeros4())) == [4n] : List<&2, Nat>}:
+def over_red() -> {SV.reds(SO.Out.cls(SO.solve(SR.over(), zeros4()))) == [4n] : List<&2, Nat>}:
+  {==}
+
+# its class is Over (kind 2), the others Kept (kind 0)
+def over_kind() -> {SV.kind(SV.class_at(SO.Out.cls(SO.solve(SR.over(), zeros4())), 4n)) == 2n : Nat}:
+  {==}
+
+def over_kept() -> {SV.kind(SV.class_at(SO.Out.cls(SO.solve(SR.over(), zeros4())), 3n)) == 0n : Nat}:
   {==}
 
 # refused over two precisions (64 and 96 bits): every precision fails the
@@ -65,7 +73,7 @@ def far_refused() -> {SO.Out.ok(SO.solve_lw(far(), R.circle_g0(), 0n, 2n)) == Fa
 def mid_ok() -> {SO.Out.ok(SO.solve(R.mid(), R.mid_g0())) == True{} : Bool}:
   {==}
 
-def mid_red() -> {SO.Out.red(SO.solve(R.mid(), R.mid_g0())) == [3n] : List<&2, Nat>}:
+def mid_red() -> {SV.reds(SO.Out.cls(SO.solve(R.mid(), R.mid_g0()))) == [3n] : List<&2, Nat>}:
   {==}
 
 def circle_pins() -> {SO.Out.pins(SO.solve(SR.circle(), R.circle_g0())) == [0n, 1n, 2n, 3n] : List<&2, Nat>}:
@@ -73,8 +81,10 @@ def circle_pins() -> {SO.Out.pins(SO.solve(SR.circle(), R.circle_g0())) == [0n, 
 
 # The laws at these sketches
 
-def circle_exists(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>) -> &x: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve(SR.circle(), R.circle_g0())), SO.Out.gr(SO.solve(SR.circle(), R.circle_g0())), x) & SK.Sketch.means(~F, x, SV.mark(SO.Out.red(SO.solve(SR.circle(), R.circle_g0())), SR.circle()))):
+def circle_exists(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>) -> &x: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve(SR.circle(), R.circle_g0())), SO.Out.gr(SO.solve(SR.circle(), R.circle_g0())), x) & SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(SO.solve(SR.circle(), R.circle_g0()))), SR.circle()))):
   SP.solve_exists(~F, ~R, ~H, SR.circle(), R.circle_g0(), 0n, circle_ok())
 
-def over_explained() -> {SV.explained(SR.over(), SO.Out.red(SO.solve(SR.over(), zeros4())), SO.Out.why(SO.solve(SR.over(), zeros4()))) == True{} : Bool}:
-  SP.solve_red(SR.over(), zeros4(), 0n, over_ok())
+# the red stage's witness for it is explained (sk-09's syntactic form,
+# lib/why.bend; sk-13a's Honest replaces it, PLAN-sk13a.md S4)
+def over_explained() -> {WY.explained(SR.over(), SO.red_of(SR.over()), SO.why_of(SR.over())) == True{} : Bool}:
+  {==}

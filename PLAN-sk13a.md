@@ -1,8 +1,8 @@
 # Plan: sk-13a, the degree-0 layer (v5, 2026-10-19)
 
 The statements are in SK13A-REVIEW.md (v5): the answer
-`Out{ok, cls, pins, gc, gr, plan}`, the spec (`spec/_draft13a.bend`,
-`spec/_draft_sketch13a.bend`), and laws 1–11. This file is the order of
+`Out{ok, cls, pins, gc, gr, plan}`, the spec (now `spec/solve.bend` and
+`spec/sketch.bend`), and laws 1–11 (written out in ROADMAP.bend). This file is the order of
 work, what each step proves, and the risks. It replaces PLAN-sk13.md's
 Phase 1; the rest of PLAN-sk13.md stands.
 
@@ -75,7 +75,13 @@ equations). It gives each one exactly one class:
   - The existing solver treats merge equations as ordinary ones (larger
     blocks), so the gate and the regression stay green. Record the
     timings.
-- **S0b, the solve spec:**
+- **S0b, the solve spec:** *done 2026-10-19* (choices recorded in
+  SK13A-REVIEW.md, "As written in ROADMAP"). The interim classes come
+  from sk-09's red stage (`cls_of`); `lib/clspf.bend` proves that their
+  red positions make the same constraints driven as the red list, which
+  carries sk-09's totality and completeness over (`total_now`,
+  `complete_now`). The verdict no longer checks sk-09's `explained`
+  (moved to `lib/why.bend`); the CLI prints the red list ascending.
   - `spec/_draft13a.bend` replaces `spec/solve.bend`.
   - Laws 1–11 go into ROADMAP.bend, written out, with `honest_unique` in
     its typed form; `tools/stmtcheck.py` type-checks them.

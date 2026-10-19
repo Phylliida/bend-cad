@@ -1,4 +1,4 @@
-# HANDOFF — bend-cad (2026-10-18, sk-06 done; sk-09 verified solver built and its laws reviewed; next: sk-13a per PLAN-sk13a.md)
+# HANDOFF — bend-cad (2026-10-19, sk-09 verified solver built; sk-13a S0 done; next: PLAN-sk13a.md S1)
 
 Read first: `DESIGN.md` (v0.9: the plan, Danielle's decisions, §3 spec
 numbers, §4–§5 typed IR, forms and meanings as built), `proto/RESULTS.md`
@@ -195,10 +195,15 @@ laws 1–18), spec `spec/_draft13a.bend` (not wired yet). `lib/qnorm.bend`
 Q29; `Honest` and `honest_unique`) and v5 (one class per constraint,
 honesty stated constraint by constraint, dependence by derivative, Q30),
 after four audits (AUDIT-sk13a-drafts*.md; the fourth found no
-counterexample to `honest_unique`). **Next: PLAN-sk13a.md S0a** (merges as
-equations, on the existing solver), then S0b (the solve spec). No more
-statement audits before building (Danielle, 2026-10-19); proving is the
-audit, and S9 keeps one at the end.
+counterexample to `honest_unique`). No more statement audits before
+building (Danielle, 2026-10-19); proving is the audit, and S9 keeps one
+at the end. **S0 is done (2026-10-19):** merges are equations (S0a: the
+spec, meaning lemmas, wfdec, the page, the regression sketches), and the
+v5 solve spec is in place with laws 1–11 in ROADMAP.bend (S0b: the
+verdict laws proven over the classes; sk-09's totality and completeness
+proven in interim forms, `total_now` and `complete_now`; the other laws
+open and type-checked). **Next: PLAN-sk13a.md S1** (polynomials as
+vectors, reduced normal forms, the non-root lemma).
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);

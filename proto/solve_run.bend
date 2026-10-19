@@ -12,12 +12,19 @@ import ./struct_run.bend as SR
 def shown(xs: List<&2, Nat>) -> String:
   SR.shown(xs)
 
-def showw(+sk: SK.Sketch, ws: List<&2, SV.Why>) -> String:
-  match ws:
+# each red constraint's reason, in order
+def showc(+sk: SK.Sketch, cs: List<&2, SV.Class>) -> String:
+  match cs:
     case Nil{}:
       ""
-    case Con{SV.Why{+j, s, w}, t}:
-      " [its equation " ++ Nat.show(SO.eqlabel(sk, j)) ++ " (eq " ++ Nat.show(j) ++ ") in S {" ++ shown(s) ++ "} over W {" ++ shown(w) ++ "}]" ++ showw(sk, t)
+    case Con{SV.Over{+j, s, w}, t}:
+      " [its equation " ++ Nat.show(SO.eqlabel(sk, j)) ++ " (eq " ++ Nat.show(j) ++ ") in S {" ++ shown(s) ++ "} over W {" ++ shown(w) ++ "}]" ++ showc(sk, t)
+    case Con{SV.Conflict{s}, t}:
+      " [conflicts with {" ++ shown(s) ++ "}]" ++ showc(sk, t)
+    case Con{SV.Kept{ds}, t}:
+      showc(sk, t)
+    case Con{SV.Amber{ds, rs}, t}:
+      showc(sk, t)
 
 def dlen(xs: List<&2, S.D>) -> Nat:
   match xs:
@@ -28,8 +35,8 @@ def dlen(xs: List<&2, S.D>) -> Nat:
 
 def show(+sk: SK.Sketch, o: SO.Out) -> String:
   match o:
-    case SO.Out{ok, red, why, pins, gc, gr, plan}:
-      "certified " ++ Bool.show(ok) ++ ", box of " ++ Nat.show(dlen(gc)) ++ ", pins {" ++ shown(pins) ++ "}, red {" ++ shown(red) ++ "}" ++ showw(sk, why)
+    case SO.Out{ok, +cls, pins, gc, gr, plan}:
+      "certified " ++ Bool.show(ok) ++ ", box of " ++ Nat.show(dlen(gc)) ++ ", pins {" ++ shown(pins) ++ "}, red {" ++ shown(SV.reds(cls)) ++ "}" ++ showc(sk, cls)
 
 def d(n: Nat) -> S.D:
   S.D{S.Z.of_diff(n, 0n), 0n}
