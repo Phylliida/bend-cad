@@ -191,8 +191,13 @@ the layer's proof system (degree 0: constant multipliers, Motzkin form),
 with completeness laws and the semantic claims as proven corollaries; "all
 limits are proved, not just stated". Statements: SK13A-REVIEW.md (v3,
 laws 1–18), spec `spec/_draft13a.bend` (not wired yet). `lib/qnorm.bend`
-(the certificate checker) is done. **Next: PLAN-sk13a.md S0** (Danielle's
-review of v3, a third audit, then wire the spec and laws).
+(the certificate checker) is done. Since then: v4 (merges as equations,
+Q29; `Honest` and `honest_unique`) and v5 (one class per constraint,
+honesty stated constraint by constraint, dependence by derivative, Q30),
+after four audits (AUDIT-sk13a-drafts*.md; the fourth found no
+counterexample to `honest_unique`). **Next: PLAN-sk13a.md S0** (Danielle's
+review of v5, a fifth audit, then S0a merges-as-equations and S0b the
+solve spec).
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);
