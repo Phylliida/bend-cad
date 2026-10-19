@@ -86,7 +86,9 @@ with certificates): the laws are solve_amber, a box-free solve_drop,
 solve_conflict with a support, and solve_deg0; the first layer eliminates
 over all equations (degree 0) and decides side conditions by
 Fourier–Motzkin. Where the bullets below differ, the review document
-wins.
+wins. **Now superseded by PLAN-sk13a.md** (the order of work for v3:
+derivations, completeness laws, semantic corollaries; exact simplex for
+side conditions).
 
 - **The answer** gains one field, `drop`: the dropped equations (in the
   sketch's numbering, `SK.Sketch.eqs(sk)`) with their certificates

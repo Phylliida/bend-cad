@@ -321,9 +321,10 @@ type Why is Data:
   # its equation j lies in the over-determined set s (whose variables are
   # among w), made of its own and solved equations
   Over{j: Nat, s: List<&2, Nat>, w: List<&2, Nat>}
-  # it cannot hold together with the constraints at the positions s, all
-  # kept (solve_conflict); s is empty when it cannot hold at all (a
-  # distance of -5)
+  # it cannot hold together with its support, the constraints at the
+  # positions s: all kept, all before it, each driving an equation
+  # (solve_conflict0 and solve_conflict); s is empty when it cannot hold
+  # at all (a distance of -5)
   Conflict{s: List<&2, Nat>}
 
 # no entry of xs is in ys
@@ -371,13 +372,21 @@ def ceqs(sk: SK.Sketch, c: Nat) -> Nat:
     case SK.Sketch{vs, +es, cs}:
       ceqs.at(es, cs, c)
 
+# each of cs drives an equation
+def has_eqs(+sk: SK.Sketch, cs: List<&2, Nat>) -> Bool:
+  match cs:
+    case Nil{}:
+      True{}
+    case Con{c, t}:
+      band(lt(0n, ceqs(sk, c)), has_eqs(sk, t))
+
 # the reason y explains the constraint at position c
 def why_ok(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, y: Why) -> Bool:
   match y:
     case Over{+j, +s, +w}:
       band(eq(nth(owners(sk), j), c), band(mem(j, s), band(overdet(SK.Sketch.eqs(sk), s, w), clean(owners(sk), red, ds, c, s))))
     case Conflict{+s}:
-      band(lt(0n, ceqs(sk, c)), band(distinct(s), band(below(s, ncons(sk)), band(bnot(mem(c, s)), none_in(s, red)))))
+      band(lt(0n, ceqs(sk, c)), band(distinct(s), band(below(s, c), band(has_eqs(sk, s), none_in(s, red)))))
 
 # each red constraint (rs, in order) is explained by the matching Why,
 # red being the whole list and ds the dropped equations
@@ -409,17 +418,26 @@ def dropped_ok(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>) -> Bool:
 def explained(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, why: List<&2, Why>) -> Bool:
   band(distinct(red), band(dropped_ok(sk, red, ds), explained.go(sk, red, ds, red, why)))
 
-def has_eqs(+sk: SK.Sketch, cs: List<&2, Nat>) -> Bool:
+# every equation of c (from position k) is dropped
+def alldrop.go(own: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +k: Nat) -> Bool:
+  match own:
+    case Nil{}:
+      True{}
+    case Con{o, t}:
+      band(bor(bnot(eq(o, c)), mem(k, ds)), alldrop.go(t, ds, c, 1n+k))
+
+def alldrop(+sk: SK.Sketch, +ds: List<&2, Nat>, cs: List<&2, Nat>) -> Bool:
   match cs:
     case Nil{}:
       True{}
-    case Con{c, t}:
-      band(lt(0n, ceqs(sk, c)), has_eqs(sk, t))
+    case Con{+c, t}:
+      band(alldrop.go(owners(sk), ds, c, 0n), alldrop(sk, ds, t))
 
-# the amber constraints are distinct, kept, and each drives an equation (a
-# merge has none: it is realized by shared variables, not by equations)
-def amber_ok(+sk: SK.Sketch, +red: List<&2, Nat>, +amber: List<&2, Nat>) -> Bool:
-  band(distinct(amber), band(none_in(amber, red), has_eqs(sk, amber)))
+# the amber constraints are distinct, kept, each drives an equation (a
+# merge has none: it is realized by shared variables, not by equations),
+# and all their equations are dropped
+def amber_ok(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +amber: List<&2, Nat>) -> Bool:
+  band(distinct(amber), band(none_in(amber, red), band(has_eqs(sk, amber), alldrop(sk, ds, amber))))
 
 def conflicts.of(c: Nat, y: Why, rest: List<&2, Nat>) -> List<&2, Nat>:
   match y:
@@ -452,6 +470,23 @@ def support.of(+c: Nat, +r: Nat, y: Why, rest: List<&2, Nat>) -> List<&2, Nat>:
     case Conflict{s}:
       support.pick(eq(r, c), s, rest)
 
+def over_at.of(+c: Nat, +j: Nat, +r: Nat, y: Why) -> Bool:
+  match y:
+    case Over{jj, s, w}:
+      band(eq(r, c), eq(jj, j))
+    case Conflict{s}:
+      False{}
+
+# the red constraint c is red as Over, with its equation j
+def over_at(+c: Nat, +j: Nat, red: List<&2, Nat>, why: List<&2, Why>) -> Bool:
+  match red why:
+    case Con{+r, rt} Con{y, yt}:
+      bor(over_at.of(c, j, r, y), over_at(c, j, rt, yt))
+    case Nil{} why:
+      False{}
+    case Con{r, rt} Nil{}:
+      False{}
+
 # the support of the red constraint c's conflict
 def support(+c: Nat, red: List<&2, Nat>, why: List<&2, Why>) -> List<&2, Nat>:
   match red why:
@@ -477,8 +512,14 @@ def unmark(+c: Nat, xs: List<&2, Nat>) -> List<&2, Nat>:
     case Con{+h, t}:
       unmark.go(eq(h, c), h, unmark(c, t))
 
-# Completeness of the first layer
-# -------------------------------
+# Degree-0 derivations: the first layer's proof system
+# ----------------------------------------------------
+# The laws about dropped, amber and conflicting constraints state the
+# derivation itself (a combination with constant coefficients), not only
+# what it implies: an implication from premises that have no solution says
+# nothing, but "this equation is 1 times that one" stays true however the
+# rest of the sketch fails. The semantic laws (solve_drop, solve_amber,
+# solve_conflict) follow from these.
 
 def qlen(xs: List<&2, S.Q>) -> Nat:
   match xs:
@@ -504,6 +545,188 @@ def AllZero(ls: List<&2, S.Q>) -> Data:
       Unit
     case Con{l, t}:
       M.Both({S.Q.num(l) == S.Z0{} : S.Z}, AllZero(t))
+
+def qzero() -> S.Q:
+  S.Q{S.Z0{}, S.XH{}}
+
+def islt(c: Cmp) -> Bool:
+  match c:
+    case LT{}:
+      True{}
+    case EQ{}:
+      False{}
+    case GT{}:
+      False{}
+
+# e1 and e2 are the same polynomial: equal at every rational point (Q is
+# infinite, so this is equality of polynomials, and then they agree in
+# every ordered field)
+def Ident(+e1: E.QExpr, +e2: E.QExpr) -> Type:
+  @x: List<&2, S.Q> -> S.Q.eq(E.qeval(x, e1), E.qeval(x, e2))
+
+# a side condition's expression
+def sexpr(s: SK.Side) -> E.QExpr:
+  match s:
+    case SK.Gt0{e}:
+      e
+    case SK.Ge0{e}:
+      e
+
+def slen(ss: List<&2, SK.Side>) -> Nat:
+  match ss:
+    case Nil{}:
+      0n
+    case Con{h, t}:
+      1n+slen(t)
+
+# m_1 s_1 + ... + m_n s_n, the s_k side conditions' expressions
+def slin(ms: List<&2, S.Q>, ss: List<&2, SK.Side>) -> E.QExpr:
+  match ms ss:
+    case Con{m, mt} Con{h, st}:
+      E.QAdd{E.QMul{E.QCst{m}, sexpr(h)}, slin(mt, st)}
+    case Nil{} ss:
+      E.QCst{qzero()}
+    case Con{m, mt} Nil{}:
+      E.QCst{qzero()}
+
+# the side condition that holds exactly where s fails
+def negate(s: SK.Side) -> SK.Side:
+  match s:
+    case SK.Gt0{e}:
+      SK.Ge0{E.QNeg{e}}
+    case SK.Ge0{e}:
+      SK.Gt0{E.QNeg{e}}
+
+# every entry is >= 0
+def nonneg(ms: List<&2, S.Q>) -> Bool:
+  match ms:
+    case Nil{}:
+      True{}
+    case Con{+m, t}:
+      band(bnot(islt(S.Q.cmp(m, qzero()))), nonneg(t))
+
+# some strict side condition has a positive multiplier
+def strict_pos(ms: List<&2, S.Q>, ss: List<&2, SK.Side>) -> Bool:
+  match ms ss:
+    case Con{+m, mt} Con{SK.Gt0{e}, st}:
+      bor(islt(S.Q.cmp(qzero(), m)), strict_pos(mt, st))
+    case Con{m, mt} Con{SK.Ge0{e}, st}:
+      strict_pos(mt, st)
+    case Nil{} ss:
+      False{}
+    case Con{m, mt} Nil{}:
+      False{}
+
+def iszz(z: S.Z) -> Bool:
+  match z:
+    case S.Z0{}:
+      True{}
+    case S.Zpos{p}:
+      False{}
+    case S.Zneg{p}:
+      False{}
+
+def refok(+ls: List<&2, S.Q>, +ms: List<&2, S.Q>, +k: S.Q, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>) -> Bool:
+  band(eq(qlen(ls), neqs(es)), band(eq(qlen(ms), slen(ss)), band(nonneg(ms), bor(islt(S.Q.cmp(k, qzero())), band(iszz(S.Q.num(k)), strict_pos(ms, ss))))))
+
+# a degree-0 refutation of the equations es and side conditions ss
+# (Motzkin's form): constants l_i (one per equation), m_k >= 0 (one per
+# side condition) and k with
+#   l_1 e_1 + ... + m_1 s_1 + ... = k
+# as polynomials, and k < 0, or k = 0 with m_k > 0 for some strict s_k.
+# Wherever every e_i is 0 and every s_k holds, the left side is >= 0 (> 0
+# in the second case), so no point, in any ordered field, satisfies them
+# all
+def Refutes0(+es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, +ls: List<&2, S.Q>, +ms: List<&2, S.Q>, +k: S.Q) -> Type:
+  {refok(ls, ms, k, es, ss) == True{} : Bool} & Ident(E.QAdd{lin(ls, es), slin(ms, ss)}, E.QCst{k})
+
+# The pieces the derivations are about
+# ------------------------------------
+
+def eqs_of.go(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +cs: List<&2, Nat>, +k: Nat) -> List<&2, E.QExpr>:
+  match es:
+    case Nil{}:
+      Nil{}
+    case Con{e, t}:
+      solved.pick(mem(nth(own, k), cs), e, eqs_of.go(t, own, cs, 1n+k))
+
+# the sketch's equations owned by the constraints at the positions cs, in
+# order
+def eqs_of(+sk: SK.Sketch, +cs: List<&2, Nat>) -> List<&2, E.QExpr>:
+  eqs_of.go(SK.Sketch.eqs(sk), owners(sk), cs, 0n)
+
+def csides.pick(b: Bool, xs: List<&2, SK.Side>, rest: List<&2, SK.Side>) -> List<&2, SK.Side>:
+  match b:
+    case True{}:
+      SK.cats(xs, rest)
+    case False{}:
+      rest
+
+def csides.go(+es: List<&2, SK.Ent>, rs: List<&2, SK.Rec>, +cs: List<&2, Nat>, +i: Nat) -> List<&2, SK.Side>:
+  match rs:
+    case Nil{}:
+      Nil{}
+    case Con{SK.Rec{id, True{}, k}, t}:
+      csides.go(es, t, cs, 1n+i)
+    case Con{SK.Rec{id, False{}, +k}, t}:
+      csides.pick(mem(i, cs), SK.Constraint.sides(es, k), csides.go(es, t, cs, 1n+i))
+
+# the side conditions of the driving constraints at the positions cs, in
+# order
+def csides(sk: SK.Sketch, +cs: List<&2, Nat>) -> List<&2, SK.Side>:
+  match sk:
+    case SK.Sketch{vs, +es, rs}:
+      csides.go(es, rs, cs, 0n)
+
+# every entity's side conditions (a circle's r > 0, an arc's bulge > 0)
+def esides(sk: SK.Sketch) -> List<&2, SK.Side>:
+  match sk:
+    case SK.Sketch{vs, es, rs}:
+      SK.Sketch.sides.ents(es)
+
+def below_solved.go(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +j: Nat, +k: Nat) -> List<&2, E.QExpr>:
+  match es:
+    case Nil{}:
+      Nil{}
+    case Con{e, t}:
+      solved.pick(band(lt(k, j), band(bnot(mem(nth(own, k), red)), bnot(mem(k, ds)))), e, below_solved.go(t, own, red, ds, j, 1n+k))
+
+# the solved equations at positions before j (in Sketch.eqs)
+def below_solved(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +j: Nat) -> List<&2, E.QExpr>:
+  below_solved.go(SK.Sketch.eqs(sk), owners(sk), red, ds, j, 0n)
+
+def kept.pick(b: Bool, i: Nat, rest: List<&2, Nat>) -> List<&2, Nat>:
+  match b:
+    case True{}:
+      Con{i, rest}
+    case False{}:
+      rest
+
+def kept.go(rs: List<&2, SK.Rec>, +red: List<&2, Nat>, +c: Nat, +i: Nat) -> List<&2, Nat>:
+  match rs:
+    case Nil{}:
+      Nil{}
+    case Con{SK.Rec{id, True{}, k}, t}:
+      kept.go(t, red, c, 1n+i)
+    case Con{SK.Rec{id, False{}, k}, t}:
+      kept.pick(band(lt(i, c), bnot(mem(i, red))), i, kept.go(t, red, c, 1n+i))
+
+# the kept (not red), driving constraints at positions before c
+def kept_before(sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat) -> List<&2, Nat>:
+  match sk:
+    case SK.Sketch{vs, es, rs}:
+      kept.go(rs, red, c, 0n)
+
+# the side condition at position i of a list (0 > 0, which never holds,
+# past its end)
+def side_at(ss: List<&2, SK.Side>, i: Nat) -> SK.Side:
+  match ss i:
+    case Nil{} i:
+      SK.Gt0{E.QCst{qzero()}}
+    case Con{h, t} 0n:
+      h
+    case Con{h, t} 1n+m:
+      side_at(t, m)
 
 # A one-to-one matching (for solve_total)
 # ---------------------------------------
@@ -680,9 +903,10 @@ def Near(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, n: Nat, +v: Nat, +g: N.KVec(~
     case 1n+m:
       M.Both(Near.go(~K, ~F, ~H, mem(v, pins), g, x, d, g0, v), Near(~K, ~F, ~H, m, 1n+v, g, x, d, pins, g0))
 
-# a side condition holds strictly at x: e > 0; a variable-free e >= 0 may
-# also hold with equality (balls cannot certify a variable expression at
-# exactly 0)
+# a side condition holds strictly at x: e > 0; an e >= 0 whose variables
+# are all pins may also hold with equality (its ball has radius 0, so it
+# is checked at its exact value; balls cannot certify an expression of a
+# free variable at exactly 0)
 def Strict.ge(~F: O.OField, b: Bool, +x: M.Vec(~F), +e: E.QExpr) -> Data:
   match b:
     case True{}:
@@ -690,11 +914,11 @@ def Strict.ge(~F: O.OField, b: Bool, +x: M.Vec(~F), +e: E.QExpr) -> Data:
     case False{}:
       O.lt(F, O.zero(F), O.eval(~F, x, e))
 
-def Strict(~F: O.OField, +x: M.Vec(~F), ss: List<&2, SK.Side>) -> Data:
+def Strict(~F: O.OField, +x: M.Vec(~F), ss: List<&2, SK.Side>, +pins: List<&2, Nat>) -> Data:
   match ss:
     case Nil{}:
       Unit
     case Con{SK.Gt0{+e}, t}:
-      M.Both(O.lt(F, O.zero(F), O.eval(~F, x, e)), Strict(~F, x, t))
+      M.Both(O.lt(F, O.zero(F), O.eval(~F, x, e)), Strict(~F, x, t, pins))
     case Con{SK.Ge0{+e}, t}:
-      M.Both(Strict.ge(~F, BX.QExpr.within(e, 0n), x, e), Strict(~F, x, t))
+      M.Both(Strict.ge(~F, inside(e, pins), x, e), Strict(~F, x, t, pins))
