@@ -7,13 +7,16 @@
 # (unused indices read as 0). Entities are the drawn geometry, with
 # persistent IDs: a point names its two coordinate variables, a segment its
 # two endpoint points, a circle its center point and radius variable.
-# Merged points (D3) share their variables. Constraints reference existing
+# A merge (coincident, horizontal, vertical, concentric, equal radius) is
+# an equation like any other constraint (D3 as revised 2026-10-19, as Fix
+# was before it: sharing variables is the solver's optimization, not part
+# of what a sketch means). Constraints reference existing
 # entities by ID; the spec resolves each reference (wf_refs checks that it
 # names an entity of the right kind). Each constraint has
 #   eqs:   polynomials over the variables that must vanish (§5),
 #   sides: polynomials that must be positive, or nonnegative (side
 #          conditions, §8.6),
-#   wf:    for merge kinds, the variable sharing that realizes it,
+#   wf:    nothing beyond the references, for every kind so far,
 #   means: its geometric meaning in any ordered field (spec/geom.bend).
 # The meaning lemmas (ROADMAP.bend, DESIGN §5.5) say that, for a well-formed
 # constraint, eqs = 0 and sides > 0 hold exactly when the meaning holds.
@@ -70,7 +73,7 @@ type Ent is Data:
 # exact constants elsewhere (§7).
 
 type Constraint is Data:
-  # merges (D3): realized by shared variables, no equations
+  # merges: equations like any other constraint (D3 as revised, Q29)
   Coincident{a: Nat, b: Nat}
   Horizontal{a: Nat, b: Nat}
   Vertical{a: Nat, b: Nat}
@@ -312,15 +315,15 @@ type Side is Data:
 def Constraint.eqs(+es: List<&2, Ent>, +k: Constraint) -> List<&2, E.QExpr>:
   match k:
     case Coincident{a, b}:
-      []
+      [E.QSub{var(Pt.x(pt(es, a))), var(Pt.x(pt(es, b)))}, E.QSub{var(Pt.y(pt(es, a))), var(Pt.y(pt(es, b)))}]
     case Horizontal{a, b}:
-      []
+      [E.QSub{var(Pt.y(pt(es, a))), var(Pt.y(pt(es, b)))}]
     case Vertical{a, b}:
-      []
+      [E.QSub{var(Pt.x(pt(es, a))), var(Pt.x(pt(es, b)))}]
     case Concentric{a, b}:
-      []
+      [E.QSub{var(Pt.x(Circ.c(circ(es, a)))), var(Pt.x(Circ.c(circ(es, b))))}, E.QSub{var(Pt.y(Circ.c(circ(es, a)))), var(Pt.y(Circ.c(circ(es, b))))}]
     case EqualRadius{a, b}:
-      []
+      [E.QSub{var(Circ.r(circ(es, a))), var(Circ.r(circ(es, b)))}]
     case Fix{v, c}:
       [E.QSub{var(v), E.QCst{c}}]
     case Distance{p, q, d}:
@@ -372,21 +375,10 @@ def Constraint.sides(+es: List<&2, Ent>, +k: Constraint) -> List<&2, Side>:
     case _:
       []
 
-# Merge kinds are realized by shared variables (D3)
+# No kind asks more than its references (merges were realized by shared
+# variables until D3 was revised, 2026-10-19; they are equations now)
 def Constraint.wf(+es: List<&2, Ent>, +k: Constraint) -> Type:
-  match k:
-    case Coincident{a, b}:
-      {pt(es, a) == pt(es, b) : Pt}
-    case Horizontal{a, b}:
-      {Pt.y(pt(es, a)) == Pt.y(pt(es, b)) : Nat}
-    case Vertical{a, b}:
-      {Pt.x(pt(es, a)) == Pt.x(pt(es, b)) : Nat}
-    case Concentric{a, b}:
-      {Circ.c(circ(es, a)) == Circ.c(circ(es, b)) : Pt}
-    case EqualRadius{a, b}:
-      {Circ.r(circ(es, a)) == Circ.r(circ(es, b)) : Nat}
-    case _:
-      Unit
+  Unit
 
 # every reference names an entity of the right kind
 def Constraint.wf_refs(+es: List<&2, Ent>, +k: Constraint) -> Type:
@@ -624,7 +616,7 @@ def Sketch.wf.cons(+es: List<&2, Ent>, cs: List<&2, Rec>) -> Type:
     case Con{Rec{id, dr, +k}, t}:
       Constraint.wf_refs(es, k) & (Constraint.wf(es, k) & Sketch.wf.cons(es, t))
 
-# every reference resolves and every merge is realized
+# every reference resolves
 def Sketch.wf(sk: Sketch) -> Type:
   match sk:
     case Sketch{vs, +es, cs}:

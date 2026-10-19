@@ -10,49 +10,49 @@ import ../spec/geom.bend as G
 import ../spec/sketch.bend as K
 
 def H.Coincident(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Pt, +b: K.Pt) -> Type:
-  K.Zeros(~F, env, []) & K.Sides(~F, env, [])
+  K.Zeros(~F, env, [E.QSub{K.var(K.Pt.x(a)), K.var(K.Pt.x(b))}, E.QSub{K.var(K.Pt.y(a)), K.var(K.Pt.y(b))}]) & K.Sides(~F, env, [])
 
 def M.Coincident(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Pt, +b: K.Pt) -> Type:
   {K.at(~F, env, a) == K.at(~F, env, b) : G.Vec(~F)}
 
 def W.Coincident(+a: K.Pt, +b: K.Pt) -> Type:
-  {a == b : K.Pt}
+  Unit
 
 def H.Horizontal(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Pt, +b: K.Pt) -> Type:
-  K.Zeros(~F, env, []) & K.Sides(~F, env, [])
+  K.Zeros(~F, env, [E.QSub{K.var(K.Pt.y(a)), K.var(K.Pt.y(b))}]) & K.Sides(~F, env, [])
 
 def M.Horizontal(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Pt, +b: K.Pt) -> Type:
   {G.y(~F, K.at(~F, env, a)) == G.y(~F, K.at(~F, env, b)) : O.C(F)}
 
 def W.Horizontal(+a: K.Pt, +b: K.Pt) -> Type:
-  {K.Pt.y(a) == K.Pt.y(b) : Nat}
+  Unit
 
 def H.Vertical(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Pt, +b: K.Pt) -> Type:
-  K.Zeros(~F, env, []) & K.Sides(~F, env, [])
+  K.Zeros(~F, env, [E.QSub{K.var(K.Pt.x(a)), K.var(K.Pt.x(b))}]) & K.Sides(~F, env, [])
 
 def M.Vertical(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Pt, +b: K.Pt) -> Type:
   {G.x(~F, K.at(~F, env, a)) == G.x(~F, K.at(~F, env, b)) : O.C(F)}
 
 def W.Vertical(+a: K.Pt, +b: K.Pt) -> Type:
-  {K.Pt.x(a) == K.Pt.x(b) : Nat}
+  Unit
 
 def H.Concentric(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Circ, +b: K.Circ) -> Type:
-  K.Zeros(~F, env, []) & K.Sides(~F, env, [])
+  K.Zeros(~F, env, [E.QSub{K.var(K.Pt.x(K.Circ.c(a))), K.var(K.Pt.x(K.Circ.c(b)))}, E.QSub{K.var(K.Pt.y(K.Circ.c(a))), K.var(K.Pt.y(K.Circ.c(b)))}]) & K.Sides(~F, env, [])
 
 def M.Concentric(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Circ, +b: K.Circ) -> Type:
   {K.at(~F, env, K.Circ.c(a)) == K.at(~F, env, K.Circ.c(b)) : G.Vec(~F)}
 
 def W.Concentric(+a: K.Circ, +b: K.Circ) -> Type:
-  {K.Circ.c(a) == K.Circ.c(b) : K.Pt}
+  Unit
 
 def H.EqualRadius(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Circ, +b: K.Circ) -> Type:
-  K.Zeros(~F, env, []) & K.Sides(~F, env, [])
+  K.Zeros(~F, env, [E.QSub{K.var(K.Circ.r(a)), K.var(K.Circ.r(b))}]) & K.Sides(~F, env, [])
 
 def M.EqualRadius(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Circ, +b: K.Circ) -> Type:
   {O.lookup(~F, env, K.Circ.r(a)) == O.lookup(~F, env, K.Circ.r(b)) : O.C(F)}
 
 def W.EqualRadius(+a: K.Circ, +b: K.Circ) -> Type:
-  {K.Circ.r(a) == K.Circ.r(b) : Nat}
+  Unit
 
 def H.Fix(~F: O.OField, +env: List<&2, O.C(F)>, +v: Nat, +c: S.Q) -> Type:
   K.Zeros(~F, env, [E.QSub{K.var(v), E.QCst{c}}]) & K.Sides(~F, env, [])

@@ -344,16 +344,44 @@ def two(+e1: E.QExpr, +e2: E.QExpr, +n: Nat, +h1: {w(e1, n) == True{} : Bool}, +
 # each constraint's equations are within n
 def cw(+es: List<&2, SK.Ent>, k: SK.Constraint, +n: Nat, +hk: {BX.Constraint.within(k, n) == True{} : Bool}, +hr: {WF.crefs(es, k) == True{} : Bool}, +hw: {BX.Sketch.within.ents(es, n) == True{} : Bool}, +he: {WF.ents(es, es) == True{} : Bool}) -> {ewithin(SK.Constraint.eqs(es, k), n) == True{} : Bool}:
   match k:
-    case SK.Coincident{a, b}:
-      {==}
-    case SK.Horizontal{a, b}:
-      {==}
-    case SK.Vertical{a, b}:
-      {==}
-    case SK.Concentric{a, b}:
-      {==}
-    case SK.EqualRadius{a, b}:
-      {==}
+    case SK.Coincident{+a, +b}:
+      +pa = ptok(es, a, n, KA.band_l(WF.ispt(es, a), WF.ispt(es, b), hr), hw)
+      +pb = ptok(es, b, n, KA.band_r(WF.ispt(es, a), WF.ispt(es, b), hr), hw)
+      +xa = SK.var(SK.Pt.x(SK.pt(es, a)))
+      +xb = SK.var(SK.Pt.x(SK.pt(es, b)))
+      +ya = SK.var(SK.Pt.y(SK.pt(es, a)))
+      +yb = SK.var(SK.Pt.y(SK.pt(es, b)))
+      two(E.QSub{xa, xb}, E.QSub{ya, yb}, n, w2(xa, xb, n, pt_x(SK.pt(es, a), n, pa), pt_x(SK.pt(es, b), n, pb)), w2(ya, yb, n, pt_y(SK.pt(es, a), n, pa), pt_y(SK.pt(es, b), n, pb)))
+    case SK.Horizontal{+a, +b}:
+      +pa = ptok(es, a, n, KA.band_l(WF.ispt(es, a), WF.ispt(es, b), hr), hw)
+      +pb = ptok(es, b, n, KA.band_r(WF.ispt(es, a), WF.ispt(es, b), hr), hw)
+      +ya = SK.var(SK.Pt.y(SK.pt(es, a)))
+      +yb = SK.var(SK.Pt.y(SK.pt(es, b)))
+      one(E.QSub{ya, yb}, n, w2(ya, yb, n, pt_y(SK.pt(es, a), n, pa), pt_y(SK.pt(es, b), n, pb)))
+    case SK.Vertical{+a, +b}:
+      +pa = ptok(es, a, n, KA.band_l(WF.ispt(es, a), WF.ispt(es, b), hr), hw)
+      +pb = ptok(es, b, n, KA.band_r(WF.ispt(es, a), WF.ispt(es, b), hr), hw)
+      +xa = SK.var(SK.Pt.x(SK.pt(es, a)))
+      +xb = SK.var(SK.Pt.x(SK.pt(es, b)))
+      one(E.QSub{xa, xb}, n, w2(xa, xb, n, pt_x(SK.pt(es, a), n, pa), pt_x(SK.pt(es, b), n, pb)))
+    case SK.Concentric{+a, +b}:
+      +ca = circok(es, a, n, KA.band_l(WF.iscirc(es, a), WF.iscirc(es, b), hr), hw, he)
+      +cb = circok(es, b, n, KA.band_r(WF.iscirc(es, a), WF.iscirc(es, b), hr), hw, he)
+      +pa = SK.Circ.c(SK.circ(es, a))
+      +pb = SK.Circ.c(SK.circ(es, b))
+      +ia = and_l(ptin(pa, n), BX.lt(SK.Circ.r(SK.circ(es, a)), n), ca)
+      +ib = and_l(ptin(pb, n), BX.lt(SK.Circ.r(SK.circ(es, b)), n), cb)
+      +xa = SK.var(SK.Pt.x(pa))
+      +xb = SK.var(SK.Pt.x(pb))
+      +ya = SK.var(SK.Pt.y(pa))
+      +yb = SK.var(SK.Pt.y(pb))
+      two(E.QSub{xa, xb}, E.QSub{ya, yb}, n, w2(xa, xb, n, pt_x(pa, n, ia), pt_x(pb, n, ib)), w2(ya, yb, n, pt_y(pa, n, ia), pt_y(pb, n, ib)))
+    case SK.EqualRadius{+a, +b}:
+      +ca = circok(es, a, n, KA.band_l(WF.iscirc(es, a), WF.iscirc(es, b), hr), hw, he)
+      +cb = circok(es, b, n, KA.band_r(WF.iscirc(es, a), WF.iscirc(es, b), hr), hw, he)
+      +ra = SK.var(SK.Circ.r(SK.circ(es, a)))
+      +rb = SK.var(SK.Circ.r(SK.circ(es, b)))
+      one(E.QSub{ra, rb}, n, w2(ra, rb, n, and_r(ptin(SK.Circ.c(SK.circ(es, a)), n), BX.lt(SK.Circ.r(SK.circ(es, a)), n), ca), and_r(ptin(SK.Circ.c(SK.circ(es, b)), n), BX.lt(SK.Circ.r(SK.circ(es, b)), n), cb)))
     case SK.Fix{+v, +c}:
       one(E.QSub{SK.var(v), E.QCst{c}}, n, and_i(BX.lt(v, n), True{}, hk, {==}))
     case SK.Distance{+p, +q, +d}:
@@ -452,9 +480,9 @@ def eqs_go(+es: List<&2, SK.Ent>, cs: List<&2, SK.Rec>, +n: Nat, +hc: {BX.Sketch
     case Nil{}:
       {==}
     case Con{SK.Rec{id, True{}, +k}, +t}:
-      eqs_go(es, t, n, and_r(BX.Constraint.within(k, n), BX.Sketch.within.cons(t, n), hc), KA.band_r(WF.cmerge(es, k), WF.cons(es, t), KA.band_r(WF.crefs(es, k), KA.band(WF.cmerge(es, k), WF.cons(es, t)), hr)), hw, he)
+      eqs_go(es, t, n, and_r(BX.Constraint.within(k, n), BX.Sketch.within.cons(t, n), hc), KA.band_r(WF.crefs(es, k), WF.cons(es, t), hr), hw, he)
     case Con{SK.Rec{id, False{}, +k}, +t}:
-      ewithin_cat(SK.Constraint.eqs(es, k), SK.Sketch.eqs.go(es, t), n, cw(es, k, n, and_l(BX.Constraint.within(k, n), BX.Sketch.within.cons(t, n), hc), KA.band_l(WF.crefs(es, k), KA.band(WF.cmerge(es, k), WF.cons(es, t)), hr), hw, he), eqs_go(es, t, n, and_r(BX.Constraint.within(k, n), BX.Sketch.within.cons(t, n), hc), KA.band_r(WF.cmerge(es, k), WF.cons(es, t), KA.band_r(WF.crefs(es, k), KA.band(WF.cmerge(es, k), WF.cons(es, t)), hr)), hw, he))
+      ewithin_cat(SK.Constraint.eqs(es, k), SK.Sketch.eqs.go(es, t), n, cw(es, k, n, and_l(BX.Constraint.within(k, n), BX.Sketch.within.cons(t, n), hc), KA.band_l(WF.crefs(es, k), WF.cons(es, t), hr), hw, he), eqs_go(es, t, n, and_r(BX.Constraint.within(k, n), BX.Sketch.within.cons(t, n), hc), KA.band_r(WF.crefs(es, k), WF.cons(es, t), hr), hw, he))
 
 # a covered sketch passing the check: its adjacency lists are below n
 def cov(sk: SK.Sketch, +n: Nat, +hcov: {BX.Sketch.within(sk, n) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}) -> {D.adjb(ST.adj(SK.Sketch.eqs(sk)), n) == True{} : Bool}:

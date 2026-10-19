@@ -717,9 +717,10 @@ law big_mul_wf:
 # lives), for every assignment env of values to the variables: a
 # constraint's exact equations vanish and its side conditions are positive
 # exactly when it means what it says (K.Constraint.means, one case per kind,
-# in the vocabulary of spec/geom.bend). Merge kinds need their variable
-# sharing (wf). F is a template parameter: the proofs see its operations
-# only through the ordered-field axioms (spec/field.bend).
+# in the vocabulary of spec/geom.bend). Merges are equations like any other
+# kind (D3 as revised), so wf asks nothing beyond the references. F is a
+# template parameter: the proofs see its operations only through the
+# ordered-field axioms (spec/field.bend).
 
 # LAW: the exact form implies the meaning
 law means_sound:

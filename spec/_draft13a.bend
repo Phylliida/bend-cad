@@ -32,7 +32,7 @@ import ./ring.bend as E
 import ./field.bend as O
 import ./mat.bend as M
 import ./knum.bend as N
-import ./_draft_sketch13a.bend as SK
+import ./sketch.bend as SK
 import ./box.bend as BX
 import ./deriv.bend as DV
 

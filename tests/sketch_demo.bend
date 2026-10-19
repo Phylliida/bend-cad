@@ -29,6 +29,8 @@ def sg(id: Nat, p: Nat, q: Nat) -> K.Ent:
 
 # Variables: 0 Ax = Cx, 1 Ay = By = My, 2 Bx = Dx, 3 Cy = Dy, 4 Mx, 5 Px,
 # 6 Py = Qy, 7 Qx, 8 Ex, 9 Ey, 10 the radius, 11 the aux length of AB.
+# The merged points share variables here, which a sketch may still do: the
+# merges' equations then read x - x = 0 and hold.
 # Points 0 A, 1 B, 2 C, 3 D, 4 M, 5 P, 6 Q, 7 E; segments 10 AB, 11 CD,
 # 12 AC, 13 AE, 14 AM, 15 Z = AA; circle 20 about A.
 def ents() -> List<&2, K.Ent>:
@@ -121,7 +123,13 @@ def reversed() -> {ok(good(), [K.HDistance{1n, 0n, c(4n)}]) == False{} : Bool}:
 def refs_ok() -> K.Constraint.wf_refs(ents(), K.Symmetric{5n, 6n, 12n}):
   ({==}, ({==}, {==}))
 
+# Merges are equations (D3 as revised): they ask nothing beyond their
+# references, and one between points that differ fails (P is at height 1,
+# E at height 4)
 def merge_ok() -> K.Constraint.wf(ents(), K.Horizontal{0n, 1n}):
+  Unit{}
+
+def merge_fails() -> {ok(good(), [K.Horizontal{5n, 7n}]) == False{} : Bool}:
   {==}
 
 # a segment id is not a point

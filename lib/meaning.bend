@@ -110,45 +110,62 @@ def dx(~F: O.OField, +env: List<&2, O.C(F)>, a: Nat, b: Nat) -> O.C(F):
 
 # Merges
 # ------
+# Equations like any other kind (D3 as revised, Q29): coordinate differences.
+
+# a point equality as its coordinate differences
+def pt_zeros(~F: O.OField, +ax: O.C(F), +ay: O.C(F), +bx: O.C(F), +by: O.C(F), +h: {G.V2{ax, ay} == G.V2{bx, by} : G.Vec(~F)}) -> K.Both({O.sub(~F, ax, bx) == O.zero(F) : O.C(F)}, K.Both({O.sub(~F, ay, by) == O.zero(F) : O.C(F)}, Unit)):
+  (FO.sub_of_eq(~F, ax, bx, x_eq(~F, ax, ay, bx, by, h)), (FO.sub_of_eq(~F, ay, by, y_eq(~F, ax, ay, bx, by, h)), Unit{}))
 
 def Coincident.sound(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Pt, +b: K.Pt, w: MF.W.Coincident(a, b), h: MF.H.Coincident(~F, env, a, b)) -> MF.M.Coincident(~F, env, a, b):
-  %w : {K.at(~F, env, a) == K.at(~F, env, _) : G.Vec(~F)}
-  {==}
+  match a b:
+    case K.Pt{+ax, +ay} K.Pt{+bx, +by}:
+      ((hx, (hy, u1)), u2) = h
+      v2_eq(~F, O.lookup(~F, env, ax), O.lookup(~F, env, ay), O.lookup(~F, env, bx), O.lookup(~F, env, by), FO.eq_of_sub(~F, O.lookup(~F, env, ax), O.lookup(~F, env, bx), hx), FO.eq_of_sub(~F, O.lookup(~F, env, ay), O.lookup(~F, env, by), hy))
 
 def Coincident.complete(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Pt, +b: K.Pt, h: MF.M.Coincident(~F, env, a, b)) -> MF.H.Coincident(~F, env, a, b):
-  (Unit{}, Unit{})
+  match a b:
+    case K.Pt{+ax, +ay} K.Pt{+bx, +by}:
+      (pt_zeros(~F, O.lookup(~F, env, ax), O.lookup(~F, env, ay), O.lookup(~F, env, bx), O.lookup(~F, env, by), h), Unit{})
 
 def Horizontal.sound(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Pt, +b: K.Pt, w: MF.W.Horizontal(a, b), h: MF.H.Horizontal(~F, env, a, b)) -> MF.M.Horizontal(~F, env, a, b):
   match a b:
-    case K.Pt{ax, ay} K.Pt{bx, by}:
-      %w : {O.lookup(~F, env, ay) == O.lookup(~F, env, _) : O.C(F)}
-      {==}
+    case K.Pt{ax, +ay} K.Pt{bx, +by}:
+      ((hz, u1), u2) = h
+      FO.eq_of_sub(~F, O.lookup(~F, env, ay), O.lookup(~F, env, by), hz)
 
 def Horizontal.complete(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Pt, +b: K.Pt, h: MF.M.Horizontal(~F, env, a, b)) -> MF.H.Horizontal(~F, env, a, b):
-  (Unit{}, Unit{})
+  match a b:
+    case K.Pt{ax, +ay} K.Pt{bx, +by}:
+      ((FO.sub_of_eq(~F, O.lookup(~F, env, ay), O.lookup(~F, env, by), h), Unit{}), Unit{})
 
 def Vertical.sound(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Pt, +b: K.Pt, w: MF.W.Vertical(a, b), h: MF.H.Vertical(~F, env, a, b)) -> MF.M.Vertical(~F, env, a, b):
   match a b:
-    case K.Pt{ax, ay} K.Pt{bx, by}:
-      %w : {O.lookup(~F, env, ax) == O.lookup(~F, env, _) : O.C(F)}
-      {==}
+    case K.Pt{+ax, ay} K.Pt{+bx, by}:
+      ((hz, u1), u2) = h
+      FO.eq_of_sub(~F, O.lookup(~F, env, ax), O.lookup(~F, env, bx), hz)
 
 def Vertical.complete(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Pt, +b: K.Pt, h: MF.M.Vertical(~F, env, a, b)) -> MF.H.Vertical(~F, env, a, b):
-  (Unit{}, Unit{})
+  match a b:
+    case K.Pt{+ax, ay} K.Pt{+bx, by}:
+      ((FO.sub_of_eq(~F, O.lookup(~F, env, ax), O.lookup(~F, env, bx), h), Unit{}), Unit{})
 
 def Concentric.sound(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Circ, +b: K.Circ, w: MF.W.Concentric(a, b), h: MF.H.Concentric(~F, env, a, b)) -> MF.M.Concentric(~F, env, a, b):
-  %w : {K.at(~F, env, K.Circ.c(a)) == K.at(~F, env, _) : G.Vec(~F)}
-  {==}
+  match a b:
+    case K.Circ{K.Pt{+ax, +ay}, ar} K.Circ{K.Pt{+bx, +by}, br}:
+      ((hx, (hy, u1)), u2) = h
+      v2_eq(~F, O.lookup(~F, env, ax), O.lookup(~F, env, ay), O.lookup(~F, env, bx), O.lookup(~F, env, by), FO.eq_of_sub(~F, O.lookup(~F, env, ax), O.lookup(~F, env, bx), hx), FO.eq_of_sub(~F, O.lookup(~F, env, ay), O.lookup(~F, env, by), hy))
 
 def Concentric.complete(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Circ, +b: K.Circ, h: MF.M.Concentric(~F, env, a, b)) -> MF.H.Concentric(~F, env, a, b):
-  (Unit{}, Unit{})
+  match a b:
+    case K.Circ{K.Pt{+ax, +ay}, ar} K.Circ{K.Pt{+bx, +by}, br}:
+      (pt_zeros(~F, O.lookup(~F, env, ax), O.lookup(~F, env, ay), O.lookup(~F, env, bx), O.lookup(~F, env, by), h), Unit{})
 
 def EqualRadius.sound(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Circ, +b: K.Circ, w: MF.W.EqualRadius(a, b), h: MF.H.EqualRadius(~F, env, a, b)) -> MF.M.EqualRadius(~F, env, a, b):
-  %w : {O.lookup(~F, env, K.Circ.r(a)) == O.lookup(~F, env, _) : O.C(F)}
-  {==}
+  ((hz, u1), u2) = h
+  FO.eq_of_sub(~F, O.lookup(~F, env, K.Circ.r(a)), O.lookup(~F, env, K.Circ.r(b)), hz)
 
 def EqualRadius.complete(~F: O.OField, +env: List<&2, O.C(F)>, +a: K.Circ, +b: K.Circ, h: MF.M.EqualRadius(~F, env, a, b)) -> MF.H.EqualRadius(~F, env, a, b):
-  (Unit{}, Unit{})
+  ((FO.sub_of_eq(~F, O.lookup(~F, env, K.Circ.r(a)), O.lookup(~F, env, K.Circ.r(b)), h), Unit{}), Unit{})
 
 # Fix and dimensions
 # ------------------

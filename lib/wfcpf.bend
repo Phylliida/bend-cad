@@ -20,11 +20,6 @@ def ktriple(+a: Bool, +b: Bool, +c: Bool, h: {a == True{} : Bool} & ({b == True{
   (x, yz) = h
   KA.band_i(a, KA.band(b, c), x, kpair(b, c, yz))
 
-def pteq_refl(p: SK.Pt) -> {WF.pteq(p, p) == True{} : Bool}:
-  match p:
-    case SK.Pt{+x, +y}:
-      KA.band_i(KA.nateq(x, x), KA.nateq(y, y), KA.nateq_refl(x), KA.nateq_refl(y))
-
 # Entities
 # --------
 
@@ -93,56 +88,9 @@ def crefs_dec(+es: List<&2, SK.Ent>, k: SK.Constraint, h: SK.Constraint.wf_refs(
     case SK.Symmetric{+p, +q, +a}:
       ktriple(WF.ispt(es, p), WF.ispt(es, q), WF.isseg(es, a), h)
 
-def ptq(+p: SK.Pt, +q: SK.Pt, h: {p == q : SK.Pt}) -> {WF.pteq(p, q) == True{} : Bool}:
-  %h : {WF.pteq(p, _) == True{} : Bool}
-  pteq_refl(p)
-
-def cmerge_dec(+es: List<&2, SK.Ent>, k: SK.Constraint, h: SK.Constraint.wf(es, k)) -> {WF.cmerge(es, k) == True{} : Bool}:
-  match k:
-    case SK.Coincident{+a, +b}:
-      ptq(SK.pt(es, a), SK.pt(es, b), h)
-    case SK.Horizontal{+a, +b}:
-      KA.nateq_of(SK.Pt.y(SK.pt(es, a)), SK.Pt.y(SK.pt(es, b)), h)
-    case SK.Vertical{+a, +b}:
-      KA.nateq_of(SK.Pt.x(SK.pt(es, a)), SK.Pt.x(SK.pt(es, b)), h)
-    case SK.Concentric{+a, +b}:
-      ptq(SK.Circ.c(SK.circ(es, a)), SK.Circ.c(SK.circ(es, b)), h)
-    case SK.EqualRadius{+a, +b}:
-      KA.nateq_of(SK.Circ.r(SK.circ(es, a)), SK.Circ.r(SK.circ(es, b)), h)
-    case SK.Fix{v, c}:
-      {==}
-    case SK.Distance{p, q, d}:
-      {==}
-    case SK.HDistance{p, q, d}:
-      {==}
-    case SK.VDistance{p, q, d}:
-      {==}
-    case SK.Radius{c, d}:
-      {==}
-    case SK.Diameter{c, d}:
-      {==}
-    case SK.LineDistance{p, a, rev, d, l}:
-      {==}
-    case SK.Angle{a, ra, b, rb, c, s}:
-      {==}
-    case SK.EqualLength{a, b}:
-      {==}
-    case SK.Perpendicular{a, b}:
-      {==}
-    case SK.Parallel{a, b}:
-      {==}
-    case SK.OnLine{p, a}:
-      {==}
-    case SK.OnCircle{p, c}:
-      {==}
-    case SK.Midpoint{m, a}:
-      {==}
-    case SK.Symmetric{p, q, a}:
-      {==}
-
-def cons_dec.go(+es: List<&2, SK.Ent>, +k: SK.Constraint, +t: List<&2, SK.Rec>, h: SK.Constraint.wf(es, k) & SK.Sketch.wf.cons(es, t), ih: SK.Sketch.wf.cons(es, t) -> {WF.cons(es, t) == True{} : Bool}) -> {KA.band(WF.cmerge(es, k), WF.cons(es, t)) == True{} : Bool}:
+def cons_dec.go(+es: List<&2, SK.Ent>, +k: SK.Constraint, +t: List<&2, SK.Rec>, h: SK.Constraint.wf(es, k) & SK.Sketch.wf.cons(es, t), ih: SK.Sketch.wf.cons(es, t) -> {WF.cons(es, t) == True{} : Bool}) -> {WF.cons(es, t) == True{} : Bool}:
   (a, b) = h
-  KA.band_i(WF.cmerge(es, k), WF.cons(es, t), cmerge_dec(es, k, a), ih(b))
+  ih(b)
 
 def cons_dec(+es: List<&2, SK.Ent>, cs: List<&2, SK.Rec>, h: SK.Sketch.wf.cons(es, cs)) -> {WF.cons(es, cs) == True{} : Bool}:
   match cs:
@@ -150,7 +98,7 @@ def cons_dec(+es: List<&2, SK.Ent>, cs: List<&2, SK.Rec>, h: SK.Sketch.wf.cons(e
       {==}
     case Con{SK.Rec{id, dr, +k}, +t}:
       (a, bc) = h
-      KA.band_i(WF.crefs(es, k), KA.band(WF.cmerge(es, k), WF.cons(es, t)), crefs_dec(es, k, a), cons_dec.go(es, k, t, bc, x => cons_dec(es, t, x)))
+      KA.band_i(WF.crefs(es, k), WF.cons(es, t), crefs_dec(es, k, a), cons_dec.go(es, k, t, bc, x => cons_dec(es, t, x)))
 
 # a well-formed sketch passes the check
 def wf_dec_ok(sk: SK.Sketch, h: SK.Sketch.wf(sk)) -> {WF.wf_dec(sk) == True{} : Bool}:
@@ -167,7 +115,7 @@ def mark_cons(+es: List<&2, SK.Ent>, +red: List<&2, Nat>, cs: List<&2, SK.Rec>, 
     case Nil{}:
       {==}
     case Con{SK.Rec{id, dr, +k}, +t}:
-      %Equal.sym(Bool, WF.cons(es, SV.mark.cons(red, t, 1n+i)), WF.cons(es, t), mark_cons(es, red, t, 1n+i)) : {KA.band(WF.crefs(es, k), KA.band(WF.cmerge(es, k), _)) == KA.band(WF.crefs(es, k), KA.band(WF.cmerge(es, k), WF.cons(es, t))) : Bool}
+      %Equal.sym(Bool, WF.cons(es, SV.mark.cons(red, t, 1n+i)), WF.cons(es, t), mark_cons(es, red, t, 1n+i)) : {KA.band(WF.crefs(es, k), _) == KA.band(WF.crefs(es, k), WF.cons(es, t)) : Bool}
       {==}
 
 # making constraints driven keeps a sketch passing the check
