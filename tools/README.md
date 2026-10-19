@@ -27,6 +27,7 @@ the checker verifies the output.
 | `lib/locpf.bend` | `python3 tools/expand.py tools/drafts/locpf.draft lib/locpf.bend` |
 | `lib/pblkpf.bend` | `python3 tools/expand.py tools/drafts/pblkpf.draft lib/pblkpf.bend` |
 | `lib/completepf.bend` | `python3 tools/expand.py tools/drafts/completepf.draft lib/completepf.bend` |
+| `lib/qnorm.bend` | `python3 tools/expand.py tools/drafts/qnorm.draft lib/qnorm.bend` |
 
 `@MACRO NAME text` (a line) makes every `$NAME` below stand for `text`
 (textual, longest names first, macros may use macros): long hypothesis lists
