@@ -43,8 +43,11 @@ equations). It gives each one exactly one class:
 ## Steps
 
 ### S0. Statements settled; merges as equations wired
-- **Review.** Danielle reviews SK13A-REVIEW.md v5, then a fifth audit runs
-  on it. It also checks that v5 is equivalent to v4.
+- **No further statement audits** (Danielle, 2026-10-19: four rounds were
+  enough; the fourth found no counterexample to `honest_unique`, and
+  proving is the stronger audit). Build on v5. A spec problem found while
+  proving gets fixed in SK13A-REVIEW.md with a note, and the S9 audit
+  checks the proven statements at the end.
 - **S0a, merges as equations (Q29):**
   - `spec/_draft_sketch13a.bend` replaces `spec/sketch.bend`.
   - The merge kinds' meaning lemmas are re-proven (`lib/meaning.bend`,

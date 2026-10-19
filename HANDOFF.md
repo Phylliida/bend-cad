@@ -195,9 +195,10 @@ laws 1–18), spec `spec/_draft13a.bend` (not wired yet). `lib/qnorm.bend`
 Q29; `Honest` and `honest_unique`) and v5 (one class per constraint,
 honesty stated constraint by constraint, dependence by derivative, Q30),
 after four audits (AUDIT-sk13a-drafts*.md; the fourth found no
-counterexample to `honest_unique`). **Next: PLAN-sk13a.md S0** (Danielle's
-review of v5, a fifth audit, then S0a merges-as-equations and S0b the
-solve spec).
+counterexample to `honest_unique`). **Next: PLAN-sk13a.md S0a** (merges as
+equations, on the existing solver), then S0b (the solve spec). No more
+statement audits before building (Danielle, 2026-10-19); proving is the
+audit, and S9 keeps one at the end.
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);
