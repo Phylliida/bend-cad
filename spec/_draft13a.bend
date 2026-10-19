@@ -1,24 +1,23 @@
-# bend-cad spec: what the solver's answers mean (DESIGN §10.2). Trusted;
-# DRAFT FOR REVIEW with the solve_* laws in ROADMAP.bend.
+# bend-cad spec: what the solver's answers mean (DESIGN §10.2, §8.11).
+# Trusted; DRAFT FOR REVIEW (sk-13a v4, SK13A-REVIEW.md) with the solve_*
+# laws in ROADMAP.bend.
 #
-# The solver may flag constraints red (named by their position in the
-# sketch's list of constraints, counting driven ones too, so that a
-# repeated id cannot drop a second constraint): it drops them from the
-# exact system by making them driven (Rec's driven flag; a driven constraint
-# contributes no equations, sk-03), and it certifies the rest. Each red
-# constraint must be explained: it owns an equation j of the sketch's exact
-# system (Sketch.eqs) that lies in a set S of the system's equations which
-# use fewer variables than S has equations (all of them in W, and W is
-# shorter than S). Such a set over-determines its variables: its
-# Jacobian has rank at most |W| < |S| everywhere, so it can never be part
-# of a certified (square, regular) system, and some equation of it has to
-# go. This is a fact about the equations alone; it does not depend on how
-# the solver matched or pinned anything. Moreover S may use, besides the
-# red constraint's own equations, only equations of constraints that stay
-# (are not red): so restoring any one red constraint alone over-determines
-# what was kept, and no red flag is spare. (Without this, an
-# over-determined set padded with unrelated equations would "explain"
-# dropping anything; found by the independent audit, 2026-10-14.)
+# The solver classifies each constraint (by its position in the sketch's
+# list of constraints, counting driven ones too, so that a repeated id
+# cannot drop a second constraint):
+# - red: made driven (Rec's driven flag; a driven constraint contributes
+#   no equations), with a reason: Over (one of its equations lies in a
+#   structurally over-determined set of its own and earlier solved
+#   equations) or Conflict (a degree-0 refutation with its support, kept
+#   constraints before it);
+# - amber: redundant: its equations follow from earlier solved ones and
+#   its side conditions from the premises before it;
+# - kept, with some equations perhaps dropped from the system solved.
+# Every judgment is a derivation in the layer's proof system (degree 0:
+# constant multipliers, Motzkin's form), with completeness conditions; the
+# semantic laws (solve_drop, solve_amber, solve_conflict) follow. Honest
+# (below) collects the conditions on a classification; honest_unique says
+# the sketch determines the classification.
 #
 # The solver may also pin variables: hold free degrees of freedom at the
 # drawing's values (radius 0). held says each pin is exactly at its drawn
@@ -30,7 +29,7 @@ import ./ring.bend as E
 import ./field.bend as O
 import ./mat.bend as M
 import ./knum.bend as N
-import ./sketch.bend as SK
+import ./_draft_sketch13a.bend as SK
 import ./box.bend as BX
 
 # Lists of numbers
@@ -219,13 +218,15 @@ def mark(+red: List<&2, Nat>, sk: SK.Sketch) -> SK.Sketch:
 # What the solver says about a constraint is a statement about solution
 # sets, in every ordered field (the same, for these statements, as over the
 # reals), never about its box:
-# - amber (redundant): the other constraints imply it, its side conditions
-#   included, so deleting every amber constraint changes no solution
-#   (solve_amber);
-# - red, Conflict: it cannot hold together with its support, a set of kept
-#   constraints (solve_conflict);
-# - red, Over: one of its equations lies in an over-determined set
-#   (infeasible for generic values; v1's structural reason).
+# - amber (redundant): the constraints before it imply it, its side
+#   conditions included, so deleting every amber constraint changes no
+#   solution (solve_amber);
+# - red, Conflict: it cannot hold together with its support, kept
+#   constraints before it (solve_conflict);
+# - red, Over: one of its equations lies in a structurally over-determined
+#   set (more equations than variables). This claims the count only, not
+#   infeasibility: incidence theorems (Pappus) are over-determined and
+#   consistent; Phase 4 decides Over flags exactly.
 # Inside its solve the solver may also drop an equation of a kept
 # constraint that the equations it solves imply, everywhere (solve_drop).
 # The constraint is not made driven: it still holds at the certified
@@ -307,14 +308,14 @@ def drops(ds: List<&2, Drop>) -> List<&2, Nat>:
 # Red and amber constraints
 # -------------------------
 
-# every equation of s is c's own, or solved (its constraint not red, and
-# it not dropped)
+# every equation of s is c's own, or solved and earlier: its constraint is
+# before c and not red, and it is not dropped
 def clean(+own: List<&2, Nat>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, s: List<&2, Nat>) -> Bool:
   match s:
     case Nil{}:
       True{}
     case Con{+k, t}:
-      band(bor(eq(nth(own, k), c), band(bnot(mem(nth(own, k), red)), bnot(mem(k, ds)))), clean(own, red, ds, c, t))
+      band(bor(eq(nth(own, k), c), band(lt(nth(own, k), c), band(bnot(mem(nth(own, k), red)), bnot(mem(k, ds))))), clean(own, red, ds, c, t))
 
 # why the constraint at a position is red
 type Why is Data:
@@ -434,8 +435,7 @@ def alldrop(+sk: SK.Sketch, +ds: List<&2, Nat>, cs: List<&2, Nat>) -> Bool:
       band(alldrop.go(owners(sk), ds, c, 0n), alldrop(sk, ds, t))
 
 # the amber constraints are distinct, kept, each drives an equation (a
-# merge has none: it is realized by shared variables, not by equations),
-# and all their equations are dropped
+# driven constraint has none), and all their equations are dropped
 def amber_ok(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +amber: List<&2, Nat>) -> Bool:
   band(distinct(amber), band(none_in(amber, red), band(has_eqs(sk, amber), alldrop(sk, ds, amber))))
 
@@ -769,10 +769,112 @@ def uses_all(es: List<&2, E.QExpr>, m: List<&2, Nat>) -> Bool:
 
 # m matches the equations es one to one with the variables vs: equation i
 # with entry i of m, a variable it mentions, and every variable of vs is
-# some equation's (so the system is square, and its Jacobian is not
-# singular for want of structure)
+# some equation's (so the system is square). `uses` is syntactic, so this
+# is about structure only; regularity is solve_complete's and
+# solve_regular's
 def perfect(+es: List<&2, E.QExpr>, +vs: List<&2, Nat>, +m: List<&2, Nat>) -> Bool:
   band(eq(len(vs), len(m)), band(distinct(m), band(sub(m, vs), uses_all(es, m))))
+
+# Honest classifications (sk-13a)
+# --------------------------------
+# What the derivation and completeness laws say about the solver's answer,
+# as one predicate of any classification (red, why, dropped equations ds,
+# amber), so that two honest classifications of a sketch can be compared:
+# honest_unique says the sketch determines which constraints are red, which
+# of those conflict, which equations are dropped and which constraints are
+# amber; only the witnesses and supports shown may differ.
+
+def own_below.go(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +c: Nat, +i: Nat, +k: Nat) -> List<&2, E.QExpr>:
+  match es:
+    case Nil{}:
+      Nil{}
+    case Con{e, t}:
+      solved.pick(band(lt(k, i), eq(nth(own, k), c)), e, own_below.go(t, own, c, i, 1n+k))
+
+# c's own equations at positions before i
+def own_below(+sk: SK.Sketch, +c: Nat, +i: Nat) -> List<&2, E.QExpr>:
+  own_below.go(SK.Sketch.eqs(sk), owners(sk), c, i, 0n)
+
+def over_s.of(+c: Nat, +r: Nat, y: Why, rest: List<&2, Nat>) -> List<&2, Nat>:
+  match y:
+    case Over{j, s, w}:
+      support.pick(eq(r, c), s, rest)
+    case Conflict{s}:
+      rest
+
+# the over-determined set of the red constraint c's Over
+def over_s(+c: Nat, red: List<&2, Nat>, why: List<&2, Why>) -> List<&2, Nat>:
+  match red why:
+    case Con{+r, rt} Con{y, yt}:
+      over_s.of(c, r, y, over_s(c, rt, yt))
+    case Nil{} why:
+      Nil{}
+    case Con{r, rt} Nil{}:
+      Nil{}
+
+# the premises before c: the equations and side conditions of the kept
+# constraints before it, and the entities' side conditions
+def pre_eqs(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat) -> List<&2, E.QExpr>:
+  eqs_of(sk, kept_before(sk, red, c))
+
+def pre_sides(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat) -> List<&2, SK.Side>:
+  SK.cats(csides(sk, kept_before(sk, red, c)), esides(sk))
+
+# every dropped equation is a constant combination of the solved equations
+# before it
+def Drop0(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>) -> Type:
+  @j: Nat -> {mem(j, ds) == True{} : Bool} -> &ls: List<&2, S.Q> -> Ident(eqat(SK.Sketch.eqs(sk), j), lin(ls, below_solved(sk, red, ds, j)))
+
+# the premises before c, and the negation of c's i-th side condition
+def neg_pre(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +i: Nat) -> List<&2, SK.Side>:
+  SK.cats(pre_sides(sk, red, c), [negate(side_at(csides(sk, [c]), i))])
+
+# every side condition of an amber constraint is implied by the premises
+# before it: they and its negation have a degree-0 refutation
+def Amber0(+sk: SK.Sketch, +red: List<&2, Nat>, +amber: List<&2, Nat>) -> Type:
+  @c: Nat -> {mem(c, amber) == True{} : Bool} -> @i: Nat -> {lt(i, slen(csides(sk, [c]))) == True{} : Bool} -> &ls: List<&2, S.Q> -> &ms: List<&2, S.Q> -> &k: S.Q -> Refutes0(pre_eqs(sk, red, c), neg_pre(sk, red, c, i), ls, ms, k)
+
+# every conflict has a degree-0 refutation with its support
+def Conflict0(+sk: SK.Sketch, +red: List<&2, Nat>, +why: List<&2, Why>) -> Type:
+  @c: Nat -> {mem(c, conflicts(red, why)) == True{} : Bool} -> &ls: List<&2, S.Q> -> &ms: List<&2, S.Q> -> &k: S.Q -> Refutes0(eqs_of(sk, Con{c, support(c, red, why)}), SK.cats(csides(sk, Con{c, support(c, red, why)}), esides(sk)), ls, ms, k)
+
+# and none without any one member of its support (the support is
+# irreducible)
+def ConflictMin(+sk: SK.Sketch, +red: List<&2, Nat>, +why: List<&2, Why>) -> Type:
+  @c: Nat -> {mem(c, conflicts(red, why)) == True{} : Bool} -> @m: Nat -> {mem(m, support(c, red, why)) == True{} : Bool} -> @ls: List<&2, S.Q> -> @ms: List<&2, S.Q> -> @k: S.Q -> Refutes0(eqs_of(sk, Con{c, unmark(m, support(c, red, why))}), SK.cats(csides(sk, Con{c, unmark(m, support(c, red, why))}), esides(sk)), ls, ms, k) -> Empty
+
+# no constant combination of the solved equations, other than all zeros,
+# is constant
+def Deg0(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>) -> Type:
+  @ls: List<&2, S.Q> -> {qlen(ls) == neqs(solved(sk, red, ds)) : Nat} -> @k: S.Q -> Ident(lin(ls, solved(sk, red, ds)), E.QCst{k}) -> AllZero(ls)
+
+# the kept system (solved equations, every kept constraint's side
+# conditions, the entities') has no degree-0 refutation
+def Mz0(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>) -> Type:
+  @ls: List<&2, S.Q> -> @ms: List<&2, S.Q> -> @k: S.Q -> Refutes0(solved(sk, red, ds), SK.cats(csides(sk, kept_before(sk, red, ncons(sk))), esides(sk)), ls, ms, k) -> Empty
+
+# a red constraint is Over only when degree 0 finds nothing for it: none of
+# its equations in the over-determined set is a constant combination, plus
+# a constant, of the solved equations before it and its own earlier ones;
+# and it has no degree-0 refutation with the premises before it
+def Over0(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +why: List<&2, Why>) -> Type:
+  @c: Nat -> @j: Nat -> {over_at(c, j, red, why) == True{} : Bool} -> ((@i: Nat -> {band(mem(i, over_s(c, red, why)), eq(nth(owners(sk), i), c)) == True{} : Bool} -> @ls: List<&2, S.Q> -> @k: S.Q -> Ident(eqat(SK.Sketch.eqs(sk), i), E.QAdd{lin(ls, SK.cat(below_solved(sk, red, ds, i), own_below(sk, c, i))), E.QCst{k}}) -> Empty) & (@ls: List<&2, S.Q> -> @ms: List<&2, S.Q> -> @k: S.Q -> Refutes0(SK.cat(pre_eqs(sk, red, c), eqs_of(sk, [c])), SK.cats(pre_sides(sk, red, c), csides(sk, [c])), ls, ms, k) -> Empty))
+
+# redundancy is reported: a kept constraint that drives an equation, has
+# all its equations dropped, and whose every side condition is implied by
+# the premises before it, is amber
+def AmberComplete(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +amber: List<&2, Nat>) -> Type:
+  @c: Nat -> {mem(c, red) == False{} : Bool} -> {lt(0n, ceqs(sk, c)) == True{} : Bool} -> {alldrop(sk, ds, [c]) == True{} : Bool} -> (@i: Nat -> {lt(i, slen(csides(sk, [c]))) == True{} : Bool} -> &ls: List<&2, S.Q> -> &ms: List<&2, S.Q> -> &k: S.Q -> Refutes0(pre_eqs(sk, red, c), neg_pre(sk, red, c, i), ls, ms, k)) -> {mem(c, amber) == True{} : Bool}
+
+# the solved system has a one-to-one matching of its equations with
+# variables each mentions (no structurally over-determined part)
+def Matchable(+es: List<&2, E.QExpr>) -> Type:
+  &m: List<&2, Nat> -> {band(distinct(m), uses_all(es, m)) == True{} : Bool}
+
+# an honest classification of the sketch: red with reasons, dropped
+# equations ds, amber
+def Honest(+sk: SK.Sketch, +red: List<&2, Nat>, +why: List<&2, Why>, +ds: List<&2, Nat>, +amber: List<&2, Nat>) -> Type:
+  {band(explained(sk, red, ds, why), amber_ok(sk, red, ds, amber)) == True{} : Bool} & (Drop0(sk, red, ds) & (Amber0(sk, red, amber) & (Conflict0(sk, red, why) & (ConflictMin(sk, red, why) & (Deg0(sk, red, ds) & (Mz0(sk, red, ds) & (Over0(sk, red, ds, why) & (AmberComplete(sk, red, ds, amber) & Matchable(solved(sk, red, ds))))))))))
 
 # Pins
 # ----

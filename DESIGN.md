@@ -1,4 +1,4 @@
-# bend-cad — Design v0.15 (draft; exact by default; sk-06 done; sk-09: a verified proposer; §8.11 decided, sk-13 under way)
+# bend-cad — Design v0.16 (draft; exact by default; sk-06 done; sk-09: a verified proposer; §8.11 decided, sk-13 under way)
 
 A formally verified 2D sketch constraint solver in Bend 2, aiming at Onshape /
 FreeCAD sketcher parity, feeding an implicit-function (SDF) modeling pipeline.
@@ -48,7 +48,7 @@ designed for and built late (§7.4).
 |---|---|
 | D1 | **Exact by default.** Every committed sketch state carries a proof, stated over ℚ, that an exact real solution exists within radius r of the displayed geometry and is unique there. Pinned, fixed and merged values and typed dimensions hold exactly for that solution. |
 | D2 | **Displayed geometry is exact integers** at fixed per-kind scales; certificates use dyadic rationals at a working precision chosen per block. Denominators never grow across solves. |
-| D3 | Coincident points, horizontal, vertical, fix, and concentric / equal radius between full circles are **variable merging / constants**. |
+| D3 | Coincident points, horizontal, vertical, fix, and concentric / equal radius between full circles are **variable merging / constants**. *Revised (Danielle, 2026-10-19, Q29):* merges are equations in the spec, as Fix already was; sharing variables is the solver's optimization (the exact linear presolve after sk-13a). |
 | D4 | **Every curve piece passes through its endpoints by construction** (segments, bulge arcs, clamped splines, conic arcs as rational Béziers). Profiles are exactly closed. |
 | D5 | Contact points, trim/split points and curve parameters are **explicit variables**, with encodings chosen to be **regular** (nonsingular Jacobian) at the configurations users draw. |
 | D6 | The **typed IR is the spec and the persisted source of truth**. Each constraint kind has an exact equation form, defined in LAWS.bend, with a **mandatory meaning lemma**. |
@@ -2023,6 +2023,13 @@ laws, `AUDIT-sk09-laws.md`):**
 - **Q26** Pins chosen from the drawing (numerically), after sk-13a.
 - **Q27** Which solution: the one nearest the current layout, even far
   (§10.3); open to a radius bound, not required.
+- **Q29** Merges are equations (2026-10-19, after the third audit of the
+  sk-13a drafts, AUDIT-sk13a-drafts-v3.md 5): a support should be able to
+  name a merge ("conflicts with Horizontal #2"). The unmerged-view
+  alternative would have put a union-find in the trusted spec; equations
+  are one view, as Fix already was (§4). Costs, accepted: merge equations
+  in the solve until the exact linear presolve; the merge kinds' meaning
+  lemmas re-proven; the page sends unmerged variables.
 - **Q28** The principled way (after the audit of the sk-13a drafts,
   AUDIT-sk13a-drafts.md): every judgment about a constraint is an
   (in)feasibility statement about solution sets with a certificate,
@@ -2099,6 +2106,15 @@ laws, `AUDIT-sk09-laws.md`):**
 ---
 
 ## 19. Changelog
+
+**v0.15 → v0.16 (sk-13a statements v4):**
+- D3 revised, Q29: merges are equations.
+- SK13A-REVIEW.md v4 after three audits: `Honest` (derivation and
+  completeness conditions as one predicate) and `honest_unique` (the
+  sketch determines the classification); Over witnesses look backwards;
+  irreducible supports by a deletion filter; the refusal law restated
+  honestly, its stronger forms open; the exact linear presolve after
+  sk-13a.
 
 **v0.14 → v0.15 (the second review of the sk-09 laws; Q24–Q27):**
 - §10.2: the soundness laws hold at every level (the review's blocker);
