@@ -15,7 +15,9 @@
 #   0 elsewhere, and Ident(e1, e2) gives equal coefficients everywhere.
 # - e depends on v (the spec's Depends: its derivative in v is not
 #   identically 0) exactly when dep(e, v), which normalizes the
-#   derivative.
+#   derivative. The structure's adjacency dadj(e) (the variables e
+#   mentions that it depends on) is exactly that: each is depended on, and
+#   e depends on nothing outside it (lib/deppf.bend).
 
 import Base
 import ../spec/num.bend as S
@@ -24,11 +26,13 @@ import ../spec/field.bend as O
 import ../spec/deriv.bend as DV
 import ../spec/solve.bend as SV
 import ../lib/zring.bend as R
+import ../lib/listpf.bend as L
 import ../lib/qnorm.bend as QN
 import ../lib/redpoly.bend as RP
 import ../lib/nonroot.bend as NRT
 import ../lib/identpf.bend as ID
 import ../lib/coefpf.bend as CF
+import ../lib/deppf.bend as DP
 
 def norm_reduced(e: E.ZExpr) -> {RP.red(R.norm(e)) == True{} : Bool}:
   RP.norm_red(e)
@@ -79,11 +83,20 @@ def sq_coefs() -> {[CF.coef(E.QMul{E.QAdd{E.QVar{0n}, E.QCst{S.Q{S.Zpos{S.XH{}},
     == [S.Q{S.Zpos{S.XH{}}, S.XH{}}, S.Q{S.Zneg{S.XH{}}, S.XH{}}, S.Q{S.Z0{}, S.XH{}}] : List<S.Q>}:
   {==}
 
+def adjacency_depends(+e: E.QExpr, +v: Nat, h: {SV.mem(v, DP.dadj(e)) == True{} : Bool}) -> SV.Depends(e, v):
+  DP.dadj_depends(e, v, h)
+
+def adjacency_within(+e: E.QExpr, +w: List<&2, Nat>, +hs: {L.subl(DP.dadj(e), w) == True{} : Bool}) -> SV.DependsWithin(e, w):
+  DP.dadj_within(e, w, hs)
+
 # x - x + y: depends on y, not on x
 def xxy() -> E.QExpr:
   E.QAdd{E.QSub{E.QVar{0n}, E.QVar{0n}}, E.QVar{1n}}
 
 def xxy_deps() -> {[ID.dep(xxy(), 0n), ID.dep(xxy(), 1n)] == [False{}, True{}] : List<Bool>}:
+  {==}
+
+def xxy_adj() -> {DP.dadj(xxy()) == [1n] : List<&2, Nat>}:
   {==}
 
 # (x + 1)(x - 1) is x x - 1
