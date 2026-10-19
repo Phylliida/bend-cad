@@ -13,11 +13,14 @@
 # - amber: redundant: its equations follow from earlier solved ones and
 #   its side conditions from the premises before it;
 # - kept, with some equations perhaps dropped from the system solved.
-# Every judgment is a derivation in the layer's proof system (degree 0:
-# constant multipliers, Motzkin's form), with completeness conditions; the
-# semantic laws (solve_drop, solve_amber, solve_conflict) follow. Honest
-# (below) collects the conditions on a classification; honest_unique says
-# the sketch determines the classification.
+# The answer gives each constraint exactly one class (Kept, Amber, Over,
+# Conflict). Every judgment is a derivation in the layer's proof system
+# (degree 0: constant multipliers, Motzkin's form); Honest says each
+# constraint's class is the honest one given the classes before it, so the
+# sketch determines the classification (honest_unique). Structure is read
+# from what an equation depends on (its derivative is not identically 0),
+# not from how it is written. The semantic laws (solve_drop, solve_amber,
+# solve_conflict) follow.
 #
 # The solver may also pin variables: hold free degrees of freedom at the
 # drawing's values (radius 0). held says each pin is exactly at its drawn
@@ -31,6 +34,7 @@ import ./mat.bend as M
 import ./knum.bend as N
 import ./_draft_sketch13a.bend as SK
 import ./box.bend as BX
+import ./deriv.bend as DV
 
 # Lists of numbers
 # ----------------
@@ -115,8 +119,8 @@ def below(xs: List<&2, Nat>, +n: Nat) -> Bool:
     case Con{h, t}:
       band(lt(h, n), below(t, n))
 
-# Over-determined sets of equations
-# ---------------------------------
+# Variables of an expression
+# --------------------------
 
 # every variable of e is in w
 def inside(e: E.QExpr, +w: List<&2, Nat>) -> Bool:
@@ -150,18 +154,6 @@ def eqat(es: List<&2, E.QExpr>, j: Nat) -> E.QExpr:
       e
     case Con{e, t} 1n+i:
       eqat(t, i)
-
-def all_inside(+es: List<&2, E.QExpr>, s: List<&2, Nat>, +w: List<&2, Nat>) -> Bool:
-  match s:
-    case Nil{}:
-      True{}
-    case Con{j, t}:
-      band(inside(eqat(es, j), w), all_inside(es, t, w))
-
-# s names distinct equations of es, every variable they use is in w, and w
-# is shorter than s
-def overdet(+es: List<&2, E.QExpr>, +s: List<&2, Nat>, +w: List<&2, Nat>) -> Bool:
-  band(distinct(s), band(below(s, neqs(es)), band(lt(len(w), len(s)), all_inside(es, s, w))))
 
 # Which constraint each equation comes from
 # -----------------------------------------
@@ -305,28 +297,152 @@ def drops(ds: List<&2, Drop>) -> List<&2, Nat>:
     case Con{Drop{j, c}, t}:
       Con{j, drops(t)}
 
-# Red and amber constraints
-# -------------------------
+# Classes
+# -------
+# The answer classifies every constraint, by position, with exactly one
+# class, so a constraint cannot be red twice, red and amber, or red with
+# dropped equations.
 
-# every equation of s is c's own, or solved and earlier: its constraint is
-# before c and not red, and it is not dropped
-def clean(+own: List<&2, Nat>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, s: List<&2, Nat>) -> Bool:
-  match s:
-    case Nil{}:
-      True{}
-    case Con{+k, t}:
-      band(bor(eq(nth(own, k), c), band(lt(nth(own, k), c), band(bnot(mem(nth(own, k), red)), bnot(mem(k, ds))))), clean(own, red, ds, c, t))
+# a degree-0 refutation's multipliers (for the verdict to check an amber
+# constraint's side conditions by their certificates)
+type Ref is Data:
+  Ref{ls: List<&2, S.Q>, ms: List<&2, S.Q>, k: S.Q}
 
-# why the constraint at a position is red
-type Why is Data:
-  # its equation j lies in the over-determined set s (whose variables are
-  # among w), made of its own and solved equations
+type Class is Data:
+  # kept; these of its equations are dropped from the system solved
+  Kept{ds: List<&2, Drop>}
+  # redundant: all its equations are dropped (these), and its side
+  # conditions are implied by the premises before it (one refutation of
+  # the premises and the side's negation each, rs)
+  Amber{ds: List<&2, Drop>, rs: List<&2, Ref>}
+  # red: its equation j lies in s, more equations than variables (all in
+  # w), made of its own equations and earlier solved ones
   Over{j: Nat, s: List<&2, Nat>, w: List<&2, Nat>}
-  # it cannot hold together with its support, the constraints at the
-  # positions s: all kept, all before it, each driving an equation
-  # (solve_conflict0 and solve_conflict); s is empty when it cannot hold
-  # at all (a distance of -5)
+  # red: it cannot hold together with its support s, kept constraints
+  # before it, irreducibly
   Conflict{s: List<&2, Nat>}
+
+# the class of the constraint at position c (kept, nothing dropped, past
+# the end)
+def class_at(cls: List<&2, Class>, c: Nat) -> Class:
+  match cls c:
+    case Nil{} c:
+      Kept{Nil{}}
+    case Con{h, t} 0n:
+      h
+    case Con{h, t} 1n+m:
+      class_at(t, m)
+
+def clsn(cls: List<&2, Class>) -> Nat:
+  match cls:
+    case Nil{}:
+      0n
+    case Con{h, t}:
+      1n+clsn(t)
+
+# 0 kept, 1 amber, 2 over, 3 conflict
+def kind(k: Class) -> Nat:
+  match k:
+    case Kept{ds}:
+      0n
+    case Amber{ds, rs}:
+      1n
+    case Over{j, s, w}:
+      2n
+    case Conflict{s}:
+      3n
+
+def is_red(k: Class) -> Bool:
+  match k:
+    case Kept{ds}:
+      False{}
+    case Amber{ds, rs}:
+      False{}
+    case Over{j, s, w}:
+      True{}
+    case Conflict{s}:
+      True{}
+
+def is_amber(k: Class) -> Bool:
+  match k:
+    case Kept{ds}:
+      False{}
+    case Amber{ds, rs}:
+      True{}
+    case Over{j, s, w}:
+      False{}
+    case Conflict{s}:
+      False{}
+
+def is_conflict(k: Class) -> Bool:
+  match k:
+    case Kept{ds}:
+      False{}
+    case Amber{ds, rs}:
+      False{}
+    case Over{j, s, w}:
+      False{}
+    case Conflict{s}:
+      True{}
+
+def pos.pick(b: Bool, i: Nat, rest: List<&2, Nat>) -> List<&2, Nat>:
+  match b:
+    case True{}:
+      Con{i, rest}
+    case False{}:
+      rest
+
+def reds.go(cls: List<&2, Class>, +i: Nat) -> List<&2, Nat>:
+  match cls:
+    case Nil{}:
+      Nil{}
+    case Con{+h, t}:
+      pos.pick(is_red(h), i, reds.go(t, 1n+i))
+
+# the red constraints' positions
+def reds(cls: List<&2, Class>) -> List<&2, Nat>:
+  reds.go(cls, 0n)
+
+def ambers.go(cls: List<&2, Class>, +i: Nat) -> List<&2, Nat>:
+  match cls:
+    case Nil{}:
+      Nil{}
+    case Con{+h, t}:
+      pos.pick(is_amber(h), i, ambers.go(t, 1n+i))
+
+# the amber constraints' positions
+def ambers(cls: List<&2, Class>) -> List<&2, Nat>:
+  ambers.go(cls, 0n)
+
+def conflicts.go(cls: List<&2, Class>, +i: Nat) -> List<&2, Nat>:
+  match cls:
+    case Nil{}:
+      Nil{}
+    case Con{+h, t}:
+      pos.pick(is_conflict(h), i, conflicts.go(t, 1n+i))
+
+# the conflicting constraints' positions
+def conflicts(cls: List<&2, Class>) -> List<&2, Nat>:
+  conflicts.go(cls, 0n)
+
+def kdrops(k: Class) -> List<&2, Nat>:
+  match k:
+    case Kept{ds}:
+      drops(ds)
+    case Amber{ds, rs}:
+      drops(ds)
+    case Over{j, s, w}:
+      Nil{}
+    case Conflict{s}:
+      Nil{}
+
+# the dropped equations' positions (in Sketch.eqs)
+def dropped(cls: List<&2, Class>) -> List<&2, Nat>:
+  match cls:
+    case Nil{}:
+      Nil{}
+    case Con{h, t}:
+      cat(kdrops(h), dropped(t))
 
 # no entry of xs is in ys
 def none_in(xs: List<&2, Nat>, +ys: List<&2, Nat>) -> Bool:
@@ -349,153 +465,45 @@ def ncons(sk: SK.Sketch) -> Nat:
     case SK.Sketch{vs, es, cs}:
       clen(cs)
 
-# a driven constraint has none
-def ceqs.rec(+es: List<&2, SK.Ent>, r: SK.Rec) -> Nat:
+def driven.rec(r: SK.Rec) -> Bool:
   match r:
-    case SK.Rec{id, True{}, k}:
-      0n
-    case SK.Rec{id, False{}, k}:
-      neqs(SK.Constraint.eqs(es, k))
+    case SK.Rec{id, dr, k}:
+      dr
 
-def ceqs.at(+es: List<&2, SK.Ent>, cs: List<&2, SK.Rec>, c: Nat) -> Nat:
+def driven.at(cs: List<&2, SK.Rec>, c: Nat) -> Bool:
   match cs c:
     case Nil{} c:
-      0n
+      True{}
     case Con{r, t} 0n:
-      ceqs.rec(es, r)
+      driven.rec(r)
     case Con{r, t} 1n+m:
-      ceqs.at(es, t, m)
+      driven.at(t, m)
 
-# the number of equations the constraint at position c contributes (0 if
-# it is driven)
-def ceqs(sk: SK.Sketch, c: Nat) -> Nat:
+# the constraint at position c is driven (or there is none)
+def driven(sk: SK.Sketch, c: Nat) -> Bool:
   match sk:
-    case SK.Sketch{vs, +es, cs}:
-      ceqs.at(es, cs, c)
+    case SK.Sketch{vs, es, cs}:
+      driven.at(cs, c)
 
-# each of cs drives an equation
-def has_eqs(+sk: SK.Sketch, cs: List<&2, Nat>) -> Bool:
+# the constraint at position c exists and is driving
+def driving(+sk: SK.Sketch, +c: Nat) -> Bool:
+  band(lt(c, ncons(sk)), bnot(driven(sk, c)))
+
+# each of cs is driving
+def all_driving(+sk: SK.Sketch, cs: List<&2, Nat>) -> Bool:
   match cs:
     case Nil{}:
       True{}
-    case Con{c, t}:
-      band(lt(0n, ceqs(sk, c)), has_eqs(sk, t))
+    case Con{+c, t}:
+      band(driving(sk, c), all_driving(sk, t))
 
-# the reason y explains the constraint at position c
-def why_ok(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, y: Why) -> Bool:
-  match y:
-    case Over{+j, +s, +w}:
-      band(eq(nth(owners(sk), j), c), band(mem(j, s), band(overdet(SK.Sketch.eqs(sk), s, w), clean(owners(sk), red, ds, c, s))))
-    case Conflict{+s}:
-      band(lt(0n, ceqs(sk, c)), band(distinct(s), band(below(s, c), band(has_eqs(sk, s), none_in(s, red)))))
-
-# each red constraint (rs, in order) is explained by the matching Why,
-# red being the whole list and ds the dropped equations
-def explained.go(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, rs: List<&2, Nat>, why: List<&2, Why>) -> Bool:
-  match rs why:
-    case Nil{} Nil{}:
-      True{}
-    case Nil{} Con{y, yt}:
-      False{}
-    case Con{c, rt} Nil{}:
-      False{}
-    case Con{+c, rt} Con{y, yt}:
-      band(why_ok(sk, red, ds, c, y), explained.go(sk, red, ds, rt, yt))
-
-# every dropped equation is a kept constraint's
-def owners_kept(+own: List<&2, Nat>, +red: List<&2, Nat>, ds: List<&2, Nat>) -> Bool:
-  match ds:
-    case Nil{}:
-      True{}
-    case Con{k, t}:
-      band(bnot(mem(nth(own, k), red)), owners_kept(own, red, t))
-
-# the dropped equations are distinct equations of kept constraints
-def dropped_ok(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>) -> Bool:
-  band(distinct(ds), band(below(ds, neqs(SK.Sketch.eqs(sk))), owners_kept(owners(sk), red, ds)))
-
-# no constraint is red twice, the dropped equations are kept ones, and each
-# red constraint is explained
-def explained(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, why: List<&2, Why>) -> Bool:
-  band(distinct(red), band(dropped_ok(sk, red, ds), explained.go(sk, red, ds, red, why)))
-
-# every equation of c (from position k) is dropped
+# every equation of c (from position k) is in ds
 def alldrop.go(own: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +k: Nat) -> Bool:
   match own:
     case Nil{}:
       True{}
     case Con{o, t}:
       band(bor(bnot(eq(o, c)), mem(k, ds)), alldrop.go(t, ds, c, 1n+k))
-
-def alldrop(+sk: SK.Sketch, +ds: List<&2, Nat>, cs: List<&2, Nat>) -> Bool:
-  match cs:
-    case Nil{}:
-      True{}
-    case Con{+c, t}:
-      band(alldrop.go(owners(sk), ds, c, 0n), alldrop(sk, ds, t))
-
-# the amber constraints are distinct, kept, each drives an equation (a
-# driven constraint has none), and all their equations are dropped
-def amber_ok(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +amber: List<&2, Nat>) -> Bool:
-  band(distinct(amber), band(none_in(amber, red), band(has_eqs(sk, amber), alldrop(sk, ds, amber))))
-
-def conflicts.of(c: Nat, y: Why, rest: List<&2, Nat>) -> List<&2, Nat>:
-  match y:
-    case Over{j, s, w}:
-      rest
-    case Conflict{s}:
-      Con{c, rest}
-
-# the red constraints whose reason is a conflict
-def conflicts(red: List<&2, Nat>, why: List<&2, Why>) -> List<&2, Nat>:
-  match red why:
-    case Con{c, rt} Con{y, yt}:
-      conflicts.of(c, y, conflicts(rt, yt))
-    case Nil{} why:
-      Nil{}
-    case Con{c, rt} Nil{}:
-      Nil{}
-
-def support.pick(b: Bool, s: List<&2, Nat>, rest: List<&2, Nat>) -> List<&2, Nat>:
-  match b:
-    case True{}:
-      s
-    case False{}:
-      rest
-
-def support.of(+c: Nat, +r: Nat, y: Why, rest: List<&2, Nat>) -> List<&2, Nat>:
-  match y:
-    case Over{j, s, w}:
-      rest
-    case Conflict{s}:
-      support.pick(eq(r, c), s, rest)
-
-def over_at.of(+c: Nat, +j: Nat, +r: Nat, y: Why) -> Bool:
-  match y:
-    case Over{jj, s, w}:
-      band(eq(r, c), eq(jj, j))
-    case Conflict{s}:
-      False{}
-
-# the red constraint c is red as Over, with its equation j
-def over_at(+c: Nat, +j: Nat, red: List<&2, Nat>, why: List<&2, Why>) -> Bool:
-  match red why:
-    case Con{+r, rt} Con{y, yt}:
-      bor(over_at.of(c, j, r, y), over_at(c, j, rt, yt))
-    case Nil{} why:
-      False{}
-    case Con{r, rt} Nil{}:
-      False{}
-
-# the support of the red constraint c's conflict
-def support(+c: Nat, red: List<&2, Nat>, why: List<&2, Why>) -> List<&2, Nat>:
-  match red why:
-    case Con{+r, rt} Con{y, yt}:
-      support.of(c, r, y, support(c, rt, yt))
-    case Nil{} why:
-      Nil{}
-    case Con{r, rt} Nil{}:
-      Nil{}
 
 def unmark.go(b: Bool, h: Nat, rest: List<&2, Nat>) -> List<&2, Nat>:
   match b:
@@ -511,6 +519,21 @@ def unmark(+c: Nat, xs: List<&2, Nat>) -> List<&2, Nat>:
       Nil{}
     case Con{+h, t}:
       unmark.go(eq(h, c), h, unmark(c, t))
+
+def support.of(k: Class) -> List<&2, Nat>:
+  match k:
+    case Kept{ds}:
+      Nil{}
+    case Amber{ds, rs}:
+      Nil{}
+    case Over{j, s, w}:
+      Nil{}
+    case Conflict{s}:
+      s
+
+# the support of the constraint at position c, if it conflicts
+def support(+cls: List<&2, Class>, +c: Nat) -> List<&2, Nat>:
+  support.of(class_at(cls, c))
 
 # Degree-0 derivations: the first layer's proof system
 # ----------------------------------------------------
@@ -684,17 +707,6 @@ def esides(sk: SK.Sketch) -> List<&2, SK.Side>:
     case SK.Sketch{vs, es, rs}:
       SK.Sketch.sides.ents(es)
 
-def below_solved.go(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +j: Nat, +k: Nat) -> List<&2, E.QExpr>:
-  match es:
-    case Nil{}:
-      Nil{}
-    case Con{e, t}:
-      solved.pick(band(lt(k, j), band(bnot(mem(nth(own, k), red)), bnot(mem(k, ds)))), e, below_solved.go(t, own, red, ds, j, 1n+k))
-
-# the solved equations at positions before j (in Sketch.eqs)
-def below_solved(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +j: Nat) -> List<&2, E.QExpr>:
-  below_solved.go(SK.Sketch.eqs(sk), owners(sk), red, ds, j, 0n)
-
 def kept.pick(b: Bool, i: Nat, rest: List<&2, Nat>) -> List<&2, Nat>:
   match b:
     case True{}:
@@ -728,24 +740,43 @@ def side_at(ss: List<&2, SK.Side>, i: Nat) -> SK.Side:
     case Con{h, t} 1n+m:
       side_at(t, m)
 
-# A one-to-one matching (for solve_total)
-# ---------------------------------------
+# Dependence, and one-to-one matchings
+# -------------------------------------
 
-# e mentions the variable v
-def uses(+v: Nat, e: E.QExpr) -> Bool:
-  match e:
-    case E.QVar{i}:
-      eq(i, v)
-    case E.QCst{q}:
-      False{}
-    case E.QAdd{a, b}:
-      bor(uses(v, a), uses(v, b))
-    case E.QSub{a, b}:
-      bor(uses(v, a), uses(v, b))
-    case E.QMul{a, b}:
-      bor(uses(v, a), uses(v, b))
-    case E.QNeg{a}:
-      uses(v, a)
+# e depends on the variable v: its derivative in v is not identically 0 (a
+# variable that only cancels, as in x - x + y, does not count)
+def Depends(+e: E.QExpr, +v: Nat) -> Type:
+  Ident(DV.deriv(e, v), E.QCst{qzero()}) -> Empty
+
+# every variable e depends on is in w
+def DependsWithin(+e: E.QExpr, +w: List<&2, Nat>) -> Type:
+  @v: Nat -> {mem(v, w) == False{} : Bool} -> Ident(DV.deriv(e, v), E.QCst{qzero()})
+
+# equation i of es depends on entry i of m, one entry per equation
+def DepAll(es: List<&2, E.QExpr>, m: List<&2, Nat>) -> Type:
+  match es m:
+    case Nil{} Nil{}:
+      Unit
+    case Con{+e, t} Con{+v, u}:
+      Depends(e, v) & DepAll(t, u)
+    case Nil{} Con{v, u}:
+      Empty
+    case Con{e, t} Nil{}:
+      Empty
+
+# every equation of es at the positions s depends only on variables in w
+def AllWithin(+es: List<&2, E.QExpr>, s: List<&2, Nat>, +w: List<&2, Nat>) -> Type:
+  match s:
+    case Nil{}:
+      Unit
+    case Con{+k, t}:
+      DependsWithin(eqat(es, k), w) & AllWithin(es, t, w)
+
+# s names distinct equations of es that depend only on variables in w, and
+# w is shorter than s: structurally over-determined (no matching can give
+# each of them its own variable)
+def Overdet(+es: List<&2, E.QExpr>, +s: List<&2, Nat>, +w: List<&2, Nat>) -> Type:
+  {band(distinct(s), band(below(s, neqs(es)), lt(len(w), len(s)))) == True{} : Bool} & AllWithin(es, s, w)
 
 # every entry of xs is in ys
 def sub(xs: List<&2, Nat>, +ys: List<&2, Nat>) -> Bool:
@@ -755,62 +786,56 @@ def sub(xs: List<&2, Nat>, +ys: List<&2, Nat>) -> Bool:
     case Con{h, t}:
       band(mem(h, ys), sub(t, ys))
 
-# equation i of es mentions entry i of m, one entry per equation
-def uses_all(es: List<&2, E.QExpr>, m: List<&2, Nat>) -> Bool:
-  match es m:
-    case Nil{} Nil{}:
-      True{}
-    case Con{e, t} Con{+v, u}:
-      band(uses(v, e), uses_all(t, u))
-    case Nil{} Con{v, u}:
-      False{}
-    case Con{e, t} Nil{}:
-      False{}
+# a one-to-one matching of es with variables each depends on
+def Matchable(+es: List<&2, E.QExpr>) -> Type:
+  &m: List<&2, Nat> -> ({distinct(m) == True{} : Bool} & DepAll(es, m))
 
-# m matches the equations es one to one with the variables vs: equation i
-# with entry i of m, a variable it mentions, and every variable of vs is
-# some equation's (so the system is square). `uses` is syntactic, so this
-# is about structure only; regularity is solve_complete's and
-# solve_regular's
-def perfect(+es: List<&2, E.QExpr>, +vs: List<&2, Nat>, +m: List<&2, Nat>) -> Bool:
-  band(eq(len(vs), len(m)), band(distinct(m), band(sub(m, vs), uses_all(es, m))))
+# m matches the equations es one to one with the variables vs, each
+# equation with a variable it depends on, every variable of vs used (for
+# solve_total: the system solved is square in the free variables)
+def Perfect(+es: List<&2, E.QExpr>, +vs: List<&2, Nat>, +m: List<&2, Nat>) -> Type:
+  {band(eq(len(vs), len(m)), band(distinct(m), sub(m, vs))) == True{} : Bool} & DepAll(es, m)
 
-# Honest classifications (sk-13a)
-# --------------------------------
-# What the derivation and completeness laws say about the solver's answer,
-# as one predicate of any classification (red, why, dropped equations ds,
-# amber), so that two honest classifications of a sketch can be compared:
-# honest_unique says the sketch determines which constraints are red, which
-# of those conflict, which equations are dropped and which constraints are
-# amber; only the witnesses and supports shown may differ.
+# Honest classifications (sk-13a), constraint by constraint
+# ---------------------------------------------------------
+# What the answer must be, stated for each constraint c given the classes
+# of the constraints before it, as exclusive cases, so the sketch decides
+# every class (honest_unique, by induction along the order):
+# - Conflict iff c with the premises before it has a degree-0 refutation
+#   (then with an irreducible support among them);
+# - otherwise each equation of c is dropped iff it is a constant
+#   combination of the solved equations before c and c's own earlier
+#   equations not dropped;
+# - otherwise Over iff c's remaining equations with the solved ones before
+#   it contain a structurally over-determined set (by what the equations
+#   depend on);
+# - otherwise kept, and amber iff all of its equations are dropped and
+#   every side condition of it is implied.
+# The global facts (the kept system has no refutation; the solved
+# equations are independent modulo constants; they have a matching)
+# follow as theorems.
 
-def own_below.go(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +c: Nat, +i: Nat, +k: Nat) -> List<&2, E.QExpr>:
+def presolved.go(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +k: Nat) -> List<&2, E.QExpr>:
   match es:
     case Nil{}:
       Nil{}
     case Con{e, t}:
-      solved.pick(band(lt(k, i), eq(nth(own, k), c)), e, own_below.go(t, own, c, i, 1n+k))
+      solved.pick(band(lt(nth(own, k), c), band(bnot(mem(nth(own, k), red)), bnot(mem(k, ds)))), e, presolved.go(t, own, red, ds, c, 1n+k))
 
-# c's own equations at positions before i
-def own_below(+sk: SK.Sketch, +c: Nat, +i: Nat) -> List<&2, E.QExpr>:
-  own_below.go(SK.Sketch.eqs(sk), owners(sk), c, i, 0n)
+# the solved equations of the constraints before c
+def presolved(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat) -> List<&2, E.QExpr>:
+  presolved.go(SK.Sketch.eqs(sk), owners(sk), red, ds, c, 0n)
 
-def over_s.of(+c: Nat, +r: Nat, y: Why, rest: List<&2, Nat>) -> List<&2, Nat>:
-  match y:
-    case Over{j, s, w}:
-      support.pick(eq(r, c), s, rest)
-    case Conflict{s}:
-      rest
-
-# the over-determined set of the red constraint c's Over
-def over_s(+c: Nat, red: List<&2, Nat>, why: List<&2, Why>) -> List<&2, Nat>:
-  match red why:
-    case Con{+r, rt} Con{y, yt}:
-      over_s.of(c, r, y, over_s(c, rt, yt))
-    case Nil{} why:
+def own_rest.go(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +i: Nat, +k: Nat) -> List<&2, E.QExpr>:
+  match es:
+    case Nil{}:
       Nil{}
-    case Con{r, rt} Nil{}:
-      Nil{}
+    case Con{e, t}:
+      solved.pick(band(lt(k, i), band(eq(nth(own, k), c), bnot(mem(k, d)))), e, own_rest.go(t, own, c, d, i, 1n+k))
+
+# c's own equations at positions before i that are not in d
+def own_rest(+sk: SK.Sketch, +c: Nat, +d: List<&2, Nat>, +i: Nat) -> List<&2, E.QExpr>:
+  own_rest.go(SK.Sketch.eqs(sk), owners(sk), c, d, i, 0n)
 
 # the premises before c: the equations and side conditions of the kept
 # constraints before it, and the entities' side conditions
@@ -820,61 +845,139 @@ def pre_eqs(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat) -> List<&2, E.QExpr>:
 def pre_sides(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat) -> List<&2, SK.Side>:
   SK.cats(csides(sk, kept_before(sk, red, c)), esides(sk))
 
-# every dropped equation is a constant combination of the solved equations
-# before it
-def Drop0(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>) -> Type:
-  @j: Nat -> {mem(j, ds) == True{} : Bool} -> &ls: List<&2, S.Q> -> Ident(eqat(SK.Sketch.eqs(sk), j), lin(ls, below_solved(sk, red, ds, j)))
-
 # the premises before c, and the negation of c's i-th side condition
 def neg_pre(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +i: Nat) -> List<&2, SK.Side>:
   SK.cats(pre_sides(sk, red, c), [negate(side_at(csides(sk, [c]), i))])
 
-# every side condition of an amber constraint is implied by the premises
-# before it: they and its negation have a degree-0 refutation
-def Amber0(+sk: SK.Sketch, +red: List<&2, Nat>, +amber: List<&2, Nat>) -> Type:
-  @c: Nat -> {mem(c, amber) == True{} : Bool} -> @i: Nat -> {lt(i, slen(csides(sk, [c]))) == True{} : Bool} -> &ls: List<&2, S.Q> -> &ms: List<&2, S.Q> -> &k: S.Q -> Refutes0(pre_eqs(sk, red, c), neg_pre(sk, red, c, i), ls, ms, k)
+# c with the premises before it has no degree-0 refutation
+def NoRefute(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat) -> Type:
+  @ls: List<&2, S.Q> -> @ms: List<&2, S.Q> -> @k: S.Q -> Refutes0(SK.cat(pre_eqs(sk, red, c), eqs_of(sk, [c])), SK.cats(pre_sides(sk, red, c), csides(sk, [c])), ls, ms, k) -> Empty
 
-# every conflict has a degree-0 refutation with its support
-def Conflict0(+sk: SK.Sketch, +red: List<&2, Nat>, +why: List<&2, Why>) -> Type:
-  @c: Nat -> {mem(c, conflicts(red, why)) == True{} : Bool} -> &ls: List<&2, S.Q> -> &ms: List<&2, S.Q> -> &k: S.Q -> Refutes0(eqs_of(sk, Con{c, support(c, red, why)}), SK.cats(csides(sk, Con{c, support(c, red, why)}), esides(sk)), ls, ms, k)
+# c's i-th side condition is implied by the premises before it (they and
+# its negation have a degree-0 refutation), or it is not
+def Implied(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +i: Nat) -> Type:
+  &ls: List<&2, S.Q> -> &ms: List<&2, S.Q> -> &k: S.Q -> Refutes0(pre_eqs(sk, red, c), neg_pre(sk, red, c, i), ls, ms, k)
 
-# and none without any one member of its support (the support is
-# irreducible)
-def ConflictMin(+sk: SK.Sketch, +red: List<&2, Nat>, +why: List<&2, Why>) -> Type:
-  @c: Nat -> {mem(c, conflicts(red, why)) == True{} : Bool} -> @m: Nat -> {mem(m, support(c, red, why)) == True{} : Bool} -> @ls: List<&2, S.Q> -> @ms: List<&2, S.Q> -> @k: S.Q -> Refutes0(eqs_of(sk, Con{c, unmark(m, support(c, red, why))}), SK.cats(csides(sk, Con{c, unmark(m, support(c, red, why))}), esides(sk)), ls, ms, k) -> Empty
+def NotImplied(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +i: Nat) -> Type:
+  @ls: List<&2, S.Q> -> @ms: List<&2, S.Q> -> @k: S.Q -> Refutes0(pre_eqs(sk, red, c), neg_pre(sk, red, c, i), ls, ms, k) -> Empty
 
-# no constant combination of the solved equations, other than all zeros,
-# is constant
-def Deg0(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>) -> Type:
-  @ls: List<&2, S.Q> -> {qlen(ls) == neqs(solved(sk, red, ds)) : Nat} -> @k: S.Q -> Ident(lin(ls, solved(sk, red, ds)), E.QCst{k}) -> AllZero(ls)
+# the equations equation i of c may be combined from: the solved ones
+# before c and c's own earlier ones not in d
+def basis(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +i: Nat) -> List<&2, E.QExpr>:
+  SK.cat(presolved(sk, red, ds, c), own_rest(sk, c, d, i))
 
-# the kept system (solved equations, every kept constraint's side
-# conditions, the entities') has no degree-0 refutation
-def Mz0(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>) -> Type:
-  @ls: List<&2, S.Q> -> @ms: List<&2, S.Q> -> @k: S.Q -> Refutes0(solved(sk, red, ds), SK.cats(csides(sk, kept_before(sk, red, ncons(sk))), esides(sk)), ls, ms, k) -> Empty
+def Derivable(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +i: Nat) -> Type:
+  &ls: List<&2, S.Q> -> Ident(eqat(SK.Sketch.eqs(sk), i), lin(ls, basis(sk, red, ds, c, d, i)))
 
-# a red constraint is Over only when degree 0 finds nothing for it: none of
-# its equations in the over-determined set is a constant combination, plus
-# a constant, of the solved equations before it and its own earlier ones;
-# and it has no degree-0 refutation with the premises before it
-def Over0(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +why: List<&2, Why>) -> Type:
-  @c: Nat -> @j: Nat -> {over_at(c, j, red, why) == True{} : Bool} -> ((@i: Nat -> {band(mem(i, over_s(c, red, why)), eq(nth(owners(sk), i), c)) == True{} : Bool} -> @ls: List<&2, S.Q> -> @k: S.Q -> Ident(eqat(SK.Sketch.eqs(sk), i), E.QAdd{lin(ls, SK.cat(below_solved(sk, red, ds, i), own_below(sk, c, i))), E.QCst{k}}) -> Empty) & (@ls: List<&2, S.Q> -> @ms: List<&2, S.Q> -> @k: S.Q -> Refutes0(SK.cat(pre_eqs(sk, red, c), eqs_of(sk, [c])), SK.cats(pre_sides(sk, red, c), csides(sk, [c])), ls, ms, k) -> Empty))
+def NotDerivable(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +i: Nat) -> Type:
+  @ls: List<&2, S.Q> -> Ident(eqat(SK.Sketch.eqs(sk), i), lin(ls, basis(sk, red, ds, c, d, i))) -> Empty
 
-# redundancy is reported: a kept constraint that drives an equation, has
-# all its equations dropped, and whose every side condition is implied by
-# the premises before it, is amber
-def AmberComplete(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +amber: List<&2, Nat>) -> Type:
-  @c: Nat -> {mem(c, red) == False{} : Bool} -> {lt(0n, ceqs(sk, c)) == True{} : Bool} -> {alldrop(sk, ds, [c]) == True{} : Bool} -> (@i: Nat -> {lt(i, slen(csides(sk, [c]))) == True{} : Bool} -> &ls: List<&2, S.Q> -> &ms: List<&2, S.Q> -> &k: S.Q -> Refutes0(pre_eqs(sk, red, c), neg_pre(sk, red, c, i), ls, ms, k)) -> {mem(c, amber) == True{} : Bool}
+def drops_ok.mem(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, m: Bool, +k: Nat) -> Type:
+  match m:
+    case True{}:
+      Derivable(sk, red, ds, c, d, k)
+    case False{}:
+      NotDerivable(sk, red, ds, c, d, k)
 
-# the solved system has a one-to-one matching of its equations with
-# variables each mentions (no structurally over-determined part)
-def Matchable(+es: List<&2, E.QExpr>) -> Type:
-  &m: List<&2, Nat> -> {band(distinct(m), uses_all(es, m)) == True{} : Bool}
+def drops_ok.at(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, b: Bool, +k: Nat) -> Type:
+  match b:
+    case True{}:
+      drops_ok.mem(sk, red, ds, c, d, mem(k, d), k)
+    case False{}:
+      {mem(k, d) == False{} : Bool}
 
-# an honest classification of the sketch: red with reasons, dropped
-# equations ds, amber
-def Honest(+sk: SK.Sketch, +red: List<&2, Nat>, +why: List<&2, Why>, +ds: List<&2, Nat>, +amber: List<&2, Nat>) -> Type:
-  {band(explained(sk, red, ds, why), amber_ok(sk, red, ds, amber)) == True{} : Bool} & (Drop0(sk, red, ds) & (Amber0(sk, red, amber) & (Conflict0(sk, red, why) & (ConflictMin(sk, red, why) & (Deg0(sk, red, ds) & (Mz0(sk, red, ds) & (Over0(sk, red, ds, why) & (AmberComplete(sk, red, ds, amber) & Matchable(solved(sk, red, ds))))))))))
+def drops_ok.go(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, own: List<&2, Nat>, +k: Nat) -> Type:
+  match own:
+    case Nil{}:
+      Unit
+    case Con{o, t}:
+      drops_ok.at(sk, red, ds, c, d, eq(o, c), k) & drops_ok.go(sk, red, ds, c, d, t, 1n+k)
+
+# d is exactly c's derivable equations: each equation of c is in d iff it
+# is a constant combination of the solved equations before c and c's own
+# earlier equations not in d; nothing else is in d
+def DropsOk(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>) -> Type:
+  {band(distinct(d), below(d, neqs(SK.Sketch.eqs(sk)))) == True{} : Bool} & drops_ok.go(sk, red, ds, c, d, owners(sk), 0n)
+
+# the equations of an Over set: c's own not in d, or solved and earlier
+def clean(+own: List<&2, Nat>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +d: List<&2, Nat>, +c: Nat, s: List<&2, Nat>) -> Bool:
+  match s:
+    case Nil{}:
+      True{}
+    case Con{+k, t}:
+      band(bor(band(eq(nth(own, k), c), bnot(mem(k, d))), band(lt(nth(own, k), c), band(bnot(mem(nth(own, k), red)), bnot(mem(k, ds))))), clean(own, red, ds, d, c, t))
+
+# every equation of c is in d
+def is_amberable(+sk: SK.Sketch, +c: Nat, +d: List<&2, Nat>) -> Bool:
+  alldrop.go(owners(sk), d, c, 0n)
+
+# kept with the dropped equations d: no refutation, d exactly the
+# derivable ones, no over-determined set, and not amber (if every
+# equation is dropped, some side condition is not implied)
+def KeptOk(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>) -> Type:
+  NoRefute(sk, red, c) & (DropsOk(sk, red, ds, c, d) & (Matchable(SK.cat(presolved(sk, red, ds, c), own_rest(sk, c, d, neqs(SK.Sketch.eqs(sk))))) & ({is_amberable(sk, c, d) == True{} : Bool} -> &i: Nat -> ({lt(i, slen(csides(sk, [c]))) == True{} : Bool} & NotImplied(sk, red, c, i)))))
+
+# amber with the dropped equations d: no refutation, d exactly the
+# derivable ones, all of c's equations, every side implied
+def AmberOk(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>) -> Type:
+  NoRefute(sk, red, c) & (DropsOk(sk, red, ds, c, d) & ({is_amberable(sk, c, d) == True{} : Bool} & (@i: Nat -> {lt(i, slen(csides(sk, [c]))) == True{} : Bool} -> Implied(sk, red, c, i))))
+
+# Over with equation j in the over-determined set s over w: no
+# refutation, and with c's derivable equations d set aside, s is made of
+# c's other equations and earlier solved ones
+def OverOk(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +j: Nat, +s: List<&2, Nat>, +w: List<&2, Nat>) -> Type:
+  NoRefute(sk, red, c) & (&d: List<&2, Nat> -> (DropsOk(sk, red, ds, c, d) & {band(eq(nth(owners(sk), j), c), band(mem(j, s), clean(owners(sk), red, ds, d, c, s))) == True{} : Bool} & Overdet(SK.Sketch.eqs(sk), s, w)))
+
+# Conflict with support s: kept, driving constraints before c; c and s
+# have a degree-0 refutation; without any one member of s they have none
+def ConflictOk(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>) -> Type:
+  {band(distinct(s), band(below(s, c), band(all_driving(sk, s), none_in(s, red)))) == True{} : Bool} & ((&ls: List<&2, S.Q> -> &ms: List<&2, S.Q> -> &k: S.Q -> Refutes0(eqs_of(sk, Con{c, s}), SK.cats(csides(sk, Con{c, s}), esides(sk)), ls, ms, k)) & (@m: Nat -> {mem(m, s) == True{} : Bool} -> @ls: List<&2, S.Q> -> @ms: List<&2, S.Q> -> @k: S.Q -> Refutes0(eqs_of(sk, Con{c, unmark(m, s)}), SK.cats(csides(sk, Con{c, unmark(m, s)}), esides(sk)), ls, ms, k) -> Empty))
+
+def Fate.driving(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, k: Class) -> Type:
+  match k:
+    case Kept{+dc}:
+      KeptOk(sk, red, ds, c, drops(dc))
+    case Amber{+dc, rs}:
+      AmberOk(sk, red, ds, c, drops(dc))
+    case Over{+j, +s, +w}:
+      OverOk(sk, red, ds, c, j, s, w)
+    case Conflict{+s}:
+      ConflictOk(sk, red, c, s)
+
+# a driven constraint means nothing: kept, nothing dropped
+def Fate.driven(k: Class) -> Type:
+  match k:
+    case Kept{dc}:
+      {drops(dc) == Nil{} : List<&2, Nat>}
+    case Amber{dc, rs}:
+      Empty
+    case Over{j, s, w}:
+      Empty
+    case Conflict{s}:
+      Empty
+
+def Fate.pick(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, b: Bool, +k: Class) -> Type:
+  match b:
+    case True{}:
+      Fate.driven(k)
+    case False{}:
+      Fate.driving(sk, red, ds, c, k)
+
+# the constraint at position c has its honest class, given the others'
+def Fate(+sk: SK.Sketch, +cls: List<&2, Class>, +c: Nat) -> Type:
+  Fate.pick(sk, reds(cls), dropped(cls), c, driven(sk, c), class_at(cls, c))
+
+def Honest.go(+sk: SK.Sketch, +cls: List<&2, Class>, n: Nat, +c: Nat) -> Type:
+  match n:
+    case 0n:
+      Unit
+    case 1n+m:
+      Fate(sk, cls, c) & Honest.go(sk, cls, m, 1n+c)
+
+# an honest classification of the sketch: one class per constraint, each
+# the honest one given the classes before it
+def Honest(+sk: SK.Sketch, +cls: List<&2, Class>) -> Type:
+  {clsn(cls) == ncons(sk) : Nat} & Honest.go(sk, cls, ncons(sk), 0n)
 
 # Pins
 # ----

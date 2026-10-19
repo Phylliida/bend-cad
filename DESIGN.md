@@ -1,4 +1,4 @@
-# bend-cad — Design v0.16 (draft; exact by default; sk-06 done; sk-09: a verified proposer; §8.11 decided, sk-13 under way)
+# bend-cad — Design v0.17 (draft; exact by default; sk-06 done; sk-09: a verified proposer; §8.11 decided, sk-13 under way)
 
 A formally verified 2D sketch constraint solver in Bend 2, aiming at Onshape /
 FreeCAD sketcher parity, feeding an implicit-function (SDF) modeling pipeline.
@@ -217,12 +217,15 @@ the plan; the bullets marked *as built* record what sk-03 fixed.
 - **Constraints** are typed and reference entities by ID. Their exact equation
   forms (§5) and tolerance checks (§6) are produced *inside* the checker, so an
   untrusted front end cannot change what a constraint means.
-- **Merging (D3)** is recorded as shared variable IDs. Merge conflicts are
-  errors (two different constants; horizontal and vertical on one segment).
-  *As built:* coincident, horizontal, vertical, and concentric / equal radius
-  of full circles stay in the IR as records of intent; `wf` requires the
-  referenced entities to share their variables. `Fix{v, k}` is an equation v − k = 0 in the spec;
-  treating v as a constant is the certificate layer's optimization (§8).
+- **Merges (D3, revised 2026-10-19, Q29)** are equations: coincident is
+  x_a − x_b and y_a − y_b, horizontal y_a − y_b, vertical x_a − x_b,
+  concentric the centres' differences, equal radius r_a − r_b, as
+  `Fix{v, k}` is the equation v − k = 0. Sharing variables is the
+  solver's optimization (the exact linear presolve after sk-13a). Two
+  different constants on merged coordinates are an ordinary conflict with
+  a support; horizontal and vertical on one segment is a degenerate (zero-
+  length) segment, which Q15 allows. *Until sk-13a's S0a:* the IR still
+  records merges as shared variable IDs, with `wf` requiring the sharing.
 - **Dimensions** are driving or driven. Driving values are exact constants (§7)
   or expressions over named sketch variables.
 - **Evaluation** is a straight-line program over an environment (shared
@@ -831,7 +834,9 @@ has one solution, so a claim stated there says nothing more).
   real closed fields agree, Tarski), so the laws speak about real geometry.
 - Redundant (amber): "the others, with c failing" is infeasible. Conflict:
   "c with its support" is infeasible. Over: structurally over-determined
-  (Dulmage–Mendelsohn), infeasible for generic values.
+  (Dulmage–Mendelsohn, read from what equations depend on, Q30); a count,
+  not a claim of infeasibility (Pappus-type incidences are over-determined
+  and consistent); Phase 4 decides Over exactly.
 - Theorems of the alternative decide these by certificates and are
   complete: Farkas (1902) and Motzkin (1936) for the linear fragment, the
   Positivstellensatz (Krivine 1964, Stengle 1974) for polynomials. One
@@ -847,8 +852,11 @@ has one solution, so a claim stated there says nothing more).
   universality theorem makes realizability of incidence configurations as
   hard as the existential theory of the reals); typical sketches are
   fast, pathological ones slow, never wrong.
-- sk-13a's form of it: SK13A-REVIEW.md (v2), after the audit in
-  AUDIT-sk13a-drafts.md.
+- sk-13a's form of it: SK13A-REVIEW.md (v5, after four audits,
+  AUDIT-sk13a-drafts*.md): each judgment's derivation, the layer's
+  completeness, and the semantic claims as corollaries; one class per
+  constraint; `Honest` stated constraint by constraint, and
+  `honest_unique` (the sketch determines the classification).
 
 **Layers, cheapest first.** Most dependencies in sketches come from three
 families with a group structure. For these, the search is a graph walk
@@ -992,8 +1000,8 @@ constraint order (the closing edge), matching v1's order rule and a
 user's "the one I just added". Processing equations in constraint order
 gives it.
 
-**Laws (drafts, v2 2026-10-18, Q24 and Q28; full text in
-SK13A-REVIEW.md).**
+**Laws (drafts; superseded in detail by SK13A-REVIEW.md v5, which is
+authoritative; the list below is the v2 outline).**
 - `solve_exists`, `solve_unique`, `solve_pins`: unchanged. Amber
   constraints are not marked, so the certified geometry satisfies them.
 - `solve_amber`: deleting every amber constraint changes no solution, in
@@ -2030,6 +2038,12 @@ laws, `AUDIT-sk09-laws.md`):**
   are one view, as Fix already was (§4). Costs, accepted: merge equations
   in the solve until the exact linear presolve; the merge kinds' meaning
   lemmas re-proven; the page sends unmerged variables.
+- **Q30** Structure is read from dependence (2026-10-19, after the fourth
+  audit, AUDIT-sk13a-drafts-v4.md 3): "e depends on v" is "the derivative
+  of e in v is not identically 0", using only the trusted derivative and
+  `Ident`, not how e is written (x − x + y does not depend on x). With
+  `honest_unique`, a syntactic notion would have forbidden the solver
+  from seeing such cancellations.
 - **Q28** The principled way (after the audit of the sk-13a drafts,
   AUDIT-sk13a-drafts.md): every judgment about a constraint is an
   (in)feasibility statement about solution sets with a certificate,
@@ -2106,6 +2120,10 @@ laws, `AUDIT-sk09-laws.md`):**
 ---
 
 ## 19. Changelog
+
+**v0.16 → v0.17 (sk-13a statements v5):** one class per constraint;
+`Honest` stated constraint by constraint; dependence by derivative (Q30);
+§4's merges rewritten for Q29; §8.11's Over wording and pointers updated.
 
 **v0.15 → v0.16 (sk-13a statements v4):**
 - D3 revised, Q29: merges are equations.

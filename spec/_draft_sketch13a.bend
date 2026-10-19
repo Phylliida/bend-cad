@@ -73,7 +73,7 @@ type Ent is Data:
 # exact constants elsewhere (§7).
 
 type Constraint is Data:
-  # merges (D3): realized by shared variables, no equations
+  # merges: equations like any other constraint (D3 as revised, Q29)
   Coincident{a: Nat, b: Nat}
   Horizontal{a: Nat, b: Nat}
   Vertical{a: Nat, b: Nat}
@@ -616,7 +616,7 @@ def Sketch.wf.cons(+es: List<&2, Ent>, cs: List<&2, Rec>) -> Type:
     case Con{Rec{id, dr, +k}, t}:
       Constraint.wf_refs(es, k) & (Constraint.wf(es, k) & Sketch.wf.cons(es, t))
 
-# every reference resolves and every merge is realized
+# every reference resolves
 def Sketch.wf(sk: Sketch) -> Type:
   match sk:
     case Sketch{vs, +es, cs}:

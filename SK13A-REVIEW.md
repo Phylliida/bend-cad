@@ -1,274 +1,259 @@
-# sk-13a: the trusted part (v4, 2026-10-19)
+# sk-13a: the trusted part (v5, 2026-10-19)
 
 What "correct" means once the solver reports redundant and conflicting
-constraints (DESIGN §8.11, Q24, Q28, Q29).
+constraints (DESIGN §8.11, Q24, Q28–Q30).
 
-History, each version audited:
-- v1: AUDIT-sk13a-drafts.md. The box-relative law said nothing.
-- v2: AUDIT-sk13a-drafts-v2.md. The semantic laws were vacuous on
-  inconsistent premises.
-- v3: AUDIT-sk13a-drafts-v3.md. Over could pre-empt amber, supports were
-  not irreducible, and the refusal law overclaimed.
-- v4 makes four changes:
-  - merges become equations (Q29);
-  - Over sets look only backwards;
-  - the conditions on a classification become one predicate, `Honest`,
-    with a law that **the sketch determines the classification**;
-  - the refusal law is restated honestly, and the stronger forms become
-    open laws.
+History: four versions, each audited (AUDIT-sk13a-drafts.md, -v2, -v3,
+-v4). The fourth audit found no counterexample to `honest_unique`. v5
+keeps v4's logic and simplifies its form (Danielle, 2026-10-19):
+- **one class per constraint** in place of parallel lists;
+- **honesty stated locally**, each constraint given the classes before it;
+- **structure read from what an equation depends on** (Q30), not from how
+  it is written.
 
-Danielle's standing rules: verified and complete; the principled way;
-"all limits are proved, not just stated".
+v5 also folds in the fourth audit's fixes. Danielle's standing rules:
+verified and complete; the principled way; all limits proved, not stated.
 
-Where things are:
-- The spec is in two draft files:
-  - `spec/_draft13a.bend`: `spec/solve.bend` with its red-constraint
-    section replaced, `Strict` refined, and `Honest` added;
-  - `spec/_draft_sketch13a.bend`: `spec/sketch.bend` with merges as
-    equations.
-- Both type-check. Planted errors are rejected, and the Bool definitions
-  were run on examples.
-- The order of work is in PLAN-sk13a.md.
+The spec is in two draft files:
+- `spec/_draft13a.bend`: `spec/solve.bend` with its classification
+  section replaced and `Strict` refined;
+- `spec/_draft_sketch13a.bend`: `spec/sketch.bend` with merges as
+  equations.
 
-## The principle, both halves
+Both type-check; planted errors are rejected; the Bool helpers were run
+on examples. The order of work is in PLAN-sk13a.md.
+
+## The principle
 
 Every judgment about a constraint is an (in)feasibility question about
-solution sets, decided by a theorem of the alternative:
-- Farkas (1902) and Motzkin (1936) for the linear fragment;
-- the Positivstellensatz (Krivine 1964, Stengle 1974) for polynomials.
+solution sets, decided by a theorem of the alternative: Farkas and
+Motzkin for the linear fragment, the Positivstellensatz for polynomials.
 
-Each has two matching halves:
-- **semantics:** "no point satisfies these", in every ordered field, which
-  for these statements is the same as over the reals;
-- **derivations:** "this combination is a contradiction". This is a proof
-  system; bounded-degree Nullstellensatz and Positivstellensatz proof
-  systems are standard in proof complexity.
+Such a theorem has two halves:
+- **semantics**, which says nothing when premises are inconsistent;
+- **derivations** (a proof system), which stay meaningful.
 
-The semantic half alone says nothing when premises are inconsistent,
-while a bounded-degree derivation stays meaningful. So:
-1. each judgment comes with its derivation in the layer's proof system
-   (sk-13a: constant multipliers, "degree 0");
-2. completeness conditions say every derivation of that degree was found;
-3. the semantic claims are proven corollaries.
+So each judgment carries its derivation in the layer's proof system:
+constant multipliers, "degree 0", in sk-13a. The layer's completeness is
+part of what "honest" means, and the semantic claims are proven
+corollaries.
 
-`Honest` collects 1 and 2 as a predicate of any classification.
-`honest_unique` proves that two honest classifications of a sketch agree.
-Every lazy solver the audits found was a case of the laws not pinning the
-answer down. This law proves they now do.
-
-**Over** claims only a count, a structurally over-determined set (a Hall
-violator, the over-determined part of the Dulmage–Mendelsohn
-decomposition). It doesn't claim infeasibility: incidence theorems such
-as Pappus give over-determined sets that are consistent for every value.
-Phase 4 decides Over flags exactly.
-
-From sk-13b, nondegeneracy enters as explicit hypotheses in geometric
-form, from a fixed vocabulary in the spec (as in Wu and Chou).
+Over claims only a count, a structurally over-determined set, not
+infeasibility; Pappus-type incidences are over-determined and consistent.
+Phase 4 decides Over exactly. From sk-13b, nondegeneracy enters as
+explicit geometric hypotheses from a fixed vocabulary in the spec.
 
 ## The answer
 
-`Out{ok, red, why, amber, drop, pins, gc, gr, plan}`.
-- **red** with **why**: constraints made driven.
-  - `Over{j, s, w}`: equation j lies in s, a set of more equations than
-    variables (all in w), made of c's own equations and *earlier* solved
-    ones.
-  - `Conflict{s}`: c cannot hold with its support s, kept constraints
-    before it, irreducible.
-- **amber:** the redundant constraints.
-- **drop:** equations left out of the system solved, each with a
-  certificate. This is the solver's own reduction: a constraint may have
-  dropped equations without being amber.
+`Out{ok, cls, pins, gc, gr, plan}`: one class per constraint, by position.
+- **`Kept{drops}`:** kept; these of its equations are left out of the
+  system solved, each with a certificate.
+- **`Amber{drops, refs}`:** redundant. All its equations are dropped,
+  and its side conditions are implied by the premises before it, each by
+  a refutation of the premises and the side's negation (`Ref{ls, ms, k}`,
+  which the verdict checks).
+- **`Over{j, s, w}`:** red. Its equation j lies in s, which has more
+  equations than variables (in w). s is made of its own non-dropped
+  equations and earlier solved ones.
+- **`Conflict{s}`:** red. It cannot hold together with its support s:
+  kept, driving constraints before it, irreducibly.
+
+A constraint can't be red twice, red and amber, or red with drops: those
+states can't be written. `reds`, `ambers`, `conflicts` and `dropped` are
+derived, so the laws that use `mark(red, sk)` read as before.
 
 ## The spec
 
-`spec/_draft_sketch13a.bend` (Q29: merges as equations, D3 revised).
-- Coincident(a, b) is x_a − x_b, y_a − y_b; Horizontal is y_a − y_b;
-  Vertical is x_a − x_b; Concentric is the centres' x and y differences;
-  EqualRadius is r_a − r_b.
-- `Constraint.wf` asks nothing beyond the references.
-- `Constraint.means` is unchanged: it already stated these equalities.
-- This is how Fix was already handled (§4: "Fix{v, k} is an equation
-  v − k = 0 in the spec; treating v as a constant is the certificate
-  layer's optimization").
+**`spec/_draft_sketch13a.bend`** (Q29, D3 revised):
+- Coincident is x_a − x_b, y_a − y_b; Horizontal is y_a − y_b; Vertical
+  is x_a − x_b; Concentric is the centres' differences; EqualRadius is
+  r_a − r_b.
+- `Constraint.wf` asks nothing beyond the references, and `means` is
+  unchanged.
+- The fourth audit checked the change is semantically clean:
+  `means_sound` and `means_complete` stay true with a weaker hypothesis,
+  `sketch_*` are unaffected, and a sketch that still shares variables
+  means the same thing (its merges come out amber).
 
-`spec/_draft13a.bend`: systems and pieces.
-- `solved`: equations of kept constraints that are not dropped.
-- `below_solved(.., j)`: those at positions before j.
-- `own_below(sk, c, i)`: c's own equations before position i.
-- `eqs_of(sk, cs)` and `csides(sk, cs)`: the equations and side
-  conditions of a set of constraints.
-- `esides`: the entities' side conditions.
-- `kept_before`: the kept constraints before a position.
-- `pre_eqs`, `pre_sides`: the premises before c (the equations and sides
-  of the kept constraints before it, plus the entities' sides).
-- `neg_pre`: those premises plus the negation of one of c's sides.
-- `only`, `picked`, `side_at`, `negate`.
+**`spec/_draft13a.bend`: systems.**
+- `solved`;
+- `presolved(sk, red, ds, c)`: the solved equations of constraints before
+  c;
+- `own_rest(sk, c, d, i)`: c's equations before position i not in d;
+- `eqs_of`, `csides`, `esides`, `kept_before`;
+- `pre_eqs` and `pre_sides`: the premises before c, i.e. the kept
+  constraints before it plus the entity sides;
+- `neg_pre`, `only`, `picked`, `side_at`, `negate`.
 
-`spec/_draft13a.bend`: derivations.
-- `Ident`: the same polynomial (equal at every rational point).
+**`spec/_draft13a.bend`: derivations.**
+- `Ident`: the same polynomial, equal at every rational point.
 - `lin`, `slin`, `AllZero`.
 - `Refutes0`, Motzkin's form: Σ lᵢeᵢ + Σ mₖsₖ = k identically, every
-  mₖ ≥ 0, and k < 0, or k = 0 with a strict side mₖ > 0. No point in any
-  ordered field satisfies the system.
+  mₖ ≥ 0, and k < 0, or k = 0 with a strict side's mₖ > 0.
 
-`spec/_draft13a.bend`: bookkeeping.
-- `explained`:
-  - red has no repeats, and drops are distinct equations of kept
-    constraints;
-  - **Over:** `clean` now requires every equation of s that c doesn't
-    own to belong to a constraint *before* c, not red, and not dropped
-    (audit 3.1a);
-  - **Conflict:** c drives an equation; s is distinct, before c, kept,
-    and drives equations.
-- `amber_ok`: distinct, kept, drives an equation, all its equations
-  dropped.
-- `conflicts`, `support`, `over_at`, `over_s`, `unmark`, `perfect`.
-- `Strict` (refined): a ≥ 0 side whose variables are all pins may hold
-  with equality. Ball products are exact on radius 0.
+**`spec/_draft13a.bend`: dependence (Q30).** Structure is about what an
+equation depends on, not how it is written:
+- `Depends(e, v)`: the derivative of e in v (`spec/deriv.bend`) is not
+  identically 0. In x − x + y, x doesn't count.
+- `DependsWithin(e, w)`: e depends only on variables in w.
+- `Overdet(es, s, w)`: distinct equations of es, depending only on w,
+  with w shorter than s.
+- `Matchable(es)`: a one-to-one matching of es with variables each
+  depends on.
+- `Perfect(es, vs, m)`: such a matching onto exactly vs, for
+  `solve_total`.
 
-**`Honest(sk, red, why, ds, amber)`** is the conjunction of:
-- `explained` and `amber_ok`;
-- `Drop0`: each dropped equation is `lin(ls, below_solved(j))`;
-- `Amber0`: each side of an amber c is implied, i.e. `Refutes0` of the
-  premises before c plus the side's negation;
-- `Conflict0`: each conflict has a `Refutes0` with its support;
-- `ConflictMin`: removing any member of the support leaves no refutation;
-- `Deg0`: no constant combination of solved equations, other than all
-  zeros, is constant;
-- `Mz0`: the kept system (solved equations, kept and entity sides) has no
-  refutation;
-- `Over0`:
-  - none of an Over constraint's equations in its set is a constant
-    combination, plus a constant, of earlier solved equations and its own
-    earlier ones (audit 3.1b);
-  - it has no refutation with its premises;
-- `AmberComplete`: a kept constraint with an equation, all its equations
-  dropped, and every side implied, is amber;
-- `Matchable(solved)`: a one-to-one matching of solved equations with
-  variables they mention.
+This needs no new trust: it uses only the trusted derivative and `Ident`.
+The solver builds its adjacency from normal forms, and the non-root lemma
+proves the two notions agree.
 
-Checked on examples:
-- The audit's lying Over (Fix x0 = 1 twice, the first flagged) is now
-  rejected; the honest form is accepted.
-- Merges have equations (Horizontal 1, Coincident 2).
-- A Coincident is amber only with both equations dropped.
-- A Conflict can name a merge in its support.
-- Earlier examples still hold.
+**`spec/_draft13a.bend`: classes.** `Ref`, `Class`, `class_at`, `kind`, `reds`,
+`ambers`, `conflicts`, `dropped`, `support`, `driving`, `all_driving`,
+`alldrop.go`, `unmark`.
+
+**`Honest(sk, cls)`.** There is one class per constraint, and each
+constraint c's class is the honest one given the classes before it. A
+driven constraint is Kept with nothing dropped. For a driving c:
+- **Conflict{s} (`ConflictOk`):**
+  - s is distinct, before c, driving, and kept;
+  - c and s have a degree-0 refutation;
+  - without any one member of s they have none, so s is irreducible.
+- **Kept{drops} (`KeptOk`):**
+  - c with its premises has no degree-0 refutation (`NoRefute`);
+  - the dropped equations are *exactly* the derivable ones (`DropsOk`):
+    each equation of c is dropped iff it is a constant combination of
+    the earlier solved equations and c's own earlier non-dropped ones;
+  - what's left, with the earlier solved equations, is `Matchable`;
+  - if every equation was dropped, some side condition is *not* implied
+    (otherwise it would be amber).
+- **Amber{drops} (`AmberOk`):** `NoRefute`, `DropsOk`, every equation
+  dropped, and every side condition implied (the premises plus its
+  negation have a refutation).
+- **Over{j, s, w} (`OverOk`):**
+  - `NoRefute`;
+  - with c's derivable equations set aside (some d with `DropsOk`), j is
+    c's, and s is made of c's other equations and earlier solved ones
+    (`clean`);
+  - `Overdet(s, w)`.
+
+These cases exclude each other, so `honest_unique` is an induction along
+the order (the fourth audit's proof, below). The global facts become
+library theorems, not trust:
+- the kept system has no refutation;
+- the solved equations are independent modulo constants;
+- the solved equations have a matching.
 
 ## The laws
 
-Abbreviations: A = `SO.solve_l(sk, g0, l)`; red, why, amber, ds =
-`drops(drop)` of A; solved = `SV.solved(sk, red, ds)`.
+A = `SO.solve_l(sk, g0, l)`, cls = `SO.Out.cls(A)`, red = `SV.reds(cls)`,
+ds = `SV.dropped(cls)`, solved = `SV.solved(sk, red, ds)`.
 
 **From the verdict** (when ok; independent of how the answer was found)
-1. `solve_exists`, `solve_unique`, `solve_pins`: unchanged.
-2. `solve_red` v2: `explained` and `amber_ok`.
-3. `solve_regular`: the certified geometry is a regular point of the
-   solved system in the free variables. The verdict gains three checks
-   (audit 3.4): the plan's pins are the reported pins, the plan's variable
-   order covers exactly 0..nvars − 1, and its equation order covers exactly
-   the solved equations.
-4. `solve_blame`: every conflict's support is consistent, because the
+1. `solve_exists`, `solve_unique`, `solve_pins`: unchanged, over red.
+2. `solve_regular`: the certified geometry is a regular point of the
+   solved system in the free variables. The verdict checks that the
+   plan's pins are the reported pins, and that the plan's variable and
+   equation orders cover exactly the variables and the solved equations.
+3. `solve_blame`: every conflict's support is consistent, because the
    certified geometry satisfies it.
 
-**Honesty** (about the search, for every wf sketch, ok or not)
-5. **`solve_honest`**: `Honest(sk, red, why, ds, amber)` at every level.
+The verdict also checks the drop certificates, and the amber side
+conditions by their refutations in `Amber`'s refs (audit 4.7), not by
+balls.
 
-**The spec pins the answer down** (about the spec alone; no solver)
-6. **`honest_unique`**: two honest classifications of a wf sketch agree
-   on every constraint (red or not, conflict or not, amber or not) and on
-   every equation (dropped or not):
+**Honesty** (about the search, for every wf sketch, ok or not)
+4. **`solve_honest`**: `Honest(sk, cls)` at every level. (v4's
+   `solve_red` is part of it now.)
+
+**The spec pins the answer down** (about the spec alone)
+5. **`honest_unique`**:
    ```
    law honest_unique:
      for +sk: SK.Sketch
      for  w: SK.Sketch.wf(sk)
-     for +r1, +y1, +d1, +a1; h1: SV.Honest(sk, r1, y1, d1, a1)
-     for +r2, +y2, +d2, +a2; h2: SV.Honest(sk, r2, y2, d2, a2)
+     for +c1: List<&2, SV.Class>
+     for  h1: SV.Honest(sk, c1)
+     for +c2: List<&2, SV.Class>
+     for  h2: SV.Honest(sk, c2)
      for +c: Nat
-     M.Both({SV.mem(c, r1) == SV.mem(c, r2)}, M.Both({SV.mem(c, SV.conflicts(r1, y1)) == SV.mem(c, SV.conflicts(r2, y2))}, M.Both({SV.mem(c, a1) == SV.mem(c, a2)}, {SV.mem(c, d1) == SV.mem(c, d2)})))
+     for +j: Nat
+     M.Both({SV.kind(SV.class_at(c1, c)) == SV.kind(SV.class_at(c2, c)) : Nat}, {SV.mem(j, SV.dropped(c1)) == SV.mem(j, SV.dropped(c2)) : Bool})
    ```
-   The proof is by induction along the constraint order. Given the same
-   earlier decisions, a constraint's fate is forced:
-   - its derivable equations must be dropped (`Deg0`), and only those
-     (`Drop0`);
-   - a degree-0 refutation with the premises forces Conflict (`Mz0`,
-     `Over0`(b)), and its absence forbids it (`Conflict0`, since a
-     refutation with a support extends to the premises);
-   - a Hall violator among the earlier solved equations and its own
-     forces Over (`Matchable`), and its absence forbids it (`clean`);
-   - amber is forced both ways (`Amber0`, `AmberComplete`).
+   Every constraint gets the same kind, and every equation is dropped in
+   both or in neither.
+   - The induction (audit 4): agreement before c gives equal premises and
+     equal earlier solved equations; then c's drops are forced, Conflict
+     is forced by a refutation and excluded by its absence, Over by an
+     over-determined set, and amber either way.
+   - The delicate steps are list bookkeeping: `owners` is nondecreasing;
+     support lists embed into the premises; side lists are re-indexed.
+   - Only the shown Over witnesses, which irreducible support is shown,
+     the pins and the box may differ between solvers.
 
-   Only the shown witnesses and supports may differ: supports are
-   irreducible but not unique (audit 3.6).
-
-**Semantic corollaries** (proven from 5 and the spec)
-7. `solve_drop`: wherever the solved equations hold, every dropped
+**Semantic corollaries** (from 4 and the spec)
+6. `solve_drop`: wherever the solved equations hold, every dropped
    equation holds.
-8. `solve_amber`: deleting every amber constraint changes no solution.
-   This goes by induction along the order; justifications look only
-   backwards.
-9. `solve_conflict`: c and its support cannot all hold (by `Conflict0`),
-   so c cannot be restored. Blame is earned: the support alone has no
-   refutation, by `Drop0` and `Mz0` (audit 3.6's correction of "by 9 and
-   10").
+7. `solve_amber`: deleting every amber constraint changes no solution.
+8. `solve_conflict`: c and its support cannot all hold, so c cannot be
+   restored. Blame is earned: the support alone has no refutation.
 
 **Search facts**
-10. `solve_total` v2:
-    - as today, plus amber and drop from the sketch;
-    - `explained` and `amber_ok`;
-    - `perfect(solved, free(nvars, 0n, pins_of), m)` in place of the
-      count.
-11. `solve_complete` v2: Regular for the solved system; `dy` for kept
-    constraints only; the refined `Strict`.
+9. `solve_total` v2: cls = `cls_of(sk)` (from the sketch alone);
+   `wf_dec(mark(red, sk))`; distinct, in-range pins; and
+   `&m -> Perfect(solved, free(nvars, 0n, pins_of), m)`.
+10. `solve_complete` v2:
+    - Regular for the solved system;
+    - `dy` for kept constraints only;
+    - `hs`: `Strict` over the side conditions of the kept *non-amber*
+      constraints, i.e. `sides(mark(red ++ ambers, sk))`. Amber sides
+      are certified by their refutations instead, so one that holds with
+      equality is fine. `Strict` itself is refined: a ≥ 0 side whose
+      variables are all pins may hold with equality.
 
 **What a refusal means today**
-12. `solve_refused`, restated honestly (audit 3.3): if no level certifies,
-    the drawing itself is not a regular solution of the solved system, in
-    the free variables the solver chose. That is all `solve_complete`'s
-    contrapositive gives. It says nothing about a regular solution near
-    the drawing, and the page tries finitely many levels. The stronger
-    forms are open laws below.
+11. `solve_refused`: if no level certifies, the drawing itself is not a
+    regular solution of the solved system in the solver's free variables.
+    That's all it says; the stronger forms are open laws.
 
-## Open laws (in ROADMAP when their phase starts; none is prose only)
+## Open laws (in ROADMAP when their phase starts)
 
-- **`solve_refusal_explained`** (sk-13e): every refusal is explained, as
-  one of three outcomes: a red constraint, a singular configuration naming
-  the block, or a quantitative bound (no regular solution within a stated
-  radius of the drawing, with a conditioning bound, Kantorovich-style).
-  Audit 3.3.
-- **Implicit equalities** (with the simplex, as soon as dimensions can be
-  variables): an equation forced by side conditions alone (x ≥ 0 and
-  −x ≥ 0 make Fix x = 0 redundant) is dropped and can be amber. These are
-  the LP's implicit equalities, decided by the same simplex. Audit 3.7.
-- **Amber sides at equality, nonlinear** (Phase 4): a ≥ 0 amber side that
-  holds with equality at a nonlinear solution is certified exactly.
-  Audit 3.7.
-- Directions and lengths (sk-13b/c): derivation and completeness laws for
-  their certificate shapes, with nondegeneracy hypotheses.
-- Phase 4: higher-degree derivations; real-only implications (sums of
-  squares); branch-selecting constraints; the exact decision of Over
-  flags (Q22).
-- §10.3: the solution nearest the layout (Q27).
-- **The exact linear presolve** (the step after sk-13a): substituting the
-  solved linear equations' pivots before Newton. This is faster, and it
-  makes merged points display identical again. Its law: certifying the
-  reduced system and substituting certifies the full one.
+- `solve_refusal_explained` (sk-13e): every refusal is explained as a red
+  constraint, a singular configuration naming the block, or a
+  quantitative bound.
+- Implicit equalities (with the simplex): an equation forced by side
+  conditions alone is dropped and can be amber.
+- A ≥ 0 side that is not amber and holds with equality on free variables
+  (audit 4.7). Today `Strict` excludes it.
+- Pins from the drawing (Q26, after sk-13a and the presolve). This
+  removes `solve_complete`'s "in the solver's free variables".
+- A red constraint's deviation at the solution (sk-19).
+- Directions and lengths (sk-13b/c), with nondegeneracy hypotheses.
+- Phase 4:
+  - higher-degree derivations;
+  - real-only implications;
+  - branch-selecting constraints;
+  - Over decided exactly (Q22).
+- The solution nearest the layout (§10.3, Q27).
+- The exact linear presolve (right after sk-13a), with its law.
 
-## Where the third audit's findings went
+## Where the fourth audit's findings went
 
-1. Over pre-empting: (a) `clean` looks backwards; (b) `Over0` covers
-   every equation of c in its set. `honest_unique` proves no room is left.
-2. Law 8 false for the plan: Chinneck's deletion filter on every
-   conflict (PLAN S3); `ConflictMin` is now true for the plan.
-3. Law 18 overclaims: restated (12), with `solve_refusal_explained` open.
-4. Law 3's verdict checks: listed in 3. The explicit inverse is in PLAN's
-   risks.
-5. Merges in supports: merges are equations (Q29).
-6. Comments: the `perfect` comment, the file header, "earlier", the
-   Pappus note on Over, the "by 5 and 10" wording, and "irreducible, not
-   unique" are all fixed in the draft and here.
-7. Uncovered limits: open laws above.
-8. Normal forms proven reduced: PLAN S1.
+1. The deletion filter tests members' full equations (PLAN S3).
+2. `wfdec`'s `cmerge` goes with S0a, along with `wfcpf`, `covpf`,
+   `sketch_demo`, the LAWS.bend comment, and saved IR unshared on load
+   (PLAN S0a).
+3. Syntactic structure: dependence by derivative (Q30).
+4. Stale text: fixed in the drafts; the LAWS.bend comment is in S0a;
+   DESIGN §4 and §8.11 are fixed.
+5. `honest_unique` typed: above (it type-checked in the audit's scratch
+   copy).
+6. Proof sketch: Over's exclusion uses `clean` and the drop conditions;
+   Conflict's uses `Drop0`-style rewriting and side re-indexing; no
+   decision procedure (PLAN S6).
+7. Amber sides certified by their certificates: law 10 and the verdict.
+   The non-amber case is an open law.
+8. "Driving" in place of "has an equation": `driving`, `all_driving`.
+9. Open laws: Q26, sk-19, ≥ 0 at equality, added.
 
 ## Questions
 
