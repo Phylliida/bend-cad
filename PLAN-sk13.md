@@ -1,7 +1,8 @@
 # Plan: sk-13, generic dependencies (written 2026-10-18 for a fresh session)
 
-**The design** is DESIGN.md §8.11, with Danielle's decisions Q20–Q23 in
-§16. This file is the order of work, the references, and what to check
+**The design** is DESIGN.md §8.11, with Danielle's decisions Q20–Q27 in
+§16 (Q24–Q27 after the second review of the sk-09 laws,
+AUDIT-sk09-laws.md). This file is the order of work, the references, and what to check
 before each step. Read §8.11 first.
 
 **In one paragraph.** v1 finds red constraints by counting. When
@@ -9,9 +10,11 @@ constraints depend on each other through geometry (a repeat, a chain of
 parallels, a fourth right angle), counting cannot see it. The kept block
 is singular, and the solver refuses with nothing red, after retrying
 every precision. sk-13 makes every refusal a theorem:
-- a red constraint is **implied** (shown amber, and holds at the
-  certified solution), **conflicting**, or **over-determined** (today's
-  `Why`);
+- an **implied** equation is dropped from the system solved, with a
+  certificate; its constraint still holds (shown amber when all its
+  equations were dropped);
+- a red constraint is **conflicting** or **over-determined** (today's
+  `Why`), dropped whole;
 - a **singular configuration** is reported as such.
 
 Dependencies are found by layers, cheapest first: linear, directions,
@@ -43,10 +46,11 @@ side by side with a ball-arithmetic nonzero test.
   - `+` for reused parameters, `1n++j` for a reused predecessor;
   - a check fully checks all imports, but the unsafe report covers the
     root's own defs only.
-- **Before sk-13a:** Danielle has read the six sk-09 law drafts in
-  ROADMAP.bend and thinks they look good (2026-10-18); an independent
-  agent review was run the same day (outcome noted in HANDOFF). sk-13a
-  replaces `solve_red`, so its new statement builds on the reviewed one.
+- **Before sk-13a (done):** Danielle read the six sk-09 law drafts in
+  ROADMAP.bend and thinks they look good (2026-10-18). The independent
+  review the same day (AUDIT-sk09-laws.md) found the soundness laws
+  stated for level 0 only; they now hold at every level (Q25). Its other
+  findings are folded into Phase 1 and the pins milestone.
 
 ## Phase 0: evidence and the regression set (done 2026-10-18)
 
@@ -71,23 +75,67 @@ the plan as written.
     tools/diag/README.md §4.
 - The diagnosis tools are in tools/diag/ and proto/probe_*.bend.
 
-## Phase 1, sk-13a: explanations as a sum type, and the linear layer
+## Phase 1, sk-13a: dropped equations, conflicts, and the linear layer
 
-- `Why` becomes a sum type: `Over` (today's), `Implied`, `Conflict`.
-  `explained₂` checks each one.
-  - Drafts in ROADMAP.bend: `solve_red` v2, `solve_implied` (the
-    certified solution satisfies each Implied red constraint), and
-    `solve_conflict`.
-  - Restate them in tests/ so lawsync covers them.
-- The linear layer: Fix, HDistance, VDistance, Midpoint, Radius and
-  Diameter, with the merges.
-  - Exact elimination over the dyadic constants. The certificate is the
-    coefficients λ with Σ λᵢgᵢ ≡ k: k = 0 is implied, k ≠ 0 is a conflict.
-  - The ring normalizer (`@ZEQ` style) checks Σ λᵢgᵢ ≡ k.
-- Flag the last constraint in constraint order (Q21).
-- Exit: the gate passes; the new laws are proven, or staged with Danielle;
-  the regression set is unchanged except for linear dependencies. Add a
-  test sketch with hdistance a–b, b–c and a–c (consistent, and one not).
+Revised 2026-10-18 for Q24 (DESIGN §8.11, §16): implied equations are
+dropped inside the solve, never whole constraints; amber constraints stay
+in the meaning; side conditions are never dropped. Red is Conflict or
+Over, dropped whole.
+
+- **The answer** gains one field, `drop`: the dropped equations (in the
+  sketch's numbering, `SK.Sketch.eqs(sk)`) with their certificates
+  h·g_j ≡ Σ qᵢ·gᵢ. In this phase h = 1 and the qᵢ are constants; the type
+  takes expressions so Phases 2–4 reuse it. Amber, for the page, is a
+  constraint all of whose equations are dropped.
+- **`Why`** becomes a sum type: `Over` (today's) and `Conflict` (the
+  certificate h·g_j ≡ Σ qᵢ·gᵢ + k, k a nonzero constant, over kept
+  equations and the constraint's own). `explained₂` checks both, with
+  `clean` (no spare flag) kept for both, and `distinct(red)`.
+- **The spec** (spec/solve.bend): the solved system is
+  eqs(mark(red, sk)) less the dropped equations; `cert_ok` checks one
+  certificate with the ring normalizer, over equations that are solved
+  (not dropped, not red), so no two certificates lean on each other.
+- **The verdict** (`final`): the plan checks the solved system; each
+  certificate is checked; h ≠ 0 over the box (trivial for h = 1); the
+  side conditions are those of mark(red, sk), amber constraints' included.
+- **Proof of soundness**: Zeros(solved) and the certificates give
+  Zeros(eqs(mark(red, sk))), so `solve_exists`, `solve_unique` and
+  `solve_pins` keep their statements. New: `solve_drop` (every x in the
+  box satisfying the solved equations satisfies each dropped one) and
+  `solve_conflict` (no x satisfies a Conflict's equations with the kept
+  ones).
+- **The linear layer**: equations that are linear (Fix, HDistance,
+  VDistance, Midpoint, Radius, Diameter, merges included), processed in
+  constraint order, eliminated exactly over the dyadic constants against
+  the solved ones so far. A residual with a variable: solved. Residual 0:
+  dropped (implied). A nonzero constant: the constraint is red, Conflict.
+  This gives Q21 (the last in order). Constant side conditions that fail
+  (d = −5 ≥ 0) make the constraint red, Conflict, too.
+- **Then today's structural stage** runs on the solved system.
+- **The review's items folded in** (AUDIT-sk09-laws.md):
+  - `solve_total` v2: with `drop_of(sk)`, and a matching of the solved
+    equations into the free variables in place of the count (lib/maxpf
+    has the facts);
+  - `solve_complete` v2: Regular for the solved system;
+  - the drawing has one value per variable (in `final`);
+  - `dyadic(mark(red_of(sk), sk))` in place of `dyadic(sk)`;
+  - the plan's pins are the reported pins (in `final`).
+- **Laws**: drafts in ROADMAP.bend, restated in tests/ so lawsync covers
+  them; staged with Danielle before they are called done.
+- **Exit**: the gate passes; the new laws proven; the regression set
+  unchanged except where a linear dependency now drops (e.g. a repeated
+  Fix: amber where it was Over). New test sketches: hdistance a–b, b–c,
+  a–c consistent (amber) and not (Conflict); the partly implied midpoint
+  pair (certifies, nothing flagged); Distance 5 and −5 (Conflict).
+
+## After Phase 1: pins from the drawing (Q26)
+
+Structural pins make exactly drawn axis-aligned sketches singular
+(AUDIT-sk09-laws.md 3: a horizontal segment with only a length is
+refused). Choose the pins from the drawing's Jacobian (rank-revealing
+pivoting). This changes `solve_total` ("pins from the sketch alone") and
+reopens part of `solve_complete`'s proof: a choice made at a drawing near
+x must stay regular at x. Design it before Phase 2.
 
 ## Phase 2, sk-13b: directions
 
@@ -122,7 +170,9 @@ the plan as written.
 
 Measure how often anything still reaches the witness layer on the
 regression set and on new GUI sketches. Then review the scope of Phase 4
-together: it is the large one.
+together: it is the large one. Settle there (DESIGN §8.11's correction):
+the exact decision per candidate is implied / not this one, and conflict
+is its own exact test (1 ∈ I + (g_c), degenerate solutions removed).
 
 ## Phase 4, sk-13d: the witness layer and the exact decision (large)
 

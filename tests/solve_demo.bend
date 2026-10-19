@@ -74,7 +74,7 @@ def circle_pins() -> {SO.Out.pins(SO.solve(SR.circle(), R.circle_g0())) == [0n, 
 # The laws at these sketches
 
 def circle_exists(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>) -> &x: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve(SR.circle(), R.circle_g0())), SO.Out.gr(SO.solve(SR.circle(), R.circle_g0())), x) & SK.Sketch.means(~F, x, SV.mark(SO.Out.red(SO.solve(SR.circle(), R.circle_g0())), SR.circle()))):
-  SP.solve_exists(~F, ~R, ~H, SR.circle(), R.circle_g0(), circle_ok())
+  SP.solve_exists(~F, ~R, ~H, SR.circle(), R.circle_g0(), 0n, circle_ok())
 
 def over_explained() -> {SV.explained(SR.over(), SO.Out.red(SO.solve(SR.over(), zeros4())), SO.Out.why(SO.solve(SR.over(), zeros4()))) == True{} : Bool}:
-  SP.solve_red(SR.over(), zeros4(), over_ok())
+  SP.solve_red(SR.over(), zeros4(), 0n, over_ok())

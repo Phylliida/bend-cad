@@ -1,4 +1,4 @@
-# bend-cad — Design v0.14 (draft; exact by default; sk-06 done; sk-09: a verified proposer; §8.11 proposed)
+# bend-cad — Design v0.15 (draft; exact by default; sk-06 done; sk-09: a verified proposer; §8.11 decided, sk-13 under way)
 
 A formally verified 2D sketch constraint solver in Bend 2, aiming at Onshape /
 FreeCAD sketcher parity, feeding an implicit-function (SDF) modeling pipeline.
@@ -788,16 +788,33 @@ Seen 2026-10-18 in the GUI:
 The page now drops exact repeats (untrusted shaping). Everything below is
 the solver's job (D7).
 
-**The goal: every refusal is explained, as a law.** A red constraint gets
-one of three explanations:
-- **Implied**: the kept constraints imply it, for every value of the
-  dimensions. It is flagged red as redundant, with a certificate, and a law
-  says the certified solution satisfies it too.
-- **Conflict**: it cannot hold together with the kept constraints at a
-  nondegenerate configuration. It is flagged red as conflicting, with a
-  certificate.
-- **Over-determined**: today's structural `Why`, kept for what the two
-  kinds above do not cover.
+**The goal: every refusal is explained, as a law.** Every constraint
+either holds at the certified solution or is red with a reason (Danielle,
+Q24: all equations satisfied, or we are told they cannot be; drop only
+what is truly redundant, and report it; keep the solve's surface simple).
+- **Implied** (amber, "redundant, holds anyway"): the kept equations imply
+  it. Implied is not a red flag. The solver drops the implied *equation*
+  from the system it solves, with a certificate h·g_j ≡ Σ qᵢ·gᵢ over kept
+  equations only (so no two certificates lean on each other), h nonzero
+  over the box (h = 1 in the linear layer, |b|² for directions). The
+  constraint stays in the sketch's meaning, so `solve_exists` already says
+  the certified geometry satisfies it, and its side conditions are never
+  dropped: they are checked over the box like any other (a Distance of −5
+  repeated is not amber; AUDIT-sk09-laws.md 4). A constraint is shown
+  amber when all its equations were dropped; a partly implied one (a
+  midpoint whose x equation follows from others, a Symmetric whose
+  perpendicular half does) just holds, and nothing in it is removable.
+- **Conflict** (red): it cannot hold together with the kept constraints
+  (at a nondegenerate configuration, for the direction and length
+  families: Q15 allows collapsed segments, which satisfy any cycle). It
+  is dropped whole, with a certificate h·g_j ≡ Σ qᵢ·gᵢ + k, k a nonzero
+  constant, over kept equations and its own: wherever those hold, g_j = k/h
+  ≠ 0. A side condition that fails without variables (d = −5 ≥ 0) is a
+  conflict too.
+- **Over-determined** (red): today's structural `Why`, kept for what the
+  two kinds above do not cover. It claims only that the set is
+  over-determined, not whether the constraint holds (Q22's exact decision
+  of every flag reaches it in sk-13d).
 
 A **singular configuration** is different: the constraints are generically
 independent, and these values put the solution where they are not (two
@@ -878,7 +895,14 @@ family gets a law.
       indicates, and the ring normalizer checks the identity.
     - **Fails.** Ball arithmetic shows g_c(x*) ≠ 0 once the box is refined
       enough.
-  - The result is implied (amber) or conflict (red), never unknown.
+  - Holds makes c implied (amber). *Correction (2026-10-18):* Fails does
+    not make c a conflict. It shows only that c is not this dependency:
+    c may hold elsewhere on the rest's solution curve, and the singularity
+    was then the configuration's (§8.8). A conflict needs its own
+    certificate, 1 ∈ I + (g_c) with the degenerate solutions removed (the
+    Gröbner basis shows it). To settle at the Phase 4 checkpoint
+    (PLAN-sk13.md): the decision per candidate is implied / not this one,
+    and conflict is a separate exact test.
   - This also covers coincidental redundancy: dimensions that agree exactly
     by accident, which §8.7 had excluded.
   - If removing no single constraint leaves a regular block, the
@@ -933,24 +957,30 @@ family gets a law.
 today's structural stage, then blocks. The witness layer runs only on a
 block that fails at every precision. Each candidate it proposes is tried
 first as a generic theorem, with the dimensions as symbols (low degree,
-fast), and then by the exact decision. Which constraint of a dependency is
-flagged: the last in constraint order (the closing edge), matching v1's
-order rule and a user's "the one I just added".
+fast), and then by the exact decision. Which equation of a dependency is
+dropped (or which constraint flagged, for a conflict): the last in
+constraint order (the closing edge), matching v1's order rule and a
+user's "the one I just added". Processing equations in constraint order
+gives it.
 
-**Laws (drafts).**
-- `solve_red` (v2): every red constraint has an Implied, Conflict or
-  Over-determined explanation, checked by `explained₂`; `Why` becomes a sum
-  type.
-- `solve_implied`: when the answer is ok, every x in the box that
-  satisfies the kept constraints also satisfies each Implied red
-  constraint.
-- `solve_conflict`: no x satisfies a Conflict's constraints. For the
-  direction and length families: with the cycle's interior lengths
-  nonzero.
+**Laws (drafts; revised 2026-10-18 for Q24).**
+- `solve_exists`, `solve_unique`, `solve_pins`: unchanged. Amber
+  constraints are not marked, so "holds anyway" is `solve_exists`.
+- `solve_red` (v2): every red constraint has a Conflict or Over-determined
+  explanation, checked by `explained₂`; `Why` becomes a sum type;
+  `distinct(red)`.
+- `solve_drop`: every dropped equation is implied: when the answer is ok,
+  every x in the box that satisfies the equations solved satisfies each
+  dropped one (that is what makes "redundant" a true label).
+- `solve_conflict`: no x satisfies a Conflict's equations together with
+  the kept ones (for the direction and length families: none with the
+  cycle's interior lengths nonzero).
 - `solve_red_complete`, one per family: a dependency within the family
-  leaves some constraint of it red.
-- `solve_complete` (v2): Regular is required only after the implied
-  constraints are removed.
+  leaves an equation of it dropped or a constraint of it red; built on
+  `solve_total` with a matching of the solved equations into the free
+  variables (AUDIT-sk09-laws.md 2), not a count.
+- `solve_total`, `solve_complete` (v2): with the dropped equations of the
+  sketch (`drop_of`), and Regular for the system solved.
 
 **Milestones.** sk-13 (§15) becomes:
 - sk-13a: `Why` as a sum type, `explained₂`, the linear layer.
@@ -1115,6 +1145,24 @@ in a shorter list; `explained`; `held`).
   11 s at 7). Faster refusal would need a proven infeasibility
   certificate (§8.7, sk-13) or a smaller interactive budget with "try
   harder".
+- The second review (fresh agent, 2026-10-18, `AUDIT-sk09-laws.md`, after
+  Danielle read the drafts): `solve_exists`, `solve_unique`, `solve_red`
+  and `solve_pins` were stated for `solve` (level 0) while
+  `solve_complete` certifies at some level l, so nothing constrained the
+  answers it promised; a solver lying above level 0 passed all six. They
+  now hold at every level (`solve_l(sk, g0, l)`; same proofs). Also
+  found, with their plans:
+  - `solve_total` says the kept system is square by count only; sk-13a
+    adds a matching of the kept equations into the free variables.
+  - Structural pins make exactly drawn axis-aligned sketches singular (a
+    segment with only a length, drawn horizontal, is refused): pins from
+    the drawing, after sk-13a (Q26).
+  - Implied must keep side conditions (§8.11, Q24).
+  - No law bounds the radius; Danielle prefers the solution nearest the
+    layout (Q27, §10.3).
+  - Minor (into sk-13a): the drawing has one value per variable; only
+    kept constraints' constants need be dyadic; the plan's pins are the
+    reported pins; `distinct(red)`.
 
 How the stages meet the laws: red constraints are found by matching
 constraints as units, in order (all of a constraint's equations or none;
@@ -1136,6 +1184,11 @@ a witness for each pin (a variable-side Hall violator: the same
 machinery), and which solution (§10.3).
 
 ### 10.3 Which solution (ink metric, a later stage)
+
+Danielle (Q27, 2026-10-18): the solution should be the one nearest the
+current layout, even when that moves things a long way (Onshape does
+this). That, more than a bound on the box's radius, is what the law for
+this stage should say; a radius bound may come with it.
 
 v1 solves with the free degrees of freedom pinned at their displayed
 values and Newton started from the drawing. Least ink displacement (D13)
@@ -1925,12 +1978,29 @@ comprehensive and exact.
   exact check, proven sound, terminating and complete. It runs as it is
   proven, with no fallback path.
 
+**Decided (Danielle, 2026-10-18, after the second review of the sk-09
+laws, `AUDIT-sk09-laws.md`):**
+- **Q24** Implied constraints: every equation is satisfied, or we are told
+  it cannot be; only truly redundant equations are dropped, and that is
+  reported; the solve's surface stays simple. So an implied equation is
+  dropped inside the solve with a certificate, the constraint stays in
+  the meaning (amber when all its equations were dropped), and side
+  conditions are never dropped (§8.11). Red is Conflict or
+  Over-determined, dropped whole.
+- **Q25** The soundness laws hold at every level, not only level 0 (done
+  the same day).
+- **Q26** Pins chosen from the drawing (numerically), after sk-13a.
+- **Q27** Which solution: the one nearest the current layout, even far
+  (§10.3); open to a radius bound, not required.
+
 **Open for Danielle:**
 - **sk-09 statements** (ROADMAP.bend): `solve_exists`, `solve_unique`,
   `solve_red`, `solve_pins`, and `spec/solve.bend` (`mark` by constraint
   position, `owners`, `overdet`, `explained` with its no-spare-flag
   condition, `held`). All four are proven; an independent audit found no
-  blocker, and its two fixes are in (§10.2).
+  blocker, and its two fixes are in (§10.2). Danielle read the six drafts
+  on 2026-10-18 ("those drafts look good I think"); the second review's
+  blocker is fixed (Q25) and its other findings are planned (§10.2).
 
 
 ---
@@ -1989,6 +2059,17 @@ comprehensive and exact.
 ---
 
 ## 19. Changelog
+
+**v0.14 → v0.15 (the second review of the sk-09 laws; Q24–Q27):**
+- §10.2: the soundness laws hold at every level (the review's blocker);
+  the review's other findings and their plans.
+- §8.11: implied equations are dropped inside the solve, never whole
+  constraints; amber constraints stay in the meaning; side conditions are
+  never dropped; red is Conflict or Over-determined. Laws redrafted
+  (`solve_drop` replaces `solve_implied`). Corrected: in the exact
+  decision, Fails means "not this dependency", not conflict.
+- §10.3: Danielle prefers the solution nearest the layout.
+- §16: Q24–Q27.
 
 **v0.13 → v0.14 (generic dependencies proposed):**
 - §8.11 (new, proposal for review): every refusal explained, as a law.

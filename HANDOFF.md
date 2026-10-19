@@ -176,9 +176,15 @@ laws):
 criteria, downloaded references (`refs/`, git-ignored) and risks are in
 **PLAN-sk13.md**. Diagnosis tools for slow or refused sketches are in
 `tools/diag/` and `proto/probe_*.bend`. Danielle has read the six sk-09
-law drafts and thinks they look good; an independent agent review was run
-the same day. Phase 0 is done: the GUI sketches are in `proto/sketches/`
-and `tools/regress.sh` (about 2 min now, set by the slowest refusal).
+law drafts and thinks they look good. The independent review the same
+day (`AUDIT-sk09-laws.md`) found one blocker, now fixed: the four
+soundness laws were stated for level 0 only, and now hold at every level
+(Q25). Danielle's answers to the rest are Q24–Q27 (DESIGN §16): implied
+equations are dropped inside the solve with certificates, the constraint
+stays in the meaning (PLAN-sk13.md Phase 1, revised); pins from the
+drawing after sk-13a; the solution nearest the layout (§10.3). Phase 0
+is done: the GUI sketches are in `proto/sketches/` and `tools/regress.sh`
+(about 2 min now, set by the slowest refusal). Next: sk-13a as revised.
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);
