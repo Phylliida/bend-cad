@@ -821,6 +821,35 @@ independent, and these values put the solution where they are not (two
 circles exactly tangent, §8.8). Nothing is red. The answer says so and
 names the failing block.
 
+**The principle (Danielle, 2026-10-18, Q28: "the principled thing").**
+Every judgment about a constraint is an (in)feasibility statement about
+solution sets, witnessed by a certificate, never a statement about the
+solver's box (which only certifies a solution; inside it the solved system
+has one solution, so a claim stated there says nothing more).
+- "In every ordered field" is, for these universal statements, the same as
+  over the reals (every ordered field embeds in a real closed field; all
+  real closed fields agree, Tarski), so the laws speak about real geometry.
+- Redundant (amber): "the others, with c failing" is infeasible. Conflict:
+  "c with its support" is infeasible. Over: structurally over-determined
+  (Dulmage–Mendelsohn), infeasible for generic values.
+- Theorems of the alternative decide these by certificates and are
+  complete: Farkas (1902) and Motzkin (1936) for the linear fragment, the
+  Positivstellensatz (Krivine 1964, Stengle 1974) for polynomials. One
+  certificate format and one checker (`lib/qnorm.bend`) serve every layer;
+  the layers are truncations by multiplier degree (constants first, then
+  lemma-shaped multipliers for directions and lengths, then Gröbner
+  degrees in sk-13d). Checking is always cheap; finding is the cost.
+- Nondegeneracy conditions, where a theorem needs them (a chain of
+  parallels says nothing about a segment of length 0), follow geometric
+  theorem proving (Wu, Chou): explicit, in geometric form, from a fixed
+  vocabulary in the spec, never a polynomial chosen by the solver.
+- Limits: no exact, complete method is fast on every sketch (Mnëv's
+  universality theorem makes realizability of incidence configurations as
+  hard as the existential theory of the reals); typical sketches are
+  fast, pathological ones slow, never wrong.
+- sk-13a's form of it: SK13A-REVIEW.md (v2), after the audit in
+  AUDIT-sk13a-drafts.md.
+
 **Layers, cheapest first.** Most dependencies in sketches come from three
 families with a group structure. For these, the search is a graph walk
 and each certificate is an instance of a lemma proven once, so no
@@ -963,24 +992,26 @@ constraint order (the closing edge), matching v1's order rule and a
 user's "the one I just added". Processing equations in constraint order
 gives it.
 
-**Laws (drafts; revised 2026-10-18 for Q24).**
+**Laws (drafts, v2 2026-10-18, Q24 and Q28; full text in
+SK13A-REVIEW.md).**
 - `solve_exists`, `solve_unique`, `solve_pins`: unchanged. Amber
-  constraints are not marked, so "holds anyway" is `solve_exists`.
-- `solve_red` (v2): every red constraint has a Conflict or Over-determined
-  explanation, checked by `explained₂`; `Why` becomes a sum type;
-  `distinct(red)`.
-- `solve_drop`: every dropped equation is implied: when the answer is ok,
-  every x in the box that satisfies the equations solved satisfies each
-  dropped one (that is what makes "redundant" a true label).
-- `solve_conflict`: no x satisfies a Conflict's equations together with
-  the kept ones (for the direction and length families: none with the
-  cycle's interior lengths nonzero).
-- `solve_red_complete`, one per family: a dependency within the family
-  leaves an equation of it dropped or a constraint of it red; built on
-  `solve_total` with a matching of the solved equations into the free
-  variables (AUDIT-sk09-laws.md 2), not a count.
-- `solve_total`, `solve_complete` (v2): with the dropped equations of the
-  sketch (`drop_of`), and Regular for the system solved.
+  constraints are not marked, so the certified geometry satisfies them.
+- `solve_amber`: deleting every amber constraint changes no solution, in
+  every ordered field.
+- `solve_drop`: every equation the solver leaves out of its solve is
+  implied, everywhere, by the ones it solves (box-free; the first draft
+  was stated in the box and said nothing).
+- `solve_conflict`: a conflicting constraint cannot hold together with its
+  support (named in `Conflict{s}`); hence it cannot be restored into the
+  kept sketch. From sk-13b, with explicit nondegeneracy conditions.
+- `solve_deg0` (the first layer complete): no combination of the solved
+  equations with constant coefficients, not all 0, is constant. Later
+  families get their own completeness laws (`solve_red_complete`).
+- `solve_red` (v2): `explained` (with `dropped_ok`) and `amber_ok`.
+- `solve_total`, `solve_complete` (v2): with amber and drop from the
+  sketch, a one-to-one matching of the solved system with the free
+  variables in place of a count (AUDIT-sk09-laws.md 2), and Regular for
+  the system solved.
 
 **Milestones.** sk-13 (§15) becomes:
 - sk-13a: `Why` as a sum type, `explained₂`, the linear layer.
@@ -1992,6 +2023,15 @@ laws, `AUDIT-sk09-laws.md`):**
 - **Q26** Pins chosen from the drawing (numerically), after sk-13a.
 - **Q27** Which solution: the one nearest the current layout, even far
   (§10.3); open to a radius bound, not required.
+- **Q28** The principled way (after the audit of the sk-13a drafts,
+  AUDIT-sk13a-drafts.md): every judgment about a constraint is an
+  (in)feasibility statement about solution sets with a certificate,
+  decided by theorems of the alternative (Farkas, Motzkin,
+  Positivstellensatz), never a claim about the box (§8.11, "The
+  principle"). Asked whether it can be much faster: typical sketches yes
+  (the layers find dependencies before Newton, so refusals stop costing
+  every precision; the first layer eliminates over all equations, which
+  catches nonlinear repeats), every sketch no (Mnëv).
 
 **Open for Danielle:**
 - **sk-09 statements** (ROADMAP.bend): `solve_exists`, `solve_unique`,
@@ -2070,6 +2110,9 @@ laws, `AUDIT-sk09-laws.md`):**
   decision, Fails means "not this dependency", not conflict.
 - §10.3: Danielle prefers the solution nearest the layout.
 - §16: Q24–Q27.
+- §8.11 "The principle" (Q28): judgments as (in)feasibility with
+  certificates; the sk-13a laws redrafted on it (v2: solve_amber,
+  box-free solve_drop, solve_conflict with a support, solve_deg0).
 
 **v0.13 → v0.14 (generic dependencies proposed):**
 - §8.11 (new, proposal for review): every refusal explained, as a law.
