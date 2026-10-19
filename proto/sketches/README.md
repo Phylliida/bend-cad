@@ -16,6 +16,9 @@ purpose, and check that the answers stay right.
 | oncircle-pairs | sketch(3).json | two OnCircle pairs repeated; raw is refused after every precision (the slowest here) |
 | vertical-twice | sketch(4).json | (3) with a direction dependency: segment 28 is made vertical twice, through #25 perpendicular, #27 and #38 parallel (tools/diag/README.md §4); refused with or without repeats, which no structural count can see |
 
+Since S0a (PLAN-sk13a.md, 2026-10-19) the inputs keep every variable and
+send merges as equations (Q29); before, merged points shared variables.
+
 The refusals are today's answers. sk-13 (PLAN-sk13.md) is to make each one
 either amber (implied, holds anyway) or a stated conflict; update
 `expected` as each phase changes them.

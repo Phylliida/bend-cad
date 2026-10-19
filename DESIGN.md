@@ -195,8 +195,8 @@ the plan; the bullets marked *as built* record what sk-03 fixed.
   direction on each segment (`ra`, `rb`); a horizontal/vertical distance's
   points are ordered.
 - *As built:* each constraint kind has `eqs` (polynomials that must vanish),
-  `sides` (polynomials that must be positive), `wf` (for merge kinds, the
-  variable sharing that realizes them) and `means` (its geometric meaning in
+  `sides` (polynomials that must be positive), `wf` (nothing beyond the
+  references since merges became equations, Q29) and `means` (its geometric meaning in
   any ordered field, `spec/geom.bend`). Equations and dimensions are `QExpr`
   over the variables, so a dimension may be a rational, a named variable, or
   an expression.
@@ -224,8 +224,12 @@ the plan; the bullets marked *as built* record what sk-03 fixed.
   solver's optimization (the exact linear presolve after sk-13a). Two
   different constants on merged coordinates are an ordinary conflict with
   a support; horizontal and vertical on one segment is a degenerate (zero-
-  length) segment, which Q15 allows. *Until sk-13a's S0a:* the IR still
-  records merges as shared variable IDs, with `wf` requiring the sharing.
+  length) segment, which Q15 allows. *As built (S0a, 2026-10-19):* the
+  spec, the meaning lemmas and the well-formedness check have the
+  equations; the page sends every variable with the merges' equations
+  (it still draws a merged class at one value). A sketch may still share
+  variables; its merges then read x − x = 0, which today's solver cannot
+  certify (a zero column) and sk-13a makes amber.
 - **Dimensions** are driving or driven. Driving values are exact constants (§7)
   or expressions over named sketch variables.
 - **Evaluation** is a straight-line program over an environment (shared
@@ -257,7 +261,7 @@ conditions (signs, ranges, nondegeneracy) certified over the ball (§8.6).
 
 | Constraint | Exact equations | Side conditions |
 |---|---|---|
-| coincident, horizontal, vertical; concentric / equal radius of full circles | merge (shared variable indices) | — |
+| coincident, horizontal, vertical; concentric / equal radius of full circles | coordinate differences: x_a − x_b, y_a − y_b; y_a − y_b; x_a − x_b; the centres'; r_a − r_b (Q29) | — |
 | fix / block: variable v = k | v − k = 0 | — |
 | distance(P, Q) = d | \|Q − P\|² − d² = 0 | d ≥ 0 |
 | horizontal / vertical distance | (Qx − Px) − d = 0 (resp. y); Q right of / above P | d ≥ 0 |

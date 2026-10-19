@@ -29,6 +29,11 @@ function residuals(req, v) {
     if (c[0]) continue; // driven: measured, not imposed
     const k = c[1], a = c.slice(2);
     switch (k) {
+      case 0: { const p = pt(a[0]), q = pt(a[1]); out.push(p.x - q.x, p.y - q.y); break; }
+      case 1: out.push(pt(a[0]).y - pt(a[1]).y); break;
+      case 2: out.push(pt(a[0]).x - pt(a[1]).x); break;
+      case 3: { const p = circ(a[0]).c, q = circ(a[1]).c; out.push(p.x - q.x, p.y - q.y); break; }
+      case 4: out.push(circ(a[0]).r - circ(a[1]).r); break;
       case 5: out.push(v[a[0]] - frac(a[1])); break;
       case 6: { const p = pt(a[0]), q = pt(a[1]); out.push(Math.hypot(q.x - p.x, q.y - p.y) - frac(a[2])); break; }
       case 7: { const p = pt(a[0]), q = pt(a[1]); out.push(q.x - p.x - frac(a[2])); break; }

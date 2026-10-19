@@ -22,9 +22,10 @@ is newer.
 - **Untrusted, and only shaping the input:**
   - `gui/solve_cli.bend` parses the sketch file and prints the answer.
   - `gui/serve.py` writes the file and runs the binary.
-  - The page builds the sketch: merges such as coincident or horizontal
-    become shared variables, as the solver expects (D3), and a fixed
-    point becomes two `Fix` records.
+  - The page builds the sketch: every variable is sent, merges such as
+    coincident or horizontal are equations like any other (D3 as revised,
+    Q29), starting from a drawing where they hold, and a fixed point
+    becomes two `Fix` records.
   - Three settings change only the drawing or the variable order:
     - *Relax the drawing first*: a least-squares pass that moves the
       drawing as little as it can toward the constraints.

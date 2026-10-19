@@ -2,9 +2,10 @@
 //
 // Entities own variables (a point its x and y, a circle its radius). The
 // merge constraints (coincident, horizontal, vertical, concentric, equal
-// radius) are realized as the solver expects (spec/sketch.bend, D3): the
-// merged variables become one variable of the sketch sent to the solver,
-// computed by union-find from the merge constraints present.
+// radius) are equations like any other (spec/sketch.bend, D3 as revised):
+// the solver gets every variable and the merges' equations. The drawing
+// keeps merged variables together through union-find classes (classes):
+// it shows a class at one value and moves it as one.
 
 export const VK = { coord: 0, length: 1, param: 2, aux: 3 };
 
@@ -194,8 +195,10 @@ function approx(x, maxD) {
 }
 
 // The sketch the solver reads (gui/serve.py's JSON), and how to read back
-// its answer: classes become variables, entities are renumbered, fix
-// becomes two Fix records, and each record remembers its constraint.
+// its answer: each variable becomes a solver variable starting at its
+// class's value (so the merges hold in the drawing), entities are
+// renumbered, fix becomes two Fix records, and each record remembers its
+// constraint.
 // a value as the solver reads it: exactly as given, or (dyadic mode) the
 // nearest multiple of 2^-40, since the certifying arithmetic holds only
 // dyadic constants (DESIGN Q19)
@@ -211,15 +214,14 @@ export function qval(x, dyadic) {
 export function toSolver(sk, opts = { dyadic: true }) {
   const dy = opts.dyadic;
   const find = classes(sk);
-  const cls = new Map(), vars = [], g0 = [];
+  const vix = new Map(), vars = [], g0 = [];
   const vi = v => {
-    const r = find(v);
-    if (!cls.has(r)) {
-      cls.set(r, vars.length);
-      vars.push(sk.vars[r].kind);
-      g0.push(sk.vars[r].val);
+    if (!vix.has(v)) {
+      vix.set(v, vars.length);
+      vars.push(sk.vars[v].kind);
+      g0.push(val(sk, v, find));
     }
-    return cls.get(r);
+    return vix.get(v);
   };
   const eid = new Map();
   sk.ents.forEach((e, i) => eid.set(e.id, i));
@@ -267,24 +269,26 @@ export function toSolver(sk, opts = { dyadic: true }) {
         cons.push([dr, k.code, ...E, ...(k.value ? [qval(v, dy)] : [])]); owner.push(c.id);
     }
   }
-  return { req: { vars, ents, cons, g0 }, cls, owner };
+  return { req: { vars, ents, cons, g0 }, vix, owner };
 }
 
-// write a certified answer back: every class gets its box center; returns
-// the set of pinned base variables and the red constraint ids
+// write a certified answer back: every variable gets its box center (the
+// drawing shows a class at its representative's); returns the set of
+// pinned base variables (a class is shown pinned when one of its variables
+// is: the merges hold the rest) and the red constraint ids
 export function applyAnswer(sk, map, ans) {
   const find = classes(sk);
   const pinned = new Set(), red = new Set();
   for (const r of ans.red || []) if (map.owner[r] !== undefined) red.add(map.owner[r]);
   if (ans.ok && ans.gc && ans.gc.length) {
-    for (const [root, i] of map.cls) {
-      if (i < ans.gc.length) sk.vars[root].val = ans.gc[i];
+    for (const [v, i] of map.vix) {
+      if (i < ans.gc.length) sk.vars[v].val = ans.gc[i];
     }
   }
-  const pinCls = new Set(ans.pins || []);
+  const pins = new Set(ans.pins || []), pinCls = new Set();
+  for (const [v, i] of map.vix) if (pins.has(i)) pinCls.add(find(v));
   for (const v of Object.keys(sk.vars)) {
-    const i = map.cls.get(find(Number(v)));
-    if (i !== undefined && pinCls.has(i)) pinned.add(Number(v));
+    if (pinCls.has(find(Number(v)))) pinned.add(Number(v));
   }
   return { pinned, red };
 }

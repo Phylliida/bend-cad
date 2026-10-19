@@ -10,4 +10,4 @@ oncircle-thrice.raw   30  ok False; red; pins 0
 oncircle-pairs        20  ok True; red; pins 0 1 2 3
 oncircle-pairs.raw   240  ok False; red; pins 0 2
 vertical-twice        90  ok False; red 32; pins
-vertical-twice.raw    90  ok False; red 34 33 31; pins
+vertical-twice.raw    90  ok False; red 34 33 32; pins

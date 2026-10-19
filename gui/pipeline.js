@@ -9,17 +9,16 @@ export function prepare(sk, opts, heavy = []) {
   const map = M.toSolver(sk, { dyadic: opts.dyadic, repeats: opts.repeats });
   let residual = 0;
   if (opts.relax) {
+    // a dragged point's classes resist moving
     const find = M.classes(sk);
+    const heavyCls = new Set(heavy.map(v => find(v)));
     const weights = {};
-    for (const v of heavy) {
-      const i = map.cls.get(find(v));
-      if (i !== undefined) weights[i] = 1e6;
-    }
+    for (const [v, i] of map.vix) if (heavyCls.has(find(v))) weights[i] = 1e6;
     const r = relax(map.req, weights);
     map.req.g0 = r.g0;
     residual = r.residual;
     // the relaxed drawing becomes the drawing
-    for (const [root, i] of map.cls) sk.vars[root].val = r.g0[i];
+    for (const [v, i] of map.vix) sk.vars[v].val = r.g0[i];
   }
   const order = opts.order ? chooseOrder(map.req) : map.req.g0.map((_, i) => i);
   const p = permute(map.req, order);
