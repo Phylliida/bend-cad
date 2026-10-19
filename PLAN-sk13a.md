@@ -1,7 +1,7 @@
 # Plan: sk-13a, the degree-0 layer (2026-10-18)
 
 The statements are in SK13A-REVIEW.md (v3): the answer, the spec
-(`spec/_draft13a.bend`), and laws 1–19. This file is the order of work,
+(`spec/_draft13a.bend`), and laws 1–18. This file is the order of work,
 what each step proves, and the risks. It replaces PLAN-sk13.md's Phase 1
 bullets; the rest of PLAN-sk13.md stands.
 
@@ -45,7 +45,7 @@ Only then does it use structure (red, Over). All of it is proven:
 - Danielle reviews SK13A-REVIEW.md v3, then a third independent audit runs
   on it.
 - `spec/_draft13a.bend` replaces `spec/solve.bend`.
-- Laws 1–19 go into ROADMAP.bend, written out in full.
+- Laws 1–18 go into ROADMAP.bend, written out in full.
 - `tools/stmtcheck.py` type-checks the open ones.
 - The `Why`, `Out` and `explained` call sites are updated
   (`lib/redpf.bend`, `lib/solve.bend`, `proto/*.bend`, `gui/solve_cli.bend`).
@@ -67,7 +67,7 @@ Only then does it use structure (red, Over). All of it is proven:
   - then the two agree in every ordered field;
   - a polynomial identity can be read coefficient by coefficient, which is
     what lets a linearized point refute a refutation.
-- Proves the tools for laws 5–16.
+- Proves the tools for laws 5–15.
 
 ### S2. Degree-0 elimination over all equations
 - **What it does.** Fraction-free Gaussian elimination over monomial
@@ -93,7 +93,7 @@ Only then does it use structure (red, Over). All of it is proven:
   - certificate soundness, giving the side part of 7, and 6 (amber sides:
     the premises plus the side's negation);
   - "a feasible linearized point means no refutation exists" (from S1),
-    giving 10 (`solve_mz0`), 12(b), and 8 (`solve_conflict_min`: one
+    giving 10 (`solve_mz0`), 11(b), and 8 (`solve_conflict_min`: one
     simplex per support member, each giving a feasible point once that
     member is removed).
 - Fastest at our sizes, as Danielle prefers. Fourier–Motzkin was the
@@ -108,9 +108,9 @@ Only then does it use structure (red, Over). All of it is proven:
   equation, all equations dropped, and all sides implied.
 - `Out` gains amber and drop; `red_of`, `why_of`, `drop_of` and
   `amber_of` come from the sketch alone.
-- **Proves:** 17 (`solve_total` v2, with `perfect` from lib/maxpf's
-  matching facts), 12(a) (an Over equation had a residual with a
-  variable), 13 (`solve_amber_complete`).
+- **Proves:** 16 (`solve_total` v2, with `perfect` from lib/maxpf's
+  matching facts), 11(a) (an Over equation had a residual with a
+  variable), 12 (`solve_amber_complete`).
 
 ### S5. The verdict and soundness
 - **`final` gains:**
@@ -127,12 +127,12 @@ Only then does it use structure (red, Over). All of it is proven:
   - 4 (`solve_blame`, from `solve_exists`: the support is kept).
 
 ### S6. Semantic corollaries
-- 14 (`solve_drop`) from 5;
-- 15 (`solve_amber`) from 5 and 6, by induction along the constraint
+- 13 (`solve_drop`) from 5;
+- 14 (`solve_amber`) from 5 and 6, by induction along the constraint
   order;
-- 16 (`solve_conflict`) from 7, via Refutes0's soundness in every ordered
+- 15 (`solve_conflict`) from 7, via Refutes0's soundness in every ordered
   field;
-- 19 (`solve_refused`) from 18.
+- 18 (`solve_refused`) from 17.
 
 ### S7. `solve_complete` v2
 - The C1–C6 proof (`lib/completepf.bend`) with the kept system replaced
@@ -142,7 +142,7 @@ Only then does it use structure (red, Over). All of it is proven:
 - `Strict` is refined: a ≥ 0 side with only pinned variables is checked
   at its exact value.
 - `dy` only for kept constraints.
-- **Proves:** 18.
+- **Proves:** 17.
 
 ### S8. The page and the CLI
 - **The CLI** prints amber, drops, conflicts with supports, and Over.
@@ -167,7 +167,7 @@ Only then does it use structure (red, Over). All of it is proven:
 - Danielle signs off on the laws.
 
 **Exit for sk-13a:**
-- laws 1–19 proven;
+- laws 1–18 proven;
 - the regression shows the expected changes (repeats amber and fast;
   vertical-twice still refused);
 - the new test sketches behave.

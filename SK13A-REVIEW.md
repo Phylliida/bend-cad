@@ -203,8 +203,7 @@ Abbreviations, expanded in ROADMAP:
     ```
     Together, 9 and 10 are what makes 7 assign blame: using only kept
     constraints, no refutation exists.
-11. (number kept free)
-12. **`solve_over0`**: Over is used only when degree 0 finds nothing. For
+11. **`solve_over0`**: Over is used only when degree 0 finds nothing. For
     c red with Over and equation j:
     - (a) equation j is not a constant combination of earlier solved
       equations plus a constant: `Ident(eqat(eqs, j), lin(ls,
@@ -212,7 +211,7 @@ Abbreviations, expanded in ROADMAP:
     - (b) c with the premises before it has no degree-0 refutation:
       `Refutes0(P(c) equations ++ eqs_of(sk, [c]), P(c) sides ++
       csides(sk, [c]), …)` → Empty.
-13. **`solve_amber_complete`**: redundancy is reported. A kept constraint
+12. **`solve_amber_complete`**: redundancy is reported. A kept constraint
     c that drives an equation, has all its equations dropped, and whose
     every side condition is implied by P(c) (a refutation as in 6, given
     for each i) is amber:
@@ -222,26 +221,26 @@ Abbreviations, expanded in ROADMAP:
     {SV.mem(c, amber) == True{}}
     ```
 
-### Semantic corollaries (proven from 5–13 and the spec)
+### Semantic corollaries (proven from 5–12 and the spec)
 
-14. **`solve_drop`**: in every ordered field, wherever the solved
+13. **`solve_drop`**: in every ordered field, wherever the solved
     equations hold, every dropped equation holds.
-15. **`solve_amber`**: in every ordered field, deleting every amber
+14. **`solve_amber`**: in every ordered field, deleting every amber
     constraint changes no solution: `means(mark(red ++ amber, sk))` →
     `means(mark(red, sk))`. It follows from 5 and 6 by induction along
     the constraint order. Each justification looks only backwards, so two
     amber constraints cannot justify each other.
-16. **`solve_conflict`**: in every ordered field, c and its support
+15. **`solve_conflict`**: in every ordered field, c and its support
     cannot all hold. Hence c cannot be restored into the kept sketch.
 
 ### Search facts (as today, extended)
 
-17. `solve_total` v2:
+16. `solve_total` v2:
     - as today, plus amber = `amber_of(sk)` and drop = `drop_of(sk)`;
     - `explained` and `amber_ok` for them;
     - in place of the count, a one-to-one matching
       `perfect(solved, free(nvars, 0n, pins_of), m)`.
-18. `solve_complete` v2:
+17. `solve_complete` v2:
     - `hr`: Regular for the solved system;
     - `dy`: only the kept constraints' constants need be dyadic;
     - `hs`: `Strict(F, x, sides(mark(red_of, sk)), pins_of(sk))`, the
@@ -249,15 +248,15 @@ Abbreviations, expanded in ROADMAP:
 
 ### What a refusal means (already proven, stated as a corollary)
 
-19. **`solve_refused`**: if no level certifies, there is no regular
+18. **`solve_refused`**: if no level certifies, there is no regular
     solution near the drawing. This is `solve_complete`'s
     contrapositive, stated so the page's "refused" has a law behind it.
 
 ## Where the audits' findings went
 
 **First audit:**
-1. `solve_drop` empty: closed by 5 and 14.
-2. `solve_conflict` vacuous: closed by 7 with 9–11.
+1. `solve_drop` empty: closed by 5 and 13.
+2. `solve_conflict` vacuous: closed by 7 with 9 and 10.
 3. No law for the linear layer: closed by 9 and 10.
 4. The algorithm must match every equation it doesn't drop:
    PLAN-sk13a.md step 4.
@@ -273,19 +272,19 @@ Abbreviations, expanded in ROADMAP:
 
 **Second audit:**
 1. Vacuity: closed by 5–8. The semantic laws are corollaries.
-2. Over pre-empting: closed by 12.
-3. Amber completeness: closed by 13.
+2. Over pre-empting: closed by 11.
+3. Amber completeness: closed by 12.
 4. Side conditions in step (a): closed. There is no separate step; the
    simplex is in sk-13a, and its system includes c's own equations and
    the entities' sides.
 5. Junk and order in supports: closed by `below(s, c)`, `has_eqs` and 8.
 6. Cert vs h: in sk-13a the verdict requires h = 1, constant multipliers,
    and rows that are earlier solved equations; nondegeneracy enters 5 and
-   14 from sk-13b.
+   13 from sk-13b.
 7. `perfect` overclaims: comment corrected (the matching is syntactic;
    regularity is `solve_complete`'s and `solve_regular`'s).
 8. Reduce against c's own earlier equations: PLAN-sk13a.md step 2.
-9. Laws without `ok`: intended. Laws 1–4 come from the verdict, 5–19 from
+9. Laws without `ok`: intended. Laws 1–4 come from the verdict, 5–18 from
    the search proofs, as `solve_total` does. ROADMAP's sentence is
    rewritten to say which is which. `Ident` → equality in every field
    needs "a nonzero polynomial has a rational non-root": in the plan.
