@@ -1,4 +1,4 @@
-# HANDOFF — bend-cad (2026-10-19, sk-09 verified solver built; sk-13a S0 done; next: PLAN-sk13a.md S1)
+# HANDOFF — bend-cad (2026-10-19, sk-09 verified solver built; sk-13a S0, S1 done; next: PLAN-sk13a.md S2)
 
 Read first: `DESIGN.md` (v0.9: the plan, Danielle's decisions, §3 spec
 numbers, §4–§5 typed IR, forms and meanings as built), `proto/RESULTS.md`
@@ -202,8 +202,14 @@ spec, meaning lemmas, wfdec, the page, the regression sketches), and the
 v5 solve spec is in place with laws 1–11 in ROADMAP.bend (S0b: the
 verdict laws proven over the classes; sk-09's totality and completeness
 proven in interim forms, `total_now` and `complete_now`; the other laws
-open and type-checked). **Next: PLAN-sk13a.md S1** (polynomials as
-vectors, reduced normal forms, the non-root lemma).
+open and type-checked). **S1 is done (2026-10-19):** normal forms
+proven reduced (`lib/redpoly.bend`), the non-root lemma
+(`lib/nonroot.bend`), `Ident` and `Depends` decided exactly by normal
+forms (`lib/identpf.bend`; dependence normalizes the derivative, see
+PLAN S1 as built), and identities read coefficient by coefficient
+(`lib/coefpf.bend`), gated via `tests/ident_laws.bend`. **Next:
+PLAN-sk13a.md S2** (degree-0 elimination; rows and the adjacency moved
+there).
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);
