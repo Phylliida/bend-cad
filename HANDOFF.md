@@ -1,4 +1,4 @@
-# HANDOFF — bend-cad (2026-10-18, sk-06 done; sk-09 verified solver built, solve_total and solve_complete proven, drafts awaiting review; next: sk-13 per PLAN-sk13.md)
+# HANDOFF — bend-cad (2026-10-18, sk-06 done; sk-09 verified solver built and its laws reviewed; next: sk-13a per PLAN-sk13a.md)
 
 Read first: `DESIGN.md` (v0.9: the plan, Danielle's decisions, §3 spec
 numbers, §4–§5 typed IR, forms and meanings as built), `proto/RESULTS.md`
@@ -184,7 +184,15 @@ equations are dropped inside the solve with certificates, the constraint
 stays in the meaning (PLAN-sk13.md Phase 1, revised); pins from the
 drawing after sk-13a; the solution nearest the layout (§10.3). Phase 0
 is done: the GUI sketches are in `proto/sketches/` and `tools/regress.sh`
-(about 2 min now, set by the slowest refusal). Next: sk-13a as revised.
+(about 2 min now, set by the slowest refusal). Then the sk-13a statements
+went through three drafts and two audits (AUDIT-sk13a-drafts.md, -v2.md)
+to v3, on Danielle's principle (Q28): every judgment is a derivation in
+the layer's proof system (degree 0: constant multipliers, Motzkin form),
+with completeness laws and the semantic claims as proven corollaries; "all
+limits are proved, not just stated". Statements: SK13A-REVIEW.md (v3,
+laws 1–18), spec `spec/_draft13a.bend` (not wired yet). `lib/qnorm.bend`
+(the certificate checker) is done. **Next: PLAN-sk13a.md S0** (Danielle's
+review of v3, a third audit, then wire the spec and laws).
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);
