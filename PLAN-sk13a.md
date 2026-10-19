@@ -93,6 +93,36 @@ equations). It gives each one exactly one class:
   in with Danielle.
 
 ### S1. Polynomials as vectors, and the bridge
+*Done 2026-10-19 (the mathematics; rows move to S2).* As built, gated
+through `tests/ident_laws.bend`:
+- `lib/redpoly.bend`: `norm_red`, every normal form reduced (terms
+  ascending strictly by monomial, no zero coefficient, sorted monomials);
+  the monomial order is reflexive, flips and is transitive.
+- `lib/nonroot.bend`: the non-root lemma, by induction on variables (the
+  Kronecker route needs base-B digit uniqueness and a dominance bound,
+  both heavier, so I didn't prototype it). Split p = A + x_h B at the
+  smallest variable: if A is not 0, x_h = 2a makes p = a(1 + 2B), odd
+  times nonzero; otherwise p = x_h B, with every coordinate of the
+  witness kept nonzero. No inequalities needed.
+- `lib/identpf.bend`: `Ident(e1, e2)` holds exactly when the cleared
+  e1 - e2 normalizes to 0 (`ident_ok`, `qzero_ident`); identities hold in
+  every ordered field (`ident_all`); the same against 0.
+- **Dependence, as built:** `dep(e, v)` normalizes the derivative of e in
+  v, and `dep_ok`, `nodep_ok` and `dep_of` show it decides `Depends`
+  exactly (x - x + y: y only). This differs from the bullet below, which
+  reads v off e's own normal form. Agreement of the two would need a
+  derivative on normal forms commuting with the symbolic one. That isn't
+  needed for correctness, and the cost is one small normalization per
+  (equation, variable it mentions).
+- `lib/coefpf.bend`: `coef(e, m)`, the rational coefficient of a
+  monomial. Linear over sums, differences, negation, constant multiples
+  and `lin` (`coef_lin`, exact equalities); `ident_coef` gives an identity
+  equal coefficients at every monomial. This bridges `Ident` to linear
+  equations over monomials for S2 and S3.
+- Moved to S2: rows with their combinations and value invariant (their
+  shape follows the elimination), and "a variable e doesn't mention has
+  derivative 0" for the adjacency.
+
 - **Rows** are integer polynomials in normal form (`lib/zring.bend`'s
   ZTerm lists), with a combination (equation, integer coefficient).
 - **Invariant:** in every ordered field, a row's value is Σ c·den·g.
