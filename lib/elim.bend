@@ -79,8 +79,10 @@ def vscale(+k: S.Z, u: List<&2, S.Z>) -> List<&2, S.Z>:
 
 def vadd(u: List<&2, S.Z>, w: List<&2, S.Z>) -> List<&2, S.Z>:
   match u w:
-    case Nil{} w:
-      w
+    case Nil{} Nil{}:
+      Nil{}
+    case Nil{} Con{y, s}:
+      Con{y, s}
     case Con{x, t} Nil{}:
       Con{x, t}
     case Con{x, t} Con{y, s}:
