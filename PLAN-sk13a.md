@@ -366,6 +366,34 @@ As planned:
   (2026-10-20): S7 right after the switch** — re-prove completeness over
   the system solved before the next green commit; nothing leaves the
   gate.
+- **The switch, as designed (2026-10-20).** Completeness over the
+  system solved is false unless `final` already checks the drop
+  certificates and the amber refutations (a dropped equation and an
+  amber side are not in the plan), so those come with the switch, not
+  after it. And the pins are by dependence while the plan checker reads
+  syntax (a block's equations may only mention earlier variables). The
+  structure therefore matches and pins by dependence (`PA.kvs` over
+  `dadjs`) and builds its blocks by syntax (`ST.adj`). lib/structpf's
+  `vside` does not mention the adjacency, so `skok_of`, `reg_kd` and
+  `inv_blocks` apply unchanged; only the sketch-level wrappers
+  (`vend`, `struct_ok`, `kept_good`, `pins_red`, `regular_blocks`,
+  `block_invs`) are redone. `good` is the pass's own `bp` (distinct,
+  below, the same set as its matching's equations; the system solved
+  is `picked(ES, bp)`), so `solved_pos` becomes `bp`. In order:
+  1. Alongside, gated green: the exact checks (`lib/verdict.bend`) and
+     their soundness (zeros of the system solved and the checks give
+     the zeros of the sketch less its red constraints, and every
+     amber side); the pass's certificates pass them (cwpf's walk
+     extended: each recorded drop's combination is the one `derivable`
+     proves; srefs' refutations are `refute_ok`'s); the new structure's
+     wrappers.
+  2. The switch, one green commit: `cls_of`, `pins_of`, `good_of`,
+     `kept`, `skel_of`, `final`; solve_exists/unique/pins re-proven;
+     `solve_total` (replacing `total_now`) and `solve_honest` wired;
+     completeness over the system solved (`Strict` as before, with no
+     pins, and the whole sketch dyadic), replacing `complete_now`.
+  3. Law 10 as stated: `Strict` with the pins (a ≥ 0 side over pins
+     only is exact on radius 0) and dyadic over kept constraints only.
 - **`final` gains:**
   - the drop certificates (`qzero`; h = 1; rows are earlier solved
     equations);
