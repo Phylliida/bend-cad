@@ -385,3 +385,184 @@ def noviol_f(~F: O.OField, r: SX.Rw, +v0: List<&2, S.Z>, +v1: List<&2, S.Z>, q: 
       %Equal.sym(O.C(F), O.sub(~F, SP.rv(~F, SX.Rw{d, m}, zv(~F, v0)), O.ofz(~F, S.Z.neg(b))), O.mul(F, O.sub(~F, O.ofz(~F, SX.dot(m, v0)), O.ofz(~F, S.Z.mul(S.Zpos{d}, S.Z.neg(b)))), O.inv(F, O.ofp(~F, d))), rv_less(~F, d, m, v0, S.Z.neg(b))) : LX.LNonneg(~F, _, O.sub(~F, SP.rv(~F, SX.Rw{d, m}, zv(~F, v1)), O.ofz(~F, SX.ind(s))))
       %Equal.sym(O.C(F), O.sub(~F, SP.rv(~F, SX.Rw{d, m}, zv(~F, v1)), O.ofz(~F, SX.ind(s))), O.mul(F, O.sub(~F, O.ofz(~F, SX.dot(m, v1)), O.ofz(~F, S.Z.mul(S.Zpos{d}, SX.ind(s)))), O.inv(F, O.ofp(~F, d))), rv_less(~F, d, m, v1, SX.ind(s))) : LX.LNonneg(~F, O.mul(F, O.sub(~F, O.ofz(~F, SX.dot(m, v0)), O.ofz(~F, S.Z.mul(S.Zpos{d}, S.Z.neg(b)))), O.inv(F, O.ofp(~F, d))), _)
       noviol_f.go(~F, S.Z.cmp(SX.dot(m, v0), S.Z.mul(S.Zpos{d}, S.Z.neg(b))), SX.dot(m, v0), SX.dot(m, v1), S.Z.mul(S.Zpos{d}, S.Z.neg(b)), S.Z.mul(S.Zpos{d}, SX.ind(s)), d, {==}, h)
+
+# the bound vector at slack k: -b_k, and [strict]
+def at_bnd0(qs: List<&2, SX.Ineq>, +n: Nat, k: Nat, hk: {SX.ltn(k, SX.qlen(qs)) == True{} : Bool}) -> {SX.at(SX.bnd0(qs, n), k) == S.Z.neg(Ineq.b(qat(qs, k))) : S.Z}:
+  match qs k:
+    case Nil{} k:
+      absurd({SX.at(SX.bnd0(Nil{}, n), k) == S.Z.neg(Ineq.b(qat(Nil{}, k))) : S.Z}, KA.ft(SP.ltn0(k, hk)))
+    case Con{SX.Ineq{a, b, s}, t} 0n:
+      {==}
+    case Con{SX.Ineq{a, b, s}, t} 1n++j:
+      at_bnd0(t, n, j, hk)
+
+def at_bnd1(qs: List<&2, SX.Ineq>, +n: Nat, k: Nat, hk: {SX.ltn(k, SX.qlen(qs)) == True{} : Bool}) -> {SX.at(SX.bnd1(qs, n), k) == SX.ind(Ineq.s(qat(qs, k))) : S.Z}:
+  match qs k:
+    case Nil{} k:
+      absurd({SX.at(SX.bnd1(Nil{}, n), k) == SX.ind(Ineq.s(qat(Nil{}, k))) : S.Z}, KA.ft(SP.ltn0(k, hk)))
+    case Con{SX.Ineq{a, b, s}, t} 0n:
+      {==}
+    case Con{SX.Ineq{a, b, s}, t} 1n++j:
+      at_bnd1(t, n, j, hk)
+
+# The run
+# -------
+
+def iter(n: Nat, +lp: SX.LP, r: SX.Run) -> SX.Run:
+  match n:
+    case 0n:
+      r
+    case 1n+k:
+      iter(k, lp, SX.adv(lp, r))
+
+def isgo(r: SX.Run) -> Bool:
+  match r:
+    case SX.Go{t}:
+      True{}
+    case SX.Sat{t}:
+      False{}
+    case SX.Unsat{t, i}:
+      False{}
+
+def rtab(r: SX.Run) -> SX.Tab:
+  match r:
+    case SX.Go{t}:
+      t
+    case SX.Sat{t}:
+      t
+    case SX.Unsat{t, i}:
+      t
+
+def iter_succ(n: Nat, +lp: SX.LP, +r: SX.Run) -> {iter(1n+n, lp, r) == SX.adv(lp, iter(n, lp, r)) : SX.Run}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+k:
+      iter_succ(k, lp, SX.adv(lp, r))
+
+# the run's state after n steps, and its dictionary
+def st(+lp: SX.LP, n: Nat) -> SX.Run:
+  iter(n, lp, SX.Go{SX.init(lp)})
+
+def tab(+lp: SX.LP, n: Nat) -> SX.Tab:
+  rtab(st(lp, n))
+
+# the choices at t: leaving, its row, entering
+def lv(+lp: SX.LP, t: SX.Tab) -> Nat:
+  mval(SX.leave(lp, t))
+
+def rowi(+lp: SX.LP, +t: SX.Tab) -> List<&2, S.Z>:
+  SX.Rw.m(SX.rowat(SX.Tab.rows(t), lv(lp, t)))
+
+def en(+lp: SX.LP, +t: SX.Tab) -> Nat:
+  mval(SX.enter.go(rowi(lp, t), SX.LP.m(lp), 0n))
+
+def some_eta(m: Maybe<&2, Nat>, h: {issome(m) == True{} : Bool}) -> {m == Some{mval(m)} : Maybe<&2, Nat>}:
+  match m:
+    case None{}:
+      absurd({None{} == Some{mval(None{})} : Maybe<&2, Nat>}, KA.ft(h))
+    case Some{x}:
+      {==}
+
+def go_leave.go(+lp: SX.LP, +t: SX.Tab, ml: Maybe<&2, Nat>, h: {isgo(SX.step.l(lp, t, ml)) == True{} : Bool}) -> {issome(ml) == True{} : Bool}:
+  match ml:
+    case None{}:
+      h
+    case Some{i}:
+      {==}
+
+# a step that pivots had a leaving slack
+def go_leave(+lp: SX.LP, +t: SX.Tab, h: {isgo(SX.step(lp, t)) == True{} : Bool}) -> {SX.leave(lp, t) == Some{lv(lp, t)} : Maybe<&2, Nat>}:
+  some_eta(SX.leave(lp, t), go_leave.go(lp, t, SX.leave(lp, t), h))
+
+def go_enter.go(+lp: SX.LP, +t: SX.Tab, +i: Nat, me: Maybe<&2, Nat>, h: {isgo(SX.step.e(lp, t, i, me)) == True{} : Bool}) -> {issome(me) == True{} : Bool}:
+  match me:
+    case None{}:
+      h
+    case Some{e}:
+      {==}
+
+def go_step.l(+lp: SX.LP, +t: SX.Tab, +i: Nat, hl: {SX.leave(lp, t) == Some{i} : Maybe<&2, Nat>}, h: {isgo(SX.step(lp, t)) == True{} : Bool}) -> {isgo(SX.step.e(lp, t, i, SX.enter.go(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), SX.LP.m(lp), 0n))) == True{} : Bool}:
+  %hl : {isgo(SX.step.l(lp, t, _)) == True{} : Bool}
+  h
+
+# and an entering variable
+def go_enter(+lp: SX.LP, +t: SX.Tab, +h: {isgo(SX.step(lp, t)) == True{} : Bool}) -> {SX.enter.go(rowi(lp, t), SX.LP.m(lp), 0n) == Some{en(lp, t)} : Maybe<&2, Nat>}:
+  some_eta(SX.enter.go(rowi(lp, t), SX.LP.m(lp), 0n), go_enter.go(lp, t, lv(lp, t), SX.enter.go(rowi(lp, t), SX.LP.m(lp), 0n), go_step.l(lp, t, lv(lp, t), go_leave(lp, t, h), h)))
+
+# and pivoted on them
+def go_step(+lp: SX.LP, +t: SX.Tab, +h: {isgo(SX.step(lp, t)) == True{} : Bool}) -> {SX.step(lp, t) == SX.Go{SX.pivot(SX.LP.nv(lp), t, lv(lp, t), en(lp, t))} : SX.Run}:
+  %Equal.sym(Maybe<&2, Nat>, SX.leave(lp, t), Some{lv(lp, t)}, go_leave(lp, t, h)) : {SX.step.l(lp, t, _) == SX.Go{SX.pivot(SX.LP.nv(lp), t, lv(lp, t), en(lp, t))} : SX.Run}
+  %Equal.sym(Maybe<&2, Nat>, SX.enter.go(rowi(lp, t), SX.LP.m(lp), 0n), Some{en(lp, t)}, go_enter(lp, t, h)) : {SX.step.e(lp, t, lv(lp, t), _) == SX.Go{SX.pivot(SX.LP.nv(lp), t, lv(lp, t), en(lp, t))} : SX.Run}
+  {==}
+
+def go_back(+lp: SX.LP, r: SX.Run, h: {isgo(SX.adv(lp, r)) == True{} : Bool}) -> {isgo(r) == True{} : Bool}:
+  match r:
+    case SX.Go{t}:
+      {==}
+    case SX.Sat{t}:
+      h
+    case SX.Unsat{t, i}:
+      h
+
+def go_eta(r: SX.Run, h: {isgo(r) == True{} : Bool}) -> {r == SX.Go{rtab(r)} : SX.Run}:
+  match r:
+    case SX.Go{t}:
+      {==}
+    case SX.Sat{t}:
+      absurd({SX.Sat{t} == SX.Go{rtab(SX.Sat{t})} : SX.Run}, KA.ft(h))
+    case SX.Unsat{t, i}:
+      absurd({SX.Unsat{t, i} == SX.Go{rtab(SX.Unsat{t, i})} : SX.Run}, KA.ft(h))
+
+def stop_e(+lp: SX.LP, +t: SX.Tab, +i: Nat, me: Maybe<&2, Nat>, h: {isgo(SX.step.e(lp, t, i, me)) == False{} : Bool}) -> {rtab(SX.step.e(lp, t, i, me)) == t : SX.Tab}:
+  match me:
+    case None{}:
+      {==}
+    case Some{e}:
+      absurd({rtab(SX.step.e(lp, t, i, Some{e})) == t : SX.Tab}, KA.tf(h))
+
+def stop_l(+lp: SX.LP, +t: SX.Tab, ml: Maybe<&2, Nat>, h: {isgo(SX.step.l(lp, t, ml)) == False{} : Bool}) -> {rtab(SX.step.l(lp, t, ml)) == t : SX.Tab}:
+  match ml:
+    case None{}:
+      {==}
+    case Some{+i}:
+      stop_e(lp, t, i, SX.enter.go(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), SX.LP.m(lp), 0n), h)
+
+# a step that stops keeps the dictionary
+def stop_tab(+lp: SX.LP, r: SX.Run, h: {isgo(SX.adv(lp, r)) == False{} : Bool}) -> {rtab(SX.adv(lp, r)) == rtab(r) : SX.Tab}:
+  match r:
+    case SX.Go{+t}:
+      stop_l(lp, t, SX.leave(lp, t), h)
+    case SX.Sat{t}:
+      {==}
+    case SX.Unsat{t, i}:
+      {==}
+
+def st_succ(+lp: SX.LP, +n: Nat) -> {st(lp, 1n+n) == SX.adv(lp, st(lp, n)) : SX.Run}:
+  iter_succ(n, lp, SX.Go{SX.init(lp)})
+
+def piv_step.go(+lp: SX.LP, +n: Nat, +h2: {isgo(SX.adv(lp, st(lp, n))) == True{} : Bool}) -> {isgo(SX.step(lp, tab(lp, n))) == True{} : Bool}:
+  %go_eta(st(lp, n), go_back(lp, st(lp, n), h2)) : {isgo(SX.adv(lp, _)) == True{} : Bool}
+  h2
+
+# the state before a pivoting step was a dictionary whose step pivots
+def piv_step(+lp: SX.LP, +n: Nat, h: {isgo(st(lp, 1n+n)) == True{} : Bool}) -> {isgo(SX.step(lp, tab(lp, n))) == True{} : Bool}:
+  piv_step.go(lp, n, (%st_succ(lp, n) : {isgo(_) == True{} : Bool}
+    h))
+
+def tab_piv.go(+lp: SX.LP, +n: Nat, +h2: {isgo(SX.adv(lp, st(lp, n))) == True{} : Bool}) -> {rtab(SX.adv(lp, st(lp, n))) == SX.pivot(SX.LP.nv(lp), tab(lp, n), lv(lp, tab(lp, n)), en(lp, tab(lp, n))) : SX.Tab}:
+  %Equal.sym(SX.Run, st(lp, n), SX.Go{rtab(st(lp, n))}, go_eta(st(lp, n), go_back(lp, st(lp, n), h2))) : {rtab(SX.adv(lp, _)) == SX.pivot(SX.LP.nv(lp), tab(lp, n), lv(lp, tab(lp, n)), en(lp, tab(lp, n))) : SX.Tab}
+  %Equal.sym(SX.Run, SX.step(lp, tab(lp, n)), SX.Go{SX.pivot(SX.LP.nv(lp), tab(lp, n), lv(lp, tab(lp, n)), en(lp, tab(lp, n)))}, go_step(lp, tab(lp, n), piv_step.go(lp, n, h2))) : {rtab(_) == SX.pivot(SX.LP.nv(lp), tab(lp, n), lv(lp, tab(lp, n)), en(lp, tab(lp, n))) : SX.Tab}
+  {==}
+
+# a pivoting step: the next dictionary is the pivot of this one
+def tab_piv(+lp: SX.LP, +n: Nat, h: {isgo(st(lp, 1n+n)) == True{} : Bool}) -> {tab(lp, 1n+n) == SX.pivot(SX.LP.nv(lp), tab(lp, n), lv(lp, tab(lp, n)), en(lp, tab(lp, n))) : SX.Tab}:
+  %Equal.sym(SX.Run, st(lp, 1n+n), SX.adv(lp, st(lp, n)), st_succ(lp, n)) : {rtab(_) == SX.pivot(SX.LP.nv(lp), tab(lp, n), lv(lp, tab(lp, n)), en(lp, tab(lp, n))) : SX.Tab}
+  tab_piv.go(lp, n, (%st_succ(lp, n) : {isgo(_) == True{} : Bool}
+    h))
+
+# a step that stops: the next dictionary is this one
+def tab_stop(+lp: SX.LP, +n: Nat, h: {isgo(st(lp, 1n+n)) == False{} : Bool}) -> {tab(lp, 1n+n) == tab(lp, n) : SX.Tab}:
+  %Equal.sym(SX.Run, st(lp, 1n+n), SX.adv(lp, st(lp, n)), st_succ(lp, n)) : {rtab(_) == tab(lp, n) : SX.Tab}
+  stop_tab(lp, st(lp, n), (%st_succ(lp, n) : {isgo(_) == False{} : Bool}
+    h))
