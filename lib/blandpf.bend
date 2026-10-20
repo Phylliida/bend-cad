@@ -586,3 +586,154 @@ def st_const(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == T
   bool_eq(St(lp, j, plus(d, a)), St(lp, j, a),
     h => lemA(lp, j, d, 0n, a, {==}, go_down(lp, 1n+L, d, a, hd, hG), noent_pre(lp, j, 1n+L, d, a, hd, hn), h),
     h => lemB(lp, j, d, 0n, a, {==}, go_down(lp, 1n+L, d, a, hd, hG), nolev_pre(lp, j, 1n+L, d, a, hd, nolev_of(~F, lp, L, a, hwf, hG, heq, j, hn)), h))
+
+# Differences of points, and sums over columns
+# --------------------------------------------
+
+# u - w, entry by entry (missing entries 0)
+def fsub(~F: O.OField, u: M.Vec(~F), w: M.Vec(~F)) -> M.Vec(~F):
+  match u w:
+    case Nil{} Nil{}:
+      Nil{}
+    case Nil{} Con{y, s}:
+      Con{O.sub(~F, O.zero(F), y), fsub(~F, Nil{}, s)}
+    case Con{x, t} Nil{}:
+      Con{O.sub(~F, x, O.zero(F)), fsub(~F, t, Nil{})}
+    case Con{x, t} Con{y, s}:
+      Con{O.sub(~F, x, y), fsub(~F, t, s)}
+
+def fat_fsub(~F: O.OField, u: M.Vec(~F), w: M.Vec(~F), j: Nat) -> {SP.fat(~F, fsub(~F, u, w), j) == O.sub(~F, SP.fat(~F, u, j), SP.fat(~F, w, j)) : O.C(F)}:
+  match u w j:
+    case Nil{} Nil{} j:
+      FR.fring_eq(~F, [], E.ZCst{S.Z0{}}, E.ZSub{E.ZCst{S.Z0{}}, E.ZCst{S.Z0{}}}, {==})
+    case Nil{} Con{y, s} 0n:
+      {==}
+    case Nil{} Con{y, s} 1n+k:
+      fat_fsub(~F, Nil{}, s, k)
+    case Con{x, t} Nil{} 0n:
+      {==}
+    case Con{x, t} Nil{} 1n+k:
+      fat_fsub(~F, t, Nil{}, k)
+    case Con{x, t} Con{y, s} 0n:
+      {==}
+    case Con{x, t} Con{y, s} 1n+k:
+      fat_fsub(~F, t, s, k)
+
+# u . w1 - u . w2 = u . (w1 - w2)
+def zdot_fsub(~F: O.OField, u: List<&2, S.Z>, w1: M.Vec(~F), w2: M.Vec(~F)) -> {O.sub(~F, SP.zdot(~F, u, w1), SP.zdot(~F, u, w2)) == SP.zdot(~F, u, fsub(~F, w1, w2)) : O.C(F)}:
+  match u w1 w2:
+    case Nil{} w1 w2:
+      FR.fring_eq(~F, [], E.ZSub{E.ZCst{S.Z0{}}, E.ZCst{S.Z0{}}}, E.ZCst{S.Z0{}}, {==})
+    case Con{x, t} Nil{} Nil{}:
+      FR.fring_eq(~F, [], E.ZSub{E.ZCst{S.Z0{}}, E.ZCst{S.Z0{}}}, E.ZCst{S.Z0{}}, {==})
+    case Con{+x, +t} Nil{} Con{+y, +s}:
+      %zdot_fsub(~F, t, Nil{}, s) : {O.sub(~F, O.zero(F), O.add(F, O.mul(F, O.ofz(~F, x), y), SP.zdot(~F, t, s))) == O.add(F, O.mul(F, O.ofz(~F, x), O.sub(~F, O.zero(F), y)), _) : O.C(F)}
+      %SP.zdot_nil_r(~F, t) : {O.sub(~F, O.zero(F), O.add(F, O.mul(F, O.ofz(~F, x), y), SP.zdot(~F, t, s))) == O.add(F, O.mul(F, O.ofz(~F, x), O.sub(~F, O.zero(F), y)), O.sub(~F, _, SP.zdot(~F, t, s))) : O.C(F)}
+      FR.fring_eq(~F, [O.ofz(~F, x), y, SP.zdot(~F, t, s)], E.ZSub{E.ZCst{S.Z0{}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{2n}}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZSub{E.ZCst{S.Z0{}}, E.ZVar{1n}}}, E.ZSub{E.ZCst{S.Z0{}}, E.ZVar{2n}}}, {==})
+    case Con{+x, +t} Con{+y, +s} Nil{}:
+      %zdot_fsub(~F, t, s, Nil{}) : {O.sub(~F, O.add(F, O.mul(F, O.ofz(~F, x), y), SP.zdot(~F, t, s)), O.zero(F)) == O.add(F, O.mul(F, O.ofz(~F, x), O.sub(~F, y, O.zero(F))), _) : O.C(F)}
+      %SP.zdot_nil_r(~F, t) : {O.sub(~F, O.add(F, O.mul(F, O.ofz(~F, x), y), SP.zdot(~F, t, s)), O.zero(F)) == O.add(F, O.mul(F, O.ofz(~F, x), O.sub(~F, y, O.zero(F))), O.sub(~F, SP.zdot(~F, t, s), _)) : O.C(F)}
+      FR.fring_eq(~F, [O.ofz(~F, x), y, SP.zdot(~F, t, s)], E.ZSub{E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{2n}}, E.ZCst{S.Z0{}}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZSub{E.ZVar{1n}, E.ZCst{S.Z0{}}}}, E.ZSub{E.ZVar{2n}, E.ZCst{S.Z0{}}}}, {==})
+    case Con{+x, +t} Con{+y, +s} Con{+v, +r}:
+      %zdot_fsub(~F, t, s, r) : {O.sub(~F, O.add(F, O.mul(F, O.ofz(~F, x), y), SP.zdot(~F, t, s)), O.add(F, O.mul(F, O.ofz(~F, x), v), SP.zdot(~F, t, r))) == O.add(F, O.mul(F, O.ofz(~F, x), O.sub(~F, y, v)), _) : O.C(F)}
+      FR.fring_eq(~F, [O.ofz(~F, x), y, v, SP.zdot(~F, t, s), SP.zdot(~F, t, r)], E.ZSub{E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{3n}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{2n}}, E.ZVar{4n}}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZSub{E.ZVar{1n}, E.ZVar{2n}}}, E.ZSub{E.ZVar{3n}, E.ZVar{4n}}}, {==})
+
+# a row read at a difference is the difference of its readings
+def rv_fsub(~F: O.OField, +r: SX.Rw, +w1: M.Vec(~F), +w2: M.Vec(~F)) -> {O.sub(~F, SP.rv(~F, r, w1), SP.rv(~F, r, w2)) == SP.rv(~F, r, fsub(~F, w1, w2)) : O.C(F)}:
+  %zdot_fsub(~F, SX.Rw.m(r), w1, w2) : {O.sub(~F, SP.rv(~F, r, w1), SP.rv(~F, r, w2)) == O.mul(F, _, O.inv(F, O.ofp(~F, SX.Rw.d(r)))) : O.C(F)}
+  FR.fring_eq(~F, [SP.zdot(~F, SX.Rw.m(r), w1), SP.zdot(~F, SX.Rw.m(r), w2), O.inv(F, O.ofp(~F, SX.Rw.d(r)))], E.ZSub{E.ZMul{E.ZVar{0n}, E.ZVar{2n}}, E.ZMul{E.ZVar{1n}, E.ZVar{2n}}}, E.ZMul{E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{2n}}, {==})
+
+# the sum over columns j .. j + c - 1 of u_j w_j
+def isum(~F: O.OField, c: Nat, +u: List<&2, S.Z>, +w: M.Vec(~F), +j: Nat) -> O.C(F):
+  match c:
+    case 0n:
+      O.zero(F)
+    case 1n+k:
+      O.add(F, O.mul(F, O.ofz(~F, SX.at(u, j)), SP.fat(~F, w, j)), isum(~F, k, u, w, 1n+j))
+
+def isum_shift(~F: O.OField, c: Nat, +x: S.Z, +ut: List<&2, S.Z>, +y: O.C(F), +wt: M.Vec(~F), +j: Nat) -> {isum(~F, c, ut, wt, j) == isum(~F, c, Con{x, ut}, Con{y, wt}, 1n+j) : O.C(F)}:
+  match c:
+    case 0n:
+      {==}
+    case 1n+k:
+      %isum_shift(~F, k, x, ut, y, wt, 1n+j) : {O.add(F, O.mul(F, O.ofz(~F, SX.at(ut, j)), SP.fat(~F, wt, j)), isum(~F, k, ut, wt, 1n+j)) == O.add(F, O.mul(F, O.ofz(~F, SX.at(ut, j)), SP.fat(~F, wt, j)), _) : O.C(F)}
+      {==}
+
+def isum_nil_u(~F: O.OField, c: Nat, +w: M.Vec(~F), +j: Nat) -> {O.zero(F) == isum(~F, c, Nil{}, w, j) : O.C(F)}:
+  match c:
+    case 0n:
+      {==}
+    case 1n+k:
+      %isum_nil_u(~F, k, w, 1n+j) : {O.zero(F) == O.add(F, O.mul(F, O.zero(F), SP.fat(~F, w, j)), _) : O.C(F)}
+      FR.fring_eq(~F, [SP.fat(~F, w, j)], E.ZCst{S.Z0{}}, E.ZAdd{E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{0n}}, E.ZCst{S.Z0{}}}, {==})
+
+def isum_nil_w(~F: O.OField, c: Nat, +u: List<&2, S.Z>, +j: Nat) -> {O.zero(F) == isum(~F, c, u, Nil{}, j) : O.C(F)}:
+  match c:
+    case 0n:
+      {==}
+    case 1n+k:
+      %isum_nil_w(~F, k, u, 1n+j) : {O.zero(F) == O.add(F, O.mul(F, O.ofz(~F, SX.at(u, j)), O.zero(F)), _) : O.C(F)}
+      FR.fring_eq(~F, [O.ofz(~F, SX.at(u, j))], E.ZCst{S.Z0{}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZCst{S.Z0{}}}, E.ZCst{S.Z0{}}}, {==})
+
+# a row's dot product is the sum over its columns (c at least its length)
+def zdot_isum(~F: O.OField, c: Nat, u: List<&2, S.Z>, w: M.Vec(~F), hu: {KA.natle(SX.vlen(u), c) == True{} : Bool}) -> {SP.zdot(~F, u, w) == isum(~F, c, u, w, 0n) : O.C(F)}:
+  match c u w:
+    case c Nil{} w:
+      isum_nil_u(~F, c, w, 0n)
+    case 0n Con{x, ut} w:
+      absurd({SP.zdot(~F, Con{x, ut}, w) == isum(~F, 0n, Con{x, ut}, w, 0n) : O.C(F)}, KA.ft(hu))
+    case 1n++k Con{+x, +ut} Nil{}:
+      %isum_nil_w(~F, k, Con{x, ut}, 1n) : {O.zero(F) == O.add(F, O.mul(F, O.ofz(~F, x), O.zero(F)), _) : O.C(F)}
+      FR.fring_eq(~F, [O.ofz(~F, x)], E.ZCst{S.Z0{}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZCst{S.Z0{}}}, E.ZCst{S.Z0{}}}, {==})
+    case 1n++k Con{+x, +ut} Con{+y, +wt}:
+      %Equal.sym(O.C(F), SP.zdot(~F, ut, wt), isum(~F, k, ut, wt, 0n), zdot_isum(~F, k, ut, wt, hu)) : {O.add(F, O.mul(F, O.ofz(~F, x), y), _) == O.add(F, O.mul(F, O.ofz(~F, x), y), isum(~F, k, Con{x, ut}, Con{y, wt}, 1n)) : O.C(F)}
+      %isum_shift(~F, k, x, ut, y, wt, 0n) : {O.add(F, O.mul(F, O.ofz(~F, x), y), isum(~F, k, ut, wt, 0n)) == O.add(F, O.mul(F, O.ofz(~F, x), y), _) : O.C(F)}
+      {==}
+
+def bor(a: Bool, b: Bool) -> Bool:
+  match a:
+    case True{}:
+      True{}
+    case False{}:
+      b
+
+# t is among columns j .. j + c - 1
+def inrange(+t: Nat, c: Nat, +j: Nat) -> Bool:
+  match c:
+    case 0n:
+      False{}
+    case 1n+k:
+      bor(SX.eqn(j, t), inrange(t, k, 1n+j))
+
+def le_lt_absurd(j: Nat, t: Nat, h1: {KA.natle(j, t) == True{} : Bool}, h2: {SX.ltn(t, j) == True{} : Bool}) -> Empty:
+  match j t:
+    case 0n 0n:
+      KA.ft(h2)
+    case 0n 1n+b:
+      KA.ft(h2)
+    case 1n+a 0n:
+      KA.ft(h1)
+    case 1n+a 1n+b:
+      le_lt_absurd(a, b, h1, h2)
+
+def inr.go(b: Bool, +t: Nat, k: Nat, +j: Nat, hb: {b == SX.eqn(j, t) : Bool}, h1: {KA.natle(j, t) == True{} : Bool}, ih: {KA.natle(1n+j, t) == True{} : Bool} -> {inrange(t, k, 1n+j) == True{} : Bool}) -> {bor(b, inrange(t, k, 1n+j)) == True{} : Bool}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      ih(RN.ltn_le(j, t, lt_of_le_ne(j, t, h1, Equal.sym(Bool, False{}, SX.eqn(j, t), hb))))
+
+# j <= t < j + c: t is in the range
+def inrange_ok(+t: Nat, c: Nat, +j: Nat, h1: {KA.natle(j, t) == True{} : Bool}, +h2: {SX.ltn(t, plus(c, j)) == True{} : Bool}) -> {inrange(t, c, j) == True{} : Bool}:
+  match c:
+    case 0n:
+      absurd({inrange(t, 0n, j) == True{} : Bool}, le_lt_absurd(j, t, h1, h2))
+    case 1n++k:
+      inr.go(SX.eqn(j, t), t, k, j, {==}, h1, hh => inrange_ok(t, k, 1n+j, hh, h2))
+
+def lneg_nonpos(~F: O.OField, +x0: O.C(F), +x1: O.C(F), h: LX.LNeg(~F, x0, x1)) -> LX.LNonpos(~F, x0, x1):
+  match h:
+    case Inl{+p}:
+      Inl{p}
+    case Inr{+p}:
+      Inr{(LX.both_l({x0 == O.zero(F) : O.C(F)}, O.lt(F, x1, O.zero(F)), p), FO.lt_le(~F, x1, O.zero(F), LX.both_r({x0 == O.zero(F) : O.C(F)}, O.lt(F, x1, O.zero(F)), p)))}
