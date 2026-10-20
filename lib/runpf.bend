@@ -22,6 +22,7 @@ import ./zring.bend as R
 import ./elim.bend as EL
 import ./simplex.bend as SX
 import ./simppf.bend as SP
+import ./lexpf.bend as LX
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -260,3 +261,127 @@ def helpful_nz(c: S.Z, +f: Bool, h: {SX.helpful(c, f) == True{} : Bool}) -> {SX.
       {==}
     case S.Zneg{p}:
       {==}
+
+# The bounds test in F
+# --------------------
+
+def Ineq.b(q: SX.Ineq) -> S.Z:
+  match q:
+    case SX.Ineq{a, b, s}:
+      b
+
+def Ineq.s(q: SX.Ineq) -> Bool:
+  match q:
+    case SX.Ineq{a, b, s}:
+      s
+
+# an integer vector read in F
+def zv(~F: O.OField, u: List<&2, S.Z>) -> M.Vec(~F):
+  match u:
+    case Nil{}:
+      Nil{}
+    case Con{x, t}:
+      Con{O.ofz(~F, x), zv(~F, t)}
+
+def zdot_zv(~F: O.OField, u: List<&2, S.Z>, w: List<&2, S.Z>) -> {O.ofz(~F, SX.dot(u, w)) == SP.zdot(~F, u, zv(~F, w)) : O.C(F)}:
+  match u w:
+    case Nil{} Nil{}:
+      {==}
+    case Nil{} Con{+y, +s}:
+      {==}
+    case Con{+x, +t} Nil{}:
+      {==}
+    case Con{+x, +t} Con{+y, +s}:
+      %FR.ofz_add(~F, S.Z.mul(x, y), SX.dot(t, s)) : {_ == SP.zdot(~F, Con{x, t}, zv(~F, Con{y, s})) : O.C(F)}
+      %FR.ofz_mul(~F, x, y) : {O.add(F, _, O.ofz(~F, SX.dot(t, s))) == SP.zdot(~F, Con{x, t}, zv(~F, Con{y, s})) : O.C(F)}
+      %Equal.sym(O.C(F), O.ofz(~F, SX.dot(t, s)), SP.zdot(~F, t, zv(~F, s)), zdot_zv(~F, t, s)) : {O.add(F, O.mul(F, O.ofz(~F, x), O.ofz(~F, y)), _) == SP.zdot(~F, Con{x, t}, zv(~F, Con{y, s})) : O.C(F)}
+      {==}
+
+def fat_zv(~F: O.OField, u: List<&2, S.Z>, k: Nat) -> {O.ofz(~F, SX.at(u, k)) == SP.fat(~F, zv(~F, u), k) : O.C(F)}:
+  match u k:
+    case Nil{} k:
+      {==}
+    case Con{x, t} 0n:
+      {==}
+    case Con{x, t} 1n++j:
+      fat_zv(~F, t, j)
+
+# row (D, M) read at v, less c, is (M . v - D c) / D
+def rv_less(~F: O.OField, +d: S.Pos, +m: List<&2, S.Z>, +v: List<&2, S.Z>, +c: S.Z) -> {O.sub(~F, SP.rv(~F, SX.Rw{d, m}, zv(~F, v)), O.ofz(~F, c)) == O.mul(F, O.sub(~F, O.ofz(~F, SX.dot(m, v)), O.ofz(~F, S.Z.mul(S.Zpos{d}, c))), O.inv(F, O.ofp(~F, d))) : O.C(F)}:
+  %FR.ofz_mul(~F, S.Zpos{d}, c) : {O.sub(~F, SP.rv(~F, SX.Rw{d, m}, zv(~F, v)), O.ofz(~F, c)) == O.mul(F, O.sub(~F, O.ofz(~F, SX.dot(m, v)), _), O.inv(F, O.ofp(~F, d))) : O.C(F)}
+  %zdot_zv(~F, m, v) : {O.sub(~F, O.mul(F, _, O.inv(F, O.ofp(~F, d))), O.ofz(~F, c)) == O.mul(F, O.sub(~F, O.ofz(~F, SX.dot(m, v)), O.mul(F, O.ofp(~F, d), O.ofz(~F, c))), O.inv(F, O.ofp(~F, d))) : O.C(F)}
+  FO.eq_of_sub(~F, O.sub(~F, O.mul(F, O.ofz(~F, SX.dot(m, v)), O.inv(F, O.ofp(~F, d))), O.ofz(~F, c)), O.mul(F, O.sub(~F, O.ofz(~F, SX.dot(m, v)), O.mul(F, O.ofp(~F, d), O.ofz(~F, c))), O.inv(F, O.ofp(~F, d))), FO.cert1(~F, O.sub(~F, O.sub(~F, O.mul(F, O.ofz(~F, SX.dot(m, v)), O.inv(F, O.ofp(~F, d))), O.ofz(~F, c)), O.mul(F, O.sub(~F, O.ofz(~F, SX.dot(m, v)), O.mul(F, O.ofp(~F, d), O.ofz(~F, c))), O.inv(F, O.ofp(~F, d)))), O.ofz(~F, c), O.sub(~F, O.mul(F, O.ofp(~F, d), O.inv(F, O.ofp(~F, d))), O.one(F)), FR.fring_eq(~F, [O.ofz(~F, SX.dot(m, v)), O.ofz(~F, c), O.ofp(~F, d), O.inv(F, O.ofp(~F, d))], E.ZSub{E.ZSub{E.ZMul{E.ZVar{0n}, E.ZVar{3n}}, E.ZVar{1n}}, E.ZMul{E.ZSub{E.ZVar{0n}, E.ZMul{E.ZVar{2n}, E.ZVar{1n}}}, E.ZVar{3n}}}, E.ZMul{E.ZVar{1n}, E.ZSub{E.ZMul{E.ZVar{2n}, E.ZVar{3n}}, E.ZCst{S.Zpos{S.XH{}}}}}, {==}), QE.ofp_rel(~F, d)))
+
+def inv_pos(~F: O.OField, +d: S.Pos) -> O.lt(F, O.zero(F), O.inv(F, O.ofp(~F, d))):
+  FO.inv_pos(~F, O.ofp(~F, d), QE.ofp_pos(~F, d))
+
+# x < y: x - y < 0
+def sub_lt0(~F: O.OField, +x: O.C(F), +y: O.C(F), h: O.lt(F, x, y)) -> O.lt(F, O.sub(~F, x, y), O.zero(F)):
+  %O.add_neg(F)(y) : O.lt(F, O.sub(~F, x, y), _)
+  O.lt_add(F)(x, y, O.neg(F, y))(h)
+
+# a < c (integers): (a - c) / D < 0
+def sneg(~F: O.OField, +a: S.Z, +c: S.Z, +d: S.Pos, h: {S.Z.cmp(a, c) == LT{} : Cmp}) -> O.lt(F, O.mul(F, O.sub(~F, O.ofz(~F, a), O.ofz(~F, c)), O.inv(F, O.ofp(~F, d))), O.zero(F)):
+  LX.mul_neg_pos(~F, O.sub(~F, O.ofz(~F, a), O.ofz(~F, c)), O.inv(F, O.ofp(~F, d)), sub_lt0(~F, O.ofz(~F, a), O.ofz(~F, c), LX.zlt_f(~F, a, c, h)), inv_pos(~F, d))
+
+# a > c: (a - c) / D > 0
+def spos(~F: O.OField, +a: S.Z, +c: S.Z, +d: S.Pos, h: {S.Z.cmp(a, c) == GT{} : Cmp}) -> O.lt(F, O.zero(F), O.mul(F, O.sub(~F, O.ofz(~F, a), O.ofz(~F, c)), O.inv(F, O.ofp(~F, d)))):
+  O.lt_mul(F)(O.sub(~F, O.ofz(~F, a), O.ofz(~F, c)), O.inv(F, O.ofp(~F, d)), QE.lt_of_sub(~F, O.zero(F), O.sub(~F, O.ofz(~F, a), O.ofz(~F, c)), (%FR.fring_eq(~F, [O.ofz(~F, a), O.ofz(~F, c)], E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, E.ZSub{E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, E.ZCst{S.Z0{}}}, {==}) : O.lt(F, O.zero(F), _)
+    FO.lt_subst_l(~F, O.sub(~F, O.ofz(~F, c), O.ofz(~F, c)), O.zero(F), O.sub(~F, O.ofz(~F, a), O.ofz(~F, c)), O.add_neg(F)(O.ofz(~F, c)), O.lt_add(F)(O.ofz(~F, c), O.ofz(~F, a), O.neg(F, O.ofz(~F, c)))(LX.zgt_f(~F, a, c, h))))), inv_pos(~F, d))
+
+# a = c: (a - c) / D = 0
+def szero(~F: O.OField, +a: S.Z, +c: S.Z, +d: S.Pos, h: {S.Z.cmp(a, c) == EQ{} : Cmp}) -> {O.mul(F, O.sub(~F, O.ofz(~F, a), O.ofz(~F, c)), O.inv(F, O.ofp(~F, d))) == O.zero(F) : O.C(F)}:
+  %Equal.sym(O.C(F), O.ofz(~F, a), O.ofz(~F, c), LX.zeq_f(~F, a, c, h)) : {O.mul(F, O.sub(~F, _, O.ofz(~F, c)), O.inv(F, O.ofp(~F, d))) == O.zero(F) : O.C(F)}
+  FR.fring_eq(~F, [O.ofz(~F, c), O.inv(F, O.ofp(~F, d))], E.ZMul{E.ZSub{E.ZVar{0n}, E.ZVar{0n}}, E.ZVar{1n}}, E.ZCst{S.Z0{}}, {==})
+
+def of_islt(o: Cmp, h: {SX.islt(o) == True{} : Bool}) -> {o == LT{} : Cmp}:
+  match o:
+    case LT{}:
+      {==}
+    case EQ{}:
+      absurd({EQ{} == LT{} : Cmp}, KA.ft(h))
+    case GT{}:
+      absurd({GT{} == LT{} : Cmp}, KA.ft(h))
+
+def viol_f.go(~F: O.OField, o: Cmp, +a0: S.Z, +a1: S.Z, +c0: S.Z, +c1: S.Z, +d: S.Pos, ho: {S.Z.cmp(a0, c0) == o : Cmp}, h: {SX.lexlt.go(o, a1, c1) == True{} : Bool}) -> LX.LNeg(~F, O.mul(F, O.sub(~F, O.ofz(~F, a0), O.ofz(~F, c0)), O.inv(F, O.ofp(~F, d))), O.mul(F, O.sub(~F, O.ofz(~F, a1), O.ofz(~F, c1)), O.inv(F, O.ofp(~F, d)))):
+  match o:
+    case LT{}:
+      Inl{sneg(~F, a0, c0, d, ho)}
+    case EQ{}:
+      Inr{(szero(~F, a0, c0, d, ho), sneg(~F, a1, c1, d, of_islt(S.Z.cmp(a1, c1), h)))}
+    case GT{}:
+      absurd(LX.LNeg(~F, O.mul(F, O.sub(~F, O.ofz(~F, a0), O.ofz(~F, c0)), O.inv(F, O.ofp(~F, d))), O.mul(F, O.sub(~F, O.ofz(~F, a1), O.ofz(~F, c1)), O.inv(F, O.ofp(~F, d)))), KA.ft(h))
+
+def le0_cmp(~F: O.OField, o: Cmp, +a: S.Z, +c: S.Z, +d: S.Pos, ho: {S.Z.cmp(a, c) == o : Cmp}, h: {SX.islt(o) == False{} : Bool}) -> O.le(~F, O.zero(F), O.mul(F, O.sub(~F, O.ofz(~F, a), O.ofz(~F, c)), O.inv(F, O.ofp(~F, d)))):
+  match o:
+    case LT{}:
+      absurd(O.le(~F, O.zero(F), O.mul(F, O.sub(~F, O.ofz(~F, a), O.ofz(~F, c)), O.inv(F, O.ofp(~F, d)))), KA.tf(h))
+    case EQ{}:
+      Inr{Equal.sym(O.C(F), O.mul(F, O.sub(~F, O.ofz(~F, a), O.ofz(~F, c)), O.inv(F, O.ofp(~F, d))), O.zero(F), szero(~F, a, c, d, ho))}
+    case GT{}:
+      Inl{spos(~F, a, c, d, ho)}
+
+def noviol_f.go(~F: O.OField, o: Cmp, +a0: S.Z, +a1: S.Z, +c0: S.Z, +c1: S.Z, +d: S.Pos, ho: {S.Z.cmp(a0, c0) == o : Cmp}, h: {SX.lexlt.go(o, a1, c1) == False{} : Bool}) -> LX.LNonneg(~F, O.mul(F, O.sub(~F, O.ofz(~F, a0), O.ofz(~F, c0)), O.inv(F, O.ofp(~F, d))), O.mul(F, O.sub(~F, O.ofz(~F, a1), O.ofz(~F, c1)), O.inv(F, O.ofp(~F, d)))):
+  match o:
+    case LT{}:
+      absurd(LX.LNonneg(~F, O.mul(F, O.sub(~F, O.ofz(~F, a0), O.ofz(~F, c0)), O.inv(F, O.ofp(~F, d))), O.mul(F, O.sub(~F, O.ofz(~F, a1), O.ofz(~F, c1)), O.inv(F, O.ofp(~F, d)))), KA.tf(h))
+    case EQ{}:
+      Inr{(szero(~F, a0, c0, d, ho), le0_cmp(~F, S.Z.cmp(a1, c1), a1, c1, d, {==}, h))}
+    case GT{}:
+      Inl{spos(~F, a0, c0, d, ho)}
+
+# a slack below its bound: its value less its bound is negative (lex.)
+def viol_f(~F: O.OField, r: SX.Rw, +v0: List<&2, S.Z>, +v1: List<&2, S.Z>, q: SX.Ineq, h: {SX.viol(r, v0, v1, q) == True{} : Bool}) -> LX.LNeg(~F, O.sub(~F, SP.rv(~F, r, zv(~F, v0)), O.ofz(~F, S.Z.neg(Ineq.b(q)))), O.sub(~F, SP.rv(~F, r, zv(~F, v1)), O.ofz(~F, SX.ind(Ineq.s(q))))):
+  match r q:
+    case SX.Rw{+d, +m} SX.Ineq{a, +b, +s}:
+      %Equal.sym(O.C(F), O.sub(~F, SP.rv(~F, SX.Rw{d, m}, zv(~F, v0)), O.ofz(~F, S.Z.neg(b))), O.mul(F, O.sub(~F, O.ofz(~F, SX.dot(m, v0)), O.ofz(~F, S.Z.mul(S.Zpos{d}, S.Z.neg(b)))), O.inv(F, O.ofp(~F, d))), rv_less(~F, d, m, v0, S.Z.neg(b))) : LX.LNeg(~F, _, O.sub(~F, SP.rv(~F, SX.Rw{d, m}, zv(~F, v1)), O.ofz(~F, SX.ind(s))))
+      %Equal.sym(O.C(F), O.sub(~F, SP.rv(~F, SX.Rw{d, m}, zv(~F, v1)), O.ofz(~F, SX.ind(s))), O.mul(F, O.sub(~F, O.ofz(~F, SX.dot(m, v1)), O.ofz(~F, S.Z.mul(S.Zpos{d}, SX.ind(s)))), O.inv(F, O.ofp(~F, d))), rv_less(~F, d, m, v1, SX.ind(s))) : LX.LNeg(~F, O.mul(F, O.sub(~F, O.ofz(~F, SX.dot(m, v0)), O.ofz(~F, S.Z.mul(S.Zpos{d}, S.Z.neg(b)))), O.inv(F, O.ofp(~F, d))), _)
+      viol_f.go(~F, S.Z.cmp(SX.dot(m, v0), S.Z.mul(S.Zpos{d}, S.Z.neg(b))), SX.dot(m, v0), SX.dot(m, v1), S.Z.mul(S.Zpos{d}, S.Z.neg(b)), S.Z.mul(S.Zpos{d}, SX.ind(s)), d, {==}, h)
+
+# a slack not below its bound: its value less its bound is not negative
+def noviol_f(~F: O.OField, r: SX.Rw, +v0: List<&2, S.Z>, +v1: List<&2, S.Z>, q: SX.Ineq, h: {SX.viol(r, v0, v1, q) == False{} : Bool}) -> LX.LNonneg(~F, O.sub(~F, SP.rv(~F, r, zv(~F, v0)), O.ofz(~F, S.Z.neg(Ineq.b(q)))), O.sub(~F, SP.rv(~F, r, zv(~F, v1)), O.ofz(~F, SX.ind(Ineq.s(q))))):
+  match r q:
+    case SX.Rw{+d, +m} SX.Ineq{a, +b, +s}:
+      %Equal.sym(O.C(F), O.sub(~F, SP.rv(~F, SX.Rw{d, m}, zv(~F, v0)), O.ofz(~F, S.Z.neg(b))), O.mul(F, O.sub(~F, O.ofz(~F, SX.dot(m, v0)), O.ofz(~F, S.Z.mul(S.Zpos{d}, S.Z.neg(b)))), O.inv(F, O.ofp(~F, d))), rv_less(~F, d, m, v0, S.Z.neg(b))) : LX.LNonneg(~F, _, O.sub(~F, SP.rv(~F, SX.Rw{d, m}, zv(~F, v1)), O.ofz(~F, SX.ind(s))))
+      %Equal.sym(O.C(F), O.sub(~F, SP.rv(~F, SX.Rw{d, m}, zv(~F, v1)), O.ofz(~F, SX.ind(s))), O.mul(F, O.sub(~F, O.ofz(~F, SX.dot(m, v1)), O.ofz(~F, S.Z.mul(S.Zpos{d}, SX.ind(s)))), O.inv(F, O.ofp(~F, d))), rv_less(~F, d, m, v1, SX.ind(s))) : LX.LNonneg(~F, O.mul(F, O.sub(~F, O.ofz(~F, SX.dot(m, v0)), O.ofz(~F, S.Z.mul(S.Zpos{d}, S.Z.neg(b)))), O.inv(F, O.ofp(~F, d))), _)
+      noviol_f.go(~F, S.Z.cmp(SX.dot(m, v0), S.Z.mul(S.Zpos{d}, S.Z.neg(b))), SX.dot(m, v0), SX.dot(m, v1), S.Z.mul(S.Zpos{d}, S.Z.neg(b)), S.Z.mul(S.Zpos{d}, SX.ind(s)), d, {==}, h)
