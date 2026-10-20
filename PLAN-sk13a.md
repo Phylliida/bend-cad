@@ -361,8 +361,10 @@ As planned:
 - **First, the switch (from S4):** the solver reports the pass's classes
   and pins (`cls_of` := `classes`, `pins_of` := `pins`); the numeric
   plan is over the system solved; `solve_honest` and `solve_total` are
-  wired from `pass_honest` and `total_pass`. `complete_now` leaves the
-  gate until S7 re-proves completeness over the system solved.
+  wired from `pass_honest` and `total_pass`. `complete_now`'s proof
+  rests on the sk-09 red stage, so the switch breaks it: either S7
+  (completeness over the system solved) follows the switch at once, or
+  `complete_now` leaves the gate until S7. Danielle's call.
 - **`final` gains:**
   - the drop certificates (`qzero`; h = 1; rows are earlier solved
     equations);
