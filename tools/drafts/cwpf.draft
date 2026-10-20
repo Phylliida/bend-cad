@@ -51,21 +51,6 @@ def absurd(-A: Type, x: Empty) -> A:
 # Lists
 # -----
 
-# every entry of xs is owned by c
-def allo(+own: List<&2, Nat>, xs: List<&2, Nat>, +c: Nat) -> Bool:
-  match xs:
-    case Nil{}:
-      True{}
-    case Con{x, t}:
-      SV.band(SV.eq(SV.nth(own, x), c), allo(own, t, c))
-
-def allo_snoc(+own: $NL, xs: $NL, +x: Nat, +c: Nat, +h: {allo(own, xs, c) == True{} : Bool}, +hx: {SV.eq(SV.nth(own, x), c) == True{} : Bool}) -> {allo(own, CO.lsnoc(xs, x), c) == True{} : Bool}:
-  match xs:
-    case Nil{}:
-      LI.band_i(SV.eq(SV.nth(own, x), c), True{}, hx, {==})
-    case Con{+y, +t}:
-      LI.band_i(SV.eq(SV.nth(own, y), c), allo(own, CO.lsnoc(t, x), c), LI.band_l(SV.eq(SV.nth(own, y), c), allo(own, t, c), h), allo_snoc(own, t, x, c, LI.band_r(SV.eq(SV.nth(own, y), c), allo(own, t, c), h), hx))
-
 # us below k and none in d: none in k :: d
 def nonein_cons(us: $NL, +k: Nat, +d: $NL, +h1: {SV.none_in(us, d) == True{} : Bool}, +h2: {SV.below(us, k) == True{} : Bool}) -> {SV.none_in(us, Con{k, d}) == True{} : Bool}:
   match us:
@@ -177,11 +162,11 @@ params: +sk: SK.Sketch, +c: Nat, +k: Nat, +rows: List<&2, EL.Row>, +B: List<&2, 
 - rinv: EP.rinv(B, rows, 0n)
 - dbelow: SV.below(SV.drops(ds), k)
 - ddist: SV.distinct(SV.drops(ds))
-- down: allo(SV.owners(sk), SV.drops(ds), c)
+- down: KB.allo(SV.owners(sk), SV.drops(ds), c)
 - udisj: SV.none_in(us, SV.drops(ds))
 - udist: SV.distinct(us)
 - ubelow: SV.below(us, k)
-- uown: allo(SV.owners(sk), us, c)
+- uown: KB.allo(SV.owners(sk), us, c)
 @END
 
 # at position k: B is P followed by c's own before k not dropped, its
@@ -235,7 +220,7 @@ def inv_drop($CWP, +k: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: Lis
   (cwb_mk(sk, c, 1n+k, rows, B, Con{PA.drop_of(k, EL.resid(rows, e), e, B, bp), ds}, us, cwb_rinv($CWBA, hb),
       LI.band_i(SV.lt(k, 1n+k), SV.below($DS, 1n+k), KB.lt_succ(k), KB.below_up($DS, k, hdb)),
       LI.band_i(SV.bnot(SV.mem(k, $DS)), SV.distinct($DS), KB.bnot_f(SV.mem(k, $DS), KB.below_notmem($DS, k, hdb)), cwb_ddist($CWBA, hb)),
-      LI.band_i(SV.eq(SV.nth($OWN, k), c), allo($OWN, $DS, c), heq, cwb_down($CWBA, hb)),
+      LI.band_i(SV.eq(SV.nth($OWN, k), c), KB.allo($OWN, $DS, c), heq, cwb_down($CWBA, hb)),
       nonein_cons(us, k, $DS, cwb_udisj($CWBA, hb), cwb_ubelow($CWBA, hb)), cwb_udist($CWBA, hb), KB.below_up(us, k, cwb_ubelow($CWBA, hb)), cwb_uown($CWBA, hb)),
     (hl, (Equal.trans($QL, B, SK.cat($P, SV.own_rest(sk, c, $DS, k)), SK.cat($P, SV.own_rest(sk, c, Con{k, $DS}, 1n+k)), hB, Equal.cong($QL, $QL, y => SK.cat($P, y), SV.own_rest(sk, c, $DS, k), SV.own_rest(sk, c, Con{k, $DS}, 1n+k), Equal.sym($QL, SV.own_rest(sk, c, Con{k, $DS}, 1n+k), SV.own_rest(sk, c, $DS, k), or_drop(sk, c, $DS, k, heq, hk)))),
     (hp, hbp))))
@@ -268,7 +253,7 @@ def inv_keep($CWP, +k: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: Lis
       KB.nonein_snoc(us, k, $DS, cwb_udisj($CWBA, hb), KB.below_notmem($DS, k, hdb)),
       KB.dist_snoc(us, k, cwb_udist($CWBA, hb), KB.below_notmem(us, k, hub)),
       KB.below_snoc(us, k, 1n+k, KB.below_up(us, k, hub), KB.lt_succ(k)),
-      allo_snoc($OWN, us, k, c, cwb_uown($CWBA, hb), heq)),
+      KB.allo_snoc($OWN, us, k, c, cwb_uown($CWBA, hb), heq)),
     (Equal.trans(Nat, EL.rlen(EL.rsnoc(rows, EL.row_of($RR))), 1n+EL.rlen(rows), SV.neqs(EP.qsnoc(B, e)), rlen_rsnoc(rows, EL.row_of($RR)),
        Equal.trans(Nat, 1n+EL.rlen(rows), 1n+SV.neqs(B), SV.neqs(EP.qsnoc(B, e)), Equal.cong(Nat, Nat, x => 1n+x, EL.rlen(rows), SV.neqs(B), hl), Equal.sym(Nat, SV.neqs(EP.qsnoc(B, e)), 1n+SV.neqs(B), neqs_qsnoc(B, e)))),
     (keep_B(sk, R, D, c, k, B, $DS, e, hB, heq, hk, KB.below_notmem($DS, k, hdb), he),

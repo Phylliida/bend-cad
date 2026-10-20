@@ -489,3 +489,21 @@ def kbp_next.go(b: Bool, +sk: SK.Sketch, +R: List<&2, Nat>, +kb: List<&2, Nat>, 
 # the candidates grow as the kept constraints do
 def kbp_next(+sk: SK.Sketch, +R: List<&2, Nat>, +kb: List<&2, Nat>, +c: Nat, h: KBP(sk, R, kb, c)) -> KBP(sk, R, kpk(dcond(sk, R, c), kb, c), 1n+c):
   kbp_next.go(dcond(sk, R, c), sk, R, kb, c, {==}, h)
+
+# Owners
+# ------
+
+# every entry of xs is owned by c
+def allo(+own: List<&2, Nat>, xs: List<&2, Nat>, +c: Nat) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case Con{x, t}:
+      SV.band(SV.eq(SV.nth(own, x), c), allo(own, t, c))
+
+def allo_snoc(+own: List<&2, Nat>, xs: List<&2, Nat>, +x: Nat, +c: Nat, +h: {allo(own, xs, c) == True{} : Bool}, +hx: {SV.eq(SV.nth(own, x), c) == True{} : Bool}) -> {allo(own, CO.lsnoc(xs, x), c) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      LI.band_i(SV.eq(SV.nth(own, x), c), True{}, hx, {==})
+    case Con{+y, +t}:
+      LI.band_i(SV.eq(SV.nth(own, y), c), allo(own, CO.lsnoc(t, x), c), LI.band_l(SV.eq(SV.nth(own, y), c), allo(own, t, c), h), allo_snoc(own, t, x, c, LI.band_r(SV.eq(SV.nth(own, y), c), allo(own, t, c), h), hx))

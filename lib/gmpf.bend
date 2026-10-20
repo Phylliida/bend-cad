@@ -254,7 +254,7 @@ def GRes(+es: List<&2, E.QExpr>, +nv: Nat, +Z: List<&2, Nat>, +rest: List<&2, Na
     case ST.GOk{+vm2}:
       {gok(es, nv, SV.cat(Z, rest), vm2) == True{} : Bool}
     case ST.GFail{ST.Red{+j, +s, +w}}:
-      {SV.band(SV.mem(j, rest), L.subl(s, SV.cat(Z, rest))) == True{} : Bool} & SV.Overdet(es, s, w)
+      {SV.band(SV.mem(j, rest), SV.band(SV.mem(j, s), L.subl(s, SV.cat(Z, rest)))) == True{} : Bool} & SV.Overdet(es, s, w)
 
 def gres_shift(g: ST.GS, +es: List<&2, E.QExpr>, +nv: Nat, +Z: List<&2, Nat>, +u: Nat, +t: List<&2, Nat>, h: GRes(es, nv, CO.lsnoc(Z, u), t, g)) -> GRes(es, nv, Z, Con{u, t}, g):
   match g:
@@ -263,9 +263,11 @@ def gres_shift(g: ST.GS, +es: List<&2, E.QExpr>, +nv: Nat, +Z: List<&2, Nat>, +u
         h)
     case ST.GFail{ST.Red{+j, +s, +w}}:
       (+hb, ho) = h
-      (L.band_i(SV.mem(j, Con{u, t}), L.subl(s, SV.cat(Z, Con{u, t})), L.mem_tl(j, u, t, L.band_l(SV.mem(j, t), L.subl(s, SV.cat(CO.lsnoc(Z, u), t)), hb)),
-        (%Equal.sym(List<&2, Nat>, SV.cat(Z, Con{u, t}), SV.cat(CO.lsnoc(Z, u), t), CW.catcons_snoc(Z, u, t)) : {L.subl(s, _) == True{} : Bool}
-          L.band_r(SV.mem(j, t), L.subl(s, SV.cat(CO.lsnoc(Z, u), t)), hb))), ho)
+      +hr = L.band_r(SV.mem(j, t), SV.band(SV.mem(j, s), L.subl(s, SV.cat(CO.lsnoc(Z, u), t))), hb)
+      (L.band_i(SV.mem(j, Con{u, t}), SV.band(SV.mem(j, s), L.subl(s, SV.cat(Z, Con{u, t}))), L.mem_tl(j, u, t, L.band_l(SV.mem(j, t), SV.band(SV.mem(j, s), L.subl(s, SV.cat(CO.lsnoc(Z, u), t))), hb)),
+        L.band_i(SV.mem(j, s), L.subl(s, SV.cat(Z, Con{u, t})), L.band_l(SV.mem(j, s), L.subl(s, SV.cat(CO.lsnoc(Z, u), t)), hr),
+          (%Equal.sym(List<&2, Nat>, SV.cat(Z, Con{u, t}), SV.cat(CO.lsnoc(Z, u), t), CW.catcons_snoc(Z, u, t)) : {L.subl(s, _) == True{} : Bool}
+            L.band_r(SV.mem(j, s), L.subl(s, SV.cat(CO.lsnoc(Z, u), t)), hr)))), ho)
 
 def grpl_fail(t: List<&2, Nat>, +adj: List<&2, List<&2, Nat>>, +f: Nat, +r: ST.Red) -> {PA.grpl(t, adj, f, ST.GFail{r}) == ST.GFail{r} : ST.GS}:
   match t:
@@ -315,8 +317,9 @@ def gl_step(a: ST.DS, +es: List<&2, E.QExpr>, +nv: Nat, +Z: List<&2, Nat>, +u: N
       +hzb = gli_zb(es, nv, Z, Con{u, t}, vm, hg)
       +hu = L.subl_hd(u, t, SV.cat(Z, Con{u, t}), subl_catr(Z, Con{u, t}))
       %Equal.sym(ST.GS, PA.grpl(t, AD, 1n+nv, ST.GFail{ST.Red{u, Con{u, ST.look(vm, vis)}, vis}}), ST.GFail{ST.Red{u, Con{u, ST.look(vm, vis)}, vis}}, grpl_fail(t, AD, 1n+nv, ST.Red{u, Con{u, ST.look(vm, vis)}, vis})) : GRes(es, nv, Z, Con{u, t}, _)
-      (L.band_i(SV.mem(u, Con{u, t}), L.subl(Con{u, ST.look(vm, vis)}, SV.cat(Z, Con{u, t})), L.mem_hd(u, t),
-         L.subl_con(u, ST.look(vm, vis), SV.cat(Z, Con{u, t}), hu, L.subl_trans(ST.look(vm, vis), ST.somes(vm), SV.cat(Z, Con{u, t}), L.look_subl(vm, vis, ha), L.subl_trans(ST.somes(vm), Z, SV.cat(Z, Con{u, t}), hzs, subl_catl(Z, Con{u, t}))))),
+      (L.band_i(SV.mem(u, Con{u, t}), SV.band(SV.mem(u, Con{u, ST.look(vm, vis)}), L.subl(Con{u, ST.look(vm, vis)}, SV.cat(Z, Con{u, t}))), L.mem_hd(u, t),
+         L.band_i(SV.mem(u, Con{u, ST.look(vm, vis)}), L.subl(Con{u, ST.look(vm, vis)}, SV.cat(Z, Con{u, t})), L.mem_hd(u, ST.look(vm, vis)),
+           L.subl_con(u, ST.look(vm, vis), SV.cat(Z, Con{u, t}), hu, L.subl_trans(ST.look(vm, vis), ST.somes(vm), SV.cat(Z, Con{u, t}), L.look_subl(vm, vis, ha), L.subl_trans(ST.somes(vm), Z, SV.cat(Z, Con{u, t}), hzs, subl_catl(Z, Con{u, t})))))),
         wit_dep(es, vm, u, 1n+nv, vis, L.notin_subl(u, ST.somes(vm), Z, notin_cat(Z, u, t, gli_zd(es, nv, Z, Con{u, t}, vm, hg)), hzs), gli_dist(es, nv, Z, Con{u, t}, vm, hg),
           D.below_subl(ST.somes(vm), Z, SV.neqs(es), hzs, D.below_subl(Z, SV.cat(Z, Con{u, t}), SV.neqs(es), subl_catl(Z, Con{u, t}), hzb)),
           D.below_mem(u, SV.cat(Z, Con{u, t}), SV.neqs(es), hu, hzb), hv, hn))
