@@ -1,4 +1,4 @@
-# HANDOFF — bend-cad (2026-10-20, sk-09 verified solver built; sk-13a S0–S3 done, S4 in progress: pass_honest proven; next: law 9's Perfect, PLAN-sk13a.md S4)
+# HANDOFF — bend-cad (2026-10-20, sk-09 verified solver built; sk-13a S0–S4 done (S4 as proofs about the pass); next: check in with Danielle on the switch, then PLAN-sk13a.md S5)
 
 Read first: `DESIGN.md` (v0.9: the plan, Danielle's decisions, §3 spec
 numbers, §4–§5 typed IR, forms and meanings as built), `proto/RESULTS.md`
@@ -223,14 +223,18 @@ being a Motzkin refutation and none meaning none exists (`refute_ok`,
 Gated via `tests/refute_laws.bend`. See PLAN S3 as built; the pass's
 instantiation (candidates `kept_before`, `NoRefute`/`Implied` on the
 spec's lists) is S4's. Danielle approved S3 and S4 (2026-10-20).
-**S4 in progress (2026-10-20):** the single pass is `lib/pass.bend`
-(`classes`), proven honest (`pass_honest`, lib/passpf.bend, gated via
-`tests/pass_laws.bend`; the pieces in kbpf, prepf, ownpf, solvedpf,
-cwpf, gmpf, clslpf; see PLAN S4 as built). The solver switches to it with
-S5/S7 (switching now would break the gated `complete_now`), told to
-Danielle. **Next: law 9's Perfect** (expose the pass's final state,
-choose the pins by a dependence copy of lib/maxpf's variable side, its
-matching Perfect).
+**S4 is done (2026-10-20) as proofs about the pass:** the single pass is
+`lib/pass.bend` (`classes`, `final_st`, `pins`), proven honest
+(`pass_honest`, lib/passpf.bend) and with a perfect matching of the
+system solved onto the free variables by dependence (`total_pass`,
+lib/perfpf.bend), both gated via `tests/pass_laws.bend`; the pieces are
+in kbpf, prepf, ownpf, solvedpf, cwpf, gmpf, clslpf (see PLAN S4 as
+built). The solver itself still reports sk-09's classes: switching
+(`cls_of` := `classes`, `pins_of` := `pins`, the plan over the system
+solved) is S5's first step, and it breaks the gated `complete_now`
+(its proof is the sk-09 red stage's). **Next: check in with Danielle on
+the switch (S7 right after it, or complete_now out of the gate until S7),
+then PLAN-sk13a.md S5.**
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);
