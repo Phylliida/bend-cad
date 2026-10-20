@@ -1236,3 +1236,74 @@ def ok.c(+es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, mj: Maybe<&2, Nat>, hmj
 
 def refute_ok(+es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>) -> RefOk(es, ss, RF.refute(es, ss)):
   ok.c(es, ss, RF.crow(RF.Walk.rows(RF.walk(es, Nil{})), 0n), {==})
+
+# The point itself
+# ----------------
+
+# two functionals killing every equation of es, every side of ss at its
+# sign, with weights 1 and 0 at the monomial 1
+def PtOk(~F: O.OField, +ms: List<&2, List<&2, Nat>>, +c0: List<&2, O.C(F)>, +c1: List<&2, O.C(F)>, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>) -> Type:
+  AllK(~F, ms, c0, es) & (AllK(~F, ms, c1, es) & (AllS(~F, ms, c0, c1, ss) & ((@k: S.Q -> {IP.psi(~F, ms, c0, E.QCst{k}) == O.ofq(~F, k) : O.C(F)}) & (@k: S.Q -> {IP.psi(~F, ms, c1, E.QCst{k}) == O.zero(F) : O.C(F)}))))
+
+def Point(~F: O.OField, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>) -> Type:
+  &ms: List<&2, List<&2, Nat>> -> &c0: List<&2, O.C(F)> -> &c1: List<&2, O.C(F)> -> PtOk(~F, ms, c0, c1, es, ss)
+
+def pt_noref.go(~F: O.OField, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, p: Point(~F, es, ss), +ls: List<&2, S.Q>, +mm: List<&2, S.Q>, +k: S.Q, hr: SV.Refutes0(es, ss, ls, mm, k)) -> Empty:
+  (+ms, p1) = p
+  (+c0, p2) = p1
+  (+c1, p3) = p2
+  (hk0, q1) = p3
+  (hk1, q2) = q1
+  (hs, q3) = q2
+  (h0, h1) = q3
+  pt_contra(~F, ms, c0, c1, es, ss, ls, mm, k, hk0, hk1, hs, h0(k), h1(k), hr)
+
+# a point: no refutation
+def pt_noref(~F: O.OField, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, p: Point(~F, es, ss)) -> NoRef(es, ss):
+  ls => mm => k => hr => pt_noref.go(~F, es, ss, p, ls, mm, k, hr)
+
+def pt_c0(~F: O.OField, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, +t: SX.Tab, +h: {SX.solve(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)) == SX.Sat{t} : SX.Run}, +hc: {RF.crow(RF.Walk.rows(RF.walk(es, Nil{})), 0n) == None{} : Maybe<&2, Nat>}, +k: S.Q) -> {IP.psi(~F, bms(RF.Walk.rows(RF.walk(es, Nil{})), Con{Nil{}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})}), bcs(~F, RF.Walk.rows(RF.walk(es, Nil{})), Con{Nil{}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})}, Con{O.one(F), SP.ydrop(~F, SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SP.rmap(~F, SX.Tab.rows(t), RN.zv(~F, SX.LP.v0(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)))))}), E.QCst{k}) == O.ofq(~F, k) : O.C(F)}:
+  Equal.trans(O.C(F), IP.psi(~F, bms(RF.Walk.rows(RF.walk(es, Nil{})), Con{Nil{}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})}), bcs(~F, RF.Walk.rows(RF.walk(es, Nil{})), Con{Nil{}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})}, Con{O.one(F), SP.ydrop(~F, SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SP.rmap(~F, SX.Tab.rows(t), RN.zv(~F, SX.LP.v0(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)))))}), E.QCst{k}), O.mul(F, O.one(F), O.ofq(~F, k)), O.ofq(~F, k),
+    psi_cst(~F, RF.Walk.rows(RF.walk(es, Nil{})), RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), O.one(F), SP.ydrop(~F, SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SP.rmap(~F, SX.Tab.rows(t), RN.zv(~F, SX.LP.v0(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss))))), k, crow_none(RF.Walk.rows(RF.walk(es, Nil{})), 0n, hc), allcon_ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}, {==})), FR.fring_eq(~F, [O.ofq(~F, k)], E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{0n}}, E.ZVar{0n}, {==}))
+
+def pt_c1(~F: O.OField, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, +t: SX.Tab, +h: {SX.solve(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)) == SX.Sat{t} : SX.Run}, +hc: {RF.crow(RF.Walk.rows(RF.walk(es, Nil{})), 0n) == None{} : Maybe<&2, Nat>}, +k: S.Q) -> {IP.psi(~F, bms(RF.Walk.rows(RF.walk(es, Nil{})), Con{Nil{}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})}), bcs(~F, RF.Walk.rows(RF.walk(es, Nil{})), Con{Nil{}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})}, Con{O.zero(F), SP.ydrop(~F, SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SP.rmap(~F, SX.Tab.rows(t), RN.zv(~F, SX.LP.v1(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)))))}), E.QCst{k}) == O.zero(F) : O.C(F)}:
+  Equal.trans(O.C(F), IP.psi(~F, bms(RF.Walk.rows(RF.walk(es, Nil{})), Con{Nil{}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})}), bcs(~F, RF.Walk.rows(RF.walk(es, Nil{})), Con{Nil{}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})}, Con{O.zero(F), SP.ydrop(~F, SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SP.rmap(~F, SX.Tab.rows(t), RN.zv(~F, SX.LP.v1(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)))))}), E.QCst{k}), O.mul(F, O.zero(F), O.ofq(~F, k)), O.zero(F),
+    psi_cst(~F, RF.Walk.rows(RF.walk(es, Nil{})), RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), O.zero(F), SP.ydrop(~F, SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SP.rmap(~F, SX.Tab.rows(t), RN.zv(~F, SX.LP.v1(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss))))), k, crow_none(RF.Walk.rows(RF.walk(es, Nil{})), 0n, hc), allcon_ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}, {==})), FL.zero_mul(~F, O.ofq(~F, k)))
+
+def sat_point(~F: O.OField, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, +t: SX.Tab, +h: {SX.solve(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)) == SX.Sat{t} : SX.Run}, +hc: {RF.crow(RF.Walk.rows(RF.walk(es, Nil{})), 0n) == None{} : Maybe<&2, Nat>}) -> Point(~F, es, ss):
+  (bms(RF.Walk.rows(RF.walk(es, Nil{})), Con{Nil{}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})}), (bcs(~F, RF.Walk.rows(RF.walk(es, Nil{})), Con{Nil{}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})}, Con{O.one(F), SP.ydrop(~F, SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SP.rmap(~F, SX.Tab.rows(t), RN.zv(~F, SX.LP.v0(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)))))}), (bcs(~F, RF.Walk.rows(RF.walk(es, Nil{})), Con{Nil{}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})}, Con{O.zero(F), SP.ydrop(~F, SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SP.rmap(~F, SX.Tab.rows(t), RN.zv(~F, SX.LP.v1(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)))))}), (kill_all(~F, Con{Nil{}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})}, Con{O.one(F), SP.ydrop(~F, SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SP.rmap(~F, SX.Tab.rows(t), RN.zv(~F, SX.LP.v0(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)))))}, es), (kill_all(~F, Con{Nil{}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})}, Con{O.zero(F), SP.ydrop(~F, SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SP.rmap(~F, SX.Tab.rows(t), RN.zv(~F, SX.LP.v1(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)))))}, es), (allside(~F, es, ss, t, h, ss, 0n, {==}),
+    (k => pt_c0(~F, es, ss, t, h, hc, k), k => pt_c1(~F, es, ss, t, h, hc, k))))))))
+
+# when refute finds nothing, a point
+def RefPt(~F: O.OField, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, mc: Maybe<&2, RF.Cert>) -> Type:
+  match mc:
+    case None{}:
+      Point(~F, es, ss)
+    case Some{c}:
+      Unit
+
+def pt.r(~F: O.OField, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, r: SX.Run, hr: {r == SX.solve(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)) : SX.Run}, +hc: {RF.crow(RF.Walk.rows(RF.walk(es, Nil{})), 0n) == None{} : Maybe<&2, Nat>})
+  -> RefPt(~F, es, ss, RF.cert.run(RF.Walk.keep(RF.walk(es, Nil{})), es, ss, RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), r)):
+  match r:
+    case SX.Go{+t}:
+      absurd(RefPt(~F, es, ss, None{}), KA.tf((%Equal.sym(SX.Run, SX.Go{t}, SX.solve(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), hr) : {RN.isgo(_) == False{} : Bool}
+        TP.solve_ends(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), lp_wf(es, ss)))))
+    case SX.Sat{+t}:
+      sat_point(~F, es, ss, t, Equal.sym(SX.Run, SX.Sat{t}, SX.solve(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), hr), hc)
+    case SX.Unsat{t, i}:
+      Unit{}
+
+def pt.c(~F: O.OField, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, mj: Maybe<&2, Nat>, hmj: {mj == RF.crow(RF.Walk.rows(RF.walk(es, Nil{})), 0n) : Maybe<&2, Nat>}) -> RefPt(~F, es, ss, RF.cert(es, ss, RF.decide.c(RF.walk(es, Nil{}), mj, ss))):
+  match mj:
+    case Some{j}:
+      Unit{}
+    case None{}:
+      pt.r(~F, es, ss, SX.solve(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), {==}, Equal.sym(Maybe<&2, Nat>, None{}, RF.crow(RF.Walk.rows(RF.walk(es, Nil{})), 0n), hmj))
+
+def refute_pt(~F: O.OField, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>) -> RefPt(~F, es, ss, RF.refute(es, ss)):
+  pt.c(~F, es, ss, RF.crow(RF.Walk.rows(RF.walk(es, Nil{})), 0n), {==})
+
+# refute found nothing: a point
+def pt_of_none(~F: O.OField, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, h: {RF.refute(es, ss) == None{} : Maybe<&2, RF.Cert>}) -> Point(~F, es, ss):
+  %h : RefPt(~F, es, ss, _)
+  refute_pt(~F, es, ss)
