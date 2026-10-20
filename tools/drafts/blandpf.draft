@@ -1020,3 +1020,102 @@ def col.n($CTX, +j: Nat, b: Bool, hb_: {b == SX.ltn(j, SX.LP.nv(lp)) : Bool}) ->
 # every column's term: t's negative, every other one not positive
 def col($CTX, +j: Nat) -> $TSJ:
   col.n($CTA, j, SX.ltn(j, SX.LP.nv(lp)), {==})
+
+@MACRO SS0 isum(~F, c, $MM, $DL0, j)
+@MACRO SS1 isum(~F, c, $MM, $DL1, j)
+@MACRO SSJ Either<&2, &2, LX.LNeg(~F, $SS0, $SS1), M.Both({inrange($TT, c, j) == False{} : Bool}, LX.LNonpos(~F, $SS0, $SS1))>
+
+def bor_ff(a: Bool, b: Bool, ha: {a == False{} : Bool}, hb: {b == False{} : Bool}) -> {bor(a, b) == False{} : Bool}:
+  match a:
+    case True{}:
+      absurd({bor(True{}, b) == False{} : Bool}, KA.tf(ha))
+    case False{}:
+      hb
+
+def ss.go($CTX, +j: Nat, +k: Nat, h1: Either<&2, &2, LX.LNeg(~F, $TS0, $TS1), M.Both({SX.eqn(j, $TT) == False{} : Bool}, LX.LNonpos(~F, $TS0, $TS1))>, h2: Either<&2, &2, LX.LNeg(~F, isum(~F, k, $MM, $DL0, 1n+j), isum(~F, k, $MM, $DL1, 1n+j)), M.Both({inrange($TT, k, 1n+j) == False{} : Bool}, LX.LNonpos(~F, isum(~F, k, $MM, $DL0, 1n+j), isum(~F, k, $MM, $DL1, 1n+j)))>) -> Either<&2, &2, LX.LNeg(~F, @A($TS0, isum(~F, k, $MM, $DL0, 1n+j)), @A($TS1, isum(~F, k, $MM, $DL1, 1n+j))), M.Both({bor(SX.eqn(j, $TT), inrange($TT, k, 1n+j)) == False{} : Bool}, LX.LNonpos(~F, @A($TS0, isum(~F, k, $MM, $DL0, 1n+j)), @A($TS1, isum(~F, k, $MM, $DL1, 1n+j))))>:
+  match h1 h2:
+    case Inl{+u} Inl{+v}:
+      Inl{LX.lneg_add_l(~F, $TS0, $TS1, isum(~F, k, $MM, $DL0, 1n+j), isum(~F, k, $MM, $DL1, 1n+j), u, lneg_nonpos(~F, isum(~F, k, $MM, $DL0, 1n+j), isum(~F, k, $MM, $DL1, 1n+j), v))}
+    case Inl{+u} Inr{+v}:
+      Inl{LX.lneg_add_l(~F, $TS0, $TS1, isum(~F, k, $MM, $DL0, 1n+j), isum(~F, k, $MM, $DL1, 1n+j), u, both_r({inrange($TT, k, 1n+j) == False{} : Bool}, LX.LNonpos(~F, isum(~F, k, $MM, $DL0, 1n+j), isum(~F, k, $MM, $DL1, 1n+j)), v))}
+    case Inr{+u} Inl{+v}:
+      Inl{LX.lneg_add_r(~F, $TS0, $TS1, isum(~F, k, $MM, $DL0, 1n+j), isum(~F, k, $MM, $DL1, 1n+j), both_r({SX.eqn(j, $TT) == False{} : Bool}, LX.LNonpos(~F, $TS0, $TS1), u), v)}
+    case Inr{+u} Inr{+v}:
+      Inr{(bor_ff(SX.eqn(j, $TT), inrange($TT, k, 1n+j), both_l({SX.eqn(j, $TT) == False{} : Bool}, LX.LNonpos(~F, $TS0, $TS1), u), both_l({inrange($TT, k, 1n+j) == False{} : Bool}, LX.LNonpos(~F, isum(~F, k, $MM, $DL0, 1n+j), isum(~F, k, $MM, $DL1, 1n+j)), v)),
+        LX.lnonpos_add(~F, $TS0, $TS1, isum(~F, k, $MM, $DL0, 1n+j), isum(~F, k, $MM, $DL1, 1n+j), both_r({SX.eqn(j, $TT) == False{} : Bool}, LX.LNonpos(~F, $TS0, $TS1), u), both_r({inrange($TT, k, 1n+j) == False{} : Bool}, LX.LNonpos(~F, isum(~F, k, $MM, $DL0, 1n+j), isum(~F, k, $MM, $DL1, 1n+j)), v)))}
+
+# the sum over columns j .. j + c - 1: negative, or not positive with t
+# outside the columns
+def sumsign($CTX, c: Nat, +j: Nat) -> $SSJ:
+  match c:
+    case 0n:
+      Inr{({==}, Inr{({==}, Inr{{==}})})}
+    case 1n++k:
+      ss.go($CTA, j, k, col($CTA, j), sumsign($CTA, k, 1n+j))
+
+@MACRO R1 SX.rowat(SX.Tab.rows($T1), $IS)
+
+def plus_zero(c: Nat) -> {plus(c, 0n) == c : Nat}:
+  match c:
+    case 0n:
+      {==}
+    case 1n++k:
+      %Equal.sym(Nat, plus(k, 1n), 1n+plus(k, 0n), plus_succ(k, 0n)) : {_ == 1n+k : Nat}
+      %Equal.sym(Nat, plus(k, 0n), k, plus_zero(k)) : {1n+_ == 1n+k : Nat}
+      {==}
+
+def lneg_scale_r(~F: O.OField, +x0: @T, +x1: @T, +c: @T, hc: O.lt(F, @0, c), h: LX.LNeg(~F, x0, x1)) -> LX.LNeg(~F, @M(x0, c), @M(x1, c)):
+  %O.mul_comm(F)(c, x0) : LX.LNeg(~F, _, @M(x1, c))
+  %O.mul_comm(F)(c, x1) : LX.LNeg(~F, @M(c, x0), _)
+  LX.lneg_scale(~F, c, x0, x1, hc, h)
+
+def rn.go($CTX, +c: Nat, +j: Nat, h: $SSJ, hin: {inrange($TT, c, j) == True{} : Bool}) -> LX.LNeg(~F, $SS0, $SS1):
+  match h:
+    case Inl{u}:
+      u
+    case Inr{p}:
+      absurd(LX.LNeg(~F, $SS0, $SS1), KA.tf(Equal.trans(Bool, True{}, inrange($TT, c, j), False{}, Equal.sym(Bool, inrange($TT, c, j), True{}, hin), both_l({inrange($TT, c, j) == False{} : Bool}, LX.LNonpos(~F, $SS0, $SS1), p))))
+
+# row i at k1, read at the difference, is negative
+def row_neg($CTX) -> LX.LNeg(~F, SP.rv(~F, $R1, $DL0), SP.rv(~F, $R1, $DL1)):
+  +hv = SP.rlok_at(SX.Tab.rows($T1), SX.LP.nv(lp), $IS, RN.rl_at(lp, $K1, hwf))
+  lneg_scale_r(~F, SP.zdot(~F, $MM, $DL0), SP.zdot(~F, $MM, $DL1), O.inv(F, O.ofp(~F, SX.Rw.d($R1))), RN.inv_pos(~F, SX.Rw.d($R1)),
+    (%Equal.sym(@T, SP.zdot(~F, $MM, $DL0), isum(~F, SX.LP.nv(lp), $MM, $DL0, 0n), zdot_isum(~F, SX.LP.nv(lp), $MM, $DL0, hv)) : LX.LNeg(~F, _, SP.zdot(~F, $MM, $DL1))
+     %Equal.sym(@T, SP.zdot(~F, $MM, $DL1), isum(~F, SX.LP.nv(lp), $MM, $DL1, 0n), zdot_isum(~F, SX.LP.nv(lp), $MM, $DL1, hv)) : LX.LNeg(~F, isum(~F, SX.LP.nv(lp), $MM, $DL0, 0n), _)
+     rn.go($CTA, SX.LP.nv(lp), 0n, sumsign($CTA, SX.LP.nv(lp), 0n), inrange_ok($TT, SX.LP.nv(lp), 0n, {==}, (%Equal.sym(Nat, plus(SX.LP.nv(lp), 0n), SX.LP.nv(lp), plus_zero(SX.LP.nv(lp))) : {SX.ltn($TT, _) == True{} : Bool}
+       t_ltN($CTA))))))
+
+# the difference at i is row i (at k1) read at the difference
+def rowid($CTX, +v: M.Vec(~F)) -> {SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows($T2), v), SP.rmap(~F, SX.Tab.rows($T1), v)), $IS) == SP.rv(~F, $R1, fsub(~F, SP.rmap(~F, SX.Tab.rows($T2), v), SP.rmap(~F, SX.Tab.rows($T1), v))) : @T}:
+  +hn = RN.hn_at(lp, $K1, $PG1)
+  %Equal.sym(@T, SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows($T2), v), SP.rmap(~F, SX.Tab.rows($T1), v)), $IS), @S(SP.fat(~F, SP.rmap(~F, SX.Tab.rows($T2), v), $IS), SP.fat(~F, SP.rmap(~F, SX.Tab.rows($T1), v), $IS)), fat_fsub(~F, SP.rmap(~F, SX.Tab.rows($T2), v), SP.rmap(~F, SX.Tab.rows($T1), v), $IS)) : {_ == SP.rv(~F, $R1, fsub(~F, SP.rmap(~F, SX.Tab.rows($T2), v), SP.rmap(~F, SX.Tab.rows($T1), v))) : @T}
+  %Equal.sym(@T, SP.fat(~F, SP.rmap(~F, SX.Tab.rows($T2), v), $IS), SP.rv(~F, $R1, SP.rmap(~F, SX.Tab.rows($T2), v)), SP.agree_at(~F, SX.Tab.rows($T1), SP.rmap(~F, SX.Tab.rows($T2), v), SP.rmap(~F, SX.Tab.rows($T2), v), $IS, RN.i2_at(~F, lp, $K1)(SP.rmap(~F, SX.Tab.rows($T2), v), RN.i1_at(~F, lp, $K2, hwf)(v)), hn)) : {@S(_, SP.fat(~F, SP.rmap(~F, SX.Tab.rows($T1), v), $IS)) == SP.rv(~F, $R1, fsub(~F, SP.rmap(~F, SX.Tab.rows($T2), v), SP.rmap(~F, SX.Tab.rows($T1), v))) : @T}
+  %Equal.sym(@T, SP.fat(~F, SP.rmap(~F, SX.Tab.rows($T1), v), $IS), SP.rv(~F, $R1, SP.rmap(~F, SX.Tab.rows($T1), v)), SP.agree_at(~F, SX.Tab.rows($T1), SP.rmap(~F, SX.Tab.rows($T1), v), SP.rmap(~F, SX.Tab.rows($T1), v), $IS, RN.i2_at(~F, lp, $K1)(SP.rmap(~F, SX.Tab.rows($T1), v), RN.i1_at(~F, lp, $K1, hwf)(v)), hn)) : {@S(SP.rv(~F, $R1, SP.rmap(~F, SX.Tab.rows($T2), v)), _) == SP.rv(~F, $R1, fsub(~F, SP.rmap(~F, SX.Tab.rows($T2), v), SP.rmap(~F, SX.Tab.rows($T1), v))) : @T}
+  rv_fsub(~F, $R1, SP.rmap(~F, SX.Tab.rows($T2), v), SP.rmap(~F, SX.Tab.rows($T1), v))
+
+@MACRO LB0 @OZ(S.Z.neg(RN.Ineq.b(RN.qat(SX.LP.qs(lp), $IS))))
+@MACRO LB1 @OZ(SX.ind(RN.Ineq.s(RN.qat(SX.LP.qs(lp), $IS))))
+@MACRO A0 SP.rv(~F, SX.rowat(SX.Tab.rows($T2), $IS), $V0)
+@MACRO A1 SP.rv(~F, SX.rowat(SX.Tab.rows($T2), $IS), $V1)
+@MACRO B0 SP.rv(~F, $R1, $V0)
+@MACRO B1 SP.rv(~F, $R1, $V1)
+
+# the difference at i is positive: i is below its bound at k1, and not at
+# k2 (i < t, the smallest slack below its bound there)
+def d_pos($CTX) -> LX.LPos(~F, SP.fat(~F, $DL0, $IS), SP.fat(~F, $DL1, $IS)):
+  %Equal.sym(@T, SP.fat(~F, $DL0, $IS), @S($A0, $B0), dl_at(~F, SX.Tab.rows($T2), SX.Tab.rows($T1), $V0, $IS)) : LX.LPos(~F, _, SP.fat(~F, $DL1, $IS))
+  %Equal.sym(@T, SP.fat(~F, $DL1, $IS), @S($A1, $B1), dl_at(~F, SX.Tab.rows($T2), SX.Tab.rows($T1), $V1, $IS)) : LX.LPos(~F, @S($A0, $B0), _)
+  %@ZEQ[a=$A0,, b=$B0,, l=$LB0 | (a - l) - (b - l) | a - b] : LX.LPos(~F, _, @S($A1, $B1))
+  %@ZEQ[a=$A1,, b=$B1,, l=$LB1 | (a - l) - (b - l) | a - b] : LX.LPos(~F, @S(@S($A0, $LB0), @S($B0, $LB0)), _)
+  LX.lpos_sub(~F, @S($A0, $LB0), @S($A1, $LB1), @S($B0, $LB0), @S($B1, $LB1),
+    RN.noviol_f(~F, SX.rowat(SX.Tab.rows($T2), $IS), SX.LP.v0(lp), SX.LP.v1(lp), RN.qat(SX.LP.qs(lp), $IS), RN.lv_min(lp, $T2, $PG2, RN.hr_at(lp, $K2), $IS, (%Equal.sym(Nat, I(lp, $K2), $TT, ik2($CTA)) : {SX.ltn($IS, _) == True{} : Bool}
+      is_lt_t($CTA)))),
+    RN.viol_f(~F, $R1, SX.LP.v0(lp), SX.LP.v1(lp), RN.qat(SX.LP.qs(lp), $IS), RN.lv_viol(lp, $T1, $PG1, RN.hr_at(lp, $K1))))
+
+# Bland: the cycle is impossible
+def bland_main($CTX) -> Empty:
+  LX.lpos_lneg(~F, SP.rv(~F, $R1, $DL0), SP.rv(~F, $R1, $DL1),
+    (%rowid($CTA, $V0) : LX.LPos(~F, _, SP.rv(~F, $R1, $DL1))
+     %rowid($CTA, $V1) : LX.LPos(~F, SP.fat(~F, $DL0, $IS), _)
+     d_pos($CTA)),
+    row_neg($CTA))
