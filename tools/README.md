@@ -29,6 +29,7 @@ the checker verifies the output.
 | `lib/completepf.bend` | `python3 tools/expand.py tools/drafts/completepf.draft lib/completepf.bend` |
 | `lib/cwpf.bend` | `python3 tools/expand.py tools/drafts/cwpf.draft lib/cwpf.bend` |
 | `lib/gmpf.bend` | `python3 tools/expand.py tools/drafts/gmpf.draft lib/gmpf.bend` |
+| `lib/passpf.bend` | `python3 tools/expand.py tools/drafts/passpf.draft lib/passpf.bend` |
 | `lib/qnorm.bend` | `python3 tools/expand.py tools/drafts/qnorm.draft lib/qnorm.bend` |
 
 `@MACRO NAME text` (a line) makes every `$NAME` below stand for `text`
