@@ -45,6 +45,7 @@ import ./termpf.bend as TP
 import ./refute.bend as RF
 import ./unsatpf.bend as UN
 import ./listpf.bend as LI
+import ./lexpf.bend as LX
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -606,3 +607,576 @@ def acol_pdot(mu: List<&2, S.Z>, ss: List<&2, SK.Side>, +rows: List<&2, EL.Row>,
       %acol_pdot(ut, st, rows, ys, l, n, hl, he) : {S.Z.add(S.Z.mul(u, SX.at(RF.coefs(ys, RF.Res.p(EL.resid(rows, RF.sexpr(s)))), l)), SX.dot(ut, UN.acol(RF.ineqs(ys, RF.sres(rows, st), st), l)))
         == S.Z.add(S.Z.mul(u, SX.at(RF.coefs(ys, RF.Res.p(EL.resid(rows, RF.sexpr(s)))), l)), _) : S.Z}
       {==}
+
+# The walk over the equations
+# ---------------------------
+
+def bnext(b: Bool, +B: List<&2, E.QExpr>, +e: E.QExpr) -> List<&2, E.QExpr>:
+  match b:
+    case True{}:
+      B
+    case False{}:
+      EP.qsnoc(B, e)
+
+
+# the basis after walking es
+def wB(es: List<&2, E.QExpr>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>) -> List<&2, E.QExpr>:
+  match es:
+    case Nil{}:
+      B
+    case Con{+e, t}:
+      wB(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)), bnext(RF.isnilp(RF.Res.p(EL.resid(rows, e))), B, e))
+
+def wk_rows(b: Bool, w: RF.Walk) -> {RF.Walk.rows(RF.walk.k(b, w)) == RF.Walk.rows(w) : List<&2, EL.Row>}:
+  match w:
+    case RF.Walk{rows, keep}:
+      {==}
+
+def wk_keep(b: Bool, w: RF.Walk) -> {RF.Walk.keep(RF.walk.k(b, w)) == Con{RF.bnot(b), RF.Walk.keep(w)} : List<&2, Bool>}:
+  match w:
+    case RF.Walk{rows, keep}:
+      {==}
+
+def nil_bridge.p(p: List<&2, R.ZTerm>, h: {RF.isnilp(p) == False{} : Bool}) -> {EP.isnil(p) == False{} : Bool}:
+  match p:
+    case Nil{}:
+      absurd({EP.isnil(Nil{}) == False{} : Bool}, KA.tf(h))
+    case Con{x, t}:
+      {==}
+
+def nil_bridge(r: EL.Res, h: {RF.isnilp(RF.Res.p(r)) == False{} : Bool}) -> {EP.isnil(EP.resp(r)) == False{} : Bool}:
+  match r:
+    case EL.Res{p, cb, bt}:
+      nil_bridge.p(p, h)
+
+def rlen_rsnoc(rows: List<&2, EL.Row>, +x: EL.Row) -> {EL.rlen(EL.rsnoc(rows, x)) == 1n+EL.rlen(rows) : Nat}:
+  match rows:
+    case Nil{}:
+      {==}
+    case Con{h, +t}:
+      %rlen_rsnoc(t, x) : {1n+EL.rlen(EL.rsnoc(t, x)) == 1n+_ : Nat}
+      {==}
+
+def neqs_qsnoc(B: List<&2, E.QExpr>, +e: E.QExpr) -> {SV.neqs(EP.qsnoc(B, e)) == 1n+SV.neqs(B) : Nat}:
+  match B:
+    case Nil{}:
+      {==}
+    case Con{b, +t}:
+      %neqs_qsnoc(t, e) : {1n+SV.neqs(EP.qsnoc(t, e)) == 1n+_ : Nat}
+      {==}
+
+def step_inv(b: Bool, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +e: E.QExpr, hb: {b == RF.isnilp(RF.Res.p(EL.resid(rows, e))) : Bool}, +h: {EP.rinv(B, rows, 0n) == True{} : Bool}, +hl: {EL.rlen(rows) == SV.neqs(B) : Nat})
+  -> M.Both({EP.rinv(bnext(b, B, e), RF.walk.next(b, rows, EL.resid(rows, e)), 0n) == True{} : Bool}, {EL.rlen(RF.walk.next(b, rows, EL.resid(rows, e))) == SV.neqs(bnext(b, B, e)) : Nat}):
+  match b:
+    case True{}:
+      (h, hl)
+    case False{}:
+      (EP.new_rinv(B, rows, e, h, hl, nil_bridge(EL.resid(rows, e), Equal.sym(Bool, False{}, RF.isnilp(RF.Res.p(EL.resid(rows, e))), hb))),
+       Equal.trans(Nat, EL.rlen(EL.rsnoc(rows, EL.row_of(EL.resid(rows, e)))), 1n+EL.rlen(rows), SV.neqs(EP.qsnoc(B, e)), rlen_rsnoc(rows, EL.row_of(EL.resid(rows, e))),
+         Equal.trans(Nat, 1n+EL.rlen(rows), 1n+SV.neqs(B), SV.neqs(EP.qsnoc(B, e)),
+           (%hl : {1n+EL.rlen(rows) == 1n+_ : Nat}
+             {==}),
+           Equal.sym(Nat, SV.neqs(EP.qsnoc(B, e)), 1n+SV.neqs(B), neqs_qsnoc(B, e)))))
+
+def walk_inv(es: List<&2, E.QExpr>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, h: {EP.rinv(B, rows, 0n) == True{} : Bool}, hl: {EL.rlen(rows) == SV.neqs(B) : Nat})
+  -> M.Both({EP.rinv(wB(es, rows, B), RF.Walk.rows(RF.walk(es, rows)), 0n) == True{} : Bool}, {EL.rlen(RF.Walk.rows(RF.walk(es, rows))) == SV.neqs(wB(es, rows, B)) : Nat}):
+  match es:
+    case Nil{}:
+      (h, hl)
+    case Con{+e, +t}:
+      +st = step_inv(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, B, e, {==}, h, hl)
+      %Equal.sym(List<&2, EL.Row>, RF.Walk.rows(RF.walk.k(RF.isnilp(RF.Res.p(EL.resid(rows, e))), RF.walk(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e))))), RF.Walk.rows(RF.walk(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)))), wk_rows(RF.isnilp(RF.Res.p(EL.resid(rows, e))), RF.walk(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)))))
+        : M.Both({EP.rinv(wB(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)), bnext(RF.isnilp(RF.Res.p(EL.resid(rows, e))), B, e)), _, 0n) == True{} : Bool}, {EL.rlen(_) == SV.neqs(wB(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)), bnext(RF.isnilp(RF.Res.p(EL.resid(rows, e))), B, e))) : Nat})
+      walk_inv(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)), bnext(RF.isnilp(RF.Res.p(EL.resid(rows, e))), B, e),
+        LX.both_l({EP.rinv(bnext(RF.isnilp(RF.Res.p(EL.resid(rows, e))), B, e), RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)), 0n) == True{} : Bool}, {EL.rlen(RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e))) == SV.neqs(bnext(RF.isnilp(RF.Res.p(EL.resid(rows, e))), B, e)) : Nat}, st),
+        LX.both_r({EP.rinv(bnext(RF.isnilp(RF.Res.p(EL.resid(rows, e))), B, e), RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)), 0n) == True{} : Bool}, {EL.rlen(RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e))) == SV.neqs(bnext(RF.isnilp(RF.Res.p(EL.resid(rows, e))), B, e)) : Nat}, st))
+
+# each row's recorded pivot is its largest monomial
+def pvok1(r: EL.Row) -> Bool:
+  match r:
+    case EL.Row{p, cb, bt, pv}:
+      EL.iseq(NR.mcmp(pv, EL.pivot(p)))
+
+def pvok(rows: List<&2, EL.Row>) -> Bool:
+  match rows:
+    case Nil{}:
+      True{}
+    case Con{r, t}:
+      KA.band(pvok1(r), pvok(t))
+
+def pvok_snoc(rows: List<&2, EL.Row>, +x: EL.Row, +h: {pvok(rows) == True{} : Bool}, hx: {pvok1(x) == True{} : Bool}) -> {pvok(EL.rsnoc(rows, x)) == True{} : Bool}:
+  match rows:
+    case Nil{}:
+      KA.band_i(pvok1(x), True{}, hx, {==})
+    case Con{+r, +t}:
+      KA.band_i(pvok1(r), pvok(EL.rsnoc(t, x)), KA.band_l(pvok1(r), pvok(t), h), pvok_snoc(t, x, KA.band_r(pvok1(r), pvok(t), h), hx))
+
+def pvok_row_of(r: EL.Res) -> {pvok1(EL.row_of(r)) == True{} : Bool}:
+  match r:
+    case EL.Res{+p, cb, bt}:
+      %RP.mcmp_refl(EL.pivot(p)) : {EL.iseq(_) == True{} : Bool}
+      {==}
+
+def pvok_next(b: Bool, +rows: List<&2, EL.Row>, +r: EL.Res, h: {pvok(rows) == True{} : Bool}) -> {pvok(RF.walk.next(b, rows, r)) == True{} : Bool}:
+  match b:
+    case True{}:
+      h
+    case False{}:
+      pvok_snoc(rows, EL.row_of(r), h, pvok_row_of(r))
+
+def pvok_walk(es: List<&2, E.QExpr>, +rows: List<&2, EL.Row>, h: {pvok(rows) == True{} : Bool}) -> {pvok(RF.Walk.rows(RF.walk(es, rows))) == True{} : Bool}:
+  match es:
+    case Nil{}:
+      h
+    case Con{+e, +t}:
+      %Equal.sym(List<&2, EL.Row>, RF.Walk.rows(RF.walk.k(RF.isnilp(RF.Res.p(EL.resid(rows, e))), RF.walk(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e))))), RF.Walk.rows(RF.walk(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)))), wk_rows(RF.isnilp(RF.Res.p(EL.resid(rows, e))), RF.walk(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e))))) : {pvok(_) == True{} : Bool}
+      pvok_walk(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)), pvok_next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e), h))
+
+# the basis is the kept equations
+def qcat(B: List<&2, E.QExpr>, X: List<&2, E.QExpr>) -> List<&2, E.QExpr>:
+  match B:
+    case Nil{}:
+      X
+    case Con{b, t}:
+      Con{b, qcat(t, X)}
+
+def qcat_nil(B: List<&2, E.QExpr>) -> {B == qcat(B, Nil{}) : List<&2, E.QExpr>}:
+  match B:
+    case Nil{}:
+      {==}
+    case Con{+b, +t}:
+      %qcat_nil(t) : {Con{b, t} == Con{b, _} : List<&2, E.QExpr>}
+      {==}
+
+def qcat_snoc(B: List<&2, E.QExpr>, +e: E.QExpr, +X: List<&2, E.QExpr>) -> {qcat(EP.qsnoc(B, e), X) == qcat(B, Con{e, X}) : List<&2, E.QExpr>}:
+  match B:
+    case Nil{}:
+      {==}
+    case Con{+b, +t}:
+      %qcat_snoc(t, e, X) : {Con{b, qcat(EP.qsnoc(t, e), X)} == Con{b, _} : List<&2, E.QExpr>}
+      {==}
+
+def kb(b: Bool, +B: List<&2, E.QExpr>, +e: E.QExpr, +K: List<&2, Bool>, +t: List<&2, E.QExpr>) -> {qcat(bnext(b, B, e), kept(K, t)) == qcat(B, kept(Con{RF.bnot(b), K}, Con{e, t})) : List<&2, E.QExpr>}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      qcat_snoc(B, e, kept(K, t))
+
+def wB_kept(es: List<&2, E.QExpr>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>) -> {wB(es, rows, B) == qcat(B, kept(RF.Walk.keep(RF.walk(es, rows)), es)) : List<&2, E.QExpr>}:
+  match es:
+    case Nil{}:
+      qcat_nil(B)
+    case Con{+e, +t}:
+      %Equal.sym(List<&2, Bool>, RF.Walk.keep(RF.walk.k(RF.isnilp(RF.Res.p(EL.resid(rows, e))), RF.walk(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e))))), Con{RF.bnot(RF.isnilp(RF.Res.p(EL.resid(rows, e)))), RF.Walk.keep(RF.walk(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e))))}, wk_keep(RF.isnilp(RF.Res.p(EL.resid(rows, e))), RF.walk(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)))))
+        : {wB(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)), bnext(RF.isnilp(RF.Res.p(EL.resid(rows, e))), B, e)) == qcat(B, kept(_, Con{e, t})) : List<&2, E.QExpr>}
+      Equal.trans(List<&2, E.QExpr>, wB(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)), bnext(RF.isnilp(RF.Res.p(EL.resid(rows, e))), B, e)), qcat(bnext(RF.isnilp(RF.Res.p(EL.resid(rows, e))), B, e), kept(RF.Walk.keep(RF.walk(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)))), t)), qcat(B, kept(Con{RF.bnot(RF.isnilp(RF.Res.p(EL.resid(rows, e)))), RF.Walk.keep(RF.walk(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e))))}, Con{e, t})),
+        wB_kept(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)), bnext(RF.isnilp(RF.Res.p(EL.resid(rows, e))), B, e)), kb(RF.isnilp(RF.Res.p(EL.resid(rows, e))), B, e, RF.Walk.keep(RF.walk(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)))), t))
+
+def qlen_exp.c(b: Bool, +e: E.QExpr, +t: List<&2, E.QExpr>, +K: List<&2, Bool>, +cs: List<&2, S.Z>, ih: @c: List<&2, S.Z> -> {SV.qlen(RF.expand(K, t, c)) == SV.neqs(t) : Nat})
+  -> {SV.qlen(RF.expand(Con{RF.bnot(b), K}, Con{e, t}, cs)) == 1n+SV.neqs(t) : Nat}:
+  match b:
+    case True{}:
+      %ih(cs) : {1n+SV.qlen(RF.expand(K, t, cs)) == 1n+_ : Nat}
+      {==}
+    case False{}:
+      %ih(RF.tl(cs)) : {1n+SV.qlen(RF.expand(K, t, RF.tl(cs))) == 1n+_ : Nat}
+      {==}
+
+# one multiplier per equation
+def qlen_wexp(es: List<&2, E.QExpr>, +rows: List<&2, EL.Row>, +cs: List<&2, S.Z>) -> {SV.qlen(RF.expand(RF.Walk.keep(RF.walk(es, rows)), es, cs)) == SV.neqs(es) : Nat}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{+e, +t}:
+      %Equal.sym(List<&2, Bool>, RF.Walk.keep(RF.walk.k(RF.isnilp(RF.Res.p(EL.resid(rows, e))), RF.walk(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e))))), Con{RF.bnot(RF.isnilp(RF.Res.p(EL.resid(rows, e)))), RF.Walk.keep(RF.walk(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e))))}, wk_keep(RF.isnilp(RF.Res.p(EL.resid(rows, e))), RF.walk(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)))))
+        : {SV.qlen(RF.expand(_, Con{e, t}, cs)) == 1n+SV.neqs(t) : Nat}
+      qlen_exp.c(RF.isnilp(RF.Res.p(EL.resid(rows, e))), e, t, RF.Walk.keep(RF.walk(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)))), cs, c => qlen_wexp(t, RF.walk.next(RF.isnilp(RF.Res.p(EL.resid(rows, e))), rows, EL.resid(rows, e)), c))
+
+
+# the walk from no rows: echelon over the kept equations
+def w_rinv(+es: List<&2, E.QExpr>) -> {EP.rinv(kept(RF.Walk.keep(RF.walk(es, Nil{})), es), RF.Walk.rows(RF.walk(es, Nil{})), 0n) == True{} : Bool}:
+  %wB_kept(es, Nil{}, Nil{}) : {EP.rinv(_, RF.Walk.rows(RF.walk(es, Nil{})), 0n) == True{} : Bool}
+  LX.both_l({EP.rinv(wB(es, Nil{}, Nil{}), RF.Walk.rows(RF.walk(es, Nil{})), 0n) == True{} : Bool}, {EL.rlen(RF.Walk.rows(RF.walk(es, Nil{}))) == SV.neqs(wB(es, Nil{}, Nil{})) : Nat}, walk_inv(es, Nil{}, Nil{}, {==}, {==}))
+
+def w_allok(+es: List<&2, E.QExpr>) -> {EP.allok(kept(RF.Walk.keep(RF.walk(es, Nil{})), es), RF.Walk.rows(RF.walk(es, Nil{}))) == True{} : Bool}:
+  EP.rinv_allok(kept(RF.Walk.keep(RF.walk(es, Nil{})), es), RF.Walk.rows(RF.walk(es, Nil{})), 0n, w_rinv(es))
+
+def w_pv(+es: List<&2, E.QExpr>) -> {pvok(RF.Walk.rows(RF.walk(es, Nil{}))) == True{} : Bool}:
+  pvok_walk(es, Nil{}, {==})
+
+# A constant row
+# --------------
+
+# the row the search found: a constant (pivot 1), made from the basis, its
+# pivot its largest monomial
+def Facts(+B: List<&2, E.QExpr>, +rows: List<&2, EL.Row>, +j: Nat) -> Data:
+  M.Both({RF.iscst(RF.Row.pv(RF.rowat(rows, j))) == True{} : Bool}, M.Both({EP.rowok(B, RF.rowat(rows, j)) == True{} : Bool}, {pvok1(RF.rowat(rows, j)) == True{} : Bool}))
+
+def crow_shift(rows: List<&2, EL.Row>, +j: Nat) -> {RF.crow(rows, 1n+j) == RN.mapS(RF.crow(rows, j)) : Maybe<&2, Nat>}:
+  match rows:
+    case Nil{}:
+      {==}
+    case Con{+r, +t}:
+      %Equal.sym(Maybe<&2, Nat>, RF.crow(t, 2n+j), RN.mapS(RF.crow(t, 1n+j)), crow_shift(t, 1n+j)) : {SX.pick(RF.iscst(RF.Row.pv(r)), 1n+j, _) == RN.mapS(SX.pick(RF.iscst(RF.Row.pv(r)), j, RF.crow(t, 1n+j))) : Maybe<&2, Nat>}
+      RN.pick_map(RF.iscst(RF.Row.pv(r)), j, RF.crow(t, 1n+j))
+
+def crow_ok.c(b: Bool, +r: EL.Row, +t: List<&2, EL.Row>, +B: List<&2, E.QExpr>, j: Nat, hb: {b == RF.iscst(RF.Row.pv(r)) : Bool}, h: {SX.pick(b, 0n, RF.crow(t, 1n)) == Some{j} : Maybe<&2, Nat>},
+  +ha: {EP.allok(B, Con{r, t}) == True{} : Bool}, +hp: {pvok(Con{r, t}) == True{} : Bool}, ih: @k: Nat -> {RF.crow(t, 0n) == Some{k} : Maybe<&2, Nat>} -> Facts(B, t, k)) -> Facts(B, Con{r, t}, j):
+  match b:
+    case True{}:
+      %RN.some_inj(0n, j, h) : Facts(B, Con{r, t}, _)
+      (Equal.sym(Bool, True{}, RF.iscst(RF.Row.pv(r)), hb), (KA.band_l(EP.rowok(B, r), EP.allok(B, t), ha), KA.band_l(pvok1(r), pvok(t), hp)))
+    case False{}:
+      match j:
+        case 0n:
+          absurd(Facts(B, Con{r, t}, 0n), RN.map_zero(RF.crow(t, 0n), (%crow_shift(t, 0n) : {_ == Some{0n} : Maybe<&2, Nat>}
+            h)))
+        case 1n++k:
+          ih(k, RN.map_succ(RF.crow(t, 0n), k, (%crow_shift(t, 0n) : {_ == Some{1n+k} : Maybe<&2, Nat>}
+            h)))
+
+def crow_ok(rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, j: Nat, h: {RF.crow(rows, 0n) == Some{j} : Maybe<&2, Nat>}, +ha: {EP.allok(B, rows) == True{} : Bool}, +hp: {pvok(rows) == True{} : Bool}) -> Facts(B, rows, j):
+  match rows:
+    case Nil{}:
+      absurd(Facts(B, Nil{}, j), RN.none_some(j, h))
+    case Con{+r, +t}:
+      crow_ok.c(RF.iscst(RF.Row.pv(r)), r, t, B, j, {==}, h, ha, hp,
+        k => a => crow_ok(t, B, k, a, KA.band_r(EP.rowok(B, r), EP.allok(B, t), ha), KA.band_r(pvok1(r), pvok(t), hp)))
+
+def lt_nil(n: List<&2, Nat>, h: {RP.islt(NR.mcmp(n, Nil{})) == True{} : Bool}) -> Empty:
+  match n:
+    case Nil{}:
+      KA.ft(h)
+    case Con{a, b}:
+      KA.ft(h)
+
+# a reduced polynomial whose largest monomial is 1 is a constant
+def rconst.c(p: List<&2, R.ZTerm>, +v: Nat, +vs: List<&2, Nat>, hr: {RP.red(p) == True{} : Bool}, hp: {Nil{} == EL.pivot(p) : List<&2, Nat>}) -> {EL.cz(Con{v, vs}, p) == S.Z0{} : S.Z}:
+  match p:
+    case Nil{}:
+      {==}
+    case Con{R.ZTerm{c, n}, Nil{}}:
+      %hp : {S.Z.add(EL.ifz(EL.iseq(NR.mcmp(Con{v, vs}, _)), c), S.Z0{}) == S.Z0{} : S.Z}
+      {==}
+    case Con{R.ZTerm{c, +n}, Con{R.ZTerm{+d, +n2}, +r2}}:
+      absurd({EL.cz(Con{v, vs}, Con{R.ZTerm{c, n}, Con{R.ZTerm{d, n2}, r2}}) == S.Z0{} : S.Z},
+        lt_nil(n, (%Equal.sym(List<&2, Nat>, Nil{}, EL.pivot.go(r2, n2), hp) : {RP.islt(NR.mcmp(n, _)) == True{} : Bool}
+          EP.lts_pivot(r2, n, d, n2, KA.band_l(RP.mlts(n, Con{R.ZTerm{d, n2}, r2}), RP.red(Con{R.ZTerm{d, n2}, r2}),
+            KA.band_r(RP.msort(n), KA.band(RP.mlts(n, Con{R.ZTerm{d, n2}, r2}), RP.red(Con{R.ZTerm{d, n2}, r2})),
+              KA.band_r(RP.nz(c), KA.band(RP.msort(n), KA.band(RP.mlts(n, Con{R.ZTerm{d, n2}, r2}), RP.red(Con{R.ZTerm{d, n2}, r2}))), hr)))))))
+
+def rconst(+p: List<&2, R.ZTerm>, hr: {RP.red(p) == True{} : Bool}, hp: {Nil{} == EL.pivot(p) : List<&2, Nat>}, m: List<&2, Nat>) -> {EL.cz(m, p) == EL.ifz(RF.iscst(m), EL.cz(Nil{}, p)) : S.Z}:
+  match m:
+    case Nil{}:
+      {==}
+    case Con{v, vs}:
+      rconst.c(p, v, vs, hr, hp)
+
+# the row's combination bt NE(B_j) + cb . NE(B) at m is the row's coefficient
+def rowz(+m: List<&2, Nat>, +p: List<&2, R.ZTerm>, +cb: List<&2, S.Z>, +bt: S.Pos, +B: List<&2, E.QExpr>, hs: {EP.same(p, EP.comb2(bt, SV.eqat(B, EP.vlen(cb)), cb, B)) == True{} : Bool})
+  -> {EP.zdot(EL.vsnoc(cb, S.Zpos{bt}), EP.zv(m, B)) == EL.cz(m, p) : S.Z}:
+  %EP.zdot_vsnoc(cb, S.Zpos{bt}, EP.zv(m, B)) : {_ == EL.cz(m, p) : S.Z}
+  %EP.lookup_zv(m, B, EP.vlen(cb)) : {S.Z.add(EP.zdot(cb, EP.zv(m, B)), S.Z.mul(S.Zpos{bt}, _)) == EL.cz(m, p) : S.Z}
+  %Equal.sym(S.Z, EL.cz(m, p), S.Z.add(S.Z.mul(S.Zpos{bt}, EL.cz(m, EP.NE(SV.eqat(B, EP.vlen(cb))))), EP.zdot(cb, EP.zv(m, B))), EP.row_rel(m, p, cb, bt, B, hs))
+    : {S.Z.add(EP.zdot(cb, EP.zv(m, B)), S.Z.mul(S.Zpos{bt}, EL.cz(m, EP.NE(SV.eqat(B, EP.vlen(cb)))))) == _ : S.Z}
+  R.ring_eq([EP.zdot(cb, EP.zv(m, B)), S.Zpos{bt}, EL.cz(m, EP.NE(SV.eqat(B, EP.vlen(cb))))], E.ZAdd{E.ZVar{0n}, E.ZMul{E.ZVar{1n}, E.ZVar{2n}}}, E.ZAdd{E.ZMul{E.ZVar{1n}, E.ZVar{2n}}, E.ZVar{0n}}, {==})
+
+def nsgn_mul(c: S.Z) -> {S.Z.mul(RF.nsgn(c), c) == RF.nabs(c) : S.Z}:
+  match c:
+    case S.Z0{}:
+      {==}
+    case S.Zpos{p}:
+      {==}
+    case S.Zneg{p}:
+      {==}
+
+
+def zrow(+m: List<&2, Nat>, +p: List<&2, R.ZTerm>, +cb: List<&2, S.Z>, +bt: S.Pos, +B: List<&2, E.QExpr>, hs: {EP.same(p, EP.comb2(bt, SV.eqat(B, EP.vlen(cb)), cb, B)) == True{} : Bool},
+  hr: {RP.red(p) == True{} : Bool}, hp: {Nil{} == EL.pivot(p) : List<&2, Nat>}) -> {EP.zdot(EL.vscale(RF.nsgn(EL.cz(Nil{}, p)), EL.vsnoc(cb, S.Zpos{bt})), EP.zv(m, B)) == EL.ifz(RF.iscst(m), RF.nabs(EL.cz(Nil{}, p))) : S.Z}:
+  %EP.zdot_vscale(RF.nsgn(EL.cz(Nil{}, p)), EL.vsnoc(cb, S.Zpos{bt}), EP.zv(m, B)) : {_ == EL.ifz(RF.iscst(m), RF.nabs(EL.cz(Nil{}, p))) : S.Z}
+  %Equal.sym(S.Z, EP.zdot(EL.vsnoc(cb, S.Zpos{bt}), EP.zv(m, B)), EL.cz(m, p), rowz(m, p, cb, bt, B, hs)) : {S.Z.mul(RF.nsgn(EL.cz(Nil{}, p)), _) == EL.ifz(RF.iscst(m), RF.nabs(EL.cz(Nil{}, p))) : S.Z}
+  %Equal.sym(S.Z, EL.cz(m, p), EL.ifz(RF.iscst(m), EL.cz(Nil{}, p)), rconst(p, hr, hp, m)) : {S.Z.mul(RF.nsgn(EL.cz(Nil{}, p)), _) == EL.ifz(RF.iscst(m), RF.nabs(EL.cz(Nil{}, p))) : S.Z}
+  %Equal.sym(S.Z, S.Z.mul(RF.nsgn(EL.cz(Nil{}, p)), EL.ifz(RF.iscst(m), EL.cz(Nil{}, p))), EL.ifz(RF.iscst(m), S.Z.mul(RF.nsgn(EL.cz(Nil{}, p)), EL.cz(Nil{}, p))), CF.ifz_mul_l(RF.iscst(m), RF.nsgn(EL.cz(Nil{}, p)), EL.cz(Nil{}, p))) : {_ == EL.ifz(RF.iscst(m), RF.nabs(EL.cz(Nil{}, p))) : S.Z}
+  %nsgn_mul(EL.cz(Nil{}, p)) : {EL.ifz(RF.iscst(m), S.Z.mul(RF.nsgn(EL.cz(Nil{}, p)), EL.cz(Nil{}, p))) == EL.ifz(RF.iscst(m), _) : S.Z}
+  {==}
+
+def fqs_zeros(~F: O.OField, ss: List<&2, SK.Side>, +m: List<&2, Nat>) -> {fqs(~F, RF.qzeros(ss), ss, m) == O.zero(F) : O.C(F)}:
+  match ss:
+    case Nil{}:
+      {==}
+    case Con{+s, +st}:
+      %Equal.sym(O.C(F), fqs(~F, RF.qzeros(st), st, m), O.zero(F), fqs_zeros(~F, st, m)) : {O.add(F, O.mul(F, O.ofq(~F, RF.qz(S.Z0{})), O.ofq(~F, CF.coef(SV.sexpr(s), m))), _) == O.zero(F) : O.C(F)}
+      FR.fring_eq(~F, [O.inv(F, O.one(F)), O.ofq(~F, CF.coef(SV.sexpr(s), m))], E.ZAdd{E.ZMul{E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{0n}}, E.ZVar{1n}}, E.ZCst{S.Z0{}}}, E.ZCst{S.Z0{}}, {==})
+
+# the row's refutation, coefficient by coefficient
+def hz_row(~F: O.OField, +keep: List<&2, Bool>, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, +p: List<&2, R.ZTerm>, +cb: List<&2, S.Z>, +bt: S.Pos, +B: List<&2, E.QExpr>,
+  +hB: {B == kept(keep, es) : List<&2, E.QExpr>}, +hs: {EP.same(p, EP.comb2(bt, SV.eqat(B, EP.vlen(cb)), cb, B)) == True{} : Bool},
+  +hr: {RP.red(p) == True{} : Bool}, +hp: {Nil{} == EL.pivot(p) : List<&2, Nat>}, +m: List<&2, Nat>)
+  -> {O.add(F, DR.fql(~F, RF.expand(keep, es, EL.vscale(RF.nsgn(EL.cz(Nil{}, p)), EL.vsnoc(cb, S.Zpos{bt}))), es, m), fqs(~F, RF.qzeros(ss), ss, m)) == O.ofq(~F, CF.coef(E.QCst{RF.qz(RF.nabs(EL.cz(Nil{}, p)))}, m)) : O.C(F)}:
+  %Equal.sym(O.C(F), DR.fql(~F, RF.expand(keep, es, EL.vscale(RF.nsgn(EL.cz(Nil{}, p)), EL.vsnoc(cb, S.Zpos{bt}))), es, m), O.ofz(~F, EP.zdot(EL.vscale(RF.nsgn(EL.cz(Nil{}, p)), EL.vsnoc(cb, S.Zpos{bt})), EP.zv(m, kept(keep, es)))), fql_expand(~F, keep, es, EL.vscale(RF.nsgn(EL.cz(Nil{}, p)), EL.vsnoc(cb, S.Zpos{bt})), m))
+    : {O.add(F, _, fqs(~F, RF.qzeros(ss), ss, m)) == O.ofq(~F, CF.coef(E.QCst{RF.qz(RF.nabs(EL.cz(Nil{}, p)))}, m)) : O.C(F)}
+  %Equal.sym(O.C(F), fqs(~F, RF.qzeros(ss), ss, m), O.zero(F), fqs_zeros(~F, ss, m))
+    : {O.add(F, O.ofz(~F, EP.zdot(EL.vscale(RF.nsgn(EL.cz(Nil{}, p)), EL.vsnoc(cb, S.Zpos{bt})), EP.zv(m, kept(keep, es)))), _) == O.ofq(~F, CF.coef(E.QCst{RF.qz(RF.nabs(EL.cz(Nil{}, p)))}, m)) : O.C(F)}
+  %hB : {O.add(F, O.ofz(~F, EP.zdot(EL.vscale(RF.nsgn(EL.cz(Nil{}, p)), EL.vsnoc(cb, S.Zpos{bt})), EP.zv(m, _))), O.zero(F)) == O.ofq(~F, CF.coef(E.QCst{RF.qz(RF.nabs(EL.cz(Nil{}, p)))}, m)) : O.C(F)}
+  %Equal.sym(O.C(F), O.ofq(~F, CF.coef(E.QCst{RF.qz(RF.nabs(EL.cz(Nil{}, p)))}, m)), O.ofz(~F, EL.ifz(RF.iscst(m), RF.nabs(EL.cz(Nil{}, p)))), cst_coef(~F, RF.nabs(EL.cz(Nil{}, p)), m))
+    : {O.add(F, O.ofz(~F, EP.zdot(EL.vscale(RF.nsgn(EL.cz(Nil{}, p)), EL.vsnoc(cb, S.Zpos{bt})), EP.zv(m, B))), O.zero(F)) == _ : O.C(F)}
+  %Equal.sym(S.Z, EP.zdot(EL.vscale(RF.nsgn(EL.cz(Nil{}, p)), EL.vsnoc(cb, S.Zpos{bt})), EP.zv(m, B)), EL.ifz(RF.iscst(m), RF.nabs(EL.cz(Nil{}, p))), zrow(m, p, cb, bt, B, hs, hr, hp))
+    : {O.add(F, O.ofz(~F, _), O.zero(F)) == O.ofz(~F, EL.ifz(RF.iscst(m), RF.nabs(EL.cz(Nil{}, p)))) : O.C(F)}
+  FR.fring_eq(~F, [O.ofz(~F, EL.ifz(RF.iscst(m), RF.nabs(EL.cz(Nil{}, p))))], E.ZAdd{E.ZVar{0n}, E.ZCst{S.Z0{}}}, E.ZVar{0n}, {==})
+
+def qlen_qzeros(ss: List<&2, SK.Side>) -> {SV.qlen(RF.qzeros(ss)) == SV.slen(ss) : Nat}:
+  match ss:
+    case Nil{}:
+      {==}
+    case Con{s, +st}:
+      %qlen_qzeros(st) : {1n+SV.qlen(RF.qzeros(st)) == 1n+_ : Nat}
+      {==}
+
+def nonneg_qzeros(ss: List<&2, SK.Side>) -> {SV.nonneg(RF.qzeros(ss)) == True{} : Bool}:
+  match ss:
+    case Nil{}:
+      {==}
+    case Con{s, st}:
+      nonneg_qzeros(st)
+
+def nabs_neg(c: S.Z, h: {RP.nz(c) == True{} : Bool}) -> {SV.islt(S.Q.cmp(RF.qz(RF.nabs(c)), SV.qzero())) == True{} : Bool}:
+  match c:
+    case S.Z0{}:
+      absurd({SV.islt(S.Q.cmp(RF.qz(S.Z0{}), SV.qzero())) == True{} : Bool}, KA.ft(h))
+    case S.Zpos{p}:
+      {==}
+    case S.Zneg{p}:
+      {==}
+
+def eq_len(+a: Nat, +b: Nat, e: {a == b : Nat}) -> {SV.eq(a, b) == True{} : Bool}:
+  %e : {SV.eq(a, _) == True{} : Bool}
+  LI.eq_refl(a)
+
+def row_ref.r(+es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, +keep: List<&2, Bool>, r: EL.Row, +B: List<&2, E.QExpr>, +hB: {B == kept(keep, es) : List<&2, E.QExpr>},
+  hlen: @c: List<&2, S.Z> -> {SV.qlen(RF.expand(keep, es, c)) == SV.neqs(es) : Nat},
+  hc: {RF.iscst(RF.Row.pv(r)) == True{} : Bool}, hok: {EP.rowok(B, r) == True{} : Bool}, hpv: {pvok1(r) == True{} : Bool})
+  -> SV.Refutes0(es, ss, RF.expand(keep, es, EL.vscale(RF.nsgn(EL.cz(Nil{}, RF.Row.p(r))), EL.vsnoc(RF.Row.cb(r), S.Zpos{RF.Row.bt(r)}))), RF.qzeros(ss), RF.qz(RF.nabs(EL.cz(Nil{}, RF.Row.p(r))))):
+  match r:
+    case EL.Row{+p, +cb, +bt, Nil{}}:
+      +hok2 = hok
+      (LI.band_i(SV.eq(SV.qlen(RF.expand(keep, es, EL.vscale(RF.nsgn(EL.cz(Nil{}, p)), EL.vsnoc(cb, S.Zpos{bt})))), SV.neqs(es)), SV.band(SV.eq(SV.qlen(RF.qzeros(ss)), SV.slen(ss)), SV.band(SV.nonneg(RF.qzeros(ss)), SV.bor(SV.islt(S.Q.cmp(RF.qz(RF.nabs(EL.cz(Nil{}, p))), SV.qzero())), SV.band(SV.iszz(S.Q.num(RF.qz(RF.nabs(EL.cz(Nil{}, p))))), SV.strict_pos(RF.qzeros(ss), ss))))),
+         eq_len(SV.qlen(RF.expand(keep, es, EL.vscale(RF.nsgn(EL.cz(Nil{}, p)), EL.vsnoc(cb, S.Zpos{bt})))), SV.neqs(es), hlen(EL.vscale(RF.nsgn(EL.cz(Nil{}, p)), EL.vsnoc(cb, S.Zpos{bt})))),
+         LI.band_i(SV.eq(SV.qlen(RF.qzeros(ss)), SV.slen(ss)), SV.band(SV.nonneg(RF.qzeros(ss)), SV.bor(SV.islt(S.Q.cmp(RF.qz(RF.nabs(EL.cz(Nil{}, p))), SV.qzero())), SV.band(SV.iszz(S.Q.num(RF.qz(RF.nabs(EL.cz(Nil{}, p))))), SV.strict_pos(RF.qzeros(ss), ss)))),
+           eq_len(SV.qlen(RF.qzeros(ss)), SV.slen(ss), qlen_qzeros(ss)),
+           LI.band_i(SV.nonneg(RF.qzeros(ss)), SV.bor(SV.islt(S.Q.cmp(RF.qz(RF.nabs(EL.cz(Nil{}, p))), SV.qzero())), SV.band(SV.iszz(S.Q.num(RF.qz(RF.nabs(EL.cz(Nil{}, p))))), SV.strict_pos(RF.qzeros(ss), ss))),
+             nonneg_qzeros(ss),
+             LI.bor_l(SV.islt(S.Q.cmp(RF.qz(RF.nabs(EL.cz(Nil{}, p))), SV.qzero())), SV.band(SV.iszz(S.Q.num(RF.qz(RF.nabs(EL.cz(Nil{}, p))))), SV.strict_pos(RF.qzeros(ss), ss)),
+               nabs_neg(EL.cz(Nil{}, p), EP.rowok_nz(B, p, cb, bt, Nil{}, hok2)))))),
+       ident_of(~QF.qfield(), RF.expand(keep, es, EL.vscale(RF.nsgn(EL.cz(Nil{}, p)), EL.vsnoc(cb, S.Zpos{bt}))), es, RF.qzeros(ss), ss, RF.qz(RF.nabs(EL.cz(Nil{}, p))),
+         m => hz_row(~QF.qfield(), keep, es, ss, p, cb, bt, B, hB, EP.rowok_same(B, p, cb, bt, Nil{}, hok2), EP.rowok_red(B, p, cb, bt, Nil{}, hok2),
+           NR.mcmp_eq(Nil{}, EL.pivot(p), iseq_eq(NR.mcmp(Nil{}, EL.pivot(p)), hpv)), m)))
+    case EL.Row{p, cb, bt, Con{v, vs}}:
+      absurd(SV.Refutes0(es, ss, RF.expand(keep, es, EL.vscale(RF.nsgn(EL.cz(Nil{}, p)), EL.vsnoc(cb, S.Zpos{bt}))), RF.qzeros(ss), RF.qz(RF.nabs(EL.cz(Nil{}, p)))), KA.ft(hc))
+
+# The simplex's certificate
+# -------------------------
+
+def qlen_ineqs(+ys: List<&2, List<&2, Nat>>, +rows: List<&2, EL.Row>, ss: List<&2, SK.Side>) -> {SX.qlen(RF.ineqs(ys, RF.sres(rows, ss), ss)) == SV.slen(ss) : Nat}:
+  match ss:
+    case Nil{}:
+      {==}
+    case Con{s, +st}:
+      %qlen_ineqs(ys, rows, st) : {1n+SX.qlen(RF.ineqs(ys, RF.sres(rows, st), st)) == 1n+_ : Nat}
+      {==}
+
+def reslen_sres(+rows: List<&2, EL.Row>, ss: List<&2, SK.Side>) -> {RF.reslen(RF.sres(rows, ss)) == SV.slen(ss) : Nat}:
+  match ss:
+    case Nil{}:
+      {==}
+    case Con{s, +st}:
+      %reslen_sres(rows, st) : {1n+RF.reslen(RF.sres(rows, st)) == 1n+_ : Nat}
+      {==}
+
+def qlen_smults(mu: List<&2, S.Z>, +rows: List<&2, EL.Row>, ss: List<&2, SK.Side>, h: {KA.nateq(SX.vlen(mu), SV.slen(ss)) == True{} : Bool}) -> {SV.qlen(RF.smults(mu, RF.sres(rows, ss), ss)) == SV.slen(ss) : Nat}:
+  match mu ss:
+    case Nil{} Nil{}:
+      {==}
+    case Nil{} Con{s, st}:
+      absurd({0n == 1n+SV.slen(st) : Nat}, KA.ft(h))
+    case Con{u, ut} Nil{}:
+      absurd({SV.qlen(RF.smults(Con{u, ut}, Nil{}, Nil{})) == 0n : Nat}, KA.ft(h))
+    case Con{u, +ut} Con{+s, +st}:
+      %qlen_smults(ut, rows, st, h) : {1n+SV.qlen(RF.smults(ut, RF.sres(rows, st), st)) == 1n+_ : Nat}
+      {==}
+
+def nn_entry(u: S.Z, +q: S.Pos, hu: {UN.nn(u) == True{} : Bool}) -> {SV.bnot(SV.islt(S.Q.cmp(RF.qz(S.Z.mul(u, S.Zpos{q})), SV.qzero()))) == True{} : Bool}:
+  match u:
+    case S.Z0{}:
+      {==}
+    case S.Zpos{p}:
+      {==}
+    case S.Zneg{p}:
+      absurd({SV.bnot(SV.islt(S.Q.cmp(RF.qz(S.Z.mul(S.Zneg{p}, S.Zpos{q})), SV.qzero()))) == True{} : Bool}, KA.ft(hu))
+
+def nn_smults(mu: List<&2, S.Z>, rs: List<&2, EL.Res>, ss: List<&2, SK.Side>, h: {UN.znn(mu) == True{} : Bool}) -> {SV.nonneg(RF.smults(mu, rs, ss)) == True{} : Bool}:
+  match mu rs ss:
+    case Nil{} rs ss:
+      {==}
+    case Con{u, ut} Nil{} ss:
+      {==}
+    case Con{u, ut} Con{r, rt} Nil{}:
+      {==}
+    case Con{+u, +ut} Con{+r, +rt} Con{+s, +st}:
+      +h2 = h
+      LI.band_i(SV.bnot(SV.islt(S.Q.cmp(RF.qz(S.Z.mul(u, S.Zpos{S.Pos.mul(RF.Res.bt(r), QN.den(RF.sexpr(s)))})), SV.qzero()))), SV.nonneg(RF.smults(ut, rt, st)),
+        nn_entry(u, S.Pos.mul(RF.Res.bt(r), QN.den(RF.sexpr(s))), KA.band_l(UN.nn(u), UN.znn(ut), h2)),
+        nn_smults(ut, rt, st, KA.band_r(UN.nn(u), UN.znn(ut), h2)))
+
+def bcol_ksum(mu: List<&2, S.Z>, +rows: List<&2, EL.Row>, ss: List<&2, SK.Side>, +ys: List<&2, List<&2, Nat>>) -> {SX.dot(mu, UN.bcol(RF.ineqs(ys, RF.sres(rows, ss), ss))) == RF.ksum(mu, RF.sres(rows, ss)) : S.Z}:
+  match mu ss:
+    case Nil{} +ss:
+      Equal.sym(S.Z, S.Z0{}, SX.dot(Nil{}, UN.bcol(RF.ineqs(ys, RF.sres(rows, ss), ss))), UN.dot_nil_l(UN.bcol(RF.ineqs(ys, RF.sres(rows, ss), ss))))
+    case Con{u, ut} Nil{}:
+      {==}
+    case Con{+u, +ut} Con{+s, +st}:
+      %bcol_ksum(ut, rows, st, ys) : {S.Z.add(S.Z.mul(u, EL.cz(Nil{}, RF.Res.p(EL.resid(rows, RF.sexpr(s))))), SX.dot(ut, UN.bcol(RF.ineqs(ys, RF.sres(rows, st), st))))
+        == S.Z.add(S.Z.mul(u, EL.cz(Nil{}, RF.Res.p(EL.resid(rows, RF.sexpr(s))))), _) : S.Z}
+      {==}
+
+def sp.g(u: S.Z, +q: S.Pos, +D: S.Z, +mt: List<&2, S.Q>, +st: List<&2, SK.Side>, hu: {UN.nn(u) == True{} : Bool},
+  hs: {SX.islt(S.Z.cmp(S.Z0{}, S.Z.add(S.Z.mul(u, S.Zpos{S.XH{}}), D))) == True{} : Bool}, ih: {SX.islt(S.Z.cmp(S.Z0{}, D)) == True{} : Bool} -> {SV.strict_pos(mt, st) == True{} : Bool})
+  -> {SV.bor(SV.islt(S.Q.cmp(SV.qzero(), RF.qz(S.Z.mul(u, S.Zpos{q})))), SV.strict_pos(mt, st)) == True{} : Bool}:
+  match u:
+    case S.Z0{}:
+      LI.bor_r(SV.islt(S.Q.cmp(SV.qzero(), RF.qz(S.Z0{}))), SV.strict_pos(mt, st), ih(hs))
+    case S.Zpos{p}:
+      {==}
+    case S.Zneg{p}:
+      absurd({SV.bor(SV.islt(S.Q.cmp(SV.qzero(), RF.qz(S.Z.mul(S.Zneg{p}, S.Zpos{q})))), SV.strict_pos(mt, st)) == True{} : Bool}, KA.ft(hu))
+
+def sp.c(s: SK.Side, +u: S.Z, +q: S.Pos, +D: S.Z, +mt: List<&2, S.Q>, +st: List<&2, SK.Side>, hu: {UN.nn(u) == True{} : Bool},
+  hs: {SX.islt(S.Z.cmp(S.Z0{}, S.Z.add(S.Z.mul(u, SX.ind(RF.strict(s))), D))) == True{} : Bool}, ih: {SX.islt(S.Z.cmp(S.Z0{}, D)) == True{} : Bool} -> {SV.strict_pos(mt, st) == True{} : Bool})
+  -> {SV.strict_pos(Con{RF.qz(S.Z.mul(u, S.Zpos{q})), mt}, Con{s, st}) == True{} : Bool}:
+  match s:
+    case SK.Gt0{e}:
+      sp.g(u, q, D, mt, st, hu, hs, ih)
+    case SK.Ge0{e}:
+      ih((%Equal.sym(S.Z, S.Z0{}, S.Z.mul(u, S.Z0{}), ZL.mul_zero(u)) : {SX.islt(S.Z.cmp(S.Z0{}, S.Z.add(_, D))) == True{} : Bool}
+        hs))
+
+# sum mu_k [s_k strict] > 0: a strict side has a positive multiplier
+def sp_of(mu: List<&2, S.Z>, ss: List<&2, SK.Side>, +rows: List<&2, EL.Row>, +ys: List<&2, List<&2, Nat>>, hn: {UN.znn(mu) == True{} : Bool},
+  hs: {SX.islt(S.Z.cmp(S.Z0{}, SX.dot(mu, UN.scol(RF.ineqs(ys, RF.sres(rows, ss), ss))))) == True{} : Bool}) -> {SV.strict_pos(RF.smults(mu, RF.sres(rows, ss), ss), ss) == True{} : Bool}:
+  match mu ss:
+    case Nil{} +ss:
+      absurd({SV.strict_pos(Nil{}, ss) == True{} : Bool}, KA.ft((%Equal.sym(S.Z, S.Z0{}, SX.dot(Nil{}, UN.scol(RF.ineqs(ys, RF.sres(rows, ss), ss))), UN.dot_nil_l(UN.scol(RF.ineqs(ys, RF.sres(rows, ss), ss)))) : {SX.islt(S.Z.cmp(S.Z0{}, _)) == True{} : Bool}
+        hs)))
+    case Con{u, ut} Nil{}:
+      absurd({SV.strict_pos(RF.smults(Con{u, ut}, Nil{}, Nil{}), Nil{}) == True{} : Bool}, KA.ft(hs))
+    case Con{+u, +ut} Con{+s, +st}:
+      +hn2 = hn
+      sp.c(s, u, S.Pos.mul(RF.Res.bt(EL.resid(rows, RF.sexpr(s))), QN.den(RF.sexpr(s))), SX.dot(ut, UN.scol(RF.ineqs(ys, RF.sres(rows, st), st))), RF.smults(ut, RF.sres(rows, st), st), st,
+        KA.band_l(UN.nn(u), UN.znn(ut), hn2), hs, a => sp_of(ut, st, rows, ys, KA.band_r(UN.nn(u), UN.znn(ut), hn2), a))
+
+# K < 0, or K = 0 and a strict side weighted positively
+def lex_ref.go(o: Cmp, +K: S.Z, +T: S.Z, +SP: Bool, ho: {S.Z.cmp(K, S.Z0{}) == o : Cmp}, h: {SX.lexlt.go(o, S.Z0{}, T) == True{} : Bool},
+  hsp: {SX.islt(S.Z.cmp(S.Z0{}, T)) == True{} : Bool} -> {SP == True{} : Bool}) -> {SV.bor(SV.islt(S.Q.cmp(RF.qz(K), SV.qzero())), SV.band(SV.iszz(K), SP)) == True{} : Bool}:
+  match o:
+    case LT{}:
+      %ZL.mul_one(K) : {SV.bor(SV.islt(S.Z.cmp(_, S.Z0{})), SV.band(SV.iszz(K), SP)) == True{} : Bool}
+      %Equal.sym(Cmp, S.Z.cmp(K, S.Z0{}), LT{}, ho) : {SV.bor(SV.islt(_), SV.band(SV.iszz(K), SP)) == True{} : Bool}
+      {==}
+    case EQ{}:
+      %Equal.sym(S.Z, K, S.Z0{}, ZO.sub_eq(K, S.Z0{}, ZO.eq_zero(K, S.Z0{}, ho))) : {SV.bor(SV.islt(S.Q.cmp(RF.qz(_), SV.qzero())), SV.band(SV.iszz(_), SP)) == True{} : Bool}
+      hsp(h)
+    case GT{}:
+      absurd({SV.bor(SV.islt(S.Q.cmp(RF.qz(K), SV.qzero())), SV.band(SV.iszz(K), SP)) == True{} : Bool}, KA.ft(h))
+
+
+def pv.c(mi: Maybe<&2, Nat>, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, +t: SX.Tab, +i: Nat, +h: {SX.solve(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)) == SX.Unsat{t, i} : SX.Run}, +v: Nat, +vs: List<&2, Nat>, hmi: {mi == midx(Con{v, vs}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})) : Maybe<&2, Nat>})
+  -> {pdot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Con{v, vs}) == S.Z0{} : S.Z}:
+  match mi:
+    case None{}:
+      pdot_notin(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), v, vs, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), covall_self(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), midx_none(Con{v, vs}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), Equal.sym(Maybe<&2, Nat>, None{}, midx(Con{v, vs}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})), hmi)))
+    case Some{+l}:
+      +hs = midx_some(Con{v, vs}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), l, Equal.sym(Maybe<&2, Nat>, Some{l}, midx(Con{v, vs}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})), hmi))
+      Equal.trans(S.Z, pdot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Con{v, vs}), SX.dot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), UN.acol(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), l)), S.Z0{},
+        Equal.sym(S.Z, SX.dot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), UN.acol(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), l)), pdot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Con{v, vs}),
+          acol_pdot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), ss, RF.Walk.rows(RF.walk(es, Nil{})), RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), l, Con{v, vs}, LX.both_r({mnth(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), l) == Con{v, vs} : List<&2, Nat>}, {SX.ltn(l, RF.mlen(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}))) == True{} : Bool}, hs),
+            LX.both_l({mnth(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), l) == Con{v, vs} : List<&2, Nat>}, {SX.ltn(l, RF.mlen(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}))) == True{} : Bool}, hs))),
+        UN.unsat_cols(~QF.qfield(), RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), t, i, h, l, LX.both_r({mnth(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), l) == Con{v, vs} : List<&2, Nat>}, {SX.ltn(l, RF.mlen(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}))) == True{} : Bool}, hs)))
+
+# sum_k mu_k p_k is K at 1 and 0 elsewhere
+def pdot_val(+es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, +t: SX.Tab, +i: Nat, +h: {SX.solve(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)) == SX.Unsat{t, i} : SX.Run}, m: List<&2, Nat>) -> {pdot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), m) == EL.ifz(RF.iscst(m), RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss))) : S.Z}:
+  match m:
+    case Nil{}:
+      pdot_ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss))
+    case Con{+v, +vs}:
+      pv.c(midx(Con{v, vs}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})), es, ss, t, i, h, v, vs, {==})
+
+def hz_lp(~F: O.OField, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, +t: SX.Tab, +i: Nat, +h: {SX.solve(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)) == SX.Unsat{t, i} : SX.Run}, +m: List<&2, Nat>)
+  -> {O.add(F, DR.fql(~F, RF.expand(RF.Walk.keep(RF.walk(es, Nil{})), es, RF.cbsum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss))), es, m), fqs(~F, RF.smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), ss, m)) == O.ofq(~F, CF.coef(E.QCst{RF.qz(RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)))}, m)) : O.C(F)}:
+  %Equal.sym(O.C(F), DR.fql(~F, RF.expand(RF.Walk.keep(RF.walk(es, Nil{})), es, RF.cbsum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss))), es, m), O.ofz(~F, EP.zdot(RF.cbsum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)), EP.zv(m, kept(RF.Walk.keep(RF.walk(es, Nil{})), es)))), fql_expand(~F, RF.Walk.keep(RF.walk(es, Nil{})), es, RF.cbsum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)), m))
+    : {O.add(F, _, fqs(~F, RF.smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), ss, m)) == O.ofq(~F, CF.coef(E.QCst{RF.qz(RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)))}, m)) : O.C(F)}
+  %Equal.sym(O.C(F), fqs(~F, RF.smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), ss, m), O.ofz(~F, sdot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss, m)), fqs_smults(~F, RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss, m))
+    : {O.add(F, O.ofz(~F, EP.zdot(RF.cbsum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)), EP.zv(m, kept(RF.Walk.keep(RF.walk(es, Nil{})), es)))), _) == O.ofq(~F, CF.coef(E.QCst{RF.qz(RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)))}, m)) : O.C(F)}
+  %Equal.sym(O.C(F), O.add(F, O.ofz(~F, EP.zdot(RF.cbsum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)), EP.zv(m, kept(RF.Walk.keep(RF.walk(es, Nil{})), es)))), O.ofz(~F, sdot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss, m))), O.ofz(~F, S.Z.add(EP.zdot(RF.cbsum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)), EP.zv(m, kept(RF.Walk.keep(RF.walk(es, Nil{})), es))), sdot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss, m))),
+      FR.ofz_add(~F, EP.zdot(RF.cbsum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)), EP.zv(m, kept(RF.Walk.keep(RF.walk(es, Nil{})), es))), sdot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss, m)))
+    : {_ == O.ofq(~F, CF.coef(E.QCst{RF.qz(RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)))}, m)) : O.C(F)}
+  %Equal.sym(S.Z, S.Z.add(EP.zdot(RF.cbsum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)), EP.zv(m, kept(RF.Walk.keep(RF.walk(es, Nil{})), es))), sdot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss, m)), pdot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), m), lp_rel(m, RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), ss, RF.Walk.rows(RF.walk(es, Nil{})), kept(RF.Walk.keep(RF.walk(es, Nil{})), es), w_allok(es)))
+    : {O.ofz(~F, _) == O.ofq(~F, CF.coef(E.QCst{RF.qz(RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)))}, m)) : O.C(F)}
+  %Equal.sym(O.C(F), O.ofq(~F, CF.coef(E.QCst{RF.qz(RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)))}, m)), O.ofz(~F, EL.ifz(RF.iscst(m), RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)))), cst_coef(~F, RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)), m))
+    : {O.ofz(~F, pdot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), m)) == _ : O.C(F)}
+  %pdot_val(es, ss, t, i, h, m) : {O.ofz(~F, pdot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), m)) == O.ofz(~F, _) : O.C(F)}
+  {==}
+
+def lp_refq(+es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, +t: SX.Tab, +i: Nat, +h: {SX.solve(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)) == SX.Unsat{t, i} : SX.Run})
+  -> SV.Refutes0(es, ss, RF.expand(RF.Walk.keep(RF.walk(es, Nil{})), es, RF.cbsum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss))), RF.smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), RF.qz(RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)))):
+  (LI.band_i(SV.eq(SV.qlen(RF.expand(RF.Walk.keep(RF.walk(es, Nil{})), es, RF.cbsum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)))), SV.neqs(es)), SV.band(SV.eq(SV.qlen(RF.smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SV.slen(ss)), SV.band(SV.nonneg(RF.smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SV.bor(SV.islt(S.Q.cmp(RF.qz(RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss))), SV.qzero())), SV.band(SV.iszz(RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss))), SV.strict_pos(RF.smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), ss))))),
+     eq_len(SV.qlen(RF.expand(RF.Walk.keep(RF.walk(es, Nil{})), es, RF.cbsum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)))), SV.neqs(es), qlen_wexp(es, Nil{}, RF.cbsum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)))),
+     LI.band_i(SV.eq(SV.qlen(RF.smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SV.slen(ss)), SV.band(SV.nonneg(RF.smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SV.bor(SV.islt(S.Q.cmp(RF.qz(RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss))), SV.qzero())), SV.band(SV.iszz(RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss))), SV.strict_pos(RF.smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), ss)))),
+       eq_len(SV.qlen(RF.smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SV.slen(ss), qlen_smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.Walk.rows(RF.walk(es, Nil{})), ss, KA.nateq_of(SX.vlen(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n)), SV.slen(ss),
+         Equal.trans(Nat, SX.vlen(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SV.slen(ss), UN.vlen_mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), qlen_ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.Walk.rows(RF.walk(es, Nil{})), ss))))),
+       LI.band_i(SV.nonneg(RF.smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SV.bor(SV.islt(S.Q.cmp(RF.qz(RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss))), SV.qzero())), SV.band(SV.iszz(RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss))), SV.strict_pos(RF.smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), ss))),
+         nn_smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss, UN.unsat_nn(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), t, i, h)),
+         lex_ref.go(S.Z.cmp(RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)), S.Z0{}), RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)), SX.dot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), UN.scol(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss))), SV.strict_pos(RF.smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), ss), {==},
+           (%bcol_ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.Walk.rows(RF.walk(es, Nil{})), ss, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})) : {SX.lexlt(_, S.Z0{}, S.Z0{}, SX.dot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), UN.scol(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)))) == True{} : Bool}
+             UN.unsat_lex(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), t, i, h)),
+           a => sp_of(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), ss, RF.Walk.rows(RF.walk(es, Nil{})), RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), UN.unsat_nn(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), t, i, h), a))))),
+   ident_of(~QF.qfield(), RF.expand(RF.Walk.keep(RF.walk(es, Nil{})), es, RF.cbsum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss))), es, RF.smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), ss, RF.qz(RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss))),
+     m => hz_lp(~QF.qfield(), es, ss, t, i, h, m)))
+
+# Every certificate refute returns is a refutation
+# ------------------------------------------------
+
+def CertOk(+es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, mc: Maybe<&2, RF.Cert>) -> Type:
+  match mc:
+    case None{}:
+      Unit
+    case Some{RF.Cert{ls, ms, k}}:
+      SV.Refutes0(es, ss, ls, ms, k)
+
+
+def sound.r(+es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, r: SX.Run, hr: {r == SX.solve(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)) : SX.Run}) -> CertOk(es, ss, RF.cert.run(RF.Walk.keep(RF.walk(es, Nil{})), es, ss, RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), r)):
+  match r:
+    case SX.Go{t}:
+      Unit{}
+    case SX.Sat{t}:
+      Unit{}
+    case SX.Unsat{+t, +i}:
+      %Equal.trans(Nat, SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), SV.slen(ss), RF.reslen(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)), qlen_ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.Walk.rows(RF.walk(es, Nil{})), ss), Equal.sym(Nat, RF.reslen(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)), SV.slen(ss), reslen_sres(RF.Walk.rows(RF.walk(es, Nil{})), ss)))
+        : SV.Refutes0(es, ss, RF.expand(RF.Walk.keep(RF.walk(es, Nil{})), es, RF.cbsum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), _, 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss))), RF.smults(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), _, 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), RF.qz(RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), _, 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss))))
+      lp_refq(es, ss, t, i, Equal.sym(SX.Run, SX.Unsat{t, i}, SX.solve(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), hr))
+
+def sound.c(+es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, mj: Maybe<&2, Nat>, hmj: {mj == RF.crow(RF.Walk.rows(RF.walk(es, Nil{})), 0n) : Maybe<&2, Nat>}) -> CertOk(es, ss, RF.cert(es, ss, RF.decide.c(RF.walk(es, Nil{}), mj, ss))):
+  match mj:
+    case Some{+j}:
+      +fa = crow_ok(RF.Walk.rows(RF.walk(es, Nil{})), kept(RF.Walk.keep(RF.walk(es, Nil{})), es), j, Equal.sym(Maybe<&2, Nat>, Some{j}, RF.crow(RF.Walk.rows(RF.walk(es, Nil{})), 0n), hmj), w_allok(es), w_pv(es))
+      row_ref.r(es, ss, RF.Walk.keep(RF.walk(es, Nil{})), RF.rowat(RF.Walk.rows(RF.walk(es, Nil{})), j), kept(RF.Walk.keep(RF.walk(es, Nil{})), es), {==}, c => qlen_wexp(es, Nil{}, c),
+        LX.both_l({RF.iscst(RF.Row.pv(RF.rowat(RF.Walk.rows(RF.walk(es, Nil{})), j))) == True{} : Bool}, M.Both({EP.rowok(kept(RF.Walk.keep(RF.walk(es, Nil{})), es), RF.rowat(RF.Walk.rows(RF.walk(es, Nil{})), j)) == True{} : Bool}, {pvok1(RF.rowat(RF.Walk.rows(RF.walk(es, Nil{})), j)) == True{} : Bool}), fa),
+        LX.both_l({EP.rowok(kept(RF.Walk.keep(RF.walk(es, Nil{})), es), RF.rowat(RF.Walk.rows(RF.walk(es, Nil{})), j)) == True{} : Bool}, {pvok1(RF.rowat(RF.Walk.rows(RF.walk(es, Nil{})), j)) == True{} : Bool},
+          LX.both_r({RF.iscst(RF.Row.pv(RF.rowat(RF.Walk.rows(RF.walk(es, Nil{})), j))) == True{} : Bool}, M.Both({EP.rowok(kept(RF.Walk.keep(RF.walk(es, Nil{})), es), RF.rowat(RF.Walk.rows(RF.walk(es, Nil{})), j)) == True{} : Bool}, {pvok1(RF.rowat(RF.Walk.rows(RF.walk(es, Nil{})), j)) == True{} : Bool}), fa)),
+        LX.both_r({EP.rowok(kept(RF.Walk.keep(RF.walk(es, Nil{})), es), RF.rowat(RF.Walk.rows(RF.walk(es, Nil{})), j)) == True{} : Bool}, {pvok1(RF.rowat(RF.Walk.rows(RF.walk(es, Nil{})), j)) == True{} : Bool},
+          LX.both_r({RF.iscst(RF.Row.pv(RF.rowat(RF.Walk.rows(RF.walk(es, Nil{})), j))) == True{} : Bool}, M.Both({EP.rowok(kept(RF.Walk.keep(RF.walk(es, Nil{})), es), RF.rowat(RF.Walk.rows(RF.walk(es, Nil{})), j)) == True{} : Bool}, {pvok1(RF.rowat(RF.Walk.rows(RF.walk(es, Nil{})), j)) == True{} : Bool}), fa)))
+    case None{}:
+      sound.r(es, ss, SX.solve(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), {==})
+
+# refute's certificates are Motzkin refutations of es and ss
+def refute_sound(+es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>) -> CertOk(es, ss, RF.refute(es, ss)):
+  sound.c(es, ss, RF.crow(RF.Walk.rows(RF.walk(es, Nil{})), 0n), {==})
