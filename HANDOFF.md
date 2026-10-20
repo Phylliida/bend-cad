@@ -1,4 +1,4 @@
-# HANDOFF — bend-cad (2026-10-20, sk-13a S0–S4 done; S5's switch done with completeness re-proven over the system solved; next: law 10 as stated (S7), then the rest of S5)
+# HANDOFF — bend-cad (2026-10-20, sk-13a S0–S4 done; S5's switch done; law 10 (solve_complete) proven as stated (S7); next: S5's laws 1–3, then S6)
 
 Read first: `DESIGN.md` (v0.9: the plan, Danielle's decisions, §3 spec
 numbers, §4–§5 typed IR, forms and meanings as built), `proto/RESULTS.md`
@@ -240,8 +240,11 @@ certifies drops and amber sides (lib/verdict.bend), solve_total and
 solve_honest are proven for it, and completeness is re-proven over the
 system solved in an interim form (complete_now: Strict with no pins);
 gate and regression green, the raw OnCircle sketches certify (PLAN S5,
-"The switch, as built"). **Next: law 10 exactly as ROADMAP states it
-(Strict with the pins, dyadic kept constraints only), then S5's laws 1–3.**
+"The switch, as built"). **Law 10 is done as ROADMAP states it
+(2026-10-20, ae9691f):** `solve_complete`, with Strict over the pins (a
+≥ 0 side over pins only is checked at its exact value on radius-0 balls)
+and dyadic constants needed only on the kept constraints (PLAN S7).
+**Next: S5's laws 1–3 (solve_regular, solve_blame), then S6.**
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);

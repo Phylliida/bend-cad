@@ -433,7 +433,7 @@ As planned:
     - small helpers are duplicated (qsign vs satpf; dc_* and drv_at
       vs passpf; `PA.kvs` vs `MX.kvs`);
     - `redpf` keeps some red-stage lemmas nothing uses now.
-  - Next: step 3, law 10 as stated.
+  - Step 3 done (2026-10-20, ae9691f): law 10 as stated, see S7.
 - **`final` gains:**
   - the drop certificates (`qzero`; h = 1; rows are earlier solved
     equations);
@@ -472,6 +472,18 @@ As planned:
   refined (a ≥ 0 side with only pinned variables is exact on radius 0).
 - `dy` for kept constraints only.
 - Proves law 10.
+- **Done (2026-10-20, ae9691f): `solve_complete` as ROADMAP states it**
+  (lib/completepf.bend, restated in tests/solve_laws.bend, in sync).
+  - `Strict` with the pins: the read-back box has radius 0 at every pin
+    (`rz_ans`), so a ≥ 0 side over pins only has a radius-0 ball
+    (`kr_zero`, through `badd`/`bneg`/`bmul`) and passes at its exact
+    value (`ge_pin`); it takes no room in the budget (`SBud.ge`, `sbs`).
+    This replaces the variable-free special case.
+  - `dy` over the kept constraints: the block proofs need dyadic
+    constants only at the solved positions (lib/pblkpf.bend `dyat`),
+    which `dy_solved` (lib/vrdpf.bend) gives from the sketch less its
+    red constraints; the checked sides come from it as well, since
+    marking the ambers driven only drops sides (`ds_sub`).
 
 ### S8. The page and the CLI
 - **The CLI** prints each constraint's class with its support or witness.

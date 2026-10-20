@@ -1726,9 +1726,12 @@ is POk and accept is True at P, for every g within d of x.
   with room 2 lp ρ < e(x) (≤ for Ge0; `SBud`). The read-back box is
   graded at ρ = h T, bb = |x| + 2 (`gbox_ans`: centers within |x| + ρ by
   vsub_bound, radii picked from the blocks' by `up_pick`; ρ ≤ 1). The
-  budget: Q = qch + T + Σ 2 lp T / e(x) over the sides with variables
-  (`sbs`; a variable-free Ge0 needs none: lp = 0, `lp_closed`); t Q < 1
-  gives t qch < 1, h T ≤ 1 and every side's room (`budget`, `sbud_of`).
+  budget: Q = qch + T + Σ 2 lp T / e(x) over the sides with free
+  variables (`sbs`). A Ge0 side over pins only needs none: the pins'
+  balls have radius 0 in the read-back box (`rz_ans`), so its ball has
+  radius 0 (`kr_zero`) and it checks at its exact value, e(x) ≥ 0
+  (`ge_pin`; Strict with the pins). t Q < 1 gives t qch < 1, h T ≤ 1 and
+  every other side's room (`budget`, `sbud_of`).
   The top: l = arch(Q); P_l = pfirst(l, 64, 96) >= 64 + 2l (`pf_ge`), so
   floor(P_l/2) >= l (`div_ge` from divmod_eq and mod_le), t <= 2^-l, and
   l 2^-l <= 1 (`nv_le`) gives t Q < 1 (`tq_lt`); precisions(l, 7) starts

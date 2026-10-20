@@ -10,7 +10,10 @@
 # passes (the plan checker, the side conditions of the constraints neither
 # red nor amber, the pins held, and the exact checks, which hold whatever
 # the drawing: lib/ckpf.bend); so the precision loop stops at P and the
-# answer holds x.
+# answer holds x. A >= 0 side over pins only is checked at its exact
+# value (the pins' balls have radius 0); the others with room. Only the
+# system solved needs dyadic constants, and the sketch less its red
+# constraints gives them (lib/vrdpf.bend: dy_solved).
 
 import Base
 import ../spec/num.bend as S
