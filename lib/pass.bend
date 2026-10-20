@@ -245,3 +245,39 @@ def start(+nv: Nat) -> PS:
 # every constraint's class
 def classes(+sk: SK.Sketch) -> List<&2, SV.Class>:
   pass(recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, dadjs(SK.Sketch.eqs(sk)), 1n+nvars(sk), 0n, start(nvars(sk)))
+
+# The state the pass ends with (the same walk as pass): its basis is the
+# system solved, bp its positions, vm their matching
+def pass_st(rs: List<&2, SK.Rec>, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +i: Nat, +st: PS) -> PS:
+  match rs:
+    case Nil{}:
+      st
+    case Con{SK.Rec{id, True{}, k}, t}:
+      pass_st(t, es, own, sk, adj, f, 1n+i, st)
+    case Con{SK.Rec{id, False{}, k}, t}:
+      pass_st(t, es, own, sk, adj, f, 1n+i, PO.st(one(es, own, sk, adj, f, i, st)))
+
+def final_st(+sk: SK.Sketch) -> PS:
+  pass_st(recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, dadjs(SK.Sketch.eqs(sk)), 1n+nvars(sk), 0n, start(nvars(sk)))
+
+def PS.vm(st: PS) -> List<&2, Maybe<&2, Nat>>:
+  match st:
+    case PS{kb, rows, B, bp, vm}:
+      vm
+
+# The pins
+# --------
+# Free degrees of freedom are held at the drawing's values: the variable
+# side matches variables, latest first, to the solved equations (those
+# the pass's matching matched), by dependence; the variables left over are
+# the pins (lib/struct.bend's variable side, over what each equation
+# depends on). The earliest variables are left over (greedy on the
+# transversal matroid).
+def kvs(+adj: List<&2, List<&2, Nat>>, +nq: Nat, +nv: Nat, +good: List<&2, Nat>) -> ST.KD:
+  ST.kuhnd(ST.down(nv), ST.transpose(nv, 0n, good, adj), 1n+nq, ST.KD{ST.nones(nq), Nil{}, Nil{}})
+
+def solved_pos(+sk: SK.Sketch) -> List<&2, Nat>:
+  ST.inter(ST.iota(ST.len.q(SK.Sketch.eqs(sk)), 0n), ST.somes(PS.vm(final_st(sk))))
+
+def pins(+sk: SK.Sketch) -> List<&2, Nat>:
+  ST.KD.red(kvs(dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), nvars(sk), solved_pos(sk)))

@@ -36,7 +36,10 @@ def cshow(cls: List<&2, SV.Class>, +i: Nat) -> String:
     case Con{k, t}:
       "  #" ++ Nat.show(i) ++ " " ++ kshow(k) ++ "\n" ++ cshow(t, 1n+i)
 
+def show(+sk: SK.Sketch) -> String:
+  cshow(PA.classes(sk), 0n) ++ "  pins:" ++ nshow(PA.pins(sk))
+
 def main() -> IO(Unit):
   do IO<Unit>:
     s : String <- B.slurp("sketch.in")
-    IO.print(cshow(PA.classes(PE.sk.of(s)), 0n))
+    IO.print(show(PE.sk.of(s)))
