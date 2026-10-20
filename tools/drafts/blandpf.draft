@@ -913,3 +913,110 @@ def col_nf($CTX, +j: Nat, +hj: {SX.ltn(j, SX.LP.nv(lp)) == True{} : Bool}, +hb: 
   +hb2 = Equal.trans(Bool, St(lp, j, $K2), St(lp, j, a), False{}, st_const($CTA, j, hn, $D2, le_succ($D2, L, hd2($CTA))), Equal.trans(Bool, St(lp, j, a), St(lp, j, $K1), False{}, Equal.sym(Bool, St(lp, j, $K1), St(lp, j, a), st_const($CTA, j, hn, $D1, le_succ($D1, L, hd1(lp, L, a)))), hb))
   Inr{(nf_ne.go($CTA, j, SX.eqn(j, $TT), {==}, hn),
     LX.lnonpos_zero(~F, @OZ(SX.at($MM, j)), SP.fat(~F, $DL0, j), SP.fat(~F, $DL1, j), dz($CTA, j, $V0, hj, hb, hb2), dz($CTA, j, $V1, hj, hb, hb2)))}
+
+def helpful_pos(~F: O.OField, c: S.Z, h: {SX.helpful(c, False{}) == True{} : Bool}) -> O.lt(F, @0, @OZ(c)):
+  match c:
+    case S.Z0{}:
+      absurd(O.lt(F, @0, @OZ(S.Z0{})), KA.ft(h))
+    case S.Zpos{+p}:
+      QE.ofp_pos(~F, p)
+    case S.Zneg{p}:
+      absurd(O.lt(F, @0, @OZ(S.Zneg{p})), KA.ft(h))
+
+# t's entry in row i at k1 is positive (t can raise it, and t is a slack)
+def t_pos($CTX) -> O.lt(F, @0, @OZ(SX.at($MM, $TT))):
+  helpful_pos(~F, SX.at($MM, $TT), (%isle_f(SX.LP.m(lp), $TT, t_ltm($CTA)) : {SX.helpful(SX.at($MM, $TT), _) == True{} : Bool}
+    %ek1(lp, L, a) : {SX.helpful(SX.at($MM, _), Nat.is_le(SX.LP.m(lp), _)) == True{} : Bool}
+    RN.en_help(lp, $T1, $PG1)))
+
+# t at k1 is nonbasic: its value is its bound
+def t_at_k1($CTX, +v: M.Vec(~F)) -> {SP.rv(~F, SX.rowat(SX.Tab.rows($T1), $TT), v) == SP.fat(~F, v, $TT) : @T}:
+  nb_zero(~F, lp, $K1, $TT, v, hwf, t_nb($CTA), t_ltN($CTA))
+
+# t at k2 is below its bound
+def t_viol($CTX) -> LX.LNeg(~F, @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), $TT), $V0), @OZ(S.Z.neg(RN.Ineq.b(RN.qat(SX.LP.qs(lp), $TT))))), @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), $TT), $V1), @OZ(SX.ind(RN.Ineq.s(RN.qat(SX.LP.qs(lp), $TT)))))):
+  %ik2($CTA) : LX.LNeg(~F, @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), _), $V0), @OZ(S.Z.neg(RN.Ineq.b(RN.qat(SX.LP.qs(lp), _))))), @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), _), $V1), @OZ(SX.ind(RN.Ineq.s(RN.qat(SX.LP.qs(lp), _))))))
+  RN.viol_f(~F, SX.rowat(SX.Tab.rows($T2), I(lp, $K2)), SX.LP.v0(lp), SX.LP.v1(lp), RN.qat(SX.LP.qs(lp), I(lp, $K2)), RN.lv_viol(lp, $T2, $PG2, RN.hr_at(lp, $K2)))
+
+# t's difference is negative
+def t_dneg($CTX) -> LX.LNeg(~F, SP.fat(~F, $DL0, $TT), SP.fat(~F, $DL1, $TT)):
+  %Equal.sym(@T, SP.fat(~F, $DL0, $TT), @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), $TT), $V0), SP.rv(~F, SX.rowat(SX.Tab.rows($T1), $TT), $V0)), dl_at(~F, SX.Tab.rows($T2), SX.Tab.rows($T1), $V0, $TT)) : LX.LNeg(~F, _, SP.fat(~F, $DL1, $TT))
+  %Equal.sym(@T, SP.fat(~F, $DL1, $TT), @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), $TT), $V1), SP.rv(~F, SX.rowat(SX.Tab.rows($T1), $TT), $V1)), dl_at(~F, SX.Tab.rows($T2), SX.Tab.rows($T1), $V1, $TT)) : LX.LNeg(~F, @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), $TT), $V0), SP.rv(~F, SX.rowat(SX.Tab.rows($T1), $TT), $V0)), _)
+  %Equal.sym(@T, SP.rv(~F, SX.rowat(SX.Tab.rows($T1), $TT), $V0), SP.fat(~F, $V0, $TT), t_at_k1($CTA, $V0)) : LX.LNeg(~F, @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), $TT), $V0), _), @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), $TT), $V1), SP.rv(~F, SX.rowat(SX.Tab.rows($T1), $TT), $V1)))
+  %Equal.sym(@T, SP.rv(~F, SX.rowat(SX.Tab.rows($T1), $TT), $V1), SP.fat(~F, $V1, $TT), t_at_k1($CTA, $V1)) : LX.LNeg(~F, @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), $TT), $V0), SP.fat(~F, $V0, $TT)), @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), $TT), $V1), _))
+  %Equal.sym(@T, SP.fat(~F, $V0, $TT), @OZ(S.Z.neg(RN.Ineq.b(RN.qat(SX.LP.qs(lp), $TT)))), RN.bnd_v0(~F, lp, $TT, t_ltm($CTA))) : LX.LNeg(~F, @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), $TT), $V0), _), @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), $TT), $V1), SP.fat(~F, $V1, $TT)))
+  %Equal.sym(@T, SP.fat(~F, $V1, $TT), @OZ(SX.ind(RN.Ineq.s(RN.qat(SX.LP.qs(lp), $TT)))), RN.bnd_v1(~F, lp, $TT, t_ltm($CTA))) : LX.LNeg(~F, @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), $TT), $V0), @OZ(S.Z.neg(RN.Ineq.b(RN.qat(SX.LP.qs(lp), $TT))))), @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), $TT), $V1), _))
+  t_viol($CTA)
+
+# t's column: positive entry times negative difference
+def col_t($CTX, +j: Nat, hjt: {j == $TT : Nat}) -> $TSJ:
+  %Equal.sym(Nat, j, $TT, hjt) : Either<&2, &2, LX.LNeg(~F, @M(@OZ(SX.at($MM, _)), SP.fat(~F, $DL0, _)), @M(@OZ(SX.at($MM, _)), SP.fat(~F, $DL1, _))), M.Both({SX.eqn(_, $TT) == False{} : Bool}, LX.LNonpos(~F, @M(@OZ(SX.at($MM, _)), SP.fat(~F, $DL0, _)), @M(@OZ(SX.at($MM, _)), SP.fat(~F, $DL1, _))))>
+  Inl{LX.lneg_scale(~F, @OZ(SX.at($MM, $TT)), SP.fat(~F, $DL0, $TT), SP.fat(~F, $DL1, $TT), t_pos($CTA), t_dneg($CTA))}
+
+# a slack j < t at k2 is not below its bound: its difference is >= 0
+def lt_dnn($CTX, +j: Nat, +hjt: {SX.ltn(j, $TT) == True{} : Bool}, +hb: {St(lp, j, $K1) == False{} : Bool}, +hjN: {SX.ltn(j, SX.LP.nv(lp)) == True{} : Bool}, +hjm: {SX.ltn(j, SX.LP.m(lp)) == True{} : Bool}) -> LX.LNonneg(~F, SP.fat(~F, $DL0, j), SP.fat(~F, $DL1, j)):
+  %Equal.sym(@T, SP.fat(~F, $DL0, j), @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), j), $V0), SP.rv(~F, SX.rowat(SX.Tab.rows($T1), j), $V0)), dl_at(~F, SX.Tab.rows($T2), SX.Tab.rows($T1), $V0, j)) : LX.LNonneg(~F, _, SP.fat(~F, $DL1, j))
+  %Equal.sym(@T, SP.fat(~F, $DL1, j), @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), j), $V1), SP.rv(~F, SX.rowat(SX.Tab.rows($T1), j), $V1)), dl_at(~F, SX.Tab.rows($T2), SX.Tab.rows($T1), $V1, j)) : LX.LNonneg(~F, @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), j), $V0), SP.rv(~F, SX.rowat(SX.Tab.rows($T1), j), $V0)), _)
+  %Equal.sym(@T, SP.rv(~F, SX.rowat(SX.Tab.rows($T1), j), $V0), SP.fat(~F, $V0, j), nb_zero(~F, lp, $K1, j, $V0, hwf, hb, hjN)) : LX.LNonneg(~F, @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), j), $V0), _), @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), j), $V1), SP.rv(~F, SX.rowat(SX.Tab.rows($T1), j), $V1)))
+  %Equal.sym(@T, SP.rv(~F, SX.rowat(SX.Tab.rows($T1), j), $V1), SP.fat(~F, $V1, j), nb_zero(~F, lp, $K1, j, $V1, hwf, hb, hjN)) : LX.LNonneg(~F, @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), j), $V0), SP.fat(~F, $V0, j)), @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), j), $V1), _))
+  %Equal.sym(@T, SP.fat(~F, $V0, j), @OZ(S.Z.neg(RN.Ineq.b(RN.qat(SX.LP.qs(lp), j)))), RN.bnd_v0(~F, lp, j, hjm)) : LX.LNonneg(~F, @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), j), $V0), _), @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), j), $V1), SP.fat(~F, $V1, j)))
+  %Equal.sym(@T, SP.fat(~F, $V1, j), @OZ(SX.ind(RN.Ineq.s(RN.qat(SX.LP.qs(lp), j)))), RN.bnd_v1(~F, lp, j, hjm)) : LX.LNonneg(~F, @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), j), $V0), @OZ(S.Z.neg(RN.Ineq.b(RN.qat(SX.LP.qs(lp), j))))), @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), j), $V1), _))
+  RN.noviol_f(~F, SX.rowat(SX.Tab.rows($T2), j), SX.LP.v0(lp), SX.LP.v1(lp), RN.qat(SX.LP.qs(lp), j), RN.lv_min(lp, $T2, $PG2, RN.hr_at(lp, $K2), j, (%Equal.sym(Nat, I(lp, $K2), $TT, ik2($CTA)) : {SX.ltn(j, _) == True{} : Bool}
+    hjt)))
+
+def lt.go($CTX, +j: Nat, c: S.Z, +hc: {c == SX.at($MM, j) : S.Z}, +hjt: {SX.ltn(j, $TT) == True{} : Bool}, +hb: {St(lp, j, $K1) == False{} : Bool}, +hjN: {SX.ltn(j, SX.LP.nv(lp)) == True{} : Bool}, +hh: {SX.helpful(SX.at($MM, j), Nat.is_le(SX.LP.m(lp), j)) == False{} : Bool}) -> LX.LNonpos(~F, $TS0, $TS1):
+  match c:
+    case S.Z0{}:
+      %hc : LX.LNonpos(~F, @M(@OZ(_), SP.fat(~F, $DL0, j)), @M(@OZ(_), SP.fat(~F, $DL1, j)))
+      LX.lnonpos_czero(~F, SP.fat(~F, $DL0, j), SP.fat(~F, $DL1, j))
+    case S.Zpos{p}:
+      absurd(LX.LNonpos(~F, $TS0, $TS1), KA.tf((%Equal.sym(S.Z, S.Zpos{p}, SX.at($MM, j), hc) : {SX.helpful(_, Nat.is_le(SX.LP.m(lp), j)) == False{} : Bool}
+        hh)))
+    case S.Zneg{+q}:
+      %hc : LX.LNonpos(~F, @M(@OZ(_), SP.fat(~F, $DL0, j)), @M(@OZ(_), SP.fat(~F, $DL1, j)))
+      LX.lnonpos_scale_neg(~F, @OZ(S.Zneg{q}), SP.fat(~F, $DL0, j), SP.fat(~F, $DL1, j), FO.pos_neg(~F, O.ofp(~F, q), QE.ofp_pos(~F, q)),
+        lt_dnn($CTA, j, hjt, hb, hjN, lt_isle(SX.LP.m(lp), j, (%Equal.sym(S.Z, S.Zneg{q}, SX.at($MM, j), hc) : {SX.helpful(_, Nat.is_le(SX.LP.m(lp), j)) == False{} : Bool}
+          hh))))
+
+# a fickle column j < t: a negative entry is at a slack not below its
+# bound at k2, a positive entry would have entered
+def col_lt($CTX, +j: Nat, +hjt: {SX.ltn(j, $TT) == True{} : Bool}, +hb: {St(lp, j, $K1) == False{} : Bool}, +hjN: {SX.ltn(j, SX.LP.nv(lp)) == True{} : Bool}) -> $TSJ:
+  Inr{(SP.ltn_ne(j, $TT, hjt), lt.go($CTA, j, SX.at($MM, j), {==}, hjt, hb, hjN, RN.en_min(lp, $T1, $PG1, j, (%Equal.sym(Nat, En(lp, $K1), $TT, ek1(lp, L, a)) : {SX.ltn(j, _) == True{} : Bool}
+    hjt))))}
+
+# a variable entering in the range is at most t
+def ent_le_t($CTX, +j: Nat, +hn: {noent(lp, j, 1n+L, a) == False{} : Bool}) -> {KA.natle(j, $TT) == True{} : Bool}:
+  %Equal.sym(Nat, j, En(lp, plus(fe(lp, j, 1n+L, a), a)), SP.eqn_eq(j, En(lp, plus(fe(lp, j, 1n+L, a), a)), both_l({SX.eqn(j, En(lp, plus(fe(lp, j, 1n+L, a), a))) == True{} : Bool}, {SX.ltn(fe(lp, j, 1n+L, a), 1n+L) == True{} : Bool}, fe_ok(lp, j, 1n+L, a, hn)))) : {KA.natle(_, $TT) == True{} : Bool}
+  le_maxE(lp, L, fe(lp, j, 1n+L, a), a, ltn_succ_le(fe(lp, j, 1n+L, a), L, both_r({SX.eqn(j, En(lp, plus(fe(lp, j, 1n+L, a), a))) == True{} : Bool}, {SX.ltn(fe(lp, j, 1n+L, a), 1n+L) == True{} : Bool}, fe_ok(lp, j, 1n+L, a, hn))))
+
+def col.f($CTX, +j: Nat, b: Bool, hb_: {b == SX.eqn(j, $TT) : Bool}, +hle: {KA.natle(j, $TT) == True{} : Bool}, +hjN: {SX.ltn(j, SX.LP.nv(lp)) == True{} : Bool}, +hb: {St(lp, j, $K1) == False{} : Bool}) -> $TSJ:
+  match b:
+    case True{}:
+      col_t($CTA, j, SP.eqn_eq(j, $TT, Equal.sym(Bool, True{}, SX.eqn(j, $TT), hb_)))
+    case False{}:
+      col_lt($CTA, j, lt_of_le_ne(j, $TT, hle, Equal.sym(Bool, False{}, SX.eqn(j, $TT), hb_)), hb, hjN)
+
+def col.e($CTX, +j: Nat, b: Bool, hb_: {b == noent(lp, j, 1n+L, a) : Bool}, +hjN: {SX.ltn(j, SX.LP.nv(lp)) == True{} : Bool}, +hb: {St(lp, j, $K1) == False{} : Bool}) -> $TSJ:
+  match b:
+    case True{}:
+      col_nf($CTA, j, hjN, hb, Equal.sym(Bool, True{}, noent(lp, j, 1n+L, a), hb_))
+    case False{}:
+      col.f($CTA, j, SX.eqn(j, $TT), {==}, ent_le_t($CTA, j, Equal.sym(Bool, False{}, noent(lp, j, 1n+L, a), hb_)), hjN, hb)
+
+def col.b($CTX, +j: Nat, b: Bool, hb_: {b == St(lp, j, $K1) : Bool}, +hjN: {SX.ltn(j, SX.LP.nv(lp)) == True{} : Bool}) -> $TSJ:
+  match b:
+    case True{}:
+      col_basic($CTA, j, Equal.sym(Bool, True{}, St(lp, j, $K1), hb_))
+    case False{}:
+      col.e($CTA, j, noent(lp, j, 1n+L, a), {==}, hjN, Equal.sym(Bool, False{}, St(lp, j, $K1), hb_))
+
+def col.n($CTX, +j: Nat, b: Bool, hb_: {b == SX.ltn(j, SX.LP.nv(lp)) : Bool}) -> $TSJ:
+  match b:
+    case True{}:
+      col.b($CTA, j, St(lp, j, $K1), {==}, Equal.sym(Bool, True{}, SX.ltn(j, SX.LP.nv(lp)), hb_))
+    case False{}:
+      col_big($CTA, j, Equal.sym(Bool, False{}, SX.ltn(j, SX.LP.nv(lp)), hb_))
+
+# every column's term: t's negative, every other one not positive
+def col($CTX, +j: Nat) -> $TSJ:
+  col.n($CTA, j, SX.ltn(j, SX.LP.nv(lp)), {==})
