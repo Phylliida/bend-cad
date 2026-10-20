@@ -463,3 +463,31 @@ def cw_final.r(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +r
 def cw_final(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, hl: {EL.rlen(rows) == SV.neqs(B) : Nat},
   hB: {B == SV.presolved(sk, R, D, c) : List<&2, E.QExpr>}, hp: {B == SV.picked(SK.Sketch.eqs(sk), bp) : List<&2, E.QExpr>}) -> (SV.DropsOk(sk, R, D, c, SV.drops(cw.ds(PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}})))) & CWInv(sk, R, D, c, bp, SV.neqs(SK.Sketch.eqs(sk)), PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}))):
   cw_final.r(sk, R, D, c, rows, B, bp, cw_ok(SK.Sketch.eqs(sk), SV.owners(sk), sk, R, D, c, bp, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}, {==}, {==}, OW.len_owners(sk), {==}, cw_start(sk, R, D, c, rows, B, bp, hr, hl, hB, hp)))
+
+# The walk drops only c's equations
+# ---------------------------------
+
+def cwo.pick(b: Bool, +own: List<&2, Nat>, +c: Nat, +k: Nat, +e: E.QExpr, +r: EL.Res, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +ds: List<&2, SV.Drop>, +us: List<&2, Nat>, +ho: {SV.eq(SV.nth(own, k), c) == True{} : Bool},
+  +h: {KB.allo(own, SV.drops(ds), c) == True{} : Bool}) -> {KB.allo(own, SV.drops(cw.ds(PA.cw.pick(b, k, e, r, rows, B, bp, ds, us))), c) == True{} : Bool}:
+  match b:
+    case True{}:
+      LI.band_i(SV.eq(SV.nth(own, k), c), KB.allo(own, SV.drops(ds), c), ho, h)
+    case False{}:
+      h
+
+def cwo.at(b: Bool, +own: List<&2, Nat>, +c: Nat, +k: Nat, +e: E.QExpr, st: PA.CW, +eb: {SV.eq(SV.nth(own, k), c) == b : Bool}, +h: {KB.allo(own, SV.drops(cw.ds(st)), c) == True{} : Bool})
+  -> {KB.allo(own, SV.drops(cw.ds(PA.cw.at(b, k, e, st))), c) == True{} : Bool}:
+  match b:
+    case True{}:
+      match st:
+        case PA.CW{+rows, +B, +bp, +ds, +us}:
+          cwo.pick(EP.isnil(EP.resp(EL.resid(rows, e))), own, c, k, e, EL.resid(rows, e), rows, B, bp, ds, us, eb, h)
+    case False{}:
+      h
+
+def cw_own(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +c: Nat, +k: Nat, +st: PA.CW, +h: {KB.allo(own, SV.drops(cw.ds(st)), c) == True{} : Bool}) -> {KB.allo(own, SV.drops(cw.ds(PA.cwalk(es, own, c, k, st))), c) == True{} : Bool}:
+  match es:
+    case Nil{}:
+      h
+    case Con{+e, +t}:
+      cw_own(t, own, c, 1n+k, PA.cw.at(SV.eq(SV.nth(own, k), c), k, e, st), cwo.at(SV.eq(SV.nth(own, k), c), own, c, k, e, st, {==}, h))

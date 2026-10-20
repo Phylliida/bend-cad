@@ -1,0 +1,118 @@
+# bend-cad: the single pass is honest (PLAN-sk13a S4, law 4). Proofs
+# only.
+#
+# Honest(sk, classes(sk)): each constraint's class is the honest one
+# given the final classes' red positions and dropped equations. The pass
+# never sees the final lists; its state is related to them below c:
+# - kb, its kept constraints, is kept_before(sk, RF, c) (lib/kbpf.bend);
+# - B, its basis, is presolved(sk, RF, DF, c) (lib/solvedpf.bend), with
+#   echelon rows, positions bp and a valid matching of exactly bp;
+# and the final lists are read position by position: c is red exactly when
+# its class is, and k is dropped exactly when its owner's class drops it
+# (lib/clslpf.bend), which holds because every class drops only its own
+# equations (downs, proven first, from the walk alone).
+# Then each driving constraint's class follows from its decisions:
+# Conflict (lib/prepf.bend), Over by a failed unit (lib/gmpf.bend), Kept
+# or Amber by DropsOk (lib/cwpf.bend), the unit's matching and the side
+# tests.
+#
+# Generated from tools/drafts/passpf.draft by tools/expand.py; edit the
+# draft.
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/sketch.bend as SK
+import ../spec/solve.bend as SV
+import ./karith.bend as KA
+import ./nat.bend as LN
+import ./listpf.bend as L
+import ./struct.bend as ST
+import ./elim.bend as EL
+import ./elimpf.bend as EP
+import ./refute.bend as RF
+import ./conflict.bend as CO
+import ./pass.bend as PA
+import ./kbpf.bend as KB
+import ./ownpf.bend as OW
+import ./solvedpf.bend as SP
+import ./clslpf.bend as CL
+import ./prepf.bend as PR
+import ./cwpf.bend as CW
+import ./gmpf.bend as GM
+import ./dfspf.bend as D
+import ./maxpf.bend as MX
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+@MACRO ES SK.Sketch.eqs(sk)
+@MACRO OWN SV.owners(sk)
+@MACRO AD PA.dadjs(SK.Sketch.eqs(sk))
+@MACRO NV PA.nvars(sk)
+@MACRO PARGS SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk)
+@MACRO CLS PA.classes(sk)
+@MACRO NL List<&2, Nat>
+@MACRO QL List<&2, E.QExpr>
+@MACRO WALK PA.cwalk($ES, $OWN, c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}})
+
+# Every class drops only its own equations
+# ----------------------------------------
+
+def onea_kd(m: Maybe<&2, List<&2, SV.Ref>>, +dd: List<&2, SV.Drop>) -> {SV.kdrops(PA.one.a(m, dd)) == SV.drops(dd) : $NL}:
+  match m:
+    case None{}:
+      {==}
+    case Some{rs}:
+      {==}
+
+def onek_kd(a: Bool, +sk: SK.Sketch, +kb: $NL, +c: Nat, +dd: List<&2, SV.Drop>) -> {SV.kdrops(PA.one.k(a, sk, kb, c, dd)) == SV.drops(dd) : $NL}:
+  match a:
+    case True{}:
+      onea_kd(PA.srefs(SV.csides(sk, [c]), sk, kb, c, 0n), dd)
+    case False{}:
+      {==}
+
+def one_down.g(g: ST.GS, +sk: SK.Sketch, +c: Nat, +kb: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +vm: List<&2, Maybe<&2, Nat>>, +rows2: List<&2, EL.Row>, +B2: $QL, +bp2: $NL, +dd: List<&2, SV.Drop>, +us: $NL,
+  +h: {KB.allo($OWN, SV.drops(dd), c) == True{} : Bool}) -> {KB.allo($OWN, SV.kdrops(PA.PO.k(PA.one.g(g, sk, c, kb, rows, B, bp, vm, PA.CW{rows2, B2, bp2, dd, us}))), c) == True{} : Bool}:
+  match g:
+    case ST.GFail{ST.Red{j, s, x}}:
+      {==}
+    case ST.GOk{vm2}:
+      %Equal.sym($NL, SV.kdrops(PA.one.k(SV.is_amberable(sk, c, SV.drops(dd)), sk, kb, c, dd)), SV.drops(dd), onek_kd(SV.is_amberable(sk, c, SV.drops(dd)), sk, kb, c, dd)) : {KB.allo($OWN, _, c) == True{} : Bool}
+      h
+
+def one_down.w(w: PA.CW, +sk: SK.Sketch, +c: Nat, +kb: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +vm: List<&2, Maybe<&2, Nat>>, +h: {KB.allo($OWN, SV.drops(CW.cw.ds(w)), c) == True{} : Bool})
+  -> {KB.allo($OWN, SV.kdrops(PA.PO.k(PA.one.w(w, sk, $AD, 1n+$NV, c, kb, rows, B, bp, vm))), c) == True{} : Bool}:
+  match w:
+    case PA.CW{+rows2, +B2, +bp2, +dd, +us}:
+      one_down.g(PA.grpl(us, $AD, 1n+$NV, ST.GOk{vm}), sk, c, kb, rows, B, bp, vm, rows2, B2, bp2, dd, us, h)
+
+def one_down.c(b: Bool, +sk: SK.Sketch, +c: Nat, +kb: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +vm: List<&2, Maybe<&2, Nat>>, +eb: {CO.refutable(sk, c, kb) == b : Bool})
+  -> {KB.allo($OWN, SV.kdrops(PA.PO.k(PA.one.c(CO.refutable(sk, c, kb), $PARGS, c, kb, rows, B, bp, vm))), c) == True{} : Bool}:
+  match b:
+    case True{}:
+      %Equal.sym(Bool, CO.refutable(sk, c, kb), True{}, eb) : {KB.allo($OWN, SV.kdrops(PA.PO.k(PA.one.c(_, $PARGS, c, kb, rows, B, bp, vm))), c) == True{} : Bool}
+      {==}
+    case False{}:
+      %Equal.sym(Bool, CO.refutable(sk, c, kb), False{}, eb) : {KB.allo($OWN, SV.kdrops(PA.PO.k(PA.one.c(_, $PARGS, c, kb, rows, B, bp, vm))), c) == True{} : Bool}
+      one_down.w($WALK, sk, c, kb, rows, B, bp, vm, CW.cw_own($ES, $OWN, c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}, {==}))
+
+def one_down(st: PA.PS, +sk: SK.Sketch, +c: Nat) -> {KB.allo($OWN, SV.kdrops(PA.PO.k(PA.one($PARGS, c, st))), c) == True{} : Bool}:
+  match st:
+    case PA.PS{+kb, +rows, +B, +bp, +vm}:
+      one_down.c(CO.refutable(sk, c, kb), sk, c, kb, rows, B, bp, vm, {==})
+
+def pass_down(rs: List<&2, SK.Rec>, +sk: SK.Sketch, +i: Nat, +st: PA.PS) -> {CL.downs($OWN, PA.pass(rs, $PARGS, i, st), i) == True{} : Bool}:
+  match rs:
+    case Nil{}:
+      {==}
+    case Con{SK.Rec{id, True{}, k}, +t}:
+      L.band_i(True{}, CL.downs($OWN, PA.pass(t, $PARGS, 1n+i, st), 1n+i), {==}, pass_down(t, sk, 1n+i, st))
+    case Con{SK.Rec{id, False{}, k}, +t}:
+      L.band_i(KB.allo($OWN, SV.kdrops(PA.PO.k(PA.one($PARGS, i, st))), i), CL.downs($OWN, PA.pass(t, $PARGS, 1n+i, PA.PO.st(PA.one($PARGS, i, st))), 1n+i),
+        one_down(st, sk, i), pass_down(t, sk, 1n+i, PA.PO.st(PA.one($PARGS, i, st))))
+
+# the final classes drop only their own equations
+def classes_down(+sk: SK.Sketch) -> {CL.downs($OWN, $CLS, 0n) == True{} : Bool}:
+  pass_down(PA.recs(sk), sk, 0n, PA.start($NV))

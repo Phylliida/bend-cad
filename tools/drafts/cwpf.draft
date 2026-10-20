@@ -462,3 +462,31 @@ def cw_final.r(+sk: SK.Sketch, +R: $NL, +D: $NL, +c: Nat, +rows: List<&2, EL.Row
 def cw_final(+sk: SK.Sketch, +R: $NL, +D: $NL, +c: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, hl: {EL.rlen(rows) == SV.neqs(B) : Nat},
   hB: {B == $P : $QL}, hp: {B == SV.picked($ES, bp) : $QL}) -> (SV.DropsOk(sk, R, D, c, SV.drops(cw.ds($FIN))) & CWInv(sk, R, D, c, bp, $N, $FIN)):
   cw_final.r(sk, R, D, c, rows, B, bp, cw_ok($ES, $OWN, sk, R, D, c, bp, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}, {==}, {==}, OW.len_owners(sk), {==}, cw_start(sk, R, D, c, rows, B, bp, hr, hl, hB, hp)))
+
+# The walk drops only c's equations
+# ---------------------------------
+
+def cwo.pick(b: Bool, +own: $NL, +c: Nat, +k: Nat, +e: E.QExpr, +r: EL.Res, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL, +ho: {SV.eq(SV.nth(own, k), c) == True{} : Bool},
+  +h: {KB.allo(own, SV.drops(ds), c) == True{} : Bool}) -> {KB.allo(own, SV.drops(cw.ds(PA.cw.pick(b, k, e, r, rows, B, bp, ds, us))), c) == True{} : Bool}:
+  match b:
+    case True{}:
+      LI.band_i(SV.eq(SV.nth(own, k), c), KB.allo(own, SV.drops(ds), c), ho, h)
+    case False{}:
+      h
+
+def cwo.at(b: Bool, +own: $NL, +c: Nat, +k: Nat, +e: E.QExpr, st: PA.CW, +eb: {SV.eq(SV.nth(own, k), c) == b : Bool}, +h: {KB.allo(own, SV.drops(cw.ds(st)), c) == True{} : Bool})
+  -> {KB.allo(own, SV.drops(cw.ds(PA.cw.at(b, k, e, st))), c) == True{} : Bool}:
+  match b:
+    case True{}:
+      match st:
+        case PA.CW{+rows, +B, +bp, +ds, +us}:
+          cwo.pick(EP.isnil(EP.resp(EL.resid(rows, e))), own, c, k, e, EL.resid(rows, e), rows, B, bp, ds, us, eb, h)
+    case False{}:
+      h
+
+def cw_own(es: $QL, +own: $NL, +c: Nat, +k: Nat, +st: PA.CW, +h: {KB.allo(own, SV.drops(cw.ds(st)), c) == True{} : Bool}) -> {KB.allo(own, SV.drops(cw.ds(PA.cwalk(es, own, c, k, st))), c) == True{} : Bool}:
+  match es:
+    case Nil{}:
+      h
+    case Con{+e, +t}:
+      cw_own(t, own, c, 1n+k, PA.cw.at(SV.eq(SV.nth(own, k), c), k, e, st), cwo.at(SV.eq(SV.nth(own, k), c), own, c, k, e, st, {==}, h))
