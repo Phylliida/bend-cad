@@ -36,6 +36,8 @@ import ./gmpf.bend as GM
 import ./passpf.bend as PP
 import ./solve.bend as SO
 import ./clslpf.bend as CL
+import ./tarjanpf.bend as TJ
+import ./structpf.bend as STP
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -43,7 +45,9 @@ def absurd(-A: Type, x: Empty) -> A:
 @MACRO NL List<&2, Nat>
 @MACRO VM List<&2, Maybe<&2, Nat>>
 @MACRO QL List<&2, E.QExpr>
-@MACRO GOOD ST.inter(ST.iota(ST.len.q(full), 0n), ST.somes(vmr))
+@MACRO GOOD good
+@MACRO GP +good: $NL, +hs1: {L.subl(ST.somes(vmr), good) == True{} : Bool}, +hs2: {L.subl(good, ST.somes(vmr)) == True{} : Bool}, +hgb: {SV.below(good, ST.len.q(full)) == True{} : Bool}
+@MACRO GA good, hs1, hs2, hgb
 @MACRO ADT ST.transpose(nv, 0n, $GOOD, PA.dadjs(full))
 
 # lib/maxpf.bend's count, by dependence
@@ -58,7 +62,7 @@ def nthl_ltd(es: $QL, j: Nat, +v: Nat, h: {SV.mem(v, ST.nthl(PA.dadjs(es), j)) =
     case Con{e, t} 1n+i:
       nthl_ltd(t, i, v, h)
 
-def into1d.go(+full: $QL, +nv: Nat, +vmr: $VM, +r: Nat, +dd: $NL, m: Maybe<&2, Nat>, +e: {ST.getm(vmr, r) == m : Maybe<&2, Nat>}, hl: {KA.natle(1n+r, nv) == True{} : Bool},
+def into1d.go(+full: $QL, +nv: Nat, +vmr: $VM, $GP, +r: Nat, +dd: $NL, m: Maybe<&2, Nat>, +e: {ST.getm(vmr, r) == m : Maybe<&2, Nat>}, hl: {KA.natle(1n+r, nv) == True{} : Bool},
   hs: {L.subl(ST.nthl($ADT, r), dd) == True{} : Bool}, hvr: {MX.valid(PA.dadjs(full), vmr) == True{} : Bool}) -> {SV.bor(SV.bnot(L.issome(m)), SV.mem(ST.look.of(m), dd)) == True{} : Bool}:
   match m:
     case None{}:
@@ -67,43 +71,43 @@ def into1d.go(+full: $QL, +nv: Nat, +vmr: $VM, +r: Nat, +dd: $NL, m: Maybe<&2, N
       +adj = PA.dadjs(full)
       +nq = ST.len.q(full)
       +hrj = MX.valid_get(adj, vmr, r, 0n, j, hvr, e)
-      +hg = MX.inter_mem(ST.iota(nq, 0n), ST.somes(vmr), j, MX.iota_mem(nq, 0n, j, MX.lt_nat(j, nq, nthl_ltd(full, j, r, hrj))), L.some_mem(vmr, r, j, e))
+      +hg = L.subl_mem(j, ST.somes(vmr), good, L.some_mem(vmr, r, j, e), hs1)
       L.subl_mem(j, ST.nthl($ADT, r), dd, MX.in_tr($GOOD, adj, nv, r, j, hl, MX.users_mem($GOOD, adj, r, j, hg, hrj)), hs)
 
-def intod_of(+full: $QL, +nv: Nat, +vmr: $VM, xs: $NL, +dd: $NL, +hb: {SV.below(xs, nv) == True{} : Bool}, +hd: {MX.dead($ADT, xs, dd) == True{} : Bool}, +hvr: {MX.valid(PA.dadjs(full), vmr) == True{} : Bool})
+def intod_of(+full: $QL, +nv: Nat, +vmr: $VM, $GP, xs: $NL, +dd: $NL, +hb: {SV.below(xs, nv) == True{} : Bool}, +hd: {MX.dead($ADT, xs, dd) == True{} : Bool}, +hvr: {MX.valid(PA.dadjs(full), vmr) == True{} : Bool})
   -> {MX.into(vmr, xs, dd) == True{} : Bool}:
   match xs:
     case Nil{}:
       {==}
     case Con{+r, +t}:
       L.band_i(SV.bor(SV.bnot(L.issome(ST.getm(vmr, r))), SV.mem(ST.look.of(ST.getm(vmr, r)), dd)), MX.into(vmr, t, dd),
-        into1d.go(full, nv, vmr, r, dd, ST.getm(vmr, r), {==}, D.below_hd(r, t, nv, hb), L.band_l(L.subl(ST.nthl($ADT, r), dd), MX.dead($ADT, t, dd), hd), hvr),
-        intod_of(full, nv, vmr, t, dd, D.below_tl(r, t, nv, hb), L.band_r(L.subl(ST.nthl($ADT, r), dd), MX.dead($ADT, t, dd), hd), hvr))
+        into1d.go(full, nv, vmr, $GA, r, dd, ST.getm(vmr, r), {==}, D.below_hd(r, t, nv, hb), L.band_l(L.subl(ST.nthl($ADT, r), dd), MX.dead($ADT, t, dd), hd), hvr),
+        intod_of(full, nv, vmr, $GA, t, dd, D.below_tl(r, t, nv, hb), L.band_r(L.subl(ST.nthl($ADT, r), dd), MX.dead($ADT, t, dd), hd), hvr))
 
 # what the variable side ends with: its failed searches fs (the pins), its
 # matching vm (each equation's variable)
 @CONJ vsf
-params: +full: List<&2, E.QExpr>, +nv: Nat, +vmr: List<&2, Maybe<&2, Nat>>, +kn: Nat, +vm: List<&2, Maybe<&2, Nat>>, +fs: List<&2, Nat>
+params: +full: List<&2, E.QExpr>, +nv: Nat, +vmr: List<&2, Maybe<&2, Nat>>, +good: List<&2, Nat>, +kn: Nat, +vm: List<&2, Maybe<&2, Nat>>, +fs: List<&2, Nat>
 - fdist: SV.distinct(fs)
 - fbelow: SV.below(fs, nv)
 - cnt: SV.eq(Nat.add(kn, SV.len(fs)), nv)
-- valid: MX.valid(ST.transpose(nv, 0n, ST.inter(ST.iota(ST.len.q(full), 0n), ST.somes(vmr)), PA.dadjs(full)), vm)
+- valid: MX.valid(ST.transpose(nv, 0n, good, PA.dadjs(full)), vm)
 - vdist: SV.distinct(ST.somes(vm))
 - ffree: MX.disj(fs, ST.somes(vm))
 - mus: L.subl(ST.somes(vm), ST.down(nv))
 - scnt: SV.eq(SV.len(ST.somes(vm)), kn)
+- fus: L.subl(fs, ST.down(nv))
 @END
 
 def cancel_r(+a: Nat, +b: Nat, +c: Nat, +n: Nat, h1: {Nat.add(a, b) == n : Nat}, h2: {Nat.add(c, b) == n : Nat}) -> {a == c : Nat}:
   LN.add_cancel(b, a, c, Equal.trans(Nat, Nat.add(b, a), Nat.add(a, b), Nat.add(b, c), LN.add_comm(b, a), Equal.trans(Nat, Nat.add(a, b), n, Nat.add(b, c), h1, Equal.trans(Nat, n, Nat.add(c, b), Nat.add(b, c), Equal.sym(Nat, Nat.add(c, b), n, h2), LN.add_comm(c, b)))))
 
-def pfind(+full: $QL, +nv: Nat, +vmr: $VM, +kn: Nat, st: ST.KD, +h: {MX.kinvs($ADT, ST.len.q(full), ST.down(nv), SV.len(ST.down(nv)), Nil{}, st) == True{} : Bool}, +hvr: {MX.valid(PA.dadjs(full), vmr) == True{} : Bool},
-  +hdr: {SV.distinct(ST.somes(vmr)) == True{} : Bool}, +hmr: {L.mlen(vmr) == nv : Nat}, +hcr: {SV.len(ST.somes(vmr)) == kn : Nat}) -> {vsf(full, nv, vmr, kn, ST.KD.vm(st), ST.KD.red(st)) == True{} : Bool}:
+def pfind(+full: $QL, +nv: Nat, +vmr: $VM, $GP, +kn: Nat, st: ST.KD, +h: {MX.kinvs($ADT, ST.len.q(full), ST.down(nv), SV.len(ST.down(nv)), Nil{}, st) == True{} : Bool}, +hvr: {MX.valid(PA.dadjs(full), vmr) == True{} : Bool},
+  +hdr: {SV.distinct(ST.somes(vmr)) == True{} : Bool}, +hmr: {L.mlen(vmr) == nv : Nat}, +hcr: {SV.len(ST.somes(vmr)) == kn : Nat}) -> {vsf(full, nv, vmr, good, kn, ST.KD.vm(st), ST.KD.red(st)) == True{} : Bool}:
   match st:
     case ST.KD{+vm, +fs, +dd}:
       +adj = PA.dadjs(full)
       +nq = ST.len.q(full)
-      +good = $GOOD
       +adjt = $ADT
       +us = ST.down(nv)
       +c = SV.len(ST.down(nv))
@@ -111,30 +115,49 @@ def pfind(+full: $QL, +nv: Nat, +vmr: $VM, +kn: Nat, st: ST.KD, +h: {MX.kinvs($A
       +hfd = MX.kinv_fdist(adjt, nq, us, c, js, vm, fs, dd, h)
       +hfb = D.below_subl(fs, us, nv, MX.kinv_fus(adjt, nq, us, c, js, vm, fs, dd, h), MX.down_below(nv))
       +hab = MX.cnt_end(SV.len(ST.somes(vm)), SV.len(fs), nv, MX.kinv_cnt(adjt, nq, us, c, js, vm, fs, dd, h))
-      +hkr = L.subl_trans(MX.keys(vm, 0n), good, ST.somes(vmr), MX.keys_tr(vm, 0n, nv, 0n, good, adj, MX.kinv_valid(adjt, nq, us, c, js, vm, fs, dd, h)), MX.inter_sub(ST.iota(nq, 0n), ST.somes(vmr)))
+      +hkr = L.subl_trans(MX.keys(vm, 0n), good, ST.somes(vmr), MX.keys_tr(vm, 0n, nv, 0n, good, adj, MX.kinv_valid(adjt, nq, us, c, js, vm, fs, dd, h)), hs2)
       +hak = MX.le_keys(vm, vmr, kn, L.pig(MX.keys(vm, 0n), ST.somes(vmr), MX.keys_dist(vm, 0n), hkr), hcr)
       +lk = ST.look(vm, dd)
       +hls = L.look_subl(vm, dd, MX.kinv_dallm(adjt, nq, us, c, js, vm, fs, dd, h))
       +hdd = MX.dist_app(fs, lk, hfd, L.look_dist(vm, dd, MX.kinv_ddist(adjt, nq, us, c, js, vm, fs, dd, h), MX.kinv_dallm(adjt, nq, us, c, js, vm, fs, dd, h), MX.kinv_dist(adjt, nq, us, c, js, vm, fs, dd, h)), MX.disj_sub(fs, ST.somes(vm), lk, MX.kinv_ffree(adjt, nq, us, c, js, vm, fs, dd, h), hls))
       +hdb = MX.below_app(fs, lk, nv, hfb, D.below_subl(lk, us, nv, L.subl_trans(lk, ST.somes(vm), us, hls, MX.kinv_mus(adjt, nq, us, c, js, vm, fs, dd, h)), MX.down_below(nv)))
       +hdead = MX.dead_app(adjt, fs, lk, dd, MX.kinv_fdead(adjt, nq, us, c, js, vm, fs, dd, h), MX.dead_look(vm, adjt, dd, dd, MX.kinv_dclosed(adjt, nq, us, c, js, vm, fs, dd, h)))
-      +hdf = MX.defic(vmr, ST.app(fs, lk), dd, hdd, MX.below_rw(ST.app(fs, lk), L.mlen(vmr), nv, hmr, hdb), hdr, intod_of(full, nv, vmr, ST.app(fs, lk), dd, hdb, hdead, hvr))
+      +hdf = MX.defic(vmr, ST.app(fs, lk), dd, hdd, MX.below_rw(ST.app(fs, lk), L.mlen(vmr), nv, hmr, hdb), hdr, intod_of(full, nv, vmr, $GA, ST.app(fs, lk), dd, hdb, hdead, hvr))
       +hbh = MX.le_cancel_l(SV.len(dd), SV.len(fs), SV.len(ST.holes(vmr, 0n)), MX.le_fh2(fs, vm, dd, SV.len(ST.holes(vmr, 0n)), hdf))
       +hsq = MX.squeeze(SV.len(ST.somes(vm)), SV.len(fs), kn, SV.len(ST.holes(vmr, 0n)), nv, hab, MX.kh(vmr, kn, nv, hcr, hmr), hak, hbh)
-      vsf_mk(full, nv, vmr, kn, vm, fs, hfd, hfb, D.eq_of(Nat.add(kn, SV.len(fs)), nv, hsq), MX.kinv_valid(adjt, nq, us, c, js, vm, fs, dd, h), MX.kinv_dist(adjt, nq, us, c, js, vm, fs, dd, h),
-        MX.kinv_ffree(adjt, nq, us, c, js, vm, fs, dd, h), MX.kinv_mus(adjt, nq, us, c, js, vm, fs, dd, h), D.eq_of(SV.len(ST.somes(vm)), kn, cancel_r(SV.len(ST.somes(vm)), SV.len(fs), kn, nv, hab, hsq)))
+      vsf_mk(full, nv, vmr, good, kn, vm, fs, hfd, hfb, D.eq_of(Nat.add(kn, SV.len(fs)), nv, hsq), MX.kinv_valid(adjt, nq, us, c, js, vm, fs, dd, h), MX.kinv_dist(adjt, nq, us, c, js, vm, fs, dd, h),
+        MX.kinv_ffree(adjt, nq, us, c, js, vm, fs, dd, h), MX.kinv_mus(adjt, nq, us, c, js, vm, fs, dd, h), D.eq_of(SV.len(ST.somes(vm)), kn, cancel_r(SV.len(ST.somes(vm)), SV.len(fs), kn, nv, hab, hsq)), MX.kinv_fus(adjt, nq, us, c, js, vm, fs, dd, h))
 
 # vmr: a valid matching of the system full, by dependence, whose matched
 # equations are distinct, kn of them, nv long: what the variable side
 # over them ends with
-def pins_kvd(+full: $QL, +nv: Nat, +vmr: $VM, +kn: Nat, +hvr: {MX.valid(PA.dadjs(full), vmr) == True{} : Bool}, +hdr: {SV.distinct(ST.somes(vmr)) == True{} : Bool}, +hmr: {L.mlen(vmr) == nv : Nat}, +hcr: {SV.len(ST.somes(vmr)) == kn : Nat})
-  -> {vsf(full, nv, vmr, kn, ST.KD.vm(PA.kvs(PA.dadjs(full), ST.len.q(full), nv, $GOOD)), ST.KD.red(PA.kvs(PA.dadjs(full), ST.len.q(full), nv, $GOOD))) == True{} : Bool}:
+def pins_kvd(+full: $QL, +nv: Nat, +vmr: $VM, $GP, +kn: Nat, +hvr: {MX.valid(PA.dadjs(full), vmr) == True{} : Bool}, +hdr: {SV.distinct(ST.somes(vmr)) == True{} : Bool}, +hmr: {L.mlen(vmr) == nv : Nat}, +hcr: {SV.len(ST.somes(vmr)) == kn : Nat})
+  -> {vsf(full, nv, vmr, good, kn, ST.KD.vm(PA.kvs(PA.dadjs(full), ST.len.q(full), nv, $GOOD)), ST.KD.red(PA.kvs(PA.dadjs(full), ST.len.q(full), nv, $GOOD))) == True{} : Bool}:
   +adj = PA.dadjs(full)
   +nq = ST.len.q(full)
-  +good = $GOOD
   +adjt = $ADT
-  +hbg = D.below_subl(good, ST.iota(nq, 0n), nq, MX.inter_subx(ST.iota(nq, 0n), ST.somes(vmr)), MX.iota_below(nq, 0n))
-  pfind(full, nv, vmr, kn, PA.kvs(adj, nq, nv, good), MX.kwalk(ST.down(nv), adjt, nq, ST.down(nv), SV.len(ST.down(nv)), 1n+nq, ST.KD{ST.nones(nq), Nil{}, Nil{}}, MX.down_dist(nv), L.subl_refl(ST.down(nv)), MX.adjb_tr(nv, 0n, good, adj, nq, hbg), KA.natle_refl(1n+nq), MX.kinit(adjt, nq, ST.down(nv), ST.down(nv))), hvr, hdr, hmr, hcr)
+  +hbg = hgb
+  pfind(full, nv, vmr, $GA, kn, PA.kvs(adj, nq, nv, good), MX.kwalk(ST.down(nv), adjt, nq, ST.down(nv), SV.len(ST.down(nv)), 1n+nq, ST.KD{ST.nones(nq), Nil{}, Nil{}}, MX.down_dist(nv), L.subl_refl(ST.down(nv)), MX.adjb_tr(nv, 0n, good, adj, nq, hbg), KA.natle_refl(1n+nq), MX.kinit(adjt, nq, ST.down(nv), ST.down(nv))), hvr, hdr, hmr, hcr)
+
+# what lib/structpf.bend's variable-side facts ask, read off vsf (the
+# adjacency plays no part in them)
+def vside_kd(kd: ST.KD, +full: $QL, +nv: Nat, +vmr: $VM, $GP, +kn: Nat, +hdr: {SV.distinct(ST.somes(vmr)) == True{} : Bool}, +hcr: {SV.len(ST.somes(vmr)) == kn : Nat}, +hgd: {SV.distinct(good) == True{} : Bool},
+  +hv: {vsf(full, nv, vmr, good, kn, ST.KD.vm(kd), ST.KD.red(kd)) == True{} : Bool}) -> {STP.vsides(ST.len.q(full), nv, good, kd) == True{} : Bool}:
+  match kd:
+    case ST.KD{+vm, +fs, dd}:
+      +hk = L.eq_ok(SV.len(ST.somes(vm)), kn, vsf_scnt(full, nv, vmr, good, kn, vm, fs, hv))
+      +hc = Equal.trans(Nat, Nat.add(SV.len(ST.somes(vm)), SV.len(fs)), Nat.add(kn, SV.len(fs)), nv, Equal.cong(Nat, Nat, z => Nat.add(z, SV.len(fs)), SV.len(ST.somes(vm)), kn, hk), L.eq_ok(Nat.add(kn, SV.len(fs)), nv, vsf_cnt(full, nv, vmr, good, kn, vm, fs, hv)))
+      +hfd = vsf_fdist(full, nv, vmr, good, kn, vm, fs, hv)
+      +hvd = vsf_vdist(full, nv, vmr, good, kn, vm, fs, hv)
+      +hff = vsf_ffree(full, nv, vmr, good, kn, vm, fs, hv)
+      +hmus = vsf_mus(full, nv, vmr, good, kn, vm, fs, hv)
+      +hgk = KA.natle_antisym(SV.len(good), kn, (%hcr : {KA.natle(SV.len(good), _) == True{} : Bool}
+          L.pig(good, ST.somes(vmr), hgd, hs2)),
+        (%hcr : {KA.natle(_, SV.len(good)) == True{} : Bool}
+          L.pig(ST.somes(vmr), good, hdr, hs1)))
+      STP.vside_mk(ST.len.q(full), nv, good, vm, fs, MX.keys_tr(vm, 0n, nv, 0n, good, PA.dadjs(full), vsf_valid(full, nv, vmr, good, kn, vm, fs, hv)), hvd, hfd, hff,
+        STP.pigc(ST.app(fs, ST.somes(vm)), ST.down(nv), MX.dist_app(fs, ST.somes(vm), hfd, hvd, hff), TJ.subl_app(fs, ST.somes(vm), ST.down(nv), vsf_fus(full, nv, vmr, good, kn, vm, fs, hv), hmus), STP.all_len(fs, ST.somes(vm), nv, hc)),
+        hmus, vsf_fbelow(full, nv, vmr, good, kn, vm, fs, hv), hgd, hgb, D.eq_of(SV.len(good), SV.len(ST.somes(vm)), Equal.trans(Nat, SV.len(good), kn, SV.len(ST.somes(vm)), hgk, Equal.sym(Nat, SV.len(ST.somes(vm)), kn, hk))), D.eq_of(Nat.add(SV.len(ST.somes(vm)), SV.len(fs)), nv, hc))
 
 # The free variables
 # ------------------
@@ -491,16 +514,21 @@ def depall_v(+es: $QL, +vm: $VM, ps: $NL, +nv: Nat, +good: $NL, +hv: {MX.valid($
 @MACRO DF SV.dropped(PA.classes(sk))
 @MACRO FS PA.final_st(sk)
 @MACRO VMR PA.PS.vm(PA.final_st(sk))
-@MACRO BP PP.ps.bp(PA.final_st(sk))
+@MACRO BP PA.PS.bp(PA.final_st(sk))
 @MACRO GD PA.solved_pos(sk)
 @MACRO KV PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.solved_pos(sk))
 @MACRO VV ST.KD.vm($KV)
 @MACRO PN PA.pins(sk)
 @MACRO KN SV.len(ST.somes($VMR))
 @MACRO PA0 sk, $RF, $DF, SV.ncons(sk), PP.ps.rows($FS), PP.ps.B($FS), PP.ps.bp($FS), PP.ps.vm($FS)
-@MACRO VSA $ES, $NV, $VMR, $KN, $VV, $PN
+@MACRO VSA $ES, $NV, $VMR, $GD, $KN, $VV, $PN
 
 def vm_eq(st: PA.PS) -> {PA.PS.vm(st) == PP.ps.vm(st) : $VM}:
+  match st:
+    case PA.PS{kb, rows, B, bp, vm}:
+      {==}
+
+def bp_eq(st: PA.PS) -> {PA.PS.bp(st) == PP.ps.bp(st) : $NL}:
   match st:
     case PA.PS{kb, rows, B, bp, vm}:
       {==}
@@ -512,18 +540,17 @@ def perfect_of(+sk: SK.Sketch, +hvalid: {MX.valid($AD, $VMR) == True{} : Bool}, 
   +hs1: {L.subl(ST.somes($VMR), $BP) == True{} : Bool}, +hs2: {L.subl($BP, ST.somes($VMR)) == True{} : Bool}, +hbpd: {SV.distinct($BP) == True{} : Bool}, +hbpb: {SV.below($BP, SV.neqs($ES)) == True{} : Bool},
   +hB: {PP.ps.B($FS) == SV.presolved(sk, $RF, $DF, SV.ncons(sk)) : $QL}, +hp: {PP.ps.B($FS) == SV.picked($ES, $BP) : $QL})
   -> SK.Both({SV.distinct($PN) == True{} : Bool}, {SV.below($PN, $NV) == True{} : Bool}) & (&m: $NL -> SV.Perfect(SV.solved(sk, $RF, $DF), SV.free($NV, 0n, $PN), m)):
-  +vs = pins_kvd($ES, $NV, $VMR, $KN, hvalid, hdist, hml, {==})
+  +vs = pins_kvd($ES, $NV, $VMR, $GD, hs1, hs2, (%Equal.sym(Nat, ST.len.q($ES), SV.neqs($ES), lenq_neqs($ES)) : {SV.below($BP, _) == True{} : Bool}
+    hbpb), $KN, hvalid, hdist, hml, {==})
   +hcnt = L.eq_ok(Nat.add($KN, SV.len($PN)), $NV, vsf_cnt($VSA, vs))
   +hfk = cancel_r(SV.len(SV.free($NV, 0n, $PN)), SV.len($PN), $KN, $NV, free_len($NV, $PN, vsf_fdist($VSA, vs), vsf_fbelow($VSA, vs)), hcnt)
   +hbk = KA.natle_antisym(SV.len($BP), $KN, L.pig($BP, ST.somes($VMR), hbpd, hs2), L.pig(ST.somes($VMR), $BP, hdist, hs1))
   +nq = ST.len.q($ES)
   +hkg = MX.keys_tr($VV, 0n, $NV, 0n, $GD, $AD, vsf_valid($VSA, vs))
-  +hgd = inter_dist(ST.iota(nq, 0n), ST.somes($VMR), iota_dist(nq, 0n))
   +hkl = keys_kn($VV, $KN, vsf_scnt($VSA, vs))
   +hgk = GM.pigc(MX.keys($VV, 0n), $GD, MX.keys_dist($VV, 0n), hkg, (%Equal.sym(Nat, SV.len(MX.keys($VV, 0n)), $KN, hkl) : {KA.natle(SV.len($GD), _) == True{} : Bool}
-    L.pig($GD, ST.somes($VMR), hgd, MX.inter_sub(ST.iota(nq, 0n), ST.somes($VMR)))))
-  +hbg = bp_good($BP, nq, $VMR, hs2, (%Equal.sym(Nat, nq, SV.neqs($ES), lenq_neqs($ES)) : {SV.below($BP, _) == True{} : Bool}
-    hbpb))
+    L.pig($GD, ST.somes($VMR), hbpd, hs2)))
+  +hbg = L.subl_refl($BP)
   +hall = keys_allm($VV, $BP, L.subl_trans($BP, $GD, MX.keys($VV, 0n), hbg, hgk))
   +m = ST.look($VV, $BP)
   +hmus = vsf_mus($VSA, vs)
@@ -536,23 +563,74 @@ def perfect_of(+sk: SK.Sketch, +hvalid: {MX.valid($AD, $VMR) == True{} : Bool}, 
           Equal.trans($QL, PP.ps.B($FS), SV.presolved(sk, $RF, $DF, SV.ncons(sk)), SV.solved(sk, $RF, $DF), hB, Equal.sym($QL, SV.solved(sk, $RF, $DF), SV.presolved(sk, $RF, $DF, SV.ncons(sk)), SP.solved_end(sk, $RF, $DF)))) : SV.DepAll(_, m)
         depall_v($ES, $VV, $BP, $NV, $GD, vsf_valid($VSA, vs), hall, hmus)))))
 
+# the pass's final state, from the dependence adjacency's bound
+def final_inv.a(+sk: SK.Sketch, +hA: {D.adjb($AD, $NV) == True{} : Bool}) -> PP.PInv(sk, $RF, $DF, SV.ncons(sk), $FS):
+  (%Equal.sym(Nat, SV.ncons(sk), Nat.add(SV.clen(PA.recs(sk)), 0n), Equal.trans(Nat, SV.ncons(sk), SV.clen(PA.recs(sk)), Nat.add(SV.clen(PA.recs(sk)), 0n), PP.ncons_recs(sk), LN.add_zero(SV.clen(PA.recs(sk))))) : PP.PInv(sk, $RF, $DF, _, $FS)
+    PP.pass_inv(PA.recs(sk), sk, 0n, PA.start($NV), {==}, {==}, hA, PP.classes_down(sk), PP.pinv0(sk)))
+
+@MACRO HBP +sk: SK.Sketch, +hb: {PP.pib($PA0) == True{} : Bool}
+
+def f_valid($HBP) -> {MX.valid($AD, $VMR) == True{} : Bool}:
+  (%Equal.sym($VM, PA.PS.vm($FS), PP.ps.vm($FS), vm_eq($FS)) : {MX.valid($AD, _) == True{} : Bool}
+    PP.pib_valid($PA0, hb))
+
+def f_dist($HBP) -> {SV.distinct(ST.somes($VMR)) == True{} : Bool}:
+  (%Equal.sym($VM, PA.PS.vm($FS), PP.ps.vm($FS), vm_eq($FS)) : {SV.distinct(ST.somes(_)) == True{} : Bool}
+    PP.pib_dist($PA0, hb))
+
+def f_mlen($HBP) -> {L.mlen($VMR) == $NV : Nat}:
+  L.eq_ok(L.mlen($VMR), $NV, (%Equal.sym($VM, PA.PS.vm($FS), PP.ps.vm($FS), vm_eq($FS)) : {SV.eq(L.mlen(_), $NV) == True{} : Bool}
+    PP.pib_mlen($PA0, hb)))
+
+def f_s1($HBP) -> {L.subl(ST.somes($VMR), $BP) == True{} : Bool}:
+  (%Equal.sym($VM, PA.PS.vm($FS), PP.ps.vm($FS), vm_eq($FS)) : {L.subl(ST.somes(_), $BP) == True{} : Bool}
+    (%Equal.sym($NL, PA.PS.bp($FS), PP.ps.bp($FS), bp_eq($FS)) : {L.subl(ST.somes(PP.ps.vm($FS)), _) == True{} : Bool}
+      PP.pib_s1($PA0, hb)))
+
+def f_s2($HBP) -> {L.subl($BP, ST.somes($VMR)) == True{} : Bool}:
+  (%Equal.sym($VM, PA.PS.vm($FS), PP.ps.vm($FS), vm_eq($FS)) : {L.subl($BP, ST.somes(_)) == True{} : Bool}
+    (%Equal.sym($NL, PA.PS.bp($FS), PP.ps.bp($FS), bp_eq($FS)) : {L.subl(_, ST.somes(PP.ps.vm($FS))) == True{} : Bool}
+      PP.pib_s2($PA0, hb)))
+
+def f_bpd($HBP) -> {SV.distinct($BP) == True{} : Bool}:
+  (%Equal.sym($NL, PA.PS.bp($FS), PP.ps.bp($FS), bp_eq($FS)) : {SV.distinct(_) == True{} : Bool}
+    PP.pib_bpd($PA0, hb))
+
+def f_bpb($HBP) -> {SV.below($BP, SV.neqs($ES)) == True{} : Bool}:
+  (%Equal.sym($NL, PA.PS.bp($FS), PP.ps.bp($FS), bp_eq($FS)) : {SV.below(_, SV.neqs($ES)) == True{} : Bool}
+    PP.pib_bpb($PA0, hb))
+
+@MACRO FACTS f_valid(sk, hb), f_dist(sk, hb), f_mlen(sk, hb), f_s1(sk, hb), f_s2(sk, hb), f_bpd(sk, hb), f_bpb(sk, hb)
+
+@MACRO HYPS +hvalid: {MX.valid($AD, $VMR) == True{} : Bool}, +hdist: {SV.distinct(ST.somes($VMR)) == True{} : Bool}, +hml: {L.mlen($VMR) == $NV : Nat}, +hs1: {L.subl(ST.somes($VMR), $BP) == True{} : Bool}, +hs2: {L.subl($BP, ST.somes($VMR)) == True{} : Bool}, +hbpd: {SV.distinct($BP) == True{} : Bool}, +hbpb: {SV.below($BP, SV.neqs($ES)) == True{} : Bool}
+
+# the variable side over the system solved ends as lib/structpf.bend's
+# blocks want it
+def f_gb(+sk: SK.Sketch, +hbpb: {SV.below($BP, SV.neqs($ES)) == True{} : Bool}) -> {SV.below($BP, ST.len.q($ES)) == True{} : Bool}:
+  (%Equal.sym(Nat, ST.len.q($ES), SV.neqs($ES), lenq_neqs($ES)) : {SV.below($BP, _) == True{} : Bool}
+    hbpb)
+
+def vend_of(+sk: SK.Sketch, $HYPS) -> {STP.vsides(ST.len.q($ES), $NV, $GD, $KV) == True{} : Bool}:
+  +hgb = f_gb(sk, hbpb)
+  vside_kd($KV, $ES, $NV, $VMR, $GD, hs1, hs2, hgb, $KN, hdist, {==}, hbpd, pins_kvd($ES, $NV, $VMR, $GD, hs1, hs2, hgb, $KN, hvalid, hdist, hml, {==}))
+
+def vend_pass(+sk: SK.Sketch, +hA: {D.adjb($AD, $NV) == True{} : Bool}) -> {STP.vsides(ST.len.q($ES), $NV, $GD, $KV) == True{} : Bool}:
+  +hi = final_inv.a(sk, hA)
+  +hb = PP.pinv_b(sk, $RF, $DF, SV.ncons(sk), $FS, hi)
+  vend_of(sk, $FACTS)
+
 # law 9's new part, for the pass: the pins are distinct variables, and the
 # system solved has a perfect matching onto the free variables, by
 # dependence
+def total_pass.a(+sk: SK.Sketch, +hA: {D.adjb($AD, $NV) == True{} : Bool})
+  -> SK.Both({SV.distinct($PN) == True{} : Bool}, {SV.below($PN, $NV) == True{} : Bool}) & (&m: $NL -> SV.Perfect(SV.solved(sk, $RF, $DF), SV.free($NV, 0n, $PN), m)):
+  +hi = final_inv.a(sk, hA)
+  +hb = PP.pinv_b(sk, $RF, $DF, SV.ncons(sk), $FS, hi)
+  perfect_of(sk, $FACTS,
+    PP.pinv_B(sk, $RF, $DF, SV.ncons(sk), $FS, hi),
+    (%Equal.sym($NL, PA.PS.bp($FS), PP.ps.bp($FS), bp_eq($FS)) : {PP.ps.B($FS) == SV.picked($ES, _) : $QL}
+      PP.pinv_p(sk, $RF, $DF, SV.ncons(sk), $FS, hi)))
+
 def total_pass(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool})
   -> SK.Both({SV.distinct($PN) == True{} : Bool}, {SV.below($PN, $NV) == True{} : Bool}) & (&m: $NL -> SV.Perfect(SV.solved(sk, $RF, $DF), SV.free($NV, 0n, $PN), m)):
-  +hi = PP.final_inv(sk, w, cov)
-  +hb = PP.pinv_b(sk, $RF, $DF, SV.ncons(sk), $FS, hi)
-  perfect_of(sk,
-    (%Equal.sym($VM, PA.PS.vm($FS), PP.ps.vm($FS), vm_eq($FS)) : {MX.valid($AD, _) == True{} : Bool}
-      PP.pib_valid($PA0, hb)),
-    (%Equal.sym($VM, PA.PS.vm($FS), PP.ps.vm($FS), vm_eq($FS)) : {SV.distinct(ST.somes(_)) == True{} : Bool}
-      PP.pib_dist($PA0, hb)),
-    L.eq_ok(L.mlen($VMR), $NV, (%Equal.sym($VM, PA.PS.vm($FS), PP.ps.vm($FS), vm_eq($FS)) : {SV.eq(L.mlen(_), $NV) == True{} : Bool}
-      PP.pib_mlen($PA0, hb))),
-    (%Equal.sym($VM, PA.PS.vm($FS), PP.ps.vm($FS), vm_eq($FS)) : {L.subl(ST.somes(_), $BP) == True{} : Bool}
-      PP.pib_s1($PA0, hb)),
-    (%Equal.sym($VM, PA.PS.vm($FS), PP.ps.vm($FS), vm_eq($FS)) : {L.subl($BP, ST.somes(_)) == True{} : Bool}
-      PP.pib_s2($PA0, hb)),
-    PP.pib_bpd($PA0, hb), PP.pib_bpb($PA0, hb),
-    PP.pinv_B(sk, $RF, $DF, SV.ncons(sk), $FS, hi), PP.pinv_p(sk, $RF, $DF, SV.ncons(sk), $FS, hi))
+  total_pass.a(sk, PP.adjb_of(sk, w, cov))

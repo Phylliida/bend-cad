@@ -276,8 +276,21 @@ def PS.vm(st: PS) -> List<&2, Maybe<&2, Nat>>:
 def kvs(+adj: List<&2, List<&2, Nat>>, +nq: Nat, +nv: Nat, +good: List<&2, Nat>) -> ST.KD:
   ST.kuhnd(ST.down(nv), ST.transpose(nv, 0n, good, adj), 1n+nq, ST.KD{ST.nones(nq), Nil{}, Nil{}})
 
+def PS.bp(st: PS) -> List<&2, Nat>:
+  match st:
+    case PS{kb, rows, B, bp, vm}:
+      bp
+
+# the positions of the system solved, in order
 def solved_pos(+sk: SK.Sketch) -> List<&2, Nat>:
-  ST.inter(ST.iota(ST.len.q(SK.Sketch.eqs(sk)), 0n), ST.somes(PS.vm(final_st(sk))))
+  PS.bp(final_st(sk))
 
 def pins(+sk: SK.Sketch) -> List<&2, Nat>:
   ST.KD.red(kvs(dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), nvars(sk), solved_pos(sk)))
+
+# The structure the plan follows: the system solved (its positions, in
+# the sketch's numbering), matched and pinned by dependence (pins), and cut
+# into blocks by what its equations mention (lib/struct.bend: the plan
+# checker reads that), renumbered to positions in the system solved
+def skel(+sk: SK.Sketch) -> ST.Skel:
+  ST.renum(ST.skel.kd(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), nvars(sk), solved_pos(sk), kvs(dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), nvars(sk), solved_pos(sk))), solved_pos(sk))

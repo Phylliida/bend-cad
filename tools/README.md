@@ -35,6 +35,7 @@ the checker verifies the output.
 | `lib/vrdpf.bend` | `python3 tools/expand.py tools/drafts/vrdpf.draft lib/vrdpf.bend` |
 | `lib/vsdpf.bend` | `python3 tools/expand.py tools/drafts/vsdpf.draft lib/vsdpf.bend` |
 | `lib/ckpf.bend` | `python3 tools/expand.py tools/drafts/ckpf.draft lib/ckpf.bend` |
+| `lib/skdpf.bend` | `python3 tools/expand.py tools/drafts/skdpf.draft lib/skdpf.bend` |
 
 `@MACRO NAME text` (a line) makes every `$NAME` below stand for `text`
 (textual, longest names first, macros may use macros): long hypothesis lists

@@ -1,0 +1,129 @@
+# bend-cad: the structure the plan follows over the system solved
+# (lib/pass.bend: skel; PLAN-sk13a S5). Proofs only.
+#
+# The pass's positions good (its bp) and their matching by dependence
+# give the variable side's end (lib/perfpf.bend: vend_pass), and
+# lib/structpf.bend's blocks are built from it with the syntactic
+# adjacency, as the plan checker reads equations: vside does not mention
+# the adjacency, so skel_kd, reg_kd and inv_blocks apply as they did to
+# the red stage's matching. And the system solved is the full system at
+# good (kept_good_d), so reading it through positions in good is reading
+# the full system (kept_reorder_d); the plan's pins are the pass's pins
+# (pins_skel); a regular point of the system solved in the free
+# variables has every block's Jacobian invertible (block_invs_d).
+#
+# Generated from tools/drafts/skdpf.draft by tools/expand.py; edit the
+# draft.
+
+import Base
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ../spec/mat.bend as M
+import ../spec/sketch.bend as SK
+import ../spec/solve.bend as SV
+import ../spec/deriv.bend as DV
+import ./listpf.bend as L
+import ./struct.bend as ST
+import ./plan.bend as PL
+import ./dfspf.bend as D
+import ./maxpf.bend as MX
+import ./gmpf.bend as GM
+import ./pass.bend as PA
+import ./solvedpf.bend as SP
+import ./passpf.bend as PP
+import ./perfpf.bend as PF
+import ./structpf.bend as STP
+import ./keptpf.bend as KP
+import ./gjpf.bend as GJ
+import ./permpf.bend as PM
+import ./binvpf.bend as BI
+import ./solve.bend as SO
+
+@MACRO QL List<&2, E.QExpr>
+@MACRO NL List<&2, Nat>
+@MACRO FULL SK.Sketch.eqs(sk)
+@MACRO NQ ST.len.q(SK.Sketch.eqs(sk))
+@MACRO NV PA.nvars(sk)
+@MACRO GOOD PA.solved_pos(sk)
+@MACRO AD PA.dadjs(SK.Sketch.eqs(sk))
+@MACRO ADJ ST.adj(SK.Sketch.eqs(sk))
+@MACRO KVD PA.kvs($AD, $NQ, $NV, $GOOD)
+@MACRO VM ST.KD.vm($KVD)
+@MACRO FS ST.KD.red($KVD)
+@MACRO KB STP.kblocks($ADJ, $NQ, $NV, $GOOD, $VM, $FS)
+@MACRO RF SV.reds(PA.classes(sk))
+@MACRO DF SV.dropped(PA.classes(sk))
+@MACRO SOLVED SV.solved(sk, $RF, $DF)
+@MACRO FST PA.final_st(sk)
+@MACRO HA +ha: {D.adjb($ADJ, $NV) == True{} : Bool}
+
+def hA_of(+sk: SK.Sketch, $HA) -> {D.adjb($AD, $NV) == True{} : Bool}:
+  GM.adjb_dadjs($FULL, $NV, ha)
+
+# the blocks over the dependence matching are lib/structpf.bend's
+def struct_d(+sk: SK.Sketch, $HA) -> {STP.skok($FULL, $NV, $GOOD, $VM, $FS, $KB) == True{} : Bool}:
+  STP.skel_kd($KVD, $FULL, $NQ, $NV, $GOOD, PF.vend_pass(sk, hA_of(sk, ha)), ha)
+
+# The system solved, by position
+# ------------------------------
+
+def eqat_get(es: $QL, j: Nat) -> {SV.eqat(es, j) == PL.eqget(es, j) : E.QExpr}:
+  match es j:
+    case Nil{} j:
+      {==}
+    case Con{e, t} 0n:
+      {==}
+    case Con{e, t} 1n+k:
+      eqat_get(t, k)
+
+def picked_pickk(+es: $QL, xs: $NL) -> {SV.picked(es, xs) == KP.pickk(es, 0n, xs) : $QL}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+j, +t}:
+      %Equal.sym(E.QExpr, SV.eqat(es, j), PL.eqget(es, j), eqat_get(es, j)) : {Con{_, SV.picked(es, t)} == KP.pickk(es, 0n, Con{j, t}) : $QL}
+      %Equal.sym($QL, SV.picked(es, t), KP.pickk(es, 0n, t), picked_pickk(es, t)) : {Con{PL.eqget(es, j), _} == KP.pickk(es, 0n, Con{j, t}) : $QL}
+      {==}
+
+# the system solved is the full system at the pass's positions
+def kept_good_d(+sk: SK.Sketch, $HA) -> {$SOLVED == KP.pickk($FULL, 0n, $GOOD) : $QL}:
+  +hi = PF.final_inv.a(sk, hA_of(sk, ha))
+  Equal.trans($QL, $SOLVED, SV.presolved(sk, $RF, $DF, SV.ncons(sk)), KP.pickk($FULL, 0n, $GOOD), SP.solved_end(sk, $RF, $DF),
+    Equal.trans($QL, SV.presolved(sk, $RF, $DF, SV.ncons(sk)), PP.ps.B($FST), KP.pickk($FULL, 0n, $GOOD), Equal.sym($QL, PP.ps.B($FST), SV.presolved(sk, $RF, $DF, SV.ncons(sk)), PP.pinv_B(sk, $RF, $DF, SV.ncons(sk), $FST, hi)),
+      Equal.trans($QL, PP.ps.B($FST), SV.picked($FULL, PP.ps.bp($FST)), KP.pickk($FULL, 0n, $GOOD), PP.pinv_p(sk, $RF, $DF, SV.ncons(sk), $FST, hi),
+        (%PF.bp_eq($FST) : {SV.picked($FULL, _) == KP.pickk($FULL, 0n, $GOOD) : $QL}
+          picked_pickk($FULL, $GOOD)))))
+
+def kept_len_d(+sk: SK.Sketch, $HA) -> {SV.neqs($SOLVED) == SV.len($GOOD) : Nat}:
+  %Equal.sym($QL, $SOLVED, KP.pickk($FULL, 0n, $GOOD), kept_good_d(sk, ha)) : {SV.neqs(_) == SV.len($GOOD) : Nat}
+  KP.pk_len($FULL, 0n, $GOOD)
+
+# reading the system solved through positions in good is reading the full
+# system
+def kept_reorder_d(+sk: SK.Sketch, $HA, +vp: $NL, ys: $NL, hs: {L.subl(ys, $GOOD) == True{} : Bool}) -> {PL.reorder(vp, $SOLVED, ST.positions(ys, $GOOD)) == PL.reorder(vp, $FULL, ys) : $QL}:
+  %Equal.sym($QL, $SOLVED, KP.pickk($FULL, 0n, $GOOD), kept_good_d(sk, ha)) : {PL.reorder(vp, _, ST.positions(ys, $GOOD)) == PL.reorder(vp, $FULL, ys) : $QL}
+  KP.re_pick(ys, vp, $FULL, $GOOD, hs)
+
+# The pins
+# --------
+
+# the plan's pins are the pass's
+def pins_skel(+sk: SK.Sketch) -> {SO.skel.pins(PA.skel(sk)) == PA.pins(sk) : $NL}:
+  MX.ntake_app($FS, ST.allvars(ST.blocks.of($ADJ, $VM, $FS, ST.comps($ADJ, ST.invert($VM, 0n, ST.nones($NV)), $GOOD, $NQ))))
+
+# The blocks' Jacobians
+# ---------------------
+
+# a regular point of the system solved, in the free variables the pass
+# leaves: the Jacobian in block order is invertible
+def regular_blocks_d(~F: O.OField, +sk: SK.Sketch, $HA, +x: M.Vec(~F), hr: DV.Regular(~F, x, $SOLVED, SV.free($NV, 0n, PA.pins(sk))))
+  -> GJ.InvN(~F, DV.jac(~F, x, KP.pickk($FULL, 0n, ST.alleqs($KB)), ST.allvars($KB)), SV.len(ST.allvars($KB))):
+  PM.reg_kd(~F, $KVD, $FULL, $NQ, $NV, $GOOD, x, PF.vend_pass(sk, hA_of(sk, ha)), struct_d(sk, ha),
+    (%kept_good_d(sk, ha) : DV.Regular(~F, x, _, SV.free($NV, 0n, $FS))
+      hr))
+
+# and every block's Jacobian is invertible
+def block_invs_d(~F: O.OField, +sk: SK.Sketch, $HA, +x: M.Vec(~F), hr: DV.Regular(~F, x, $SOLVED, SV.free($NV, 0n, PA.pins(sk)))) -> BI.BInv(~F, x, $FULL, $KB):
+  +sf = STP.skok_sf($FULL, $NV, $GOOD, $VM, $FS, $KB, struct_d(sk, ha))
+  BI.inv_blocks(~F, x, $FULL, $KB, $FS, $VM, STP.sfacts_ch($ADJ, $NV, $GOOD, $VM, $FS, $KB, sf), STP.sfacts_vpd($ADJ, $NV, $GOOD, $VM, $FS, $KB, sf), STP.sfacts_lk($ADJ, $NV, $GOOD, $VM, $FS, $KB, sf),
+    regular_blocks_d(~F, sk, ha, x, hr))
