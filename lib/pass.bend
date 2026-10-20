@@ -17,10 +17,9 @@
 #   side's negation refuted with them).
 # A driven constraint is kept with nothing dropped.
 #
-# The state: the red constraints and the dropped equations so far (by
-# position), the basis's echelon rows, the basis (the solved equations
-# before c, in sketch order) and its positions, and the matching (each
-# variable's equation).
+# The state: the kept constraints so far, the basis's echelon rows, the
+# basis (the solved equations before c, in sketch order) and its
+# positions, and the matching (each variable's equation).
 #
 # Untrusted in the sense of the rest of lib/: its properties are proven
 # (lib/passpf.bend), nothing about it is assumed.
@@ -148,20 +147,28 @@ def srefs.c(m: Maybe<&2, RF.Cert>, r: Maybe<&2, List<&2, SV.Ref>>) -> Maybe<&2, 
     case Some{RF.Cert{ls, ms, k}} Some{rs}:
       Some{Con{SV.Ref{ls, ms, k}, rs}}
 
+# the premises kb before c (with the entities' sides) and the negation of
+# c's i-th side condition (the spec's neg_pre, kb being kept_before)
+def neg_kb(+sk: SK.Sketch, +kb: List<&2, Nat>, +c: Nat, +i: Nat) -> List<&2, SK.Side>:
+  SK.cats(SK.cats(SV.csides(sk, kb), SV.esides(sk)), [SV.negate(SV.side_at(SV.csides(sk, [c]), i))])
+
 # each of c's side conditions ss (from the i-th) refuted with the premises
-# before c, or None if one is not
-def srefs(ss: List<&2, SK.Side>, +sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +i: Nat) -> Maybe<&2, List<&2, SV.Ref>>:
+# kb before c, or None if one is not
+def srefs(ss: List<&2, SK.Side>, +sk: SK.Sketch, +kb: List<&2, Nat>, +c: Nat, +i: Nat) -> Maybe<&2, List<&2, SV.Ref>>:
   match ss:
     case Nil{}:
       Some{Nil{}}
     case Con{s, t}:
-      srefs.c(RF.refute(SV.pre_eqs(sk, red, c), SV.neg_pre(sk, red, c, i)), srefs(t, sk, red, c, 1n+i))
+      srefs.c(RF.refute(SV.eqs_of(sk, kb), neg_kb(sk, kb, c, i)), srefs(t, sk, kb, c, 1n+i))
 
 # One constraint
 # --------------
+# The state: kb, the kept (not red) driving constraints so far; rows, the
+# basis B's echelon rows; B, the solved equations so far, in sketch order,
+# and bp their positions; vm, the matching (each variable's equation).
 
 type PS is Data:
-  PS{red: List<&2, Nat>, ds: List<&2, Nat>, rows: List<&2, EL.Row>, B: List<&2, E.QExpr>, bp: List<&2, Nat>, vm: List<&2, Maybe<&2, Nat>>}
+  PS{kb: List<&2, Nat>, rows: List<&2, EL.Row>, B: List<&2, E.QExpr>, bp: List<&2, Nat>, vm: List<&2, Maybe<&2, Nat>>}
 
 type PO is Data:
   PO{k: SV.Class, st: PS}
@@ -183,41 +190,40 @@ def one.a(m: Maybe<&2, List<&2, SV.Ref>>, +dd: List<&2, SV.Drop>) -> SV.Class:
     case Some{rs}:
       SV.Amber{dd, rs}
 
-def one.k(a: Bool, +sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +dd: List<&2, SV.Drop>) -> SV.Class:
+def one.k(a: Bool, +sk: SK.Sketch, +kb: List<&2, Nat>, +c: Nat, +dd: List<&2, SV.Drop>) -> SV.Class:
   match a:
     case True{}:
-      one.a(srefs(SV.csides(sk, [c]), sk, red, c, 0n), dd)
+      one.a(srefs(SV.csides(sk, [c]), sk, kb, c, 0n), dd)
     case False{}:
       SV.Kept{dd}
 
-def one.g(g: ST.GS, +sk: SK.Sketch, +c: Nat, +red: List<&2, Nat>, +ds: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, w: CW) -> PO:
+def one.g(g: ST.GS, +sk: SK.Sketch, +c: Nat, +kb: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, w: CW) -> PO:
   match g w:
     case ST.GFail{ST.Red{j, s, x}} w:
-      PO{SV.Over{j, s, x}, PS{Con{c, red}, ds, rows, B, bp, vm}}
+      PO{SV.Over{j, s, x}, PS{kb, rows, B, bp, vm}}
     case ST.GOk{vm2} CW{rows2, B2, bp2, +dd, us}:
-      PO{one.k(SV.is_amberable(sk, c, SV.drops(dd)), sk, red, c, dd), PS{red, SV.cat(SV.drops(dd), ds), rows2, B2, bp2, vm2}}
+      PO{one.k(SV.is_amberable(sk, c, SV.drops(dd)), sk, kb, c, dd), PS{CO.lsnoc(kb, c), rows2, B2, bp2, vm2}}
 
 def cw.us(w: CW) -> List<&2, Nat>:
   match w:
     case CW{rows, B, bp, ds, us}:
       us
 
-def one.w(+w: CW, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +c: Nat, +red: List<&2, Nat>, +ds: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>) -> PO:
-  one.g(grpl(cw.us(w), adj, f, ST.GOk{vm}), sk, c, red, ds, rows, B, bp, vm, w)
+def one.w(+w: CW, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +c: Nat, +kb: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>) -> PO:
+  one.g(grpl(cw.us(w), adj, f, ST.GOk{vm}), sk, c, kb, rows, B, bp, vm, w)
 
-def one.c(b: Bool, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +c: Nat, +kb: List<&2, Nat>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>) -> PO:
+def one.c(b: Bool, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +c: Nat, +kb: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>) -> PO:
   match b:
     case True{}:
-      PO{SV.Conflict{CO.support(sk, c, kb)}, PS{Con{c, red}, ds, rows, B, bp, vm}}
+      PO{SV.Conflict{CO.support(sk, c, kb)}, PS{kb, rows, B, bp, vm}}
     case False{}:
-      one.w(cwalk(es, own, c, 0n, CW{rows, B, bp, Nil{}, Nil{}}), sk, adj, f, c, red, ds, rows, B, bp, vm)
+      one.w(cwalk(es, own, c, 0n, CW{rows, B, bp, Nil{}, Nil{}}), sk, adj, f, c, kb, rows, B, bp, vm)
 
 # the driving constraint at position c
 def one(+es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +c: Nat, st: PS) -> PO:
   match st:
-    case PS{+red, +ds, +rows, +B, +bp, +vm}:
-      +kb = SV.kept_before(sk, red, c)
-      one.c(CO.refutable(sk, c, kb), es, own, sk, adj, f, c, kb, red, ds, rows, B, bp, vm)
+    case PS{+kb, +rows, +B, +bp, +vm}:
+      one.c(CO.refutable(sk, c, kb), es, own, sk, adj, f, c, kb, rows, B, bp, vm)
 
 # The pass
 # --------
@@ -234,7 +240,7 @@ def pass(rs: List<&2, SK.Rec>, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk:
       Con{PO.k(o), pass(t, es, own, sk, adj, f, 1n+i, PO.st(o))}
 
 def start(+nv: Nat) -> PS:
-  PS{Nil{}, Nil{}, Nil{}, Nil{}, Nil{}, ST.nones(nv)}
+  PS{Nil{}, Nil{}, Nil{}, Nil{}, ST.nones(nv)}
 
 # every constraint's class
 def classes(+sk: SK.Sketch) -> List<&2, SV.Class>:
