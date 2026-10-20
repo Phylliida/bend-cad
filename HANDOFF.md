@@ -1,4 +1,4 @@
-# HANDOFF — bend-cad (2026-10-19, sk-09 verified solver built; sk-13a S0–S3 done; next: check in with Danielle, then PLAN-sk13a.md S4)
+# HANDOFF — bend-cad (2026-10-20, sk-09 verified solver built; sk-13a S0–S3 done, S4 in progress: pass_honest proven; next: law 9's Perfect, PLAN-sk13a.md S4)
 
 Read first: `DESIGN.md` (v0.9: the plan, Danielle's decisions, §3 spec
 numbers, §4–§5 typed IR, forms and meanings as built), `proto/RESULTS.md`
@@ -222,8 +222,15 @@ being a Motzkin refutation and none meaning none exists (`refute_ok`,
 (`lib/conflict.bend`) gives a `ConflictOk` support (`lib/conflictpf.bend`).
 Gated via `tests/refute_laws.bend`. See PLAN S3 as built; the pass's
 instantiation (candidates `kept_before`, `NoRefute`/`Implied` on the
-spec's lists) is S4's. **Next: check in with Danielle (the plan's
-check-in after S3), then PLAN-sk13a.md S4** (the single pass).
+spec's lists) is S4's. Danielle approved S3 and S4 (2026-10-20).
+**S4 in progress (2026-10-20):** the single pass is `lib/pass.bend`
+(`classes`), proven honest (`pass_honest`, lib/passpf.bend, gated via
+`tests/pass_laws.bend`; the pieces in kbpf, prepf, ownpf, solvedpf,
+cwpf, gmpf, clslpf; see PLAN S4 as built). The solver switches to it with
+S5/S7 (switching now would break the gated `complete_now`), told to
+Danielle. **Next: law 9's Perfect** (expose the pass's final state,
+choose the pins by a dependence copy of lib/maxpf's variable side, its
+matching Perfect).
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);
