@@ -20,6 +20,7 @@ import ./fring.bend as FR
 import ./ford.bend as FO
 import ./qemb.bend as QE
 import ./karith.bend as KA
+import ./zring.bend as R
 import ./elim.bend as EL
 import ./simplex.bend as SX
 
@@ -570,3 +571,222 @@ def iu_pivot.at(~F: O.OField, +len: Nat, +t: SX.Tab, +i: Nat, +e: Nat, +k: Nat, 
 # IU survives a pivot
 def iu_pivot(~F: O.OField, +len: Nat, +t: SX.Tab, +i: Nat, +e: Nat, hu: IU(~F, len, t), +hp: {SX.iszero(SX.at(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), e)) == False{} : Bool}, +hi: {SX.ltn(i, len) == True{} : Bool}, +he: {SX.ltn(e, blen(SX.Tab.bas(t))) == True{} : Bool}) -> IU(~F, len, SX.pivot(len, t, i, e)):
   k => hk => hkl => w => iu_pivot.at(~F, len, t, i, e, k, hk, hkl, w, hu, hp, hi, he)
+
+# IZ: every row is 0 at each basic column (integers)
+# --------------------------------------------------
+
+def at_zeros(n: Nat, j: Nat) -> {S.Z0{} == SX.at(EL.zeros(n), j) : S.Z}:
+  match n j:
+    case 0n j:
+      {==}
+    case 1n+k 0n:
+      {==}
+    case 1n+k 1n+h:
+      at_zeros(k, h)
+
+def at_unit_ne(len: Nat, i: Nat, j: Nat, h: {SX.eqn(j, i) == False{} : Bool}) -> {S.Z0{} == SX.at(SX.unit(len, i), j) : S.Z}:
+  match len i j:
+    case 0n i j:
+      {==}
+    case 1n+l 0n 0n:
+      absurd({S.Z0{} == SX.at(SX.unit(1n+l, 0n), 0n) : S.Z}, KA.tf(h))
+    case 1n+l 0n 1n+k:
+      at_zeros(l, k)
+    case 1n+l 1n+g 0n:
+      {==}
+    case 1n+l 1n+g 1n+k:
+      at_unit_ne(l, g, k, h)
+
+def at_vadd(u: List<&2, S.Z>, w: List<&2, S.Z>, j: Nat) -> {S.Z.add(SX.at(u, j), SX.at(w, j)) == SX.at(EL.vadd(u, w), j) : S.Z}:
+  match u w j:
+    case Nil{} Nil{} j:
+      {==}
+    case Nil{} Con{y, s} j:
+      {==}
+    case Con{+x, +t} Nil{} j:
+      R.ring_eq([SX.at(Con{x, t}, j)], E.ZAdd{E.ZVar{0n}, E.ZCst{S.Z0{}}}, E.ZVar{0n}, {==})
+    case Con{x, t} Con{y, s} 0n:
+      {==}
+    case Con{x, t} Con{y, s} 1n+k:
+      at_vadd(t, s, k)
+
+def at_vscale(+k: S.Z, u: List<&2, S.Z>, j: Nat) -> {S.Z.mul(k, SX.at(u, j)) == SX.at(EL.vscale(k, u), j) : S.Z}:
+  match u j:
+    case Nil{} j:
+      R.ring_eq([k], E.ZMul{E.ZVar{0n}, E.ZCst{S.Z0{}}}, E.ZCst{S.Z0{}}, {==})
+    case Con{x, t} 0n:
+      {==}
+    case Con{x, t} 1n+h:
+      at_vscale(k, t, h)
+
+# every row is 0 at column j
+def zcol(rs: List<&2, SX.Rw>, +j: Nat) -> Bool:
+  match rs:
+    case Nil{}:
+      True{}
+    case Con{r, t}:
+      KA.band(SX.iszero(SX.at(SX.Rw.m(r), j)), zcol(t, j))
+
+def zcol_at(rs: List<&2, SX.Rw>, +j: Nat, k: Nat, h: {zcol(rs, j) == True{} : Bool}) -> {SX.iszero(SX.at(SX.Rw.m(SX.rowat(rs, k)), j)) == True{} : Bool}:
+  match rs k:
+    case Nil{} k:
+      {==}
+    case Con{+r, +t} 0n:
+      KA.band_l(SX.iszero(SX.at(SX.Rw.m(r), j)), zcol(t, j), h)
+    case Con{+r, +t} 1n+g:
+      zcol_at(t, j, g, KA.band_r(SX.iszero(SX.at(SX.Rw.m(r), j)), zcol(t, j), h))
+
+def IZ(+t: SX.Tab) -> Type:
+  @j: Nat -> {bat(SX.Tab.bas(t), j) == True{} : Bool} -> {zcol(SX.Tab.rows(t), j) == True{} : Bool}
+
+def iszero_of(+c: S.Z, e: {S.Z0{} == c : S.Z}) -> {SX.iszero(c) == True{} : Bool}:
+  %e : {SX.iszero(_) == True{} : Bool}
+  {==}
+
+# entry j of a combined row
+def comb_at(+mi: List<&2, S.Z>, +di: S.Pos, +i: Nat, +p: S.Z, +len: Nat, +c: S.Z, +m: List<&2, S.Z>, +j: Nat) -> {S.Z.add(S.Z.add(S.Z.mul(S.Zpos{EL.babs(p)}, SX.at(m, j)), S.Z.mul(S.Z.neg(EL.bsgn(p, c)), SX.at(mi, j))), S.Z.mul(S.Z.mul(EL.bsgn(p, c), S.Zpos{di}), SX.at(SX.unit(len, i), j))) == SX.at(EL.vadd(EL.vadd(EL.vscale(S.Zpos{EL.babs(p)}, m), EL.vscale(S.Z.neg(EL.bsgn(p, c)), mi)), EL.vscale(S.Z.mul(EL.bsgn(p, c), S.Zpos{di}), SX.unit(len, i))), j) : S.Z}:
+  %at_vadd(EL.vadd(EL.vscale(S.Zpos{EL.babs(p)}, m), EL.vscale(S.Z.neg(EL.bsgn(p, c)), mi)), EL.vscale(S.Z.mul(EL.bsgn(p, c), S.Zpos{di}), SX.unit(len, i)), j) : {S.Z.add(S.Z.add(S.Z.mul(S.Zpos{EL.babs(p)}, SX.at(m, j)), S.Z.mul(S.Z.neg(EL.bsgn(p, c)), SX.at(mi, j))), S.Z.mul(S.Z.mul(EL.bsgn(p, c), S.Zpos{di}), SX.at(SX.unit(len, i), j))) == _ : S.Z}
+  %at_vadd(EL.vscale(S.Zpos{EL.babs(p)}, m), EL.vscale(S.Z.neg(EL.bsgn(p, c)), mi), j) : {S.Z.add(S.Z.add(S.Z.mul(S.Zpos{EL.babs(p)}, SX.at(m, j)), S.Z.mul(S.Z.neg(EL.bsgn(p, c)), SX.at(mi, j))), S.Z.mul(S.Z.mul(EL.bsgn(p, c), S.Zpos{di}), SX.at(SX.unit(len, i), j))) == S.Z.add(_, SX.at(EL.vscale(S.Z.mul(EL.bsgn(p, c), S.Zpos{di}), SX.unit(len, i)), j)) : S.Z}
+  %at_vscale(S.Zpos{EL.babs(p)}, m, j) : {S.Z.add(S.Z.add(S.Z.mul(S.Zpos{EL.babs(p)}, SX.at(m, j)), S.Z.mul(S.Z.neg(EL.bsgn(p, c)), SX.at(mi, j))), S.Z.mul(S.Z.mul(EL.bsgn(p, c), S.Zpos{di}), SX.at(SX.unit(len, i), j))) == S.Z.add(S.Z.add(_, SX.at(EL.vscale(S.Z.neg(EL.bsgn(p, c)), mi), j)), SX.at(EL.vscale(S.Z.mul(EL.bsgn(p, c), S.Zpos{di}), SX.unit(len, i)), j)) : S.Z}
+  %at_vscale(S.Z.neg(EL.bsgn(p, c)), mi, j) : {S.Z.add(S.Z.add(S.Z.mul(S.Zpos{EL.babs(p)}, SX.at(m, j)), S.Z.mul(S.Z.neg(EL.bsgn(p, c)), SX.at(mi, j))), S.Z.mul(S.Z.mul(EL.bsgn(p, c), S.Zpos{di}), SX.at(SX.unit(len, i), j))) == S.Z.add(S.Z.add(S.Z.mul(S.Zpos{EL.babs(p)}, SX.at(m, j)), _), SX.at(EL.vscale(S.Z.mul(EL.bsgn(p, c), S.Zpos{di}), SX.unit(len, i)), j)) : S.Z}
+  %at_vscale(S.Z.mul(EL.bsgn(p, c), S.Zpos{di}), SX.unit(len, i), j) : {S.Z.add(S.Z.add(S.Z.mul(S.Zpos{EL.babs(p)}, SX.at(m, j)), S.Z.mul(S.Z.neg(EL.bsgn(p, c)), SX.at(mi, j))), S.Z.mul(S.Z.mul(EL.bsgn(p, c), S.Zpos{di}), SX.at(SX.unit(len, i), j))) == S.Z.add(S.Z.add(S.Z.mul(S.Zpos{EL.babs(p)}, SX.at(m, j)), S.Z.mul(S.Z.neg(EL.bsgn(p, c)), SX.at(mi, j))), _) : S.Z}
+  {==}
+
+# |p| c - sgn(p) c p = 0
+def zsum0(p: S.Z, +c: S.Z, +di: S.Pos, hp: {SX.iszero(p) == False{} : Bool}) -> {S.Z0{} == S.Z.add(S.Z.add(S.Z.mul(S.Zpos{EL.babs(p)}, c), S.Z.mul(S.Z.neg(EL.bsgn(p, c)), p)), S.Z.mul(S.Z.mul(EL.bsgn(p, c), S.Zpos{di}), S.Z0{})) : S.Z}:
+  match p:
+    case S.Z0{}:
+      absurd({S.Z0{} == S.Z.add(S.Z.add(S.Z.mul(S.Zpos{EL.babs(S.Z0{})}, c), S.Z.mul(S.Z.neg(EL.bsgn(S.Z0{}, c)), S.Z0{})), S.Z.mul(S.Z.mul(EL.bsgn(S.Z0{}, c), S.Zpos{di}), S.Z0{})) : S.Z}, KA.tf(hp))
+    case S.Zpos{+q}:
+      R.ring_eq([S.Zpos{q}, c, S.Zpos{di}], E.ZCst{S.Z0{}}, E.ZAdd{E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZMul{E.ZNeg{E.ZVar{1n}}, E.ZVar{0n}}}, E.ZMul{E.ZMul{E.ZVar{1n}, E.ZVar{2n}}, E.ZCst{S.Z0{}}}}, {==})
+    case S.Zneg{+q}:
+      R.ring_eq([S.Zpos{q}, c, S.Zpos{di}], E.ZCst{S.Z0{}}, E.ZAdd{E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZMul{E.ZNeg{E.ZNeg{E.ZVar{1n}}}, E.ZNeg{E.ZVar{0n}}}}, E.ZMul{E.ZMul{E.ZNeg{E.ZVar{1n}}, E.ZVar{2n}}, E.ZCst{S.Z0{}}}}, {==})
+
+# a combined row is 0 at the entering column
+def rowz_e3(+mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +len: Nat, r: SX.Rw, hpe: {SX.at(mi, e) == p : S.Z}, hp: {SX.iszero(p) == False{} : Bool}, hei: {SX.eqn(e, i) == False{} : Bool}) -> {SX.iszero(SX.at(SX.Rw.m(SX.phi.go(False{}, mi, di, i, p, len, SX.at(SX.Rw.m(r), e), r)), e)) == True{} : Bool}:
+  match r:
+    case SX.Rw{+d, +m}:
+      iszero_of(SX.at(EL.vadd(EL.vadd(EL.vscale(S.Zpos{EL.babs(p)}, m), EL.vscale(S.Z.neg(EL.bsgn(p, SX.at(m, e))), mi)), EL.vscale(S.Z.mul(EL.bsgn(p, SX.at(m, e)), S.Zpos{di}), SX.unit(len, i))), e),
+        Equal.trans(S.Z, S.Z0{}, S.Z.add(S.Z.add(S.Z.mul(S.Zpos{EL.babs(p)}, SX.at(m, e)), S.Z.mul(S.Z.neg(EL.bsgn(p, SX.at(m, e))), SX.at(mi, e))), S.Z.mul(S.Z.mul(EL.bsgn(p, SX.at(m, e)), S.Zpos{di}), SX.at(SX.unit(len, i), e))), SX.at(EL.vadd(EL.vadd(EL.vscale(S.Zpos{EL.babs(p)}, m), EL.vscale(S.Z.neg(EL.bsgn(p, SX.at(m, e))), mi)), EL.vscale(S.Z.mul(EL.bsgn(p, SX.at(m, e)), S.Zpos{di}), SX.unit(len, i))), e),
+          (%Equal.sym(S.Z, SX.at(mi, e), p, hpe) : {S.Z0{} == S.Z.add(S.Z.add(S.Z.mul(S.Zpos{EL.babs(p)}, SX.at(m, e)), S.Z.mul(S.Z.neg(EL.bsgn(p, SX.at(m, e))), _)), S.Z.mul(S.Z.mul(EL.bsgn(p, SX.at(m, e)), S.Zpos{di}), SX.at(SX.unit(len, i), e))) : S.Z}
+           %at_unit_ne(len, i, e, hei) : {S.Z0{} == S.Z.add(S.Z.add(S.Z.mul(S.Zpos{EL.babs(p)}, SX.at(m, e)), S.Z.mul(S.Z.neg(EL.bsgn(p, SX.at(m, e))), p)), S.Z.mul(S.Z.mul(EL.bsgn(p, SX.at(m, e)), S.Zpos{di}), _)) : S.Z}
+           zsum0(p, SX.at(m, e), di, hp)),
+          comb_at(mi, di, i, p, len, SX.at(m, e), m, e)))
+
+def rowz_e(b: Bool, +mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +len: Nat, +r: SX.Rw, hb: {b == SX.iszero(SX.at(SX.Rw.m(r), e)) : Bool}, hpe: {SX.at(mi, e) == p : S.Z}, hp: {SX.iszero(p) == False{} : Bool}, hei: {SX.eqn(e, i) == False{} : Bool}) -> {SX.iszero(SX.at(SX.Rw.m(SX.phi.go(b, mi, di, i, p, len, SX.at(SX.Rw.m(r), e), r)), e)) == True{} : Bool}:
+  match b:
+    case True{}:
+      Equal.sym(Bool, True{}, SX.iszero(SX.at(SX.Rw.m(r), e)), hb)
+    case False{}:
+      rowz_e3(mi, di, e, i, p, len, r, hpe, hp, hei)
+
+# after the pivot every row is 0 at the entering column
+def zcol_e(+mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +len: Nat, rs: List<&2, SX.Rw>, md: Maybe<&2, Nat>, +hpe: {SX.at(mi, e) == p : S.Z}, +hp: {SX.iszero(p) == False{} : Bool}, +hei: {SX.eqn(e, i) == False{} : Bool}) -> {zcol(SX.phis(mi, di, e, i, p, len, rs, md), e) == True{} : Bool}:
+  match rs md:
+    case Nil{} md:
+      {==}
+    case Con{+r, +t} None{}:
+      KA.band_i(SX.iszero(SX.at(SX.Rw.m(SX.phi.go(SX.iszero(SX.at(SX.Rw.m(r), e)), mi, di, i, p, len, SX.at(SX.Rw.m(r), e), r)), e)), zcol(SX.phis(mi, di, e, i, p, len, t, None{}), e),
+        rowz_e(SX.iszero(SX.at(SX.Rw.m(r), e)), mi, di, e, i, p, len, r, {==}, hpe, hp, hei), zcol_e(mi, di, e, i, p, len, t, None{}, hpe, hp, hei))
+    case Con{+r, +t} Some{0n}:
+      KA.band_i(SX.iszero(SX.at(SX.unit(len, i), e)), zcol(SX.phis(mi, di, e, i, p, len, t, None{}), e),
+        iszero_of(SX.at(SX.unit(len, i), e), at_unit_ne(len, i, e, hei)), zcol_e(mi, di, e, i, p, len, t, None{}, hpe, hp, hei))
+    case Con{+r, +t} Some{1n++d}:
+      KA.band_i(SX.iszero(SX.at(SX.Rw.m(SX.phi.go(SX.iszero(SX.at(SX.Rw.m(r), e)), mi, di, i, p, len, SX.at(SX.Rw.m(r), e), r)), e)), zcol(SX.phis(mi, di, e, i, p, len, t, Some{d}), e),
+        rowz_e(SX.iszero(SX.at(SX.Rw.m(r), e)), mi, di, e, i, p, len, r, {==}, hpe, hp, hei), zcol_e(mi, di, e, i, p, len, t, Some{d}, hpe, hp, hei))
+
+# a combined row stays 0 at a column j != i where it and the pivot row
+# were 0
+def rowz_ne3(+mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +len: Nat, r: SX.Rw, +j: Nat, hrz: {SX.iszero(SX.at(SX.Rw.m(r), j)) == True{} : Bool}, hzi: {SX.iszero(SX.at(mi, j)) == True{} : Bool}, hji: {SX.eqn(j, i) == False{} : Bool}) -> {SX.iszero(SX.at(SX.Rw.m(SX.phi.go(False{}, mi, di, i, p, len, SX.at(SX.Rw.m(r), e), r)), j)) == True{} : Bool}:
+  match r:
+    case SX.Rw{+d, +m}:
+      iszero_of(SX.at(EL.vadd(EL.vadd(EL.vscale(S.Zpos{EL.babs(p)}, m), EL.vscale(S.Z.neg(EL.bsgn(p, SX.at(m, e))), mi)), EL.vscale(S.Z.mul(EL.bsgn(p, SX.at(m, e)), S.Zpos{di}), SX.unit(len, i))), j),
+        Equal.trans(S.Z, S.Z0{}, S.Z.add(S.Z.add(S.Z.mul(S.Zpos{EL.babs(p)}, SX.at(m, j)), S.Z.mul(S.Z.neg(EL.bsgn(p, SX.at(m, e))), SX.at(mi, j))), S.Z.mul(S.Z.mul(EL.bsgn(p, SX.at(m, e)), S.Zpos{di}), SX.at(SX.unit(len, i), j))), SX.at(EL.vadd(EL.vadd(EL.vscale(S.Zpos{EL.babs(p)}, m), EL.vscale(S.Z.neg(EL.bsgn(p, SX.at(m, e))), mi)), EL.vscale(S.Z.mul(EL.bsgn(p, SX.at(m, e)), S.Zpos{di}), SX.unit(len, i))), j),
+          (%iszero_eq(SX.at(m, j), Equal.sym(Bool, SX.iszero(SX.at(m, j)), True{}, hrz)) : {S.Z0{} == S.Z.add(S.Z.add(S.Z.mul(S.Zpos{EL.babs(p)}, _), S.Z.mul(S.Z.neg(EL.bsgn(p, SX.at(m, e))), SX.at(mi, j))), S.Z.mul(S.Z.mul(EL.bsgn(p, SX.at(m, e)), S.Zpos{di}), SX.at(SX.unit(len, i), j))) : S.Z}
+           %iszero_eq(SX.at(mi, j), Equal.sym(Bool, SX.iszero(SX.at(mi, j)), True{}, hzi)) : {S.Z0{} == S.Z.add(S.Z.add(S.Z.mul(S.Zpos{EL.babs(p)}, S.Z0{}), S.Z.mul(S.Z.neg(EL.bsgn(p, SX.at(m, e))), _)), S.Z.mul(S.Z.mul(EL.bsgn(p, SX.at(m, e)), S.Zpos{di}), SX.at(SX.unit(len, i), j))) : S.Z}
+           %at_unit_ne(len, i, j, hji) : {S.Z0{} == S.Z.add(S.Z.add(S.Z.mul(S.Zpos{EL.babs(p)}, S.Z0{}), S.Z.mul(S.Z.neg(EL.bsgn(p, SX.at(m, e))), S.Z0{})), S.Z.mul(S.Z.mul(EL.bsgn(p, SX.at(m, e)), S.Zpos{di}), _)) : S.Z}
+           R.ring_eq([S.Zpos{EL.babs(p)}, S.Z.neg(EL.bsgn(p, SX.at(m, e))), S.Z.mul(EL.bsgn(p, SX.at(m, e)), S.Zpos{di})], E.ZCst{S.Z0{}}, E.ZAdd{E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZCst{S.Z0{}}}, E.ZMul{E.ZVar{1n}, E.ZCst{S.Z0{}}}}, E.ZMul{E.ZVar{2n}, E.ZCst{S.Z0{}}}}, {==})),
+          comb_at(mi, di, i, p, len, SX.at(m, e), m, j)))
+
+def rowz_ne(b: Bool, +mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +len: Nat, +r: SX.Rw, +j: Nat, hb: {b == SX.iszero(SX.at(SX.Rw.m(r), e)) : Bool}, hrz: {SX.iszero(SX.at(SX.Rw.m(r), j)) == True{} : Bool}, hzi: {SX.iszero(SX.at(mi, j)) == True{} : Bool}, hji: {SX.eqn(j, i) == False{} : Bool}) -> {SX.iszero(SX.at(SX.Rw.m(SX.phi.go(b, mi, di, i, p, len, SX.at(SX.Rw.m(r), e), r)), j)) == True{} : Bool}:
+  match b:
+    case True{}:
+      hrz
+    case False{}:
+      rowz_ne3(mi, di, e, i, p, len, r, j, hrz, hzi, hji)
+
+# after the pivot every row is still 0 at a basic column j != i
+def zcol_ne(+mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +len: Nat, rs: List<&2, SX.Rw>, md: Maybe<&2, Nat>, +j: Nat, +hz: {zcol(rs, j) == True{} : Bool}, +hzi: {SX.iszero(SX.at(mi, j)) == True{} : Bool}, +hji: {SX.eqn(j, i) == False{} : Bool}) -> {zcol(SX.phis(mi, di, e, i, p, len, rs, md), j) == True{} : Bool}:
+  match rs md:
+    case Nil{} md:
+      {==}
+    case Con{+r, +t} None{}:
+      KA.band_i(SX.iszero(SX.at(SX.Rw.m(SX.phi.go(SX.iszero(SX.at(SX.Rw.m(r), e)), mi, di, i, p, len, SX.at(SX.Rw.m(r), e), r)), j)), zcol(SX.phis(mi, di, e, i, p, len, t, None{}), j),
+        rowz_ne(SX.iszero(SX.at(SX.Rw.m(r), e)), mi, di, e, i, p, len, r, j, {==}, KA.band_l(SX.iszero(SX.at(SX.Rw.m(r), j)), zcol(t, j), hz), hzi, hji),
+        zcol_ne(mi, di, e, i, p, len, t, None{}, j, KA.band_r(SX.iszero(SX.at(SX.Rw.m(r), j)), zcol(t, j), hz), hzi, hji))
+    case Con{+r, +t} Some{0n}:
+      KA.band_i(SX.iszero(SX.at(SX.unit(len, i), j)), zcol(SX.phis(mi, di, e, i, p, len, t, None{}), j),
+        iszero_of(SX.at(SX.unit(len, i), j), at_unit_ne(len, i, j, hji)),
+        zcol_ne(mi, di, e, i, p, len, t, None{}, j, KA.band_r(SX.iszero(SX.at(SX.Rw.m(r), j)), zcol(t, j), hz), hzi, hji))
+    case Con{+r, +t} Some{1n++d}:
+      KA.band_i(SX.iszero(SX.at(SX.Rw.m(SX.phi.go(SX.iszero(SX.at(SX.Rw.m(r), e)), mi, di, i, p, len, SX.at(SX.Rw.m(r), e), r)), j)), zcol(SX.phis(mi, di, e, i, p, len, t, Some{d}), j),
+        rowz_ne(SX.iszero(SX.at(SX.Rw.m(r), e)), mi, di, e, i, p, len, r, j, {==}, KA.band_l(SX.iszero(SX.at(SX.Rw.m(r), j)), zcol(t, j), hz), hzi, hji),
+        zcol_ne(mi, di, e, i, p, len, t, Some{d}, j, KA.band_r(SX.iszero(SX.at(SX.Rw.m(r), j)), zcol(t, j), hz), hzi, hji))
+
+def zcol_piv_e.go(ri: SX.Rw, +e: Nat, +i: Nat, +len: Nat, +rows: List<&2, SX.Rw>, +bas: List<&2, Bool>, hp: {SX.iszero(SX.at(SX.Rw.m(ri), e)) == False{} : Bool}, hei: {SX.eqn(e, i) == False{} : Bool}) -> {zcol(SX.Tab.rows(SX.pivot.go(ri, e, i, len, rows, bas)), e) == True{} : Bool}:
+  match ri:
+    case SX.Rw{+di, +mi}:
+      zcol_e(mi, di, e, i, SX.at(mi, e), len, rows, Some{i}, {==}, hp, hei)
+
+def zcol_piv_e(+len: Nat, t: SX.Tab, +i: Nat, +e: Nat, hp: {SX.iszero(SX.at(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), e)) == False{} : Bool}, hei: {SX.eqn(e, i) == False{} : Bool}) -> {zcol(SX.Tab.rows(SX.pivot(len, t, i, e)), e) == True{} : Bool}:
+  match t:
+    case SX.Tab{+rows, +bas}:
+      zcol_piv_e.go(SX.rowat(rows, i), e, i, len, rows, bas, hp, hei)
+
+def zcol_piv_ne.go(ri: SX.Rw, +e: Nat, +i: Nat, +len: Nat, +rows: List<&2, SX.Rw>, +bas: List<&2, Bool>, +j: Nat, h: {SX.rowat(rows, i) == ri : SX.Rw}, +hz: {zcol(rows, j) == True{} : Bool}, hji: {SX.eqn(j, i) == False{} : Bool}) -> {zcol(SX.Tab.rows(SX.pivot.go(ri, e, i, len, rows, bas)), j) == True{} : Bool}:
+  match ri:
+    case SX.Rw{+di, +mi}:
+      zcol_ne(mi, di, e, i, SX.at(mi, e), len, rows, Some{i}, j, hz,
+        (%h : {SX.iszero(SX.at(SX.Rw.m(_), j)) == True{} : Bool}
+         zcol_at(rows, j, i, hz)), hji)
+
+def zcol_piv_ne(+len: Nat, t: SX.Tab, +i: Nat, +e: Nat, +j: Nat, hz: {zcol(SX.Tab.rows(t), j) == True{} : Bool}, hji: {SX.eqn(j, i) == False{} : Bool}) -> {zcol(SX.Tab.rows(SX.pivot(len, t, i, e)), j) == True{} : Bool}:
+  match t:
+    case SX.Tab{+rows, +bas}:
+      zcol_piv_ne.go(SX.rowat(rows, i), e, i, len, rows, bas, j, {==}, hz, hji)
+
+# entry k of bs, k != j, from entry k after setting j
+def bat_unset(bs: List<&2, Bool>, +j: Nat, +b: Bool, +k: Nat, hne: {SX.eqn(k, j) == False{} : Bool}, h: {bat(SX.setb(bs, j, b), k) == True{} : Bool}) -> {bat(bs, k) == True{} : Bool}:
+  %Equal.sym(Bool, bat(bs, k), bat(SX.setb(bs, j, b), k), bat_setb_ne(bs, j, b, k, hne)) : {_ == True{} : Bool}
+  h
+
+def nb_ne_i.c(+bas: List<&2, Bool>, +i: Nat, +j: Nat, hji: {j == i : Nat}, h: {bat(SX.setb(bas, i, False{}), j) == True{} : Bool}, hil: {SX.ltn(i, blen(bas)) == True{} : Bool}) -> {False{} == True{} : Bool}:
+  %bat_setb_eq(bas, i, False{}, hil) : {_ == True{} : Bool}
+  %hji : {bat(SX.setb(bas, i, False{}), _) == True{} : Bool}
+  h
+
+# j is basic in bas with i set nonbasic: j != i
+def nb_ne_i.go(b: Bool, +bas: List<&2, Bool>, +i: Nat, +j: Nat, hb: {b == SX.eqn(j, i) : Bool}, h: {bat(SX.setb(bas, i, False{}), j) == True{} : Bool}, hil: {SX.ltn(i, blen(bas)) == True{} : Bool}) -> {b == False{} : Bool}:
+  match b:
+    case False{}:
+      {==}
+    case True{}:
+      absurd({True{} == False{} : Bool}, KA.ft(nb_ne_i.c(bas, i, j, eqn_eq(j, i, Equal.sym(Bool, True{}, SX.eqn(j, i), hb)), h, hil)))
+
+def iz_pivot.j(b: Bool, +len: Nat, +t: SX.Tab, +i: Nat, +e: Nat, +j: Nat, hb: {b == SX.eqn(j, e) : Bool}, hj: {bat(SX.setb(SX.setb(SX.Tab.bas(t), i, False{}), e, True{}), j) == True{} : Bool}, hz: IZ(t), hp: {SX.iszero(SX.at(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), e)) == False{} : Bool}, hei: {SX.eqn(e, i) == False{} : Bool}, +hil: {SX.ltn(i, blen(SX.Tab.bas(t))) == True{} : Bool}) -> {zcol(SX.Tab.rows(SX.pivot(len, t, i, e)), j) == True{} : Bool}:
+  match b:
+    case True{}:
+      %Equal.sym(Nat, j, e, eqn_eq(j, e, Equal.sym(Bool, True{}, SX.eqn(j, e), hb))) : {zcol(SX.Tab.rows(SX.pivot(len, t, i, e)), _) == True{} : Bool}
+      zcol_piv_e(len, t, i, e, hp, hei)
+    case False{}:
+      +hj2 = bat_unset(SX.setb(SX.Tab.bas(t), i, False{}), e, True{}, j, Equal.sym(Bool, False{}, SX.eqn(j, e), hb), hj)
+      +hji = nb_ne_i.go(SX.eqn(j, i), SX.Tab.bas(t), i, j, {==}, hj2, hil)
+      zcol_piv_ne(len, t, i, e, j, hz(j, bat_unset(SX.Tab.bas(t), i, False{}, j, hji, hj2)), hji)
+
+def iz_pivot.at(+len: Nat, +t: SX.Tab, +i: Nat, +e: Nat, +j: Nat, hj: {bat(SX.Tab.bas(SX.pivot(len, t, i, e)), j) == True{} : Bool}, hz: IZ(t), hp: {SX.iszero(SX.at(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), e)) == False{} : Bool}, hei: {SX.eqn(e, i) == False{} : Bool}, hil: {SX.ltn(i, blen(SX.Tab.bas(t))) == True{} : Bool}) -> {zcol(SX.Tab.rows(SX.pivot(len, t, i, e)), j) == True{} : Bool}:
+  iz_pivot.j(SX.eqn(j, e), len, t, i, e, j, {==}, (%Equal.sym(List<&2, Bool>, SX.setb(SX.setb(SX.Tab.bas(t), i, False{}), e, True{}), SX.Tab.bas(SX.pivot(len, t, i, e)), bas_pivot(len, t, i, e)) : {bat(_, j) == True{} : Bool}
+    hj), hz, hp, hei, hil)
+
+# IZ survives a pivot
+def iz_pivot(+len: Nat, +t: SX.Tab, +i: Nat, +e: Nat, hz: IZ(t), +hp: {SX.iszero(SX.at(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), e)) == False{} : Bool}, +hei: {SX.eqn(e, i) == False{} : Bool}, +hil: {SX.ltn(i, blen(SX.Tab.bas(t))) == True{} : Bool}) -> IZ(SX.pivot(len, t, i, e)):
+  j => hj => iz_pivot.at(len, t, i, e, j, hj, hz, hp, hei, hil)
