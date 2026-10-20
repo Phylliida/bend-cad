@@ -366,3 +366,134 @@ def nv_eq(sk: SK.Sketch) -> {PA.nvars(sk) == SO.nvars(sk) : Nat}:
   match sk:
     case SK.Sketch{+vs, es, cs}:
       vlen_eq(vs)
+
+# The pass's invariant
+# --------------------
+# At position c, the state PS{kb, rows, B, bp, vm} against the final red
+# list R and dropped list D.
+
+def ps.kb(st: PA.PS) -> $NL:
+  match st:
+    case PA.PS{kb, rows, B, bp, vm}:
+      kb
+
+def ps.rows(st: PA.PS) -> List<&2, EL.Row>:
+  match st:
+    case PA.PS{kb, rows, B, bp, vm}:
+      rows
+
+def ps.B(st: PA.PS) -> $QL:
+  match st:
+    case PA.PS{kb, rows, B, bp, vm}:
+      B
+
+def ps.bp(st: PA.PS) -> $NL:
+  match st:
+    case PA.PS{kb, rows, B, bp, vm}:
+      bp
+
+def ps.vm(st: PA.PS) -> List<&2, Maybe<&2, Nat>>:
+  match st:
+    case PA.PS{kb, rows, B, bp, vm}:
+      vm
+
+@CONJ pib
+params: +sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +i: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>
+- rinv: EP.rinv(B, rows, 0n)
+- dist: SV.distinct(ST.somes(vm))
+- mlen: SV.eq(L.mlen(vm), PA.nvars(sk))
+- valid: MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm)
+- s1: L.subl(ST.somes(vm), bp)
+- s2: L.subl(bp, ST.somes(vm))
+- bpd: SV.distinct(bp)
+- bpb: SV.below(bp, SV.neqs(SK.Sketch.eqs(sk)))
+- pre: allpre(bp, SV.owners(sk), R, D, i)
+@END
+
+@MACRO PST ps.rows(st), ps.B(st), ps.bp(st), ps.vm(st)
+
+def PInv(+sk: SK.Sketch, +R: $NL, +D: $NL, +i: Nat, +st: PA.PS) -> Data:
+  SK.Both({pib(sk, R, D, i, $PST) == True{} : Bool}, SK.Both({ps.kb(st) == SV.kept_before(sk, R, i) : $NL}, SK.Both(KB.KBP(sk, R, ps.kb(st), i),
+    SK.Both({EL.rlen(ps.rows(st)) == SV.neqs(ps.B(st)) : Nat}, SK.Both({ps.B(st) == SV.presolved(sk, R, D, i) : $QL}, {ps.B(st) == SV.picked($ES, ps.bp(st)) : $QL})))))
+
+@MACRO RF SV.reds(PA.classes(sk))
+@MACRO DF SV.dropped(PA.classes(sk))
+@MACRO N SV.neqs(SK.Sketch.eqs(sk))
+
+@MACRO PA0 sk, $RF, $DF, i, $PST
+
+# c is red, or driven: nothing changes but the position
+def step_same(+sk: SK.Sketch, +i: Nat, +st: PA.PS, hi: PInv(sk, $RF, $DF, i, st), +hz: {SP.zc($OWN, i, $RF) == True{} : Bool}, +hdc: {KB.dcond(sk, $RF, i) == False{} : Bool})
+  -> PInv(sk, $RF, $DF, 1n+i, st):
+  (+hb, q1) = hi
+  (+hk, q2) = q1
+  (hK, q3) = q2
+  (hl, q4) = q3
+  (hB, hp) = q4
+  (pib_mk(sk, $RF, $DF, 1n+i, $PST, pib_rinv($PA0, hb), pib_dist($PA0, hb), pib_mlen($PA0, hb), pib_valid($PA0, hb), pib_s1($PA0, hb), pib_s2($PA0, hb), pib_bpd($PA0, hb), pib_bpb($PA0, hb),
+      allpre_up(ps.bp(st), $OWN, $RF, $DF, i, pib_pre($PA0, hb))),
+    (Equal.trans($NL, ps.kb(st), SV.kept_before(sk, $RF, i), SV.kept_before(sk, $RF, 1n+i), hk, Equal.sym($NL, SV.kept_before(sk, $RF, 1n+i), SV.kept_before(sk, $RF, i),
+        (%hdc : {SV.kept_before(sk, $RF, 1n+i) == KB.kpk(_, SV.kept_before(sk, $RF, i), i) : $NL}
+          KB.kb_next(sk, $RF, i)))),
+    ((%hdc : KB.KBP(sk, $RF, KB.kpk(_, ps.kb(st), i), 1n+i)
+        KB.kbp_next(sk, $RF, ps.kb(st), i, hK)),
+    (hl,
+    (Equal.trans($QL, ps.B(st), SV.presolved(sk, $RF, $DF, i), SV.presolved(sk, $RF, $DF, 1n+i), hB, Equal.sym($QL, SV.presolved(sk, $RF, $DF, 1n+i), SV.presolved(sk, $RF, $DF, i), SP.presolved_same(sk, $RF, $DF, i, hz))),
+      hp)))))
+
+@MACRO STK PA.PS{kb, rows, B, bp, vm}
+@MACRO CWK PA.CW{rows2, B2, bp2, dd, us}
+@MACRO CB sk, i, $N, rows2, B2, dd, us
+
+def dcond_t(+sk: SK.Sketch, +R: $NL, +i: Nat, +hdrv: {SV.driving(sk, i) == True{} : Bool}, +hred: {SV.mem(i, R) == False{} : Bool}) -> {KB.dcond(sk, R, i) == True{} : Bool}:
+  %Equal.sym(Bool, SV.driving(sk, i), True{}, hdrv) : {SV.band(_, SV.bnot(SV.mem(i, R))) == True{} : Bool}
+  %Equal.sym(Bool, SV.mem(i, R), False{}, hred) : {SV.band(True{}, SV.bnot(_)) == True{} : Bool}
+  {==}
+
+def dcond_f(+sk: SK.Sketch, +R: $NL, +i: Nat, +hred: {SV.mem(i, R) == True{} : Bool}) -> {KB.dcond(sk, R, i) == False{} : Bool}:
+  CL.band_f(SV.driving(sk, i), SV.bnot(SV.mem(i, R)), (%Equal.sym(Bool, SV.mem(i, R), True{}, hred) : {SV.bnot(_) == False{} : Bool}
+    {==}))
+
+# c is kept: its equations not dropped join the basis, its unit the
+# matching, and c the kept constraints
+def step_kept(+sk: SK.Sketch, +i: Nat, +kb: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +vm: List<&2, Maybe<&2, Nat>>, +rows2: List<&2, EL.Row>, +B2: $QL, +bp2: $NL, +dd: List<&2, SV.Drop>, +us: $NL,
+  +vm2: List<&2, Maybe<&2, Nat>>, +K: SV.Class, hi: PInv(sk, $RF, $DF, i, $STK), hcw: CW.CWInv(sk, $RF, $DF, i, bp, $N, $CWK), +hgok: {GM.gok($ES, $NV, SV.cat(bp, us), vm2) == True{} : Bool},
+  +hK: {SV.class_at($CLS, i) == K : SV.Class}, +hkd: {SV.kdrops(K) == SV.drops(dd) : $NL}, +hred: {SV.mem(i, $RF) == False{} : Bool}, +hdrv: {SV.driving(sk, i) == True{} : Bool}, +hD: {CL.downs($OWN, $CLS, 0n) == True{} : Bool})
+  -> PInv(sk, $RF, $DF, 1n+i, PA.PS{CO.lsnoc(kb, i), rows2, B2, bp2, vm2}):
+  (+hb, q1) = hi
+  (+hk, q2) = q1
+  (hKB, q3) = q2
+  (hl, q4) = q3
+  (hB, hp) = q4
+  (+hcb, c1) = hcw
+  (hcl, c2) = c1
+  (hcB, c3) = c2
+  (hcp, hbp2) = c3
+  +d = SV.drops(dd)
+  +hdc = dcond_t(sk, $RF, i, hdrv, hred)
+  +hown = CW.cwb_uown($CB, hcb)
+  +hdis = CW.cwb_udisj($CB, hcb)
+  +hbpd = dist_cat(bp, us, pib_bpd(sk, $RF, $DF, i, rows, B, bp, vm, hb), CW.cwb_udist($CB, hcb), nonein_pre(bp, $OWN, $RF, $DF, i, us, pib_pre(sk, $RF, $DF, i, rows, B, bp, vm, hb), hown))
+  +hbpb = below_cat(bp, us, $N, pib_bpb(sk, $RF, $DF, i, rows, B, bp, vm, hb), CW.cwb_ubelow($CB, hcb))
+  +hpre = allpre_cat(bp, us, $OWN, $RF, $DF, 1n+i, allpre_up(bp, $OWN, $RF, $DF, i, pib_pre(sk, $RF, $DF, i, rows, B, bp, vm, hb)), allpre_us(us, $OWN, $RF, $CLS, i, K, d, hD, hK, hkd, hown, hred, hdis))
+  +E2 = Equal.sym($NL, bp2, SV.cat(bp, us), hbp2)
+  (pib_mk(sk, $RF, $DF, 1n+i, rows2, B2, bp2, vm2, CW.cwb_rinv($CB, hcb), GM.gok_dist($ES, $NV, SV.cat(bp, us), vm2, hgok), GM.gok_mlen($ES, $NV, SV.cat(bp, us), vm2, hgok), GM.gok_valid($ES, $NV, SV.cat(bp, us), vm2, hgok),
+      (%E2 : {L.subl(ST.somes(vm2), _) == True{} : Bool}
+        GM.gok_s1($ES, $NV, SV.cat(bp, us), vm2, hgok)),
+      (%E2 : {L.subl(_, ST.somes(vm2)) == True{} : Bool}
+        GM.gok_s2($ES, $NV, SV.cat(bp, us), vm2, hgok)),
+      (%E2 : {SV.distinct(_) == True{} : Bool}
+        hbpd),
+      (%E2 : {SV.below(_, $N) == True{} : Bool}
+        hbpb),
+      (%E2 : {allpre(_, $OWN, $RF, $DF, 1n+i) == True{} : Bool}
+        hpre)),
+    (Equal.trans($NL, CO.lsnoc(kb, i), CO.lsnoc(SV.kept_before(sk, $RF, i), i), SV.kept_before(sk, $RF, 1n+i), Equal.cong($NL, $NL, z => CO.lsnoc(z, i), kb, SV.kept_before(sk, $RF, i), hk),
+        Equal.sym($NL, SV.kept_before(sk, $RF, 1n+i), CO.lsnoc(SV.kept_before(sk, $RF, i), i), (%hdc : {SV.kept_before(sk, $RF, 1n+i) == KB.kpk(_, SV.kept_before(sk, $RF, i), i) : $NL}
+          KB.kb_next(sk, $RF, i)))),
+    ((%hdc : KB.KBP(sk, $RF, KB.kpk(_, kb, i), 1n+i)
+        KB.kbp_next(sk, $RF, kb, i, hKB)),
+    (hcl,
+    (Equal.trans($QL, B2, SK.cat(SV.presolved(sk, $RF, $DF, i), SV.own_rest(sk, i, d, $N)), SV.presolved(sk, $RF, $DF, 1n+i), hcB,
+        Equal.sym($QL, SV.presolved(sk, $RF, $DF, 1n+i), SK.cat(SV.presolved(sk, $RF, $DF, i), SV.own_rest(sk, i, d, $N)), SP.presolved_kept(sk, $RF, $DF, d, i, hred, agree_of($OWN, $OWN, $CLS, i, K, d, 0n, {==}, hD, hK, hkd)))),
+      hcp)))))

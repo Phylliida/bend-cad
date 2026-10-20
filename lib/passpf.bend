@@ -357,3 +357,146 @@ def nv_eq(sk: SK.Sketch) -> {PA.nvars(sk) == SO.nvars(sk) : Nat}:
   match sk:
     case SK.Sketch{+vs, es, cs}:
       vlen_eq(vs)
+
+# The pass's invariant
+# --------------------
+# At position c, the state PS{kb, rows, B, bp, vm} against the final red
+# list R and dropped list D.
+
+def ps.kb(st: PA.PS) -> List<&2, Nat>:
+  match st:
+    case PA.PS{kb, rows, B, bp, vm}:
+      kb
+
+def ps.rows(st: PA.PS) -> List<&2, EL.Row>:
+  match st:
+    case PA.PS{kb, rows, B, bp, vm}:
+      rows
+
+def ps.B(st: PA.PS) -> List<&2, E.QExpr>:
+  match st:
+    case PA.PS{kb, rows, B, bp, vm}:
+      B
+
+def ps.bp(st: PA.PS) -> List<&2, Nat>:
+  match st:
+    case PA.PS{kb, rows, B, bp, vm}:
+      bp
+
+def ps.vm(st: PA.PS) -> List<&2, Maybe<&2, Nat>>:
+  match st:
+    case PA.PS{kb, rows, B, bp, vm}:
+      vm
+
+def pib(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +i: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>) -> Bool:
+  SV.band(EP.rinv(B, rows, 0n), SV.band(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))))))
+
+def pib_rinv(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +i: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, h: {pib(sk, R, D, i, rows, B, bp, vm) == True{} : Bool}) -> {EP.rinv(B, rows, 0n) == True{} : Bool}:
+  L.band_l(EP.rinv(B, rows, 0n), SV.band(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))))), h)
+
+def pib_dist(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +i: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, h: {pib(sk, R, D, i, rows, B, bp, vm) == True{} : Bool}) -> {SV.distinct(ST.somes(vm)) == True{} : Bool}:
+  L.band_l(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))))))), L.band_r(EP.rinv(B, rows, 0n), SV.band(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))))), h))
+
+def pib_mlen(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +i: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, h: {pib(sk, R, D, i, rows, B, bp, vm) == True{} : Bool}) -> {SV.eq(L.mlen(vm), PA.nvars(sk)) == True{} : Bool}:
+  L.band_l(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))), L.band_r(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))))))), L.band_r(EP.rinv(B, rows, 0n), SV.band(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))))), h)))
+
+def pib_valid(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +i: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, h: {pib(sk, R, D, i, rows, B, bp, vm) == True{} : Bool}) -> {MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm) == True{} : Bool}:
+  L.band_l(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))))), L.band_r(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))), L.band_r(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))))))), L.band_r(EP.rinv(B, rows, 0n), SV.band(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))))), h))))
+
+def pib_s1(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +i: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, h: {pib(sk, R, D, i, rows, B, bp, vm) == True{} : Bool}) -> {L.subl(ST.somes(vm), bp) == True{} : Bool}:
+  L.band_l(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))), L.band_r(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))))), L.band_r(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))), L.band_r(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))))))), L.band_r(EP.rinv(B, rows, 0n), SV.band(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))))), h)))))
+
+def pib_s2(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +i: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, h: {pib(sk, R, D, i, rows, B, bp, vm) == True{} : Bool}) -> {L.subl(bp, ST.somes(vm)) == True{} : Bool}:
+  L.band_l(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))), L.band_r(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))), L.band_r(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))))), L.band_r(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))), L.band_r(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))))))), L.band_r(EP.rinv(B, rows, 0n), SV.band(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))))), h))))))
+
+def pib_bpd(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +i: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, h: {pib(sk, R, D, i, rows, B, bp, vm) == True{} : Bool}) -> {SV.distinct(bp) == True{} : Bool}:
+  L.band_l(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)), L.band_r(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))), L.band_r(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))), L.band_r(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))))), L.band_r(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))), L.band_r(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))))))), L.band_r(EP.rinv(B, rows, 0n), SV.band(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))))), h)))))))
+
+def pib_bpb(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +i: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, h: {pib(sk, R, D, i, rows, B, bp, vm) == True{} : Bool}) -> {SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))) == True{} : Bool}:
+  L.band_l(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i), L.band_r(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)), L.band_r(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))), L.band_r(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))), L.band_r(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))))), L.band_r(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))), L.band_r(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))))))), L.band_r(EP.rinv(B, rows, 0n), SV.band(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))))), h))))))))
+
+def pib_pre(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +i: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, h: {pib(sk, R, D, i, rows, B, bp, vm) == True{} : Bool}) -> {allpre(bp, SV.owners(sk), R, D, i) == True{} : Bool}:
+  L.band_r(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i), L.band_r(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)), L.band_r(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))), L.band_r(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))), L.band_r(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))))), L.band_r(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))), L.band_r(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))))))), L.band_r(EP.rinv(B, rows, 0n), SV.band(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))))), h))))))))
+
+def pib_mk(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +i: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, h_rinv: {EP.rinv(B, rows, 0n) == True{} : Bool}, h_dist: {SV.distinct(ST.somes(vm)) == True{} : Bool}, h_mlen: {SV.eq(L.mlen(vm), PA.nvars(sk)) == True{} : Bool}, h_valid: {MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm) == True{} : Bool}, h_s1: {L.subl(ST.somes(vm), bp) == True{} : Bool}, h_s2: {L.subl(bp, ST.somes(vm)) == True{} : Bool}, h_bpd: {SV.distinct(bp) == True{} : Bool}, h_bpb: {SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))) == True{} : Bool}, h_pre: {allpre(bp, SV.owners(sk), R, D, i) == True{} : Bool}) -> {pib(sk, R, D, i, rows, B, bp, vm) == True{} : Bool}:
+  L.band_i(EP.rinv(B, rows, 0n), SV.band(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))))), h_rinv, L.band_i(SV.distinct(ST.somes(vm)), SV.band(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))))))), h_dist, L.band_i(SV.eq(L.mlen(vm), PA.nvars(sk)), SV.band(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))))), h_mlen, L.band_i(MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), vm), SV.band(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))))), h_valid, L.band_i(L.subl(ST.somes(vm), bp), SV.band(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)))), h_s1, L.band_i(L.subl(bp, ST.somes(vm)), SV.band(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i))), h_s2, L.band_i(SV.distinct(bp), SV.band(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i)), h_bpd, L.band_i(SV.below(bp, SV.neqs(SK.Sketch.eqs(sk))), allpre(bp, SV.owners(sk), R, D, i), h_bpb, h_pre))))))))
+
+
+def PInv(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +i: Nat, +st: PA.PS) -> Data:
+  SK.Both({pib(sk, R, D, i, ps.rows(st), ps.B(st), ps.bp(st), ps.vm(st)) == True{} : Bool}, SK.Both({ps.kb(st) == SV.kept_before(sk, R, i) : List<&2, Nat>}, SK.Both(KB.KBP(sk, R, ps.kb(st), i),
+    SK.Both({EL.rlen(ps.rows(st)) == SV.neqs(ps.B(st)) : Nat}, SK.Both({ps.B(st) == SV.presolved(sk, R, D, i) : List<&2, E.QExpr>}, {ps.B(st) == SV.picked(SK.Sketch.eqs(sk), ps.bp(st)) : List<&2, E.QExpr>})))))
+
+
+
+# c is red, or driven: nothing changes but the position
+def step_same(+sk: SK.Sketch, +i: Nat, +st: PA.PS, hi: PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, st), +hz: {SP.zc(SV.owners(sk), i, SV.reds(PA.classes(sk))) == True{} : Bool}, +hdc: {KB.dcond(sk, SV.reds(PA.classes(sk)), i) == False{} : Bool})
+  -> PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), 1n+i, st):
+  (+hb, q1) = hi
+  (+hk, q2) = q1
+  (hK, q3) = q2
+  (hl, q4) = q3
+  (hB, hp) = q4
+  (pib_mk(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), 1n+i, ps.rows(st), ps.B(st), ps.bp(st), ps.vm(st), pib_rinv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, ps.rows(st), ps.B(st), ps.bp(st), ps.vm(st), hb), pib_dist(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, ps.rows(st), ps.B(st), ps.bp(st), ps.vm(st), hb), pib_mlen(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, ps.rows(st), ps.B(st), ps.bp(st), ps.vm(st), hb), pib_valid(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, ps.rows(st), ps.B(st), ps.bp(st), ps.vm(st), hb), pib_s1(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, ps.rows(st), ps.B(st), ps.bp(st), ps.vm(st), hb), pib_s2(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, ps.rows(st), ps.B(st), ps.bp(st), ps.vm(st), hb), pib_bpd(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, ps.rows(st), ps.B(st), ps.bp(st), ps.vm(st), hb), pib_bpb(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, ps.rows(st), ps.B(st), ps.bp(st), ps.vm(st), hb),
+      allpre_up(ps.bp(st), SV.owners(sk), SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, pib_pre(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, ps.rows(st), ps.B(st), ps.bp(st), ps.vm(st), hb))),
+    (Equal.trans(List<&2, Nat>, ps.kb(st), SV.kept_before(sk, SV.reds(PA.classes(sk)), i), SV.kept_before(sk, SV.reds(PA.classes(sk)), 1n+i), hk, Equal.sym(List<&2, Nat>, SV.kept_before(sk, SV.reds(PA.classes(sk)), 1n+i), SV.kept_before(sk, SV.reds(PA.classes(sk)), i),
+        (%hdc : {SV.kept_before(sk, SV.reds(PA.classes(sk)), 1n+i) == KB.kpk(_, SV.kept_before(sk, SV.reds(PA.classes(sk)), i), i) : List<&2, Nat>}
+          KB.kb_next(sk, SV.reds(PA.classes(sk)), i)))),
+    ((%hdc : KB.KBP(sk, SV.reds(PA.classes(sk)), KB.kpk(_, ps.kb(st), i), 1n+i)
+        KB.kbp_next(sk, SV.reds(PA.classes(sk)), ps.kb(st), i, hK)),
+    (hl,
+    (Equal.trans(List<&2, E.QExpr>, ps.B(st), SV.presolved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i), SV.presolved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), 1n+i), hB, Equal.sym(List<&2, E.QExpr>, SV.presolved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), 1n+i), SV.presolved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i), SP.presolved_same(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, hz))),
+      hp)))))
+
+
+def dcond_t(+sk: SK.Sketch, +R: List<&2, Nat>, +i: Nat, +hdrv: {SV.driving(sk, i) == True{} : Bool}, +hred: {SV.mem(i, R) == False{} : Bool}) -> {KB.dcond(sk, R, i) == True{} : Bool}:
+  %Equal.sym(Bool, SV.driving(sk, i), True{}, hdrv) : {SV.band(_, SV.bnot(SV.mem(i, R))) == True{} : Bool}
+  %Equal.sym(Bool, SV.mem(i, R), False{}, hred) : {SV.band(True{}, SV.bnot(_)) == True{} : Bool}
+  {==}
+
+def dcond_f(+sk: SK.Sketch, +R: List<&2, Nat>, +i: Nat, +hred: {SV.mem(i, R) == True{} : Bool}) -> {KB.dcond(sk, R, i) == False{} : Bool}:
+  CL.band_f(SV.driving(sk, i), SV.bnot(SV.mem(i, R)), (%Equal.sym(Bool, SV.mem(i, R), True{}, hred) : {SV.bnot(_) == False{} : Bool}
+    {==}))
+
+# c is kept: its equations not dropped join the basis, its unit the
+# matching, and c the kept constraints
+def step_kept(+sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +rows2: List<&2, EL.Row>, +B2: List<&2, E.QExpr>, +bp2: List<&2, Nat>, +dd: List<&2, SV.Drop>, +us: List<&2, Nat>,
+  +vm2: List<&2, Maybe<&2, Nat>>, +K: SV.Class, hi: PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}), hcw: CW.CWInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, bp, SV.neqs(SK.Sketch.eqs(sk)), PA.CW{rows2, B2, bp2, dd, us}), +hgok: {GM.gok(SK.Sketch.eqs(sk), PA.nvars(sk), SV.cat(bp, us), vm2) == True{} : Bool},
+  +hK: {SV.class_at(PA.classes(sk), i) == K : SV.Class}, +hkd: {SV.kdrops(K) == SV.drops(dd) : List<&2, Nat>}, +hred: {SV.mem(i, SV.reds(PA.classes(sk))) == False{} : Bool}, +hdrv: {SV.driving(sk, i) == True{} : Bool}, +hD: {CL.downs(SV.owners(sk), PA.classes(sk), 0n) == True{} : Bool})
+  -> PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), 1n+i, PA.PS{CO.lsnoc(kb, i), rows2, B2, bp2, vm2}):
+  (+hb, q1) = hi
+  (+hk, q2) = q1
+  (hKB, q3) = q2
+  (hl, q4) = q3
+  (hB, hp) = q4
+  (+hcb, c1) = hcw
+  (hcl, c2) = c1
+  (hcB, c3) = c2
+  (hcp, hbp2) = c3
+  +d = SV.drops(dd)
+  +hdc = dcond_t(sk, SV.reds(PA.classes(sk)), i, hdrv, hred)
+  +hown = CW.cwb_uown(sk, i, SV.neqs(SK.Sketch.eqs(sk)), rows2, B2, dd, us, hcb)
+  +hdis = CW.cwb_udisj(sk, i, SV.neqs(SK.Sketch.eqs(sk)), rows2, B2, dd, us, hcb)
+  +hbpd = dist_cat(bp, us, pib_bpd(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, rows, B, bp, vm, hb), CW.cwb_udist(sk, i, SV.neqs(SK.Sketch.eqs(sk)), rows2, B2, dd, us, hcb), nonein_pre(bp, SV.owners(sk), SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, us, pib_pre(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, rows, B, bp, vm, hb), hown))
+  +hbpb = below_cat(bp, us, SV.neqs(SK.Sketch.eqs(sk)), pib_bpb(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, rows, B, bp, vm, hb), CW.cwb_ubelow(sk, i, SV.neqs(SK.Sketch.eqs(sk)), rows2, B2, dd, us, hcb))
+  +hpre = allpre_cat(bp, us, SV.owners(sk), SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), 1n+i, allpre_up(bp, SV.owners(sk), SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, pib_pre(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, rows, B, bp, vm, hb)), allpre_us(us, SV.owners(sk), SV.reds(PA.classes(sk)), PA.classes(sk), i, K, d, hD, hK, hkd, hown, hred, hdis))
+  +E2 = Equal.sym(List<&2, Nat>, bp2, SV.cat(bp, us), hbp2)
+  (pib_mk(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), 1n+i, rows2, B2, bp2, vm2, CW.cwb_rinv(sk, i, SV.neqs(SK.Sketch.eqs(sk)), rows2, B2, dd, us, hcb), GM.gok_dist(SK.Sketch.eqs(sk), PA.nvars(sk), SV.cat(bp, us), vm2, hgok), GM.gok_mlen(SK.Sketch.eqs(sk), PA.nvars(sk), SV.cat(bp, us), vm2, hgok), GM.gok_valid(SK.Sketch.eqs(sk), PA.nvars(sk), SV.cat(bp, us), vm2, hgok),
+      (%E2 : {L.subl(ST.somes(vm2), _) == True{} : Bool}
+        GM.gok_s1(SK.Sketch.eqs(sk), PA.nvars(sk), SV.cat(bp, us), vm2, hgok)),
+      (%E2 : {L.subl(_, ST.somes(vm2)) == True{} : Bool}
+        GM.gok_s2(SK.Sketch.eqs(sk), PA.nvars(sk), SV.cat(bp, us), vm2, hgok)),
+      (%E2 : {SV.distinct(_) == True{} : Bool}
+        hbpd),
+      (%E2 : {SV.below(_, SV.neqs(SK.Sketch.eqs(sk))) == True{} : Bool}
+        hbpb),
+      (%E2 : {allpre(_, SV.owners(sk), SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), 1n+i) == True{} : Bool}
+        hpre)),
+    (Equal.trans(List<&2, Nat>, CO.lsnoc(kb, i), CO.lsnoc(SV.kept_before(sk, SV.reds(PA.classes(sk)), i), i), SV.kept_before(sk, SV.reds(PA.classes(sk)), 1n+i), Equal.cong(List<&2, Nat>, List<&2, Nat>, z => CO.lsnoc(z, i), kb, SV.kept_before(sk, SV.reds(PA.classes(sk)), i), hk),
+        Equal.sym(List<&2, Nat>, SV.kept_before(sk, SV.reds(PA.classes(sk)), 1n+i), CO.lsnoc(SV.kept_before(sk, SV.reds(PA.classes(sk)), i), i), (%hdc : {SV.kept_before(sk, SV.reds(PA.classes(sk)), 1n+i) == KB.kpk(_, SV.kept_before(sk, SV.reds(PA.classes(sk)), i), i) : List<&2, Nat>}
+          KB.kb_next(sk, SV.reds(PA.classes(sk)), i)))),
+    ((%hdc : KB.KBP(sk, SV.reds(PA.classes(sk)), KB.kpk(_, kb, i), 1n+i)
+        KB.kbp_next(sk, SV.reds(PA.classes(sk)), kb, i, hKB)),
+    (hcl,
+    (Equal.trans(List<&2, E.QExpr>, B2, SK.cat(SV.presolved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i), SV.own_rest(sk, i, d, SV.neqs(SK.Sketch.eqs(sk)))), SV.presolved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), 1n+i), hcB,
+        Equal.sym(List<&2, E.QExpr>, SV.presolved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), 1n+i), SK.cat(SV.presolved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i), SV.own_rest(sk, i, d, SV.neqs(SK.Sketch.eqs(sk)))), SP.presolved_kept(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), d, i, hred, agree_of(SV.owners(sk), SV.owners(sk), PA.classes(sk), i, K, d, 0n, {==}, hD, hK, hkd)))),
+      hcp)))))
