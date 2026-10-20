@@ -1095,3 +1095,317 @@ def iu_init(~F: O.OField, lp: SX.LP) -> IU(~F, SX.LP.nv(lp), SX.init(lp)):
   match lp:
     case SX.LP{+qs, +n}:
       k => hk => hkl => w => iu_init.at(~F, qs, n, k, hk, hkl, w)
+
+def bat_trues_f(n: Nat, j: Nat, h: {bat(SX.trues(n, False{}), j) == True{} : Bool}) -> Empty:
+  match n j:
+    case 0n j:
+      KA.ft(h)
+    case 1n+k 0n:
+      KA.ft(h)
+    case 1n+k 1n+i:
+      bat_trues_f(k, i, h)
+
+# a basic variable of the start is a slack
+def bat_lt(m: Nat, +n: Nat, j: Nat, h: {bat(SX.bcat(SX.trues(m, True{}), SX.trues(n, False{})), j) == True{} : Bool}) -> {SX.ltn(j, m) == True{} : Bool}:
+  match m j:
+    case 0n j:
+      absurd({SX.ltn(j, 0n) == True{} : Bool}, bat_trues_f(n, j, h))
+    case 1n+k 0n:
+      {==}
+    case 1n+k 1n+i:
+      bat_lt(k, n, i, h)
+
+def at_cat_zeros(m: Nat, +a: List<&2, S.Z>, j: Nat, h: {SX.ltn(j, m) == True{} : Bool}) -> {S.Z0{} == SX.at(SX.cat(EL.zeros(m), a), j) : S.Z}:
+  match m j:
+    case 0n j:
+      absurd({S.Z0{} == SX.at(SX.cat(EL.zeros(0n), a), j) : S.Z}, KA.ft(ltn0(j, h)))
+    case 1n+k 0n:
+      {==}
+    case 1n+k 1n+i:
+      at_cat_zeros(k, a, i, h)
+
+def zcol_srows(qs: List<&2, SX.Ineq>, +m: Nat, +j: Nat, +h: {SX.ltn(j, m) == True{} : Bool}) -> {zcol(SX.srows(qs, m), j) == True{} : Bool}:
+  match qs:
+    case Nil{}:
+      {==}
+    case Con{SX.Ineq{+a, b, s}, +qt}:
+      KA.band_i(SX.iszero(SX.at(SX.cat(EL.zeros(m), a), j)), zcol(SX.srows(qt, m), j), iszero_of(SX.at(SX.cat(EL.zeros(m), a), j), at_cat_zeros(m, a, j, h)), zcol_srows(qt, m, j, h))
+
+def ltn_ne(j: Nat, i: Nat, h: {SX.ltn(j, i) == True{} : Bool}) -> {SX.eqn(j, i) == False{} : Bool}:
+  match j i:
+    case 0n 0n:
+      absurd({SX.eqn(0n, 0n) == False{} : Bool}, KA.ft(h))
+    case 0n 1n+b:
+      {==}
+    case 1n+a 0n:
+      {==}
+    case 1n+a 1n+b:
+      ltn_ne(a, b, h)
+
+def ltn_succ_r(j: Nat, i: Nat, h: {SX.ltn(j, i) == True{} : Bool}) -> {SX.ltn(j, 1n+i) == True{} : Bool}:
+  match j i:
+    case 0n i:
+      {==}
+    case 1n+a 0n:
+      absurd({SX.ltn(1n+a, 1n) == True{} : Bool}, KA.ft(h))
+    case 1n+a 1n+b:
+      ltn_succ_r(a, b, h)
+
+def zcol_yrows(c: Nat, +N: Nat, +i: Nat, +j: Nat, +h: {SX.ltn(j, i) == True{} : Bool}) -> {zcol(SX.yrows(c, N, i), j) == True{} : Bool}:
+  match c:
+    case 0n:
+      {==}
+    case 1n++k:
+      KA.band_i(SX.iszero(SX.at(SX.unit(N, i), j)), zcol(SX.yrows(k, N, 1n+i), j), iszero_of(SX.at(SX.unit(N, i), j), at_unit_ne(N, i, j, ltn_ne(j, i, h))), zcol_yrows(k, N, 1n+i, j, ltn_succ_r(j, i, h)))
+
+def zcol_rcat(u: List<&2, SX.Rw>, +v: List<&2, SX.Rw>, +j: Nat, +hu: {zcol(u, j) == True{} : Bool}, hv: {zcol(v, j) == True{} : Bool}) -> {zcol(SX.rcat(u, v), j) == True{} : Bool}:
+  match u:
+    case Nil{}:
+      hv
+    case Con{+r, +t}:
+      KA.band_i(SX.iszero(SX.at(SX.Rw.m(r), j)), zcol(SX.rcat(t, v), j), KA.band_l(SX.iszero(SX.at(SX.Rw.m(r), j)), zcol(t, j), hu), zcol_rcat(t, v, j, KA.band_r(SX.iszero(SX.at(SX.Rw.m(r), j)), zcol(t, j), hu), hv))
+
+def iz_init.at(+qs: List<&2, SX.Ineq>, +n: Nat, +j: Nat, hj: {bat(SX.Tab.bas(SX.init(SX.LP{qs, n})), j) == True{} : Bool}) -> {zcol(SX.Tab.rows(SX.init(SX.LP{qs, n})), j) == True{} : Bool}:
+  +hl = bat_lt(SX.qlen(qs), n, j, hj)
+  zcol_rcat(SX.srows(qs, SX.qlen(qs)), SX.yrows(n, Nat.add(SX.qlen(qs), n), SX.qlen(qs)), j, zcol_srows(qs, SX.qlen(qs), j, hl), zcol_yrows(n, Nat.add(SX.qlen(qs), n), SX.qlen(qs), j, hl))
+
+# IZ at the start
+def iz_init(lp: SX.LP) -> IZ(SX.init(lp)):
+  match lp:
+    case SX.LP{+qs, +n}:
+      j => hj => iz_init.at(qs, n, j, hj)
+
+# Sizes: N rows, N basis flags, rows of at most N entries
+# -------------------------------------------------------
+
+def nrows_rcat(u: List<&2, SX.Rw>, +v: List<&2, SX.Rw>) -> {Nat.add(nrows(u), nrows(v)) == nrows(SX.rcat(u, v)) : Nat}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{r, +t}:
+      %nrows_rcat(t, v) : {1n+Nat.add(nrows(t), nrows(v)) == 1n+_ : Nat}
+      {==}
+
+def nrows_srows(qs: List<&2, SX.Ineq>, +m: Nat) -> {SX.qlen(qs) == nrows(SX.srows(qs, m)) : Nat}:
+  match qs:
+    case Nil{}:
+      {==}
+    case Con{SX.Ineq{a, b, s}, +t}:
+      %nrows_srows(t, m) : {1n+SX.qlen(t) == 1n+_ : Nat}
+      {==}
+
+def nrows_yrows(c: Nat, +N: Nat, +i: Nat) -> {c == nrows(SX.yrows(c, N, i)) : Nat}:
+  match c:
+    case 0n:
+      {==}
+    case 1n++k:
+      %nrows_yrows(k, N, 1n+i) : {1n+k == 1n+_ : Nat}
+      {==}
+
+def nr_init(lp: SX.LP) -> {nrows(SX.Tab.rows(SX.init(lp))) == SX.LP.nv(lp) : Nat}:
+  match lp:
+    case SX.LP{+qs, +n}:
+      %nrows_rcat(SX.srows(qs, SX.qlen(qs)), SX.yrows(n, Nat.add(SX.qlen(qs), n), SX.qlen(qs))) : {_ == Nat.add(SX.qlen(qs), n) : Nat}
+      %nrows_srows(qs, SX.qlen(qs)) : {Nat.add(_, nrows(SX.yrows(n, Nat.add(SX.qlen(qs), n), SX.qlen(qs)))) == Nat.add(SX.qlen(qs), n) : Nat}
+      %nrows_yrows(n, Nat.add(SX.qlen(qs), n), SX.qlen(qs)) : {Nat.add(SX.qlen(qs), _) == Nat.add(SX.qlen(qs), n) : Nat}
+      {==}
+
+def nrows_phis(+mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +len: Nat, rs: List<&2, SX.Rw>, md: Maybe<&2, Nat>) -> {nrows(rs) == nrows(SX.phis(mi, di, e, i, p, len, rs, md)) : Nat}:
+  match rs md:
+    case Nil{} md:
+      {==}
+    case Con{r, +t} None{}:
+      %nrows_phis(mi, di, e, i, p, len, t, None{}) : {1n+nrows(t) == 1n+_ : Nat}
+      {==}
+    case Con{r, +t} Some{0n}:
+      %nrows_phis(mi, di, e, i, p, len, t, None{}) : {1n+nrows(t) == 1n+_ : Nat}
+      {==}
+    case Con{r, +t} Some{1n++d}:
+      %nrows_phis(mi, di, e, i, p, len, t, Some{d}) : {1n+nrows(t) == 1n+_ : Nat}
+      {==}
+
+def nr_pivot.go(ri: SX.Rw, +e: Nat, +i: Nat, +len: Nat, +rows: List<&2, SX.Rw>, +bas: List<&2, Bool>) -> {nrows(rows) == nrows(SX.Tab.rows(SX.pivot.go(ri, e, i, len, rows, bas))) : Nat}:
+  match ri:
+    case SX.Rw{+di, +mi}:
+      nrows_phis(mi, di, e, i, SX.at(mi, e), len, rows, Some{i})
+
+def nr_pivot(+len: Nat, t: SX.Tab, +i: Nat, +e: Nat) -> {nrows(SX.Tab.rows(t)) == nrows(SX.Tab.rows(SX.pivot(len, t, i, e))) : Nat}:
+  match t:
+    case SX.Tab{+rows, +bas}:
+      nr_pivot.go(SX.rowat(rows, i), e, i, len, rows, bas)
+
+def blen_bcat(u: List<&2, Bool>, +v: List<&2, Bool>) -> {Nat.add(blen(u), blen(v)) == blen(SX.bcat(u, v)) : Nat}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{x, +t}:
+      %blen_bcat(t, v) : {1n+Nat.add(blen(t), blen(v)) == 1n+_ : Nat}
+      {==}
+
+def blen_trues(c: Nat, +b: Bool) -> {c == blen(SX.trues(c, b)) : Nat}:
+  match c:
+    case 0n:
+      {==}
+    case 1n++k:
+      %blen_trues(k, b) : {1n+k == 1n+_ : Nat}
+      {==}
+
+def bl_init(lp: SX.LP) -> {blen(SX.Tab.bas(SX.init(lp))) == SX.LP.nv(lp) : Nat}:
+  match lp:
+    case SX.LP{+qs, +n}:
+      %blen_bcat(SX.trues(SX.qlen(qs), True{}), SX.trues(n, False{})) : {_ == Nat.add(SX.qlen(qs), n) : Nat}
+      %blen_trues(SX.qlen(qs), True{}) : {Nat.add(_, blen(SX.trues(n, False{}))) == Nat.add(SX.qlen(qs), n) : Nat}
+      %blen_trues(n, False{}) : {Nat.add(SX.qlen(qs), _) == Nat.add(SX.qlen(qs), n) : Nat}
+      {==}
+
+def bl_pivot(+len: Nat, +t: SX.Tab, +i: Nat, +e: Nat) -> {blen(SX.Tab.bas(t)) == blen(SX.Tab.bas(SX.pivot(len, t, i, e))) : Nat}:
+  %bas_pivot(len, t, i, e) : {blen(SX.Tab.bas(t)) == blen(_) : Nat}
+  %blen_setb(SX.setb(SX.Tab.bas(t), i, False{}), e, True{}) : {blen(SX.Tab.bas(t)) == _ : Nat}
+  blen_setb(SX.Tab.bas(t), i, False{})
+
+# every row has at most N entries
+def rlok(rs: List<&2, SX.Rw>, +N: Nat) -> Bool:
+  match rs:
+    case Nil{}:
+      True{}
+    case Con{r, t}:
+      KA.band(KA.natle(SX.vlen(SX.Rw.m(r)), N), rlok(t, N))
+
+def rlok_at(rs: List<&2, SX.Rw>, +N: Nat, k: Nat, h: {rlok(rs, N) == True{} : Bool}) -> {KA.natle(SX.vlen(SX.Rw.m(SX.rowat(rs, k))), N) == True{} : Bool}:
+  match rs k:
+    case Nil{} k:
+      {==}
+    case Con{+r, +t} 0n:
+      KA.band_l(KA.natle(SX.vlen(SX.Rw.m(r)), N), rlok(t, N), h)
+    case Con{+r, +t} 1n+j:
+      rlok_at(t, N, j, KA.band_r(KA.natle(SX.vlen(SX.Rw.m(r)), N), rlok(t, N), h))
+
+def vlen_zeros(l: Nat) -> {l == SX.vlen(EL.zeros(l)) : Nat}:
+  match l:
+    case 0n:
+      {==}
+    case 1n++k:
+      %vlen_zeros(k) : {1n+k == 1n+_ : Nat}
+      {==}
+
+def vlen_unit(len: Nat, i: Nat) -> {len == SX.vlen(SX.unit(len, i)) : Nat}:
+  match len i:
+    case 0n i:
+      {==}
+    case 1n++l 0n:
+      %vlen_zeros(l) : {1n+l == 1n+_ : Nat}
+      {==}
+    case 1n++l 1n+h:
+      %vlen_unit(l, h) : {1n+l == 1n+_ : Nat}
+      {==}
+
+def vlen_vscale(+k: S.Z, u: List<&2, S.Z>) -> {SX.vlen(u) == SX.vlen(EL.vscale(k, u)) : Nat}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{x, +t}:
+      %vlen_vscale(k, t) : {1n+SX.vlen(t) == 1n+_ : Nat}
+      {==}
+
+def vlen_cat(u: List<&2, S.Z>, +w: List<&2, S.Z>) -> {Nat.add(SX.vlen(u), SX.vlen(w)) == SX.vlen(SX.cat(u, w)) : Nat}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{x, +t}:
+      %vlen_cat(t, w) : {1n+Nat.add(SX.vlen(t), SX.vlen(w)) == 1n+_ : Nat}
+      {==}
+
+def vlen_vadd_le(u: List<&2, S.Z>, w: List<&2, S.Z>, N: Nat, hu: {KA.natle(SX.vlen(u), N) == True{} : Bool}, hw: {KA.natle(SX.vlen(w), N) == True{} : Bool}) -> {KA.natle(SX.vlen(EL.vadd(u, w)), N) == True{} : Bool}:
+  match u w N:
+    case Nil{} Nil{} N:
+      {==}
+    case Nil{} Con{y, s} N:
+      hw
+    case Con{x, t} Nil{} N:
+      hu
+    case Con{x, t} Con{y, s} 0n:
+      absurd({KA.natle(SX.vlen(EL.vadd(Con{x, t}, Con{y, s})), 0n) == True{} : Bool}, KA.ft(hu))
+    case Con{x, t} Con{y, s} 1n+k:
+      vlen_vadd_le(t, s, k, hu, hw)
+
+def vle_scale(+k: S.Z, +u: List<&2, S.Z>, +N: Nat, h: {KA.natle(SX.vlen(u), N) == True{} : Bool}) -> {KA.natle(SX.vlen(EL.vscale(k, u)), N) == True{} : Bool}:
+  %vlen_vscale(k, u) : {KA.natle(_, N) == True{} : Bool}
+  h
+
+def vle_unit(+len: Nat, +i: Nat) -> {KA.natle(SX.vlen(SX.unit(len, i)), len) == True{} : Bool}:
+  %vlen_unit(len, i) : {KA.natle(_, len) == True{} : Bool}
+  KA.natle_refl(len)
+
+def rowl3(+mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +len: Nat, r: SX.Rw, hr: {KA.natle(SX.vlen(SX.Rw.m(r)), len) == True{} : Bool}, hmi: {KA.natle(SX.vlen(mi), len) == True{} : Bool}) -> {KA.natle(SX.vlen(SX.Rw.m(SX.phi.go(False{}, mi, di, i, p, len, SX.at(SX.Rw.m(r), e), r))), len) == True{} : Bool}:
+  match r:
+    case SX.Rw{d, +m}:
+      vlen_vadd_le(EL.vadd(EL.vscale(S.Zpos{EL.babs(p)}, m), EL.vscale(S.Z.neg(EL.bsgn(p, SX.at(m, e))), mi)), EL.vscale(S.Z.mul(EL.bsgn(p, SX.at(m, e)), S.Zpos{di}), SX.unit(len, i)), len,
+        vlen_vadd_le(EL.vscale(S.Zpos{EL.babs(p)}, m), EL.vscale(S.Z.neg(EL.bsgn(p, SX.at(m, e))), mi), len, vle_scale(S.Zpos{EL.babs(p)}, m, len, hr), vle_scale(S.Z.neg(EL.bsgn(p, SX.at(m, e))), mi, len, hmi)),
+        vle_scale(S.Z.mul(EL.bsgn(p, SX.at(m, e)), S.Zpos{di}), SX.unit(len, i), len, vle_unit(len, i)))
+
+def rowl(b: Bool, +mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +len: Nat, +r: SX.Rw, hr: {KA.natle(SX.vlen(SX.Rw.m(r)), len) == True{} : Bool}, hmi: {KA.natle(SX.vlen(mi), len) == True{} : Bool}) -> {KA.natle(SX.vlen(SX.Rw.m(SX.phi.go(b, mi, di, i, p, len, SX.at(SX.Rw.m(r), e), r))), len) == True{} : Bool}:
+  match b:
+    case True{}:
+      hr
+    case False{}:
+      rowl3(mi, di, e, i, p, len, r, hr, hmi)
+
+def rlok_phis(+mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +len: Nat, rs: List<&2, SX.Rw>, md: Maybe<&2, Nat>, h: {rlok(rs, len) == True{} : Bool}, +hmi: {KA.natle(SX.vlen(mi), len) == True{} : Bool}) -> {rlok(SX.phis(mi, di, e, i, p, len, rs, md), len) == True{} : Bool}:
+  match rs md:
+    case Nil{} md:
+      {==}
+    case Con{+r, +t} None{}:
+      +h2 = h
+      KA.band_i(KA.natle(SX.vlen(SX.Rw.m(SX.phi.go(SX.iszero(SX.at(SX.Rw.m(r), e)), mi, di, i, p, len, SX.at(SX.Rw.m(r), e), r))), len), rlok(SX.phis(mi, di, e, i, p, len, t, None{}), len),
+        rowl(SX.iszero(SX.at(SX.Rw.m(r), e)), mi, di, e, i, p, len, r, KA.band_l(KA.natle(SX.vlen(SX.Rw.m(r)), len), rlok(t, len), h2), hmi),
+        rlok_phis(mi, di, e, i, p, len, t, None{}, KA.band_r(KA.natle(SX.vlen(SX.Rw.m(r)), len), rlok(t, len), h2), hmi))
+    case Con{+r, +t} Some{0n}:
+      KA.band_i(KA.natle(SX.vlen(SX.unit(len, i)), len), rlok(SX.phis(mi, di, e, i, p, len, t, None{}), len), vle_unit(len, i),
+        rlok_phis(mi, di, e, i, p, len, t, None{}, KA.band_r(KA.natle(SX.vlen(SX.Rw.m(r)), len), rlok(t, len), h), hmi))
+    case Con{+r, +t} Some{1n++d}:
+      +h2 = h
+      KA.band_i(KA.natle(SX.vlen(SX.Rw.m(SX.phi.go(SX.iszero(SX.at(SX.Rw.m(r), e)), mi, di, i, p, len, SX.at(SX.Rw.m(r), e), r))), len), rlok(SX.phis(mi, di, e, i, p, len, t, Some{d}), len),
+        rowl(SX.iszero(SX.at(SX.Rw.m(r), e)), mi, di, e, i, p, len, r, KA.band_l(KA.natle(SX.vlen(SX.Rw.m(r)), len), rlok(t, len), h2), hmi),
+        rlok_phis(mi, di, e, i, p, len, t, Some{d}, KA.band_r(KA.natle(SX.vlen(SX.Rw.m(r)), len), rlok(t, len), h2), hmi))
+
+def rl_pivot.go(ri: SX.Rw, +e: Nat, +i: Nat, +len: Nat, +rows: List<&2, SX.Rw>, +bas: List<&2, Bool>, hri: {SX.rowat(rows, i) == ri : SX.Rw}, +h: {rlok(rows, len) == True{} : Bool}) -> {rlok(SX.Tab.rows(SX.pivot.go(ri, e, i, len, rows, bas)), len) == True{} : Bool}:
+  match ri:
+    case SX.Rw{+di, +mi}:
+      rlok_phis(mi, di, e, i, SX.at(mi, e), len, rows, Some{i}, h, (%hri : {KA.natle(SX.vlen(SX.Rw.m(_)), len) == True{} : Bool}
+        rlok_at(rows, len, i, h)))
+
+def rl_pivot(+len: Nat, t: SX.Tab, +i: Nat, +e: Nat, h: {rlok(SX.Tab.rows(t), len) == True{} : Bool}) -> {rlok(SX.Tab.rows(SX.pivot(len, t, i, e)), len) == True{} : Bool}:
+  match t:
+    case SX.Tab{+rows, +bas}:
+      rl_pivot.go(SX.rowat(rows, i), e, i, len, rows, bas, {==}, h)
+
+def rlok_rcat(u: List<&2, SX.Rw>, +v: List<&2, SX.Rw>, +N: Nat, +hu: {rlok(u, N) == True{} : Bool}, hv: {rlok(v, N) == True{} : Bool}) -> {rlok(SX.rcat(u, v), N) == True{} : Bool}:
+  match u:
+    case Nil{}:
+      hv
+    case Con{+r, +t}:
+      KA.band_i(KA.natle(SX.vlen(SX.Rw.m(r)), N), rlok(SX.rcat(t, v), N), KA.band_l(KA.natle(SX.vlen(SX.Rw.m(r)), N), rlok(t, N), hu), rlok_rcat(t, v, N, KA.band_r(KA.natle(SX.vlen(SX.Rw.m(r)), N), rlok(t, N), hu), hv))
+
+def rlok_srows(qs: List<&2, SX.Ineq>, +m: Nat, +n: Nat, h: {lpwf.go(qs, n) == True{} : Bool}) -> {rlok(SX.srows(qs, m), Nat.add(m, n)) == True{} : Bool}:
+  match qs:
+    case Nil{}:
+      {==}
+    case Con{SX.Ineq{+a, b, s}, +qt}:
+      +h2 = h
+      KA.band_i(KA.natle(SX.vlen(SX.cat(EL.zeros(m), a)), Nat.add(m, n)), rlok(SX.srows(qt, m), Nat.add(m, n)),
+        (%vlen_cat(EL.zeros(m), a) : {KA.natle(_, Nat.add(m, n)) == True{} : Bool}
+         %vlen_zeros(m) : {KA.natle(Nat.add(_, SX.vlen(a)), Nat.add(m, n)) == True{} : Bool}
+         KA.natle_add_mono(m, SX.vlen(a), n, KA.band_l(KA.natle(SX.vlen(a), n), lpwf.go(qt, n), h2))),
+        rlok_srows(qt, m, n, KA.band_r(KA.natle(SX.vlen(a), n), lpwf.go(qt, n), h2)))
+
+def rlok_yrows(c: Nat, +N: Nat, +i: Nat) -> {rlok(SX.yrows(c, N, i), N) == True{} : Bool}:
+  match c:
+    case 0n:
+      {==}
+    case 1n++k:
+      KA.band_i(KA.natle(SX.vlen(SX.unit(N, i)), N), rlok(SX.yrows(k, N, 1n+i), N), vle_unit(N, i), rlok_yrows(k, N, 1n+i))
+
+def rl_init(lp: SX.LP, h: {lpwf(lp) == True{} : Bool}) -> {rlok(SX.Tab.rows(SX.init(lp)), SX.LP.nv(lp)) == True{} : Bool}:
+  match lp:
+    case SX.LP{+qs, +n}:
+      rlok_rcat(SX.srows(qs, SX.qlen(qs)), SX.yrows(n, Nat.add(SX.qlen(qs), n), SX.qlen(qs)), Nat.add(SX.qlen(qs), n), rlok_srows(qs, SX.qlen(qs), n, h), rlok_yrows(n, Nat.add(SX.qlen(qs), n), SX.qlen(qs)))
