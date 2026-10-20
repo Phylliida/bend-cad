@@ -395,3 +395,156 @@ def after_I(~F: O.OField, +lp: SX.LP, +q: Nat, +h: {RN.isgo(RN.st(lp, 1n+q)) == 
   %Equal.sym(List<&2, Bool>, B(lp, 1n+q), SX.setb(SX.setb(B(lp, q), I(lp, q), False{}), En(lp, q), True{}), bas_next(lp, q, h)) : {SP.bat(_, I(lp, q)) == False{} : Bool}
   %SP.bat_setb_ne(SX.setb(B(lp, q), I(lp, q), False{}), En(lp, q), True{}, I(lp, q), ie_ne(~F, lp, q, RN.piv_step(lp, q, h), hwf)) : {_ == False{} : Bool}
   SP.bat_setb_eq(B(lp, q), I(lp, q), False{}, RN.hil_at(lp, q, RN.piv_step(lp, q, h)))
+
+# The cycle
+# ---------
+# The setting: steps a .. a + L + 1 all pivot, and the bases at a and at
+# a + L + 1 are equal.
+
+
+def bool_eq(x: Bool, y: Bool, f: {x == True{} : Bool} -> {y == True{} : Bool}, g: {y == True{} : Bool} -> {x == True{} : Bool}) -> {x == y : Bool}:
+  match x y:
+    case True{} True{}:
+      {==}
+    case True{} False{}:
+      absurd({True{} == False{} : Bool}, KA.ft(f({==})))
+    case False{} True{}:
+      absurd({False{} == True{} : Bool}, KA.ft(g({==})))
+    case False{} False{}:
+      {==}
+
+# the statuses at the two ends agree
+def ends(+lp: SX.LP, +L: Nat, +a: Nat, +x: Nat, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}) -> {St(lp, x, a) == St(lp, x, plus(1n+L, a)) : Bool}:
+  Equal.cong(List<&2, Bool>, Bool, bs => SP.bat(bs, x), B(lp, a), B(lp, plus(1n+L, a)), heq)
+
+def hd1(+lp: SX.LP, +L: Nat, +a: Nat) -> {KA.natle(argE(lp, L, a), L) == True{} : Bool}:
+  both_r({En(lp, plus(argE(lp, L, a), a)) == maxE(lp, L, a) : Nat}, {KA.natle(argE(lp, L, a), L) == True{} : Bool}, argE_ok(lp, L, a))
+
+def ek1(+lp: SX.LP, +L: Nat, +a: Nat) -> {En(lp, plus(argE(lp, L, a), a)) == maxE(lp, L, a) : Nat}:
+  both_l({En(lp, plus(argE(lp, L, a), a)) == maxE(lp, L, a) : Nat}, {KA.natle(argE(lp, L, a), L) == True{} : Bool}, argE_ok(lp, L, a))
+
+# the run goes on past step a + d, for d <= L
+def go_at(+lp: SX.LP, +L: Nat, +a: Nat, +d: Nat, hd: {KA.natle(d, L) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}) -> {RN.isgo(RN.st(lp, 1n+plus(d, a))) == True{} : Bool}:
+  %plus_succ(d, a) : {RN.isgo(RN.st(lp, _)) == True{} : Bool}
+  go_down(lp, 1n+L, 1n+d, a, hd, hG)
+
+def go_at0(+lp: SX.LP, +L: Nat, +a: Nat, +d: Nat, hd: {KA.natle(d, L) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}) -> {RN.isgo(RN.st(lp, plus(d, a))) == True{} : Bool}:
+  go_prev(lp, plus(d, a), go_at(lp, L, a, d, hd, hG))
+
+def le_succ(+d: Nat, +L: Nat, h: {KA.natle(d, L) == True{} : Bool}) -> {KA.natle(d, 1n+L) == True{} : Bool}:
+  KA.natle_succ(d, L, h)
+
+# t is nonbasic where it enters, basic just after
+def t_nb(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}) -> {St(lp, maxE(lp, L, a), plus(argE(lp, L, a), a)) == False{} : Bool}:
+  %ek1(lp, L, a) : {St(lp, _, plus(argE(lp, L, a), a)) == False{} : Bool}
+  ent_nb(~F, lp, plus(argE(lp, L, a), a), RN.piv_step(lp, plus(argE(lp, L, a), a), go_at(lp, L, a, argE(lp, L, a), hd1(lp, L, a), hG)), hwf)
+
+def t_b(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}) -> {St(lp, maxE(lp, L, a), plus(1n+argE(lp, L, a), a)) == True{} : Bool}:
+  %ek1(lp, L, a) : {St(lp, _, plus(1n+argE(lp, L, a), a)) == True{} : Bool}
+  %Equal.sym(Nat, plus(argE(lp, L, a), 1n+a), 1n+plus(argE(lp, L, a), a), plus_succ(argE(lp, L, a), a)) : {St(lp, En(lp, plus(argE(lp, L, a), a)), _) == True{} : Bool}
+  after_E(lp, plus(argE(lp, L, a), a), go_at(lp, L, a, argE(lp, L, a), hd1(lp, L, a), hG), hwf)
+
+def tl.start(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}, b: Bool, hb: {b == St(lp, maxE(lp, L, a), a) : Bool}, +hn: {nolev(lp, maxE(lp, L, a), 1n+L, a) == True{} : Bool}) -> {St(lp, maxE(lp, L, a), a) == False{} : Bool}:
+  match b:
+    case False{}:
+      Equal.sym(Bool, False{}, St(lp, maxE(lp, L, a), a), hb)
+    case True{}:
+      absurd({St(lp, maxE(lp, L, a), a) == False{} : Bool}, KA.tf(Equal.trans(Bool, True{}, St(lp, maxE(lp, L, a), plus(argE(lp, L, a), a)), False{},
+        Equal.sym(Bool, St(lp, maxE(lp, L, a), plus(argE(lp, L, a), a)), True{}, lemB(lp, maxE(lp, L, a), argE(lp, L, a), 0n, a, {==}, go_at0(lp, L, a, argE(lp, L, a), hd1(lp, L, a), hG), nolev_pre(lp, maxE(lp, L, a), 1n+L, argE(lp, L, a), a, le_succ(argE(lp, L, a), L, hd1(lp, L, a)), hn), Equal.sym(Bool, True{}, St(lp, maxE(lp, L, a), a), hb))),
+        t_nb(~F, lp, L, a, hwf, hG, heq))))
+
+def tl.c(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}, +hn: {nolev(lp, maxE(lp, L, a), 1n+L, a) == True{} : Bool}) -> Empty:
+  KA.ft(Equal.trans(Bool, False{}, St(lp, maxE(lp, L, a), a), True{},
+    Equal.sym(Bool, St(lp, maxE(lp, L, a), a), False{}, tl.start(~F, lp, L, a, hwf, hG, heq, St(lp, maxE(lp, L, a), a), {==}, hn)),
+    Equal.trans(Bool, St(lp, maxE(lp, L, a), a), St(lp, maxE(lp, L, a), plus(1n+L, a)), True{}, ends(lp, L, a, maxE(lp, L, a), heq),
+      lemB(lp, maxE(lp, L, a), 1n+L, 1n+argE(lp, L, a), a, hd1(lp, L, a), hG, hn, t_b(~F, lp, L, a, hwf, hG, heq)))))
+
+def tl.go(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}, b: Bool, hb: {b == nolev(lp, maxE(lp, L, a), 1n+L, a) : Bool}) -> {nolev(lp, maxE(lp, L, a), 1n+L, a) == False{} : Bool}:
+  match b:
+    case False{}:
+      Equal.sym(Bool, False{}, nolev(lp, maxE(lp, L, a), 1n+L, a), hb)
+    case True{}:
+      absurd({nolev(lp, maxE(lp, L, a), 1n+L, a) == False{} : Bool}, tl.c(~F, lp, L, a, hwf, hG, heq, Equal.sym(Bool, True{}, nolev(lp, maxE(lp, L, a), 1n+L, a), hb)))
+
+# t leaves somewhere in the range
+def t_leaves(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}) -> {nolev(lp, maxE(lp, L, a), 1n+L, a) == False{} : Bool}:
+  tl.go(~F, lp, L, a, hwf, hG, heq, nolev(lp, maxE(lp, L, a), 1n+L, a), {==})
+
+
+def ltn_succ_le(x: Nat, L: Nat, h: {SX.ltn(x, 1n+L) == True{} : Bool}) -> {KA.natle(x, L) == True{} : Bool}:
+  match x L:
+    case 0n L:
+      {==}
+    case 1n+i 0n:
+      absurd({KA.natle(1n+i, 0n) == True{} : Bool}, KA.ft(SP.ltn0(i, h)))
+    case 1n+i 1n+j:
+      ltn_succ_le(i, j, h)
+
+def lt_of_le_ne(x: Nat, y: Nat, h1: {KA.natle(x, y) == True{} : Bool}, h2: {SX.eqn(x, y) == False{} : Bool}) -> {SX.ltn(x, y) == True{} : Bool}:
+  match x y:
+    case 0n 0n:
+      absurd({SX.ltn(0n, 0n) == True{} : Bool}, KA.tf(h2))
+    case 0n 1n+j:
+      {==}
+    case 1n+i 0n:
+      absurd({SX.ltn(1n+i, 0n) == True{} : Bool}, KA.ft(h1))
+    case 1n+i 1n+j:
+      lt_of_le_ne(i, j, h1, h2)
+
+# t leaves at k2 (offset d2 <= L)
+def hd2(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}) -> {KA.natle(fl(lp, maxE(lp, L, a), 1n+L, a), L) == True{} : Bool}:
+  ltn_succ_le(fl(lp, maxE(lp, L, a), 1n+L, a), L, both_r({SX.eqn(maxE(lp, L, a), I(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))) == True{} : Bool}, {SX.ltn(fl(lp, maxE(lp, L, a), 1n+L, a), 1n+L) == True{} : Bool}, fl_ok(lp, maxE(lp, L, a), 1n+L, a, t_leaves(~F, lp, L, a, hwf, hG, heq))))
+
+def ik2(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}) -> {I(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a)) == maxE(lp, L, a) : Nat}:
+  Equal.sym(Nat, maxE(lp, L, a), I(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a)), SP.eqn_eq(maxE(lp, L, a), I(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a)), both_l({SX.eqn(maxE(lp, L, a), I(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))) == True{} : Bool}, {SX.ltn(fl(lp, maxE(lp, L, a), 1n+L, a), 1n+L) == True{} : Bool}, fl_ok(lp, maxE(lp, L, a), 1n+L, a, t_leaves(~F, lp, L, a, hwf, hG, heq)))))
+
+# the variable leaving at k1 is basic there, nonbasic just after
+def is_b(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}) -> {St(lp, I(lp, plus(argE(lp, L, a), a)), plus(argE(lp, L, a), a)) == True{} : Bool}:
+  RN.viol_basic(~F, lp, plus(argE(lp, L, a), a), RN.piv_step(lp, plus(argE(lp, L, a), a), go_at(lp, L, a, argE(lp, L, a), hd1(lp, L, a), hG)), hwf)
+
+def is_nb(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}) -> {St(lp, I(lp, plus(argE(lp, L, a), a)), plus(1n+argE(lp, L, a), a)) == False{} : Bool}:
+  %Equal.sym(Nat, plus(argE(lp, L, a), 1n+a), 1n+plus(argE(lp, L, a), a), plus_succ(argE(lp, L, a), a)) : {St(lp, I(lp, plus(argE(lp, L, a), a)), _) == False{} : Bool}
+  after_I(~F, lp, plus(argE(lp, L, a), a), go_at(lp, L, a, argE(lp, L, a), hd1(lp, L, a), hG), hwf)
+
+def ie.end(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}, b: Bool, hb: {b == St(lp, I(lp, plus(argE(lp, L, a), a)), plus(1n+L, a)) : Bool}, +hn: {noent(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a) == True{} : Bool}) -> {St(lp, I(lp, plus(argE(lp, L, a), a)), plus(1n+L, a)) == False{} : Bool}:
+  match b:
+    case False{}:
+      Equal.sym(Bool, False{}, St(lp, I(lp, plus(argE(lp, L, a), a)), plus(1n+L, a)), hb)
+    case True{}:
+      absurd({St(lp, I(lp, plus(argE(lp, L, a), a)), plus(1n+L, a)) == False{} : Bool}, KA.tf(Equal.trans(Bool, True{}, St(lp, I(lp, plus(argE(lp, L, a), a)), plus(1n+argE(lp, L, a), a)), False{},
+        Equal.sym(Bool, St(lp, I(lp, plus(argE(lp, L, a), a)), plus(1n+argE(lp, L, a), a)), True{}, lemA(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, 1n+argE(lp, L, a), a, hd1(lp, L, a), hG, hn, Equal.sym(Bool, True{}, St(lp, I(lp, plus(argE(lp, L, a), a)), plus(1n+L, a)), hb))),
+        is_nb(~F, lp, L, a, hwf, hG, heq))))
+
+def ie.c(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}, +hn: {noent(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a) == True{} : Bool}) -> Empty:
+  KA.tf(Equal.trans(Bool, True{}, St(lp, I(lp, plus(argE(lp, L, a), a)), a), False{},
+    Equal.sym(Bool, St(lp, I(lp, plus(argE(lp, L, a), a)), a), True{}, lemA(lp, I(lp, plus(argE(lp, L, a), a)), argE(lp, L, a), 0n, a, {==}, go_at0(lp, L, a, argE(lp, L, a), hd1(lp, L, a), hG), noent_pre(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, argE(lp, L, a), a, le_succ(argE(lp, L, a), L, hd1(lp, L, a)), hn), is_b(~F, lp, L, a, hwf, hG, heq))),
+    Equal.trans(Bool, St(lp, I(lp, plus(argE(lp, L, a), a)), a), St(lp, I(lp, plus(argE(lp, L, a), a)), plus(1n+L, a)), False{}, ends(lp, L, a, I(lp, plus(argE(lp, L, a), a)), heq), ie.end(~F, lp, L, a, hwf, hG, heq, St(lp, I(lp, plus(argE(lp, L, a), a)), plus(1n+L, a)), {==}, hn))))
+
+def ie.go(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}, b: Bool, hb: {b == noent(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a) : Bool}) -> {noent(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a) == False{} : Bool}:
+  match b:
+    case False{}:
+      Equal.sym(Bool, False{}, noent(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a), hb)
+    case True{}:
+      absurd({noent(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a) == False{} : Bool}, ie.c(~F, lp, L, a, hwf, hG, heq, Equal.sym(Bool, True{}, noent(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a), hb)))
+
+# it enters somewhere in the range
+def is_enters(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}) -> {noent(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a) == False{} : Bool}:
+  ie.go(~F, lp, L, a, hwf, hG, heq, noent(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a), {==})
+
+def is_le_t(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}) -> {KA.natle(I(lp, plus(argE(lp, L, a), a)), maxE(lp, L, a)) == True{} : Bool}:
+  %Equal.sym(Nat, I(lp, plus(argE(lp, L, a), a)), En(lp, plus(fe(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a), a)), SP.eqn_eq(I(lp, plus(argE(lp, L, a), a)), En(lp, plus(fe(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a), a)), both_l({SX.eqn(I(lp, plus(argE(lp, L, a), a)), En(lp, plus(fe(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a), a))) == True{} : Bool}, {SX.ltn(fe(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a), 1n+L) == True{} : Bool}, fe_ok(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a, is_enters(~F, lp, L, a, hwf, hG, heq))))) : {KA.natle(_, maxE(lp, L, a)) == True{} : Bool}
+  le_maxE(lp, L, fe(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a), a, ltn_succ_le(fe(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a), L, both_r({SX.eqn(I(lp, plus(argE(lp, L, a), a)), En(lp, plus(fe(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a), a))) == True{} : Bool}, {SX.ltn(fe(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a), 1n+L) == True{} : Bool}, fe_ok(lp, I(lp, plus(argE(lp, L, a), a)), 1n+L, a, is_enters(~F, lp, L, a, hwf, hG, heq)))))
+
+def is_ne.go(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}, b: Bool, hb: {b == SX.eqn(I(lp, plus(argE(lp, L, a), a)), maxE(lp, L, a)) : Bool}) -> {SX.eqn(I(lp, plus(argE(lp, L, a), a)), maxE(lp, L, a)) == False{} : Bool}:
+  match b:
+    case False{}:
+      Equal.sym(Bool, False{}, SX.eqn(I(lp, plus(argE(lp, L, a), a)), maxE(lp, L, a)), hb)
+    case True{}:
+      absurd({SX.eqn(I(lp, plus(argE(lp, L, a), a)), maxE(lp, L, a)) == False{} : Bool}, KA.tf(Equal.trans(Bool, True{}, St(lp, maxE(lp, L, a), plus(argE(lp, L, a), a)), False{},
+        (%SP.eqn_eq(I(lp, plus(argE(lp, L, a), a)), maxE(lp, L, a), Equal.sym(Bool, True{}, SX.eqn(I(lp, plus(argE(lp, L, a), a)), maxE(lp, L, a)), hb)) : {True{} == St(lp, _, plus(argE(lp, L, a), a)) : Bool}
+         Equal.sym(Bool, St(lp, I(lp, plus(argE(lp, L, a), a)), plus(argE(lp, L, a), a)), True{}, is_b(~F, lp, L, a, hwf, hG, heq))),
+        t_nb(~F, lp, L, a, hwf, hG, heq))))
+
+# the variable leaving at k1 is smaller than t
+def is_lt_t(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}) -> {SX.ltn(I(lp, plus(argE(lp, L, a), a)), maxE(lp, L, a)) == True{} : Bool}:
+  lt_of_le_ne(I(lp, plus(argE(lp, L, a), a)), maxE(lp, L, a), is_le_t(~F, lp, L, a, hwf, hG, heq), is_ne.go(~F, lp, L, a, hwf, hG, heq, SX.eqn(I(lp, plus(argE(lp, L, a), a)), maxE(lp, L, a)), {==}))
