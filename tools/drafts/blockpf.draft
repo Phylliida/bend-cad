@@ -66,7 +66,8 @@ import ./nat.bend as LN
 # -------------
 # vb = 2^-(p/2) (Y's rounding), yn bounds |Y|, thL |I - Y J|, thR
 # |I - J Y|, sbc the self-map bound S at radius 0, ubc the search's
-# upper bound, rbc = ubc + rho every radius in sight.
+# upper bound (at S + e, e = 2^-(p+1) the start's inflation), rbc = ubc +
+# rho every radius in sight.
 
 @MACRO VB AP.vbit(~F, Nat.div(p, 2n))
 @MACRO JN @M(FR.ofn(~F, n), ms)
@@ -87,8 +88,10 @@ def sbc($KP) -> @T:
 @MACRO E8 M.ofd(~F, S.D{S.Zpos{S.XO{S.XH{}}}, 8n})
 @MACRO C65 M.ofd(~F, S.D{S.Zpos{S.XI{S.XO{S.XO{S.XO{S.XO{S.XO{S.XH{}}}}}}}}, 6n})
 
+@MACRO ETP M.ofd(~F, NU.eta(p))
+
 def ubc($KP) -> @T:
-  @M(@M($C17, @A(@1, $E8)), @A(sbc($KA), sbc($KA)))
+  @M(@M($C17, @A(@1, $E8)), @A(@A(sbc($KA), $ETP), @A(sbc($KA), $ETP)))
 
 def rbc($KP) -> @T:
   @A(ubc($KA), rho)
@@ -339,8 +342,15 @@ def sbc_nn($KP, $NNP) -> O.le(~F, @0, sbc($KA)):
 def c17e_nn(~F: O.OField, ~H: N.Emb<KI.dnum(), F>) -> O.le(~F, @0, @M($C17, @A(@1, $E8))):
   FO.mul_nonneg(~F, $C17, @A(@1, $E8), RD.dnn(~F, ~H, S.D{S.Zpos{S.XI{S.XO{S.XO{S.XO{S.XH{}}}}}}, 4n}, {==}), FO.nonneg_add(~F, @1, $E8, FO.one_nn(~F), RD.dnn(~F, ~H, S.D{S.Zpos{S.XO{S.XH{}}}, 8n}, {==})))
 
+def etp_nn(~F: O.OField, +p: Nat) -> O.le(~F, @0, $ETP):
+  FO.lt_le(~F, @0, $ETP, DM.dpos(~F, S.XH{}, 1n+p))
+
+def ubc_nn($KPH, $NNP) -> O.le(~F, @0, ubc($KA)):
+  +hse = FO.nonneg_add(~F, sbc($KA), $ETP, sbc_nn($KA, $NNA), etp_nn(~F, p))
+  FO.mul_nonneg(~F, @M($C17, @A(@1, $E8)), @A(@A(sbc($KA), $ETP), @A(sbc($KA), $ETP)), c17e_nn(~F, ~H), FO.nonneg_add(~F, @A(sbc($KA), $ETP), @A(sbc($KA), $ETP), hse, hse))
+
 def rbc_nn($KPH, $NNP) -> O.le(~F, @0, rbc($KA)):
-  FO.nonneg_add(~F, ubc($KA), rho, FO.mul_nonneg(~F, @M($C17, @A(@1, $E8)), @A(sbc($KA), sbc($KA)), c17e_nn(~F, ~H), FO.nonneg_add(~F, sbc($KA), sbc($KA), sbc_nn($KA, $NNA), sbc_nn($KA, $NNA))), hr0)
+  FO.nonneg_add(~F, ubc($KA), rho, ubc_nn($KAH, $NNA), hr0)
 
 # The block's smallness conditions
 # --------------------------------
@@ -369,18 +379,20 @@ def cen_mag($CXP, $YCP, +t: @T, +hs: O.le(~F, @A(NW.dx($KA), t), @1)) -> M.vbnd.
   NW.gnear(~F, $PTC, $XS, bb, NW.dx($KA), t, hbb, NW.ptnear($CXA, yc, lyc, NW.en($KA), hyc_all($CXA, $YCA), NW.en_le_dx($CXA)), hs, NW.lpt_xs($CXA, yc, lyc))
 
 def rho_le_rb($CXP) -> O.le(~F, rho, rbc($KA)):
-  FV.le_addl(~F, ubc($KA), rho, FO.mul_nonneg(~F, @M($C17, @A(@1, $E8)), @A(sbc($KA), sbc($KA)), c17e_nn(~F, ~H), FO.nonneg_add(~F, sbc($KA), sbc($KA), sbc_nn($KA, $NNA), sbc_nn($KA, $NNA))))
+  FV.le_addl(~F, ubc($KA), rho, ubc_nn($KAH, $NNA))
 
 @MACRO S0Y CK.svec($DN, eqs, n, yc, Nil{}, $YY, pc, pr)
 @MACRO SDY M.ofd(~F, NU.dvmax($S0Y))
-@MACRO UBS @M(@M($C17, @A(@1, $E8)), @A($SDY, $SDY))
+@MACRO UBS @M(@M($C17, @A(@1, $E8)), @A(@A($SDY, $ETP), @A($SDY, $ETP)))
 
 # the search's upper bound U is below rb
 def ub_rb($CXP, $YCP, $PRP, $AIP, $WSP) -> O.le(~F, $UBS, rbc($KA)):
   +rb = rbc($KA)
   +hs = s_bnd($CXA, $YCA, $PRA, $YY, ync($KA), y_mn($CXA, $YCA, $AIA), ync_nn($KA, $NNA), rb, rbc_nn($KAH, $NNA), cen_mag($CXA, $YCA, rb, w1), NW.vall_le(~F, M.ofdv(~F, pr), rho, rb, hpr, rho_le_rb($CXA)))
+  +hse = FV.le_add2(~F, $SDY, sbc($KA), $ETP, $ETP, hs, FO.le_refl(~F, $ETP))
+  +hn = FO.nonneg_add(~F, $SDY, $ETP, RD.dvmax_nn(~F, $S0Y), etp_nn(~F, p))
   DM.le_trans(~F, $UBS, ubc($KA), rb,
-    NW.mm_le(~F, @M($C17, @A(@1, $E8)), @M($C17, @A(@1, $E8)), @A($SDY, $SDY), @A(sbc($KA), sbc($KA)), FO.nonneg_add(~F, $SDY, $SDY, RD.dvmax_nn(~F, $S0Y), RD.dvmax_nn(~F, $S0Y)), c17e_nn(~F, ~H), FO.le_refl(~F, @M($C17, @A(@1, $E8))), FV.le_add2(~F, $SDY, sbc($KA), $SDY, sbc($KA), hs, hs)),
+    NW.mm_le(~F, @M($C17, @A(@1, $E8)), @M($C17, @A(@1, $E8)), @A(@A($SDY, $ETP), @A($SDY, $ETP)), @A(@A(sbc($KA), $ETP), @A(sbc($KA), $ETP)), FO.nonneg_add(~F, @A($SDY, $ETP), @A($SDY, $ETP), hn, hn), c17e_nn(~F, ~H), FO.le_refl(~F, @M($C17, @A(@1, $E8))), FV.le_add2(~F, @A($SDY, $ETP), @A(sbc($KA), $ETP), @A($SDY, $ETP), @A(sbc($KA), $ETP), hse, hse)),
     FV.le_addr(~F, ubc($KA), rho, hr0))
 
 # The block's outcome
@@ -413,7 +425,7 @@ def rbnd_vall(~F: O.OField, v: M.Vec(~F), +n: Nat, +t: @T, lv: {M.len(~F, v) == 
       (h1, h2) = h
       (h1, rbnd_vall(~F, as, k, t, LN.succ_inj(M.len(~F, as), k, lv), h2))
 
-@MACRO RG RD.rgood(~F, ~H, n, eqs, yc, pc, pr, $YY, mr)
+@MACRO RG RD.rgood(~F, ~H, n, eqs, yc, pc, pr, $YY, NU.eta(p), mr)
 
 # the search's radius makes the certificate
 def br_ok($CXP, $YCP, $PRP, $AIP, $WSP, +hU: O.le(~F, $UBS, rbc($KA)), +hib: O.le(~F, NP.vn(~F, BX.vsub(~F, M.ofdv(~F, yc), xb)), @M($SDY, $C65)), mr: Maybe<&2, S.D>, +hg: $RG) -> bgood(~F, n, eqs, xb, rbc($KA), pc, pr, NU.block.r(mr, n, yc, $YY, pc, pr)):
@@ -441,7 +453,7 @@ def zx_dx($CXP) -> M.vbnd.all(~F, BX.vsub(~F, xz, M.ofdv(~F, pc)), NW.dx($KA)):
   NW.vall_le(~F, BX.vsub(~F, xz, M.ofdv(~F, pc)), rho, NW.dx($KA), NW.vall_swap(~F, M.ofdv(~F, pc), xz, rho, hzc), NW.rho_le_dx($CXA))
 
 # Y fixed: the window, the search and x_b in the box
-def bym_ok($CXP, $YCP, $PRP, $AIP, $WSP) -> bgood(~F, n, eqs, xb, rbc($KA), pc, pr, NU.block.ym($YY, eqs, n, yc, pc, pr)):
+def bym_ok($CXP, $YCP, $PRP, $AIP, $WSP) -> bgood(~F, n, eqs, xb, rbc($KA), pc, pr, NU.block.ym($YY, eqs, n, yc, pc, pr, NU.eta(p))):
   +rb = rbc($KA)
   +lycK = lyck(~F, ~H, n, yc, lyc)
   +lpp = lpp_k($CXA, $PRA)
@@ -457,8 +469,8 @@ def bym_ok($CXP, $YCP, $PRP, $AIP, $WSP) -> bgood(~F, n, eqs, xb, rbc($KA), pc, 
   +hZr = NW.vall_appsub(~F, M.ofdv(~F, yc), M.ofdv(~F, yc), xz, M.ofdv(~F, pc), NW.dx($KA), {==}, NW.vall_self(~F, M.ofdv(~F, yc), NW.dx($KA), NW.dx_nn($KA, $NNA)), zx_dx($CXA))
   +hBr = NW.vall_appsub(~F, xb, M.ofdv(~F, yc), xz, M.ofdv(~F, pc), NW.dx($KA), Equal.trans(Nat, M.len(~F, xb), n, M.len(~F, M.ofdv(~F, yc)), lxb, Equal.sym(Nat, M.len(~F, M.ofdv(~F, yc)), n, lyc)), NW.vall_le(~F, BX.vsub(~F, xb, M.ofdv(~F, yc)), NW.en($KA), NW.dx($KA), NW.vall_swap(~F, M.ofdv(~F, yc), xb, NW.en($KA), hyc_all($CXA, $YCA)), NW.en_le_dx($CXA)), zx_dx($CXA))
   +hib = RD.inbox_ok(~F, ~H, n, eqs, hn, hh, yc, pc, pr, hab, lycK, $YY, hpn, xb, xz, lxb, lxz_k($CXA), hz, hzr, bb, lam, ms, hbb0, hl0, hq, ync($KA), thlc($KA), hyn, hthl, ync_nn($KA, $NNA), thlc_nn($KA, $NNA), NW.dx($KA), NW.dx_nn($KA, $NNA), cen_mag($CXA, $YCA, NW.dx($KA), s1), hZr, hBr, w4)
-  br_ok($CXA, $YCA, $PRA, $AIA, $WSA, hU, hib, NU.rsearch(64n, NU.okr(eqs, n, yc, NU.r0(eqs, n, yc, $YY, pc, pr), $YY, pc, pr), eqs, n, yc, NU.r0(eqs, n, yc, $YY, pc, pr), $YY, pc, pr),
-    RD.rs_init(~F, ~H, n, eqs, hn, hh, yc, pc, pr, lycK, lpp, $YY, bb, lam, ms, rb, hbb0, hl0, hrb, hq, hcr, hpn, hprb, ync($KA), thlc($KA), hyn, hthl, ync_nn($KA, $NNA), thlc_nn($KA, $NNA), mlen_y($CXA, inv, hA), hab, thrc($KA), thrc_nn($KA, $NNA), hthr, w2, hw, hU))
+  br_ok($CXA, $YCA, $PRA, $AIA, $WSA, hU, hib, NU.rsearch(64n, NU.okr(eqs, n, yc, NU.r0(eqs, n, yc, $YY, pc, pr, NU.eta(p)), $YY, pc, pr), eqs, n, yc, NU.r0(eqs, n, yc, $YY, pc, pr, NU.eta(p)), $YY, pc, pr),
+    RD.rs_init(~F, ~H, n, eqs, hn, hh, yc, pc, pr, lycK, lpp, $YY, bb, lam, ms, rb, hbb0, hl0, hrb, hq, hcr, hpn, hprb, ync($KA), thlc($KA), hyn, hthl, ync_nn($KA, $NNA), thlc_nn($KA, $NNA), mlen_y($CXA, inv, hA), hab, thrc($KA), thrc_nn($KA, $NNA), hthr, w2, hw, NU.eta(p), DM.dpos(~F, S.XH{}, 1n+p), hU))
 
 # the elimination at the center succeeded
 def by2_ok($CXP, $YCP, $PRP, $WSP, minv: Maybe<&2, List<&2, List<&2, S.D>>>, hres: DG.dinv_res(~F, n, $JC, NW.ea($KA), minv)) -> bgood(~F, n, eqs, xb, rbc($KA), pc, pr, NU.block.y2(minv, p, eqs, n, yc, pc, pr)):

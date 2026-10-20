@@ -184,7 +184,7 @@ def r_sbc() -> PM.PE:
   pp(pt(r_ync(), pp(pt(pt(at(6n), at(8n)), r_en()), pt(pt(at(7n), at(8n)), at(1n)))), pt(r_ync(), pt(pt(at(7n), at(8n)), at(1n))))
 
 def r_ubc() -> PM.PE:
-  pt(pt(at(13n), pp(at(5n), at(14n))), pp(r_sbc(), r_sbc()))
+  pt(pt(at(13n), pp(at(5n), at(14n))), pp(pp(r_sbc(), at(2n)), pp(r_sbc(), at(2n))))
 
 def r_rbc() -> PM.PE:
   pp(r_ubc(), at(1n))

@@ -15,8 +15,9 @@
 # an all-zero column); lib/solve.bend then tries the next precision.
 # Y is the inverse at the final center, rounded to P/2 significant bits; the radius is the first of
 # R0 (17/16)^k (k < 64) the block checker accepts, R0 the largest entry
-# of the self-map bound at radius 0 times 65/64; if none passes, the plan
-# is retried at the next precision (lib/solve.bend).
+# of the self-map bound at radius 0 times 65/64, plus 2^-(P+1) (Newton's
+# rounding unit: every radius is positive, as the checker requires); if
+# none passes, the plan is retried at the next precision (lib/solve.bend).
 
 import Base
 import ../spec/num.bend as S
@@ -809,10 +810,14 @@ def rsearch(k: Nat, ok: Bool, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.
     case 1n+j False{}:
       rsearch(j, okr(eqs, n, yc, grow(r), ym, pc, pr), eqs, n, yc, grow(r), ym, pc, pr)
 
-# the largest entry of |Y f| + |Y| (|J0z| + Dz) rho, times 65/64, at
-# about 8 bits
-def r0(+eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.D>, +ym: List<&2, List<&2, S.D>>, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> S.D:
-  dsigup(S.D.mul(dvmax(CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr)), S.D{S.Zpos{S.XI{S.XO{S.XO{S.XO{S.XO{S.XO{S.XH{}}}}}}}}, 6n}), 8n)
+# 2^-(p+1)
+def eta(+p: Nat) -> S.D:
+  S.D{S.Zpos{S.XH{}}, 1n+p}
+
+# the largest entry of |Y f| + |Y| (|J0z| + Dz) rho, times 65/64, plus e,
+# at about 8 bits
+def r0(+eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.D>, +ym: List<&2, List<&2, S.D>>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +e: S.D) -> S.D:
+  dsigup(S.D.add(S.D.mul(dvmax(CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr)), S.D{S.Zpos{S.XI{S.XO{S.XO{S.XO{S.XO{S.XO{S.XH{}}}}}}}}, 6n}), e), 8n)
 
 # a block's outcome: a certificate; no radius found; or Newton did not
 # settle, or the Jacobian looked singular (kept apart for diagnostics;
@@ -829,15 +834,15 @@ def block.r(m: Maybe<&2, S.D>, +n: Nat, +yc: List<&2, S.D>, +ym: List<&2, List<&
     case Some{+r}:
       BOk{mkcert(n, yc, r, ym, pc, pr)}
 
-def block.ym(+ym: List<&2, List<&2, S.D>>, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> BR:
-  block.r(rsearch(64n, okr(eqs, n, yc, r0(eqs, n, yc, ym, pc, pr), ym, pc, pr), eqs, n, yc, r0(eqs, n, yc, ym, pc, pr), ym, pc, pr), n, yc, ym, pc, pr)
+def block.ym(+ym: List<&2, List<&2, S.D>>, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +e: S.D) -> BR:
+  block.r(rsearch(64n, okr(eqs, n, yc, r0(eqs, n, yc, ym, pc, pr, e), ym, pc, pr), eqs, n, yc, r0(eqs, n, yc, ym, pc, pr, e), ym, pc, pr), n, yc, ym, pc, pr)
 
 def block.y2(m: Maybe<&2, List<&2, List<&2, S.D>>>, +p: Nat, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> BR:
   match m:
     case None{}:
       BStop{}
     case Some{inv}:
-      block.ym(ysig(Nat.div(p, 2n), inv), eqs, n, yc, pc, pr)
+      block.ym(ysig(Nat.div(p, 2n), inv), eqs, n, yc, pc, pr, eta(p))
 
 def block.y(m: Maybe<&2, List<&2, S.D>>, +p: Nat, +eqs: List<&2, E.QExpr>, +n: Nat, +pc: List<&2, S.D>, +pr: List<&2, S.D>) -> BR:
   match m:

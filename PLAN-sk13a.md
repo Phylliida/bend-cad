@@ -434,6 +434,41 @@ As planned:
       vs passpf; `PA.kvs` vs `MX.kvs`);
     - `redpf` keeps some red-stage lemmas nothing uses now.
   - Step 3 done (2026-10-20, ae9691f): law 10 as stated, see S7.
+- **Law 2 needs positive radii (found 2026-10-20, decided by Danielle the
+  same day: the inclusion theorem).** The block checker accepts a block
+  whose unknowns have radius 0 with a singular Jacobian inside its box
+  (y z = 0 at y = 0, radius 0, z's ball [-1, 3] around 0: every condition
+  holds, checked by running CK.check), and radius 0 is common (Newton
+  lands exactly; e.g. 10 of base's 12 blocks). The contraction says
+  nothing in a radius-0 direction, and the injectivity condition bounds
+  only the enclosure's center. The principled fix is Krawczyk's test
+  with Rump's refinement: with every unknown's radius positive,
+  (|I - Y J0| + |Y| D) r <= q r, q < 1, bounds |I - Y J| r <= q r for
+  every Jacobian J in the box (weighted max norm), so Y J, Y and every J
+  are invertible: existence, uniqueness and regularity from one
+  inequality, and the injectivity condition is redundant. In steps, each
+  a green commit:
+  1. The solver inflates: r0 = (65/64) S + 2^-P (rounded up), so every
+     unknown's radius is positive; law 10's radius search re-proven.
+  2. The checker requires every unknown's radius positive; law 10 shows
+     it.
+  3. The checker drops the injectivity condition; the fixed-point lemma
+     gets Y injective from the contraction (Y J0 contracts in the
+     weighted norm, so it is invertible, so Y is).
+  4. Per block: every Jacobian in the certificate's box is invertible
+     (`cert_regular`).
+  5. Law 2: the three checks in `final`; the block-order Jacobian is
+     injective by forward substitution through the plan's blocks
+     (block_ok's syntactic bounds give the zeros); undo the plan's
+     permutation; one `inv_of_inj`. Law 10 shows the three checks pass.
+  - Steps 1-3 done (2026-10-20): numer's r0 adds 2^-(p+1); cert.bend's
+    `cpos` (n radii, each above 0) replaces the injectivity condition;
+    certpf proves the inclusion theorem's pieces (`mcon`, `yjinj`, `yinj`)
+    and `cert_fix` from them; law 10's search and window re-proven
+    (radpf, blockpf's ubc, scalepf's reflection). The circle demo's exact
+    block got radius 2^-40. Gate and regression green, outcomes
+    unchanged. Debt: radpf/blockpf/scalepf still carry the unused thR
+    hypotheses (and blockpf's w2) of the old condition.
 - **`final` gains:**
   - the drop certificates (`qzero`; h = 1; rows are earlier solved
     equations);

@@ -12,7 +12,10 @@
 #   factor: 0 <= q < 1;
 #   contraction: G r <= q r;
 #   self-map: |Y f(X̃)| + |Y| ((|J0z| + Dz) rho) + G r <= r;
-#   injectivity: each row of |I - J0y Y| sums to less than 1.
+#   positive radii: n of them, each above 0.
+# With the radii positive, the contraction bounds |I - Y J| r <= q r for
+# every Jacobian J in the box, so Y J, Y and J are invertible: the
+# inclusion theorem (Krawczyk, Rump; lib/certpf.bend).
 
 import Base
 import ../spec/ring.bend as E
@@ -127,23 +130,20 @@ def gvec(~K: N.Num, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KV
 def svec(~K: N.Num, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> N.KVec(~K):
   KA.kvadd(~K, KA.kvadd(~K, KA.kvabs(~K, KA.kmatvec(~K, ym, kvals(~K, KA.kapp(~K, yc, pc), eqs))), KA.kmatvec(~K, KA.kmabs(~K, ym), KA.kmatvec(~K, KA.kmadd(~K, KA.kmabs(~K, mcenters(~K, rowsz(~K, eqs, n, yc, yr, pc, pr))), mradii(~K, rowsz(~K, eqs, n, yc, yr, pc, pr))), pr))), gvec(~K, eqs, n, yc, yr, ym, pc, pr))
 
-# the row sums of |I - J0y Y|
-def ivec(~K: N.Num, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> N.KVec(~K):
-  KA.kmatvec(~K, KA.kmabs(~K, imm(~K, n, mcenters(~K, rowsy(~K, eqs, n, yc, yr, pc, pr)), ym)), KA.kones(~K, n))
-
-# the three bound conditions
+# the bound conditions
 def ccon(~K: N.Num, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +q: N.NC(K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> Bool:
   KA.kvle(~K, gvec(~K, eqs, n, yc, yr, ym, pc, pr), KA.kvscale(~K, q, yr))
 
 def cself(~K: N.Num, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> Bool:
   KA.kvle(~K, svec(~K, eqs, n, yc, yr, ym, pc, pr), yr)
 
-def cinj(~K: N.Num, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> Bool:
-  KA.kvlt(~K, ivec(~K, eqs, n, yc, yr, ym, pc, pr), KA.kones(~K, n))
+# n radii, each above 0
+def cpos(~K: N.Num, +n: Nat, +yr: N.KVec(~K)) -> Bool:
+  KA.band(KA.nateq(KA.klen(~K, yr), n), KA.kvlt(~K, Nil{}, yr))
 
 # everything after the shape
 def rest3(~K: N.Num, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> Bool:
-  KA.band(cself(~K, eqs, n, yc, yr, ym, pc, pr), cinj(~K, eqs, n, yc, yr, ym, pc, pr))
+  KA.band(cself(~K, eqs, n, yc, yr, ym, pc, pr), cpos(~K, n, yr))
 
 def rest2(~K: N.Num, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +q: N.NC(K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> Bool:
   KA.band(ccon(~K, eqs, n, yc, yr, q, ym, pc, pr), rest3(~K, eqs, n, yc, yr, ym, pc, pr))

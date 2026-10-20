@@ -1,7 +1,7 @@
 # The sketch laws' hypotheses with a variable side condition. A circle
 # about A whose radius is a variable r, fixed at 3 by a Radius dimension;
 # P lies on it (OnCircle) and at distance 3 from B. A = (0, 0) and
-# B = (4, 0) are pinned; the plan solves r (a 1 × 1 block, exact, radius 0)
+# B = (4, 0) are pinned; the plan solves r (a 1 × 1 block, exact, radius 2^-40)
 # and then P with r among its parameters (tests/chain_data.bend: cr_*).
 # The circle's side condition r > 0 is checked over the plan's box,
 # together with the dimensions' d ≥ 0. Refused: a box in which r may reach

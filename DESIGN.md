@@ -560,7 +560,15 @@ for each choice of the parameters: Banach's theorem, proven in Bend (Q18,
    - |Y·f(X̃)|ᵢ + (|Y|·(|J₀,z| + Δ_z)·ρ)ᵢ + (G·r)ᵢ ≤ rᵢ for every i, the
      sensitivity form the spike found tighter than ‖Y‖·L_z·ρ (1–1.5 bits
      per step);
-   - ‖I − J₀,y·Y‖ < 1 with I of size n, so Y is injective (for `cert_fix`).
+   - every unknown's radius is positive: n radii, each rᵢ > 0. With the
+     contraction this is the inclusion theorem (Krawczyk, Rump): for
+     every Jacobian J in the box, |I − Y·J|·r ≤ G·r ≤ q·r, so in the
+     r-weighted max norm Y·J is injective, and so (square) J and Y are
+     invertible (lib/certpf.bend: `yjinj`, `yinj`; `cert_fix` uses Y's
+     injectivity, law 2 each block's Jacobian). Until 2026-10-20 the third
+     condition was ‖I − J₀,y·Y‖ < 1 (Y injective); with zero radii the
+     contraction says nothing about the Jacobian, and a singular block
+     passed (y z = 0 at y = 0, radius 0, z's ball around 0).
    The checker is a conjunction of small Bool tests, each with its own
    soundness lemma in the `dcmp_sound.go` pattern, so a proof is not stuck
    on comparisons in an opaque K.
@@ -1564,14 +1572,17 @@ restates pieces of each and block_ok in full, so the gate checks them).
     lp·dl (values) or ls·dl (slopes); `mz_mn`: the parameters' |J0z| + Dz
     grows by at most m Λ r when the unknowns' radius goes from 0 to r.
   - *Window* (`window_ok`): every dyadic r with S ≤ r/2 and r ≤ r_b passes
-    `okr` (shape, factor 1/2, contraction, self-map, injectivity), given
+    `okr` (shape, factor 1/2, contraction, self-map, positive radii: r > 0), given
     |Y| ≤ y_n, |I − Y Jc| ≤ θ_L, |I − Jc Y| ≤ θ_R < 1, the box's grade at
     r_b (|Pc| ≤ bb − r_b, ρ ≤ r_b), and cw = θ_L + y_n n Λ r_b + y_n m Λ r_b
     ≤ 1/2. The self-map is compared entry by entry with radius 0:
     svec(r) ≤ s0 + (B(r) − B(0)) + G(r) − G(0), G(0) = 0, so every entry is
     at most S + cw·r ≤ r. The plan's α-form constants became y_n and r_b.
-  - *Search* (`rs_init`): from r0 the solver's `rsearch` returns a passing
-    r with (65/64) S ≤ r ≤ U = (17/16)(1 + 2^-7)·2S (given U ≤ r_b). The
+  - *Search* (`rs_init`): from r0 = (65/64) S + e rounded up, e = 2^-(p+1)
+    (since 2026-10-20: every radius positive), the solver's `rsearch`
+    returns a passing r with (65/64) S + e ≤ r ≤ U = (17/16)(1 + 2^-7)·2(S +
+    e) (given U ≤ r_b; blockpf's ubc and scalepf's reflection carry the e,
+    atom h). The
     proof carries m, the steps still needed (R + m·S/16 ≥ 2S, m ≤ fuel,
     m = 16 at the start); a failing radius is below 2S by the window's
     contrapositive (`lt_total`), so the next is below U. Dyadic constants

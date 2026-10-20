@@ -725,3 +725,15 @@ def kvlt_ones_ok(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, u: N.KVec(~K), n: Nat
       FO.absurd(FV.vlt_all(~F, N.ofkv(~K, ~F, ~H, Con{a, us}), O.one(F)), ft(h))
     case Con{+a, +us} 1n++k:
       (klt1(~K, ~F, ~H, a, band_l(klt(~K, a, N.none(K)), kvlt(~K, us, kones(~K, k)), h)), kvlt_ones_ok(~K, ~F, ~H, us, k, band_r(klt(~K, a, N.none(K)), kvlt(~K, us, kones(~K, k)), h)))
+
+def klt0(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +b: N.NC(K), h: {klt(~K, N.nzero(K), b) == True{} : Bool}) -> O.lt(F, O.zero(F), N.emap(K, F, H, b)):
+  %Equal.sym(O.C(F), O.zero(F), N.emap(K, F, H, N.nzero(K)), ez(~K, ~F, ~H)) : O.lt(F, _, N.emap(K, F, H, b))
+  klt_ok(~K, ~F, ~H, N.nzero(K), b, h)
+
+# every entry above 0 in K is above 0 in F
+def kvpos_ok(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, w: N.KVec(~K), +h: {kvlt(~K, Nil{}, w) == True{} : Bool}) -> FV.vpos(~F, N.ofkv(~K, ~F, ~H, w)):
+  match w:
+    case Nil{}:
+      Unit{}
+    case Con{+b, +ws}:
+      (klt0(~K, ~F, ~H, b, band_l(klt(~K, N.nzero(K), b), kvlt(~K, Nil{}, ws), h)), kvpos_ok(~K, ~F, ~H, ws, band_r(klt(~K, N.nzero(K), b), kvlt(~K, Nil{}, ws), h)))

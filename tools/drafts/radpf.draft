@@ -3,9 +3,10 @@
 #
 # After Newton (lib/nwtpf.bend) the solver inverts the Jacobian at the
 # center once more, rounds the inverse to Y, and searches radii from
-# r0, the self-map bound at radius 0 times 65/64. This file shows that
-# every radius between 2S and U passes the block checker (S the largest
-# entry of that self-map bound), that the search reaches one, and that
+# r0, the self-map bound at radius 0 times 65/64 plus e = 2^-(p+1). This
+# file shows that every positive radius between 2S and rb passes the
+# block checker (S the largest entry of that self-map bound), that the
+# search reaches one, at most U = (17/16)(1 + 2^-7) 2 (S + e), and that
 # x_b lies in the box: |yc - x_b| <= (65/64) S <= r0 <= r.
 #
 # The self-map at radius r is compared entry by entry with the one at
@@ -802,11 +803,6 @@ def klen_svec(~K: N.Num, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr:
       Equal.trans(Nat, KA.klen(~K, KA.kmatvec(~K, KA.kmabs(~K, ym), zv)), CK.mlen(~K, KA.kmabs(~K, ym)), n, klen_kmatvec(~K, KA.kmabs(~K, ym), zv), Equal.trans(Nat, CK.mlen(~K, KA.kmabs(~K, ym)), CK.mlen(~K, ym), n, mlen_kmabs(~K, ym), hym))),
     klen_gvec(~K, eqs, n, yc, yr, ym, pc, pr, hym))
 
-def klen_ivec(~K: N.Num, +eqs: List<&2, E.QExpr>, +n: Nat, +hn: {CK.eqlen(eqs) == n : Nat}, +yc: N.KVec(~K), +yr: N.KVec(~K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> {KA.klen(~K, CK.ivec(~K, eqs, n, yc, yr, ym, pc, pr)) == n : Nat}:
-  +mc = CK.mcenters(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr))
-  Equal.trans(Nat, KA.klen(~K, CK.ivec(~K, eqs, n, yc, yr, ym, pc, pr)), CK.mlen(~K, KA.kmabs(~K, CK.imm(~K, n, mc, ym))), n, klen_kmatvec(~K, KA.kmabs(~K, CK.imm(~K, n, mc, ym)), KA.kones(~K, n)),
-    Equal.trans(Nat, CK.mlen(~K, KA.kmabs(~K, CK.imm(~K, n, mc, ym))), CK.mlen(~K, CK.imm(~K, n, mc, ym)), n, mlen_kmabs(~K, CK.imm(~K, n, mc, ym)), mlen_imm(~K, n, mc, ym, Equal.trans(Nat, CK.mlen(~K, mc), CK.eqlen(eqs), n, mlen_mcen(~K, CK.box(~K, n, yc, yr, pc, pr), n, 0n, eqs), hn))))
-
 # The self-map at r against r = 0
 # --------------------------------
 # svec = |Y f| + B + G: |Y f| is the same at both radii, B grows by at
@@ -1066,26 +1062,25 @@ def vlt_of_vn(~F: O.OField, v: M.Vec(~F), +t: @T, +h: O.lt(F, NP.vn(~F, v), t)) 
 
 @MACRO THR O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, NW.jc(~F, eqs, n, $PTC), M.ofdm(~F, ym)))), n), thR)
 
-# |I - J0y Y| in the checker's numbers is at most thR
-def imr_mn($WXP, +thR: @T, +hthr: $THR, +yr: List<&2, S.D>) -> O.le(~F, NP.mnorm(~F, N.ofkm($DH, CK.imm($DN, n, CK.mcenters($DN, CK.rowsy($DN, eqs, n, yc, yr, pc, pr)), ym)), n), thR):
-  %Equal.sym(M.Mat(~F), N.ofkm($DH, CK.imm($DN, n, CK.mcenters($DN, CK.rowsy($DN, eqs, n, yc, yr, pc, pr)), ym)), M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, N.ofkm($DH, CK.mcenters($DN, CK.rowsy($DN, eqs, n, yc, yr, pc, pr))), N.ofkm($DH, ym)))), ofkm_imm($DH, n, CK.mcenters($DN, CK.rowsy($DN, eqs, n, yc, yr, pc, pr)), ym)) : O.le(~F, NP.mnorm(~F, _, n), thR)
-  %Equal.sym(M.Mat(~F), N.ofkm($DH, ym), M.ofdm(~F, ym), AP.ofkm_d(~F, ~H, ym)) : O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, N.ofkm($DH, CK.mcenters($DN, CK.rowsy($DN, eqs, n, yc, yr, pc, pr))), _))), n), thR)
-  %Equal.sym(M.Mat(~F), N.ofkm($DH, CK.mcenters($DN, CK.rowsy($DN, eqs, n, yc, yr, pc, pr))), NW.jc(~F, eqs, n, $PTC), jc_ckb($WXA, yr)) : O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, _, M.ofdm(~F, ym)))), n), thR)
-  hthr
+# r > 0 in F: 0 < r in K
+def klt_rf(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +r: S.D, +hr: O.lt(F, @0, M.ofd(~F, r))) -> O.lt(F, N.emap(KI.dnum(), F, H, N.nzero(KI.dnum())), N.emap(KI.dnum(), F, H, r)):
+  %Equal.sym(@T, N.emap(KI.dnum(), F, H, r), M.ofd(~F, r), AP.hofd(~F, ~H, r)) : O.lt(F, N.emap(KI.dnum(), F, H, N.nzero(KI.dnum())), _)
+  %KA.ez($DH) : O.lt(F, _, M.ofd(~F, r))
+  hr
 
-# the injectivity condition at r, from |I - J0y Y| <= thR < 1
-def cinj_ok($WXP, +thR: @T, +hthr0: O.le(~F, @0, thR), +hthr: $THR, +hthr1: O.lt(F, thR, @1), +r: S.D) -> {CK.cinj($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr) == True{} : Bool}:
-  +mc = CK.mcenters($DN, CK.rowsy($DN, eqs, n, yc, NU.dreps(n, r), pc, pr))
-  +xa = N.ofkm($DH, KA.kmabs($DN, CK.imm($DN, n, mc, ym)))
-  +on = N.ofkv($DH, KA.kones($DN, n))
-  +lon = Equal.trans(Nat, M.len(~F, on), KA.klen($DN, KA.kones($DN, n)), n, CP.len_ofkv($DH, KA.kones($DN, n)), klen_kones($DN, n))
-  AP.kvlt_ones_of($DH, CK.ivec($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), n, klen_ivec($DN, eqs, n, hn, yc, NU.dreps(n, r), ym, pc, pr),
-    (%KA.kmatvec_ofk($DH, KA.kmabs($DN, CK.imm($DN, n, mc, ym)), KA.kones($DN, n)) : FV.vlt_all(~F, _, @1)
-      vlt_of_vn(~F, M.matvec(~F, xa, on), @1,
-        FO.le_lt_trans(~F, NP.vn(~F, M.matvec(~F, xa, on)), @M(NP.mnorm(~F, xa, n), NP.vn(~F, on)), @1, NP.mv_n(~F, xa, n, on, lon),
-          FO.le_lt_trans(~F, @M(NP.mnorm(~F, xa, n), NP.vn(~F, on)), @M(thR, @1), @1, NW.mm_le(~F, NP.mnorm(~F, xa, n), thR, NP.vn(~F, on), @1, FV.vmax_nn(~F, on), hthr0, kabs_mn($DH, CK.imm($DN, n, mc, ym), n, thR, hthr0, imr_mn($WXA, thR, hthr, NU.dreps(n, r))), vn_ones($DH, n)),
-            (%FR.fring_eq(~F, [thR], E.ZVar{0n}, E.ZMul{E.ZVar{0n}, E.ZCst{S.Zpos{S.XH{}}}}, {==}) : O.lt(F, _, @1)
-              hthr1))))))
+def klt_r(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +r: S.D, +hr: O.lt(F, @0, M.ofd(~F, r))) -> {KA.klt($DN, N.nzero(KI.dnum()), r) == True{} : Bool}:
+  AP.klt_of($DH, N.nzero(KI.dnum()), r, klt_rf(~F, ~H, r, hr))
+
+def kvlt_dreps(n: Nat, +r: S.D, +h: {KA.klt($DN, N.nzero(KI.dnum()), r) == True{} : Bool}) -> {KA.kvlt($DN, Nil{}, NU.dreps(n, r)) == True{} : Bool}:
+  match n:
+    case 0n:
+      {==}
+    case 1n++m:
+      KA.band_i(KA.klt($DN, N.nzero(KI.dnum()), r), KA.kvlt($DN, Nil{}, NU.dreps(m, r)), h, kvlt_dreps(m, r, h))
+
+# the positive-radii condition at r > 0
+def cpos_ok(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +n: Nat, +r: S.D, +hr: O.lt(F, @0, M.ofd(~F, r))) -> {CK.cpos($DN, n, NU.dreps(n, r)) == True{} : Bool}:
+  KA.band_i(KA.nateq(KA.klen($DN, NU.dreps(n, r)), n), KA.kvlt($DN, Nil{}, NU.dreps(n, r)), KA.nateq_of(KA.klen($DN, NU.dreps(n, r)), n, klen_dreps(n, r)), kvlt_dreps(n, r, klt_r(~F, ~H, r, hr)))
 
 # Shape
 # -----
@@ -1121,12 +1116,12 @@ def shape_ok($WXP, +hym: {CK.mlen($DN, ym) == n : Nat}, +hab: {CK.allbelow(Nat.a
     AP.kvle_of($DH, Nil{}, pr, rle_nil_rnn(~F, N.ofkv($DH, pr), rnn_kv(~F, ~H, pr, hpn))),
   KA.band_i(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs), hh, hab))))))))
 
-# The window: every r with S <= r/2, r <= rb passes the block checker
-def window_ok($WXP, +hym: {CK.mlen($DN, ym) == n : Nat}, +hab: {CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs) == True{} : Bool}, +thR: @T, +hthr0: O.le(~F, @0, thR), +hthr: $THR, +hthr1: O.lt(F, thR, @1), +hw: O.le(~F, $CW, $QH), +r: S.D, +hr0: O.le(~F, @0, M.ofd(~F, r)), +hr1: O.le(~F, M.ofd(~F, r), rb), +hS: O.le(~F, $SD, @M($QH, M.ofd(~F, r)))) -> {NU.okr(eqs, n, yc, r, ym, pc, pr) == True{} : Bool}:
+# The window: every r > 0 with S <= r/2, r <= rb passes the block checker
+def window_ok($WXP, +hym: {CK.mlen($DN, ym) == n : Nat}, +hab: {CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs) == True{} : Bool}, +thR: @T, +hthr0: O.le(~F, @0, thR), +hthr: $THR, +hthr1: O.lt(F, thR, @1), +hw: O.le(~F, $CW, $QH), +r: S.D, +hr0: O.le(~F, @0, M.ofd(~F, r)), +hr1: O.le(~F, M.ofd(~F, r), rb), +hS: O.le(~F, $SD, @M($QH, M.ofd(~F, r))), +hrp: O.lt(F, @0, M.ofd(~F, r))) -> {NU.okr(eqs, n, yc, r, ym, pc, pr) == True{} : Bool}:
   KA.band_i(CK.shape($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), CK.rest1($DN, eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr), shape_ok($WXA, hym, hab, r, hr0),
   KA.band_i(CK.factor($DN, NU.half()), CK.rest2($DN, eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr), {==},
   KA.band_i(CK.ccon($DN, eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr), CK.rest3($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), ccon_ok($WXA, hym, r, hr0, hr1, hw),
-  KA.band_i(CK.cself($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), CK.cinj($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), cself_ok($WXA, hym, r, hr0, hr1, hS, hw), cinj_ok($WXA, thR, hthr0, hthr, hthr1, r)))))
+  KA.band_i(CK.cself($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), CK.cpos($DN, n, NU.dreps(n, r)), cself_ok($WXA, hym, r, hr0, hr1, hS, hw), cpos_ok(~F, ~H, n, r, hrp)))))
 
 # The radius search
 # -----------------
@@ -1145,6 +1140,9 @@ def window_ok($WXP, +hym: {CK.mlen($DN, ym) == n : Nat}, +hab: {CK.allbelow(Nat.
 @MACRO E8 M.ofd(~F, $D8)
 @MACRO T16 M.ofd(~F, $D16)
 @MACRO UB @M(@M($C17, @A(@1, $E8)), @A($SD, $SD))
+@MACRO ETA M.ofd(~F, eta)
+@MACRO LO @A(@M($SD, $C65), $ETA)
+@MACRO UBE @M(@M($C17, @A(@1, $E8)), @A(@A($SD, $ETA), @A($SD, $ETA)))
 
 # dyadic constants compared in K
 def dle(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +a: S.D, +b: S.D, h: {KA.kle($DN, a, b) == True{} : Bool}) -> O.le(~F, M.ofd(~F, a), M.ofd(~F, b)):
@@ -1235,26 +1233,79 @@ def ub0(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +s: @T, +hs: O.le(~F, @0, s)) -> 
     FR.fring_eq(~F, [s, $C65, $C17, $E8], E.ZMul{E.ZMul{E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{3n}}, E.ZVar{0n}}, E.ZSub{E.ZAdd{E.ZVar{2n}, E.ZVar{2n}}, E.ZVar{1n}}}, E.ZSub{E.ZMul{E.ZMul{E.ZVar{2n}, E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{3n}}}, E.ZAdd{E.ZVar{0n}, E.ZVar{0n}}}, E.ZMul{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{3n}}}}, {==}),
     FO.mul_nonneg(~F, @M(@A(@1, $E8), s), @S(@A($C17, $C17), $C65), FO.mul_nonneg(~F, @A(@1, $E8), s, FO.nonneg_add(~F, @1, $E8, FO.one_nn(~F), dnn(~F, ~H, $D8, {==})), hs), FM.sub_nonneg(~F, $C65, @A($C17, $C17), c65_le(~F, ~H)))))
 
-def rgood($SVP, m: Maybe<&2, S.D>) -> Data:
+def c1_le(~F: O.OField, ~H: N.Emb<KI.dnum(), F>) -> O.le(~F, @1, @A($C17, $C17)):
+  %Equal.sym(@T, @A($C17, $C17), M.ofd(~F, S.D.add($D17, $D17)), DM.ofd_add(~F, $D17, $D17)) : O.le(~F, @1, _)
+  one_le(~F, ~H, S.D.add($D17, $D17), {==})
+
+# (s (65/64) + e)(1 + 2^-7) <= U at s + e
+def ub0e(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +s: @T, +e: @T, +hs: O.le(~F, @0, s), +he: O.le(~F, @0, e)) -> O.le(~F, @M(@A(@M(s, $C65), e), @A(@1, $E8)), @M(@M($C17, @A(@1, $E8)), @A(@A(s, e), @A(s, e)))):
+  +he8 = FO.nonneg_add(~F, @1, $E8, FO.one_nn(~F), dnn(~F, ~H, $D8, {==}))
+  FV.le_of_sub(~F, @M(@A(@M(s, $C65), e), @A(@1, $E8)), @M(@M($C17, @A(@1, $E8)), @A(@A(s, e), @A(s, e))), FM.nn_eq(~F, @S(@M(@M($C17, @A(@1, $E8)), @A(@A(s, e), @A(s, e))), @M(@A(@M(s, $C65), e), @A(@1, $E8))), @A(@M(@M(@A(@1, $E8), s), @S(@A($C17, $C17), $C65)), @M(@M(@A(@1, $E8), e), @S(@A($C17, $C17), @1))),
+    @ZEQ[s,, e,, c65=$C65,, c17=$C17,, e8=$E8 | ((1 + e8)*s)*((c17 + c17) - c65) + ((1 + e8)*e)*((c17 + c17) - 1) | ((c17*(1 + e8))*((s + e) + (s + e))) - (((s*c65) + e)*(1 + e8))],
+    FO.nonneg_add(~F, @M(@M(@A(@1, $E8), s), @S(@A($C17, $C17), $C65)), @M(@M(@A(@1, $E8), e), @S(@A($C17, $C17), @1)),
+      FO.mul_nonneg(~F, @M(@A(@1, $E8), s), @S(@A($C17, $C17), $C65), FO.mul_nonneg(~F, @A(@1, $E8), s, he8, hs), FM.sub_nonneg(~F, $C65, @A($C17, $C17), c65_le(~F, ~H))),
+      FO.mul_nonneg(~F, @M(@A(@1, $E8), e), @S(@A($C17, $C17), @1), FO.mul_nonneg(~F, @A(@1, $E8), e, he8, he), FM.sub_nonneg(~F, @1, @A($C17, $C17), c1_le(~F, ~H))))))
+
+# U at s is below U at s + e
+def ub_mono(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +s: @T, +e: @T, +he: O.le(~F, @0, e)) -> O.le(~F, @M(@M($C17, @A(@1, $E8)), @A(s, s)), @M(@M($C17, @A(@1, $E8)), @A(@A(s, e), @A(s, e)))):
+  +he8 = FO.nonneg_add(~F, @1, $E8, FO.one_nn(~F), dnn(~F, ~H, $D8, {==}))
+  FV.le_of_sub(~F, @M(@M($C17, @A(@1, $E8)), @A(s, s)), @M(@M($C17, @A(@1, $E8)), @A(@A(s, e), @A(s, e))), FM.nn_eq(~F, @S(@M(@M($C17, @A(@1, $E8)), @A(@A(s, e), @A(s, e))), @M(@M($C17, @A(@1, $E8)), @A(s, s))), @M(@M($C17, @A(@1, $E8)), @A(e, e)),
+    @ZEQ[s,, e,, c17=$C17,, e8=$E8 | (c17*(1 + e8))*(e + e) | ((c17*(1 + e8))*((s + e) + (s + e))) - ((c17*(1 + e8))*(s + s))],
+    FO.mul_nonneg(~F, @M($C17, @A(@1, $E8)), @A(e, e), FO.mul_nonneg(~F, $C17, @A(@1, $E8), dnn(~F, ~H, $D17, {==}), he8), FO.nonneg_add(~F, e, e, he, he))))
+
+# a c + e in F
+def ofdx_eq(~F: O.OField, +a: S.D, +c: S.D, +e: S.D) -> {M.ofd(~F, S.D.add(S.D.mul(a, c), e)) == @A(@M(M.ofd(~F, a), M.ofd(~F, c)), M.ofd(~F, e)) : @T}:
+  %DM.ofd_add(~F, S.D.mul(a, c), e) : {_ == @A(@M(M.ofd(~F, a), M.ofd(~F, c)), M.ofd(~F, e)) : @T}
+  %DM.ofd_mul(~F, a, c) : {@A(_, M.ofd(~F, e)) == @A(@M(M.ofd(~F, a), M.ofd(~F, c)), M.ofd(~F, e)) : @T}
+  {==}
+
+# x >= 0 rounded up at 8 bits is at most x (1 + 2^-7)
+def dsig_hx(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +x: S.D, +hx: O.le(~F, @0, M.ofd(~F, x))) -> O.le(~F, M.ofd(~F, NU.dsigup(x, 8n)), @M(M.ofd(~F, x), @A(@1, $E8))):
+  FV.le_of_sub(~F, M.ofd(~F, NU.dsigup(x, 8n)), @M(M.ofd(~F, x), @A(@1, $E8)), FM.nn_eq(~F, @S(@M(M.ofd(~F, x), @A(@1, $E8)), M.ofd(~F, NU.dsigup(x, 8n))), @S(@M(M.ofd(~F, x), $E8), @S(M.ofd(~F, NU.dsigup(x, 8n)), M.ofd(~F, x))),
+    FR.fring_eq(~F, [M.ofd(~F, x), M.ofd(~F, NU.dsigup(x, 8n)), $E8], E.ZSub{E.ZMul{E.ZVar{0n}, E.ZVar{2n}}, E.ZSub{E.ZVar{1n}, E.ZVar{0n}}}, E.ZSub{E.ZMul{E.ZVar{0n}, E.ZAdd{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{2n}}}, E.ZVar{1n}}, {==}),
+    FM.sub_nonneg(~F, @S(M.ofd(~F, NU.dsigup(x, 8n)), M.ofd(~F, x)), @M(M.ofd(~F, x), $E8),
+      DM.le_trans(~F, @S(M.ofd(~F, NU.dsigup(x, 8n)), M.ofd(~F, x)), @M(M.ofd(~F, M.dabs(x)), $E8), @M(M.ofd(~F, x), $E8),
+        AP.both_r(O.le(~F, M.ofd(~F, x), M.ofd(~F, NU.dsigup(x, 8n))), O.le(~F, O.sub(~F, M.ofd(~F, NU.dsigup(x, 8n)), M.ofd(~F, x)), @M(M.ofd(~F, M.dabs(x)), $E8)), RP.dsigup_ok(~F, x, 8n)),
+        FV.mul_le_r(~F, M.ofd(~F, M.dabs(x)), M.ofd(~F, x), $E8, dnn(~F, ~H, $D8, {==}), DG.dabs_le(~F, x, M.ofd(~F, x), FV.bnd_self(~F, M.ofd(~F, x), hx)))))))
+
+# x rounded up below a bound lo (1 + 2^-7) <= ub, x's value being lo
+def hi_r0(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +x: S.D, +lo: @T, +hxe: {M.ofd(~F, x) == lo : @T}, +hx0: O.le(~F, @0, M.ofd(~F, x)), +ub: @T, +h: O.le(~F, @M(lo, @A(@1, $E8)), ub)) -> O.le(~F, M.ofd(~F, NU.dsigup(x, 8n)), ub):
+  DM.le_trans(~F, M.ofd(~F, NU.dsigup(x, 8n)), @M(M.ofd(~F, x), @A(@1, $E8)), ub, dsig_hx(~F, ~H, x, hx0),
+    (%Equal.sym(@T, M.ofd(~F, x), lo, hxe) : O.le(~F, @M(_, @A(@1, $E8)), ub)
+      h))
+
+def rgood($SVP, +eta: S.D, m: Maybe<&2, S.D>) -> Data:
   match m:
     case None{}:
       Empty
     case Some{+r}:
-      M.Both({NU.okr(eqs, n, yc, r, ym, pc, pr) == True{} : Bool}, M.Both(O.le(~F, @M($SD, $C65), M.ofd(~F, r)), O.le(~F, M.ofd(~F, r), $UB)))
+      M.Both({NU.okr(eqs, n, yc, r, ym, pc, pr) == True{} : Bool}, M.Both(O.le(~F, @M($SD, $C65), M.ofd(~F, r)), O.le(~F, M.ofd(~F, r), $UBE)))
 
 @MACRO WXQ +n: Nat, +eqs: List<&2, E.QExpr>, +hn: {CK.eqlen(eqs) == n : Nat}, +hh: {CK.allheld($DN, eqs) == True{} : Bool}, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +lyc: {KA.klen($DN, yc) == n : Nat}, +lpp: {KA.klen($DN, pc) == KA.klen($DN, pr) : Nat}, +ym: List<&2, List<&2, S.D>>, +bb: @T, +lam: @T, +ms: @T, +rb: @T, +hb: O.le(~F, @0, bb), +hl0: O.le(~F, @0, lam), +hrb: O.le(~F, @0, rb), +hq: AP.eqok(~F, bb, lam, ms, eqs), +hc: M.vbnd.all(~F, $PTC, @S(bb, rb)), +hpn: FV.rnn(~F, M.ofdv(~F, pr)), +hpr: M.vbnd.all(~F, M.ofdv(~F, pr), rb), +yn: @T, +thL: @T, +hyn: O.le(~F, NP.mnorm(~F, M.ofdm(~F, ym), n), yn), +hthl: O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, M.ofdm(~F, ym), NW.jc(~F, eqs, n, $PTC)))), n), thL), +hyn0: O.le(~F, @0, yn), +hthl0: O.le(~F, @0, thL)
 @MACRO WXB n, eqs, hn, hh, yc, pc, pr, lyc, lpp, ym, bb, lam, ms, rb, hb, hl0, hrb, hq, hc, hpn, hpr, yn, thL, hyn, hthl, hyn0, hthl0
-@MACRO RSQ $WXQ, +hym: {CK.mlen($DN, ym) == n : Nat}, +hab: {CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs) == True{} : Bool}, +thR: @T, +hthr0: O.le(~F, @0, thR), +hthr: $THR, +hthr1: O.lt(F, thR, @1), +hw: O.le(~F, $CW, $QH), +hU: O.le(~F, $UB, rb)
-@MACRO RSB $WXB, hym, hab, thR, hthr0, hthr, hthr1, hw, hU
+@MACRO RSQ $WXQ, +hym: {CK.mlen($DN, ym) == n : Nat}, +hab: {CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs) == True{} : Bool}, +thR: @T, +hthr0: O.le(~F, @0, thR), +hthr: $THR, +hthr1: O.lt(F, thR, @1), +hw: O.le(~F, $CW, $QH), +eta: S.D, +hE: O.lt(F, @0, $ETA), +hU: O.le(~F, $UBE, rb)
+@MACRO RSB $WXB, hym, hab, thR, hthr0, hthr, hthr1, hw, eta, hE, hU
 
-def r_nn(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +hlo: O.le(~F, @M($SD, $C65), M.ofd(~F, r))) -> O.le(~F, @0, M.ofd(~F, r)):
-  DM.le_trans(~F, @0, @M($SD, $C65), M.ofd(~F, r), FO.mul_nonneg(~F, $SD, $C65, dvmax_nn(~F, $S0), c65_nn(~F, ~H)), hlo)
+def lo_nn(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ) -> O.le(~F, @0, $LO):
+  FO.nonneg_add(~F, @M($SD, $C65), $ETA, FO.mul_nonneg(~F, $SD, $C65, dvmax_nn(~F, $S0), c65_nn(~F, ~H)), FO.lt_le(~F, @0, $ETA, hE))
+
+def lo_pos(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ) -> O.lt(F, @0, $LO):
+  FO.lt_le_trans(~F, @0, $ETA, $LO, hE, FV.le_addl(~F, @M($SD, $C65), $ETA, FO.mul_nonneg(~F, $SD, $C65, dvmax_nn(~F, $S0), c65_nn(~F, ~H))))
+
+def r_nn(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +hlo: O.le(~F, $LO, M.ofd(~F, r))) -> O.le(~F, @0, M.ofd(~F, r)):
+  DM.le_trans(~F, @0, $LO, M.ofd(~F, r), lo_nn(~F, ~H, $RSB), hlo)
+
+def r_pos(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +hlo: O.le(~F, $LO, M.ofd(~F, r))) -> O.lt(F, @0, M.ofd(~F, r)):
+  FO.lt_le_trans(~F, @0, $LO, M.ofd(~F, r), lo_pos(~F, ~H, $RSB), hlo)
+
+def lo_le(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +hlo: O.le(~F, $LO, M.ofd(~F, r))) -> O.le(~F, @M($SD, $C65), M.ofd(~F, r)):
+  DM.le_trans(~F, @M($SD, $C65), $LO, M.ofd(~F, r), FV.le_addr(~F, @M($SD, $C65), $ETA, FO.lt_le(~F, @0, $ETA, hE)), hlo)
 
 # a radius that passes the window but failed: impossible
-def no_fail(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +eok: {NU.okr(eqs, n, yc, r, ym, pc, pr) == False{} : Bool}, +hlo: O.le(~F, @M($SD, $C65), M.ofd(~F, r)), +hhi: O.le(~F, M.ofd(~F, r), $UB), hS: O.le(~F, $SD, @M($QH, M.ofd(~F, r)))) -> Empty:
-  KA.ft(Equal.trans(Bool, False{}, NU.okr(eqs, n, yc, r, ym, pc, pr), True{}, Equal.sym(Bool, NU.okr(eqs, n, yc, r, ym, pc, pr), False{}, eok), window_ok(~F, ~H, $WXB, hym, hab, thR, hthr0, hthr, hthr1, hw, r, r_nn(~F, ~H, $RSB, r, hlo), DM.le_trans(~F, M.ofd(~F, r), $UB, rb, hhi, hU), hS)))
+def no_fail(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +eok: {NU.okr(eqs, n, yc, r, ym, pc, pr) == False{} : Bool}, +hlo: O.le(~F, $LO, M.ofd(~F, r)), +hhi: O.le(~F, M.ofd(~F, r), $UBE), hS: O.le(~F, $SD, @M($QH, M.ofd(~F, r)))) -> Empty:
+  KA.ft(Equal.trans(Bool, False{}, NU.okr(eqs, n, yc, r, ym, pc, pr), True{}, Equal.sym(Bool, NU.okr(eqs, n, yc, r, ym, pc, pr), False{}, eok), window_ok(~F, ~H, $WXB, hym, hab, thR, hthr0, hthr, hthr1, hw, r, r_nn(~F, ~H, $RSB, r, hlo), DM.le_trans(~F, M.ofd(~F, r), $UBE, rb, hhi, hU), hS, r_pos(~F, ~H, $RSB, r, hlo))))
 
-def fail_lt.go(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +eok: {NU.okr(eqs, n, yc, r, ym, pc, pr) == False{} : Bool}, +hlo: O.le(~F, @M($SD, $C65), M.ofd(~F, r)), +hhi: O.le(~F, M.ofd(~F, r), $UB), t: Or(O.lt(F, $SD, @M($QH, M.ofd(~F, r))), Or({$SD == @M($QH, M.ofd(~F, r)) : @T}, O.lt(F, @M($QH, M.ofd(~F, r)), $SD)))) -> O.lt(F, @M($QH, M.ofd(~F, r)), $SD):
+def fail_lt.go(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +eok: {NU.okr(eqs, n, yc, r, ym, pc, pr) == False{} : Bool}, +hlo: O.le(~F, $LO, M.ofd(~F, r)), +hhi: O.le(~F, M.ofd(~F, r), $UBE), t: Or(O.lt(F, $SD, @M($QH, M.ofd(~F, r))), Or({$SD == @M($QH, M.ofd(~F, r)) : @T}, O.lt(F, @M($QH, M.ofd(~F, r)), $SD)))) -> O.lt(F, @M($QH, M.ofd(~F, r)), $SD):
   match t:
     case Inl{l}:
       FO.absurd(O.lt(F, @M($QH, M.ofd(~F, r)), $SD), no_fail(~F, ~H, $RSB, r, eok, hlo, hhi, Inl{l}))
@@ -1264,42 +1315,46 @@ def fail_lt.go(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +eok: {NU.o
       g
 
 # a failing radius is at most S + S
-def fail_le(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +eok: {NU.okr(eqs, n, yc, r, ym, pc, pr) == False{} : Bool}, +hlo: O.le(~F, @M($SD, $C65), M.ofd(~F, r)), +hhi: O.le(~F, M.ofd(~F, r), $UB)) -> O.le(~F, M.ofd(~F, r), @A($SD, $SD)):
+def fail_le(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +eok: {NU.okr(eqs, n, yc, r, ym, pc, pr) == False{} : Bool}, +hlo: O.le(~F, $LO, M.ofd(~F, r)), +hhi: O.le(~F, M.ofd(~F, r), $UBE)) -> O.le(~F, M.ofd(~F, r), @A($SD, $SD)):
   lt2(~F, $SD, M.ofd(~F, r), fail_lt.go(~F, ~H, $RSB, r, eok, hlo, hhi, O.lt_total(F)($SD, @M($QH, M.ofd(~F, r)))))
 
 @MACRO INV O.le(~F, @A($SD, $SD), @A(M.ofd(~F, r), @M(@M(FR.ofn(~F, m), $T16), $SD)))
 
 # the search from r with fuel k, m steps (m <= k) from certain success
-def rs_ok(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, k: Nat, ok: Bool, m: Nat, $RSQ, +r: S.D, eok: {NU.okr(eqs, n, yc, r, ym, pc, pr) == ok : Bool}, +hlo: O.le(~F, @M($SD, $C65), M.ofd(~F, r)), +hhi: O.le(~F, M.ofd(~F, r), $UB), hm: {KA.natle(m, k) == True{} : Bool}, hinv: $INV) -> rgood(~F, ~H, n, eqs, yc, pc, pr, ym, NU.rsearch(k, ok, eqs, n, yc, r, ym, pc, pr)):
+def rs_ok(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, k: Nat, ok: Bool, m: Nat, $RSQ, +r: S.D, eok: {NU.okr(eqs, n, yc, r, ym, pc, pr) == ok : Bool}, +hlo: O.le(~F, $LO, M.ofd(~F, r)), +hhi: O.le(~F, M.ofd(~F, r), $UBE), hm: {KA.natle(m, k) == True{} : Bool}, hinv: $INV) -> rgood(~F, ~H, n, eqs, yc, pc, pr, ym, eta, NU.rsearch(k, ok, eqs, n, yc, r, ym, pc, pr)):
   match k ok m:
     case 0n True{} m:
-      (eok, (hlo, hhi))
+      (eok, (lo_le(~F, ~H, $RSB, r, hlo), hhi))
     case 1n+j True{} m:
-      (eok, (hlo, hhi))
+      (eok, (lo_le(~F, ~H, $RSB, r, hlo), hhi))
     case 0n False{} 0n:
-      FO.absurd(rgood(~F, ~H, n, eqs, yc, pc, pr, ym, NU.rsearch(0n, False{}, eqs, n, yc, r, ym, pc, pr)), no_fail(~F, ~H, $RSB, r, eok, hlo, hhi, half_le(~F, ~H, $SD, M.ofd(~F, r), FV.le_rw_r(~F, @A($SD, $SD), @A(M.ofd(~F, r), @M(@M(@0, $T16), $SD)), M.ofd(~F, r), FR.fring_eq(~F, [M.ofd(~F, r), $T16, $SD], E.ZAdd{E.ZVar{0n}, E.ZMul{E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{1n}}, E.ZVar{2n}}}, E.ZVar{0n}, {==}), hinv))))
+      FO.absurd(rgood(~F, ~H, n, eqs, yc, pc, pr, ym, eta, NU.rsearch(0n, False{}, eqs, n, yc, r, ym, pc, pr)), no_fail(~F, ~H, $RSB, r, eok, hlo, hhi, half_le(~F, ~H, $SD, M.ofd(~F, r), FV.le_rw_r(~F, @A($SD, $SD), @A(M.ofd(~F, r), @M(@M(@0, $T16), $SD)), M.ofd(~F, r), FR.fring_eq(~F, [M.ofd(~F, r), $T16, $SD], E.ZAdd{E.ZVar{0n}, E.ZMul{E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{1n}}, E.ZVar{2n}}}, E.ZVar{0n}, {==}), hinv))))
     case 0n False{} 1n+mm:
-      FO.absurd(rgood(~F, ~H, n, eqs, yc, pc, pr, ym, NU.rsearch(0n, False{}, eqs, n, yc, r, ym, pc, pr)), KA.ft(hm))
+      FO.absurd(rgood(~F, ~H, n, eqs, yc, pc, pr, ym, eta, NU.rsearch(0n, False{}, eqs, n, yc, r, ym, pc, pr)), KA.ft(hm))
     case 1n+j False{} 0n:
-      FO.absurd(rgood(~F, ~H, n, eqs, yc, pc, pr, ym, NU.rsearch(1n+j, False{}, eqs, n, yc, r, ym, pc, pr)), no_fail(~F, ~H, $RSB, r, eok, hlo, hhi, half_le(~F, ~H, $SD, M.ofd(~F, r), FV.le_rw_r(~F, @A($SD, $SD), @A(M.ofd(~F, r), @M(@M(@0, $T16), $SD)), M.ofd(~F, r), FR.fring_eq(~F, [M.ofd(~F, r), $T16, $SD], E.ZAdd{E.ZVar{0n}, E.ZMul{E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{1n}}, E.ZVar{2n}}}, E.ZVar{0n}, {==}), hinv))))
+      FO.absurd(rgood(~F, ~H, n, eqs, yc, pc, pr, ym, eta, NU.rsearch(1n+j, False{}, eqs, n, yc, r, ym, pc, pr)), no_fail(~F, ~H, $RSB, r, eok, hlo, hhi, half_le(~F, ~H, $SD, M.ofd(~F, r), FV.le_rw_r(~F, @A($SD, $SD), @A(M.ofd(~F, r), @M(@M(@0, $T16), $SD)), M.ofd(~F, r), FR.fring_eq(~F, [M.ofd(~F, r), $T16, $SD], E.ZAdd{E.ZVar{0n}, E.ZMul{E.ZMul{E.ZCst{S.Z0{}}, E.ZVar{1n}}, E.ZVar{2n}}}, E.ZVar{0n}, {==}), hinv))))
     case 1n++j False{} 1n++mm:
       +R = M.ofd(~F, r)
       +G = M.ofd(~F, NU.grow(r))
       +hR0 = r_nn(~F, ~H, $RSB, r, hlo)
       +hG = grow_lo(~F, r)
-      +hRS = DM.le_trans(~F, $SD, @M($SD, $C65), R, s_le_sc(~F, $SD, $C65, dvmax_nn(~F, $S0), one_le(~F, ~H, $D65, {==})), hlo)
-      +hlo2 = DM.le_trans(~F, @M($SD, $C65), R, G, hlo, DM.le_trans(~F, R, @M(R, @A(@1, $T16)), G, r_le(~F, R, $T16, hR0, dnn(~F, ~H, $D16, {==})), hG))
-      +hhi2 = DM.le_trans(~F, G, @M(@M(R, $C17), @A(@1, $E8)), $UB, dsig_hi(~F, ~H, r, $D17, hR0, dnn(~F, ~H, $D17, {==})), ub_step(~F, ~H, R, $SD, fail_le(~F, ~H, $RSB, r, eok, hlo, hhi)))
+      +hRS = DM.le_trans(~F, $SD, @M($SD, $C65), R, s_le_sc(~F, $SD, $C65, dvmax_nn(~F, $S0), one_le(~F, ~H, $D65, {==})), lo_le(~F, ~H, $RSB, r, hlo))
+      +hlo2 = DM.le_trans(~F, $LO, R, G, hlo, DM.le_trans(~F, R, @M(R, @A(@1, $T16)), G, r_le(~F, R, $T16, hR0, dnn(~F, ~H, $D16, {==})), hG))
+      +hhi2 = DM.le_trans(~F, G, @M(@M(R, $C17), @A(@1, $E8)), $UBE, dsig_hi(~F, ~H, r, $D17, hR0, dnn(~F, ~H, $D17, {==})), DM.le_trans(~F, @M(@M(R, $C17), @A(@1, $E8)), $UB, $UBE, ub_step(~F, ~H, R, $SD, fail_le(~F, ~H, $RSB, r, eok, hlo, hhi)), ub_mono(~F, ~H, $SD, $ETA, FO.lt_le(~F, @0, $ETA, hE))))
       rs_ok(~F, ~H, j, NU.okr(eqs, n, yc, NU.grow(r), ym, pc, pr), mm, $RSB, NU.grow(r), {==}, hlo2, hhi2, hm, step_inv(~F, G, R, $SD, $T16, FR.ofn(~F, mm), hG, hinv, hRS, dnn(~F, ~H, $D16, {==})))
 
 # the solver's search from r0 returns a passing radius between (65/64) S and U
-def rs_init(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ) -> rgood(~F, ~H, n, eqs, yc, pc, pr, ym, NU.rsearch(64n, NU.okr(eqs, n, yc, NU.r0(eqs, n, yc, ym, pc, pr), ym, pc, pr), eqs, n, yc, NU.r0(eqs, n, yc, ym, pc, pr), ym, pc, pr)):
-  +r = NU.r0(eqs, n, yc, ym, pc, pr)
+def rs_init(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ) -> rgood(~F, ~H, n, eqs, yc, pc, pr, ym, eta, NU.rsearch(64n, NU.okr(eqs, n, yc, NU.r0(eqs, n, yc, ym, pc, pr, eta), ym, pc, pr), eqs, n, yc, NU.r0(eqs, n, yc, ym, pc, pr, eta), ym, pc, pr)):
+  +x = S.D.add(S.D.mul(NU.dvmax($S0), $D65), eta)
+  +r = NU.r0(eqs, n, yc, ym, pc, pr, eta)
   +hS0 = dvmax_nn(~F, $S0)
-  +hlo = dsig_lo(~F, NU.dvmax($S0), $D65)
-  +hRS = DM.le_trans(~F, $SD, @M($SD, $C65), M.ofd(~F, r), s_le_sc(~F, $SD, $C65, hS0, one_le(~F, ~H, $D65, {==})), hlo)
+  +hE0 = FO.lt_le(~F, @0, $ETA, hE)
+  +hxe = ofdx_eq(~F, NU.dvmax($S0), $D65, eta)
+  +hx0 = FV.le_rw_r(~F, @0, $LO, M.ofd(~F, x), Equal.sym(@T, M.ofd(~F, x), $LO, hxe), lo_nn(~F, ~H, $RSB))
+  +hlo = RL.le_rw_l(~F, M.ofd(~F, x), $LO, M.ofd(~F, r), hxe, AP.both_l(O.le(~F, M.ofd(~F, x), M.ofd(~F, NU.dsigup(x, 8n))), O.le(~F, O.sub(~F, M.ofd(~F, NU.dsigup(x, 8n)), M.ofd(~F, x)), @M(M.ofd(~F, M.dabs(x)), $E8)), RP.dsigup_ok(~F, x, 8n)))
+  +hRS = DM.le_trans(~F, $SD, @M($SD, $C65), M.ofd(~F, r), s_le_sc(~F, $SD, $C65, hS0, one_le(~F, ~H, $D65, {==})), lo_le(~F, ~H, $RSB, r, hlo))
   rs_ok(~F, ~H, 64n, NU.okr(eqs, n, yc, r, ym, pc, pr), 16n, $RSB, r, {==}, hlo,
-    DM.le_trans(~F, M.ofd(~F, r), @M(@M($SD, $C65), @A(@1, $E8)), $UB, dsig_hi(~F, ~H, NU.dvmax($S0), $D65, hS0, c65_nn(~F, ~H)), ub0(~F, ~H, $SD, hS0)),
+    hi_r0(~F, ~H, x, $LO, hxe, hx0, $UBE, ub0e(~F, ~H, $SD, $ETA, hS0, hE0)),
     {==},
     (%Equal.sym(@T, @M(FR.ofn(~F, 16n), $T16), @1, n16_eq(~F)) : O.le(~F, @A($SD, $SD), @A(M.ofd(~F, r), @M(_, $SD)))
       FV.le_of_sub(~F, @A($SD, $SD), @A(M.ofd(~F, r), @M(@1, $SD)), FM.nn_eq(~F, @S(@A(M.ofd(~F, r), @M(@1, $SD)), @A($SD, $SD)), @S(M.ofd(~F, r), $SD), FR.fring_eq(~F, [M.ofd(~F, r), $SD], E.ZSub{E.ZVar{0n}, E.ZVar{1n}}, E.ZSub{E.ZAdd{E.ZVar{0n}, E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{1n}}}, E.ZAdd{E.ZVar{1n}, E.ZVar{1n}}}, {==}), FM.sub_nonneg(~F, $SD, M.ofd(~F, r), hRS)))))

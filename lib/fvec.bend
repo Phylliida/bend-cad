@@ -1166,3 +1166,64 @@ def vall_zero(~F: O.OField, d: M.Vec(~F), +s: O.C(F), +r: M.Vec(~F), +h: BX.rbnd
       +m0 = mul_le_r(~F, s, O.zero(F), vr, rnn_head(~F, r, hr), hs)
       (FM.bnd_mono(~F, a, O.mul(F, s, vr), O.zero(F), bnd_vhd_scale(~F, a, s, r, rbnd_head(~F, a, ds, M.vscale(~F, s, r), h)), FM.sub_nonneg(~F, O.mul(F, s, vr), O.zero(F), le_rw_r(~F, O.mul(F, s, vr), O.mul(F, O.zero(F), vr), O.zero(F), FL.zero_mul(~F, vr), m0))),
        vall_zero(~F, ds, s, vtl(~F, r), rbnd_tail_scale(~F, ds, s, r, rbnd_tail(~F, a, ds, M.vscale(~F, s, r), h)), hs, rnn_tail(~F, r, hr)))
+
+# every entry is above 0
+def vpos(~F: O.OField, w: M.Vec(~F)) -> Data:
+  match w:
+    case Nil{}:
+      Unit
+    case Con{b, ws}:
+      M.Both(O.lt(F, O.zero(F), b), vpos(~F, ws))
+
+def rat_ge_pos.go(~F: O.OField, +a: O.C(F), +r: O.C(F), t: Or(O.lt(F, O.zero(F), r), Or({O.zero(F) == r : O.C(F)}, O.lt(F, r, O.zero(F)))), +l: O.lt(F, O.zero(F), r)) -> M.bnd(~F, a, O.mul(F, rat.go(~F, a, r, t), r)):
+  match t:
+    case Inl{l2}:
+      FM.bnd_eq(~F, a, fabs(~F, a), O.mul(F, O.mul(F, fabs(~F, a), O.inv(F, r)), r), Equal.sym(O.C(F), O.mul(F, O.mul(F, fabs(~F, a), O.inv(F, r)), r), fabs(~F, a), inv_cancel(~F, fabs(~F, a), r, l2)), fabs_bnd(~F, a))
+    case Inr{Inl{e}}:
+      FO.absurd(M.bnd(~F, a, O.mul(F, O.zero(F), r)), FO.ne_of_gt(~F, r, O.zero(F), l, Equal.sym(O.C(F), O.zero(F), r, e)))
+    case Inr{Inr{g}}:
+      FO.absurd(M.bnd(~F, a, O.mul(F, O.zero(F), r)), O.lt_irrefl(F)(r, FO.lt_le_trans(~F, r, O.zero(F), r, g, FO.lt_le(~F, O.zero(F), r, l))))
+
+# |a| <= rat(a, r) r, for r > 0
+def rat_ge_pos(~F: O.OField, +a: O.C(F), +r: O.C(F), +l: O.lt(F, O.zero(F), r)) -> M.bnd(~F, a, O.mul(F, rat(~F, a, r), r)):
+  rat_ge_pos.go(~F, a, r, O.lt_total(F)(O.zero(F), r), l)
+
+# |a| <= s b, for b > 0 and rat(a, b) <= s
+def bnd_rat_s(~F: O.OField, +a: O.C(F), +b: O.C(F), +s: O.C(F), +hb: O.lt(F, O.zero(F), b), hw: O.le(~F, O.zero(F), O.sub(~F, s, rat(~F, a, b)))) -> M.bnd(~F, a, O.mul(F, s, b)):
+  FM.bnd_mono(~F, a, O.mul(F, rat(~F, a, b), b), O.mul(F, s, b), rat_ge_pos(~F, a, b, hb), FM.sub_nonneg(~F, O.mul(F, rat(~F, a, b), b), O.mul(F, s, b), mul_le_r(~F, rat(~F, a, b), s, b, FO.lt_le(~F, O.zero(F), b, hb), le_of_sub(~F, rat(~F, a, b), s, hw))))
+
+def vpos_hd(~F: O.OField, w: M.Vec(~F), +k: Nat, h: vpos(~F, w), hl: {1n+k == M.len(~F, w) : Nat}) -> O.lt(F, O.zero(F), vhd(~F, w)):
+  match w:
+    case Nil{}:
+      FO.absurd(O.lt(F, O.zero(F), vhd(~F, Nil{})), zero_ne(k, Equal.sym(Nat, 1n+k, 0n, hl)))
+    case Con{b, ws}:
+      (hb, hs) = h
+      hb
+
+def vpos_tl(~F: O.OField, w: M.Vec(~F), h: vpos(~F, w)) -> vpos(~F, vtl(~F, w)):
+  match w:
+    case Nil{}:
+      Unit{}
+    case Con{b, ws}:
+      (hb, hs) = h
+      hs
+
+def len_vtl(~F: O.OField, w: M.Vec(~F), +k: Nat, hl: {1n+k == M.len(~F, w) : Nat}) -> {k == M.len(~F, vtl(~F, w)) : Nat}:
+  match w:
+    case Nil{}:
+      FO.absurd({k == M.len(~F, vtl(~F, Nil{})) : Nat}, zero_ne(k, Equal.sym(Nat, 1n+k, 0n, hl)))
+    case Con{b, ws}:
+      LN.succ_inj(k, M.len(~F, ws), hl)
+
+# |d| <= s r, for r > 0 (as long as d) and every ratio at most s
+def wr_near_pos(~F: O.OField, d: M.Vec(~F), +r: M.Vec(~F), +s: O.C(F), +hp: vpos(~F, r), +hl: {M.len(~F, d) == M.len(~F, r) : Nat}, hw: M.vbnd.all(~F, wr(~F, d, r), s)) -> BX.rbnd(~F, d, M.vscale(~F, s, r)):
+  match d:
+    case Nil{}:
+      Unit{}
+    case Con{+a, +ds}:
+      (hw0, hws) = hw
+      (hw1, hw2) = hw0
+      +vr = vhd(~F, r)
+      rbnd_mk(~F, a, ds, M.vscale(~F, s, r),
+        FM.bnd_eq(~F, a, O.mul(F, s, vr), vhd(~F, M.vscale(~F, s, r)), vhd_vscale(~F, s, r), bnd_rat_s(~F, a, vr, s, vpos_hd(~F, r, M.len(~F, ds), hp, hl), hw1)),
+        rbnd_vtl_vscale(~F, ds, s, r, wr_near_pos(~F, ds, vtl(~F, r), s, vpos_tl(~F, r, hp), len_vtl(~F, r, M.len(~F, ds), hl), hws)))
