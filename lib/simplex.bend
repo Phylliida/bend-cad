@@ -345,7 +345,7 @@ def phi.go(b: Bool, +mi: List<&2, S.Z>, +di: S.Pos, +i: Nat, +p: S.Z, +len: Nat,
     case False{}:
       Rw{S.Pos.mul(EL.babs(p), Rw.d(r)), EL.vadd(EL.vadd(EL.vscale(S.Zpos{EL.babs(p)}, Rw.m(r)), EL.vscale(S.Z.neg(EL.bsgn(p, c)), mi)), EL.vscale(S.Z.mul(EL.bsgn(p, c), S.Zpos{di}), unit(len, i)))}
 
-# row x (index k) after the pivot: e_i for x = i, unchanged when M_xe = 0
+# row x after the pivot: e_i for the pivot row, unchanged when M_xe = 0
 def phi(b: Bool, +mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +len: Nat, +r: Rw) -> Rw:
   match b:
     case True{}:
@@ -353,12 +353,17 @@ def phi(b: Bool, +mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +len
     case False{}:
       phi.go(iszero(at(Rw.m(r), e)), mi, di, i, p, len, at(Rw.m(r), e), r)
 
-def phis(+mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +len: Nat, rs: List<&2, Rw>, +k: Nat) -> List<&2, Rw>:
-  match rs:
-    case Nil{}:
+# every row after the pivot; md counts down to the pivot row
+def phis(+mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +len: Nat, rs: List<&2, Rw>, md: Maybe<&2, Nat>) -> List<&2, Rw>:
+  match rs md:
+    case Nil{} md:
       Nil{}
-    case Con{r, t}:
-      Con{phi(eqn(k, i), mi, di, e, i, p, len, r), phis(mi, di, e, i, p, len, t, 1n+k)}
+    case Con{r, t} None{}:
+      Con{phi(False{}, mi, di, e, i, p, len, r), phis(mi, di, e, i, p, len, t, None{})}
+    case Con{r, t} Some{0n}:
+      Con{phi(True{}, mi, di, e, i, p, len, r), phis(mi, di, e, i, p, len, t, None{})}
+    case Con{r, t} Some{1n+d}:
+      Con{phi(False{}, mi, di, e, i, p, len, r), phis(mi, di, e, i, p, len, t, Some{d})}
 
 def setb(bs: List<&2, Bool>, i: Nat, b: Bool) -> List<&2, Bool>:
   match bs i:
@@ -372,7 +377,7 @@ def setb(bs: List<&2, Bool>, i: Nat, b: Bool) -> List<&2, Bool>:
 def pivot.go(ri: Rw, +e: Nat, +i: Nat, +len: Nat, rows: List<&2, Rw>, bas: List<&2, Bool>) -> Tab:
   match ri:
     case Rw{+di, +mi}:
-      Tab{phis(mi, di, e, i, at(mi, e), len, rows, 0n), setb(setb(bas, i, False{}), e, True{})}
+      Tab{phis(mi, di, e, i, at(mi, e), len, rows, Some{i}), setb(setb(bas, i, False{}), e, True{})}
 
 # i leaves, e enters
 def pivot(+len: Nat, t: Tab, +i: Nat, +e: Nat) -> Tab:

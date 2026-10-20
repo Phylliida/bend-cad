@@ -1,0 +1,291 @@
+# bend-cad: the simplex's dictionary read in an ordered field (PLAN-sk13a
+# S3). A row Rw{D, M} reads as R = M / D: its value at a point w (one entry
+# per variable) is rv(r, w) = (M . w) / D. Pivoting on p = M_ie (pivot row
+# (D_i, M_i), leaving i, entering e) sends every row's value at w to the old
+# row's value at w with entry e lowered by
+#   t(w) = (M_i . w - D_i w_i) / p,
+# that is R' = R - (R_e / R_ie)(R_i - e_i) (phis_ok). Everything about the
+# dictionary that the proofs use follows from this.
+#
+# Generated from tools/drafts/simppf.draft by tools/expand.py; edit the
+# draft.
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ../spec/mat.bend as M
+import ./flaws.bend as FL
+import ./fring.bend as FR
+import ./ford.bend as FO
+import ./qemb.bend as QE
+import ./karith.bend as KA
+import ./elim.bend as EL
+import ./simplex.bend as SX
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+# Vectors
+# -------
+
+# u . w, u an integer vector read in F
+def zdot(~F: O.OField, u: List<&2, S.Z>, w: M.Vec(~F)) -> @T:
+  match u w:
+    case Nil{} w:
+      @0
+    case Con{x, t} Nil{}:
+      @0
+    case Con{x, t} Con{y, s}:
+      @A(@M(@OZ(x), y), zdot(~F, t, s))
+
+# entry j (0 past the end)
+def fat(~F: O.OField, w: M.Vec(~F), j: Nat) -> @T:
+  match w j:
+    case Nil{} j:
+      @0
+    case Con{y, s} 0n:
+      y
+    case Con{y, s} 1n+k:
+      fat(~F, s, k)
+
+# w with entry e lowered by t
+def wsub(~F: O.OField, w: M.Vec(~F), e: Nat, +t: @T) -> M.Vec(~F):
+  match w e:
+    case Nil{} 0n:
+      Con{@S(@0, t), Nil{}}
+    case Nil{} 1n+k:
+      Con{@0, wsub(~F, Nil{}, k, t)}
+    case Con{y, s} 0n:
+      Con{@S(y, t), s}
+    case Con{y, s} 1n+k:
+      Con{y, wsub(~F, s, k, t)}
+
+def zdot_nil_r(~F: O.OField, u: List<&2, S.Z>) -> {@0 == zdot(~F, u, Nil{}) : @T}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{x, t}:
+      {==}
+
+def zz(~F: O.OField) -> {@A(@0, @0) == @0 : @T}:
+  O.add_zero(F)(@0)
+
+# u . (w - t e_e) = u . w - u_e t
+def zdot_wsub(~F: O.OField, u: List<&2, S.Z>, w: M.Vec(~F), e: Nat, +t: @T) -> {@S(zdot(~F, u, w), @M(@OZ(SX.at(u, e)), t)) == zdot(~F, u, wsub(~F, w, e, t)) : @T}:
+  match u w e:
+    case Nil{} w e:
+      @ZEQ[t | 0 - 0*t | 0]
+    case Con{+x, +ut} Nil{} 0n:
+      %zdot_nil_r(~F, ut) : {@S(@0, @M(@OZ(x), t)) == @A(@M(@OZ(x), @S(@0, t)), _) : @T}
+      @ZEQ[x=@OZ(x),, t | 0 - x*t | x*(0 - t) + 0]
+    case Con{+x, +ut} Nil{} 1n++k:
+      %zdot_wsub(~F, ut, Nil{}, k, t) : {@S(@0, @M(@OZ(SX.at(ut, k)), t)) == @A(@M(@OZ(x), @0), _) : @T}
+      %zdot_nil_r(~F, ut) : {@S(@0, @M(@OZ(SX.at(ut, k)), t)) == @A(@M(@OZ(x), @0), @S(_, @M(@OZ(SX.at(ut, k)), t))) : @T}
+      @ZEQ[x=@OZ(x),, a=@OZ(SX.at(ut, k)),, t | 0 - a*t | x*0 + (0 - a*t)]
+    case Con{+x, +ut} Con{+y, +s} 0n:
+      @ZEQ[x=@OZ(x),, y,, t,, d=zdot(~F, ut, s) | (x*y + d) - x*t | x*(y - t) + d]
+    case Con{+x, +ut} Con{+y, +s} 1n++k:
+      %zdot_wsub(~F, ut, s, k, t) : {@S(@A(@M(@OZ(x), y), zdot(~F, ut, s)), @M(@OZ(SX.at(ut, k)), t)) == @A(@M(@OZ(x), y), _) : @T}
+      @ZEQ[x=@OZ(x),, y,, t,, a=@OZ(SX.at(ut, k)),, d=zdot(~F, ut, s) | (x*y + d) - a*t | x*y + (d - a*t)]
+
+# u1 . w + u2 . w = (u1 + u2) . w
+def zdot_vadd(~F: O.OField, u1: List<&2, S.Z>, u2: List<&2, S.Z>, +w: M.Vec(~F)) -> {@A(zdot(~F, u1, w), zdot(~F, u2, w)) == zdot(~F, EL.vadd(u1, u2), w) : @T}:
+  match u1 u2 w:
+    case Nil{} Nil{} w:
+      zz(~F)
+    case Nil{} Con{+y, +s} w:
+      FL.zero_add(~F, zdot(~F, Con{y, s}, w))
+    case Con{+x, +t} Nil{} w:
+      Equal.sym(@T, zdot(~F, Con{x, t}, w), @A(zdot(~F, Con{x, t}, w), @0), FL.add_zero(~F, zdot(~F, Con{x, t}, w)))
+    case Con{x, t} Con{y, s} Nil{}:
+      zz(~F)
+    case Con{+x, +t} Con{+y, +s} Con{+z, +r}:
+      %zdot_vadd(~F, t, s, r) : {@A(@A(@M(@OZ(x), z), zdot(~F, t, r)), @A(@M(@OZ(y), z), zdot(~F, s, r))) == @A(@M(@OZ(S.Z.add(x, y)), z), _) : @T}
+      %FR.ofz_add(~F, x, y) : {@A(@A(@M(@OZ(x), z), zdot(~F, t, r)), @A(@M(@OZ(y), z), zdot(~F, s, r))) == @A(@M(_, z), @A(zdot(~F, t, r), zdot(~F, s, r))) : @T}
+      @ZEQ[x=@OZ(x),, y=@OZ(y),, z,, a=zdot(~F, t, r),, b=zdot(~F, s, r) | (x*z + a) + (y*z + b) | (x + y)*z + (a + b)]
+
+# k (u . w) = (k u) . w
+def zdot_vscale(~F: O.OField, +k: S.Z, u: List<&2, S.Z>, +w: M.Vec(~F)) -> {@M(@OZ(k), zdot(~F, u, w)) == zdot(~F, EL.vscale(k, u), w) : @T}:
+  match u w:
+    case Nil{} w:
+      Equal.sym(@T, @0, @M(@OZ(k), @0), FL.mul_zero(~F, @OZ(k)))
+    case Con{x, t} Nil{}:
+      Equal.sym(@T, @0, @M(@OZ(k), @0), FL.mul_zero(~F, @OZ(k)))
+    case Con{+x, +t} Con{+y, +s}:
+      %zdot_vscale(~F, k, t, s) : {@M(@OZ(k), @A(@M(@OZ(x), y), zdot(~F, t, s))) == @A(@M(@OZ(S.Z.mul(k, x)), y), _) : @T}
+      %FR.ofz_mul(~F, k, x) : {@M(@OZ(k), @A(@M(@OZ(x), y), zdot(~F, t, s))) == @A(@M(_, y), @M(@OZ(k), zdot(~F, t, s))) : @T}
+      @ZEQ[k=@OZ(k),, x=@OZ(x),, y,, a=zdot(~F, t, s) | k*(x*y + a) | (k*x)*y + k*a]
+
+# zeros . w = 0
+def zdot_zeros(~F: O.OField, j: Nat, w: M.Vec(~F)) -> {@0 == zdot(~F, EL.zeros(j), w) : @T}:
+  match j w:
+    case 0n w:
+      {==}
+    case 1n+k Nil{}:
+      {==}
+    case 1n+k Con{+y, +s}:
+      %zdot_zeros(~F, k, s) : {@0 == @A(@M(@0, y), _) : @T}
+      @ZEQ[y | 0 | 0*y + 0]
+
+# e_i . w = w_i, for i < len
+def zdot_unit(~F: O.OField, len: Nat, i: Nat, w: M.Vec(~F), hi: {SX.ltn(i, len) == True{} : Bool}) -> {fat(~F, w, i) == zdot(~F, SX.unit(len, i), w) : @T}:
+  match len i w:
+    case 0n 0n w:
+      absurd({fat(~F, w, 0n) == zdot(~F, SX.unit(0n, 0n), w) : @T}, KA.ft(hi))
+    case 0n 1n++h w:
+      absurd({fat(~F, w, 1n+h) == zdot(~F, SX.unit(0n, 1n+h), w) : @T}, KA.ft(hi))
+    case 1n++j 0n Nil{}:
+      {==}
+    case 1n++j 0n Con{+y, +s}:
+      %zdot_zeros(~F, j, s) : {y == @A(@M(@1, y), _) : @T}
+      @ZEQ[y | y | 1*y + 0]
+    case 1n++j 1n++h Nil{}:
+      {==}
+    case 1n++j 1n++h Con{+y, +s}:
+      %zdot_unit(~F, j, h, s, hi) : {fat(~F, s, h) == @A(@M(@0, y), _) : @T}
+      @ZEQ[y,, f=fat(~F, s, h) | f | 0*y + f]
+
+# Rows
+# ----
+
+# row r's value at w: (M . w) / D
+def rv(~F: O.OField, +r: SX.Rw, +w: M.Vec(~F)) -> @T:
+  @M(zdot(~F, SX.Rw.m(r), w), O.inv(F, O.ofp(~F, SX.Rw.d(r))))
+
+# every row's value at w
+def rmap(~F: O.OField, rs: List<&2, SX.Rw>, +w: M.Vec(~F)) -> M.Vec(~F):
+  match rs:
+    case Nil{}:
+      Nil{}
+    case Con{r, t}:
+      Con{rv(~F, r, w), rmap(~F, t, w)}
+
+# r . (w - t e_e) = r . w - R_e t
+def rv_wsub(~F: O.OField, +r: SX.Rw, +w: M.Vec(~F), +e: Nat, +t: @T) -> {@S(rv(~F, r, w), @M(@M(@OZ(SX.at(SX.Rw.m(r), e)), O.inv(F, O.ofp(~F, SX.Rw.d(r)))), t)) == rv(~F, r, wsub(~F, w, e, t)) : @T}:
+  %zdot_wsub(~F, SX.Rw.m(r), w, e, t) : {@S(rv(~F, r, w), @M(@M(@OZ(SX.at(SX.Rw.m(r), e)), O.inv(F, O.ofp(~F, SX.Rw.d(r)))), t)) == @M(_, O.inv(F, O.ofp(~F, SX.Rw.d(r)))) : @T}
+  @ZEQ[a=zdot(~F, SX.Rw.m(r), w),, c=@OZ(SX.at(SX.Rw.m(r), e)),, d=O.inv(F, O.ofp(~F, SX.Rw.d(r))),, t | a*d - (c*d)*t | (a - c*t)*d]
+
+# the pivot's step at w: (M_i . w - D_i w_i) / p
+def tval(~F: O.OField, +mi: List<&2, S.Z>, +di: S.Pos, +i: Nat, +p: S.Z, +w: M.Vec(~F)) -> @T:
+  @M(@S(zdot(~F, mi, w), @M(O.ofp(~F, di), fat(~F, w, i))), O.inv(F, @OZ(p)))
+
+def ofz_ne(~F: O.OField, p: S.Z, h: {SX.iszero(p) == False{} : Bool}) -> {@OZ(p) == @0 : @T} -> Empty:
+  match p:
+    case S.Z0{}:
+      absurd({@OZ(S.Z0{}) == @0 : @T} -> Empty, KA.tf(h))
+    case S.Zpos{+q}:
+      QE.ofp_ne(~F, q)
+    case S.Zneg{+q}:
+      e => QE.ofp_ne(~F, q)(@CERTEQ[a=O.ofp(~F, q) | a | 0 | -1 ; (-a) - 0 || FO.sub_of_eq(~F, @N(O.ofp(~F, q)), @0, e)])
+
+def iszero_eq(c: S.Z, h: {True{} == SX.iszero(c) : Bool}) -> {S.Z0{} == c : S.Z}:
+  match c:
+    case S.Z0{}:
+      {==}
+    case S.Zpos{q}:
+      absurd({S.Z0{} == S.Zpos{q} : S.Z}, KA.tf(h))
+    case S.Zneg{q}:
+      absurd({S.Z0{} == S.Zneg{q} : S.Z}, KA.tf(h))
+
+# the pivot row becomes e_i
+def phi1(~F: O.OField, +mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +len: Nat, +w: M.Vec(~F), hpe: {SX.at(mi, e) == p : S.Z}, +hp: {SX.iszero(p) == False{} : Bool}, +hi: {SX.ltn(i, len) == True{} : Bool}) -> {rv(~F, SX.Rw{di, mi}, wsub(~F, w, e, tval(~F, mi, di, i, p, w))) == rv(~F, SX.Rw{S.XH{}, SX.unit(len, i)}, w) : @T}:
+  %rv_wsub(~F, SX.Rw{di, mi}, w, e, tval(~F, mi, di, i, p, w)) : {_ == rv(~F, SX.Rw{S.XH{}, SX.unit(len, i)}, w) : @T}
+  %Equal.sym(S.Z, SX.at(mi, e), p, hpe) : {@S(@M(zdot(~F, mi, w), O.inv(F, O.ofp(~F, di))), @M(@M(@OZ(_), O.inv(F, O.ofp(~F, di))), tval(~F, mi, di, i, p, w))) == rv(~F, SX.Rw{S.XH{}, SX.unit(len, i)}, w) : @T}
+  %zdot_unit(~F, len, i, w, hi) : {@S(@M(zdot(~F, mi, w), O.inv(F, O.ofp(~F, di))), @M(@M(@OZ(p), O.inv(F, O.ofp(~F, di))), tval(~F, mi, di, i, p, w))) == @M(_, O.inv(F, O.ofp(~F, S.XH{}))) : @T}
+  @CERTEQ[w0=fat(~F, w, i),, i1=O.inv(F, O.ofp(~F, S.XH{})),, b=zdot(~F, mi, w),, idi=O.inv(F, O.ofp(~F, di)),, p=@OZ(p),, di=O.ofp(~F, di),, ip=O.inv(F, @OZ(p)) | b*idi - (p*idi)*((b - di*w0)*ip) | w0*i1 | idi*(-b + di*w0) ; p*ip - 1 | w0 ; di*idi - 1 | -w0 ; 1*i1 - 1 || FO.inv_rel(~F, @OZ(p), ofz_ne(~F, p, hp)), QE.ofp_rel(~F, di), QE.ofp_rel(~F, S.XH{})]
+
+# a row with M_xe = 0 is unchanged
+def phi2(~F: O.OField, +mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +r: SX.Rw, +w: M.Vec(~F), hb: {True{} == SX.iszero(SX.at(SX.Rw.m(r), e)) : Bool}) -> {rv(~F, r, wsub(~F, w, e, tval(~F, mi, di, i, p, w))) == rv(~F, r, w) : @T}:
+  %rv_wsub(~F, r, w, e, tval(~F, mi, di, i, p, w)) : {_ == rv(~F, r, w) : @T}
+  %iszero_eq(SX.at(SX.Rw.m(r), e), hb) : {@S(rv(~F, r, w), @M(@M(@OZ(_), O.inv(F, O.ofp(~F, SX.Rw.d(r)))), tval(~F, mi, di, i, p, w))) == rv(~F, r, w) : @T}
+  @ZEQ[v=rv(~F, r, w),, d=O.inv(F, O.ofp(~F, SX.Rw.d(r))),, t=tval(~F, mi, di, i, p, w) | v - (0*d)*t | v]
+def phi3.pos(~F: O.OField, +mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +q: S.Pos, +len: Nat, r: SX.Rw, +w: M.Vec(~F), +hi: {SX.ltn(i, len) == True{} : Bool}) -> {rv(~F, r, wsub(~F, w, e, tval(~F, mi, di, i, S.Zpos{q}, w))) == rv(~F, SX.phi.go(False{}, mi, di, i, S.Zpos{q}, len, SX.at(SX.Rw.m(r), e), r), w) : @T}:
+  match r:
+    case SX.Rw{+d, +m}:
+      %rv_wsub(~F, SX.Rw{d, m}, w, e, tval(~F, mi, di, i, S.Zpos{q}, w)) : {_ == @M(zdot(~F, EL.vadd(EL.vadd(EL.vscale(S.Zpos{q}, m), EL.vscale(S.Z.neg(SX.at(m, e)), mi)), EL.vscale(S.Z.mul(SX.at(m, e), S.Zpos{di}), SX.unit(len, i))), w), O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      %zdot_vadd(~F, EL.vadd(EL.vscale(S.Zpos{q}, m), EL.vscale(S.Z.neg(SX.at(m, e)), mi)), EL.vscale(S.Z.mul(SX.at(m, e), S.Zpos{di}), SX.unit(len, i)), w) : {@S(@M(zdot(~F, m, w), O.inv(F, O.ofp(~F, d))), @M(@M(@OZ(SX.at(m, e)), O.inv(F, O.ofp(~F, d))), tval(~F, mi, di, i, S.Zpos{q}, w))) == @M(_, O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      %zdot_vadd(~F, EL.vscale(S.Zpos{q}, m), EL.vscale(S.Z.neg(SX.at(m, e)), mi), w) : {@S(@M(zdot(~F, m, w), O.inv(F, O.ofp(~F, d))), @M(@M(@OZ(SX.at(m, e)), O.inv(F, O.ofp(~F, d))), tval(~F, mi, di, i, S.Zpos{q}, w))) == @M(@A(_, zdot(~F, EL.vscale(S.Z.mul(SX.at(m, e), S.Zpos{di}), SX.unit(len, i)), w)), O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      %zdot_vscale(~F, S.Zpos{q}, m, w) : {@S(@M(zdot(~F, m, w), O.inv(F, O.ofp(~F, d))), @M(@M(@OZ(SX.at(m, e)), O.inv(F, O.ofp(~F, d))), tval(~F, mi, di, i, S.Zpos{q}, w))) == @M(@A(@A(_, zdot(~F, EL.vscale(S.Z.neg(SX.at(m, e)), mi), w)), zdot(~F, EL.vscale(S.Z.mul(SX.at(m, e), S.Zpos{di}), SX.unit(len, i)), w)), O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      %zdot_vscale(~F, S.Z.neg(SX.at(m, e)), mi, w) : {@S(@M(zdot(~F, m, w), O.inv(F, O.ofp(~F, d))), @M(@M(@OZ(SX.at(m, e)), O.inv(F, O.ofp(~F, d))), tval(~F, mi, di, i, S.Zpos{q}, w))) == @M(@A(@A(@M(@OZ(S.Zpos{q}), zdot(~F, m, w)), _), zdot(~F, EL.vscale(S.Z.mul(SX.at(m, e), S.Zpos{di}), SX.unit(len, i)), w)), O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      %zdot_vscale(~F, S.Z.mul(SX.at(m, e), S.Zpos{di}), SX.unit(len, i), w) : {@S(@M(zdot(~F, m, w), O.inv(F, O.ofp(~F, d))), @M(@M(@OZ(SX.at(m, e)), O.inv(F, O.ofp(~F, d))), tval(~F, mi, di, i, S.Zpos{q}, w))) == @M(@A(@A(@M(@OZ(S.Zpos{q}), zdot(~F, m, w)), @M(@OZ(S.Z.neg(SX.at(m, e))), zdot(~F, mi, w))), _), O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      %zdot_unit(~F, len, i, w, hi) : {@S(@M(zdot(~F, m, w), O.inv(F, O.ofp(~F, d))), @M(@M(@OZ(SX.at(m, e)), O.inv(F, O.ofp(~F, d))), tval(~F, mi, di, i, S.Zpos{q}, w))) == @M(@A(@A(@M(@OZ(S.Zpos{q}), zdot(~F, m, w)), @M(@OZ(S.Z.neg(SX.at(m, e))), zdot(~F, mi, w))), @M(@OZ(S.Z.mul(SX.at(m, e), S.Zpos{di})), _)), O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      %FR.ofz_neg(~F, SX.at(m, e)) : {@S(@M(zdot(~F, m, w), O.inv(F, O.ofp(~F, d))), @M(@M(@OZ(SX.at(m, e)), O.inv(F, O.ofp(~F, d))), tval(~F, mi, di, i, S.Zpos{q}, w))) == @M(@A(@A(@M(@OZ(S.Zpos{q}), zdot(~F, m, w)), @M(_, zdot(~F, mi, w))), @M(@OZ(S.Z.mul(SX.at(m, e), S.Zpos{di})), fat(~F, w, i))), O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      %FR.ofz_mul(~F, SX.at(m, e), S.Zpos{di}) : {@S(@M(zdot(~F, m, w), O.inv(F, O.ofp(~F, d))), @M(@M(@OZ(SX.at(m, e)), O.inv(F, O.ofp(~F, d))), tval(~F, mi, di, i, S.Zpos{q}, w))) == @M(@A(@A(@M(@OZ(S.Zpos{q}), zdot(~F, m, w)), @M(@N(@OZ(SX.at(m, e))), zdot(~F, mi, w))), @M(_, fat(~F, w, i))), O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      @CERTEQ[a=zdot(~F, m, w),, b=zdot(~F, mi, w),, c=@OZ(SX.at(m, e)),, di=O.ofp(~F, di),, w0=fat(~F, w, i),, qq=O.ofp(~F, q),, dx=O.ofp(~F, d),, ii=O.inv(F, O.ofp(~F, S.Pos.mul(q, d))),, pd=O.ofp(~F, S.Pos.mul(q, d)),, idx=O.inv(F, O.ofp(~F, d)),, ip=O.inv(F, O.ofp(~F, q)),, qm:=qq*a - c*b + c*di*w0 | a*idx - (c*idx)*((b - di*w0)*ip) | ((qq*a + (-c)*b) + (c*di)*w0)*ii | -(qm*idx*ip) ; pd*ii - 1 | (qm*idx*ip)*ii ; pd - qq*dx | -(a*idx - qm*ii*dx*idx) ; qq*ip - 1 | qm*ii ; dx*idx - 1 || QE.ofp_rel(~F, S.Pos.mul(q, d)), FO.sub_of_eq(~F, O.ofp(~F, S.Pos.mul(q, d)), @M(O.ofp(~F, q), O.ofp(~F, d)), Equal.sym(@T, @M(O.ofp(~F, q), O.ofp(~F, d)), O.ofp(~F, S.Pos.mul(q, d)), FR.ofz_mul(~F, S.Zpos{q}, S.Zpos{d}))), FO.inv_rel(~F, O.ofp(~F, q), QE.ofp_ne(~F, q)), QE.ofp_rel(~F, d)]
+
+def phi3.neg(~F: O.OField, +mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +q: S.Pos, +len: Nat, r: SX.Rw, +w: M.Vec(~F), +hi: {SX.ltn(i, len) == True{} : Bool}) -> {rv(~F, r, wsub(~F, w, e, tval(~F, mi, di, i, S.Zneg{q}, w))) == rv(~F, SX.phi.go(False{}, mi, di, i, S.Zneg{q}, len, SX.at(SX.Rw.m(r), e), r), w) : @T}:
+  match r:
+    case SX.Rw{+d, +m}:
+      %rv_wsub(~F, SX.Rw{d, m}, w, e, tval(~F, mi, di, i, S.Zneg{q}, w)) : {_ == @M(zdot(~F, EL.vadd(EL.vadd(EL.vscale(S.Zpos{q}, m), EL.vscale(S.Z.neg(S.Z.neg(SX.at(m, e))), mi)), EL.vscale(S.Z.mul(S.Z.neg(SX.at(m, e)), S.Zpos{di}), SX.unit(len, i))), w), O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      %zdot_vadd(~F, EL.vadd(EL.vscale(S.Zpos{q}, m), EL.vscale(S.Z.neg(S.Z.neg(SX.at(m, e))), mi)), EL.vscale(S.Z.mul(S.Z.neg(SX.at(m, e)), S.Zpos{di}), SX.unit(len, i)), w) : {@S(@M(zdot(~F, m, w), O.inv(F, O.ofp(~F, d))), @M(@M(@OZ(SX.at(m, e)), O.inv(F, O.ofp(~F, d))), tval(~F, mi, di, i, S.Zneg{q}, w))) == @M(_, O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      %zdot_vadd(~F, EL.vscale(S.Zpos{q}, m), EL.vscale(S.Z.neg(S.Z.neg(SX.at(m, e))), mi), w) : {@S(@M(zdot(~F, m, w), O.inv(F, O.ofp(~F, d))), @M(@M(@OZ(SX.at(m, e)), O.inv(F, O.ofp(~F, d))), tval(~F, mi, di, i, S.Zneg{q}, w))) == @M(@A(_, zdot(~F, EL.vscale(S.Z.mul(S.Z.neg(SX.at(m, e)), S.Zpos{di}), SX.unit(len, i)), w)), O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      %zdot_vscale(~F, S.Zpos{q}, m, w) : {@S(@M(zdot(~F, m, w), O.inv(F, O.ofp(~F, d))), @M(@M(@OZ(SX.at(m, e)), O.inv(F, O.ofp(~F, d))), tval(~F, mi, di, i, S.Zneg{q}, w))) == @M(@A(@A(_, zdot(~F, EL.vscale(S.Z.neg(S.Z.neg(SX.at(m, e))), mi), w)), zdot(~F, EL.vscale(S.Z.mul(S.Z.neg(SX.at(m, e)), S.Zpos{di}), SX.unit(len, i)), w)), O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      %zdot_vscale(~F, S.Z.neg(S.Z.neg(SX.at(m, e))), mi, w) : {@S(@M(zdot(~F, m, w), O.inv(F, O.ofp(~F, d))), @M(@M(@OZ(SX.at(m, e)), O.inv(F, O.ofp(~F, d))), tval(~F, mi, di, i, S.Zneg{q}, w))) == @M(@A(@A(@M(@OZ(S.Zpos{q}), zdot(~F, m, w)), _), zdot(~F, EL.vscale(S.Z.mul(S.Z.neg(SX.at(m, e)), S.Zpos{di}), SX.unit(len, i)), w)), O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      %zdot_vscale(~F, S.Z.mul(S.Z.neg(SX.at(m, e)), S.Zpos{di}), SX.unit(len, i), w) : {@S(@M(zdot(~F, m, w), O.inv(F, O.ofp(~F, d))), @M(@M(@OZ(SX.at(m, e)), O.inv(F, O.ofp(~F, d))), tval(~F, mi, di, i, S.Zneg{q}, w))) == @M(@A(@A(@M(@OZ(S.Zpos{q}), zdot(~F, m, w)), @M(@OZ(S.Z.neg(S.Z.neg(SX.at(m, e)))), zdot(~F, mi, w))), _), O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      %zdot_unit(~F, len, i, w, hi) : {@S(@M(zdot(~F, m, w), O.inv(F, O.ofp(~F, d))), @M(@M(@OZ(SX.at(m, e)), O.inv(F, O.ofp(~F, d))), tval(~F, mi, di, i, S.Zneg{q}, w))) == @M(@A(@A(@M(@OZ(S.Zpos{q}), zdot(~F, m, w)), @M(@OZ(S.Z.neg(S.Z.neg(SX.at(m, e)))), zdot(~F, mi, w))), @M(@OZ(S.Z.mul(S.Z.neg(SX.at(m, e)), S.Zpos{di})), _)), O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      %FR.ofz_neg(~F, S.Z.neg(SX.at(m, e))) : {@S(@M(zdot(~F, m, w), O.inv(F, O.ofp(~F, d))), @M(@M(@OZ(SX.at(m, e)), O.inv(F, O.ofp(~F, d))), tval(~F, mi, di, i, S.Zneg{q}, w))) == @M(@A(@A(@M(@OZ(S.Zpos{q}), zdot(~F, m, w)), @M(_, zdot(~F, mi, w))), @M(@OZ(S.Z.mul(S.Z.neg(SX.at(m, e)), S.Zpos{di})), fat(~F, w, i))), O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      %FR.ofz_mul(~F, S.Z.neg(SX.at(m, e)), S.Zpos{di}) : {@S(@M(zdot(~F, m, w), O.inv(F, O.ofp(~F, d))), @M(@M(@OZ(SX.at(m, e)), O.inv(F, O.ofp(~F, d))), tval(~F, mi, di, i, S.Zneg{q}, w))) == @M(@A(@A(@M(@OZ(S.Zpos{q}), zdot(~F, m, w)), @M(@N(@OZ(S.Z.neg(SX.at(m, e)))), zdot(~F, mi, w))), @M(_, fat(~F, w, i))), O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      %FR.ofz_neg(~F, SX.at(m, e)) : {@S(@M(zdot(~F, m, w), O.inv(F, O.ofp(~F, d))), @M(@M(@OZ(SX.at(m, e)), O.inv(F, O.ofp(~F, d))), tval(~F, mi, di, i, S.Zneg{q}, w))) == @M(@A(@A(@M(@OZ(S.Zpos{q}), zdot(~F, m, w)), @M(@N(_), zdot(~F, mi, w))), @M(@M(_, @OZ(S.Zpos{di})), fat(~F, w, i))), O.inv(F, O.ofp(~F, S.Pos.mul(q, d)))) : @T}
+      @CERTEQ[a=zdot(~F, m, w),, b=zdot(~F, mi, w),, c=@OZ(SX.at(m, e)),, di=O.ofp(~F, di),, w0=fat(~F, w, i),, qq=O.ofp(~F, q),, dx=O.ofp(~F, d),, ii=O.inv(F, O.ofp(~F, S.Pos.mul(q, d))),, pd=O.ofp(~F, S.Pos.mul(q, d)),, idx=O.inv(F, O.ofp(~F, d)),, ip=O.inv(F, @N(O.ofp(~F, q))),, qm:=(-qq)*a - c*b + c*di*w0 | a*idx - (c*idx)*((b - di*w0)*ip) | ((qq*a + (-(-c))*b) + ((-c)*di)*w0)*ii | -(qm*idx*ip) ; pd*ii - 1 | (qm*idx*ip)*ii ; pd - qq*dx | -(a*idx + qm*ii*dx*idx) ; (-qq)*ip - 1 | -(qm*ii) ; dx*idx - 1 || QE.ofp_rel(~F, S.Pos.mul(q, d)), FO.sub_of_eq(~F, O.ofp(~F, S.Pos.mul(q, d)), @M(O.ofp(~F, q), O.ofp(~F, d)), Equal.sym(@T, @M(O.ofp(~F, q), O.ofp(~F, d)), O.ofp(~F, S.Pos.mul(q, d)), FR.ofz_mul(~F, S.Zpos{q}, S.Zpos{d}))), FO.inv_rel(~F, @N(O.ofp(~F, q)), ofz_ne(~F, S.Zneg{q}, {==})), QE.ofp_rel(~F, d)]
+
+
+# a row with M_xe = c != 0: |p| D_x x = |p| M_x - sgn(p) c M_i + sgn(p) c D_i e_i
+def phi3(~F: O.OField, +mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, p: S.Z, +len: Nat, r: SX.Rw, +w: M.Vec(~F), hp: {SX.iszero(p) == False{} : Bool}, +hi: {SX.ltn(i, len) == True{} : Bool}) -> {rv(~F, r, wsub(~F, w, e, tval(~F, mi, di, i, p, w))) == rv(~F, SX.phi.go(False{}, mi, di, i, p, len, SX.at(SX.Rw.m(r), e), r), w) : @T}:
+  match p:
+    case S.Z0{}:
+      absurd({rv(~F, r, wsub(~F, w, e, tval(~F, mi, di, i, S.Z0{}, w))) == rv(~F, SX.phi.go(False{}, mi, di, i, S.Z0{}, len, SX.at(SX.Rw.m(r), e), r), w) : @T}, KA.tf(hp))
+    case S.Zpos{+q}:
+      phi3.pos(~F, mi, di, e, i, q, len, r, w, hi)
+    case S.Zneg{+q}:
+      phi3.neg(~F, mi, di, e, i, q, len, r, w, hi)
+
+def phi_go_ok(~F: O.OField, b: Bool, +mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +len: Nat, +r: SX.Rw, +w: M.Vec(~F), hb: {b == SX.iszero(SX.at(SX.Rw.m(r), e)) : Bool}, hp: {SX.iszero(p) == False{} : Bool}, hi: {SX.ltn(i, len) == True{} : Bool}) -> {rv(~F, r, wsub(~F, w, e, tval(~F, mi, di, i, p, w))) == rv(~F, SX.phi.go(b, mi, di, i, p, len, SX.at(SX.Rw.m(r), e), r), w) : @T}:
+  match b:
+    case True{}:
+      phi2(~F, mi, di, e, i, p, r, w, hb)
+    case False{}:
+      phi3(~F, mi, di, e, i, p, len, r, w, hp, hi)
+
+# the row at md (counting down) is the pivot row
+def pivrow(rs: List<&2, SX.Rw>, md: Maybe<&2, Nat>, +di: S.Pos, +mi: List<&2, S.Z>) -> Data:
+  match md:
+    case None{}:
+      Unit
+    case Some{d}:
+      {SX.rowat(rs, d) == SX.Rw{di, mi} : SX.Rw}
+
+# every row after the pivot, read at w, is the old row at w - t(w) e_e
+def phis_ok(~F: O.OField, +mi: List<&2, S.Z>, +di: S.Pos, +e: Nat, +i: Nat, +p: S.Z, +len: Nat, rs: List<&2, SX.Rw>, md: Maybe<&2, Nat>, +w: M.Vec(~F), h: pivrow(rs, md, di, mi), +hpe: {SX.at(mi, e) == p : S.Z}, +hp: {SX.iszero(p) == False{} : Bool}, +hi: {SX.ltn(i, len) == True{} : Bool}) -> {rmap(~F, rs, wsub(~F, w, e, tval(~F, mi, di, i, p, w))) == rmap(~F, SX.phis(mi, di, e, i, p, len, rs, md), w) : M.Vec(~F)}:
+  match rs md:
+    case Nil{} md:
+      {==}
+    case Con{+r, +t} None{}:
+      %phi_go_ok(~F, SX.iszero(SX.at(SX.Rw.m(r), e)), mi, di, e, i, p, len, r, w, {==}, hp, hi) : {Con{rv(~F, r, wsub(~F, w, e, tval(~F, mi, di, i, p, w))), rmap(~F, t, wsub(~F, w, e, tval(~F, mi, di, i, p, w)))} == Con{_, rmap(~F, SX.phis(mi, di, e, i, p, len, t, None{}), w)} : M.Vec(~F)}
+      %phis_ok(~F, mi, di, e, i, p, len, t, None{}, w, Unit{}, hpe, hp, hi) : {Con{rv(~F, r, wsub(~F, w, e, tval(~F, mi, di, i, p, w))), rmap(~F, t, wsub(~F, w, e, tval(~F, mi, di, i, p, w)))} == Con{rv(~F, r, wsub(~F, w, e, tval(~F, mi, di, i, p, w))), _} : M.Vec(~F)}
+      {==}
+    case Con{+r, +t} Some{0n}:
+      %Equal.sym(SX.Rw, r, SX.Rw{di, mi}, h) : {Con{rv(~F, _, wsub(~F, w, e, tval(~F, mi, di, i, p, w))), rmap(~F, t, wsub(~F, w, e, tval(~F, mi, di, i, p, w)))} == Con{rv(~F, SX.Rw{S.XH{}, SX.unit(len, i)}, w), rmap(~F, SX.phis(mi, di, e, i, p, len, t, None{}), w)} : M.Vec(~F)}
+      %phi1(~F, mi, di, e, i, p, len, w, hpe, hp, hi) : {Con{rv(~F, SX.Rw{di, mi}, wsub(~F, w, e, tval(~F, mi, di, i, p, w))), rmap(~F, t, wsub(~F, w, e, tval(~F, mi, di, i, p, w)))} == Con{_, rmap(~F, SX.phis(mi, di, e, i, p, len, t, None{}), w)} : M.Vec(~F)}
+      %phis_ok(~F, mi, di, e, i, p, len, t, None{}, w, Unit{}, hpe, hp, hi) : {Con{rv(~F, SX.Rw{di, mi}, wsub(~F, w, e, tval(~F, mi, di, i, p, w))), rmap(~F, t, wsub(~F, w, e, tval(~F, mi, di, i, p, w)))} == Con{rv(~F, SX.Rw{di, mi}, wsub(~F, w, e, tval(~F, mi, di, i, p, w))), _} : M.Vec(~F)}
+      {==}
+    case Con{+r, +t} Some{1n+d}:
+      %phi_go_ok(~F, SX.iszero(SX.at(SX.Rw.m(r), e)), mi, di, e, i, p, len, r, w, {==}, hp, hi) : {Con{rv(~F, r, wsub(~F, w, e, tval(~F, mi, di, i, p, w))), rmap(~F, t, wsub(~F, w, e, tval(~F, mi, di, i, p, w)))} == Con{_, rmap(~F, SX.phis(mi, di, e, i, p, len, t, Some{d}), w)} : M.Vec(~F)}
+      %phis_ok(~F, mi, di, e, i, p, len, t, Some{d}, w, h, hpe, hp, hi) : {Con{rv(~F, r, wsub(~F, w, e, tval(~F, mi, di, i, p, w))), rmap(~F, t, wsub(~F, w, e, tval(~F, mi, di, i, p, w)))} == Con{rv(~F, r, wsub(~F, w, e, tval(~F, mi, di, i, p, w))), _} : M.Vec(~F)}
+      {==}
+
+# the pivot's step at w for the tableau's rows: i leaves, e enters
+def pstep(~F: O.OField, +rows: List<&2, SX.Rw>, +i: Nat, +e: Nat, +w: M.Vec(~F)) -> @T:
+  tval(~F, SX.Rw.m(SX.rowat(rows, i)), SX.Rw.d(SX.rowat(rows, i)), i, SX.at(SX.Rw.m(SX.rowat(rows, i)), e), w)
+
+def pivot_go_ok(~F: O.OField, ri: SX.Rw, +e: Nat, +i: Nat, +len: Nat, +rows: List<&2, SX.Rw>, +bas: List<&2, Bool>, +w: M.Vec(~F), h: {SX.rowat(rows, i) == ri : SX.Rw}, hp: {SX.iszero(SX.at(SX.Rw.m(ri), e)) == False{} : Bool}, hi: {SX.ltn(i, len) == True{} : Bool}) -> {rmap(~F, rows, wsub(~F, w, e, tval(~F, SX.Rw.m(ri), SX.Rw.d(ri), i, SX.at(SX.Rw.m(ri), e), w))) == rmap(~F, SX.Tab.rows(SX.pivot.go(ri, e, i, len, rows, bas)), w) : M.Vec(~F)}:
+  match ri:
+    case SX.Rw{+di, +mi}:
+      phis_ok(~F, mi, di, e, i, SX.at(mi, e), len, rows, Some{i}, w, h, {==}, hp, hi)
+
+# the tableau's rows after the pivot, read at w, are the old rows at
+# w - t(w) e_e
+def pivot_ok(~F: O.OField, +len: Nat, t: SX.Tab, +i: Nat, +e: Nat, +w: M.Vec(~F), hp: {SX.iszero(SX.at(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), e)) == False{} : Bool}, hi: {SX.ltn(i, len) == True{} : Bool}) -> {rmap(~F, SX.Tab.rows(t), wsub(~F, w, e, pstep(~F, SX.Tab.rows(t), i, e, w))) == rmap(~F, SX.Tab.rows(SX.pivot(len, t, i, e)), w) : M.Vec(~F)}:
+  match t:
+    case SX.Tab{+rows, +bas}:
+      pivot_go_ok(~F, SX.rowat(rows, i), e, i, len, rows, bas, w, {==}, hp, hi)
