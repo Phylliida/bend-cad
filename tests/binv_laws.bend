@@ -35,9 +35,11 @@ import ../lib/gjpf.bend as GJ
 import ../lib/normpf.bend as NP
 import ../lib/binvpf.bend as BI
 import ../lib/locpf.bend as LC
+import ../lib/pass.bend as PA
+import ../lib/skdpf.bend as SD
 
-def blocks_invertible(~F: O.OField, +sk: SK.Sketch, +ha: {D.adjb(ST.adj(SK.Sketch.eqs(sk)), SO.nvars(sk)) == True{} : Bool}, +x: M.Vec(~F), hr: DV.Regular(~F, x, SO.kept(sk), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)))) -> BI.BInv(~F, x, SK.Sketch.eqs(sk), SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))))):
-  BI.block_invs(~F, sk, ha, x, hr)
+def blocks_invertible(~F: O.OField, +sk: SK.Sketch, +ha: {D.adjb(ST.adj(SK.Sketch.eqs(sk)), SO.nvars(sk)) == True{} : Bool}, +x: M.Vec(~F), hr: DV.Regular(~F, x, SO.kept(sk), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)))) -> BI.BInv(~F, x, SK.Sketch.eqs(sk), SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))))):
+  SD.block_invs_d(~F, sk, ha, x, hr)
 
 def local_inverse(~F: O.OField, +x: M.Vec(~F), +vp: List<&2, Nat>, +o: Nat, +n: Nat, +pars: List<&2, Nat>, +full: List<&2, E.QExpr>, +es: List<&2, Nat>, +vs: List<&2, Nat>, +hrun: {LC.posrun(vp, vs, o, 0n) == True{} : Bool}, +hvs: {L.subl(vs, vp) == True{} : Bool}, +hn: {SV.len(vs) == n : Nat}, +hr: {LC.rowsok(full, vp, o, n, pars, es) == True{} : Bool}, +hX: {KA.natle(Nat.add(o, n), M.len(~F, LC.xperm(~F, x, vp))) == True{} : Bool}, h: GJ.InvN(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs))) -> NP.InvB(~F, DV.jac(~F, C.app(~F, PP.ftake(~F, n, PP.fdrop(~F, o, LC.xperm(~F, x, vp))), PP.zmap(~F, PP.ftake(~F, o, LC.xperm(~F, x, vp)), pars)), PL.renames(o, n, pars, PL.reorder(vp, full, es)), ST.iota(n, 0n)), n, LC.ibd(~F, DV.jac(~F, x, KP.pickk(full, 0n, es), vs), SV.len(vs), h)):
   LC.loc_invb(~F, x, vp, o, n, pars, full, es, vs, hrun, hvs, hn, hr, hX, h)

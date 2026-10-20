@@ -577,16 +577,3 @@ def reg_kd(~F: O.OField, kd: ST.KD, +full: List<&2, E.QExpr>, +nq: Nat, +nv: Nat
   match kd:
     case ST.KD{+vm, +fs, dd}:
       reg_go(~F, full, nq, nv, good, vm, fs, x, hv, hs, hr)
-
-# a regular point of the kept system (in the free variables the solver
-# chose) has the Jacobian in the solver's block order invertible: rows the
-# kept equations block by block, columns the blocks' unknowns
-def regular_blocks(~F: O.OField, +sk: SK.Sketch, +ha: {D.adjb(ST.adj(SK.Sketch.eqs(sk)), SO.nvars(sk)) == True{} : Bool}, +x: M.Vec(~F), hr: DV.Regular(~F, x, SO.kept(sk), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)))) -> GJ.InvN(~F, DV.jac(~F, x, KP.pickk(SK.Sketch.eqs(sk), 0n, ST.alleqs(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))))), ST.allvars(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk)))))), SV.len(ST.allvars(SP.kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))))))):
-  +full = SK.Sketch.eqs(sk)
-  +nq = ST.len.q(full)
-  +nv = SO.nvars(sk)
-  +good = SO.good_of(sk)
-  +kdv = MX.kvs(ST.adj(full), nq, nv, good)
-  reg_kd(~F, kdv, full, nq, nv, good, x, SP.vend(sk, ha), SP.struct_ok(sk, ha), (%KP.kept_good(sk, ha) : DV.Regular(~F, x, _, SV.free(nv, 0n, ST.KD.red(kdv)))
-    (%MX.pins_red(sk) : DV.Regular(~F, x, SO.kept(sk), SV.free(nv, 0n, _))
-      hr)))

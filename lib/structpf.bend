@@ -645,47 +645,6 @@ def all_len(+fs: List<&2, Nat>, +ss: List<&2, Nat>, +nv: Nat, hc: {Nat.add(SV.le
   %Equal.sym(Nat, Nat.add(SV.len(ss), SV.len(fs)), nv, hc) : {KA.natle(nv, _) == True{} : Bool}
   KA.natle_refl(nv)
 
-def vend.go(+full: List<&2, E.QExpr>, +nv: Nat, +vmr: List<&2, Maybe<&2, Nat>>, +kn: Nat, kd: ST.KD, +h: {MX.kinvs(ST.transpose(nv, 0n, ST.inter(ST.iota(ST.len.q(full), 0n), ST.somes(vmr)), ST.adj(full)), ST.len.q(full), ST.down(nv), SV.len(ST.down(nv)), Nil{}, kd) == True{} : Bool}, +hp: {SV.band(SV.distinct(ST.KD.red(kd)), SV.band(SV.below(ST.KD.red(kd), nv), SV.eq(Nat.add(kn, SV.len(ST.KD.red(kd))), nv))) == True{} : Bool}, hdr: {SV.distinct(ST.somes(vmr)) == True{} : Bool}, hcr: {SV.len(ST.somes(vmr)) == kn : Nat}) -> {vsides(ST.len.q(full), nv, ST.inter(ST.iota(ST.len.q(full), 0n), ST.somes(vmr)), kd) == True{} : Bool}:
-  match kd:
-    case ST.KD{+vm, +fs, +dd}:
-      +adj = ST.adj(full)
-      +nq = ST.len.q(full)
-      +good = ST.inter(ST.iota(nq, 0n), ST.somes(vmr))
-      +adjt = ST.transpose(nv, 0n, good, adj)
-      +us = ST.down(nv)
-      +c = SV.len(ST.down(nv))
-      +js = {Nil{} : List<&2, Nat>}
-      +a = SV.len(ST.somes(vm))
-      +f = SV.len(fs)
-      +g = SV.len(good)
-      +hp2 = L.band_r(SV.distinct(fs), SV.band(SV.below(fs, nv), SV.eq(Nat.add(kn, f), nv)), hp)
-      +hc = MX.cnt_end(a, f, nv, MX.kinv_cnt(adjt, nq, us, c, js, vm, fs, dd, h))
-      +hk = L.eq_ok(Nat.add(kn, f), nv, L.band_r(SV.below(fs, nv), SV.eq(Nat.add(kn, f), nv), hp2))
-      +hak = cancel_r(a, kn, f, nv, hc, hk)
-      +hkg = MX.keys_tr(vm, 0n, nv, 0n, good, adj, MX.kinv_valid(adjt, nq, us, c, js, vm, fs, dd, h))
-      +hgd = inter_dist(ST.iota(nq, 0n), ST.somes(vmr), iota_dist(nq, 0n))
-      +hvd = MX.kinv_dist(adjt, nq, us, c, js, vm, fs, dd, h)
-      +hfd = MX.kinv_fdist(adjt, nq, us, c, js, vm, fs, dd, h)
-      +hff = MX.kinv_ffree(adjt, nq, us, c, js, vm, fs, dd, h)
-      +hmus = MX.kinv_mus(adjt, nq, us, c, js, vm, fs, dd, h)
-      +hg1 = KA.natle_rw(g, SV.len(ST.somes(vmr)), a, (%Equal.sym(Nat, a, kn, hak) : {SV.len(ST.somes(vmr)) == _ : Nat}
-        hcr), L.pig(good, ST.somes(vmr), hgd, MX.inter_sub(ST.iota(nq, 0n), ST.somes(vmr))))
-      +hg2 = le_rw_l(SV.len(MX.keys(vm, 0n)), g, a, MX.keys_len(vm, 0n), L.pig(MX.keys(vm, 0n), good, MX.keys_dist(vm, 0n), hkg))
-      vside_mk(nq, nv, good, vm, fs, hkg, hvd, hfd, hff, pigc(ST.app(fs, ST.somes(vm)), us, MX.dist_app(fs, ST.somes(vm), hfd, hvd, hff), TJ.subl_app(fs, ST.somes(vm), us, MX.kinv_fus(adjt, nq, us, c, js, vm, fs, dd, h), hmus), all_len(fs, ST.somes(vm), nv, hc)), hmus, L.band_l(SV.below(fs, nv), SV.eq(Nat.add(kn, f), nv), hp2), hgd, D.below_subl(good, ST.iota(nq, 0n), nq, MX.inter_subx(ST.iota(nq, 0n), ST.somes(vmr)), MX.iota_below(nq, 0n)), D.eq_of(g, a, KA.natle_antisym(g, a, hg1, hg2)), D.eq_of(Nat.add(a, f), nv, hc))
-
-# the variable side over the sketch's kept equations
-def vend(+sk: SK.Sketch, +ha: {D.adjb(ST.adj(SK.Sketch.eqs(sk)), SO.nvars(sk)) == True{} : Bool}) -> {vsides(ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))) == True{} : Bool}:
-  +full = SK.Sketch.eqs(sk)
-  +adj = ST.adj(full)
-  +nq = ST.len.q(full)
-  +nv = SO.nvars(sk)
-  +vmr = SO.CS.vm(SO.rs_of(sk))
-  +kn = SV.neqs(SO.kept(sk))
-  +good = ST.inter(ST.iota(nq, 0n), ST.somes(vmr))
-  +adjt = ST.transpose(nv, 0n, good, adj)
-  +hbg = D.below_subl(good, ST.iota(nq, 0n), nq, MX.inter_subx(ST.iota(nq, 0n), ST.somes(vmr)), MX.iota_below(nq, 0n))
-  vend.go(full, nv, vmr, kn, MX.kvs(adj, nq, nv, good), MX.kwalk(ST.down(nv), adjt, nq, ST.down(nv), SV.len(ST.down(nv)), 1n+nq, ST.KD{ST.nones(nq), Nil{}, Nil{}}, MX.down_dist(nv), L.subl_refl(ST.down(nv)), MX.adjb_tr(nv, 0n, good, adj, nq, hbg), KA.natle_refl(1n+nq), MX.kinit(adjt, nq, ST.down(nv), ST.down(nv))), MX.pins_kv(full, nv, vmr, kn, MX.red_valid(sk, nv), RP.red_dist(sk, nv, ha), RP.red_mlen(sk, nv, ha), RP.red_cnt(sk, nv, ha)), RP.red_dist(sk, nv, ha), RP.red_cnt(sk, nv, ha))
-
 # What follows from the variable side's end
 # -----------------------------------------
 
@@ -1299,8 +1258,3 @@ def skel_kd(kd: ST.KD, +full: List<&2, E.QExpr>, +nq: Nat, +nv: Nat, +good: List
   match kd:
     case ST.KD{+vm, +fs, dd}:
       skok_of(full, nq, nv, good, vm, fs, h, ha)
-
-# the solver's structure of a sketch's kept equations
-def struct_ok(+sk: SK.Sketch, +ha: {D.adjb(ST.adj(SK.Sketch.eqs(sk)), SO.nvars(sk)) == True{} : Bool}) -> {skok(SK.Sketch.eqs(sk), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), kblocks(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk), ST.KD.vm(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))), ST.KD.red(MX.kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))))) == True{} : Bool}:
-  +full = SK.Sketch.eqs(sk)
-  skel_kd(MX.kvs(ST.adj(full), ST.len.q(full), SO.nvars(sk), SO.good_of(sk)), full, ST.len.q(full), SO.nvars(sk), SO.good_of(sk), vend(sk, ha), ha)

@@ -4,7 +4,7 @@
 # trailing zeros, so no product could ever equal it). In the canonical
 # rationals (lib/qfield.bend, where everything computes): A = (0, 0) and
 # B = (6, 0) are pinned (the solver's own pins_of), P is at distance 5
-# from both, and at P = (3, 4) the Jacobian of the kept system in the free
+# from both, and at P = (3, 4) the Jacobian of the system solved in the free
 # variables (P's, as SV.free computes them) is [[6, 8], [-6, 8]], with
 # inverse [[1/12, -1/12], [1/16, 1/16]]. The point also solves the system.
 
@@ -47,8 +47,8 @@ def y() -> List<&2, List<&2, QF.QC>>:
 def pins() -> {SO.pins_of(sk()) == [0n, 1n, 2n, 3n] : List<&2, Nat>}:
   {==}
 
-def solves() -> SK.Zeros(~QF.qfield(), x(), SK.Sketch.eqs(SV.mark(SO.red_of(sk()), sk()))):
+def solves() -> SK.Zeros(~QF.qfield(), x(), SV.solved(sk(), SV.reds(SO.cls_of(sk())), SV.dropped(SO.cls_of(sk())))):
   ({==}, ({==}, Unit{}))
 
-def regular() -> DV.Regular(~QF.qfield(), x(), SK.Sketch.eqs(SV.mark(SO.red_of(sk()), sk())), SV.free(SO.nvars(sk()), 0n, SO.pins_of(sk()))):
+def regular() -> DV.Regular(~QF.qfield(), x(), SV.solved(sk(), SV.reds(SO.cls_of(sk())), SV.dropped(SO.cls_of(sk()))), SV.free(SO.nvars(sk()), 0n, SO.pins_of(sk()))):
   ({==}, (y(), ((({==}, ({==}, Unit{})), (({==}, ({==}, Unit{})), Unit{})), (({==}, ({==}, Unit{})), (({==}, ({==}, Unit{})), Unit{})))))

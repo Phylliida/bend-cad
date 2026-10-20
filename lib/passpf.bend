@@ -348,18 +348,8 @@ def noc_owners(sk: SK.Sketch, +i: Nat, +h: {SV.driven(sk, i) == True{} : Bool}) 
     case SK.Sketch{vs, +es, +cs}:
       OW.owners_noc(es, cs, 0n, cs, i, {==}, KB.lt_z(i), h)
 
-def vlen_eq(vs: List<&2, SK.VKind>) -> {PA.vlen(vs) == SO.vlen(vs) : Nat}:
-  match vs:
-    case Nil{}:
-      {==}
-    case Con{v, +t}:
-      %vlen_eq(t) : {1n+PA.vlen(t) == 1n+_ : Nat}
-      {==}
-
 def nv_eq(sk: SK.Sketch) -> {PA.nvars(sk) == SO.nvars(sk) : Nat}:
-  match sk:
-    case SK.Sketch{+vs, es, cs}:
-      vlen_eq(vs)
+  {==}
 
 # The pass's invariant
 # --------------------

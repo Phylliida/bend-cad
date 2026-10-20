@@ -13,9 +13,11 @@
 # - The circle demo with |PB| = 10, more than |AB| + r = 7: no geometry
 #   exists, and the solver refuses (natively at the full budget too:
 #   proto/solve_run.bend).
-# - (From the audit) a midpoint whose y equation is redundant beside
-#   x_q = 1: only the midpoint is red (its witness: its y equation and the
-#   three y fixes, 4 equations over 3 variables); x_q = 1 stays.
+# - (From the audit) a midpoint of QR at P, with the three y fixes and
+#   the x fixes P = 0, Q = -1, R = 1: nothing is red (sk-09 made the
+#   midpoint red); the pass drops the midpoint's y equation (implied by
+#   the y fixes) and R's x fix (implied by the midpoint's x equation and
+#   the other two), so that fix is amber; certified.
 # - The circle demo pins A and B (variables 0..3), held at the drawing.
 
 
@@ -32,7 +34,6 @@ import ../spec/solve.bend as SV
 import ../lib/kinst.bend as KI
 import ../lib/solve.bend as SO
 import ../lib/solvepf.bend as SP
-import ../lib/why.bend as WY
 import ../proto/struct_run.bend as SR
 import ../proto/solve_run.bend as R
 
@@ -73,7 +74,13 @@ def far_refused() -> {SO.Out.ok(SO.solve_lw(far(), R.circle_g0(), 0n, 2n)) == Fa
 def mid_ok() -> {SO.Out.ok(SO.solve(R.mid(), R.mid_g0())) == True{} : Bool}:
   {==}
 
-def mid_red() -> {SV.reds(SO.Out.cls(SO.solve(R.mid(), R.mid_g0()))) == [3n] : List<&2, Nat>}:
+def mid_red() -> {SV.reds(SO.Out.cls(SO.solve(R.mid(), R.mid_g0()))) == [] : List<&2, Nat>}:
+  {==}
+
+def mid_drop() -> {SV.dropped(SO.Out.cls(SO.solve(R.mid(), R.mid_g0()))) == [4n, 7n] : List<&2, Nat>}:
+  {==}
+
+def mid_amber() -> {SV.ambers(SO.Out.cls(SO.solve(R.mid(), R.mid_g0()))) == [6n] : List<&2, Nat>}:
   {==}
 
 def circle_pins() -> {SO.Out.pins(SO.solve(SR.circle(), R.circle_g0())) == [0n, 1n, 2n, 3n] : List<&2, Nat>}:
@@ -83,8 +90,3 @@ def circle_pins() -> {SO.Out.pins(SO.solve(SR.circle(), R.circle_g0())) == [0n, 
 
 def circle_exists(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>) -> &x: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve(SR.circle(), R.circle_g0())), SO.Out.gr(SO.solve(SR.circle(), R.circle_g0())), x) & SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(SO.solve(SR.circle(), R.circle_g0()))), SR.circle()))):
   SP.solve_exists(~F, ~R, ~H, SR.circle(), R.circle_g0(), 0n, circle_ok())
-
-# the red stage's witness for it is explained (sk-09's syntactic form,
-# lib/why.bend; sk-13a's Honest replaces it, PLAN-sk13a.md S4)
-def over_explained() -> {WY.explained(SR.over(), SO.red_of(SR.over()), SO.why_of(SR.over())) == True{} : Bool}:
-  {==}

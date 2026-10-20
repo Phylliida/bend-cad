@@ -970,8 +970,8 @@ def defic(+vm: List<&2, Maybe<&2, Nat>>, +dr: List<&2, Nat>, +dd: List<&2, Nat>,
   %mu_len(vm, dr) : {KA.natle(_, Nat.add(SV.len(dd), SV.len(ST.holes(vm, 0n)))) == True{} : Bool}
   KA.natle_add2(SV.len(m), SV.len(u), SV.len(dd), SV.len(ST.holes(vm, 0n)), le_mt(vm, m, dd, mt_dist(vm, dr, hd), mt_allm(vm, dr), hds, mt_into(vm, dr, dd, hi)), L.pig(u, ST.holes(vm, 0n), um_dist(vm, dr, hd), um_holes(vm, dr, hb)))
 
-# The red stage's matching is valid
-# ---------------------------------
+# A unit's search keeps the matching valid
+# ----------------------------------------
 
 def gvalid(+adj: List<&2, List<&2, Nat>>, g: ST.GS) -> Bool:
   match g:
@@ -997,29 +997,6 @@ def grp_valid(n: Nat, +k: Nat, +adj: List<&2, List<&2, Nat>>, +f: Nat, st: ST.GS
       grp_valid(m, 1n+k, adj, f, ST.gstep(k, ST.search(f, adj, vm, k), vm), gstep_valid(adj, k, ST.search(f, adj, vm, k), vm, frame(f, ST.nthl(adj, k), ST.cls(vm, Nil{}, ST.nthl(adj, k)), k, adj, vm, ST.DS{False{}, vm, Nil{}}, Nil{}, {==}, L.subl_refl(ST.nthl(adj, k)), h, {==})))
     case 1n+m ST.GFail{r}:
       {==}
-
-def cfin_valid(+adj: List<&2, List<&2, Nat>>, +i: Nat, g: ST.GS, st: SO.CS, hg: {gvalid(adj, g) == True{} : Bool}, h: {valid(adj, SO.CS.vm(st)) == True{} : Bool}) -> {valid(adj, SO.CS.vm(SO.cfin(i, g, st))) == True{} : Bool}:
-  match g st:
-    case ST.GOk{vm2} SO.CS{vm, red, why}:
-      hg
-    case ST.GFail{ST.Red{j, s, w}} SO.CS{vm, red, why}:
-      h
-
-def kuhnc_valid(cs: List<&2, SK.Rec>, +es: List<&2, SK.Ent>, +i: Nat, +k: Nat, +adj: List<&2, List<&2, Nat>>, +f: Nat, +st: SO.CS, +h: {valid(adj, SO.CS.vm(st)) == True{} : Bool}) -> {valid(adj, SO.CS.vm(SO.kuhnc(cs, es, i, k, adj, f, st))) == True{} : Bool}:
-  match cs:
-    case Nil{}:
-      h
-    case Con{SK.Rec{id, True{}, kd}, t}:
-      kuhnc_valid(t, es, 1n+i, k, adj, f, st, h)
-    case Con{SK.Rec{id, False{}, +kd}, t}:
-      +n = SV.neqs(SK.Constraint.eqs(es, kd))
-      +g = ST.grp(n, k, adj, f, ST.GOk{SO.CS.vm(st)})
-      kuhnc_valid(t, es, 1n+i, Nat.add(k, n), adj, f, SO.cfin(i, g, st), cfin_valid(adj, i, g, st, grp_valid(n, k, adj, f, ST.GOk{SO.CS.vm(st)}, h), h))
-
-def red_valid(sk: SK.Sketch, +nv: Nat) -> {valid(ST.adj(SK.Sketch.eqs(sk)), SO.CS.vm(SO.run(sk, nv))) == True{} : Bool}:
-  match sk:
-    case SK.Sketch{vs, +es, +cs}:
-      kuhnc_valid(cs, es, 0n, 0n, ST.adj(SK.Sketch.eqs.go(es, cs)), 1n+nv, SO.CS{ST.nones(nv), Nil{}, Nil{}}, valid_nones(ST.adj(SK.Sketch.eqs.go(es, cs)), nv, 0n))
 
 # The end of the walk
 # -------------------
@@ -1126,21 +1103,3 @@ def ntake_app(xs: List<&2, Nat>, +ys: List<&2, Nat>) -> {SO.ntake(ST.len(xs), ST
     case Con{+h, +t}:
       %Equal.sym(List<&2, Nat>, SO.ntake(ST.len(t), ST.app(t, ys)), t, ntake_app(t, ys)) : {Con{h, _} == Con{h, t} : List<&2, Nat>}
       {==}
-
-# the solver's pins are the variable side's failed searches
-def pins_red(+sk: SK.Sketch) -> {SO.pins_of(sk) == ST.KD.red(kvs(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), SO.nvars(sk), SO.good_of(sk))) : List<&2, Nat>}:
-  +adj = ST.adj(SK.Sketch.eqs(sk))
-  +nq = ST.len.q(SK.Sketch.eqs(sk))
-  +nv = SO.nvars(sk)
-  +good = SO.good_of(sk)
-  +kv = kvs(adj, nq, nv, good)
-  ntake_app(ST.KD.red(kv), ST.allvars(ST.blocks.of(adj, ST.KD.vm(kv), ST.KD.red(kv), ST.comps(adj, ST.invert(ST.KD.vm(kv), 0n, ST.nones(nv)), good, nq))))
-
-# the solver's pins: distinct variables, and with them the kept system is
-# square
-def pins_sq(+sk: SK.Sketch, +ha: {D.adjb(ST.adj(SK.Sketch.eqs(sk)), SO.nvars(sk)) == True{} : Bool}) -> {SV.band(SV.distinct(SO.pins_of(sk)), SV.band(SV.below(SO.pins_of(sk), SO.nvars(sk)), SV.eq(Nat.add(SV.neqs(SO.kept(sk)), SV.len(SO.pins_of(sk))), SO.nvars(sk)))) == True{} : Bool}:
-  +full = SK.Sketch.eqs(sk)
-  +nv = SO.nvars(sk)
-  +kn = SV.neqs(SO.kept(sk))
-  %Equal.sym(List<&2, Nat>, SO.pins_of(sk), ST.KD.red(kvs(ST.adj(full), ST.len.q(full), nv, SO.good_of(sk))), pins_red(sk)) : {SV.band(SV.distinct(_), SV.band(SV.below(_, nv), SV.eq(Nat.add(kn, SV.len(_)), nv))) == True{} : Bool}
-  pins_kv(full, nv, SO.CS.vm(SO.rs_of(sk)), kn, red_valid(sk, nv), RP.red_dist(sk, nv, ha), RP.red_mlen(sk, nv, ha), RP.red_cnt(sk, nv, ha))

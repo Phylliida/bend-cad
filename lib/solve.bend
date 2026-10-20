@@ -4,18 +4,20 @@
 # the drawing's values) and a class for each constraint (spec/solve.bend:
 # Kept, Amber, Over, Conflict).
 #
-# search does the work (lib/struct.bend: red constraints and their
-# witnesses, pins, blocks; lib/numer.bend: Newton, Y and radii at
-# precisions 64 .. 512). seal then recomputes the verdict from the answer
-# alone: every pin held at its drawn value with radius 0, the sketch with
-# the red constraints made driven well formed (lib/wfdec.bend), covered by
-# the box, its plan and its side conditions checked (lib/plan.bend). So
-# the verdict laws (solve_exists, solve_unique, solve_pins) need nothing
-# from search: they follow from the verdict and the sk-06 laws.
-#
-# Until sk-13a's stage lands (PLAN-sk13a.md S4) the classes come from
-# sk-09's red stage: Over (with its syntactic witness, lib/why.bend) at
-# each red constraint, Kept with nothing dropped elsewhere.
+# The classes are the single pass's (lib/pass.bend: classes, PLAN-sk13a
+# S4), and so is the structure: the system solved (the sketch's equations
+# whose constraint is not red and that are not dropped), its pins and its
+# blocks (lib/pass.bend: pins, skel). search does the numbers
+# (lib/numer.bend: Newton, Y and radii at precisions 64 .. 512) over the
+# system solved. seal then recomputes the verdict from the answer alone:
+# every pin held at its drawn value with radius 0, the sketch with the red
+# constraints made driven well formed (lib/wfdec.bend), covered by the box,
+# the plan checked over the system solved, the side conditions of the
+# constraints neither red nor amber checked over the box (lib/plan.bend),
+# and the dropped equations and amber side conditions certified by their
+# combinations and refutations (lib/verdict.bend). So the verdict laws
+# (solve_exists, solve_unique, solve_pins) need nothing from search: they
+# follow from the verdict and the sk-06 laws.
 
 import Base
 import ../spec/num.bend as S
@@ -27,7 +29,6 @@ import ../spec/real.bend as CR
 import ../spec/sketch.bend as SK
 import ../spec/box.bend as BX
 import ../spec/solve.bend as SV
-import ./why.bend as WY
 import ./karith.bend as KA
 import ./kinst.bend as KI
 import ./plan.bend as PL
@@ -35,6 +36,8 @@ import ./planpf.bend as PP
 import ./struct.bend as ST
 import ./numer.bend as NU
 import ./wfdec.bend as WF
+import ./pass.bend as PA
+import ./verdict.bend as VD
 
 # The answer
 # ----------
@@ -75,18 +78,9 @@ def Out.plan(x: Out) -> PL.Plan<KI.dnum()>:
 # The search
 # ----------
 
-def vlen(vs: List<&2, SK.VKind>) -> Nat:
-  match vs:
-    case Nil{}:
-      0n
-    case Con{v, t}:
-      1n+vlen(t)
-
-# the number of variables
-def nvars(sk: SK.Sketch) -> Nat:
-  match sk:
-    case SK.Sketch{vs, es, cs}:
-      vlen(vs)
+# the number of variables (the pass's count)
+def nvars(+sk: SK.Sketch) -> Nat:
+  PA.nvars(sk)
 
 def clen(cs: List<&2, SK.Rec>) -> Nat:
   match cs:
@@ -100,52 +94,6 @@ def ncons(sk: SK.Sketch) -> Nat:
   match sk:
     case SK.Sketch{vs, es, cs}:
       clen(cs)
-
-# Red constraints
-# ---------------
-# The constraints are walked in order, as Sketch.eqs and SV.owners walk
-# them: constraint i (counting driven ones) owns the equations k .. k + n -
-# 1 of the sketch's exact system. Its equations are matched as a unit
-# (lib/struct.bend: grp); if one fails, the matching goes back to what it
-# was and i is red, with that equation's witness. vm: the matching (each
-# variable's equation); red, why: the red constraints so far and why,
-# newest first.
-
-type CS is Data:
-  CS{vm: List<&2, Maybe<&2, Nat>>, red: List<&2, Nat>, why: List<&2, WY.Why>}
-
-def CS.vm(st: CS) -> List<&2, Maybe<&2, Nat>>:
-  match st:
-    case CS{vm, red, why}:
-      vm
-
-def CS.red(st: CS) -> List<&2, Nat>:
-  match st:
-    case CS{vm, red, why}:
-      red
-
-def CS.why(st: CS) -> List<&2, WY.Why>:
-  match st:
-    case CS{vm, red, why}:
-      why
-
-def cfin(+i: Nat, g: ST.GS, st: CS) -> CS:
-  match g st:
-    case ST.GOk{vm2} CS{vm, red, why}:
-      CS{vm2, red, why}
-    case ST.GFail{ST.Red{j, s, w}} CS{vm, red, why}:
-      CS{vm, Con{i, red}, Con{WY.Why{j, s, w}, why}}
-
-# the constraints cs from position i, their equations from k
-def kuhnc(cs: List<&2, SK.Rec>, +es: List<&2, SK.Ent>, +i: Nat, +k: Nat, +adj: List<&2, List<&2, Nat>>, +f: Nat, +st: CS) -> CS:
-  match cs:
-    case Nil{}:
-      st
-    case Con{SK.Rec{id, True{}, kd}, t}:
-      kuhnc(t, es, 1n+i, k, adj, f, st)
-    case Con{SK.Rec{id, False{}, +kd}, t}:
-      +n = SV.neqs(SK.Constraint.eqs(es, kd))
-      kuhnc(t, es, 1n+i, Nat.add(k, n), adj, f, cfin(i, ST.grp(n, k, adj, f, ST.GOk{CS.vm(st)}), st))
 
 # the precisions of level l: of 64, 96, 128, 192, 256, ... (doubling
 # every two steps), seven from the l-th. Level 0 is 64 .. 512 bits; a higher
@@ -232,13 +180,15 @@ def skel.pins(s: ST.Skel) -> List<&2, Nat>:
 # The verdict
 # -----------
 
-# what the laws need, read off the answer alone
+# what the laws need, read off the answer alone (the exact checks last:
+# they are the most work, and a box that fails is retried anyway)
 def final(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: Out) -> Bool:
   KA.band(SV.held(Out.pins(x), g0, Out.gc(x), Out.gr(x)),
   KA.band(WF.wf_dec(SV.mark(SV.reds(Out.cls(x)), sk)),
   KA.band(BX.Sketch.within(SV.mark(SV.reds(Out.cls(x)), sk), List.length(&2, N.NC(KI.dnum()), Out.gc(x))),
-  KA.band(PL.check(~KI.dnum(), SK.Sketch.eqs(SV.mark(SV.reds(Out.cls(x)), sk)), Out.gc(x), Out.gr(x), Out.plan(x)),
-  PL.check_sides(~KI.dnum(), SK.Sketch.sides(SV.mark(SV.reds(Out.cls(x)), sk)), Out.gc(x), Out.gr(x))))))
+  KA.band(PL.check(~KI.dnum(), SV.solved(sk, SV.reds(Out.cls(x)), SV.dropped(Out.cls(x))), Out.gc(x), Out.gr(x), Out.plan(x)),
+  KA.band(PL.check_sides(~KI.dnum(), SK.Sketch.sides(SV.mark(SV.cat(SV.reds(Out.cls(x)), SV.ambers(Out.cls(x))), sk)), Out.gc(x), Out.gr(x)),
+  VD.exact(sk, Out.cls(x)))))))
 
 # The precision loop
 # ------------------
@@ -272,93 +222,29 @@ def ploop(ps: List<&2, Nat>, ok: Bool, cur: NU.PR, +sk: SK.Sketch, +g0: List<&2,
 
 # The structure depends on the sketch alone
 # -----------------------------------------
-# Red constraints first (constraints matched as units, in order: each red
-# one's witness uses only kept constraints and itself), then the sketch
-# less them: its pins and blocks.
+# The pass (lib/pass.bend) classifies the constraints and leaves the
+# system solved, matched by dependence; its pins are the variables the
+# variable side leaves over, and the blocks follow (lib/pass.bend: skel).
 
-def run(sk: SK.Sketch, +nv: Nat) -> CS:
-  match sk:
-    case SK.Sketch{vs, +es, +cs}:
-      kuhnc(cs, es, 0n, 0n, ST.adj(SK.Sketch.eqs.go(es, cs)), 1n+nv, CS{ST.nones(nv), Nil{}, Nil{}})
-
-def rs_of(+sk: SK.Sketch) -> CS:
-  run(sk, nvars(sk))
-
-def red_of(+sk: SK.Sketch) -> List<&2, Nat>:
-  CS.red(rs_of(sk))
-
-def why_of(+sk: SK.Sketch) -> List<&2, WY.Why>:
-  CS.why(rs_of(sk))
-
-# the sketch's exact system less its red constraints
-def kept(+sk: SK.Sketch) -> List<&2, E.QExpr>:
-  SK.Sketch.eqs(SV.mark(red_of(sk), sk))
-
-# the kept equations in the sketch's numbering: those the red stage
-# matched, in order
-def good_of(+sk: SK.Sketch) -> List<&2, Nat>:
-  ST.inter(ST.iota(ST.len.q(SK.Sketch.eqs(sk)), 0n), ST.somes(CS.vm(rs_of(sk))))
-
-def skel.from(+sk: SK.Sketch, +good: List<&2, Nat>) -> ST.Skel:
-  ST.renum(ST.skel.kept(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), nvars(sk), good), good)
-
-# the structure of the kept system, worked out in the sketch's numbering
-# (the red stage's matching is there) and renumbered
-def skel_of(+sk: SK.Sketch) -> ST.Skel:
-  skel.from(sk, good_of(sk))
-
-# the pins: the earliest variables the kept system can leave over (with
-# them it is square: the red stage's matching saturates its equations, and
-# the variable side's greedy matching is then maximum)
-def pins_of(+sk: SK.Sketch) -> List<&2, Nat>:
-  skel.pins(skel_of(sk))
-
-# The classes (until the sk-13a stage, PLAN-sk13a.md S4): Over with its
-# witness at each red constraint, Kept with nothing dropped elsewhere
-
-# the witness red's member c has (red and why are aligned)
-def whyat.go(b: Bool, +y: WY.Why, rest: WY.Why) -> WY.Why:
-  match b:
-    case True{}:
-      y
-    case False{}:
-      rest
-
-def whyat(red: List<&2, Nat>, why: List<&2, WY.Why>, +c: Nat) -> WY.Why:
-  match red why:
-    case Nil{} why:
-      WY.Why{0n, Nil{}, Nil{}}
-    case Con{r, rt} Nil{}:
-      WY.Why{0n, Nil{}, Nil{}}
-    case Con{r, rt} Con{+y, yt}:
-      whyat.go(SV.eq(r, c), y, whyat(rt, yt, c))
-
-def over_of(y: WY.Why) -> SV.Class:
-  match y:
-    case WY.Why{j, s, w}:
-      SV.Over{j, s, w}
-
-def cls_at(b: Bool, +red: List<&2, Nat>, +why: List<&2, WY.Why>, +c: Nat) -> SV.Class:
-  match b:
-    case True{}:
-      over_of(whyat(red, why, c))
-    case False{}:
-      SV.Kept{Nil{}}
-
-# the classes of positions i .. i + n - 1
-def cls.go(n: Nat, +red: List<&2, Nat>, +why: List<&2, WY.Why>, +i: Nat) -> List<&2, SV.Class>:
-  match n:
-    case 0n:
-      Nil{}
-    case 1n+m:
-      Con{cls_at(SV.mem(i, red), red, why, i), cls.go(m, red, why, 1n+i)}
-
-def cls_mk(+red: List<&2, Nat>, +why: List<&2, WY.Why>, +n: Nat) -> List<&2, SV.Class>:
-  cls.go(n, red, why, 0n)
-
-# the classes, from the sketch alone
+# the classes
 def cls_of(+sk: SK.Sketch) -> List<&2, SV.Class>:
-  cls_mk(red_of(sk), why_of(sk), SV.ncons(sk))
+  PA.classes(sk)
+
+# the system solved
+def kept(+sk: SK.Sketch) -> List<&2, E.QExpr>:
+  SV.solved(sk, SV.reds(cls_of(sk)), SV.dropped(cls_of(sk)))
+
+# its positions in the sketch's numbering, in order
+def good_of(+sk: SK.Sketch) -> List<&2, Nat>:
+  PA.solved_pos(sk)
+
+# the structure of the system solved, renumbered to positions in it
+def skel_of(+sk: SK.Sketch) -> ST.Skel:
+  PA.skel(sk)
+
+# the pins: the earliest variables the system solved can leave over
+def pins_of(+sk: SK.Sketch) -> List<&2, Nat>:
+  PA.pins(sk)
 
 # the loop from its first precision's answer (starting it with a literal
 # "not yet" would let the checker unfold the whole verdict symbolically

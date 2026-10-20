@@ -319,20 +319,3 @@ def inv_blocks(~F: O.OField, +x: M.Vec(~F), +full: List<&2, E.QExpr>, bs: List<&
       (both_l(GJ.InvN(~F, $JA, $N1), GJ.InvN(~F, $JD, $N2), bi), inv_blocks(~F, x, full, t, ST.app(known, vs), vm, hc2,
         (%Equal.sym(List<&2, Nat>, ST.app(ST.app(known, vs), $V2), ST.app(known, $UV), TJ.app_assoc(known, vs, $V2)) : {SV.distinct(_) == True{} : Bool}
         hd), hl2, both_r(GJ.InvN(~F, $JA, $N1), GJ.InvN(~F, $JD, $N2), bi)))
-
-# The solver's blocks
-# -------------------
-
-@MACRO FULL SK.Sketch.eqs(sk)
-@MACRO NV SO.nvars(sk)
-@MACRO GOOD SO.good_of(sk)
-@MACRO KVS MX.kvs(ST.adj($FULL), ST.len.q($FULL), $NV, $GOOD)
-@MACRO VM ST.KD.vm($KVS)
-@MACRO FS ST.KD.red($KVS)
-@MACRO KB SP.kblocks(ST.adj($FULL), ST.len.q($FULL), $NV, $GOOD, $VM, $FS)
-
-# a regular solution (in the solver's free variables): every block of the
-# solver's structure has an invertible Jacobian there
-def block_invs(~F: O.OField, +sk: SK.Sketch, +ha: {D.adjb(ST.adj($FULL), $NV) == True{} : Bool}, +x: M.Vec(~F), hr: DV.Regular(~F, x, SO.kept(sk), SV.free($NV, 0n, SO.pins_of(sk)))) -> BInv(~F, x, $FULL, $KB):
-  +sf = SP.skok_sf($FULL, $NV, $GOOD, $VM, $FS, $KB, SP.struct_ok(sk, ha))
-  inv_blocks(~F, x, $FULL, $KB, $FS, $VM, SP.sfacts_ch(ST.adj($FULL), $NV, $GOOD, $VM, $FS, $KB, sf), SP.sfacts_vpd(ST.adj($FULL), $NV, $GOOD, $VM, $FS, $KB, sf), SP.sfacts_lk(ST.adj($FULL), $NV, $GOOD, $VM, $FS, $KB, sf), PF.regular_blocks(~F, sk, ha, x, hr))
