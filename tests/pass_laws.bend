@@ -7,7 +7,9 @@
 # - the pass's classes are honest (spec/solve.bend: Honest), each
 #   constraint's class the honest one given the classes before it;
 # - its pins are distinct variables, and the system solved has a perfect
-#   matching onto the free variables, by dependence.
+#   matching onto the free variables, by dependence;
+# - its drop combinations and amber refutations pass the verdict's exact
+#   checks (lib/verdict.bend: exact; lib/ckpf.bend).
 
 import Base
 import ../spec/sketch.bend as SK
@@ -17,6 +19,8 @@ import ../lib/solve.bend as SO
 import ../lib/pass.bend as PA
 import ../lib/passpf.bend as PP
 import ../lib/perfpf.bend as PF
+import ../lib/verdict.bend as VD
+import ../lib/ckpf.bend as CK
 
 def pass_honest(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}) -> SV.Honest(sk, PA.classes(sk)):
   PP.pass_honest(sk, w, cov)
@@ -26,3 +30,7 @@ def pass_honest(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk,
 def total_pass(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool})
   -> SK.Both({SV.distinct(PA.pins(sk)) == True{} : Bool}, {SV.below(PA.pins(sk), PA.nvars(sk)) == True{} : Bool}) & (&m: List<&2, Nat> -> SV.Perfect(SV.solved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk))), SV.free(PA.nvars(sk), 0n, PA.pins(sk)), m)):
   PF.total_pass(sk, w, cov)
+
+# the pass's certificates pass the verdict's exact checks
+def pass_exact(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}) -> {VD.exact(sk, PA.classes(sk)) == True{} : Bool}:
+  CK.ck_pass(sk, PP.adjb_of(sk, w, cov))
