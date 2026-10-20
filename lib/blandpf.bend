@@ -737,3 +737,157 @@ def lneg_nonpos(~F: O.OField, +x0: O.C(F), +x1: O.C(F), h: LX.LNeg(~F, x0, x1)) 
       Inl{p}
     case Inr{+p}:
       Inr{(LX.both_l({x0 == O.zero(F) : O.C(F)}, O.lt(F, x1, O.zero(F)), p), FO.lt_le(~F, x1, O.zero(F), LX.both_r({x0 == O.zero(F) : O.C(F)}, O.lt(F, x1, O.zero(F)), p)))}
+
+# Row i at k1, read at the difference of values
+# ---------------------------------------------
+
+
+def isle_f(m: Nat, t: Nat, h: {SX.ltn(t, m) == True{} : Bool}) -> {Nat.is_le(m, t) == False{} : Bool}:
+  match m t:
+    case 0n t:
+      absurd({Nat.is_le(0n, t) == False{} : Bool}, KA.ft(SP.ltn0(t, h)))
+    case 1n+k 0n:
+      {==}
+    case 1n+k 1n+j:
+      isle_f(k, j, h)
+
+def lt_isle(m: Nat, j: Nat, h: {Nat.is_le(m, j) == False{} : Bool}) -> {SX.ltn(j, m) == True{} : Bool}:
+  match m j:
+    case 0n 0n:
+      absurd({SX.ltn(0n, 0n) == True{} : Bool}, KA.tf(h))
+    case 0n 1n+i:
+      absurd({SX.ltn(1n+i, 0n) == True{} : Bool}, KA.tf(h))
+    case 1n+k 0n:
+      {==}
+    case 1n+k 1n+i:
+      lt_isle(k, i, h)
+
+def at_past(u: List<&2, S.Z>, j: Nat, h: {KA.natle(SX.vlen(u), j) == True{} : Bool}) -> {S.Z0{} == SX.at(u, j) : S.Z}:
+  match u j:
+    case Nil{} j:
+      {==}
+    case Con{x, t} 0n:
+      absurd({S.Z0{} == SX.at(Con{x, t}, 0n) : S.Z}, KA.ft(h))
+    case Con{x, t} 1n+k:
+      at_past(t, k, h)
+
+def ne_of_lt_le(t: Nat, N: Nat, j: Nat, h1: {SX.ltn(t, N) == True{} : Bool}, h2: {KA.natle(N, j) == True{} : Bool}) -> {SX.eqn(j, t) == False{} : Bool}:
+  match t N j:
+    case t 0n j:
+      absurd({SX.eqn(j, t) == False{} : Bool}, KA.ft(SP.ltn0(t, h1)))
+    case 0n 1n+k 0n:
+      absurd({SX.eqn(0n, 0n) == False{} : Bool}, KA.ft(h2))
+    case 0n 1n+k 1n+i:
+      {==}
+    case 1n+s 1n+k 0n:
+      absurd({SX.eqn(0n, 1n+s) == False{} : Bool}, KA.ft(h2))
+    case 1n+s 1n+k 1n+i:
+      ne_of_lt_le(s, k, i, h1, h2)
+
+def ne_of_st.go(b: Bool, +lp: SX.LP, +j: Nat, +t: Nat, +q: Nat, hb: {b == SX.eqn(j, t) : Bool}, h1: {St(lp, j, q) == True{} : Bool}, h2: {St(lp, t, q) == False{} : Bool}) -> {b == False{} : Bool}:
+  match b:
+    case False{}:
+      {==}
+    case True{}:
+      absurd({True{} == False{} : Bool}, KA.tf(Equal.trans(Bool, True{}, St(lp, t, q), False{},
+        (%SP.eqn_eq(j, t, Equal.sym(Bool, True{}, SX.eqn(j, t), hb)) : {True{} == St(lp, _, q) : Bool}
+         Equal.sym(Bool, St(lp, j, q), True{}, h1)),
+        h2)))
+
+def ne_of_st(+lp: SX.LP, +j: Nat, +t: Nat, +q: Nat, h1: {St(lp, j, q) == True{} : Bool}, h2: {St(lp, t, q) == False{} : Bool}) -> {SX.eqn(j, t) == False{} : Bool}:
+  ne_of_st.go(SX.eqn(j, t), lp, j, t, q, {==}, h1, h2)
+
+def iszero_z(c: S.Z, h: {SX.iszero(c) == True{} : Bool}) -> {S.Z0{} == c : S.Z}:
+  SP.iszero_eq(c, Equal.sym(Bool, SX.iszero(c), True{}, h))
+
+# entry j of the difference: row j at k2 less row j at k1, at v
+def dl_at(~F: O.OField, +r2: List<&2, SX.Rw>, +r1: List<&2, SX.Rw>, +v: M.Vec(~F), +j: Nat) -> {SP.fat(~F, fsub(~F, SP.rmap(~F, r2, v), SP.rmap(~F, r1, v)), j) == O.sub(~F, SP.rv(~F, SX.rowat(r2, j), v), SP.rv(~F, SX.rowat(r1, j), v)) : O.C(F)}:
+  %Equal.sym(O.C(F), SP.fat(~F, fsub(~F, SP.rmap(~F, r2, v), SP.rmap(~F, r1, v)), j), O.sub(~F, SP.fat(~F, SP.rmap(~F, r2, v), j), SP.fat(~F, SP.rmap(~F, r1, v), j)), fat_fsub(~F, SP.rmap(~F, r2, v), SP.rmap(~F, r1, v), j)) : {_ == O.sub(~F, SP.rv(~F, SX.rowat(r2, j), v), SP.rv(~F, SX.rowat(r1, j), v)) : O.C(F)}
+  %SP.fat_rmap(~F, r2, v, j) : {O.sub(~F, _, SP.fat(~F, SP.rmap(~F, r1, v), j)) == O.sub(~F, SP.rv(~F, SX.rowat(r2, j), v), SP.rv(~F, SX.rowat(r1, j), v)) : O.C(F)}
+  %SP.fat_rmap(~F, r1, v, j) : {O.sub(~F, SP.rv(~F, SX.rowat(r2, j), v), _) == O.sub(~F, SP.rv(~F, SX.rowat(r2, j), v), SP.rv(~F, SX.rowat(r1, j), v)) : O.C(F)}
+  {==}
+
+def le_of_nlt(j: Nat, N: Nat, h: {SX.ltn(j, N) == False{} : Bool}) -> {KA.natle(N, j) == True{} : Bool}:
+  match j N:
+    case j 0n:
+      {==}
+    case 0n 1n+k:
+      absurd({KA.natle(1n+k, 0n) == True{} : Bool}, KA.tf(h))
+    case 1n+i 1n+k:
+      le_of_nlt(i, k, h)
+
+def t_ltN(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}) -> {SX.ltn(maxE(lp, L, a), SX.LP.nv(lp)) == True{} : Bool}:
+  %ik2(~F, lp, L, a, hwf, hG, heq) : {SX.ltn(_, SX.LP.nv(lp)) == True{} : Bool}
+  RN.lv_ltN(lp, RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a)), RN.piv_step(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a), go_at(lp, L, a, fl(lp, maxE(lp, L, a), 1n+L, a), hd2(~F, lp, L, a, hwf, hG, heq), hG)))
+
+def t_ltm(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}) -> {SX.ltn(maxE(lp, L, a), SX.LP.m(lp)) == True{} : Bool}:
+  %ik2(~F, lp, L, a, hwf, hG, heq) : {SX.ltn(_, SX.LP.m(lp)) == True{} : Bool}
+  RN.lv_lt(lp, RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a)), RN.piv_step(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a), go_at(lp, L, a, fl(lp, maxE(lp, L, a), 1n+L, a), hd2(~F, lp, L, a, hwf, hG, heq), hG)))
+
+# a column past N: row i has no entry there
+def col_big(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}, +j: Nat, +hj: {SX.ltn(j, SX.LP.nv(lp)) == False{} : Bool}) -> Either<&2, &2, LX.LNeg(~F, O.mul(F, O.ofz(~F, SX.at(RN.rowi(lp, RN.tab(lp, plus(argE(lp, L, a), a))), j)), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v0(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v0(lp)))), j)), O.mul(F, O.ofz(~F, SX.at(RN.rowi(lp, RN.tab(lp, plus(argE(lp, L, a), a))), j)), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v1(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v1(lp)))), j))), M.Both({SX.eqn(j, maxE(lp, L, a)) == False{} : Bool}, LX.LNonpos(~F, O.mul(F, O.ofz(~F, SX.at(RN.rowi(lp, RN.tab(lp, plus(argE(lp, L, a), a))), j)), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v0(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v0(lp)))), j)), O.mul(F, O.ofz(~F, SX.at(RN.rowi(lp, RN.tab(lp, plus(argE(lp, L, a), a))), j)), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v1(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v1(lp)))), j))))>:
+  Inr{(ne_of_lt_le(maxE(lp, L, a), SX.LP.nv(lp), j, t_ltN(~F, lp, L, a, hwf, hG, heq), le_of_nlt(j, SX.LP.nv(lp), hj)),
+    (%at_past(RN.rowi(lp, RN.tab(lp, plus(argE(lp, L, a), a))), j, KA.natle_trans(SX.vlen(RN.rowi(lp, RN.tab(lp, plus(argE(lp, L, a), a)))), SX.LP.nv(lp), j, SP.rlok_at(SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), SX.LP.nv(lp), I(lp, plus(argE(lp, L, a), a)), RN.rl_at(lp, plus(argE(lp, L, a), a), hwf)), le_of_nlt(j, SX.LP.nv(lp), hj))) : LX.LNonpos(~F, O.mul(F, O.ofz(~F, _), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v0(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v0(lp)))), j)), O.mul(F, O.ofz(~F, _), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v1(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v1(lp)))), j)))
+     LX.lnonpos_czero(~F, SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v0(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v0(lp)))), j), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v1(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v1(lp)))), j))))}
+
+# a column basic at k1: row i is 0 there
+def col_basic(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}, +j: Nat, +hb: {St(lp, j, plus(argE(lp, L, a), a)) == True{} : Bool}) -> Either<&2, &2, LX.LNeg(~F, O.mul(F, O.ofz(~F, SX.at(RN.rowi(lp, RN.tab(lp, plus(argE(lp, L, a), a))), j)), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v0(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v0(lp)))), j)), O.mul(F, O.ofz(~F, SX.at(RN.rowi(lp, RN.tab(lp, plus(argE(lp, L, a), a))), j)), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v1(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v1(lp)))), j))), M.Both({SX.eqn(j, maxE(lp, L, a)) == False{} : Bool}, LX.LNonpos(~F, O.mul(F, O.ofz(~F, SX.at(RN.rowi(lp, RN.tab(lp, plus(argE(lp, L, a), a))), j)), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v0(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v0(lp)))), j)), O.mul(F, O.ofz(~F, SX.at(RN.rowi(lp, RN.tab(lp, plus(argE(lp, L, a), a))), j)), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v1(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v1(lp)))), j))))>:
+  Inr{(ne_of_st(lp, j, maxE(lp, L, a), plus(argE(lp, L, a), a), hb, t_nb(~F, lp, L, a, hwf, hG, heq)),
+    (%iszero_z(SX.at(RN.rowi(lp, RN.tab(lp, plus(argE(lp, L, a), a))), j), SP.zcol_at(SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), j, I(lp, plus(argE(lp, L, a), a)), RN.iz_at(~F, lp, plus(argE(lp, L, a), a), hwf)(j, hb))) : LX.LNonpos(~F, O.mul(F, O.ofz(~F, _), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v0(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v0(lp)))), j)), O.mul(F, O.ofz(~F, _), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v1(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v1(lp)))), j)))
+     LX.lnonpos_czero(~F, SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v0(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v0(lp)))), j), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v1(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v1(lp)))), j))))}
+
+def band_f_r(a: Bool, h: {a == a : Bool}) -> {KA.band(a, False{}) == False{} : Bool}:
+  match a:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# x enters at step p + d (d < c): it does not never-enter
+def noent_at(+lp: SX.LP, +x: Nat, c: Nat, d: Nat, +p: Nat, hd: {SX.ltn(d, c) == True{} : Bool}, h: {SX.eqn(x, En(lp, plus(d, p))) == True{} : Bool}) -> {noent(lp, x, c, p) == False{} : Bool}:
+  match c d:
+    case 0n d:
+      absurd({noent(lp, x, 0n, p) == False{} : Bool}, KA.ft(SP.ltn0(d, hd)))
+    case 1n+k 0n:
+      %Equal.sym(Bool, SX.eqn(x, En(lp, p)), True{}, h) : {KA.band(bnot(_), noent(lp, x, k, 1n+p)) == False{} : Bool}
+      {==}
+    case 1n+k 1n+i:
+      %Equal.sym(Bool, noent(lp, x, k, 1n+p), False{}, noent_at(lp, x, k, i, 1n+p, hd, h)) : {KA.band(bnot(SX.eqn(x, En(lp, p))), _) == False{} : Bool}
+      band_f_r(bnot(SX.eqn(x, En(lp, p))), {==})
+
+def eqn_refl(x: Nat) -> {SX.eqn(x, x) == True{} : Bool}:
+  match x:
+    case 0n:
+      {==}
+    case 1n+k:
+      eqn_refl(k)
+
+def t_ent(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}) -> {noent(lp, maxE(lp, L, a), 1n+L, a) == False{} : Bool}:
+  noent_at(lp, maxE(lp, L, a), 1n+L, argE(lp, L, a), a, SP.ltn_of(argE(lp, L, a), 1n+L, hd1(lp, L, a)), (%ek1(lp, L, a) : {SX.eqn(_, En(lp, plus(argE(lp, L, a), a))) == True{} : Bool}
+    eqn_refl(En(lp, plus(argE(lp, L, a), a)))))
+
+def nf_ne.go(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}, +j: Nat, b: Bool, hb: {b == SX.eqn(j, maxE(lp, L, a)) : Bool}, hn: {noent(lp, j, 1n+L, a) == True{} : Bool}) -> {b == False{} : Bool}:
+  match b:
+    case False{}:
+      {==}
+    case True{}:
+      absurd({True{} == False{} : Bool}, KA.tf(Equal.trans(Bool, True{}, noent(lp, maxE(lp, L, a), 1n+L, a), False{},
+        (%SP.eqn_eq(j, maxE(lp, L, a), Equal.sym(Bool, True{}, SX.eqn(j, maxE(lp, L, a)), hb)) : {True{} == noent(lp, _, 1n+L, a) : Bool}
+         Equal.sym(Bool, noent(lp, j, 1n+L, a), True{}, hn)),
+        t_ent(~F, lp, L, a, hwf, hG, heq))))
+
+# row j of a dictionary where j is nonbasic, read at v, less v_j, is 0
+def nb_zero(~F: O.OField, +lp: SX.LP, +q: Nat, +j: Nat, +v: M.Vec(~F), +hwf: {SP.lpwf(lp) == True{} : Bool}, hb: {St(lp, j, q) == False{} : Bool}, hj: {SX.ltn(j, SX.LP.nv(lp)) == True{} : Bool}) -> {SP.rv(~F, SX.rowat(SX.Tab.rows(RN.tab(lp, q)), j), v) == SP.fat(~F, v, j) : O.C(F)}:
+  RN.iu_at(~F, lp, q, hwf)(j, hb, hj, v)
+
+def dz(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}, +j: Nat, +v: M.Vec(~F), +hj: {SX.ltn(j, SX.LP.nv(lp)) == True{} : Bool}, +hb: {St(lp, j, plus(argE(lp, L, a), a)) == False{} : Bool}, +hb2: {St(lp, j, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a)) == False{} : Bool}) -> {SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), v), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), v)), j) == O.zero(F) : O.C(F)}:
+  %Equal.sym(O.C(F), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), v), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), v)), j), O.sub(~F, SP.rv(~F, SX.rowat(SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), j), v), SP.rv(~F, SX.rowat(SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), j), v)), dl_at(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), v, j)) : {_ == O.zero(F) : O.C(F)}
+  %Equal.sym(O.C(F), SP.rv(~F, SX.rowat(SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), j), v), SP.fat(~F, v, j), nb_zero(~F, lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a), j, v, hwf, hb2, hj)) : {O.sub(~F, _, SP.rv(~F, SX.rowat(SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), j), v)) == O.zero(F) : O.C(F)}
+  %Equal.sym(O.C(F), SP.rv(~F, SX.rowat(SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), j), v), SP.fat(~F, v, j), nb_zero(~F, lp, plus(argE(lp, L, a), a), j, v, hwf, hb, hj)) : {O.sub(~F, SP.fat(~F, v, j), _) == O.zero(F) : O.C(F)}
+  FR.fring_eq(~F, [SP.fat(~F, v, j)], E.ZSub{E.ZVar{0n}, E.ZVar{0n}}, E.ZCst{S.Z0{}}, {==})
+
+# a column that never enters keeps its status, so its difference is 0
+def col_nf(~F: O.OField, +lp: SX.LP, +L: Nat, +a: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, plus(1n+L, a))) == True{} : Bool}, +heq: {B(lp, a) == B(lp, plus(1n+L, a)) : List<&2, Bool>}, +j: Nat, +hj: {SX.ltn(j, SX.LP.nv(lp)) == True{} : Bool}, +hb: {St(lp, j, plus(argE(lp, L, a), a)) == False{} : Bool}, +hn: {noent(lp, j, 1n+L, a) == True{} : Bool}) -> Either<&2, &2, LX.LNeg(~F, O.mul(F, O.ofz(~F, SX.at(RN.rowi(lp, RN.tab(lp, plus(argE(lp, L, a), a))), j)), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v0(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v0(lp)))), j)), O.mul(F, O.ofz(~F, SX.at(RN.rowi(lp, RN.tab(lp, plus(argE(lp, L, a), a))), j)), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v1(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v1(lp)))), j))), M.Both({SX.eqn(j, maxE(lp, L, a)) == False{} : Bool}, LX.LNonpos(~F, O.mul(F, O.ofz(~F, SX.at(RN.rowi(lp, RN.tab(lp, plus(argE(lp, L, a), a))), j)), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v0(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v0(lp)))), j)), O.mul(F, O.ofz(~F, SX.at(RN.rowi(lp, RN.tab(lp, plus(argE(lp, L, a), a))), j)), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v1(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v1(lp)))), j))))>:
+  +hb2 = Equal.trans(Bool, St(lp, j, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a)), St(lp, j, a), False{}, st_const(~F, lp, L, a, hwf, hG, heq, j, hn, fl(lp, maxE(lp, L, a), 1n+L, a), le_succ(fl(lp, maxE(lp, L, a), 1n+L, a), L, hd2(~F, lp, L, a, hwf, hG, heq))), Equal.trans(Bool, St(lp, j, a), St(lp, j, plus(argE(lp, L, a), a)), False{}, Equal.sym(Bool, St(lp, j, plus(argE(lp, L, a), a)), St(lp, j, a), st_const(~F, lp, L, a, hwf, hG, heq, j, hn, argE(lp, L, a), le_succ(argE(lp, L, a), L, hd1(lp, L, a)))), hb))
+  Inr{(nf_ne.go(~F, lp, L, a, hwf, hG, heq, j, SX.eqn(j, maxE(lp, L, a)), {==}, hn),
+    LX.lnonpos_zero(~F, O.ofz(~F, SX.at(RN.rowi(lp, RN.tab(lp, plus(argE(lp, L, a), a))), j)), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v0(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v0(lp)))), j), SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))), RN.zv(~F, SX.LP.v1(lp))), SP.rmap(~F, SX.Tab.rows(RN.tab(lp, plus(argE(lp, L, a), a))), RN.zv(~F, SX.LP.v1(lp)))), j), dz(~F, lp, L, a, hwf, hG, heq, j, RN.zv(~F, SX.LP.v0(lp)), hj, hb, hb2), dz(~F, lp, L, a, hwf, hG, heq, j, RN.zv(~F, SX.LP.v1(lp)), hj, hb, hb2)))}

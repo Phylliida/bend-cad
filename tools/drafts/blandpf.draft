@@ -747,3 +747,169 @@ def lneg_nonpos(~F: O.OField, +x0: @T, +x1: @T, h: LX.LNeg(~F, x0, x1)) -> LX.LN
       Inl{p}
     case Inr{+p}:
       Inr{(LX.both_l({x0 == @0 : @T}, O.lt(F, x1, @0), p), FO.lt_le(~F, x1, @0, LX.both_r({x0 == @0 : @T}, O.lt(F, x1, @0), p)))}
+
+# Row i at k1, read at the difference of values
+# ---------------------------------------------
+
+@MACRO T1 RN.tab(lp, plus(argE(lp, L, a), a))
+@MACRO T2 RN.tab(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a))
+@MACRO V0 RN.zv(~F, SX.LP.v0(lp))
+@MACRO V1 RN.zv(~F, SX.LP.v1(lp))
+@MACRO MM RN.rowi(lp, $T1)
+@MACRO DL0 fsub(~F, SP.rmap(~F, SX.Tab.rows($T2), $V0), SP.rmap(~F, SX.Tab.rows($T1), $V0))
+@MACRO DL1 fsub(~F, SP.rmap(~F, SX.Tab.rows($T2), $V1), SP.rmap(~F, SX.Tab.rows($T1), $V1))
+@MACRO TS0 @M(@OZ(SX.at($MM, j)), SP.fat(~F, $DL0, j))
+@MACRO TS1 @M(@OZ(SX.at($MM, j)), SP.fat(~F, $DL1, j))
+@MACRO TSJ Either<&2, &2, LX.LNeg(~F, $TS0, $TS1), M.Both({SX.eqn(j, $TT) == False{} : Bool}, LX.LNonpos(~F, $TS0, $TS1))>
+@MACRO PG1 RN.piv_step(lp, plus(argE(lp, L, a), a), go_at(lp, L, a, argE(lp, L, a), hd1(lp, L, a), hG))
+@MACRO PG2 RN.piv_step(lp, plus(fl(lp, maxE(lp, L, a), 1n+L, a), a), go_at(lp, L, a, fl(lp, maxE(lp, L, a), 1n+L, a), hd2($CTA), hG))
+
+def isle_f(m: Nat, t: Nat, h: {SX.ltn(t, m) == True{} : Bool}) -> {Nat.is_le(m, t) == False{} : Bool}:
+  match m t:
+    case 0n t:
+      absurd({Nat.is_le(0n, t) == False{} : Bool}, KA.ft(SP.ltn0(t, h)))
+    case 1n+k 0n:
+      {==}
+    case 1n+k 1n+j:
+      isle_f(k, j, h)
+
+def lt_isle(m: Nat, j: Nat, h: {Nat.is_le(m, j) == False{} : Bool}) -> {SX.ltn(j, m) == True{} : Bool}:
+  match m j:
+    case 0n 0n:
+      absurd({SX.ltn(0n, 0n) == True{} : Bool}, KA.tf(h))
+    case 0n 1n+i:
+      absurd({SX.ltn(1n+i, 0n) == True{} : Bool}, KA.tf(h))
+    case 1n+k 0n:
+      {==}
+    case 1n+k 1n+i:
+      lt_isle(k, i, h)
+
+def at_past(u: List<&2, S.Z>, j: Nat, h: {KA.natle(SX.vlen(u), j) == True{} : Bool}) -> {S.Z0{} == SX.at(u, j) : S.Z}:
+  match u j:
+    case Nil{} j:
+      {==}
+    case Con{x, t} 0n:
+      absurd({S.Z0{} == SX.at(Con{x, t}, 0n) : S.Z}, KA.ft(h))
+    case Con{x, t} 1n+k:
+      at_past(t, k, h)
+
+def ne_of_lt_le(t: Nat, N: Nat, j: Nat, h1: {SX.ltn(t, N) == True{} : Bool}, h2: {KA.natle(N, j) == True{} : Bool}) -> {SX.eqn(j, t) == False{} : Bool}:
+  match t N j:
+    case t 0n j:
+      absurd({SX.eqn(j, t) == False{} : Bool}, KA.ft(SP.ltn0(t, h1)))
+    case 0n 1n+k 0n:
+      absurd({SX.eqn(0n, 0n) == False{} : Bool}, KA.ft(h2))
+    case 0n 1n+k 1n+i:
+      {==}
+    case 1n+s 1n+k 0n:
+      absurd({SX.eqn(0n, 1n+s) == False{} : Bool}, KA.ft(h2))
+    case 1n+s 1n+k 1n+i:
+      ne_of_lt_le(s, k, i, h1, h2)
+
+def ne_of_st.go(b: Bool, +lp: SX.LP, +j: Nat, +t: Nat, +q: Nat, hb: {b == SX.eqn(j, t) : Bool}, h1: {St(lp, j, q) == True{} : Bool}, h2: {St(lp, t, q) == False{} : Bool}) -> {b == False{} : Bool}:
+  match b:
+    case False{}:
+      {==}
+    case True{}:
+      absurd({True{} == False{} : Bool}, KA.tf(Equal.trans(Bool, True{}, St(lp, t, q), False{},
+        (%SP.eqn_eq(j, t, Equal.sym(Bool, True{}, SX.eqn(j, t), hb)) : {True{} == St(lp, _, q) : Bool}
+         Equal.sym(Bool, St(lp, j, q), True{}, h1)),
+        h2)))
+
+def ne_of_st(+lp: SX.LP, +j: Nat, +t: Nat, +q: Nat, h1: {St(lp, j, q) == True{} : Bool}, h2: {St(lp, t, q) == False{} : Bool}) -> {SX.eqn(j, t) == False{} : Bool}:
+  ne_of_st.go(SX.eqn(j, t), lp, j, t, q, {==}, h1, h2)
+
+def iszero_z(c: S.Z, h: {SX.iszero(c) == True{} : Bool}) -> {S.Z0{} == c : S.Z}:
+  SP.iszero_eq(c, Equal.sym(Bool, SX.iszero(c), True{}, h))
+
+# entry j of the difference: row j at k2 less row j at k1, at v
+def dl_at(~F: O.OField, +r2: List<&2, SX.Rw>, +r1: List<&2, SX.Rw>, +v: M.Vec(~F), +j: Nat) -> {SP.fat(~F, fsub(~F, SP.rmap(~F, r2, v), SP.rmap(~F, r1, v)), j) == @S(SP.rv(~F, SX.rowat(r2, j), v), SP.rv(~F, SX.rowat(r1, j), v)) : @T}:
+  %Equal.sym(@T, SP.fat(~F, fsub(~F, SP.rmap(~F, r2, v), SP.rmap(~F, r1, v)), j), @S(SP.fat(~F, SP.rmap(~F, r2, v), j), SP.fat(~F, SP.rmap(~F, r1, v), j)), fat_fsub(~F, SP.rmap(~F, r2, v), SP.rmap(~F, r1, v), j)) : {_ == @S(SP.rv(~F, SX.rowat(r2, j), v), SP.rv(~F, SX.rowat(r1, j), v)) : @T}
+  %SP.fat_rmap(~F, r2, v, j) : {@S(_, SP.fat(~F, SP.rmap(~F, r1, v), j)) == @S(SP.rv(~F, SX.rowat(r2, j), v), SP.rv(~F, SX.rowat(r1, j), v)) : @T}
+  %SP.fat_rmap(~F, r1, v, j) : {@S(SP.rv(~F, SX.rowat(r2, j), v), _) == @S(SP.rv(~F, SX.rowat(r2, j), v), SP.rv(~F, SX.rowat(r1, j), v)) : @T}
+  {==}
+
+def le_of_nlt(j: Nat, N: Nat, h: {SX.ltn(j, N) == False{} : Bool}) -> {KA.natle(N, j) == True{} : Bool}:
+  match j N:
+    case j 0n:
+      {==}
+    case 0n 1n+k:
+      absurd({KA.natle(1n+k, 0n) == True{} : Bool}, KA.tf(h))
+    case 1n+i 1n+k:
+      le_of_nlt(i, k, h)
+
+def t_ltN($CTX) -> {SX.ltn($TT, SX.LP.nv(lp)) == True{} : Bool}:
+  %ik2($CTA) : {SX.ltn(_, SX.LP.nv(lp)) == True{} : Bool}
+  RN.lv_ltN(lp, $T2, $PG2)
+
+def t_ltm($CTX) -> {SX.ltn($TT, SX.LP.m(lp)) == True{} : Bool}:
+  %ik2($CTA) : {SX.ltn(_, SX.LP.m(lp)) == True{} : Bool}
+  RN.lv_lt(lp, $T2, $PG2)
+
+# a column past N: row i has no entry there
+def col_big($CTX, +j: Nat, +hj: {SX.ltn(j, SX.LP.nv(lp)) == False{} : Bool}) -> $TSJ:
+  Inr{(ne_of_lt_le($TT, SX.LP.nv(lp), j, t_ltN($CTA), le_of_nlt(j, SX.LP.nv(lp), hj)),
+    (%at_past($MM, j, KA.natle_trans(SX.vlen($MM), SX.LP.nv(lp), j, SP.rlok_at(SX.Tab.rows($T1), SX.LP.nv(lp), $IS, RN.rl_at(lp, $K1, hwf)), le_of_nlt(j, SX.LP.nv(lp), hj))) : LX.LNonpos(~F, @M(@OZ(_), SP.fat(~F, $DL0, j)), @M(@OZ(_), SP.fat(~F, $DL1, j)))
+     LX.lnonpos_czero(~F, SP.fat(~F, $DL0, j), SP.fat(~F, $DL1, j))))}
+
+# a column basic at k1: row i is 0 there
+def col_basic($CTX, +j: Nat, +hb: {St(lp, j, $K1) == True{} : Bool}) -> $TSJ:
+  Inr{(ne_of_st(lp, j, $TT, $K1, hb, t_nb($CTA)),
+    (%iszero_z(SX.at($MM, j), SP.zcol_at(SX.Tab.rows($T1), j, $IS, RN.iz_at(~F, lp, $K1, hwf)(j, hb))) : LX.LNonpos(~F, @M(@OZ(_), SP.fat(~F, $DL0, j)), @M(@OZ(_), SP.fat(~F, $DL1, j)))
+     LX.lnonpos_czero(~F, SP.fat(~F, $DL0, j), SP.fat(~F, $DL1, j))))}
+
+def band_f_r(a: Bool, h: {a == a : Bool}) -> {KA.band(a, False{}) == False{} : Bool}:
+  match a:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# x enters at step p + d (d < c): it does not never-enter
+def noent_at(+lp: SX.LP, +x: Nat, c: Nat, d: Nat, +p: Nat, hd: {SX.ltn(d, c) == True{} : Bool}, h: {SX.eqn(x, En(lp, plus(d, p))) == True{} : Bool}) -> {noent(lp, x, c, p) == False{} : Bool}:
+  match c d:
+    case 0n d:
+      absurd({noent(lp, x, 0n, p) == False{} : Bool}, KA.ft(SP.ltn0(d, hd)))
+    case 1n+k 0n:
+      %Equal.sym(Bool, SX.eqn(x, En(lp, p)), True{}, h) : {KA.band(bnot(_), noent(lp, x, k, 1n+p)) == False{} : Bool}
+      {==}
+    case 1n+k 1n+i:
+      %Equal.sym(Bool, noent(lp, x, k, 1n+p), False{}, noent_at(lp, x, k, i, 1n+p, hd, h)) : {KA.band(bnot(SX.eqn(x, En(lp, p))), _) == False{} : Bool}
+      band_f_r(bnot(SX.eqn(x, En(lp, p))), {==})
+
+def eqn_refl(x: Nat) -> {SX.eqn(x, x) == True{} : Bool}:
+  match x:
+    case 0n:
+      {==}
+    case 1n+k:
+      eqn_refl(k)
+
+def t_ent($CTX) -> {noent(lp, $TT, 1n+L, a) == False{} : Bool}:
+  noent_at(lp, $TT, 1n+L, $D1, a, SP.ltn_of($D1, 1n+L, hd1(lp, L, a)), (%ek1(lp, L, a) : {SX.eqn(_, En(lp, $K1)) == True{} : Bool}
+    eqn_refl(En(lp, $K1))))
+
+def nf_ne.go($CTX, +j: Nat, b: Bool, hb: {b == SX.eqn(j, $TT) : Bool}, hn: {noent(lp, j, 1n+L, a) == True{} : Bool}) -> {b == False{} : Bool}:
+  match b:
+    case False{}:
+      {==}
+    case True{}:
+      absurd({True{} == False{} : Bool}, KA.tf(Equal.trans(Bool, True{}, noent(lp, $TT, 1n+L, a), False{},
+        (%SP.eqn_eq(j, $TT, Equal.sym(Bool, True{}, SX.eqn(j, $TT), hb)) : {True{} == noent(lp, _, 1n+L, a) : Bool}
+         Equal.sym(Bool, noent(lp, j, 1n+L, a), True{}, hn)),
+        t_ent($CTA))))
+
+# row j of a dictionary where j is nonbasic, read at v, less v_j, is 0
+def nb_zero(~F: O.OField, +lp: SX.LP, +q: Nat, +j: Nat, +v: M.Vec(~F), +hwf: {SP.lpwf(lp) == True{} : Bool}, hb: {St(lp, j, q) == False{} : Bool}, hj: {SX.ltn(j, SX.LP.nv(lp)) == True{} : Bool}) -> {SP.rv(~F, SX.rowat(SX.Tab.rows(RN.tab(lp, q)), j), v) == SP.fat(~F, v, j) : @T}:
+  RN.iu_at(~F, lp, q, hwf)(j, hb, hj, v)
+
+def dz($CTX, +j: Nat, +v: M.Vec(~F), +hj: {SX.ltn(j, SX.LP.nv(lp)) == True{} : Bool}, +hb: {St(lp, j, $K1) == False{} : Bool}, +hb2: {St(lp, j, $K2) == False{} : Bool}) -> {SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows($T2), v), SP.rmap(~F, SX.Tab.rows($T1), v)), j) == @0 : @T}:
+  %Equal.sym(@T, SP.fat(~F, fsub(~F, SP.rmap(~F, SX.Tab.rows($T2), v), SP.rmap(~F, SX.Tab.rows($T1), v)), j), @S(SP.rv(~F, SX.rowat(SX.Tab.rows($T2), j), v), SP.rv(~F, SX.rowat(SX.Tab.rows($T1), j), v)), dl_at(~F, SX.Tab.rows($T2), SX.Tab.rows($T1), v, j)) : {_ == @0 : @T}
+  %Equal.sym(@T, SP.rv(~F, SX.rowat(SX.Tab.rows($T2), j), v), SP.fat(~F, v, j), nb_zero(~F, lp, $K2, j, v, hwf, hb2, hj)) : {@S(_, SP.rv(~F, SX.rowat(SX.Tab.rows($T1), j), v)) == @0 : @T}
+  %Equal.sym(@T, SP.rv(~F, SX.rowat(SX.Tab.rows($T1), j), v), SP.fat(~F, v, j), nb_zero(~F, lp, $K1, j, v, hwf, hb, hj)) : {@S(SP.fat(~F, v, j), _) == @0 : @T}
+  @ZEQ[f=SP.fat(~F, v, j) | f - f | 0]
+
+# a column that never enters keeps its status, so its difference is 0
+def col_nf($CTX, +j: Nat, +hj: {SX.ltn(j, SX.LP.nv(lp)) == True{} : Bool}, +hb: {St(lp, j, $K1) == False{} : Bool}, +hn: {noent(lp, j, 1n+L, a) == True{} : Bool}) -> $TSJ:
+  +hb2 = Equal.trans(Bool, St(lp, j, $K2), St(lp, j, a), False{}, st_const($CTA, j, hn, $D2, le_succ($D2, L, hd2($CTA))), Equal.trans(Bool, St(lp, j, a), St(lp, j, $K1), False{}, Equal.sym(Bool, St(lp, j, $K1), St(lp, j, a), st_const($CTA, j, hn, $D1, le_succ($D1, L, hd1(lp, L, a)))), hb))
+  Inr{(nf_ne.go($CTA, j, SX.eqn(j, $TT), {==}, hn),
+    LX.lnonpos_zero(~F, @OZ(SX.at($MM, j)), SP.fat(~F, $DL0, j), SP.fat(~F, $DL1, j), dz($CTA, j, $V0, hj, hb, hb2), dz($CTA, j, $V1, hj, hb, hb2)))}
