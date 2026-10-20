@@ -1,4 +1,4 @@
-# HANDOFF — bend-cad (2026-10-19, sk-09 verified solver built; sk-13a S0–S2 done; next: PLAN-sk13a.md S3)
+# HANDOFF — bend-cad (2026-10-19, sk-09 verified solver built; sk-13a S0–S3 done; next: check in with Danielle, then PLAN-sk13a.md S4)
 
 Read first: `DESIGN.md` (v0.9: the plan, Danielle's decisions, §3 spec
 numbers, §4–§5 typed IR, forms and meanings as built), `proto/RESULTS.md`
@@ -213,8 +213,17 @@ and its invariants (`lib/elimpf.bend`), a zero residual is a drop with
 its certificate (`lib/drvpf.bend`), a nonzero one is independent of the
 basis (`lib/indpf.bend`); gated via `tests/elim_laws.bend`. The
 per-constraint walk and `DropsOk` move to S4 (see PLAN S2 as built).
-**Next: PLAN-sk13a.md S3** (exact simplex with Bland's rule, the deletion
-filter).
+**S3 is done (2026-10-19):** the exact simplex with Bland's rule
+(`lib/simplex.bend`) finishes on every problem (Bland's lemma generic over
+ordered fields, `lib/blandpf.bend`; pigeonhole, `lib/termpf.bend`);
+`refute` (`lib/refute.bend`) decides degree-0 refutability, a certificate
+being a Motzkin refutation and none meaning none exists (`refute_ok`,
+`lib/refpf.bend` and `lib/satpf.bend`); Chinneck's deletion filter
+(`lib/conflict.bend`) gives a `ConflictOk` support (`lib/conflictpf.bend`).
+Gated via `tests/refute_laws.bend`. See PLAN S3 as built; the pass's
+instantiation (candidates `kept_before`, `NoRefute`/`Implied` on the
+spec's lists) is S4's. **Next: check in with Danielle (the plan's
+check-in after S3), then PLAN-sk13a.md S4** (the single pass).
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);
