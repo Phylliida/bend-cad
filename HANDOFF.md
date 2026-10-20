@@ -1,4 +1,4 @@
-# HANDOFF — bend-cad (2026-10-19, sk-09 verified solver built; sk-13a S0, S1 done; next: PLAN-sk13a.md S2)
+# HANDOFF — bend-cad (2026-10-19, sk-09 verified solver built; sk-13a S0–S2 done; next: PLAN-sk13a.md S3)
 
 Read first: `DESIGN.md` (v0.9: the plan, Danielle's decisions, §3 spec
 numbers, §4–§5 typed IR, forms and meanings as built), `proto/RESULTS.md`
@@ -207,9 +207,14 @@ proven reduced (`lib/redpoly.bend`), the non-root lemma
 (`lib/nonroot.bend`), `Ident` and `Depends` decided exactly by normal
 forms (`lib/identpf.bend`; dependence normalizes the derivative, see
 PLAN S1 as built), and identities read coefficient by coefficient
-(`lib/coefpf.bend`), gated via `tests/ident_laws.bend`. **Next:
-PLAN-sk13a.md S2** (degree-0 elimination; rows and the adjacency moved
-there).
+(`lib/coefpf.bend`), gated via `tests/ident_laws.bend`. **S2 is done (2026-10-19)** at the basis level: the adjacency by
+dependence (`lib/deppf.bend`), the elimination code (`lib/elim.bend`)
+and its invariants (`lib/elimpf.bend`), a zero residual is a drop with
+its certificate (`lib/drvpf.bend`), a nonzero one is independent of the
+basis (`lib/indpf.bend`); gated via `tests/elim_laws.bend`. The
+per-constraint walk and `DropsOk` move to S4 (see PLAN S2 as built).
+**Next: PLAN-sk13a.md S3** (exact simplex with Bland's rule, the deletion
+filter).
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);

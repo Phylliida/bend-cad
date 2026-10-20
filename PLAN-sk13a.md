@@ -140,6 +140,43 @@ through `tests/ident_laws.bend`:
     normal forms is the spec's dependence (Q30).
 
 ### S2. Degree-0 elimination over all equations
+*Done 2026-10-19 at the basis level; the per-constraint walk and
+`DropsOk` move to S4.* As built, gated through `tests/elim_laws.bend`
+and `tests/ident_laws.bend`:
+- `lib/deppf.bend`: the adjacency `dadj(e)` keeps the variables e
+  mentions that it depends on (`dep`). Each is depended on; e depends on
+  nothing outside it (an unmentioned variable has derivative 0 in every
+  field).
+- `lib/elim.bend` (the code):
+  - Rows are integer polynomials in normal form, oldest first. Row j is
+    aligned with basis entry j and records its combination: bt times its
+    own equation plus cb (one integer per earlier entry), with bt > 0.
+  - Reduction is fraction-free, r := |b| r - sgn(b) a R. The pivot is
+    the residual's largest monomial, 1 only for a nonzero constant.
+  - `proto/probe_elim`: a few ms per regression sketch, coefficients
+    under 90 bits.
+- `lib/elimpf.bend`: the invariants.
+  - A row's polynomial and its recorded combination have the same
+    coefficients.
+  - The rows are echelon: each is nonzero at its pivot and every later
+    row is 0 there.
+  - The residual is reduced, 0 at every pivot, and its combination is as
+    long as the basis.
+  - A nonzero residual extends the rows and the basis (`new_rinv`).
+- `lib/drvpf.bend`: a zero residual is a drop, with multipliers
+  -cb_k den(B_k) / (bt den(e)) (`derivable`, the spec's `Ident`).
+- `lib/indpf.bend`: a nonzero residual is independent of the basis
+  (`indep`, the spec's NotDerivable), by a dual certificate.
+  Back-substituted weights give a functional that kills every row, hence
+  every basis equation, but not e.
+- **Moved to S4:** walking a constraint's equations (each dropped, or a
+  new row and basis entry) and `DropsOk` itself. Both need the pass's
+  basis at c to be `presolved(sk, red, ds, c)`, which is the pass's own
+  invariant; `own_rest` is that walk's accumulation.
+- Pivot 1 (a constant residual) is allowed as a row. It marks a
+  refutation candidate for S3 and keeps `DropsOk` exact for the
+  equations after it.
+
 - Each equation is normalized; its variables (from the normal form) give
   the structure's adjacency.
 - Fraction-free Gaussian elimination over monomial vectors, constraint by
