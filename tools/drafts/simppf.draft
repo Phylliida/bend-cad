@@ -20,6 +20,7 @@ import ./fring.bend as FR
 import ./ford.bend as FO
 import ./qemb.bend as QE
 import ./karith.bend as KA
+import ./nat.bend as LN
 import ./zring.bend as R
 import ./elim.bend as EL
 import ./simplex.bend as SX
@@ -790,3 +791,307 @@ def iz_pivot.at(+len: Nat, +t: SX.Tab, +i: Nat, +e: Nat, +j: Nat, hj: {bat(SX.Ta
 # IZ survives a pivot
 def iz_pivot(+len: Nat, +t: SX.Tab, +i: Nat, +e: Nat, hz: IZ(t), +hp: {SX.iszero(SX.at(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), e)) == False{} : Bool}, +hei: {SX.eqn(e, i) == False{} : Bool}, +hil: {SX.ltn(i, blen(SX.Tab.bas(t))) == True{} : Bool}) -> IZ(SX.pivot(len, t, i, e)):
   j => hj => iz_pivot.at(len, t, i, e, j, hj, hz, hp, hei, hil)
+
+# The starting dictionary
+# -----------------------
+# Slacks basic with rows (1, zeros(m) ++ a_k), the y's nonbasic with rows
+# (1, e_k). It satisfies every invariant when each a_k has at most n
+# entries (lpwf).
+
+def inv1(~F: O.OField) -> {O.inv(F, O.ofp(~F, S.XH{})) == @1 : @T}:
+  @CERTEQ[i1=O.inv(F, O.ofp(~F, S.XH{})) | i1 | 1 | 1 ; 1*i1 - 1 || QE.ofp_rel(~F, S.XH{})]
+
+# every a_k has at most n entries
+def lpwf.go(qs: List<&2, SX.Ineq>, +n: Nat) -> Bool:
+  match qs:
+    case Nil{}:
+      True{}
+    case Con{SX.Ineq{a, b, s}, t}:
+      KA.band(KA.natle(SX.vlen(a), n), lpwf.go(t, n))
+
+def lpwf(lp: SX.LP) -> Bool:
+  match lp:
+    case SX.LP{qs, +n}:
+      lpwf.go(qs, n)
+
+# F-vectors: append, and dropping the first k entries
+def fcat(~F: O.OField, u: M.Vec(~F), w: M.Vec(~F)) -> M.Vec(~F):
+  match u:
+    case Nil{}:
+      w
+    case Con{x, t}:
+      Con{x, fcat(~F, t, w)}
+
+def ydrop(~F: O.OField, k: Nat, w: M.Vec(~F)) -> M.Vec(~F):
+  match k w:
+    case 0n w:
+      w
+    case 1n+j Nil{}:
+      Nil{}
+    case 1n+j Con{y, s}:
+      ydrop(~F, j, s)
+
+def rmap_rcat(~F: O.OField, u: List<&2, SX.Rw>, +v: List<&2, SX.Rw>, +w: M.Vec(~F)) -> {fcat(~F, rmap(~F, u, w), rmap(~F, v, w)) == rmap(~F, SX.rcat(u, v), w) : M.Vec(~F)}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{+r, +t}:
+      %rmap_rcat(~F, t, v, w) : {Con{rv(~F, r, w), fcat(~F, rmap(~F, t, w), rmap(~F, v, w))} == Con{rv(~F, r, w), _} : M.Vec(~F)}
+      {==}
+
+def len_srows(~F: O.OField, qs: List<&2, SX.Ineq>, +m: Nat, +w: M.Vec(~F)) -> {SX.qlen(qs) == M.len(~F, rmap(~F, SX.srows(qs, m), w)) : Nat}:
+  match qs:
+    case Nil{}:
+      {==}
+    case Con{SX.Ineq{a, b, s}, +t}:
+      %len_srows(~F, t, m, w) : {1n+SX.qlen(t) == 1n+_ : Nat}
+      {==}
+
+def ydrop_fcat(~F: O.OField, u: M.Vec(~F), +w: M.Vec(~F)) -> {w == ydrop(~F, M.len(~F, u), fcat(~F, u, w)) : M.Vec(~F)}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{x, t}:
+      ydrop_fcat(~F, t, w)
+
+# zeros(m) ++ a against w is a against w from entry m
+def zdot_cat_zeros(~F: O.OField, m: Nat, +a: List<&2, S.Z>, w: M.Vec(~F)) -> {zdot(~F, a, ydrop(~F, m, w)) == zdot(~F, SX.cat(EL.zeros(m), a), w) : @T}:
+  match m w:
+    case 0n w:
+      {==}
+    case 1n++j Nil{}:
+      Equal.sym(@T, @0, zdot(~F, a, Nil{}), zdot_nil_r(~F, a))
+    case 1n++j Con{+y, +s}:
+      %zdot_cat_zeros(~F, j, a, s) : {zdot(~F, a, ydrop(~F, j, s)) == @A(@M(@0, y), _) : @T}
+      @ZEQ[y,, z=zdot(~F, a, ydrop(~F, j, s)) | z | 0*y + z]
+
+# a . (w from k) splits off entry k
+def zdot_ydrop(~F: O.OField, +x: S.Z, +at: List<&2, S.Z>, k: Nat, w: M.Vec(~F)) -> {@A(@M(@OZ(x), fat(~F, w, k)), zdot(~F, at, ydrop(~F, 1n+k, w))) == zdot(~F, Con{x, at}, ydrop(~F, k, w)) : @T}:
+  match k w:
+    case 0n Nil{}:
+      %zdot_nil_r(~F, at) : {@A(@M(@OZ(x), @0), _) == @0 : @T}
+      @ZEQ[x=@OZ(x) | x*0 + 0 | 0]
+    case 0n Con{y, s}:
+      {==}
+    case 1n+j Nil{}:
+      %zdot_nil_r(~F, at) : {@A(@M(@OZ(x), @0), _) == @0 : @T}
+      @ZEQ[x=@OZ(x) | x*0 + 0 | 0]
+    case 1n+j Con{y, s}:
+      zdot_ydrop(~F, x, at, j, s)
+
+def ltn_of(a: Nat, b: Nat, h: {KA.natle(1n+a, b) == True{} : Bool}) -> {SX.ltn(a, b) == True{} : Bool}:
+  match a b:
+    case 0n 0n:
+      absurd({SX.ltn(0n, 0n) == True{} : Bool}, KA.ft(h))
+    case 0n 1n+j:
+      {==}
+    case 1n+i 0n:
+      absurd({SX.ltn(1n+i, 0n) == True{} : Bool}, KA.ft(h))
+    case 1n+i 1n+j:
+      ltn_of(i, j, h)
+
+# k + 1 + j <= N: k < N
+def lt_of_add(+k: Nat, +j: Nat, +N: Nat, hk: {KA.natle(Nat.add(k, 1n+j), N) == True{} : Bool}) -> {SX.ltn(k, N) == True{} : Bool}:
+  ltn_of(k, N, KA.natle_trans(1n+k, Nat.add(k, 1n+j), N, (%LN.add_succ(k, j) : {KA.natle(1n+k, _) == True{} : Bool}
+    KA.natle_add_r(k, j)), hk))
+
+# a . (the y rows from k, read at w) = a . (w from k), for a of at most c
+# entries and units below N
+def ydot(~F: O.OField, a: List<&2, S.Z>, c: Nat, +N: Nat, +k: Nat, +w: M.Vec(~F), ha: {KA.natle(SX.vlen(a), c) == True{} : Bool}, hk: {KA.natle(Nat.add(k, c), N) == True{} : Bool}) -> {@M(zdot(~F, a, ydrop(~F, k, w)), O.inv(F, O.ofp(~F, S.XH{}))) == zdot(~F, a, rmap(~F, SX.yrows(c, N, k), w)) : @T}:
+  match a c:
+    case Nil{} c:
+      FL.zero_mul(~F, O.inv(F, O.ofp(~F, S.XH{})))
+    case Con{x, at} 0n:
+      absurd({@M(zdot(~F, Con{x, at}, ydrop(~F, k, w)), O.inv(F, O.ofp(~F, S.XH{}))) == zdot(~F, Con{x, at}, rmap(~F, SX.yrows(0n, N, k), w)) : @T}, KA.ft(ha))
+    case Con{+x, +at} 1n++j:
+      +hk2 = hk
+      %ydot(~F, at, j, N, 1n+k, w, ha, (%Equal.sym(Nat, 1n+Nat.add(k, j), Nat.add(k, 1n+j), LN.add_succ(k, j)) : {KA.natle(_, N) == True{} : Bool}
+        hk2)) : {@M(zdot(~F, Con{x, at}, ydrop(~F, k, w)), O.inv(F, O.ofp(~F, S.XH{}))) == @A(@M(@OZ(x), @M(zdot(~F, SX.unit(N, k), w), O.inv(F, O.ofp(~F, S.XH{})))), _) : @T}
+      %zdot_unit(~F, N, k, w, lt_of_add(k, j, N, hk2)) : {@M(zdot(~F, Con{x, at}, ydrop(~F, k, w)), O.inv(F, O.ofp(~F, S.XH{}))) == @A(@M(@OZ(x), @M(_, O.inv(F, O.ofp(~F, S.XH{})))), @M(zdot(~F, at, ydrop(~F, 1n+k, w)), O.inv(F, O.ofp(~F, S.XH{})))) : @T}
+      %zdot_ydrop(~F, x, at, k, w) : {@M(_, O.inv(F, O.ofp(~F, S.XH{}))) == @A(@M(@OZ(x), @M(fat(~F, w, k), O.inv(F, O.ofp(~F, S.XH{})))), @M(zdot(~F, at, ydrop(~F, 1n+k, w)), O.inv(F, O.ofp(~F, S.XH{})))) : @T}
+      @ZEQ[x=@OZ(x),, f=fat(~F, w, k),, z=zdot(~F, at, ydrop(~F, 1n+k, w)),, i1=O.inv(F, O.ofp(~F, S.XH{})) | (x*f + z)*i1 | x*(f*i1) + z*i1]
+
+# the slack rows of the start, read at w, against X = S ++ Y (S the slack
+# rows' values, m of them; Y the y rows' values)
+def i1w(~F: O.OField, qs: List<&2, SX.Ineq>, +m: Nat, +n: Nat, +S: M.Vec(~F), +w: M.Vec(~F), hS: {M.len(~F, S) == m : Nat}, hwf: {lpwf.go(qs, n) == True{} : Bool}) -> invg(~F, qs, m, fcat(~F, S, rmap(~F, SX.yrows(n, Nat.add(m, n), m), w)), fcat(~F, rmap(~F, SX.srows(qs, m), w), rmap(~F, SX.yrows(n, Nat.add(m, n), m), w))):
+  match qs:
+    case Nil{}:
+      Unit{}
+    case Con{SX.Ineq{+a, b, s}, +qt}:
+      +hS2 = hS
+      +hwf2 = hwf
+      ((%zdot_cat_zeros(~F, m, a, w) : {@M(_, O.inv(F, O.ofp(~F, S.XH{}))) == zdot(~F, SX.cat(EL.zeros(m), a), fcat(~F, S, rmap(~F, SX.yrows(n, Nat.add(m, n), m), w))) : @T}
+        %Equal.sym(@T, @M(zdot(~F, a, ydrop(~F, m, w)), O.inv(F, O.ofp(~F, S.XH{}))), zdot(~F, a, rmap(~F, SX.yrows(n, Nat.add(m, n), m), w)), ydot(~F, a, n, Nat.add(m, n), m, w, KA.band_l(KA.natle(SX.vlen(a), n), lpwf.go(qt, n), hwf2), KA.natle_refl(Nat.add(m, n)))) : {_ == zdot(~F, SX.cat(EL.zeros(m), a), fcat(~F, S, rmap(~F, SX.yrows(n, Nat.add(m, n), m), w))) : @T}
+        %zdot_cat_zeros(~F, m, a, fcat(~F, S, rmap(~F, SX.yrows(n, Nat.add(m, n), m), w))) : {zdot(~F, a, rmap(~F, SX.yrows(n, Nat.add(m, n), m), w)) == _ : @T}
+        %hS2 : {zdot(~F, a, rmap(~F, SX.yrows(n, Nat.add(m, n), m), w)) == zdot(~F, a, ydrop(~F, _, fcat(~F, S, rmap(~F, SX.yrows(n, Nat.add(m, n), m), w)))) : @T}
+        %ydrop_fcat(~F, S, rmap(~F, SX.yrows(n, Nat.add(m, n), m), w)) : {zdot(~F, a, rmap(~F, SX.yrows(n, Nat.add(m, n), m), w)) == zdot(~F, a, _) : @T}
+        {==}),
+       i1w(~F, qt, m, n, S, w, hS2, KA.band_r(KA.natle(SX.vlen(a), n), lpwf.go(qt, n), hwf2)))
+
+def i1_init.go(~F: O.OField, +qs: List<&2, SX.Ineq>, +n: Nat, +w: M.Vec(~F), hwf: {lpwf.go(qs, n) == True{} : Bool}) -> InV(~F, SX.LP{qs, n}, rmap(~F, SX.Tab.rows(SX.init(SX.LP{qs, n})), w)):
+  %rmap_rcat(~F, SX.srows(qs, SX.qlen(qs)), SX.yrows(n, Nat.add(SX.qlen(qs), n), SX.qlen(qs)), w) : invg(~F, qs, SX.qlen(qs), _, _)
+  i1w(~F, qs, SX.qlen(qs), n, rmap(~F, SX.srows(qs, SX.qlen(qs)), w), w, Equal.sym(Nat, SX.qlen(qs), M.len(~F, rmap(~F, SX.srows(qs, SX.qlen(qs)), w)), len_srows(~F, qs, SX.qlen(qs), w)), hwf)
+
+# I1 at the start
+def i1_init(~F: O.OField, lp: SX.LP, hwf: {lpwf(lp) == True{} : Bool}) -> I1(~F, lp, SX.Tab.rows(SX.init(lp))):
+  match lp:
+    case SX.LP{+qs, +n}:
+      w => i1_init.go(~F, qs, n, w, hwf)
+
+def fhd(~F: O.OField, u: M.Vec(~F)) -> @T:
+  match u:
+    case Nil{}:
+      @0
+    case Con{y, s}:
+      y
+
+def ftl(~F: O.OField, u: M.Vec(~F)) -> M.Vec(~F):
+  match u:
+    case Nil{}:
+      Nil{}
+    case Con{y, s}:
+      s
+
+def fhd_ydrop(~F: O.OField, k: Nat, x: M.Vec(~F)) -> {fat(~F, x, k) == fhd(~F, ydrop(~F, k, x)) : @T}:
+  match k x:
+    case 0n Nil{}:
+      {==}
+    case 0n Con{y, s}:
+      {==}
+    case 1n+j Nil{}:
+      {==}
+    case 1n+j Con{y, s}:
+      fhd_ydrop(~F, j, s)
+
+def ftl_ydrop(~F: O.OField, k: Nat, x: M.Vec(~F)) -> {ydrop(~F, 1n+k, x) == ftl(~F, ydrop(~F, k, x)) : M.Vec(~F)}:
+  match k x:
+    case 0n Nil{}:
+      {==}
+    case 0n Con{y, s}:
+      {==}
+    case 1n+j Nil{}:
+      {==}
+    case 1n+j Con{y, s}:
+      ftl_ydrop(~F, j, s)
+
+def ydrop_nil(~F: O.OField, k: Nat) -> {Nil{} == ydrop(~F, k, Nil{}) : M.Vec(~F)}:
+  match k:
+    case 0n:
+      {==}
+    case 1n+j:
+      {==}
+
+def agree_nil(~F: O.OField, u: M.Vec(~F)) -> Agree(~F, u, Nil{}):
+  match u:
+    case Nil{}:
+      Unit{}
+    case Con{y, s}:
+      Unit{}
+
+def agree_cons(~F: O.OField, u: M.Vec(~F), +v: @T, +vt: M.Vec(~F), hh: {fhd(~F, u) == v : @T}, ht: Agree(~F, ftl(~F, u), vt)) -> Agree(~F, u, Con{v, vt}):
+  match u:
+    case Nil{}:
+      (hh, ht)
+    case Con{y, s}:
+      (hh, ht)
+
+# a value times 1/1 is itself
+def by_inv1(~F: O.OField, +y: @T, +z: @T, h: {y == z : @T}) -> {y == @M(z, O.inv(F, O.ofp(~F, S.XH{}))) : @T}:
+  %Equal.sym(@T, O.inv(F, O.ofp(~F, S.XH{})), @1, inv1(~F)) : {y == @M(z, _) : @T}
+  %FL.mul_one(~F, z) : {y == _ : @T}
+  h
+
+# the y rows from k agree with x from k
+def agree_y(~F: O.OField, c: Nat, +N: Nat, +k: Nat, +x: M.Vec(~F), hk: {KA.natle(Nat.add(k, c), N) == True{} : Bool}) -> Agree(~F, ydrop(~F, k, x), rmap(~F, SX.yrows(c, N, k), x)):
+  match c:
+    case 0n:
+      agree_nil(~F, ydrop(~F, k, x))
+    case 1n++j:
+      +hk2 = hk
+      agree_cons(~F, ydrop(~F, k, x), rv(~F, SX.Rw{S.XH{}, SX.unit(N, k)}, x), rmap(~F, SX.yrows(j, N, 1n+k), x),
+        (%fhd_ydrop(~F, k, x) : {_ == rv(~F, SX.Rw{S.XH{}, SX.unit(N, k)}, x) : @T}
+         by_inv1(~F, fat(~F, x, k), zdot(~F, SX.unit(N, k), x), zdot_unit(~F, N, k, x, lt_of_add(k, j, N, hk2)))),
+        (%ftl_ydrop(~F, k, x) : Agree(~F, _, rmap(~F, SX.yrows(j, N, 1n+k), x))
+         agree_y(~F, j, N, 1n+k, x, (%Equal.sym(Nat, 1n+Nat.add(k, j), Nat.add(k, 1n+j), LN.add_succ(k, j)) : {KA.natle(_, N) == True{} : Bool}
+           hk2))))
+
+# the slack rows of the start agree with x, given the system's condition
+def i2w(~F: O.OField, qs: List<&2, SX.Ineq>, +m: Nat, +n: Nat, +x: M.Vec(~F), xr: M.Vec(~F), h: invg(~F, qs, m, x, xr), ht: Agree(~F, ydrop(~F, SX.qlen(qs), xr), rmap(~F, SX.yrows(n, Nat.add(m, n), m), x))) -> Agree(~F, xr, fcat(~F, rmap(~F, SX.srows(qs, m), x), rmap(~F, SX.yrows(n, Nat.add(m, n), m), x))):
+  match qs xr:
+    case Nil{} xr:
+      ht
+    case Con{SX.Ineq{+a, b, s}, +qt} Nil{}:
+      (h1, h2) = h
+      ((%Equal.sym(@T, O.inv(F, O.ofp(~F, S.XH{})), @1, inv1(~F)) : {@0 == @M(zdot(~F, SX.cat(EL.zeros(m), a), x), _) : @T}
+        %h1 : {@0 == @M(_, @1) : @T}
+        Equal.sym(@T, @M(@0, @1), @0, FL.zero_mul(~F, @1))),
+       i2w(~F, qt, m, n, x, Nil{}, h2, (%ydrop_nil(~F, SX.qlen(qt)) : Agree(~F, _, rmap(~F, SX.yrows(n, Nat.add(m, n), m), x))
+         ht)))
+    case Con{SX.Ineq{+a, b, s}, +qt} Con{+y, +xt}:
+      (h1, h2) = h
+      (by_inv1(~F, y, zdot(~F, SX.cat(EL.zeros(m), a), x), h1), i2w(~F, qt, m, n, x, xt, h2, ht))
+
+def i2_init.go(~F: O.OField, +qs: List<&2, SX.Ineq>, +n: Nat, +x: M.Vec(~F), hx: InV(~F, SX.LP{qs, n}, x)) -> RSat(~F, SX.Tab.rows(SX.init(SX.LP{qs, n})), x):
+  %rmap_rcat(~F, SX.srows(qs, SX.qlen(qs)), SX.yrows(n, Nat.add(SX.qlen(qs), n), SX.qlen(qs)), x) : Agree(~F, x, _)
+  i2w(~F, qs, SX.qlen(qs), n, x, x, hx, agree_y(~F, n, Nat.add(SX.qlen(qs), n), SX.qlen(qs), x, KA.natle_refl(Nat.add(SX.qlen(qs), n))))
+
+# I2 at the start
+def i2_init(~F: O.OField, lp: SX.LP) -> I2(~F, lp, SX.Tab.rows(SX.init(lp))):
+  match lp:
+    case SX.LP{+qs, +n}:
+      x => hx => i2_init.go(~F, qs, n, x, hx)
+
+def ltn_add_cancel(m: Nat, +k: Nat, +n: Nat, h: {SX.ltn(Nat.add(m, k), Nat.add(m, n)) == True{} : Bool}) -> {SX.ltn(k, n) == True{} : Bool}:
+  match m:
+    case 0n:
+      h
+    case 1n+j:
+      ltn_add_cancel(j, k, n, h)
+
+def yrow_at(c: Nat, +N: Nat, +i: Nat, k: Nat, hk: {SX.ltn(k, c) == True{} : Bool}) -> {SX.rowat(SX.yrows(c, N, i), k) == SX.Rw{S.XH{}, SX.unit(N, Nat.add(k, i))} : SX.Rw}:
+  match c k:
+    case 0n k:
+      absurd({SX.rowat(SX.yrows(0n, N, i), k) == SX.Rw{S.XH{}, SX.unit(N, Nat.add(k, i))} : SX.Rw}, KA.ft(ltn0(k, hk)))
+    case 1n+j 0n:
+      {==}
+    case 1n+j 1n++h:
+      %Equal.sym(Nat, 1n+Nat.add(h, i), Nat.add(h, 1n+i), LN.add_succ(h, i)) : {SX.rowat(SX.yrows(j, N, 1n+i), h) == SX.Rw{S.XH{}, SX.unit(N, _)} : SX.Rw}
+      yrow_at(j, N, 1n+i, h, hk)
+
+def off_eq(+off: Nat, +m: Nat, h: {Nat.add(off, 0n) == m : Nat}) -> {off == m : Nat}:
+  %Equal.sym(Nat, off, Nat.add(off, 0n), LN.add_zero(off)) : {_ == m : Nat}
+  h
+
+# the y rows of the start read off their entries
+def iu0.base(~F: O.OField, +m: Nat, +n: Nat, +k: Nat, +w: M.Vec(~F), +hk: {SX.ltn(Nat.add(m, k), Nat.add(m, n)) == True{} : Bool}) -> {rv(~F, SX.rowat(SX.yrows(n, Nat.add(m, n), m), k), w) == fat(~F, w, Nat.add(m, k)) : @T}:
+  %Equal.sym(SX.Rw, SX.rowat(SX.yrows(n, Nat.add(m, n), m), k), SX.Rw{S.XH{}, SX.unit(Nat.add(m, n), Nat.add(k, m))}, yrow_at(n, Nat.add(m, n), m, k, ltn_add_cancel(m, k, n, hk))) : {rv(~F, _, w) == fat(~F, w, Nat.add(m, k)) : @T}
+  %LN.add_comm(k, m) : {rv(~F, SX.Rw{S.XH{}, SX.unit(Nat.add(m, n), Nat.add(k, m))}, w) == fat(~F, w, _) : @T}
+  Equal.sym(@T, fat(~F, w, Nat.add(k, m)), rv(~F, SX.Rw{S.XH{}, SX.unit(Nat.add(m, n), Nat.add(k, m))}, w), by_inv1(~F, fat(~F, w, Nat.add(k, m)), zdot(~F, SX.unit(Nat.add(m, n), Nat.add(k, m)), w), zdot_unit(~F, Nat.add(m, n), Nat.add(k, m), w, (%LN.add_comm(m, k) : {SX.ltn(_, Nat.add(m, n)) == True{} : Bool}
+    hk))))
+
+# the start's nonbasic rows (the y's, after peeling off the slacks) read off
+# their entries; off slacks peeled so far, k the index after them
+def iu0(~F: O.OField, qs: List<&2, SX.Ineq>, +m: Nat, +n: Nat, +off: Nat, k: Nat, +w: M.Vec(~F), +hoff: {Nat.add(off, SX.qlen(qs)) == m : Nat}, hb: {bat(SX.bcat(SX.trues(SX.qlen(qs), True{}), SX.trues(n, False{})), k) == False{} : Bool}, hk: {SX.ltn(Nat.add(off, k), Nat.add(m, n)) == True{} : Bool}) -> {rv(~F, SX.rowat(SX.rcat(SX.srows(qs, m), SX.yrows(n, Nat.add(m, n), m)), k), w) == fat(~F, w, Nat.add(off, k)) : @T}:
+  match qs k:
+    case Con{q, qt} 0n:
+      absurd({rv(~F, SX.rowat(SX.rcat(SX.srows(Con{q, qt}, m), SX.yrows(n, Nat.add(m, n), m)), 0n), w) == fat(~F, w, Nat.add(off, 0n)) : @T}, KA.tf(hb))
+    case Con{SX.Ineq{a, b, s}, +qt} 1n++j:
+      %LN.add_succ(off, j) : {rv(~F, SX.rowat(SX.rcat(SX.srows(qt, m), SX.yrows(n, Nat.add(m, n), m)), j), w) == fat(~F, w, _) : @T}
+      iu0(~F, qt, m, n, 1n+off, j, w,
+        (%Equal.sym(Nat, 1n+Nat.add(off, SX.qlen(qt)), Nat.add(off, 1n+SX.qlen(qt)), LN.add_succ(off, SX.qlen(qt))) : {_ == m : Nat}
+         hoff), hb,
+        (%Equal.sym(Nat, 1n+Nat.add(off, j), Nat.add(off, 1n+j), LN.add_succ(off, j)) : {SX.ltn(_, Nat.add(m, n)) == True{} : Bool}
+         hk))
+    case Nil{} +k:
+      %Equal.sym(Nat, off, m, off_eq(off, m, hoff)) : {rv(~F, SX.rowat(SX.yrows(n, Nat.add(m, n), m), k), w) == fat(~F, w, Nat.add(_, k)) : @T}
+      iu0.base(~F, m, n, k, w, (%off_eq(off, m, hoff) : {SX.ltn(Nat.add(_, k), Nat.add(m, n)) == True{} : Bool}
+        hk))
+
+def iu_init.at(~F: O.OField, +qs: List<&2, SX.Ineq>, +n: Nat, +k: Nat, hk: {bat(SX.Tab.bas(SX.init(SX.LP{qs, n})), k) == False{} : Bool}, hkl: {SX.ltn(k, SX.LP.nv(SX.LP{qs, n})) == True{} : Bool}, +w: M.Vec(~F)) -> {rv(~F, SX.rowat(SX.Tab.rows(SX.init(SX.LP{qs, n})), k), w) == fat(~F, w, k) : @T}:
+  iu0(~F, qs, SX.qlen(qs), n, 0n, k, w, {==}, hk, hkl)
+
+# IU at the start
+def iu_init(~F: O.OField, lp: SX.LP) -> IU(~F, SX.LP.nv(lp), SX.init(lp)):
+  match lp:
+    case SX.LP{+qs, +n}:
+      k => hk => hkl => w => iu_init.at(~F, qs, n, k, hk, hkl, w)
