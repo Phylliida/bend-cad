@@ -42,6 +42,8 @@ import ./cwpf.bend as CW
 import ./gmpf.bend as GM
 import ./dfspf.bend as D
 import ./maxpf.bend as MX
+import ./solve.bend as SO
+import ./redpf.bend as RP
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -116,3 +118,251 @@ def pass_down(rs: List<&2, SK.Rec>, +sk: SK.Sketch, +i: Nat, +st: PA.PS) -> {CL.
 # the final classes drop only their own equations
 def classes_down(+sk: SK.Sketch) -> {CL.downs($OWN, $CLS, 0n) == True{} : Bool}:
   pass_down(PA.recs(sk), sk, 0n, PA.start($NV))
+
+# Lists for the pass's invariant
+# ------------------------------
+
+# k is a solved position before c: c's constraint is earlier, not red, k
+# not dropped
+def psel(+own: $NL, +R: $NL, +D: $NL, +c: Nat, +k: Nat) -> Bool:
+  SV.band(SV.lt(SV.nth(own, k), c), SV.band(SV.bnot(SV.mem(SV.nth(own, k), R)), SV.bnot(SV.mem(k, D))))
+
+def allpre(xs: $NL, +own: $NL, +R: $NL, +D: $NL, +c: Nat) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case Con{+k, t}:
+      SV.band(psel(own, R, D, c, k), allpre(t, own, R, D, c))
+
+def allpre_up(xs: $NL, +own: $NL, +R: $NL, +D: $NL, +c: Nat, +h: {allpre(xs, own, R, D, c) == True{} : Bool}) -> {allpre(xs, own, R, D, 1n+c) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+k, +t}:
+      +hp = L.band_l(psel(own, R, D, c, k), allpre(t, own, R, D, c), h)
+      +hq = L.band_r(SV.lt(SV.nth(own, k), c), SV.band(SV.bnot(SV.mem(SV.nth(own, k), R)), SV.bnot(SV.mem(k, D))), hp)
+      L.band_i(psel(own, R, D, 1n+c, k), allpre(t, own, R, D, 1n+c),
+        L.band_i(SV.lt(SV.nth(own, k), 1n+c), SV.band(SV.bnot(SV.mem(SV.nth(own, k), R)), SV.bnot(SV.mem(k, D))), KB.lt_up(SV.nth(own, k), c, L.band_l(SV.lt(SV.nth(own, k), c), SV.band(SV.bnot(SV.mem(SV.nth(own, k), R)), SV.bnot(SV.mem(k, D))), hp)), hq),
+        allpre_up(t, own, R, D, c, L.band_r(psel(own, R, D, c, k), allpre(t, own, R, D, c), h)))
+
+def allpre_cat(xs: $NL, +ys: $NL, +own: $NL, +R: $NL, +D: $NL, +c: Nat, +h1: {allpre(xs, own, R, D, c) == True{} : Bool}, +h2: {allpre(ys, own, R, D, c) == True{} : Bool}) -> {allpre(SV.cat(xs, ys), own, R, D, c) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      h2
+    case Con{+k, +t}:
+      L.band_i(psel(own, R, D, c, k), allpre(SV.cat(t, ys), own, R, D, c), L.band_l(psel(own, R, D, c, k), allpre(t, own, R, D, c), h1), allpre_cat(t, ys, own, R, D, c, L.band_r(psel(own, R, D, c, k), allpre(t, own, R, D, c), h1), h2))
+
+def mem_ext.c(b: Bool, +k: Nat, +x: Nat, +t: $NL, e: {SV.eq(k, x) == b : Bool}, hm: {SV.bor(b, SV.mem(k, t)) == True{} : Bool}) -> Either<&2, &2, {k == x : Nat}, {SV.mem(k, t) == True{} : Bool}>:
+  match b:
+    case True{}:
+      Inl{L.eq_ok(k, x, e)}
+    case False{}:
+      Inr{hm}
+
+# k in x :: t: k is x, or in t
+def mem_ext(+k: Nat, +x: Nat, +t: $NL, hm: {SV.mem(k, Con{x, t}) == True{} : Bool}) -> Either<&2, &2, {k == x : Nat}, {SV.mem(k, t) == True{} : Bool}>:
+  mem_ext.c(SV.eq(k, x), k, x, t, {==}, hm)
+
+def allpre_mem.e(+own: $NL, +R: $NL, +D: $NL, +c: Nat, +k: Nat, +x: Nat, +t: $NL, h: {SV.band(psel(own, R, D, c, x), allpre(t, own, R, D, c)) == True{} : Bool},
+  m: Either<&2, &2, {k == x : Nat}, {SV.mem(k, t) == True{} : Bool}>, ih: {SV.mem(k, t) == True{} : Bool} -> {allpre(t, own, R, D, c) == True{} : Bool} -> {psel(own, R, D, c, k) == True{} : Bool}) -> {psel(own, R, D, c, k) == True{} : Bool}:
+  match m:
+    case Inl{e}:
+      (%Equal.sym(Nat, k, x, e) : {psel(own, R, D, c, _) == True{} : Bool}
+        L.band_l(psel(own, R, D, c, x), allpre(t, own, R, D, c), h))
+    case Inr{hm}:
+      ih(hm, L.band_r(psel(own, R, D, c, x), allpre(t, own, R, D, c), h))
+
+def allpre_mem(xs: $NL, +own: $NL, +R: $NL, +D: $NL, +c: Nat, +k: Nat, h: {allpre(xs, own, R, D, c) == True{} : Bool}, hm: {SV.mem(k, xs) == True{} : Bool}) -> {psel(own, R, D, c, k) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      absurd({psel(own, R, D, c, k) == True{} : Bool}, KA.ft(hm))
+    case Con{+x, +t}:
+      allpre_mem.e(own, R, D, c, k, x, t, h, mem_ext(k, x, t, hm), q => r => allpre_mem(t, own, R, D, c, k, r, q))
+
+def allo_mem.e(+own: $NL, +c: Nat, +k: Nat, +x: Nat, +t: $NL, h: {SV.band(SV.eq(SV.nth(own, x), c), KB.allo(own, t, c)) == True{} : Bool},
+  m: Either<&2, &2, {k == x : Nat}, {SV.mem(k, t) == True{} : Bool}>, ih: {SV.mem(k, t) == True{} : Bool} -> {KB.allo(own, t, c) == True{} : Bool} -> {SV.eq(SV.nth(own, k), c) == True{} : Bool}) -> {SV.eq(SV.nth(own, k), c) == True{} : Bool}:
+  match m:
+    case Inl{e}:
+      (%Equal.sym(Nat, k, x, e) : {SV.eq(SV.nth(own, _), c) == True{} : Bool}
+        L.band_l(SV.eq(SV.nth(own, x), c), KB.allo(own, t, c), h))
+    case Inr{hm}:
+      ih(hm, L.band_r(SV.eq(SV.nth(own, x), c), KB.allo(own, t, c), h))
+
+def allo_mem(+own: $NL, xs: $NL, +c: Nat, +k: Nat, h: {KB.allo(own, xs, c) == True{} : Bool}, hm: {SV.mem(k, xs) == True{} : Bool}) -> {SV.eq(SV.nth(own, k), c) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      absurd({SV.eq(SV.nth(own, k), c) == True{} : Bool}, KA.ft(hm))
+    case Con{+x, +t}:
+      allo_mem.e(own, c, k, x, t, h, mem_ext(k, x, t, hm), q => r => allo_mem(own, t, c, k, r, q))
+
+def nonein_mem.e(+k: Nat, +x: Nat, +t: $NL, +ys: $NL, h: {SV.band(SV.bnot(SV.mem(x, ys)), SV.none_in(t, ys)) == True{} : Bool},
+  m: Either<&2, &2, {k == x : Nat}, {SV.mem(k, t) == True{} : Bool}>, ih: {SV.mem(k, t) == True{} : Bool} -> {SV.none_in(t, ys) == True{} : Bool} -> {SV.mem(k, ys) == False{} : Bool}) -> {SV.mem(k, ys) == False{} : Bool}:
+  match m:
+    case Inl{e}:
+      (%Equal.sym(Nat, k, x, e) : {SV.mem(_, ys) == False{} : Bool}
+        KB.bnot_t(SV.mem(x, ys), L.band_l(SV.bnot(SV.mem(x, ys)), SV.none_in(t, ys), h)))
+    case Inr{hm}:
+      ih(hm, L.band_r(SV.bnot(SV.mem(x, ys)), SV.none_in(t, ys), h))
+
+# none of xs in ys, k in xs: k not in ys
+def nonein_mem(xs: $NL, +ys: $NL, +k: Nat, h: {SV.none_in(xs, ys) == True{} : Bool}, hm: {SV.mem(k, xs) == True{} : Bool}) -> {SV.mem(k, ys) == False{} : Bool}:
+  match xs:
+    case Nil{}:
+      absurd({SV.mem(k, ys) == False{} : Bool}, KA.ft(hm))
+    case Con{+x, +t}:
+      nonein_mem.e(k, x, t, ys, h, mem_ext(k, x, t, hm), q => r => nonein_mem(t, ys, k, r, q))
+
+def below_cat(xs: $NL, +ys: $NL, +n: Nat, +h1: {SV.below(xs, n) == True{} : Bool}, +h2: {SV.below(ys, n) == True{} : Bool}) -> {SV.below(SV.cat(xs, ys), n) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      h2
+    case Con{+x, +t}:
+      L.band_i(SV.lt(x, n), SV.below(SV.cat(t, ys), n), L.band_l(SV.lt(x, n), SV.below(t, n), h1), below_cat(t, ys, n, L.band_r(SV.lt(x, n), SV.below(t, n), h1), h2))
+
+def dist_cat(xs: $NL, +ys: $NL, +hx: {SV.distinct(xs) == True{} : Bool}, +hy: {SV.distinct(ys) == True{} : Bool}, +hn: {SV.none_in(xs, ys) == True{} : Bool}) -> {SV.distinct(SV.cat(xs, ys)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      hy
+    case Con{+x, +t}:
+      +h1 = KB.bnot_t(SV.mem(x, t), L.band_l(SV.bnot(SV.mem(x, t)), SV.distinct(t), hx))
+      +h2 = KB.bnot_t(SV.mem(x, ys), L.band_l(SV.bnot(SV.mem(x, ys)), SV.none_in(t, ys), hn))
+      L.band_i(SV.bnot(SV.mem(x, SV.cat(t, ys))), SV.distinct(SV.cat(t, ys)),
+        KB.bnot_f(SV.mem(x, SV.cat(t, ys)), Equal.trans(Bool, SV.mem(x, SV.cat(t, ys)), SV.bor(SV.mem(x, t), SV.mem(x, ys)), False{}, SP.mem_cat(x, t, ys), L.bor_f(SV.mem(x, t), SV.mem(x, ys), h1, h2))),
+        dist_cat(t, ys, L.band_r(SV.bnot(SV.mem(x, t)), SV.distinct(t), hx), hy, L.band_r(SV.bnot(SV.mem(x, ys)), SV.none_in(t, ys), hn)))
+
+# solved positions before c are not c's own
+def nonein_pre(xs: $NL, +own: $NL, +R: $NL, +D: $NL, +c: Nat, +us: $NL, +hp: {allpre(xs, own, R, D, c) == True{} : Bool}, +hu: {KB.allo(own, us, c) == True{} : Bool}) -> {SV.none_in(xs, us) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      +hl = L.band_l(SV.lt(SV.nth(own, x), c), SV.band(SV.bnot(SV.mem(SV.nth(own, x), R)), SV.bnot(SV.mem(x, D))), L.band_l(psel(own, R, D, c, x), allpre(t, own, R, D, c), hp))
+      L.band_i(SV.bnot(SV.mem(x, us)), SV.none_in(t, us), KB.bnot_f(SV.mem(x, us), CL.allo_nm(own, us, c, x, hu, Equal.trans(Bool, SV.eq(SV.nth(own, x), c), SV.eq(c, SV.nth(own, x)), False{}, L.eq_sym(SV.nth(own, x), c), KB.ne_of_lt(SV.nth(own, x), c, hl)))),
+        nonein_pre(t, own, R, D, c, us, L.band_r(psel(own, R, D, c, x), allpre(t, own, R, D, c), hp), hu))
+
+def clean_of.c(b: Bool, +own: $NL, +R: $NL, +D: $NL, +d: $NL, +c: Nat, +k: Nat, +bp: $NL, +us: $NL, e: {SV.mem(k, bp) == b : Bool}, +hm: {SV.bor(b, SV.mem(k, us)) == True{} : Bool},
+  +hp: {allpre(bp, own, R, D, c) == True{} : Bool}, +hu: {KB.allo(own, us, c) == True{} : Bool}, +hn: {SV.none_in(us, d) == True{} : Bool})
+  -> {SV.bor(SV.band(SV.eq(SV.nth(own, k), c), SV.bnot(SV.mem(k, d))), psel(own, R, D, c, k)) == True{} : Bool}:
+  match b:
+    case True{}:
+      L.bor_r(SV.band(SV.eq(SV.nth(own, k), c), SV.bnot(SV.mem(k, d))), psel(own, R, D, c, k), allpre_mem(bp, own, R, D, c, k, hp, e))
+    case False{}:
+      L.bor_l(SV.band(SV.eq(SV.nth(own, k), c), SV.bnot(SV.mem(k, d))), psel(own, R, D, c, k),
+        L.band_i(SV.eq(SV.nth(own, k), c), SV.bnot(SV.mem(k, d)), allo_mem(own, us, c, k, hu, hm), KB.bnot_f(SV.mem(k, d), nonein_mem(us, d, k, hn, hm))))
+
+# an Over set within the solved positions bp and c's us: its equations
+# are c's own not dropped, or solved before c
+def clean_of(s: $NL, +own: $NL, +R: $NL, +D: $NL, +d: $NL, +c: Nat, +bp: $NL, +us: $NL, +hs: {L.subl(s, SV.cat(bp, us)) == True{} : Bool},
+  +hp: {allpre(bp, own, R, D, c) == True{} : Bool}, +hu: {KB.allo(own, us, c) == True{} : Bool}, +hn: {SV.none_in(us, d) == True{} : Bool}) -> {SV.clean(own, R, D, d, c, s) == True{} : Bool}:
+  match s:
+    case Nil{}:
+      {==}
+    case Con{+k, +t}:
+      L.band_i(SV.bor(SV.band(SV.eq(SV.nth(own, k), c), SV.bnot(SV.mem(k, d))), psel(own, R, D, c, k)), SV.clean(own, R, D, d, c, t),
+        clean_of.c(SV.mem(k, bp), own, R, D, d, c, k, bp, us, {==}, Equal.trans(Bool, SV.bor(SV.mem(k, bp), SV.mem(k, us)), SV.mem(k, SV.cat(bp, us)), True{}, Equal.sym(Bool, SV.mem(k, SV.cat(bp, us)), SV.bor(SV.mem(k, bp), SV.mem(k, us)), SP.mem_cat(k, bp, us)), L.subl_hd(k, t, SV.cat(bp, us), hs)), hp, hu, hn),
+        clean_of(t, own, R, D, d, c, bp, us, L.subl_tl(k, t, SV.cat(bp, us), hs), hp, hu, hn))
+
+def beq_refl(a: Bool) -> {SP.beq(a, a) == True{} : Bool}:
+  match a:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# the final drops at c's equations are its class's
+def drop_at(+own: $NL, +cls: List<&2, SV.Class>, +c: Nat, +K: SV.Class, +d: $NL, +k: Nat, +hD: {CL.downs(own, cls, 0n) == True{} : Bool}, +hK: {SV.class_at(cls, c) == K : SV.Class}, +hkd: {SV.kdrops(K) == d : $NL},
+  +nc: {SV.nth(own, k) == c : Nat}) -> {SV.mem(k, SV.dropped(cls)) == SV.mem(k, d) : Bool}:
+  Equal.trans(Bool, SV.mem(k, SV.dropped(cls)), SV.mem(k, SV.kdrops(SV.class_at(cls, SV.nth(own, k)))), SV.mem(k, d), CL.mem_dropped(own, cls, k, hD),
+    (%Equal.sym(Nat, SV.nth(own, k), c, nc) : {SV.mem(k, SV.kdrops(SV.class_at(cls, _))) == SV.mem(k, d) : Bool}
+      (%Equal.sym(SV.Class, SV.class_at(cls, c), K, hK) : {SV.mem(k, SV.kdrops(_)) == SV.mem(k, d) : Bool}
+        (%Equal.sym($NL, SV.kdrops(K), d, hkd) : {SV.mem(k, _) == SV.mem(k, d) : Bool}
+          {==}))))
+
+def agree_of.c(b: Bool, +own: $NL, +cls: List<&2, SV.Class>, +c: Nat, +K: SV.Class, +d: $NL, +j: Nat, +o: Nat, +ot: $NL, e: {SV.eq(o, c) == b : Bool}, +ho: {OW.ndrop(j, own) == Con{o, ot} : $NL},
+  +hD: {CL.downs(own, cls, 0n) == True{} : Bool}, +hK: {SV.class_at(cls, c) == K : SV.Class}, +hkd: {SV.kdrops(K) == d : $NL}) -> {SV.bor(SV.bnot(b), SP.beq(SV.mem(j, SV.dropped(cls)), SV.mem(j, d))) == True{} : Bool}:
+  match b:
+    case True{}:
+      %Equal.sym(Bool, SV.mem(j, SV.dropped(cls)), SV.mem(j, d), drop_at(own, cls, c, K, d, j, hD, hK, hkd, Equal.trans(Nat, SV.nth(own, j), o, c, OW.nth_of(own, j, o, ot, ho), L.eq_ok(o, c, e)))) : {SP.beq(_, SV.mem(j, d)) == True{} : Bool}
+      beq_refl(SV.mem(j, d))
+    case False{}:
+      {==}
+
+def agree_of(own_j: $NL, +own: $NL, +cls: List<&2, SV.Class>, +c: Nat, +K: SV.Class, +d: $NL, +j: Nat, +ho: {OW.ndrop(j, own) == own_j : $NL},
+  +hD: {CL.downs(own, cls, 0n) == True{} : Bool}, +hK: {SV.class_at(cls, c) == K : SV.Class}, +hkd: {SV.kdrops(K) == d : $NL}) -> {SP.agree(own_j, SV.dropped(cls), d, c, j) == True{} : Bool}:
+  match own_j:
+    case Nil{}:
+      {==}
+    case Con{+o, +ot}:
+      L.band_i(SV.bor(SV.bnot(SV.eq(o, c)), SP.beq(SV.mem(j, SV.dropped(cls)), SV.mem(j, d))), SP.agree(ot, SV.dropped(cls), d, c, 1n+j),
+        agree_of.c(SV.eq(o, c), own, cls, c, K, d, j, o, ot, {==}, ho, hD, hK, hkd),
+        agree_of(ot, own, cls, c, K, d, 1n+j, OW.ndrop_step(j, own, o, ot, ho), hD, hK, hkd))
+
+# c's own equations not dropped: solved positions before c + 1
+def allpre_us(us: $NL, +own: $NL, +R: $NL, +cls: List<&2, SV.Class>, +c: Nat, +K: SV.Class, +d: $NL, +hD: {CL.downs(own, cls, 0n) == True{} : Bool}, +hK: {SV.class_at(cls, c) == K : SV.Class}, +hkd: {SV.kdrops(K) == d : $NL},
+  +hu: {KB.allo(own, us, c) == True{} : Bool}, +hred: {SV.mem(c, R) == False{} : Bool}, +hn: {SV.none_in(us, d) == True{} : Bool}) -> {allpre(us, own, R, SV.dropped(cls), 1n+c) == True{} : Bool}:
+  match us:
+    case Nil{}:
+      {==}
+    case Con{+u, +t}:
+      +nc = L.eq_ok(SV.nth(own, u), c, L.band_l(SV.eq(SV.nth(own, u), c), KB.allo(own, t, c), hu))
+      +hdn = KB.bnot_t(SV.mem(u, d), L.band_l(SV.bnot(SV.mem(u, d)), SV.none_in(t, d), hn))
+      L.band_i(psel(own, R, SV.dropped(cls), 1n+c, u), allpre(t, own, R, SV.dropped(cls), 1n+c),
+        L.band_i(SV.lt(SV.nth(own, u), 1n+c), SV.band(SV.bnot(SV.mem(SV.nth(own, u), R)), SV.bnot(SV.mem(u, SV.dropped(cls)))),
+          (%Equal.sym(Nat, SV.nth(own, u), c, nc) : {SV.lt(_, 1n+c) == True{} : Bool}
+            KB.lt_succ(c)),
+          L.band_i(SV.bnot(SV.mem(SV.nth(own, u), R)), SV.bnot(SV.mem(u, SV.dropped(cls))),
+            (%Equal.sym(Nat, SV.nth(own, u), c, nc) : {SV.bnot(SV.mem(_, R)) == True{} : Bool}
+              KB.bnot_f(SV.mem(c, R), hred)),
+            KB.bnot_f(SV.mem(u, SV.dropped(cls)), Equal.trans(Bool, SV.mem(u, SV.dropped(cls)), SV.mem(u, d), False{}, drop_at(own, cls, c, K, d, u, hD, hK, hkd, nc), hdn)))),
+        allpre_us(t, own, R, cls, c, K, d, hD, hK, hkd, L.band_r(SV.eq(SV.nth(own, u), c), KB.allo(own, t, c), hu), hred, L.band_r(SV.bnot(SV.mem(u, d)), SV.none_in(t, d), hn)))
+
+# The sketch's
+# ------------
+
+def drv_recs(sk: SK.Sketch, +i: Nat) -> {SV.driven(sk, i) == SV.driven.at(PA.recs(sk), i) : Bool}:
+  match sk:
+    case SK.Sketch{vs, es, cs}:
+      {==}
+
+def ncons_recs(sk: SK.Sketch) -> {SV.ncons(sk) == SV.clen(PA.recs(sk)) : Nat}:
+  match sk:
+    case SK.Sketch{vs, es, cs}:
+      {==}
+
+def drv_at(+sk: SK.Sketch, +i: Nat, +r: SK.Rec, +t: List<&2, SK.Rec>, hd: {KB.rdrop(i, PA.recs(sk)) == Con{r, t} : List<&2, SK.Rec>}) -> {SV.driven(sk, i) == SV.driven.rec(r) : Bool}:
+  Equal.trans(Bool, SV.driven(sk, i), SV.driven.at(PA.recs(sk), i), SV.driven.rec(r), drv_recs(sk, i),
+    Equal.trans(Bool, SV.driven.at(PA.recs(sk), i), SV.driven.at(KB.rdrop(i, PA.recs(sk)), 0n), SV.driven.rec(r), KB.driven_drop(PA.recs(sk), i), Equal.cong(List<&2, SK.Rec>, Bool, z => SV.driven.at(z, 0n), KB.rdrop(i, PA.recs(sk)), Con{r, t}, hd)))
+
+def driving_at(+sk: SK.Sketch, +i: Nat, +id: Nat, +k: SK.Constraint, +t: List<&2, SK.Rec>, +hd: {KB.rdrop(i, PA.recs(sk)) == Con{SK.Rec{id, False{}, k}, t} : List<&2, SK.Rec>}) -> {SV.driving(sk, i) == True{} : Bool}:
+  %Equal.sym(Bool, SV.driven(sk, i), False{}, drv_at(sk, i, SK.Rec{id, False{}, k}, t, hd)) : {SV.band(SV.lt(i, SV.ncons(sk)), SV.bnot(_)) == True{} : Bool}
+  %Equal.sym(Nat, SV.ncons(sk), SV.clen(PA.recs(sk)), ncons_recs(sk)) : {SV.band(SV.lt(i, _), True{}) == True{} : Bool}
+  Equal.trans(Bool, SV.band(SV.lt(i, SV.clen(PA.recs(sk))), True{}), SV.lt(i, SV.clen(PA.recs(sk))), True{}, CL.band_t(SV.lt(i, SV.clen(PA.recs(sk))), True{}, {==}), KB.lt_drop(PA.recs(sk), i, SK.Rec{id, False{}, k}, t, hd))
+
+def clsn_pass(rs: List<&2, SK.Rec>, +sk: SK.Sketch, +i: Nat, +st: PA.PS) -> {SV.clsn(PA.pass(rs, $PARGS, i, st)) == SV.clen(rs) : Nat}:
+  match rs:
+    case Nil{}:
+      {==}
+    case Con{SK.Rec{id, True{}, k}, +t}:
+      %clsn_pass(t, sk, 1n+i, st) : {1n+SV.clsn(PA.pass(t, $PARGS, 1n+i, st)) == 1n+_ : Nat}
+      {==}
+    case Con{SK.Rec{id, False{}, k}, +t}:
+      %clsn_pass(t, sk, 1n+i, PA.PO.st(PA.one($PARGS, i, st))) : {1n+SV.clsn(PA.pass(t, $PARGS, 1n+i, PA.PO.st(PA.one($PARGS, i, st)))) == 1n+_ : Nat}
+      {==}
+
+def noc_owners(sk: SK.Sketch, +i: Nat, +h: {SV.driven(sk, i) == True{} : Bool}) -> {OW.noc(SV.owners(sk), i) == True{} : Bool}:
+  match sk:
+    case SK.Sketch{vs, +es, +cs}:
+      OW.owners_noc(es, cs, 0n, cs, i, {==}, KB.lt_z(i), h)
+
+def vlen_eq(vs: List<&2, SK.VKind>) -> {PA.vlen(vs) == SO.vlen(vs) : Nat}:
+  match vs:
+    case Nil{}:
+      {==}
+    case Con{v, +t}:
+      %vlen_eq(t) : {1n+PA.vlen(t) == 1n+_ : Nat}
+      {==}
+
+def nv_eq(sk: SK.Sketch) -> {PA.nvars(sk) == SO.nvars(sk) : Nat}:
+  match sk:
+    case SK.Sketch{+vs, es, cs}:
+      vlen_eq(vs)
