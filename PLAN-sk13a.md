@@ -394,6 +394,46 @@ As planned:
      pins, and the whole sketch dyadic), replacing `complete_now`.
   3. Law 10 as stated: `Strict` with the pins (a ≥ 0 side over pins
      only is exact on radius 0) and dyadic over kept constraints only.
+- **The switch, as built (2026-10-20), steps 1 and 2 done:**
+  - `lib/verdict.bend`: the exact checks (`dck`, `ack`, `exact`).
+  - `lib/vrdpf.bend`: what the drop checks give: `zeros_mark`,
+    `zeros_solved`.
+  - `lib/vsdpf.bend`: what the amber checks give, along the order:
+    `sides_mark`, via `refute_at` and `side_of_ref`.
+  - `lib/qsign.bend`: rational signs in every field.
+  - `lib/ckpf.bend`: the pass's certificates pass the checks
+    (`ck_pass`). The walk's drops are `dgood`, and the kept
+    constraints' final positions are solved.
+  - `lib/pass.bend`: `solved_pos` is the pass's `bp`; `skel` is the plan's
+    structure.
+  - `lib/perfpf.bend`: generalized over `good`; adds `vend_pass` and
+    `total_pass.a`.
+  - `lib/skdpf.bend`: the structure's wrappers.
+  - The switch itself, in `lib/solve.bend`:
+    - `cls_of`, `pins_of`, `good_of` and `skel_of` are the pass's, and
+      `kept` is the system solved;
+    - `nvars` is `PA.nvars`, so `nv_eq` is `{==}`;
+    - `final` checks the plan over the system solved, the sides of the
+      constraints neither red nor amber, and `exact`.
+  - The red stage is gone, with its proofs.
+  - Proven against the solver as it runs:
+    - `solve_exists`, `solve_unique` and `solve_pins`
+      (`lib/solvepf.bend`, now a draft);
+    - `solve_total` (law 9) and `solve_honest` (law 4)
+      (`lib/totalpf.bend`), both in sync with ROADMAP;
+    - `complete_now` over the system solved (`lib/completepf.bend`),
+      the interim form of law 10: `Strict` with no pins, the whole
+      sketch dyadic.
+  - Regression: the raw OnCircle sketches certify (pairs in 4 s, where
+    they used to be refused after 88 s), vertical-twice is refused at
+    its one Over constraint, and the audit's midpoint has nothing red.
+  - Debt:
+    - `pass` and `pass_st` still walk twice;
+    - the exact checks are recomputed at every precision;
+    - small helpers are duplicated (qsign vs satpf; dc_* and drv_at
+      vs passpf; `PA.kvs` vs `MX.kvs`);
+    - `redpf` keeps some red-stage lemmas nothing uses now.
+  - Next: step 3, law 10 as stated.
 - **`final` gains:**
   - the drop certificates (`qzero`; h = 1; rows are earlier solved
     equations);

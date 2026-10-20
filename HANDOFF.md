@@ -1,4 +1,4 @@
-# HANDOFF — bend-cad (2026-10-20, sk-09 verified solver built; sk-13a S0–S4 done (S4 as proofs about the pass); next: the switch (S5) with S7 right after it, per Danielle)
+# HANDOFF — bend-cad (2026-10-20, sk-13a S0–S4 done; S5's switch done with completeness re-proven over the system solved; next: law 10 as stated (S7), then the rest of S5)
 
 Read first: `DESIGN.md` (v0.9: the plan, Danielle's decisions, §3 spec
 numbers, §4–§5 typed IR, forms and meanings as built), `proto/RESULTS.md`
@@ -234,8 +234,14 @@ built). The solver itself still reports sk-09's classes: switching
 solved) is S5's first step, and it breaks the gated `complete_now`
 (its proof is the sk-09 red stage's). Danielle decided (2026-10-20): **S7 right
 after the switch** — switch, then re-prove completeness over the system
-solved before the next green commit; nothing leaves the gate. **Next:
-PLAN-sk13a.md S5 (the switch first), with S7 immediately after it.**
+solved before the next green commit; nothing leaves the gate. **Done
+2026-10-20 (f2c2abb):** the solver runs the single pass, its verdict
+certifies drops and amber sides (lib/verdict.bend), solve_total and
+solve_honest are proven for it, and completeness is re-proven over the
+system solved in an interim form (complete_now: Strict with no pins);
+gate and regression green, the raw OnCircle sketches certify (PLAN S5,
+"The switch, as built"). **Next: law 10 exactly as ROADMAP states it
+(Strict with the pins, dyadic kept constraints only), then S5's laws 1–3.**
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);
