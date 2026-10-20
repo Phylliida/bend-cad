@@ -186,15 +186,11 @@ def bnd1(qs: List<&2, Ineq>, n: Nat) -> List<&2, S.Z>:
     case Con{Ineq{a, b, s}, t}:
       Con{ind(s), bnd1(t, n)}
 
-def LP.v0(lp: LP) -> List<&2, S.Z>:
-  match lp:
-    case LP{qs, n}:
-      bnd0(qs, n)
+def LP.v0(+lp: LP) -> List<&2, S.Z>:
+  bnd0(LP.qs(lp), LP.n(lp))
 
-def LP.v1(lp: LP) -> List<&2, S.Z>:
-  match lp:
-    case LP{qs, n}:
-      bnd1(qs, n)
+def LP.v1(+lp: LP) -> List<&2, S.Z>:
+  bnd1(LP.qs(lp), LP.n(lp))
 
 # The dictionary
 # --------------

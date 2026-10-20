@@ -566,3 +566,296 @@ def tab_stop(+lp: SX.LP, +n: Nat, h: {isgo(st(lp, 1n+n)) == False{} : Bool}) -> 
   %Equal.sym(SX.Run, st(lp, 1n+n), SX.adv(lp, st(lp, n)), st_succ(lp, n)) : {rtab(_) == tab(lp, n) : SX.Tab}
   stop_tab(lp, st(lp, n), (%st_succ(lp, n) : {isgo(_) == False{} : Bool}
     h))
+
+# What a pivoting step's choices say
+# ----------------------------------
+
+def ltn_le(a: Nat, b: Nat, h: {SX.ltn(a, b) == True{} : Bool}) -> {KA.natle(1n+a, b) == True{} : Bool}:
+  match a b:
+    case 0n 0n:
+      absurd({KA.natle(1n, 0n) == True{} : Bool}, KA.ft(h))
+    case 0n 1n++j:
+      {==}
+    case 1n++i 0n:
+      absurd({KA.natle(2n+i, 0n) == True{} : Bool}, KA.ft(h))
+    case 1n++i 1n++j:
+      ltn_le(i, j, h)
+
+def ltn_trans(a: Nat, b: Nat, +c: Nat, h1: {SX.ltn(a, b) == True{} : Bool}, h2: {SX.ltn(b, c) == True{} : Bool}) -> {SX.ltn(a, c) == True{} : Bool}:
+  match a b c:
+    case 0n 0n c:
+      absurd({SX.ltn(0n, c) == True{} : Bool}, KA.ft(h1))
+    case 0n 1n++j 0n:
+      absurd({SX.ltn(0n, 0n) == True{} : Bool}, KA.ft(h2))
+    case 0n 1n++j 1n++k:
+      {==}
+    case 1n++i 0n c:
+      absurd({SX.ltn(1n+i, c) == True{} : Bool}, KA.ft(h1))
+    case 1n++i 1n++j 0n:
+      absurd({SX.ltn(1n+i, 0n) == True{} : Bool}, KA.ft(h2))
+    case 1n++i 1n++j 1n++k:
+      ltn_trans(i, j, k, h1, h2)
+
+def ltn_le_trans(+a: Nat, +b: Nat, +c: Nat, h1: {SX.ltn(a, b) == True{} : Bool}, h2: {KA.natle(b, c) == True{} : Bool}) -> {SX.ltn(a, c) == True{} : Bool}:
+  SP.ltn_of(a, c, KA.natle_trans(1n+a, b, c, ltn_le(a, b, h1), h2))
+
+def lv_first(+lp: SX.LP, +t: SX.Tab, h: {isgo(SX.step(lp, t)) == True{} : Bool}) -> {firstfrom(viols(SX.LP.qs(lp), SX.Tab.rows(t), SX.LP.v0(lp), SX.LP.v1(lp)), 0n) == Some{lv(lp, t)} : Maybe<&2, Nat>}:
+  %leave_eq(SX.LP.qs(lp), SX.Tab.rows(t), SX.LP.v0(lp), SX.LP.v1(lp), 0n) : {_ == Some{lv(lp, t)} : Maybe<&2, Nat>}
+  go_leave(lp, t, h)
+
+# the leaving variable is a slack
+def lv_lt(+lp: SX.LP, +t: SX.Tab, h: {isgo(SX.step(lp, t)) == True{} : Bool}) -> {SX.ltn(lv(lp, t), SX.LP.m(lp)) == True{} : Bool}:
+  ltn_le_trans(lv(lp, t), SP.blen(viols(SX.LP.qs(lp), SX.Tab.rows(t), SX.LP.v0(lp), SX.LP.v1(lp))), SX.LP.m(lp), first_lt(viols(SX.LP.qs(lp), SX.Tab.rows(t), SX.LP.v0(lp), SX.LP.v1(lp)), lv(lp, t), lv_first(lp, t, h)), blen_viols(SX.LP.qs(lp), SX.Tab.rows(t), SX.LP.v0(lp), SX.LP.v1(lp)))
+
+# below its bound
+def lv_viol(+lp: SX.LP, +t: SX.Tab, +h: {isgo(SX.step(lp, t)) == True{} : Bool}, hr: {KA.natle(SX.LP.m(lp), SP.nrows(SX.Tab.rows(t))) == True{} : Bool}) -> {SX.viol(SX.rowat(SX.Tab.rows(t), lv(lp, t)), SX.LP.v0(lp), SX.LP.v1(lp), qat(SX.LP.qs(lp), lv(lp, t))) == True{} : Bool}:
+  %bat_viols(SX.LP.qs(lp), SX.Tab.rows(t), SX.LP.v0(lp), SX.LP.v1(lp), lv(lp, t), lv_lt(lp, t, h), hr) : {_ == True{} : Bool}
+  first_some(viols(SX.LP.qs(lp), SX.Tab.rows(t), SX.LP.v0(lp), SX.LP.v1(lp)), lv(lp, t), lv_first(lp, t, h))
+
+# and the smallest such slack
+def lv_min(+lp: SX.LP, +t: SX.Tab, +h: {isgo(SX.step(lp, t)) == True{} : Bool}, hr: {KA.natle(SX.LP.m(lp), SP.nrows(SX.Tab.rows(t))) == True{} : Bool}, +k: Nat, +hk: {SX.ltn(k, lv(lp, t)) == True{} : Bool}) -> {SX.viol(SX.rowat(SX.Tab.rows(t), k), SX.LP.v0(lp), SX.LP.v1(lp), qat(SX.LP.qs(lp), k)) == False{} : Bool}:
+  %bat_viols(SX.LP.qs(lp), SX.Tab.rows(t), SX.LP.v0(lp), SX.LP.v1(lp), k, ltn_trans(k, lv(lp, t), SX.LP.m(lp), hk, lv_lt(lp, t, h)), hr) : {_ == False{} : Bool}
+  first_min(viols(SX.LP.qs(lp), SX.Tab.rows(t), SX.LP.v0(lp), SX.LP.v1(lp)), lv(lp, t), lv_first(lp, t, h), k, hk)
+
+def en_first(+lp: SX.LP, +t: SX.Tab, h: {isgo(SX.step(lp, t)) == True{} : Bool}) -> {firstfrom(helps(rowi(lp, t), SX.LP.m(lp), 0n), 0n) == Some{en(lp, t)} : Maybe<&2, Nat>}:
+  %enter_eq(rowi(lp, t), SX.LP.m(lp), 0n) : {_ == Some{en(lp, t)} : Maybe<&2, Nat>}
+  go_enter(lp, t, h)
+
+def bat_helps0(+r: List<&2, S.Z>, +m: Nat, +k: Nat) -> {SP.bat(helps(r, m, 0n), k) == SX.helpful(SX.at(r, k), Nat.is_le(m, k)) : Bool}:
+  %Equal.sym(Nat, k, Nat.add(k, 0n), LN.add_zero(k)) : {SP.bat(helps(r, m, 0n), k) == SX.helpful(SX.at(r, k), Nat.is_le(m, _)) : Bool}
+  bat_helps(r, m, 0n, k)
+
+# the entering variable can raise the leaving row
+def en_help(+lp: SX.LP, +t: SX.Tab, +h: {isgo(SX.step(lp, t)) == True{} : Bool}) -> {SX.helpful(SX.at(rowi(lp, t), en(lp, t)), Nat.is_le(SX.LP.m(lp), en(lp, t))) == True{} : Bool}:
+  %bat_helps0(rowi(lp, t), SX.LP.m(lp), en(lp, t)) : {_ == True{} : Bool}
+  first_some(helps(rowi(lp, t), SX.LP.m(lp), 0n), en(lp, t), en_first(lp, t, h))
+
+# and is the smallest that can
+def en_min(+lp: SX.LP, +t: SX.Tab, +h: {isgo(SX.step(lp, t)) == True{} : Bool}, +j: Nat, +hj: {SX.ltn(j, en(lp, t)) == True{} : Bool}) -> {SX.helpful(SX.at(rowi(lp, t), j), Nat.is_le(SX.LP.m(lp), j)) == False{} : Bool}:
+  %bat_helps0(rowi(lp, t), SX.LP.m(lp), j) : {_ == False{} : Bool}
+  first_min(helps(rowi(lp, t), SX.LP.m(lp), 0n), en(lp, t), en_first(lp, t, h), j, hj)
+
+# its entry is not 0
+def en_hp(+lp: SX.LP, +t: SX.Tab, +h: {isgo(SX.step(lp, t)) == True{} : Bool}) -> {SX.iszero(SX.at(rowi(lp, t), en(lp, t))) == False{} : Bool}:
+  helpful_nz(SX.at(rowi(lp, t), en(lp, t)), Nat.is_le(SX.LP.m(lp), en(lp, t)), en_help(lp, t, h))
+
+# it is a variable (below N)
+def en_lt(+lp: SX.LP, +t: SX.Tab, +h: {isgo(SX.step(lp, t)) == True{} : Bool}, hrl: {SP.rlok(SX.Tab.rows(t), SX.LP.nv(lp)) == True{} : Bool}) -> {SX.ltn(en(lp, t), SX.LP.nv(lp)) == True{} : Bool}:
+  ltn_le_trans(en(lp, t), SX.vlen(rowi(lp, t)), SX.LP.nv(lp), (%Equal.sym(Nat, SX.vlen(rowi(lp, t)), SP.blen(helps(rowi(lp, t), SX.LP.m(lp), 0n)), blen_helps(rowi(lp, t), SX.LP.m(lp), 0n)) : {SX.ltn(en(lp, t), _) == True{} : Bool}
+    first_lt(helps(rowi(lp, t), SX.LP.m(lp), 0n), en(lp, t), en_first(lp, t, h))), SP.rlok_at(SX.Tab.rows(t), SX.LP.nv(lp), lv(lp, t), hrl))
+
+# The invariants at every step
+# ----------------------------
+
+def mle_nv(+lp: SX.LP) -> {KA.natle(SX.LP.m(lp), SX.LP.nv(lp)) == True{} : Bool}:
+  KA.natle_add_r(SX.LP.m(lp), SX.LP.n(lp))
+
+# the leaving slack is below N
+def lv_ltN(+lp: SX.LP, +t: SX.Tab, +h: {isgo(SX.step(lp, t)) == True{} : Bool}) -> {SX.ltn(lv(lp, t), SX.LP.nv(lp)) == True{} : Bool}:
+  ltn_le_trans(lv(lp, t), SX.LP.m(lp), SX.LP.nv(lp), lv_lt(lp, t, h), mle_nv(lp))
+
+def nr_at.s(b: Bool, +lp: SX.LP, +k: Nat, hb: {b == isgo(st(lp, 1n+k)) : Bool}, ih: {SP.nrows(SX.Tab.rows(tab(lp, k))) == SX.LP.nv(lp) : Nat}) -> {SP.nrows(SX.Tab.rows(tab(lp, 1n+k))) == SX.LP.nv(lp) : Nat}:
+  match b:
+    case True{}:
+      %Equal.sym(SX.Tab, tab(lp, 1n+k), SX.pivot(SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k))), tab_piv(lp, k, Equal.sym(Bool, True{}, isgo(st(lp, 1n+k)), hb))) : {SP.nrows(SX.Tab.rows(_)) == SX.LP.nv(lp) : Nat}
+      Equal.trans(Nat, SP.nrows(SX.Tab.rows(SX.pivot(SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k))))), SP.nrows(SX.Tab.rows(tab(lp, k))), SX.LP.nv(lp), Equal.sym(Nat, SP.nrows(SX.Tab.rows(tab(lp, k))), SP.nrows(SX.Tab.rows(SX.pivot(SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k))))), SP.nr_pivot(SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k)))), ih)
+    case False{}:
+      %Equal.sym(SX.Tab, tab(lp, 1n+k), tab(lp, k), tab_stop(lp, k, Equal.sym(Bool, False{}, isgo(st(lp, 1n+k)), hb))) : {SP.nrows(SX.Tab.rows(_)) == SX.LP.nv(lp) : Nat}
+      ih
+
+# N rows at every step
+def nr_at(+lp: SX.LP, n: Nat) -> {SP.nrows(SX.Tab.rows(tab(lp, n))) == SX.LP.nv(lp) : Nat}:
+  match n:
+    case 0n:
+      SP.nr_init(lp)
+    case 1n++k:
+      nr_at.s(isgo(st(lp, 1n+k)), lp, k, {==}, nr_at(lp, k))
+
+def bl_at.s(b: Bool, +lp: SX.LP, +k: Nat, hb: {b == isgo(st(lp, 1n+k)) : Bool}, ih: {SP.blen(SX.Tab.bas(tab(lp, k))) == SX.LP.nv(lp) : Nat}) -> {SP.blen(SX.Tab.bas(tab(lp, 1n+k))) == SX.LP.nv(lp) : Nat}:
+  match b:
+    case True{}:
+      %Equal.sym(SX.Tab, tab(lp, 1n+k), SX.pivot(SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k))), tab_piv(lp, k, Equal.sym(Bool, True{}, isgo(st(lp, 1n+k)), hb))) : {SP.blen(SX.Tab.bas(_)) == SX.LP.nv(lp) : Nat}
+      Equal.trans(Nat, SP.blen(SX.Tab.bas(SX.pivot(SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k))))), SP.blen(SX.Tab.bas(tab(lp, k))), SX.LP.nv(lp), Equal.sym(Nat, SP.blen(SX.Tab.bas(tab(lp, k))), SP.blen(SX.Tab.bas(SX.pivot(SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k))))), SP.bl_pivot(SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k)))), ih)
+    case False{}:
+      %Equal.sym(SX.Tab, tab(lp, 1n+k), tab(lp, k), tab_stop(lp, k, Equal.sym(Bool, False{}, isgo(st(lp, 1n+k)), hb))) : {SP.blen(SX.Tab.bas(_)) == SX.LP.nv(lp) : Nat}
+      ih
+
+# N basis flags at every step
+def bl_at(+lp: SX.LP, n: Nat) -> {SP.blen(SX.Tab.bas(tab(lp, n))) == SX.LP.nv(lp) : Nat}:
+  match n:
+    case 0n:
+      SP.bl_init(lp)
+    case 1n++k:
+      bl_at.s(isgo(st(lp, 1n+k)), lp, k, {==}, bl_at(lp, k))
+
+def rl_at.s(b: Bool, +lp: SX.LP, +k: Nat, hb: {b == isgo(st(lp, 1n+k)) : Bool}, ih: {SP.rlok(SX.Tab.rows(tab(lp, k)), SX.LP.nv(lp)) == True{} : Bool}) -> {SP.rlok(SX.Tab.rows(tab(lp, 1n+k)), SX.LP.nv(lp)) == True{} : Bool}:
+  match b:
+    case True{}:
+      %Equal.sym(SX.Tab, tab(lp, 1n+k), SX.pivot(SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k))), tab_piv(lp, k, Equal.sym(Bool, True{}, isgo(st(lp, 1n+k)), hb))) : {SP.rlok(SX.Tab.rows(_), SX.LP.nv(lp)) == True{} : Bool}
+      SP.rl_pivot(SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k)), ih)
+    case False{}:
+      %Equal.sym(SX.Tab, tab(lp, 1n+k), tab(lp, k), tab_stop(lp, k, Equal.sym(Bool, False{}, isgo(st(lp, 1n+k)), hb))) : {SP.rlok(SX.Tab.rows(_), SX.LP.nv(lp)) == True{} : Bool}
+      ih
+
+# rows of at most N entries at every step
+def rl_at(+lp: SX.LP, n: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}) -> {SP.rlok(SX.Tab.rows(tab(lp, n)), SX.LP.nv(lp)) == True{} : Bool}:
+  match n:
+    case 0n:
+      SP.rl_init(lp, hwf)
+    case 1n++k:
+      rl_at.s(isgo(st(lp, 1n+k)), lp, k, {==}, rl_at(lp, k, hwf))
+
+def hp_at(+lp: SX.LP, +k: Nat, +hgo: {isgo(SX.step(lp, tab(lp, k))) == True{} : Bool}) -> {SX.iszero(SX.at(SX.Rw.m(SX.rowat(SX.Tab.rows(tab(lp, k)), lv(lp, tab(lp, k)))), en(lp, tab(lp, k)))) == False{} : Bool}:
+  en_hp(lp, tab(lp, k), hgo)
+
+def he_at(+lp: SX.LP, +k: Nat, +hgo: {isgo(SX.step(lp, tab(lp, k))) == True{} : Bool}, +hwf: {SP.lpwf(lp) == True{} : Bool}) -> {SX.ltn(en(lp, tab(lp, k)), SP.blen(SX.Tab.bas(tab(lp, k)))) == True{} : Bool}:
+  %Equal.sym(Nat, SP.blen(SX.Tab.bas(tab(lp, k))), SX.LP.nv(lp), bl_at(lp, k)) : {SX.ltn(en(lp, tab(lp, k)), _) == True{} : Bool}
+  en_lt(lp, tab(lp, k), hgo, rl_at(lp, k, hwf))
+
+def hn_at(+lp: SX.LP, +k: Nat, +hgo: {isgo(SX.step(lp, tab(lp, k))) == True{} : Bool}) -> {SX.ltn(lv(lp, tab(lp, k)), SP.nrows(SX.Tab.rows(tab(lp, k)))) == True{} : Bool}:
+  %Equal.sym(Nat, SP.nrows(SX.Tab.rows(tab(lp, k))), SX.LP.nv(lp), nr_at(lp, k)) : {SX.ltn(lv(lp, tab(lp, k)), _) == True{} : Bool}
+  lv_ltN(lp, tab(lp, k), hgo)
+
+def hil_at(+lp: SX.LP, +k: Nat, +hgo: {isgo(SX.step(lp, tab(lp, k))) == True{} : Bool}) -> {SX.ltn(lv(lp, tab(lp, k)), SP.blen(SX.Tab.bas(tab(lp, k)))) == True{} : Bool}:
+  %Equal.sym(Nat, SP.blen(SX.Tab.bas(tab(lp, k))), SX.LP.nv(lp), bl_at(lp, k)) : {SX.ltn(lv(lp, tab(lp, k)), _) == True{} : Bool}
+  lv_ltN(lp, tab(lp, k), hgo)
+
+def hr_at(+lp: SX.LP, +k: Nat) -> {KA.natle(SX.LP.m(lp), SP.nrows(SX.Tab.rows(tab(lp, k)))) == True{} : Bool}:
+  %Equal.sym(Nat, SP.nrows(SX.Tab.rows(tab(lp, k))), SX.LP.nv(lp), nr_at(lp, k)) : {KA.natle(SX.LP.m(lp), _) == True{} : Bool}
+  mle_nv(lp)
+
+def iu_at.s(~F: O.OField, b: Bool, +lp: SX.LP, +k: Nat, +hb: {b == isgo(st(lp, 1n+k)) : Bool}, ih: SP.IU(~F, SX.LP.nv(lp), tab(lp, k)), +hwf: {SP.lpwf(lp) == True{} : Bool}) -> SP.IU(~F, SX.LP.nv(lp), tab(lp, 1n+k)):
+  match b:
+    case True{}:
+      +hgo = piv_step(lp, k, Equal.sym(Bool, True{}, isgo(st(lp, 1n+k)), hb))
+      %Equal.sym(SX.Tab, tab(lp, 1n+k), SX.pivot(SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k))), tab_piv(lp, k, Equal.sym(Bool, True{}, isgo(st(lp, 1n+k)), hb))) : SP.IU(~F, SX.LP.nv(lp), _)
+      SP.iu_pivot(~F, SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k)), ih, hp_at(lp, k, hgo), lv_ltN(lp, tab(lp, k), hgo), he_at(lp, k, hgo, hwf))
+    case False{}:
+      %Equal.sym(SX.Tab, tab(lp, 1n+k), tab(lp, k), tab_stop(lp, k, Equal.sym(Bool, False{}, isgo(st(lp, 1n+k)), hb))) : SP.IU(~F, SX.LP.nv(lp), _)
+      ih
+
+# IU at every step
+def iu_at(~F: O.OField, +lp: SX.LP, n: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}) -> SP.IU(~F, SX.LP.nv(lp), tab(lp, n)):
+  match n:
+    case 0n:
+      SP.iu_init(~F, lp)
+    case 1n++k:
+      iu_at.s(~F, isgo(st(lp, 1n+k)), lp, k, {==}, iu_at(~F, lp, k, hwf), hwf)
+
+def i1_at.s(~F: O.OField, b: Bool, +lp: SX.LP, +k: Nat, +hb: {b == isgo(st(lp, 1n+k)) : Bool}, ih: SP.I1(~F, lp, SX.Tab.rows(tab(lp, k)))) -> SP.I1(~F, lp, SX.Tab.rows(tab(lp, 1n+k))):
+  match b:
+    case True{}:
+      +hgo = piv_step(lp, k, Equal.sym(Bool, True{}, isgo(st(lp, 1n+k)), hb))
+      %Equal.sym(SX.Tab, tab(lp, 1n+k), SX.pivot(SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k))), tab_piv(lp, k, Equal.sym(Bool, True{}, isgo(st(lp, 1n+k)), hb))) : SP.I1(~F, lp, SX.Tab.rows(_))
+      SP.i1_pivot(~F, lp, SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k)), ih, hp_at(lp, k, hgo), lv_ltN(lp, tab(lp, k), hgo))
+    case False{}:
+      %Equal.sym(SX.Tab, tab(lp, 1n+k), tab(lp, k), tab_stop(lp, k, Equal.sym(Bool, False{}, isgo(st(lp, 1n+k)), hb))) : SP.I1(~F, lp, SX.Tab.rows(_))
+      ih
+
+# I1 at every step
+def i1_at(~F: O.OField, +lp: SX.LP, n: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}) -> SP.I1(~F, lp, SX.Tab.rows(tab(lp, n))):
+  match n:
+    case 0n:
+      SP.i1_init(~F, lp, hwf)
+    case 1n++k:
+      i1_at.s(~F, isgo(st(lp, 1n+k)), lp, k, {==}, i1_at(~F, lp, k, hwf))
+
+def i2_at.s(~F: O.OField, b: Bool, +lp: SX.LP, +k: Nat, +hb: {b == isgo(st(lp, 1n+k)) : Bool}, ih: SP.I2(~F, lp, SX.Tab.rows(tab(lp, k)))) -> SP.I2(~F, lp, SX.Tab.rows(tab(lp, 1n+k))):
+  match b:
+    case True{}:
+      +hgo = piv_step(lp, k, Equal.sym(Bool, True{}, isgo(st(lp, 1n+k)), hb))
+      %Equal.sym(SX.Tab, tab(lp, 1n+k), SX.pivot(SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k))), tab_piv(lp, k, Equal.sym(Bool, True{}, isgo(st(lp, 1n+k)), hb))) : SP.I2(~F, lp, SX.Tab.rows(_))
+      SP.i2_pivot(~F, lp, SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k)), ih, hp_at(lp, k, hgo), lv_ltN(lp, tab(lp, k), hgo), hn_at(lp, k, hgo))
+    case False{}:
+      %Equal.sym(SX.Tab, tab(lp, 1n+k), tab(lp, k), tab_stop(lp, k, Equal.sym(Bool, False{}, isgo(st(lp, 1n+k)), hb))) : SP.I2(~F, lp, SX.Tab.rows(_))
+      ih
+
+# I2 at every step
+def i2_at(~F: O.OField, +lp: SX.LP, n: Nat) -> SP.I2(~F, lp, SX.Tab.rows(tab(lp, n))):
+  match n:
+    case 0n:
+      SP.i2_init(~F, lp)
+    case 1n++k:
+      i2_at.s(~F, isgo(st(lp, 1n+k)), lp, k, {==}, i2_at(~F, lp, k))
+
+def lneg00(~F: O.OField, h: LX.LNeg(~F, O.zero(F), O.zero(F))) -> Empty:
+  match h:
+    case Inl{l}:
+      O.lt_irrefl(F)(O.zero(F))(l)
+    case Inr{p}:
+      O.lt_irrefl(F)(O.zero(F))(LX.both_r({O.zero(F) == O.zero(F) : O.C(F)}, O.lt(F, O.zero(F), O.zero(F)), p))
+
+def lneg_self(~F: O.OField, +x0: O.C(F), +x1: O.C(F), h: LX.LNeg(~F, O.sub(~F, x0, x0), O.sub(~F, x1, x1))) -> Empty:
+  lneg00(~F, (%FR.fring_eq(~F, [x0], E.ZSub{E.ZVar{0n}, E.ZVar{0n}}, E.ZCst{S.Z0{}}, {==}) : LX.LNeg(~F, _, O.zero(F))
+    %FR.fring_eq(~F, [x1], E.ZSub{E.ZVar{0n}, E.ZVar{0n}}, E.ZCst{S.Z0{}}, {==}) : LX.LNeg(~F, O.sub(~F, x0, x0), _)
+    h))
+
+# a slack's bound, read off the bound vector
+def bnd_v0(~F: O.OField, +lp: SX.LP, +i: Nat, hi: {SX.ltn(i, SX.LP.m(lp)) == True{} : Bool}) -> {SP.fat(~F, zv(~F, SX.LP.v0(lp)), i) == O.ofz(~F, S.Z.neg(Ineq.b(qat(SX.LP.qs(lp), i)))) : O.C(F)}:
+  %fat_zv(~F, SX.LP.v0(lp), i) : {_ == O.ofz(~F, S.Z.neg(Ineq.b(qat(SX.LP.qs(lp), i)))) : O.C(F)}
+  %Equal.sym(S.Z, SX.at(SX.LP.v0(lp), i), S.Z.neg(Ineq.b(qat(SX.LP.qs(lp), i))), at_bnd0(SX.LP.qs(lp), SX.LP.n(lp), i, hi)) : {O.ofz(~F, _) == O.ofz(~F, S.Z.neg(Ineq.b(qat(SX.LP.qs(lp), i)))) : O.C(F)}
+  {==}
+
+def bnd_v1(~F: O.OField, +lp: SX.LP, +i: Nat, hi: {SX.ltn(i, SX.LP.m(lp)) == True{} : Bool}) -> {SP.fat(~F, zv(~F, SX.LP.v1(lp)), i) == O.ofz(~F, SX.ind(Ineq.s(qat(SX.LP.qs(lp), i)))) : O.C(F)}:
+  %fat_zv(~F, SX.LP.v1(lp), i) : {_ == O.ofz(~F, SX.ind(Ineq.s(qat(SX.LP.qs(lp), i)))) : O.C(F)}
+  %Equal.sym(S.Z, SX.at(SX.LP.v1(lp), i), SX.ind(Ineq.s(qat(SX.LP.qs(lp), i))), at_bnd1(SX.LP.qs(lp), SX.LP.n(lp), i, hi)) : {O.ofz(~F, _) == O.ofz(~F, SX.ind(Ineq.s(qat(SX.LP.qs(lp), i)))) : O.C(F)}
+  {==}
+
+# a nonbasic slack is at its bound, so it is not below it
+def vb.contra(~F: O.OField, +lp: SX.LP, +k: Nat, +hgo: {isgo(SX.step(lp, tab(lp, k))) == True{} : Bool}, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hnb: {SP.bat(SX.Tab.bas(tab(lp, k)), lv(lp, tab(lp, k))) == False{} : Bool}) -> Empty:
+  lneg_self(~F, O.ofz(~F, S.Z.neg(Ineq.b(qat(SX.LP.qs(lp), lv(lp, tab(lp, k)))))), O.ofz(~F, SX.ind(Ineq.s(qat(SX.LP.qs(lp), lv(lp, tab(lp, k)))))),
+    (%Equal.trans(O.C(F), SP.rv(~F, SX.rowat(SX.Tab.rows(tab(lp, k)), lv(lp, tab(lp, k))), zv(~F, SX.LP.v0(lp))), SP.fat(~F, zv(~F, SX.LP.v0(lp)), lv(lp, tab(lp, k))), O.ofz(~F, S.Z.neg(Ineq.b(qat(SX.LP.qs(lp), lv(lp, tab(lp, k)))))), iu_at(~F, lp, k, hwf)(lv(lp, tab(lp, k)), hnb, lv_ltN(lp, tab(lp, k), hgo), zv(~F, SX.LP.v0(lp))), bnd_v0(~F, lp, lv(lp, tab(lp, k)), lv_lt(lp, tab(lp, k), hgo))) : LX.LNeg(~F, O.sub(~F, _, O.ofz(~F, S.Z.neg(Ineq.b(qat(SX.LP.qs(lp), lv(lp, tab(lp, k))))))), O.sub(~F, O.ofz(~F, SX.ind(Ineq.s(qat(SX.LP.qs(lp), lv(lp, tab(lp, k)))))), O.ofz(~F, SX.ind(Ineq.s(qat(SX.LP.qs(lp), lv(lp, tab(lp, k))))))))
+     %Equal.trans(O.C(F), SP.rv(~F, SX.rowat(SX.Tab.rows(tab(lp, k)), lv(lp, tab(lp, k))), zv(~F, SX.LP.v1(lp))), SP.fat(~F, zv(~F, SX.LP.v1(lp)), lv(lp, tab(lp, k))), O.ofz(~F, SX.ind(Ineq.s(qat(SX.LP.qs(lp), lv(lp, tab(lp, k)))))), iu_at(~F, lp, k, hwf)(lv(lp, tab(lp, k)), hnb, lv_ltN(lp, tab(lp, k), hgo), zv(~F, SX.LP.v1(lp))), bnd_v1(~F, lp, lv(lp, tab(lp, k)), lv_lt(lp, tab(lp, k), hgo))) : LX.LNeg(~F, O.sub(~F, SP.rv(~F, SX.rowat(SX.Tab.rows(tab(lp, k)), lv(lp, tab(lp, k))), zv(~F, SX.LP.v0(lp))), O.ofz(~F, S.Z.neg(Ineq.b(qat(SX.LP.qs(lp), lv(lp, tab(lp, k))))))), O.sub(~F, _, O.ofz(~F, SX.ind(Ineq.s(qat(SX.LP.qs(lp), lv(lp, tab(lp, k))))))))
+     viol_f(~F, SX.rowat(SX.Tab.rows(tab(lp, k)), lv(lp, tab(lp, k))), SX.LP.v0(lp), SX.LP.v1(lp), qat(SX.LP.qs(lp), lv(lp, tab(lp, k))), lv_viol(lp, tab(lp, k), hgo, hr_at(lp, k)))))
+
+def vb.go(~F: O.OField, b: Bool, +lp: SX.LP, +k: Nat, hb: {b == SP.bat(SX.Tab.bas(tab(lp, k)), lv(lp, tab(lp, k))) : Bool}, +hgo: {isgo(SX.step(lp, tab(lp, k))) == True{} : Bool}, +hwf: {SP.lpwf(lp) == True{} : Bool}) -> {SP.bat(SX.Tab.bas(tab(lp, k)), lv(lp, tab(lp, k))) == True{} : Bool}:
+  match b:
+    case True{}:
+      Equal.sym(Bool, True{}, SP.bat(SX.Tab.bas(tab(lp, k)), lv(lp, tab(lp, k))), hb)
+    case False{}:
+      absurd({SP.bat(SX.Tab.bas(tab(lp, k)), lv(lp, tab(lp, k))) == True{} : Bool}, vb.contra(~F, lp, k, hgo, hwf, Equal.sym(Bool, False{}, SP.bat(SX.Tab.bas(tab(lp, k)), lv(lp, tab(lp, k))), hb)))
+
+# the leaving slack is basic
+def viol_basic(~F: O.OField, +lp: SX.LP, +k: Nat, +hgo: {isgo(SX.step(lp, tab(lp, k))) == True{} : Bool}, +hwf: {SP.lpwf(lp) == True{} : Bool}) -> {SP.bat(SX.Tab.bas(tab(lp, k)), lv(lp, tab(lp, k))) == True{} : Bool}:
+  vb.go(~F, SP.bat(SX.Tab.bas(tab(lp, k)), lv(lp, tab(lp, k))), lp, k, {==}, hgo, hwf)
+
+def help_zero(c: S.Z, +f: Bool, h1: {SX.iszero(c) == True{} : Bool}, h2: {SX.helpful(c, f) == True{} : Bool}) -> Empty:
+  match c:
+    case S.Z0{}:
+      KA.ft(h2)
+    case S.Zpos{p}:
+      KA.ft(h1)
+    case S.Zneg{p}:
+      KA.ft(h1)
+
+def ei.go(~F: O.OField, b: Bool, +lp: SX.LP, +k: Nat, hb: {b == SX.eqn(en(lp, tab(lp, k)), lv(lp, tab(lp, k))) : Bool}, +hgo: {isgo(SX.step(lp, tab(lp, k))) == True{} : Bool}, +hwf: {SP.lpwf(lp) == True{} : Bool}, hz: SP.IZ(tab(lp, k))) -> {SX.eqn(en(lp, tab(lp, k)), lv(lp, tab(lp, k))) == False{} : Bool}:
+  match b:
+    case False{}:
+      Equal.sym(Bool, False{}, SX.eqn(en(lp, tab(lp, k)), lv(lp, tab(lp, k))), hb)
+    case True{}:
+      absurd({SX.eqn(en(lp, tab(lp, k)), lv(lp, tab(lp, k))) == False{} : Bool}, help_zero(SX.at(rowi(lp, tab(lp, k)), lv(lp, tab(lp, k))), Nat.is_le(SX.LP.m(lp), lv(lp, tab(lp, k))),
+        SP.zcol_at(SX.Tab.rows(tab(lp, k)), lv(lp, tab(lp, k)), lv(lp, tab(lp, k)), hz(lv(lp, tab(lp, k)), viol_basic(~F, lp, k, hgo, hwf))),
+        (%SP.eqn_eq(en(lp, tab(lp, k)), lv(lp, tab(lp, k)), Equal.sym(Bool, True{}, SX.eqn(en(lp, tab(lp, k)), lv(lp, tab(lp, k))), hb)) : {SX.helpful(SX.at(rowi(lp, tab(lp, k)), _), Nat.is_le(SX.LP.m(lp), _)) == True{} : Bool}
+         en_help(lp, tab(lp, k), hgo))))
+
+# the entering variable is not the leaving one
+def ei_ne(~F: O.OField, +lp: SX.LP, +k: Nat, +hgo: {isgo(SX.step(lp, tab(lp, k))) == True{} : Bool}, +hwf: {SP.lpwf(lp) == True{} : Bool}, hz: SP.IZ(tab(lp, k))) -> {SX.eqn(en(lp, tab(lp, k)), lv(lp, tab(lp, k))) == False{} : Bool}:
+  ei.go(~F, SX.eqn(en(lp, tab(lp, k)), lv(lp, tab(lp, k))), lp, k, {==}, hgo, hwf, hz)
+
+def iz_at.s(~F: O.OField, b: Bool, +lp: SX.LP, +k: Nat, +hb: {b == isgo(st(lp, 1n+k)) : Bool}, ih: SP.IZ(tab(lp, k)), ih2: SP.IZ(tab(lp, k)), +hwf: {SP.lpwf(lp) == True{} : Bool}) -> SP.IZ(tab(lp, 1n+k)):
+  match b:
+    case True{}:
+      +hgo = piv_step(lp, k, Equal.sym(Bool, True{}, isgo(st(lp, 1n+k)), hb))
+      %Equal.sym(SX.Tab, tab(lp, 1n+k), SX.pivot(SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k))), tab_piv(lp, k, Equal.sym(Bool, True{}, isgo(st(lp, 1n+k)), hb))) : SP.IZ(_)
+      SP.iz_pivot(SX.LP.nv(lp), tab(lp, k), lv(lp, tab(lp, k)), en(lp, tab(lp, k)), ih, hp_at(lp, k, hgo), ei_ne(~F, lp, k, hgo, hwf, ih2), hil_at(lp, k, hgo))
+    case False{}:
+      %Equal.sym(SX.Tab, tab(lp, 1n+k), tab(lp, k), tab_stop(lp, k, Equal.sym(Bool, False{}, isgo(st(lp, 1n+k)), hb))) : SP.IZ(_)
+      ih
+
+# IZ at every step
+def iz_at(~F: O.OField, +lp: SX.LP, n: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}) -> SP.IZ(tab(lp, n)):
+  match n:
+    case 0n:
+      SP.iz_init(lp)
+    case 1n++k:
+      iz_at.s(~F, isgo(st(lp, 1n+k)), lp, k, {==}, iz_at(~F, lp, k, hwf), iz_at(~F, lp, k, hwf), hwf)
