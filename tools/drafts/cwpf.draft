@@ -1,0 +1,479 @@
+# bend-cad: one constraint's equations through the elimination, for the
+# single pass (PLAN-sk13a S4). Proofs only.
+#
+# The pass walks every position k of the sketch's equations
+# (lib/pass.bend: cwalk), reducing those constraint c owns against the
+# basis B (its rows EP.rinv). Through the walk, B is the solved equations
+# before c (P) followed by c's own before k that are not dropped
+# (own_rest), so B is the spec's basis at k, and:
+# - a zero residual is a drop, Derivable from B (lib/drvpf.bend);
+# - a nonzero one is NotDerivable from B (lib/indpf.bend) and joins it.
+# The drops d the walk ends with agree, below k, with the ones it has so
+# far (d = X ++ drops so far, X at k or later), so the spec's statements
+# about d at k are about what the walk saw: DropsOk.
+# The walk also keeps B = picked(positions bp), bp = bp0 ++ us (c's
+# equations that joined, distinct, owned by c, not dropped).
+#
+# Generated from tools/drafts/cwpf.draft by tools/expand.py; edit the
+# draft.
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/sketch.bend as SK
+import ../spec/solve.bend as SV
+import ./karith.bend as KA
+import ./nat.bend as LN
+import ./listpf.bend as LI
+import ./listpf.bend as L
+import ./elim.bend as EL
+import ./elimpf.bend as EP
+import ./drvpf.bend as DR
+import ./indpf.bend as IN
+import ./conflict.bend as CO
+import ./pass.bend as PA
+import ./kbpf.bend as KB
+import ./ownpf.bend as OW
+import ./solvedpf.bend as SP
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+@MACRO ES SK.Sketch.eqs(sk)
+@MACRO OWN SV.owners(sk)
+@MACRO N SV.neqs(SK.Sketch.eqs(sk))
+@MACRO P SV.presolved(sk, R, D, c)
+@MACRO CWP +sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +bp0: List<&2, Nat>
+@MACRO CWA sk, R, D, c, bp0
+@MACRO QL List<&2, E.QExpr>
+@MACRO NL List<&2, Nat>
+
+# Lists
+# -----
+
+# every entry of xs is owned by c
+def allo(+own: List<&2, Nat>, xs: List<&2, Nat>, +c: Nat) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case Con{x, t}:
+      SV.band(SV.eq(SV.nth(own, x), c), allo(own, t, c))
+
+def allo_snoc(+own: $NL, xs: $NL, +x: Nat, +c: Nat, +h: {allo(own, xs, c) == True{} : Bool}, +hx: {SV.eq(SV.nth(own, x), c) == True{} : Bool}) -> {allo(own, CO.lsnoc(xs, x), c) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      LI.band_i(SV.eq(SV.nth(own, x), c), True{}, hx, {==})
+    case Con{+y, +t}:
+      LI.band_i(SV.eq(SV.nth(own, y), c), allo(own, CO.lsnoc(t, x), c), LI.band_l(SV.eq(SV.nth(own, y), c), allo(own, t, c), h), allo_snoc(own, t, x, c, LI.band_r(SV.eq(SV.nth(own, y), c), allo(own, t, c), h), hx))
+
+# us below k and none in d: none in k :: d
+def nonein_cons(us: $NL, +k: Nat, +d: $NL, +h1: {SV.none_in(us, d) == True{} : Bool}, +h2: {SV.below(us, k) == True{} : Bool}) -> {SV.none_in(us, Con{k, d}) == True{} : Bool}:
+  match us:
+    case Nil{}:
+      {==}
+    case Con{+u, +t}:
+      +hu = Equal.trans(Bool, SV.eq(u, k), SV.eq(k, u), False{}, LI.eq_sym(u, k), KB.ne_of_lt(u, k, LI.band_l(SV.lt(u, k), SV.below(t, k), h2)))
+      +hd = KB.bnot_t(SV.mem(u, d), LI.band_l(SV.bnot(SV.mem(u, d)), SV.none_in(t, d), h1))
+      LI.band_i(SV.bnot(SV.mem(u, Con{k, d})), SV.none_in(t, Con{k, d}), KB.bnot_f(SV.mem(u, Con{k, d}), LI.bor_f(SV.eq(u, k), SV.mem(u, d), hu, hd)),
+        nonein_cons(t, k, d, LI.band_r(SV.bnot(SV.mem(u, d)), SV.none_in(t, d), h1), LI.band_r(SV.lt(u, k), SV.below(t, k), h2)))
+
+def qs_eq(B: $QL, +e: E.QExpr) -> {SP.qsnoc(B, e) == EP.qsnoc(B, e) : $QL}:
+  match B:
+    case Nil{}:
+      {==}
+    case Con{+b, +t}:
+      %Equal.sym($QL, SP.qsnoc(t, e), EP.qsnoc(t, e), qs_eq(t, e)) : {Con{b, _} == Con{b, EP.qsnoc(t, e)} : $QL}
+      {==}
+
+def qs_cat(Q: $QL, +Y: $QL, +e: E.QExpr) -> {EP.qsnoc(SK.cat(Q, Y), e) == SK.cat(Q, EP.qsnoc(Y, e)) : $QL}:
+  match Q:
+    case Nil{}:
+      {==}
+    case Con{+b, +t}:
+      %Equal.sym($QL, EP.qsnoc(SK.cat(t, Y), e), SK.cat(t, EP.qsnoc(Y, e)), qs_cat(t, Y, e)) : {Con{b, _} == Con{b, SK.cat(t, EP.qsnoc(Y, e))} : $QL}
+      {==}
+
+def picked_snoc(+es: $QL, bp: $NL, +k: Nat) -> {SV.picked(es, CO.lsnoc(bp, k)) == EP.qsnoc(SV.picked(es, bp), SV.eqat(es, k)) : $QL}:
+  match bp:
+    case Nil{}:
+      {==}
+    case Con{+b, +t}:
+      %Equal.sym($QL, SV.picked(es, CO.lsnoc(t, k)), EP.qsnoc(SV.picked(es, t), SV.eqat(es, k)), picked_snoc(es, t, k)) : {Con{SV.eqat(es, b), _} == Con{SV.eqat(es, b), EP.qsnoc(SV.picked(es, t), SV.eqat(es, k))} : $QL}
+      {==}
+
+def cat_lsnoc(X: $NL, +us: $NL, +k: Nat) -> {CO.lsnoc(SV.cat(X, us), k) == SV.cat(X, CO.lsnoc(us, k)) : $NL}:
+  match X:
+    case Nil{}:
+      {==}
+    case Con{+b, +t}:
+      %Equal.sym($NL, CO.lsnoc(SV.cat(t, us), k), SV.cat(t, CO.lsnoc(us, k)), cat_lsnoc(t, us, k)) : {Con{b, _} == Con{b, SV.cat(t, CO.lsnoc(us, k))} : $NL}
+      {==}
+
+def catcons_snoc(X: $NL, +k: Nat, +Y: $NL) -> {SV.cat(X, Con{k, Y}) == SV.cat(CO.lsnoc(X, k), Y) : $NL}:
+  match X:
+    case Nil{}:
+      {==}
+    case Con{+b, +t}:
+      %Equal.sym($NL, SV.cat(t, Con{k, Y}), SV.cat(CO.lsnoc(t, k), Y), catcons_snoc(t, k, Y)) : {Con{b, _} == Con{b, SV.cat(CO.lsnoc(t, k), Y)} : $NL}
+      {==}
+
+def rlen_rsnoc(rows: List<&2, EL.Row>, +x: EL.Row) -> {EL.rlen(EL.rsnoc(rows, x)) == 1n+EL.rlen(rows) : Nat}:
+  match rows:
+    case Nil{}:
+      {==}
+    case Con{h, +t}:
+      %rlen_rsnoc(t, x) : {1n+EL.rlen(EL.rsnoc(t, x)) == 1n+_ : Nat}
+      {==}
+
+def neqs_qsnoc(B: $QL, +e: E.QExpr) -> {SV.neqs(EP.qsnoc(B, e)) == 1n+SV.neqs(B) : Nat}:
+  match B:
+    case Nil{}:
+      {==}
+    case Con{b, +t}:
+      %neqs_qsnoc(t, e) : {1n+SV.neqs(EP.qsnoc(t, e)) == 1n+_ : Nat}
+      {==}
+
+def geall_snoc(X: $NL, +k: Nat, +h: {OW.geall(X, 1n+k) == True{} : Bool}) -> {OW.geall(CO.lsnoc(X, k), k) == True{} : Bool}:
+  match X:
+    case Nil{}:
+      OW.ge_con(k, k, Nil{}, KB.lt_irr(k), {==})
+    case Con{+x, +t}:
+      OW.ge_con(x, k, CO.lsnoc(t, k), KB.nlt_down(x, k, OW.ge_head(x, 1n+k, t, h)), geall_snoc(t, k, OW.ge_tail(x, 1n+k, t, h)))
+
+# k is in neither X (at k + 1 or later) nor d (below k)
+def mem_notk(+X: $NL, +d: $NL, +k: Nat, hX: {OW.geall(X, 1n+k) == True{} : Bool}, hd: {SV.below(d, k) == True{} : Bool}) -> {SV.mem(k, SV.cat(X, d)) == False{} : Bool}:
+  Equal.trans(Bool, SV.mem(k, SV.cat(X, d)), SV.bor(SV.mem(k, X), SV.mem(k, d)), False{}, SP.mem_cat(k, X, d),
+    LI.bor_f(SV.mem(k, X), SV.mem(k, d), SP.ge_notmem(X, 1n+k, k, hX, KB.lt_succ(k)), KB.below_notmem(d, k, hd)))
+
+def mem_kin(+X: $NL, +d: $NL, +k: Nat) -> {SV.mem(k, SV.cat(X, Con{k, d})) == True{} : Bool}:
+  Equal.trans(Bool, SV.mem(k, SV.cat(X, Con{k, d})), SV.bor(SV.mem(k, X), SV.mem(k, Con{k, d})), True{}, SP.mem_cat(k, X, Con{k, d}),
+    LI.bor_r(SV.mem(k, X), SV.mem(k, Con{k, d}), LI.mem_hd(k, d)))
+
+# The walk's state
+# ----------------
+
+def cw.rows(w: PA.CW) -> List<&2, EL.Row>:
+  match w:
+    case PA.CW{rows, B, bp, ds, us}:
+      rows
+
+def cw.B(w: PA.CW) -> $QL:
+  match w:
+    case PA.CW{rows, B, bp, ds, us}:
+      B
+
+def cw.bp(w: PA.CW) -> $NL:
+  match w:
+    case PA.CW{rows, B, bp, ds, us}:
+      bp
+
+def cw.ds(w: PA.CW) -> List<&2, SV.Drop>:
+  match w:
+    case PA.CW{rows, B, bp, ds, us}:
+      ds
+
+@CONJ cwb
+params: +sk: SK.Sketch, +c: Nat, +k: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +ds: List<&2, SV.Drop>, +us: List<&2, Nat>
+- rinv: EP.rinv(B, rows, 0n)
+- dbelow: SV.below(SV.drops(ds), k)
+- ddist: SV.distinct(SV.drops(ds))
+- down: allo(SV.owners(sk), SV.drops(ds), c)
+- udisj: SV.none_in(us, SV.drops(ds))
+- udist: SV.distinct(us)
+- ubelow: SV.below(us, k)
+- uown: allo(SV.owners(sk), us, c)
+@END
+
+# at position k: B is P followed by c's own before k not dropped, its
+# rows' basis, and the equations at bp = bp0 ++ us
+def cw.us(w: PA.CW) -> $NL:
+  match w:
+    case PA.CW{rows, B, bp, ds, us}:
+      us
+
+def CWInv($CWP, +k: Nat, +st: PA.CW) -> Data:
+  SK.Both({cwb(sk, c, k, cw.rows(st), cw.B(st), cw.ds(st), cw.us(st)) == True{} : Bool}, SK.Both({EL.rlen(cw.rows(st)) == SV.neqs(cw.B(st)) : Nat}, SK.Both({cw.B(st) == SK.cat($P, SV.own_rest(sk, c, SV.drops(cw.ds(st)), k)) : $QL},
+    SK.Both({cw.B(st) == SV.picked($ES, cw.bp(st)) : $QL}, {cw.bp(st) == SV.cat(bp0, cw.us(st)) : $NL}))))
+
+# The invariant from k to k + 1
+# -----------------------------
+
+@MACRO CWBA sk, c, k, rows, B, ds, us
+@MACRO DS SV.drops(ds)
+
+def or_skip(+sk: SK.Sketch, +c: Nat, +d: $NL, +k: Nat, +heq: {SV.eq(SV.nth($OWN, k), c) == False{} : Bool}, +hk: {SV.lt(k, $N) == True{} : Bool}) -> {SV.own_rest(sk, c, d, 1n+k) == SV.own_rest(sk, c, d, k) : $QL}:
+  Equal.trans($QL, SV.own_rest(sk, c, d, 1n+k), SP.oadd(SV.band(SV.eq(SV.nth($OWN, k), c), SV.bnot(SV.mem(k, d))), SV.own_rest(sk, c, d, k), SV.eqat($ES, k)), SV.own_rest(sk, c, d, k),
+    SP.or_step($ES, $ES, $OWN, c, d, k, 0n, {==}, KB.lt_z(k), hk),
+    (%Equal.sym(Bool, SV.eq(SV.nth($OWN, k), c), False{}, heq) : {SP.oadd(SV.band(_, SV.bnot(SV.mem(k, d))), SV.own_rest(sk, c, d, k), SV.eqat($ES, k)) == SV.own_rest(sk, c, d, k) : $QL}
+      {==}))
+
+def or_drop(+sk: SK.Sketch, +c: Nat, +d: $NL, +k: Nat, +heq: {SV.eq(SV.nth($OWN, k), c) == True{} : Bool}, +hk: {SV.lt(k, $N) == True{} : Bool}) -> {SV.own_rest(sk, c, Con{k, d}, 1n+k) == SV.own_rest(sk, c, d, k) : $QL}:
+  Equal.trans($QL, SV.own_rest(sk, c, Con{k, d}, 1n+k), SP.oadd(SV.band(SV.eq(SV.nth($OWN, k), c), SV.bnot(SV.mem(k, Con{k, d}))), SV.own_rest(sk, c, Con{k, d}, k), SV.eqat($ES, k)), SV.own_rest(sk, c, d, k),
+    SP.or_step($ES, $ES, $OWN, c, Con{k, d}, k, 0n, {==}, KB.lt_z(k), hk),
+    (%Equal.sym(Bool, SV.eq(SV.nth($OWN, k), c), True{}, heq) : {SP.oadd(SV.band(_, SV.bnot(SV.mem(k, Con{k, d}))), SV.own_rest(sk, c, Con{k, d}, k), SV.eqat($ES, k)) == SV.own_rest(sk, c, d, k) : $QL}
+      (%Equal.sym(Bool, SV.mem(k, Con{k, d}), True{}, LI.mem_hd(k, d)) : {SP.oadd(SV.band(True{}, SV.bnot(_)), SV.own_rest(sk, c, Con{k, d}, k), SV.eqat($ES, k)) == SV.own_rest(sk, c, d, k) : $QL}
+        SP.or_cat($ES, $OWN, c, [k], d, k, 0n, OW.ge_con(k, k, Nil{}, KB.lt_irr(k), {==})))))
+
+def inv_skip($CWP, +k: Nat, st: PA.CW, hi: CWInv($CWA, k, st), +heq: {SV.eq(SV.nth($OWN, k), c) == False{} : Bool}, +hk: {SV.lt(k, $N) == True{} : Bool}) -> CWInv($CWA, 1n+k, st):
+  match st:
+    case PA.CW{+rows, +B, +bp, +ds, +us}:
+      (+hb, q1) = hi
+      (hl, q2) = q1
+      (hB, q3) = q2
+      (hp, hbp) = q3
+      (cwb_mk(sk, c, 1n+k, rows, B, ds, us, cwb_rinv($CWBA, hb), KB.below_up($DS, k, cwb_dbelow($CWBA, hb)), cwb_ddist($CWBA, hb), cwb_down($CWBA, hb), cwb_udisj($CWBA, hb), cwb_udist($CWBA, hb), KB.below_up(us, k, cwb_ubelow($CWBA, hb)), cwb_uown($CWBA, hb)),
+        (hl, (Equal.trans($QL, B, SK.cat($P, SV.own_rest(sk, c, $DS, k)), SK.cat($P, SV.own_rest(sk, c, $DS, 1n+k)), hB, Equal.cong($QL, $QL, y => SK.cat($P, y), SV.own_rest(sk, c, $DS, k), SV.own_rest(sk, c, $DS, 1n+k), Equal.sym($QL, SV.own_rest(sk, c, $DS, 1n+k), SV.own_rest(sk, c, $DS, k), or_skip(sk, c, $DS, k, heq, hk)))),
+        (hp, hbp))))
+
+def inv_drop($CWP, +k: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL, +e: E.QExpr, hi: CWInv($CWA, k, PA.CW{rows, B, bp, ds, us}), +heq: {SV.eq(SV.nth($OWN, k), c) == True{} : Bool}, +hk: {SV.lt(k, $N) == True{} : Bool})
+  -> CWInv($CWA, 1n+k, PA.CW{rows, B, bp, Con{PA.drop_of(k, EL.resid(rows, e), e, B, bp), ds}, us}):
+  (+hb, q1) = hi
+  (hl, q2) = q1
+  (hB, q3) = q2
+  (hp, hbp) = q3
+  +hdb = cwb_dbelow($CWBA, hb)
+  (cwb_mk(sk, c, 1n+k, rows, B, Con{PA.drop_of(k, EL.resid(rows, e), e, B, bp), ds}, us, cwb_rinv($CWBA, hb),
+      LI.band_i(SV.lt(k, 1n+k), SV.below($DS, 1n+k), KB.lt_succ(k), KB.below_up($DS, k, hdb)),
+      LI.band_i(SV.bnot(SV.mem(k, $DS)), SV.distinct($DS), KB.bnot_f(SV.mem(k, $DS), KB.below_notmem($DS, k, hdb)), cwb_ddist($CWBA, hb)),
+      LI.band_i(SV.eq(SV.nth($OWN, k), c), allo($OWN, $DS, c), heq, cwb_down($CWBA, hb)),
+      nonein_cons(us, k, $DS, cwb_udisj($CWBA, hb), cwb_ubelow($CWBA, hb)), cwb_udist($CWBA, hb), KB.below_up(us, k, cwb_ubelow($CWBA, hb)), cwb_uown($CWBA, hb)),
+    (hl, (Equal.trans($QL, B, SK.cat($P, SV.own_rest(sk, c, $DS, k)), SK.cat($P, SV.own_rest(sk, c, Con{k, $DS}, 1n+k)), hB, Equal.cong($QL, $QL, y => SK.cat($P, y), SV.own_rest(sk, c, $DS, k), SV.own_rest(sk, c, Con{k, $DS}, 1n+k), Equal.sym($QL, SV.own_rest(sk, c, Con{k, $DS}, 1n+k), SV.own_rest(sk, c, $DS, k), or_drop(sk, c, $DS, k, heq, hk)))),
+    (hp, hbp))))
+
+@MACRO RR EL.resid(rows, e)
+@MACRO OR SV.own_rest(sk, c, $DS, k)
+
+def keep_B(+sk: SK.Sketch, +R: $NL, +D: $NL, +c: Nat, +k: Nat, +B: $QL, +d: $NL, +e: E.QExpr, hB: {B == SK.cat($P, SV.own_rest(sk, c, d, k)) : $QL}, +heq: {SV.eq(SV.nth($OWN, k), c) == True{} : Bool},
+  +hk: {SV.lt(k, $N) == True{} : Bool}, +hm: {SV.mem(k, d) == False{} : Bool}, +he: {SV.eqat($ES, k) == e : E.QExpr}) -> {EP.qsnoc(B, e) == SK.cat($P, SV.own_rest(sk, c, d, 1n+k)) : $QL}:
+  %Equal.sym($QL, SV.own_rest(sk, c, d, 1n+k), SP.oadd(SV.band(SV.eq(SV.nth($OWN, k), c), SV.bnot(SV.mem(k, d))), SV.own_rest(sk, c, d, k), SV.eqat($ES, k)), SP.or_step($ES, $ES, $OWN, c, d, k, 0n, {==}, KB.lt_z(k), hk)) : {EP.qsnoc(B, e) == SK.cat($P, _) : $QL}
+  %Equal.sym(Bool, SV.eq(SV.nth($OWN, k), c), True{}, heq) : {EP.qsnoc(B, e) == SK.cat($P, SP.oadd(SV.band(_, SV.bnot(SV.mem(k, d))), SV.own_rest(sk, c, d, k), SV.eqat($ES, k))) : $QL}
+  %Equal.sym(Bool, SV.mem(k, d), False{}, hm) : {EP.qsnoc(B, e) == SK.cat($P, SP.oadd(SV.band(True{}, SV.bnot(_)), SV.own_rest(sk, c, d, k), SV.eqat($ES, k))) : $QL}
+  %Equal.sym(E.QExpr, SV.eqat($ES, k), e, he) : {EP.qsnoc(B, e) == SK.cat($P, SP.qsnoc(SV.own_rest(sk, c, d, k), _)) : $QL}
+  %Equal.sym($QL, SP.qsnoc(SV.own_rest(sk, c, d, k), e), EP.qsnoc(SV.own_rest(sk, c, d, k), e), qs_eq(SV.own_rest(sk, c, d, k), e)) : {EP.qsnoc(B, e) == SK.cat($P, _) : $QL}
+  %qs_cat($P, SV.own_rest(sk, c, d, k), e) : {EP.qsnoc(B, e) == _ : $QL}
+  %Equal.sym($QL, B, SK.cat($P, SV.own_rest(sk, c, d, k)), hB) : {EP.qsnoc(_, e) == EP.qsnoc(SK.cat($P, SV.own_rest(sk, c, d, k)), e) : $QL}
+  {==}
+
+def inv_keep($CWP, +k: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL, +e: E.QExpr, hi: CWInv($CWA, k, PA.CW{rows, B, bp, ds, us}), +heq: {SV.eq(SV.nth($OWN, k), c) == True{} : Bool}, +hk: {SV.lt(k, $N) == True{} : Bool},
+  +hne: {EP.isnil(EP.resp($RR)) == False{} : Bool}, +he: {SV.eqat($ES, k) == e : E.QExpr})
+  -> CWInv($CWA, 1n+k, PA.CW{EL.rsnoc(rows, EL.row_of($RR)), EP.qsnoc(B, e), CO.lsnoc(bp, k), ds, CO.lsnoc(us, k)}):
+  (+hb, q1) = hi
+  (+hl, q2) = q1
+  (hB, q3) = q2
+  (hp, hbp) = q3
+  +hdb = cwb_dbelow($CWBA, hb)
+  +hub = cwb_ubelow($CWBA, hb)
+  (cwb_mk(sk, c, 1n+k, EL.rsnoc(rows, EL.row_of($RR)), EP.qsnoc(B, e), ds, CO.lsnoc(us, k), EP.new_rinv(B, rows, e, cwb_rinv($CWBA, hb), hl, hne),
+      KB.below_up($DS, k, hdb), cwb_ddist($CWBA, hb), cwb_down($CWBA, hb),
+      KB.nonein_snoc(us, k, $DS, cwb_udisj($CWBA, hb), KB.below_notmem($DS, k, hdb)),
+      KB.dist_snoc(us, k, cwb_udist($CWBA, hb), KB.below_notmem(us, k, hub)),
+      KB.below_snoc(us, k, 1n+k, KB.below_up(us, k, hub), KB.lt_succ(k)),
+      allo_snoc($OWN, us, k, c, cwb_uown($CWBA, hb), heq)),
+    (Equal.trans(Nat, EL.rlen(EL.rsnoc(rows, EL.row_of($RR))), 1n+EL.rlen(rows), SV.neqs(EP.qsnoc(B, e)), rlen_rsnoc(rows, EL.row_of($RR)),
+       Equal.trans(Nat, 1n+EL.rlen(rows), 1n+SV.neqs(B), SV.neqs(EP.qsnoc(B, e)), Equal.cong(Nat, Nat, x => 1n+x, EL.rlen(rows), SV.neqs(B), hl), Equal.sym(Nat, SV.neqs(EP.qsnoc(B, e)), 1n+SV.neqs(B), neqs_qsnoc(B, e)))),
+    (keep_B(sk, R, D, c, k, B, $DS, e, hB, heq, hk, KB.below_notmem($DS, k, hdb), he),
+    ((%Equal.sym($QL, SV.picked($ES, CO.lsnoc(bp, k)), EP.qsnoc(SV.picked($ES, bp), SV.eqat($ES, k)), picked_snoc($ES, bp, k)) : {EP.qsnoc(B, e) == _ : $QL}
+        (%Equal.sym(E.QExpr, SV.eqat($ES, k), e, he) : {EP.qsnoc(B, e) == EP.qsnoc(SV.picked($ES, bp), _) : $QL}
+          (%hp : {EP.qsnoc(B, e) == EP.qsnoc(_, e) : $QL}
+            {==}))),
+      (%Equal.sym($NL, bp, SV.cat(bp0, us), hbp) : {CO.lsnoc(_, k) == SV.cat(bp0, CO.lsnoc(us, k)) : $NL}
+        cat_lsnoc(bp0, us, k))))))
+
+# The walk
+# --------
+# From position k with state st, ending in fin: fin's drops are some X at k
+# or later followed by st's; DropsOk's facts from k on hold for fin's drops;
+# and fin satisfies the invariant at the end.
+
+@MACRO DF SV.drops(cw.ds(fin))
+@MACRO STQ PA.CW{rows, B, bp, ds, us}
+
+# fin's drops: some X at k or later, then d
+def XRel(+dF: $NL, +d: $NL, +k: Nat) -> Data:
+  Sigma<&2, &2, $NL, X => SK.Both({dF == SV.cat(X, d) : $NL}, {OW.geall(X, k) == True{} : Bool})>
+
+def CWRes($CWP, +k: Nat, own_k: $NL, +st: PA.CW, +fin: PA.CW) -> Type:
+  XRel($DF, SV.drops(cw.ds(st)), k) & (SV.drops_ok.go(sk, R, D, c, $DF, own_k, k) & CWInv($CWA, $N, fin))
+
+def xr_up(+k: Nat, +dF: $NL, +d: $NL, xr: XRel(dF, d, 1n+k)) -> XRel(dF, d, k):
+  (+X, xq) = xr
+  (hX, hg) = xq
+  (X, (hX, OW.geall_up(X, k, hg)))
+
+def xr_drop(+k: Nat, +dF: $NL, +d: $NL, xr: XRel(dF, Con{k, d}, 1n+k)) -> XRel(dF, d, k):
+  (+X, xq) = xr
+  (hX, hg) = xq
+  (CO.lsnoc(X, k), (Equal.trans($NL, dF, SV.cat(X, Con{k, d}), SV.cat(CO.lsnoc(X, k), d), hX, catcons_snoc(X, k, d)), geall_snoc(X, k, hg)))
+
+def mem_x_f(+k: Nat, +dF: $NL, +d: $NL, xr: XRel(dF, d, 1n+k), hd: {SV.below(d, k) == True{} : Bool}) -> {SV.mem(k, dF) == False{} : Bool}:
+  (+X, xq) = xr
+  (hX, hg) = xq
+  (%Equal.sym($NL, dF, SV.cat(X, d), hX) : {SV.mem(k, _) == False{} : Bool}
+    mem_notk(X, d, k, hg, hd))
+
+def mem_x_t(+k: Nat, +dF: $NL, +d: $NL, xr: XRel(dF, Con{k, d}, 1n+k)) -> {SV.mem(k, dF) == True{} : Bool}:
+  (+X, xq) = xr
+  (hX, hg) = xq
+  (%Equal.sym($NL, dF, SV.cat(X, Con{k, d}), hX) : {SV.mem(k, _) == True{} : Bool}
+    mem_kin(X, d, k))
+
+def or_x(+sk: SK.Sketch, +c: Nat, +k: Nat, +dF: $NL, +d: $NL, xr: XRel(dF, d, k)) -> {SV.own_rest(sk, c, dF, k) == SV.own_rest(sk, c, d, k) : $QL}:
+  (+X, xq) = xr
+  (hX, hg) = xq
+  (%Equal.sym($NL, dF, SV.cat(X, d), hX) : {SV.own_rest(sk, c, _, k) == SV.own_rest(sk, c, d, k) : $QL}
+    SP.or_cat($ES, $OWN, c, X, d, k, 0n, hg))
+
+def res_skip($CWP, +k: Nat, +o: Nat, +ot: $NL, st: PA.CW, +fin: PA.CW, +heo: {SV.eq(o, c) == False{} : Bool}, hi: CWInv($CWA, k, st), r: CWRes($CWA, 1n+k, ot, st, fin))
+  -> CWRes($CWA, k, Con{o, ot}, st, fin):
+  match st:
+    case PA.CW{+rows, +B, +bp, +ds, +us}:
+      (+hb, hq1) = hi
+      (+xr, q) = r
+      (dr, fr) = q
+      (xr_up(k, $DF, $DS, xr), (((%Equal.sym(Bool, SV.eq(o, c), False{}, heo) : SV.drops_ok.at(sk, R, D, c, $DF, _, k)
+          mem_x_f(k, $DF, $DS, xr, cwb_dbelow($CWBA, hb))), dr), fr))
+
+def res_drop($CWP, +k: Nat, +o: Nat, +ot: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL, +e: E.QExpr, +fin: PA.CW, +heo: {SV.eq(o, c) == True{} : Bool},
+  +he: {SV.eqat($ES, k) == e : E.QExpr}, +hnil: {EP.isnil(EP.resp($RR)) == True{} : Bool}, hi: CWInv($CWA, k, $STQ),
+  r: CWRes($CWA, 1n+k, ot, PA.CW{rows, B, bp, Con{PA.drop_of(k, $RR, e, B, bp), ds}, us}, fin)) -> CWRes($CWA, k, Con{o, ot}, $STQ, fin):
+  (+hb, q1) = hi
+  (hl, q2) = q1
+  (+hB, q3) = q2
+  (+xr, q) = r
+  (dr, fr) = q
+  +xr2 = xr_drop(k, $DF, $DS, xr)
+  +LS = DR.dropls(DR.rescb($RR), DR.resbt($RR), e, B)
+  (xr2, (((%Equal.sym(Bool, SV.eq(o, c), True{}, heo) : SV.drops_ok.at(sk, R, D, c, $DF, _, k)
+      (%Equal.sym(Bool, SV.mem(k, $DF), True{}, mem_x_t(k, $DF, $DS, xr)) : SV.drops_ok.mem(sk, R, D, c, $DF, _, k)
+        (LS, (%Equal.sym(E.QExpr, SV.eqat($ES, k), e, he) : SV.Ident(_, SV.lin(LS, SK.cat($P, SV.own_rest(sk, c, $DF, k))))
+          (%Equal.sym($QL, SV.own_rest(sk, c, $DF, k), $OR, or_x(sk, c, k, $DF, $DS, xr2)) : SV.Ident(e, SV.lin(LS, SK.cat($P, _)))
+            (%hB : SV.Ident(e, SV.lin(LS, _))
+              DR.derivable(B, rows, e, cwb_rinv($CWBA, hb), hnil))))))), dr), fr))
+
+def res_keep($CWP, +k: Nat, +o: Nat, +ot: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL, +e: E.QExpr, +fin: PA.CW, +heo: {SV.eq(o, c) == True{} : Bool},
+  +he: {SV.eqat($ES, k) == e : E.QExpr}, +hne: {EP.isnil(EP.resp($RR)) == False{} : Bool}, hi: CWInv($CWA, k, $STQ),
+  r: CWRes($CWA, 1n+k, ot, PA.CW{EL.rsnoc(rows, EL.row_of($RR)), EP.qsnoc(B, e), CO.lsnoc(bp, k), ds, CO.lsnoc(us, k)}, fin)) -> CWRes($CWA, k, Con{o, ot}, $STQ, fin):
+  (+hb, q1) = hi
+  (+hl, q2) = q1
+  (+hB, q3) = q2
+  (+xr, q) = r
+  (dr, fr) = q
+  +xr1 = xr_up(k, $DF, $DS, xr)
+  (xr1, (((%Equal.sym(Bool, SV.eq(o, c), True{}, heo) : SV.drops_ok.at(sk, R, D, c, $DF, _, k)
+      (%Equal.sym(Bool, SV.mem(k, $DF), False{}, mem_x_f(k, $DF, $DS, xr, cwb_dbelow($CWBA, hb))) : SV.drops_ok.mem(sk, R, D, c, $DF, _, k)
+        (%Equal.sym(E.QExpr, SV.eqat($ES, k), e, he) : (@ls: List<&2, S.Q> -> SV.Ident(_, SV.lin(ls, SK.cat($P, SV.own_rest(sk, c, $DF, k)))) -> Empty)
+          (%Equal.sym($QL, SV.own_rest(sk, c, $DF, k), $OR, or_x(sk, c, k, $DF, $DS, xr1)) : (@ls: List<&2, S.Q> -> SV.Ident(e, SV.lin(ls, SK.cat($P, _))) -> Empty)
+            (%hB : (@ls: List<&2, S.Q> -> SV.Ident(e, SV.lin(ls, _)) -> Empty)
+              IN.indep(B, rows, e, cwb_rinv($CWBA, hb), hl, hne)))))), dr), fr))
+
+@MACRO HEO Equal.trans(Bool, SV.eq(o, c), SV.eq(SV.nth($OWN, k), c), True{}, Equal.cong(Nat, Bool, x => SV.eq(x, c), o, SV.nth($OWN, k), Equal.sym(Nat, SV.nth($OWN, k), o, OW.nth_of($OWN, k, o, ot, ho))), heq)
+@MACRO IH ih: @st2: PA.CW -> CWInv($CWA, 1n+k, st2) -> CWRes($CWA, 1n+k, ot, st2, PA.cwalk(t, $OWN, c, 1n+k, st2))
+
+def cw_ok.k(b: Bool, +e: E.QExpr, +t: $QL, +o: Nat, +ot: $NL, $CWP, +k: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL,
+  +eb: {EP.isnil(EP.resp($RR)) == b : Bool}, +heq: {SV.eq(SV.nth($OWN, k), c) == True{} : Bool}, +hq: {OW.qdrop(k, $ES) == Con{e, t} : $QL}, +ho: {OW.ndrop(k, $OWN) == Con{o, ot} : $NL},
+  +hlt: {SV.lt(k, $N) == True{} : Bool}, +hi: CWInv($CWA, k, $STQ), $IH)
+  -> CWRes($CWA, k, Con{o, ot}, $STQ, PA.cwalk(t, $OWN, c, 1n+k, PA.cw.pick(EP.isnil(EP.resp($RR)), k, e, $RR, rows, B, bp, ds, us))):
+  match b:
+    case True{}:
+      %Equal.sym(Bool, EP.isnil(EP.resp($RR)), True{}, eb) : CWRes($CWA, k, Con{o, ot}, $STQ, PA.cwalk(t, $OWN, c, 1n+k, PA.cw.pick(_, k, e, $RR, rows, B, bp, ds, us)))
+      res_drop($CWA, k, o, ot, rows, B, bp, ds, us, e, PA.cwalk(t, $OWN, c, 1n+k, PA.CW{rows, B, bp, Con{PA.drop_of(k, $RR, e, B, bp), ds}, us}), $HEO, OW.eqat_of($ES, k, e, t, hq), eb, hi,
+        ih(PA.CW{rows, B, bp, Con{PA.drop_of(k, $RR, e, B, bp), ds}, us}, inv_drop($CWA, k, rows, B, bp, ds, us, e, hi, heq, hlt)))
+    case False{}:
+      %Equal.sym(Bool, EP.isnil(EP.resp($RR)), False{}, eb) : CWRes($CWA, k, Con{o, ot}, $STQ, PA.cwalk(t, $OWN, c, 1n+k, PA.cw.pick(_, k, e, $RR, rows, B, bp, ds, us)))
+      res_keep($CWA, k, o, ot, rows, B, bp, ds, us, e, PA.cwalk(t, $OWN, c, 1n+k, PA.CW{EL.rsnoc(rows, EL.row_of($RR)), EP.qsnoc(B, e), CO.lsnoc(bp, k), ds, CO.lsnoc(us, k)}), $HEO, OW.eqat_of($ES, k, e, t, hq), eb, hi,
+        ih(PA.CW{EL.rsnoc(rows, EL.row_of($RR)), EP.qsnoc(B, e), CO.lsnoc(bp, k), ds, CO.lsnoc(us, k)}, inv_keep($CWA, k, rows, B, bp, ds, us, e, hi, heq, hlt, eb, OW.eqat_of($ES, k, e, t, hq))))
+
+def cw_ok.s(st: PA.CW, +e: E.QExpr, +t: $QL, +o: Nat, +ot: $NL, $CWP, +k: Nat, +heq: {SV.eq(SV.nth($OWN, k), c) == True{} : Bool}, +hq: {OW.qdrop(k, $ES) == Con{e, t} : $QL}, +ho: {OW.ndrop(k, $OWN) == Con{o, ot} : $NL},
+  +hlt: {SV.lt(k, $N) == True{} : Bool}, hi: CWInv($CWA, k, st), $IH) -> CWRes($CWA, k, Con{o, ot}, st, PA.cwalk(t, $OWN, c, 1n+k, PA.cw.res(k, e, st))):
+  match st:
+    case PA.CW{+rows, +B, +bp, +ds, +us}:
+      cw_ok.k(EP.isnil(EP.resp($RR)), e, t, o, ot, $CWA, k, rows, B, bp, ds, us, {==}, heq, hq, ho, hlt, hi, ih)
+
+def cw_ok.o(b: Bool, +e: E.QExpr, +t: $QL, +o: Nat, +ot: $NL, $CWP, +k: Nat, +st: PA.CW, +eb: {SV.eq(SV.nth($OWN, k), c) == b : Bool}, +hq: {OW.qdrop(k, $ES) == Con{e, t} : $QL}, +ho: {OW.ndrop(k, $OWN) == Con{o, ot} : $NL},
+  +hlt: {SV.lt(k, $N) == True{} : Bool}, +hi: CWInv($CWA, k, st), $IH) -> CWRes($CWA, k, Con{o, ot}, st, PA.cwalk(Con{e, t}, $OWN, c, k, st)):
+  match b:
+    case True{}:
+      %Equal.sym(Bool, SV.eq(SV.nth($OWN, k), c), True{}, eb) : CWRes($CWA, k, Con{o, ot}, st, PA.cwalk(t, $OWN, c, 1n+k, PA.cw.at(_, k, e, st)))
+      cw_ok.s(st, e, t, o, ot, $CWA, k, eb, hq, ho, hlt, hi, ih)
+    case False{}:
+      %Equal.sym(Bool, SV.eq(SV.nth($OWN, k), c), False{}, eb) : CWRes($CWA, k, Con{o, ot}, st, PA.cwalk(t, $OWN, c, 1n+k, PA.cw.at(_, k, e, st)))
+      res_skip($CWA, k, o, ot, st, PA.cwalk(t, $OWN, c, 1n+k, st), (%OW.nth_of($OWN, k, o, ot, ho) : {SV.eq(_, c) == False{} : Bool}
+        eb), hi, ih(st, inv_skip($CWA, k, st, hi, eb, hlt)))
+
+def len_nc(+o: Nat, +ot: $NL, h: {SV.len(Con{o, ot}) == SV.neqs(Nil{}) : Nat}) -> Empty:
+  OW.zs(SV.len(ot), Equal.sym(Nat, 1n+SV.len(ot), 0n, h))
+
+def len_cn(+e: E.QExpr, +t: $QL, h: {SV.len(Nil{}) == SV.neqs(Con{e, t}) : Nat}) -> Empty:
+  OW.zs(SV.neqs(t), h)
+
+# the walk from position k
+def cw_ok(es: $QL, own_k: $NL, $CWP, +k: Nat, +st: PA.CW, +hq: {OW.qdrop(k, $ES) == es : $QL}, +ho: {OW.ndrop(k, $OWN) == own_k : $NL}, +hl: {SV.len(own_k) == SV.neqs(es) : Nat},
+  +hk: {Nat.add(k, SV.neqs(es)) == $N : Nat}, +hi: CWInv($CWA, k, st)) -> CWRes($CWA, k, own_k, st, PA.cwalk(es, $OWN, c, k, st)):
+  match es own_k:
+    case Nil{} Nil{}:
+      ((Nil{}, ({==}, {==})), (Unit{}, (%Equal.trans(Nat, k, Nat.add(k, 0n), $N, LN.add_zero(k), hk) : CWInv($CWA, _, st)
+        hi)))
+    case Nil{} Con{+o, +ot}:
+      absurd(CWRes($CWA, k, Con{o, ot}, st, st), len_nc(o, ot, hl))
+    case Con{+e, +t} Nil{}:
+      absurd(CWRes($CWA, k, Nil{}, st, PA.cwalk(Con{e, t}, $OWN, c, k, st)), len_cn(e, t, hl))
+    case Con{+e, +t} Con{+o, +ot}:
+      cw_ok.o(SV.eq(SV.nth($OWN, k), c), e, t, o, ot, $CWA, k, st, {==}, hq, ho, SP.lt_qdrop($ES, k, e, t, hq), hi,
+        st2 => h2 => cw_ok(t, ot, $CWA, 1n+k, st2, OW.qdrop_step(k, $ES, e, t, hq), OW.ndrop_step(k, $OWN, o, ot, ho), LN.succ_inj(SV.len(ot), SV.neqs(t), hl),
+          Equal.trans(Nat, 1n+Nat.add(k, SV.neqs(t)), Nat.add(k, 1n+SV.neqs(t)), $N, LN.add_succ(k, SV.neqs(t)), hk), h2))
+
+# From the pass's state
+# ---------------------
+
+def inv_b($CWP, +k: Nat, +st: PA.CW, hi: CWInv($CWA, k, st)) -> {cwb(sk, c, k, cw.rows(st), cw.B(st), cw.ds(st), cw.us(st)) == True{} : Bool}:
+  (h, q) = hi
+  h
+
+def own_rest_zero(+sk: SK.Sketch, +c: Nat, +d: $NL) -> {SV.own_rest(sk, c, d, 0n) == Nil{} : $QL}:
+  SP.or_nil($ES, $OWN, c, d, 0n, 0n, {==})
+
+def qcat_nil(xs: $QL) -> {xs == SK.cat(xs, Nil{}) : $QL}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+h, +t}:
+      %qcat_nil(t) : {Con{h, t} == Con{h, _} : $QL}
+      {==}
+
+def ncat_nil(xs: $NL) -> {xs == SV.cat(xs, Nil{}) : $NL}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+h, +t}:
+      %ncat_nil(t) : {Con{h, t} == Con{h, _} : $NL}
+      {==}
+
+# the walk starts with the solved equations before c, their rows and
+# positions, and nothing dropped or added
+def cw_start(+sk: SK.Sketch, +R: $NL, +D: $NL, +c: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, hl: {EL.rlen(rows) == SV.neqs(B) : Nat},
+  hB: {B == $P : $QL}, hp: {B == SV.picked($ES, bp) : $QL}) -> CWInv(sk, R, D, c, bp, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}):
+  (cwb_mk(sk, c, 0n, rows, B, Nil{}, Nil{}, hr, {==}, {==}, {==}, {==}, {==}, {==}, {==}),
+    (hl, ((%Equal.sym($QL, SV.own_rest(sk, c, Nil{}, 0n), Nil{}, own_rest_zero(sk, c, Nil{})) : {B == SK.cat($P, _) : $QL}
+      (%qcat_nil($P) : {B == _ : $QL}
+        hB)), (hp, ncat_nil(bp)))))
+
+@MACRO FIN PA.cwalk($ES, $OWN, c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}})
+
+def drops_ok_of(+sk: SK.Sketch, +R: $NL, +D: $NL, +c: Nat, +d: $NL, h1: {SV.distinct(d) == True{} : Bool}, h2: {SV.below(d, $N) == True{} : Bool}, dr: SV.drops_ok.go(sk, R, D, c, d, $OWN, 0n)) -> SV.DropsOk(sk, R, D, c, d):
+  (LI.band_i(SV.distinct(d), SV.below(d, $N), h1, h2), dr)
+
+def cw_final.r2(+sk: SK.Sketch, +R: $NL, +D: $NL, +c: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, dr: SV.drops_ok.go(sk, R, D, c, SV.drops(cw.ds($FIN)), $OWN, 0n), +fr: CWInv(sk, R, D, c, bp, $N, $FIN))
+  -> (SV.DropsOk(sk, R, D, c, SV.drops(cw.ds($FIN))) & CWInv(sk, R, D, c, bp, $N, $FIN)):
+  +hb = inv_b(sk, R, D, c, bp, $N, $FIN, fr)
+  (drops_ok_of(sk, R, D, c, SV.drops(cw.ds($FIN)), cwb_ddist(sk, c, $N, cw.rows($FIN), cw.B($FIN), cw.ds($FIN), cw.us($FIN), hb), cwb_dbelow(sk, c, $N, cw.rows($FIN), cw.B($FIN), cw.ds($FIN), cw.us($FIN), hb), dr), fr)
+
+def cw_final.r(+sk: SK.Sketch, +R: $NL, +D: $NL, +c: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, r: CWRes(sk, R, D, c, bp, 0n, $OWN, PA.CW{rows, B, bp, Nil{}, Nil{}}, $FIN))
+  -> (SV.DropsOk(sk, R, D, c, SV.drops(cw.ds($FIN))) & CWInv(sk, R, D, c, bp, $N, $FIN)):
+  (xr, q) = r
+  (dr, fr) = q
+  cw_final.r2(sk, R, D, c, rows, B, bp, dr, fr)
+
+# the walk's end: DropsOk for its drops, and the invariant at the end
+def cw_final(+sk: SK.Sketch, +R: $NL, +D: $NL, +c: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, hl: {EL.rlen(rows) == SV.neqs(B) : Nat},
+  hB: {B == $P : $QL}, hp: {B == SV.picked($ES, bp) : $QL}) -> (SV.DropsOk(sk, R, D, c, SV.drops(cw.ds($FIN))) & CWInv(sk, R, D, c, bp, $N, $FIN)):
+  cw_final.r(sk, R, D, c, rows, B, bp, cw_ok($ES, $OWN, sk, R, D, c, bp, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}, {==}, {==}, OW.len_owners(sk), {==}, cw_start(sk, R, D, c, rows, B, bp, hr, hl, hB, hp)))
