@@ -275,6 +275,64 @@ Fourier–Motzkin. As built, gated through `tests/refute_laws.bend`:
 - Check in with Danielle after S3.
 
 ### S4. The single pass
+*In progress (2026-10-20). Law 4's search half is done:* `pass_honest`,
+gated through `tests/pass_laws.bend`. Sequencing (told to Danielle): the
+pass is built and proven as its own function (`lib/pass.bend`:
+`classes`), and the solver switches to it with S5/S7, because switching
+now would break the gated `complete_now` (its proof is the sk-09 red
+stage's) and refuse every sketch with drops until S5's verdict checks the
+plan over the solved system. With the switch, `solve_honest` is one
+projection away.
+
+As built so far:
+- `lib/pass.bend` (the code): each driving constraint in order:
+  - `CO.refutable` with the kept constraints before it (the pass keeps
+    them in its own list kb) gives Conflict with the deletion filter's
+    support;
+  - else every position is walked (`cwalk`) and c's equations are
+    reduced against the basis (drops with certificates `drop_of`, h = 1);
+  - then c's kept equations are matched as a unit (`grpl`) over the
+    dependence adjacency (`dadjs`). A failed search is Over with its
+    witness;
+  - else Kept, or Amber when all its equations drop and `srefs` refutes
+    every side's negation with the premises.
+
+  On the regression sketches the repeats become amber
+  (oncircle-thrice.raw #12, #16; oncircle-pairs.raw and
+  vertical-twice.raw #23, #25), and vertical-twice is Over at #32 as
+  before. 23-260 ms each (`proto/probe_pass.bend`).
+- `lib/kbpf.bend`: kept_before grows by c exactly when c is driving and
+  not red (`kb_next`). A list grown so is the filter's candidates (`KBP`).
+- `lib/prepf.bend`: NoRefute from refute's point, reordered from the
+  filter's order to the spec's. ConflictOk. srefs gives Implied for
+  every side or a NotImplied one.
+- `lib/ownpf.bend`: owners are as long as the equations, sorted, own
+  nothing of a driven constraint, and are below ncons.
+- `lib/solvedpf.bend`: `own_rest` grows by one position. Presolved at
+  c + 1 is presolved at c then c's own not dropped (kept c, by the
+  owners' order), or the same (red or driven). Solved is presolved at
+  ncons.
+- `lib/cwpf.bend`: the walk's invariant (the basis is the spec's basis at
+  k; the final drops agree below k with those so far) gives `DropsOk`
+  and the end state (`cw_final`).
+- `lib/gmpf.bend`: the unit matching by dependence. All found: a valid
+  matching of the solved positions and us. One failed: Overdet by
+  dependence within them. A valid matching gives `Matchable`.
+- `lib/clslpf.bend`: the final lists read position by position:
+  `mem_reds` (red exactly when the class is) and `mem_dropped` (dropped
+  exactly when the owner's class drops it, given `downs`).
+- `lib/passpf.bend`: every class drops only its own (`classes_down`). The
+  pass's state against the final lists (`PInv`: kb is kept_before, B is
+  presolved, rows, positions and a valid matching of them). Each Fate by
+  its decisions, by induction along the order: `pass_honest`.
+
+**Left in S4:** law 9's Perfect. The pass's final state (to be exposed)
+gives the solved positions and their valid matching. The pins are then
+chosen by the variable side over them by dependence (a parallel copy of
+lib/maxpf's square count), and its matching is Perfect onto the free
+variables.
+
+As planned:
 - `kuhnc` extended. For each constraint: normalize, then S2, then S3
   (Conflict first), then the structural matching of its tentatively
   solved equations as a unit (`grp` takes a list; adjacency by
