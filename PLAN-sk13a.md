@@ -275,8 +275,9 @@ Fourier–Motzkin. As built, gated through `tests/refute_laws.bend`:
 - Check in with Danielle after S3.
 
 ### S4. The single pass
-*In progress (2026-10-20). Law 4's search half is done:* `pass_honest`,
-gated through `tests/pass_laws.bend`. Sequencing (told to Danielle): the
+*Done 2026-10-20 as proofs about the pass:* `pass_honest` (law 4) and
+`total_pass` (law 9's new part), gated through `tests/pass_laws.bend`;
+wiring them to `solve_l` moves to S5 with the switch. Sequencing (told to Danielle): the
 pass is built and proven as its own function (`lib/pass.bend`:
 `classes`), and the solver switches to it with S5/S7, because switching
 now would break the gated `complete_now` (its proof is the sk-09 red
@@ -326,11 +327,21 @@ As built so far:
   presolved, rows, positions and a valid matching of them). Each Fate by
   its decisions, by induction along the order: `pass_honest`.
 
-**Left in S4:** law 9's Perfect. The pass's final state (to be exposed)
-gives the solved positions and their valid matching. The pins are then
-chosen by the variable side over them by dependence (a parallel copy of
-lib/maxpf's square count), and its matching is Perfect onto the free
-variables.
+- `lib/pass.bend` also exposes the pass's final state (`final_st`) and
+  the pins: the variable side over the solved positions, by dependence
+  (`pins`). On the regression sketches the pins are today's, and on the
+  raw ones the deduplicated sketch's.
+- `lib/passpf.bend`: the invariant at the end (`final_inv`): the basis
+  is the system solved, with a valid matching of exactly its positions.
+- `lib/perfpf.bend`: lib/maxpf's count by dependence (`pins_kvd`). The
+  variable side's matching read at the solved positions is `Perfect`
+  onto the free variables (`total_pass`).
+- **Moved to S5, with the switch:** `cls_of` := `classes`, `pins_of` :=
+  `pins`, `Out` built from them. Then `solve_honest` and `solve_total` are
+  `pass_honest` and `total_pass` plus the projections and `WC.wf_mark`
+  (any red list), with `SO.nvars`/`PA.nvars` bridged (`nv_eq`). Fuse
+  `pass` and `pass_st` into one walk at runtime (pins needs the final
+  state; computing both runs the pass twice).
 
 As planned:
 - `kuhnc` extended. For each constraint: normalize, then S2, then S3
@@ -347,6 +358,11 @@ As planned:
   matching facts, with adjacency by dependence.
 
 ### S5. The verdict and soundness
+- **First, the switch (from S4):** the solver reports the pass's classes
+  and pins (`cls_of` := `classes`, `pins_of` := `pins`); the numeric
+  plan is over the system solved; `solve_honest` and `solve_total` are
+  wired from `pass_honest` and `total_pass`. `complete_now` leaves the
+  gate until S7 re-proves completeness over the system solved.
 - **`final` gains:**
   - the drop certificates (`qzero`; h = 1; rows are earlier solved
     equations);
