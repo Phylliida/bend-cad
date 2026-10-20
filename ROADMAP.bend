@@ -60,15 +60,12 @@ import ./lib/solve.bend as SO
 # solve_complete, and solve_refused, what a refusal means today.
 #
 # Proven: solve_exists, solve_unique, solve_pins (lib/solvepf.bend),
-# solve_total and solve_honest (lib/totalpf.bend), restated in
-# tests/solve_laws.bend. The classes, pins and structure are the single
-# pass's (lib/pass.bend; PLAN-sk13a S4, switched in S5), and the verdict
-# certifies the dropped equations and amber sides by their combinations
-# and refutations (lib/verdict.bend). Completeness is proven over the
-# system solved in an interim form (lib/completepf.bend: complete_now:
-# Strict with no pins, every constant of the sketch dyadic), which
-# solve_complete below refines (PLAN-sk13a S7); the rest is open
-# (PLAN-sk13a.md S5-S7).
+# solve_total and solve_honest (lib/totalpf.bend), and solve_complete
+# (lib/completepf.bend), restated in tests/solve_laws.bend. The classes,
+# pins and structure are the single pass's (lib/pass.bend; PLAN-sk13a S4,
+# switched in S5), and the verdict certifies the dropped equations and
+# amber sides by their combinations and refutations (lib/verdict.bend);
+# the rest is open (PLAN-sk13a.md S5, S6).
 
 # LAW: in a complete ordered field, the solver's box holds a geometry
 # meaning the sketch less its red constraints

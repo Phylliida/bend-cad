@@ -323,21 +323,28 @@ def held_rn(+o: Nat, +n: Nat, +pars: List<&2, Nat>, +vp: List<&2, Nat>, e: E.QEx
     case E.QNeg{+a}:
       held_rn(o, n, pars, vp, a, h)
 
-def dyget(full: List<&2, E.QExpr>, j: Nat, h: {SV.dyeqs(full) == True{} : Bool}) -> {SV.dyconst(PL.eqget(full, j)) == True{} : Bool}:
-  match full j:
-    case Nil{} j:
-      {==}
-    case Con{+e, +t} 0n:
-      L.band_l(SV.dyconst(e), SV.dyeqs(t), h)
-    case Con{+e, +t} 1n+k:
-      dyget(t, k, L.band_r(SV.dyconst(e), SV.dyeqs(t), h))
+def dyat.go(+full: List<&2, E.QExpr>, +j: Nat, +g: Nat, +t: List<&2, Nat>, b: Bool, e: {SV.eq(j, g) == b : Bool}, hm: {SV.bor(b, SV.mem(j, t)) == True{} : Bool}, hg: {SV.dyconst(PL.eqget(full, g)) == True{} : Bool}, ih: {SV.mem(j, t) == True{} : Bool} -> {SV.dyconst(PL.eqget(full, j)) == True{} : Bool}) -> {SV.dyconst(PL.eqget(full, j)) == True{} : Bool}:
+  match b:
+    case True{}:
+      %Equal.sym(Nat, j, g, L.eq_ok(j, g, e)) : {SV.dyconst(PL.eqget(full, _)) == True{} : Bool}
+      hg
+    case False{}:
+      ih(hm)
 
-def held_blk(+o: Nat, +n: Nat, +pars: List<&2, Nat>, +vp: List<&2, Nat>, +full: List<&2, E.QExpr>, +hd: {SV.dyeqs(full) == True{} : Bool}, es: List<&2, Nat>) -> {CK.allheld($DN, PL.renames(o, n, pars, PL.reorder(vp, full, es))) == True{} : Bool}:
+# the system solved has dyadic constants, so each equation in it does
+def dyat(+full: List<&2, E.QExpr>, good: List<&2, Nat>, +j: Nat, +h: {SV.dyeqs(KP.pickk(full, 0n, good)) == True{} : Bool}, hj: {SV.mem(j, good) == True{} : Bool}) -> {SV.dyconst(PL.eqget(full, j)) == True{} : Bool}:
+  match good:
+    case Nil{}:
+      absurd({SV.dyconst(PL.eqget(full, j)) == True{} : Bool}, L.mem_nil(j, hj))
+    case Con{+g, +t}:
+      dyat.go(full, j, g, t, SV.eq(j, g), {==}, hj, L.band_l(SV.dyconst(PL.eqget(full, g)), SV.dyeqs(KP.pickk(full, 0n, t)), h), hm => dyat(full, t, j, L.band_r(SV.dyconst(PL.eqget(full, g)), SV.dyeqs(KP.pickk(full, 0n, t)), h), hm))
+
+def held_blk(+o: Nat, +n: Nat, +pars: List<&2, Nat>, +vp: List<&2, Nat>, +full: List<&2, E.QExpr>, +good: List<&2, Nat>, +hd: {SV.dyeqs(KP.pickk(full, 0n, good)) == True{} : Bool}, es: List<&2, Nat>, +hes: {L.subl(es, good) == True{} : Bool}) -> {CK.allheld($DN, PL.renames(o, n, pars, PL.reorder(vp, full, es))) == True{} : Bool}:
   match es:
     case Nil{}:
       {==}
     case Con{+j, +t}:
-      KA.band_i(KB.held($DN, PL.rename(o, n, pars, PL.rnv(vp, PL.eqget(full, j)))), CK.allheld($DN, PL.renames(o, n, pars, PL.reorder(vp, full, t))), held_rn(o, n, pars, vp, PL.eqget(full, j), dyget(full, j, hd)), held_blk(o, n, pars, vp, full, hd, t))
+      KA.band_i(KB.held($DN, PL.rename(o, n, pars, PL.rnv(vp, PL.eqget(full, j)))), CK.allheld($DN, PL.renames(o, n, pars, PL.reorder(vp, full, t))), held_rn(o, n, pars, vp, PL.eqget(full, j), dyat(full, good, j, hd, L.subl_hd(j, t, good, hes))), held_blk(o, n, pars, vp, full, good, hd, t, L.subl_tl(j, t, good, hes)))
 
 # Renumbered equations stay below n + m
 # -------------------------------------
@@ -1372,9 +1379,9 @@ def hn_of($BKP) -> {CK.eqlen($EQL) == $NN : Nat}:
   %$TQE : {CK.eqlen(_) == $NN : Nat}
   Equal.sym(Nat, $NN, CK.eqlen($RBK), nq_eq(es, good, vp, full))
 
-def hh_of($BKP, +hdy: {SV.dyeqs(full) == True{} : Bool}) -> {CK.allheld($DN, $EQL) == True{} : Bool}:
+def hh_of($BKP, +hdy: {SV.dyeqs(KP.pickk(full, 0n, good)) == True{} : Bool}, +hes: {L.subl(es, good) == True{} : Bool}) -> {CK.allheld($DN, $EQL) == True{} : Bool}:
   %$TQE : {CK.allheld($DN, PL.renames(o, $NN, $PARS, _)) == True{} : Bool}
-  held_blk(o, $NN, $PARS, vp, full, hdy, es)
+  held_blk(o, $NN, $PARS, vp, full, good, hdy, es, hes)
 
 def eqb_of($BKP, +h: {PL.eqs_below(Nat.add(o, $NN), PL.takeq($NN, $SYSK)) == True{} : Bool}) -> {PL.eqs_below(Nat.add(o, $NN), $RBK) == True{} : Bool}:
   %Equal.sym(List<&2, E.QExpr>, $RBK, PL.takeq($NN, $SYSK), Equal.sym(List<&2, E.QExpr>, PL.takeq($NN, $SYSK), $RBK, tq_eq(vp, full, es, ST.alleqs(t), good))) : {PL.eqs_below(Nat.add(o, $NN), _) == True{} : Bool}
@@ -1429,7 +1436,7 @@ def hy0_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +nv: Nat, +g: List<&2, S.D>, +
 # block_sc at a block of the structure
 # ------------------------------------
 
-@MACRO OKP ~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +full: List<&2, E.QExpr>, +good: List<&2, Nat>, +vp: List<&2, Nat>, +nv: Nat, +vm: List<&2, Maybe<&2, Nat>>, +x: M.Vec(~F), +g: List<&2, S.D>, +g0: List<&2, S.D>, +pins: List<&2, Nat>, +p: Nat, +q2: Nat, +hp2: {p == 1n+(1n+q2) : Nat}, +d: @T, +hd0: O.le(~F, @0, d), +hdh: O.le(~F, d, $HH), +hdy: {SV.dyeqs(full) == True{} : Bool}, +hzg: SK.Zeros(~F, x, KP.pickk(full, 0n, good)), +hN: SV.Near($DN, ~F, ~H, nv, 0n, g, x, d, pins, g0), +hvd: {SV.distinct(vp) == True{} : Bool}, +hvl: {SV.len(vp) == nv : Nat}
+@MACRO OKP ~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +full: List<&2, E.QExpr>, +good: List<&2, Nat>, +vp: List<&2, Nat>, +nv: Nat, +vm: List<&2, Maybe<&2, Nat>>, +x: M.Vec(~F), +g: List<&2, S.D>, +g0: List<&2, S.D>, +pins: List<&2, Nat>, +p: Nat, +q2: Nat, +hp2: {p == 1n+(1n+q2) : Nat}, +d: @T, +hd0: O.le(~F, @0, d), +hdh: O.le(~F, d, $HH), +hdy: {SV.dyeqs(KP.pickk(full, 0n, good)) == True{} : Bool}, +hzg: SK.Zeros(~F, x, KP.pickk(full, 0n, good)), +hN: SV.Near($DN, ~F, ~H, nv, 0n, g, x, d, pins, g0), +hvd: {SV.distinct(vp) == True{} : Bool}, +hvl: {SV.len(vp) == nv : Nat}
 @MACRO OKA ~F, ~H, full, good, vp, nv, vm, x, g, g0, pins, p, q2, hp2, d, hd0, hdh, hdy, hzg, hN, hvd, hvl
 @MACRO VB AP.vbit(~F, Nat.div(p, 2n))
 @MACRO RHO @M($HH, tt)
@@ -1450,7 +1457,7 @@ def blk_sc($OKP, +es: List<&2, Nat>, +vs: List<&2, Nat>, +t: List<&2, ST.SB>, +k
   +hbb0 = FO.nonneg_add(~F, NP.vn(~F, x), @1, FV.vmax_nn(~F, x), FO.one_nn(~F))
   +hr0 = FO.mul_nonneg(~F, $HH, tt, NW.hnw_nn(~F, p), htt)
   +hgc = KA.natle_rw(o, o, KA.klen($DN, gc), Equal.sym(Nat, KA.klen($DN, gc), o, hlc), KA.natle_refl(o))
-  SC.block_sc(~F, ~H, $NN, $MM, $EQL, hn_of($BKA), hh_of($BKA, hdy), hbl, NU.dpick(gc, $PARS), len_pick(~F, gc, $PARS), p, $YBN, PP.zmap(~F, $PBN, $PARS), PP.len_ftake(~F, $NN, PP.fdrop(~F, o, $XV), LC.ld_le(~F, o, $NN, $XV, hX)), PP.len_zmap(~F, $PBN, $PARS),
+  SC.block_sc(~F, ~H, $NN, $MM, $EQL, hn_of($BKA), hh_of($BKA, hdy, hes), hbl, NU.dpick(gc, $PARS), len_pick(~F, gc, $PARS), p, $YBN, PP.zmap(~F, $PBN, $PARS), PP.len_ftake(~F, $NN, PP.fdrop(~F, o, $XV), LC.ld_le(~F, o, $NN, $XV, hX)), PP.len_zmap(~F, $PBN, $PARS),
     hz_of(~F, $BKA, x, hzg, hes, hr, s4, hbl, hX),
     $BB, $LAM, $MSS, $BE0, d, $RHO,
     ibd_nn(~F, $JSK, SV.len(vs), h0), lsum_nn(~F, $BB, hbb0, $EQL), msum_nn(~F, $BB, hbb0, $EQL), hd0, hr0,

@@ -11,7 +11,8 @@
 # - zeros_mark: so, when D is the classes' dropped equations and every
 #   class's combinations pass, every equation of the sketch less its red
 #   constraints is 0 there;
-# - zeros_solved: and back, the system solved is part of that system.
+# - zeros_solved: and back, the system solved is part of that system;
+# - dy_solved: and so its constants are dyadic when that system's are.
 #
 # Generated from tools/drafts/vrdpf.draft by tools/expand.py; edit the
 # draft.
@@ -248,4 +249,41 @@ def zs.go(~F: O.OField, +x: M.Vec(~F), ys: $QL, os: $NL, +own: $NL, +R: $NL, +D:
 def zeros_solved(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +R: $NL, +D: $NL, hk: SK.Zeros(~F, x, SK.Sketch.eqs(SV.mark(R, sk)))) -> SK.Zeros(~F, x, SV.solved(sk, R, D)):
   zs.go(~F, x, SK.Sketch.eqs(sk), SV.owners(sk), SV.owners(sk), R, D, 0n, {==}, KP.owners_len(sk),
     (%KP.kept_keepq(sk, R) : SK.Zeros(~F, x, _)
+      hk))
+
+# Dyadic constants
+# ----------------
+
+def dys.d(+e: E.QExpr, +t: $QL, +ot: $NL, +own: $NL, +R: $NL, +D: $NL, +k: Nat, c: Bool, +hk: {SV.dyeqs(Con{e, KP.keepq(t, ot, R)}) == True{} : Bool},
+  ih: {SV.dyeqs(KP.keepq(t, ot, R)) == True{} : Bool} -> {SV.dyeqs(SV.solved.go(t, own, R, D, 1n+k)) == True{} : Bool}) -> {SV.dyeqs(SV.solved.pick(SV.bnot(c), e, SV.solved.go(t, own, R, D, 1n+k))) == True{} : Bool}:
+  match c:
+    case True{}:
+      ih(L.band_r(SV.dyconst(e), SV.dyeqs(KP.keepq(t, ot, R)), hk))
+    case False{}:
+      L.band_i(SV.dyconst(e), SV.dyeqs(SV.solved.go(t, own, R, D, 1n+k)), L.band_l(SV.dyconst(e), SV.dyeqs(KP.keepq(t, ot, R)), hk), ih(L.band_r(SV.dyconst(e), SV.dyeqs(KP.keepq(t, ot, R)), hk)))
+
+def dys.c(+e: E.QExpr, +t: $QL, +ot: $NL, +own: $NL, +R: $NL, +D: $NL, +k: Nat, b: Bool, hk: {SV.dyeqs(KP.keepq.go(b, e, KP.keepq(t, ot, R))) == True{} : Bool},
+  ih: {SV.dyeqs(KP.keepq(t, ot, R)) == True{} : Bool} -> {SV.dyeqs(SV.solved.go(t, own, R, D, 1n+k)) == True{} : Bool}) -> {SV.dyeqs(SV.solved.pick(SV.band(SV.bnot(b), SV.bnot(SV.mem(k, D))), e, SV.solved.go(t, own, R, D, 1n+k))) == True{} : Bool}:
+  match b:
+    case True{}:
+      ih(hk)
+    case False{}:
+      dys.d(e, t, ot, own, R, D, k, SV.mem(k, D), hk, ih)
+
+def dys.go(ys: $QL, os: $NL, +own: $NL, +R: $NL, +D: $NL, +k: Nat, +ho: {OW.ndrop(k, own) == os : $NL}, +hl: {SV.len(os) == SV.neqs(ys) : Nat}, hk: {SV.dyeqs(KP.keepq(ys, os, R)) == True{} : Bool})
+  -> {SV.dyeqs(SV.solved.go(ys, own, R, D, k)) == True{} : Bool}:
+  match ys os:
+    case Nil{} os:
+      {==}
+    case Con{+e, +t} Nil{}:
+      absurd({SV.dyeqs(SV.solved.go(Con{e, t}, own, R, D, k)) == True{} : Bool}, SP.len_cn(e, t, hl))
+    case Con{+e, +t} Con{+o, +ot}:
+      %Equal.sym(Nat, SV.nth(own, k), o, OW.nth_of(own, k, o, ot, ho)) : {SV.dyeqs(SV.solved.pick(SV.band(SV.bnot(SV.mem(_, R)), SV.bnot(SV.mem(k, D))), e, SV.solved.go(t, own, R, D, 1n+k))) == True{} : Bool}
+      dys.c(e, t, ot, own, R, D, k, SV.mem(o, R), hk, hk2 => dys.go(t, ot, own, R, D, 1n+k, OW.ndrop_step(k, own, o, ot, ho), LN.succ_inj(SV.len(ot), SV.neqs(t), hl), hk2))
+
+# when the sketch less its red constraints has dyadic constants, so does
+# the system solved (whatever is dropped)
+def dy_solved(+sk: SK.Sketch, +R: $NL, +D: $NL, hk: {SV.dyeqs(SK.Sketch.eqs(SV.mark(R, sk))) == True{} : Bool}) -> {SV.dyeqs(SV.solved(sk, R, D)) == True{} : Bool}:
+  dys.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.owners(sk), R, D, 0n, {==}, KP.owners_len(sk),
+    (%KP.kept_keepq(sk, R) : {SV.dyeqs(_) == True{} : Bool}
       hk))
