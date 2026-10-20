@@ -786,3 +786,41 @@ def pass_honest(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk,
   (Equal.trans(Nat, SV.clsn($CLS), SV.clen(PA.recs(sk)), SV.ncons(sk), clsn_pass(PA.recs(sk), sk, 0n, PA.start($NV)), Equal.sym(Nat, SV.ncons(sk), SV.clen(PA.recs(sk)), ncons_recs(sk))),
     (%Equal.sym(Nat, SV.ncons(sk), SV.clen(PA.recs(sk)), ncons_recs(sk)) : SV.Honest.go(sk, $CLS, _, 0n)
       hon(PA.recs(sk), sk, 0n, PA.start($NV), {==}, {==}, hA, classes_down(sk), pinv0(sk))))
+
+# The state the pass ends with
+# ----------------------------
+
+def pinv_sr(+sk: SK.Sketch, +i: Nat, +o: PA.PO, sr: StepRes(sk, i, o)) -> PInv(sk, $RF, $DF, 1n+i, PA.PO.st(o)):
+  (f, p) = sr
+  p
+
+def pinv_add(+sk: SK.Sketch, +n: Nat, +i: Nat, +st: PA.PS, h: PInv(sk, $RF, $DF, Nat.add(n, 1n+i), st)) -> PInv(sk, $RF, $DF, Nat.add(1n+n, i), st):
+  (%Equal.sym(Nat, 1n+Nat.add(n, i), Nat.add(n, 1n+i), LN.add_succ(n, i)) : PInv(sk, $RF, $DF, _, st)
+    h)
+
+# the invariant at the end of the walk from position i
+def pass_inv(rs: List<&2, SK.Rec>, +sk: SK.Sketch, +i: Nat, +st: PA.PS, +hd: {KB.rdrop(i, PA.recs(sk)) == rs : List<&2, SK.Rec>}, +hc: {CL.cdrop(i, $CLS) == PA.pass(rs, $PARGS, i, st) : List<&2, SV.Class>},
+  +hA: {D.adjb($AD, $NV) == True{} : Bool}, +hD: {CL.downs($OWN, $CLS, 0n) == True{} : Bool}, hi: PInv(sk, $RF, $DF, i, st)) -> PInv(sk, $RF, $DF, Nat.add(SV.clen(rs), i), PA.pass_st(rs, $PARGS, i, st)):
+  match rs:
+    case Nil{}:
+      hi
+    case Con{SK.Rec{+id, True{}, +k}, +t}:
+      +hdr = drv_at(sk, i, SK.Rec{id, True{}, k}, t, hd)
+      pinv_add(sk, SV.clen(t), i, PA.pass_st(t, $PARGS, 1n+i, st),
+        pass_inv(t, sk, 1n+i, st, KB.rdrop_step(i, PA.recs(sk), SK.Rec{id, True{}, k}, t, hd), CL.cdrop_step($CLS, i, SV.Kept{Nil{}}, PA.pass(t, $PARGS, 1n+i, st), hc), hA, hD,
+          step_same(sk, i, st, hi, SP.zc_noc($OWN, i, $RF, noc_owners(sk, i, hdr)), dcond_dr(sk, $RF, i, hdr))))
+    case Con{SK.Rec{+id, False{}, +k}, +t}:
+      +hK = CL.ca_of($CLS, i, PA.PO.k($O1), PA.pass(t, $PARGS, 1n+i, PA.PO.st($O1)), hc)
+      pinv_add(sk, SV.clen(t), i, PA.pass_st(t, $PARGS, 1n+i, PA.PO.st($O1)),
+        pass_inv(t, sk, 1n+i, PA.PO.st($O1), KB.rdrop_step(i, PA.recs(sk), SK.Rec{id, False{}, k}, t, hd), CL.cdrop_step($CLS, i, PA.PO.k($O1), PA.pass(t, $PARGS, 1n+i, PA.PO.st($O1)), hc), hA, hD,
+          pinv_sr(sk, i, $O1, hon.d(st, sk, i, hi, hK, hA, driving_at(sk, i, id, k, t, hd), hD))))
+
+def adjb_of(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}) -> {D.adjb($AD, $NV) == True{} : Bool}:
+  GM.adjb_dadjs($ES, $NV, (%Equal.sym(Nat, $NV, SO.nvars(sk), nv_eq(sk)) : {D.adjb(ST.adj($ES), _) == True{} : Bool}
+    CV.cov(sk, SO.nvars(sk), cov, WC.wf_dec_ok(sk, w))))
+
+# the pass's final state: its basis is the system solved, its matching a
+# valid matching of exactly its positions
+def final_inv(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}) -> PInv(sk, $RF, $DF, SV.ncons(sk), PA.final_st(sk)):
+  (%Equal.sym(Nat, SV.ncons(sk), Nat.add(SV.clen(PA.recs(sk)), 0n), Equal.trans(Nat, SV.ncons(sk), SV.clen(PA.recs(sk)), Nat.add(SV.clen(PA.recs(sk)), 0n), ncons_recs(sk), LN.add_zero(SV.clen(PA.recs(sk))))) : PInv(sk, $RF, $DF, _, PA.final_st(sk))
+    pass_inv(PA.recs(sk), sk, 0n, PA.start($NV), {==}, {==}, adjb_of(sk, w, cov), classes_down(sk), pinv0(sk)))
