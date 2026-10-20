@@ -289,3 +289,284 @@ def pivot_ok(~F: O.OField, +len: Nat, t: SX.Tab, +i: Nat, +e: Nat, +w: M.Vec(~F)
   match t:
     case SX.Tab{+rows, +bas}:
       pivot_go_ok(~F, SX.rowat(rows, i), e, i, len, rows, bas, w, {==}, hp, hi)
+
+# Points of the system, and the invariants
+# ----------------------------------------
+# A point gives every variable a value. It is a point of the system when
+# each slack's entry is a_k . (the y entries), read by the slack's initial
+# row (zeros at the slacks, then a_k). The dictionary keeps two facts, for
+# every point:
+# - I1: reading the rows at any w gives a point of the system;
+# - I2: a point of the system satisfies every row (x_j = R_j . x).
+
+def nrows(rs: List<&2, SX.Rw>) -> Nat:
+  match rs:
+    case Nil{}:
+      0n
+    case Con{r, t}:
+      1n+nrows(t)
+
+def invg(~F: O.OField, qs: List<&2, SX.Ineq>, +m: Nat, +x: M.Vec(~F), xr: M.Vec(~F)) -> Data:
+  match qs xr:
+    case Nil{} xr:
+      Unit
+    case Con{SX.Ineq{a, b, s}, qt} Nil{}:
+      M.Both({O.zero(F) == zdot(~F, SX.cat(EL.zeros(m), a), x) : O.C(F)}, invg(~F, qt, m, x, Nil{}))
+    case Con{SX.Ineq{a, b, s}, qt} Con{y, xt}:
+      M.Both({y == zdot(~F, SX.cat(EL.zeros(m), a), x) : O.C(F)}, invg(~F, qt, m, x, xt))
+
+def InV(~F: O.OField, +lp: SX.LP, +x: M.Vec(~F)) -> Data:
+  invg(~F, SX.LP.qs(lp), SX.LP.m(lp), x, x)
+
+# u agrees with v at each of v's entries (u reads 0 past its end)
+def Agree(~F: O.OField, u: M.Vec(~F), v: M.Vec(~F)) -> Data:
+  match u v:
+    case Nil{} Nil{}:
+      Unit
+    case Nil{} Con{a, vt}:
+      M.Both({O.zero(F) == a : O.C(F)}, Agree(~F, Nil{}, vt))
+    case Con{y, ut} Nil{}:
+      Unit
+    case Con{y, ut} Con{a, vt}:
+      M.Both({y == a : O.C(F)}, Agree(~F, ut, vt))
+
+# x satisfies every row
+def RSat(~F: O.OField, +rows: List<&2, SX.Rw>, +x: M.Vec(~F)) -> Data:
+  Agree(~F, x, rmap(~F, rows, x))
+
+def I1(~F: O.OField, +lp: SX.LP, +rows: List<&2, SX.Rw>) -> Type:
+  @w: M.Vec(~F) -> InV(~F, lp, rmap(~F, rows, w))
+
+def I2(~F: O.OField, +lp: SX.LP, +rows: List<&2, SX.Rw>) -> Type:
+  @x: M.Vec(~F) -> InV(~F, lp, x) -> RSat(~F, rows, x)
+
+def ltn0(j: Nat, h: {SX.ltn(j, 0n) == True{} : Bool}) -> {False{} == True{} : Bool}:
+  match j:
+    case 0n:
+      h
+    case 1n+k:
+      h
+
+# u agrees with the rows read at x: u_j = R_j . x, for j below the rows
+def agree_at(~F: O.OField, rs: List<&2, SX.Rw>, +x: M.Vec(~F), u: M.Vec(~F), j: Nat, h: Agree(~F, u, rmap(~F, rs, x)), hj: {SX.ltn(j, nrows(rs)) == True{} : Bool}) -> {fat(~F, u, j) == rv(~F, SX.rowat(rs, j), x) : O.C(F)}:
+  match rs u j:
+    case Nil{} u j:
+      absurd({fat(~F, u, j) == rv(~F, SX.rowat(Nil{}, j), x) : O.C(F)}, KA.ft(ltn0(j, hj)))
+    case Con{r, t} Nil{} 0n:
+      (h1, h2) = h
+      h1
+    case Con{r, t} Nil{} 1n+k:
+      (h1, h2) = h
+      agree_at(~F, t, x, Nil{}, k, h2, hj)
+    case Con{r, t} Con{y, ut} 0n:
+      (h1, h2) = h
+      h1
+    case Con{r, t} Con{y, ut} 1n+k:
+      (h1, h2) = h
+      agree_at(~F, t, x, ut, k, h2, hj)
+
+# I1 survives a pivot
+def i1_pivot.at(~F: O.OField, +lp: SX.LP, +len: Nat, +t: SX.Tab, +i: Nat, +e: Nat, +w: M.Vec(~F), h1: I1(~F, lp, SX.Tab.rows(t)), hp: {SX.iszero(SX.at(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), e)) == False{} : Bool}, hi: {SX.ltn(i, len) == True{} : Bool}) -> InV(~F, lp, rmap(~F, SX.Tab.rows(SX.pivot(len, t, i, e)), w)):
+  %pivot_ok(~F, len, t, i, e, w, hp, hi) : InV(~F, lp, _)
+  h1(wsub(~F, w, e, pstep(~F, SX.Tab.rows(t), i, e, w)))
+
+def i1_pivot(~F: O.OField, +lp: SX.LP, +len: Nat, +t: SX.Tab, +i: Nat, +e: Nat, h1: I1(~F, lp, SX.Tab.rows(t)), hp: {SX.iszero(SX.at(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), e)) == False{} : Bool}, hi: {SX.ltn(i, len) == True{} : Bool}) -> I1(~F, lp, SX.Tab.rows(SX.pivot(len, t, i, e))):
+  w => i1_pivot.at(~F, lp, len, t, i, e, w, h1, hp, hi)
+
+# at a point satisfying the pivot row, the pivot's step is 0
+def tzero(~F: O.OField, +rows: List<&2, SX.Rw>, +i: Nat, +e: Nat, +x: M.Vec(~F), h: {fat(~F, x, i) == rv(~F, SX.rowat(rows, i), x) : O.C(F)}) -> {O.zero(F) == pstep(~F, rows, i, e, x) : O.C(F)}:
+  %Equal.sym(O.C(F), fat(~F, x, i), rv(~F, SX.rowat(rows, i), x), h) : {O.zero(F) == O.mul(F, O.sub(~F, zdot(~F, SX.Rw.m(SX.rowat(rows, i)), x), O.mul(F, O.ofp(~F, SX.Rw.d(SX.rowat(rows, i))), _)), O.inv(F, O.ofz(~F, SX.at(SX.Rw.m(SX.rowat(rows, i)), e)))) : O.C(F)}
+  FO.eq_of_sub(~F, O.zero(F), O.mul(F, O.sub(~F, zdot(~F, SX.Rw.m(SX.rowat(rows, i)), x), O.mul(F, O.ofp(~F, SX.Rw.d(SX.rowat(rows, i))), O.mul(F, zdot(~F, SX.Rw.m(SX.rowat(rows, i)), x), O.inv(F, O.ofp(~F, SX.Rw.d(SX.rowat(rows, i))))))), O.inv(F, O.ofz(~F, SX.at(SX.Rw.m(SX.rowat(rows, i)), e)))), FO.cert1(~F, O.sub(~F, O.zero(F), O.mul(F, O.sub(~F, zdot(~F, SX.Rw.m(SX.rowat(rows, i)), x), O.mul(F, O.ofp(~F, SX.Rw.d(SX.rowat(rows, i))), O.mul(F, zdot(~F, SX.Rw.m(SX.rowat(rows, i)), x), O.inv(F, O.ofp(~F, SX.Rw.d(SX.rowat(rows, i))))))), O.inv(F, O.ofz(~F, SX.at(SX.Rw.m(SX.rowat(rows, i)), e))))), O.mul(F, zdot(~F, SX.Rw.m(SX.rowat(rows, i)), x), O.inv(F, O.ofz(~F, SX.at(SX.Rw.m(SX.rowat(rows, i)), e)))), O.sub(~F, O.mul(F, O.ofp(~F, SX.Rw.d(SX.rowat(rows, i))), O.inv(F, O.ofp(~F, SX.Rw.d(SX.rowat(rows, i))))), O.one(F)), FR.fring_eq(~F, [zdot(~F, SX.Rw.m(SX.rowat(rows, i)), x), O.ofp(~F, SX.Rw.d(SX.rowat(rows, i))), O.inv(F, O.ofp(~F, SX.Rw.d(SX.rowat(rows, i)))), O.inv(F, O.ofz(~F, SX.at(SX.Rw.m(SX.rowat(rows, i)), e)))], E.ZSub{E.ZCst{S.Z0{}}, E.ZMul{E.ZSub{E.ZVar{0n}, E.ZMul{E.ZVar{1n}, E.ZMul{E.ZVar{0n}, E.ZVar{2n}}}}, E.ZVar{3n}}}, E.ZMul{E.ZMul{E.ZVar{0n}, E.ZVar{3n}}, E.ZSub{E.ZMul{E.ZVar{1n}, E.ZVar{2n}}, E.ZCst{S.Zpos{S.XH{}}}}}, {==}), QE.ofp_rel(~F, SX.Rw.d(SX.rowat(rows, i)))))
+
+# lowering an entry by 0 changes no row's value
+def rmap_wsub0(~F: O.OField, rs: List<&2, SX.Rw>, +x: M.Vec(~F), +e: Nat) -> {rmap(~F, rs, x) == rmap(~F, rs, wsub(~F, x, e, O.zero(F))) : M.Vec(~F)}:
+  match rs:
+    case Nil{}:
+      {==}
+    case Con{+r, +t}:
+      %rv_wsub(~F, r, x, e, O.zero(F)) : {Con{rv(~F, r, x), rmap(~F, t, x)} == Con{_, rmap(~F, t, wsub(~F, x, e, O.zero(F)))} : M.Vec(~F)}
+      %rmap_wsub0(~F, t, x, e) : {Con{rv(~F, r, x), rmap(~F, t, x)} == Con{O.sub(~F, rv(~F, r, x), O.mul(F, O.mul(F, O.ofz(~F, SX.at(SX.Rw.m(r), e)), O.inv(F, O.ofp(~F, SX.Rw.d(r)))), O.zero(F))), _} : M.Vec(~F)}
+      %FR.fring_eq(~F, [rv(~F, r, x), O.ofz(~F, SX.at(SX.Rw.m(r), e)), O.inv(F, O.ofp(~F, SX.Rw.d(r)))], E.ZVar{0n}, E.ZSub{E.ZVar{0n}, E.ZMul{E.ZMul{E.ZVar{1n}, E.ZVar{2n}}, E.ZCst{S.Z0{}}}}, {==}) : {Con{rv(~F, r, x), rmap(~F, t, x)} == Con{_, rmap(~F, t, x)} : M.Vec(~F)}
+      {==}
+
+# I2 survives a pivot
+def i2_pivot.at(~F: O.OField, +lp: SX.LP, +len: Nat, +t: SX.Tab, +i: Nat, +e: Nat, +x: M.Vec(~F), hx: InV(~F, lp, x), h2: I2(~F, lp, SX.Tab.rows(t)), hp: {SX.iszero(SX.at(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), e)) == False{} : Bool}, hi: {SX.ltn(i, len) == True{} : Bool}, hn: {SX.ltn(i, nrows(SX.Tab.rows(t))) == True{} : Bool}) -> RSat(~F, SX.Tab.rows(SX.pivot(len, t, i, e)), x):
+  +old = h2(x, hx)
+  %pivot_ok(~F, len, t, i, e, x, hp, hi) : Agree(~F, x, _)
+  %tzero(~F, SX.Tab.rows(t), i, e, x, agree_at(~F, SX.Tab.rows(t), x, x, i, old, hn)) : Agree(~F, x, rmap(~F, SX.Tab.rows(t), wsub(~F, x, e, _)))
+  %rmap_wsub0(~F, SX.Tab.rows(t), x, e) : Agree(~F, x, _)
+  old
+
+def i2_pivot(~F: O.OField, +lp: SX.LP, +len: Nat, +t: SX.Tab, +i: Nat, +e: Nat, h2: I2(~F, lp, SX.Tab.rows(t)), hp: {SX.iszero(SX.at(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), e)) == False{} : Bool}, hi: {SX.ltn(i, len) == True{} : Bool}, hn: {SX.ltn(i, nrows(SX.Tab.rows(t))) == True{} : Bool}) -> I2(~F, lp, SX.Tab.rows(SX.pivot(len, t, i, e))):
+  x => hx => i2_pivot.at(~F, lp, len, t, i, e, x, hx, h2, hp, hi, hn)
+
+# The basis
+# ---------
+
+# entry k of a Bool list (False past the end)
+def bat(bs: List<&2, Bool>, k: Nat) -> Bool:
+  match bs k:
+    case Nil{} k:
+      False{}
+    case Con{b, t} 0n:
+      b
+    case Con{b, t} 1n+j:
+      bat(t, j)
+
+def blen(bs: List<&2, Bool>) -> Nat:
+  match bs:
+    case Nil{}:
+      0n
+    case Con{b, t}:
+      1n+blen(t)
+
+# setting entry j to b: entry j is b
+def bat_setb_eq(bs: List<&2, Bool>, j: Nat, +b: Bool, h: {SX.ltn(j, blen(bs)) == True{} : Bool}) -> {bat(SX.setb(bs, j, b), j) == b : Bool}:
+  match bs j:
+    case Nil{} j:
+      absurd({bat(SX.setb(Nil{}, j, b), j) == b : Bool}, KA.ft(ltn0(j, h)))
+    case Con{x, t} 0n:
+      {==}
+    case Con{x, t} 1n+k:
+      bat_setb_eq(t, k, b, h)
+
+# and the others are unchanged
+def bat_setb_ne(bs: List<&2, Bool>, j: Nat, +b: Bool, k: Nat, h: {SX.eqn(k, j) == False{} : Bool}) -> {bat(bs, k) == bat(SX.setb(bs, j, b), k) : Bool}:
+  match bs j k:
+    case Nil{} j k:
+      {==}
+    case Con{x, t} 0n 0n:
+      absurd({bat(Con{x, t}, 0n) == bat(SX.setb(Con{x, t}, 0n, b), 0n) : Bool}, KA.tf(h))
+    case Con{x, t} 0n 1n+m:
+      {==}
+    case Con{x, t} 1n+i 0n:
+      {==}
+    case Con{x, t} 1n+i 1n+m:
+      bat_setb_ne(t, i, b, m, h)
+
+def blen_setb(bs: List<&2, Bool>, j: Nat, +b: Bool) -> {blen(bs) == blen(SX.setb(bs, j, b)) : Nat}:
+  match bs j:
+    case Nil{} j:
+      {==}
+    case Con{x, t} 0n:
+      {==}
+    case Con{+x, +t} 1n+k:
+      %blen_setb(t, k, b) : {1n+blen(t) == 1n+_ : Nat}
+      {==}
+
+# lowering entry e leaves entry k != e alone
+def fat_wsub_ne(~F: O.OField, w: M.Vec(~F), e: Nat, +t: O.C(F), k: Nat, h: {SX.eqn(k, e) == False{} : Bool}) -> {fat(~F, w, k) == fat(~F, wsub(~F, w, e, t), k) : O.C(F)}:
+  match w e k:
+    case Nil{} 0n 0n:
+      absurd({fat(~F, Nil{}, 0n) == fat(~F, wsub(~F, Nil{}, 0n, t), 0n) : O.C(F)}, KA.tf(h))
+    case Nil{} 0n 1n+m:
+      {==}
+    case Nil{} 1n+i 0n:
+      {==}
+    case Nil{} 1n+i 1n+m:
+      fat_wsub_ne(~F, Nil{}, i, t, m, h)
+    case Con{y, s} 0n 0n:
+      absurd({fat(~F, Con{y, s}, 0n) == fat(~F, wsub(~F, Con{y, s}, 0n, t), 0n) : O.C(F)}, KA.tf(h))
+    case Con{y, s} 0n 1n+m:
+      {==}
+    case Con{y, s} 1n+i 0n:
+      {==}
+    case Con{y, s} 1n+i 1n+m:
+      fat_wsub_ne(~F, s, i, t, m, h)
+
+# reading the rows at w, then entry k, is row k at w
+def fat_rmap(~F: O.OField, rs: List<&2, SX.Rw>, +w: M.Vec(~F), k: Nat) -> {rv(~F, SX.rowat(rs, k), w) == fat(~F, rmap(~F, rs, w), k) : O.C(F)}:
+  match rs k:
+    case Nil{} k:
+      FL.zero_mul(~F, O.inv(F, O.ofp(~F, S.XH{})))
+    case Con{r, t} 0n:
+      {==}
+    case Con{r, t} 1n+j:
+      fat_rmap(~F, t, w, j)
+
+# IU: each nonbasic row (below len) reads off its own entry
+def IU(~F: O.OField, +len: Nat, +t: SX.Tab) -> Type:
+  @k: Nat -> {bat(SX.Tab.bas(t), k) == False{} : Bool} -> {SX.ltn(k, len) == True{} : Bool} -> @w: M.Vec(~F) -> {rv(~F, SX.rowat(SX.Tab.rows(t), k), w) == fat(~F, w, k) : O.C(F)}
+
+def iu_piv_i.go(~F: O.OField, ri: SX.Rw, +rows: List<&2, SX.Rw>, +i: Nat, +e: Nat, +len: Nat, +w: M.Vec(~F), h: {SX.rowat(rows, i) == ri : SX.Rw}, hp: {SX.iszero(SX.at(SX.Rw.m(ri), e)) == False{} : Bool}, +hi: {SX.ltn(i, len) == True{} : Bool}) -> {rv(~F, ri, wsub(~F, w, e, tval(~F, SX.Rw.m(ri), SX.Rw.d(ri), i, SX.at(SX.Rw.m(ri), e), w))) == fat(~F, w, i) : O.C(F)}:
+  match ri:
+    case SX.Rw{+di, +mi}:
+      %Equal.sym(O.C(F), rv(~F, SX.Rw{di, mi}, wsub(~F, w, e, tval(~F, mi, di, i, SX.at(mi, e), w))), rv(~F, SX.Rw{S.XH{}, SX.unit(len, i)}, w), phi1(~F, mi, di, e, i, SX.at(mi, e), len, w, {==}, hp, hi)) : {_ == fat(~F, w, i) : O.C(F)}
+      %zdot_unit(~F, len, i, w, hi) : {O.mul(F, _, O.inv(F, O.ofp(~F, S.XH{}))) == fat(~F, w, i) : O.C(F)}
+      FO.eq_of_sub(~F, O.mul(F, fat(~F, w, i), O.inv(F, O.ofp(~F, S.XH{}))), fat(~F, w, i), FO.cert1(~F, O.sub(~F, O.mul(F, fat(~F, w, i), O.inv(F, O.ofp(~F, S.XH{}))), fat(~F, w, i)), fat(~F, w, i), O.sub(~F, O.mul(F, O.one(F), O.inv(F, O.ofp(~F, S.XH{}))), O.one(F)), FR.fring_eq(~F, [fat(~F, w, i), O.inv(F, O.ofp(~F, S.XH{}))], E.ZSub{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{0n}}, E.ZMul{E.ZVar{0n}, E.ZSub{E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{1n}}, E.ZCst{S.Zpos{S.XH{}}}}}, {==}), QE.ofp_rel(~F, S.XH{})))
+
+# the leaving variable's new row reads off its entry
+def iu_piv_i(~F: O.OField, +len: Nat, +t: SX.Tab, +i: Nat, +e: Nat, +w: M.Vec(~F), +hp: {SX.iszero(SX.at(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), e)) == False{} : Bool}, +hi: {SX.ltn(i, len) == True{} : Bool}) -> {rv(~F, SX.rowat(SX.Tab.rows(SX.pivot(len, t, i, e)), i), w) == fat(~F, w, i) : O.C(F)}:
+  %Equal.sym(O.C(F), rv(~F, SX.rowat(SX.Tab.rows(SX.pivot(len, t, i, e)), i), w), fat(~F, rmap(~F, SX.Tab.rows(SX.pivot(len, t, i, e)), w), i), fat_rmap(~F, SX.Tab.rows(SX.pivot(len, t, i, e)), w, i)) : {_ == fat(~F, w, i) : O.C(F)}
+  %pivot_ok(~F, len, t, i, e, w, hp, hi) : {fat(~F, _, i) == fat(~F, w, i) : O.C(F)}
+  %fat_rmap(~F, SX.Tab.rows(t), wsub(~F, w, e, pstep(~F, SX.Tab.rows(t), i, e, w)), i) : {_ == fat(~F, w, i) : O.C(F)}
+  iu_piv_i.go(~F, SX.rowat(SX.Tab.rows(t), i), SX.Tab.rows(t), i, e, len, w, {==}, hp, hi)
+
+# a row that stays nonbasic (k != i, k != e) still reads off its entry
+def iu_piv_k(~F: O.OField, +len: Nat, +t: SX.Tab, +i: Nat, +e: Nat, +k: Nat, +w: M.Vec(~F), hu: IU(~F, len, t), hk: {bat(SX.Tab.bas(t), k) == False{} : Bool}, hkl: {SX.ltn(k, len) == True{} : Bool}, +hke: {SX.eqn(k, e) == False{} : Bool}, +hp: {SX.iszero(SX.at(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), e)) == False{} : Bool}, +hi: {SX.ltn(i, len) == True{} : Bool}) -> {rv(~F, SX.rowat(SX.Tab.rows(SX.pivot(len, t, i, e)), k), w) == fat(~F, w, k) : O.C(F)}:
+  %Equal.sym(O.C(F), rv(~F, SX.rowat(SX.Tab.rows(SX.pivot(len, t, i, e)), k), w), fat(~F, rmap(~F, SX.Tab.rows(SX.pivot(len, t, i, e)), w), k), fat_rmap(~F, SX.Tab.rows(SX.pivot(len, t, i, e)), w, k)) : {_ == fat(~F, w, k) : O.C(F)}
+  %pivot_ok(~F, len, t, i, e, w, hp, hi) : {fat(~F, _, k) == fat(~F, w, k) : O.C(F)}
+  %fat_rmap(~F, SX.Tab.rows(t), wsub(~F, w, e, pstep(~F, SX.Tab.rows(t), i, e, w)), k) : {_ == fat(~F, w, k) : O.C(F)}
+  %Equal.sym(O.C(F), rv(~F, SX.rowat(SX.Tab.rows(t), k), wsub(~F, w, e, pstep(~F, SX.Tab.rows(t), i, e, w))), fat(~F, wsub(~F, w, e, pstep(~F, SX.Tab.rows(t), i, e, w)), k), hu(k, hk, hkl, wsub(~F, w, e, pstep(~F, SX.Tab.rows(t), i, e, w)))) : {_ == fat(~F, w, k) : O.C(F)}
+  Equal.sym(O.C(F), fat(~F, w, k), fat(~F, wsub(~F, w, e, pstep(~F, SX.Tab.rows(t), i, e, w)), k), fat_wsub_ne(~F, w, e, pstep(~F, SX.Tab.rows(t), i, e, w), k, hke))
+
+def eqn_eq(a: Nat, b: Nat, h: {SX.eqn(a, b) == True{} : Bool}) -> {a == b : Nat}:
+  match a b:
+    case 0n 0n:
+      {==}
+    case 0n 1n+j:
+      absurd({0n == 1n+j : Nat}, KA.ft(h))
+    case 1n+i 0n:
+      absurd({1n+i == 0n : Nat}, KA.ft(h))
+    case 1n+i 1n+j:
+      %eqn_eq(i, j, h) : {1n+i == 1n+_ : Nat}
+      {==}
+
+def bas_pivot.go(ri: SX.Rw, +e: Nat, +i: Nat, +len: Nat, +rows: List<&2, SX.Rw>, +bas: List<&2, Bool>) -> {SX.setb(SX.setb(bas, i, False{}), e, True{}) == SX.Tab.bas(SX.pivot.go(ri, e, i, len, rows, bas)) : List<&2, Bool>}:
+  match ri:
+    case SX.Rw{di, mi}:
+      {==}
+
+# the pivot's basis: i out, e in
+def bas_pivot(+len: Nat, t: SX.Tab, +i: Nat, +e: Nat) -> {SX.setb(SX.setb(SX.Tab.bas(t), i, False{}), e, True{}) == SX.Tab.bas(SX.pivot(len, t, i, e)) : List<&2, Bool>}:
+  match t:
+    case SX.Tab{+rows, +bas}:
+      bas_pivot.go(SX.rowat(rows, i), e, i, len, rows, bas)
+
+def nb_ne_e.c(+bas: List<&2, Bool>, +i: Nat, +e: Nat, +k: Nat, hke: {k == e : Nat}, hk: {bat(SX.setb(SX.setb(bas, i, False{}), e, True{}), k) == False{} : Bool}, he: {SX.ltn(e, blen(bas)) == True{} : Bool}) -> {True{} == False{} : Bool}:
+  %bat_setb_eq(SX.setb(bas, i, False{}), e, True{}, (%blen_setb(bas, i, False{}) : {SX.ltn(e, _) == True{} : Bool}
+    he)) : {_ == False{} : Bool}
+  %hke : {bat(SX.setb(SX.setb(bas, i, False{}), e, True{}), _) == False{} : Bool}
+  hk
+
+def nb_ne_e.go(b: Bool, +bas: List<&2, Bool>, +i: Nat, +e: Nat, +k: Nat, hb: {b == SX.eqn(k, e) : Bool}, hk: {bat(SX.setb(SX.setb(bas, i, False{}), e, True{}), k) == False{} : Bool}, he: {SX.ltn(e, blen(bas)) == True{} : Bool}) -> {b == False{} : Bool}:
+  match b:
+    case False{}:
+      {==}
+    case True{}:
+      absurd({True{} == False{} : Bool}, KA.tf(nb_ne_e.c(bas, i, e, k, eqn_eq(k, e, Equal.sym(Bool, True{}, SX.eqn(k, e), hb)), hk, he)))
+
+# k is nonbasic after the pivot and not i: it is not e, and was nonbasic
+def nb_ne_e(bas: List<&2, Bool>, +i: Nat, +e: Nat, +k: Nat, hk: {bat(SX.setb(SX.setb(bas, i, False{}), e, True{}), k) == False{} : Bool}, he: {SX.ltn(e, blen(bas)) == True{} : Bool}) -> {SX.eqn(k, e) == False{} : Bool}:
+  nb_ne_e.go(SX.eqn(k, e), bas, i, e, k, {==}, hk, he)
+
+def iu_pivot.k(~F: O.OField, b: Bool, +len: Nat, +t: SX.Tab, +i: Nat, +e: Nat, +k: Nat, +w: M.Vec(~F), +hb: {b == SX.eqn(k, i) : Bool}, hu: IU(~F, len, t), +hk: {bat(SX.setb(SX.setb(SX.Tab.bas(t), i, False{}), e, True{}), k) == False{} : Bool}, hkl: {SX.ltn(k, len) == True{} : Bool}, +hp: {SX.iszero(SX.at(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), e)) == False{} : Bool}, +hi: {SX.ltn(i, len) == True{} : Bool}, +he: {SX.ltn(e, blen(SX.Tab.bas(t))) == True{} : Bool}) -> {rv(~F, SX.rowat(SX.Tab.rows(SX.pivot(len, t, i, e)), k), w) == fat(~F, w, k) : O.C(F)}:
+  match b:
+    case True{}:
+      %Equal.sym(Nat, k, i, eqn_eq(k, i, Equal.sym(Bool, True{}, SX.eqn(k, i), hb))) : {rv(~F, SX.rowat(SX.Tab.rows(SX.pivot(len, t, i, e)), _), w) == fat(~F, w, _) : O.C(F)}
+      iu_piv_i(~F, len, t, i, e, w, hp, hi)
+    case False{}:
+      +hke = nb_ne_e(SX.Tab.bas(t), i, e, k, hk, he)
+      iu_piv_k(~F, len, t, i, e, k, w, hu,
+        (%Equal.sym(Bool, bat(SX.Tab.bas(t), k), bat(SX.setb(SX.Tab.bas(t), i, False{}), k), bat_setb_ne(SX.Tab.bas(t), i, False{}, k, Equal.sym(Bool, False{}, SX.eqn(k, i), hb))) : {_ == False{} : Bool}
+         %Equal.sym(Bool, bat(SX.setb(SX.Tab.bas(t), i, False{}), k), bat(SX.setb(SX.setb(SX.Tab.bas(t), i, False{}), e, True{}), k), bat_setb_ne(SX.setb(SX.Tab.bas(t), i, False{}), e, True{}, k, hke)) : {_ == False{} : Bool}
+         hk),
+        hkl, hke, hp, hi)
+
+def iu_pivot.at(~F: O.OField, +len: Nat, +t: SX.Tab, +i: Nat, +e: Nat, +k: Nat, hk: {bat(SX.Tab.bas(SX.pivot(len, t, i, e)), k) == False{} : Bool}, hkl: {SX.ltn(k, len) == True{} : Bool}, +w: M.Vec(~F), hu: IU(~F, len, t), +hp: {SX.iszero(SX.at(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), e)) == False{} : Bool}, +hi: {SX.ltn(i, len) == True{} : Bool}, +he: {SX.ltn(e, blen(SX.Tab.bas(t))) == True{} : Bool}) -> {rv(~F, SX.rowat(SX.Tab.rows(SX.pivot(len, t, i, e)), k), w) == fat(~F, w, k) : O.C(F)}:
+  iu_pivot.k(~F, SX.eqn(k, i), len, t, i, e, k, w, {==}, hu, (%Equal.sym(List<&2, Bool>, SX.setb(SX.setb(SX.Tab.bas(t), i, False{}), e, True{}), SX.Tab.bas(SX.pivot(len, t, i, e)), bas_pivot(len, t, i, e)) : {bat(_, k) == False{} : Bool}
+    hk), hkl, hp, hi, he)
+
+# IU survives a pivot
+def iu_pivot(~F: O.OField, +len: Nat, +t: SX.Tab, +i: Nat, +e: Nat, hu: IU(~F, len, t), +hp: {SX.iszero(SX.at(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), e)) == False{} : Bool}, +hi: {SX.ltn(i, len) == True{} : Bool}, +he: {SX.ltn(e, blen(SX.Tab.bas(t))) == True{} : Bool}) -> IU(~F, len, SX.pivot(len, t, i, e)):
+  k => hk => hkl => w => iu_pivot.at(~F, len, t, i, e, k, hk, hkl, w, hu, hp, hi, he)
