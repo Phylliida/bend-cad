@@ -188,8 +188,8 @@ and `tests/ident_laws.bend`:
 - Proves `DropsOk` and the independence facts.
 
 ### S3. Exact simplex with Bland's rule, and the deletion filter
-*In progress (2026-10-19).* Danielle chose simplex with Bland's rule over
-Fourier–Motzkin. Design as built so far:
+*Done 2026-10-19.* Danielle chose simplex with Bland's rule over
+Fourier–Motzkin. As built, gated through `tests/refute_laws.bend`:
 - `lib/simplex.bend` (the code): Dutertre–de Moura's general simplex.
   - Variables: m slacks s_k = a_k . y with lower bounds -b_k (+ delta if
     strict), then n free monomials y. Values are a + b delta, compared
@@ -211,23 +211,52 @@ Fourier–Motzkin. Design as built so far:
   and the monomials left are the y's; simplex; the certificate is read
   back over es and ss (m_k = mu_k bt_k den(s_k); ls from the combinations,
   0 at drops).
-- `proto/probe_refute.bend`, `proto/simplex_test.bend`: diagnostics.
-- **Proof plan:**
-  - invariants in a field (Z: basic columns 0; U: nonbasic rows e_x;
-    I: R_s = sum_y a_sy R_y; II: L(x) = sum_j R_xj L(x_j));
-  - Bland: if the bases at steps a < b are equal, let t be the largest
-    entering variable in [a, b), entering at k1 and leaving at k2. Take
-    i* (leaving at k1) and Delta = value(k2) - value(k1), which lies in V.
-    Row i* at k1 then gives Delta_i* > 0 on the left and a sum that is
-    < 0 on the right (each term <= 0, t's < 0). No tableau uniqueness is
-    needed;
-  - pigeonhole over bases (distinct Bool lists of length N number at most
-    2^N), so run(N) finishes;
-  - Unsat gives Refutes0, via the coefficient view;
-  - Sat gives a linearized point (two Q-valued functionals, the delta
-    part lexicographic) that kills every equation and satisfies every side,
-    hence no refutation, for any lists those cover;
-  - the deletion filter and `ConflictOk`.
+- `lib/conflict.bend`: Chinneck's deletion filter. Each candidate in turn
+  is dropped if c with the kept and the untested ones still refutes. A
+  support stands for all equations of its members (dropped ones
+  included), their sides, c's, and the entities' sides.
+- **The proofs:**
+  - `lib/simppf.bend`, `lib/runpf.bend`: the dictionary's invariants in
+    every ordered field (rows read at any point give a point of the
+    system; a point of the system satisfies every row; nonbasic rows are
+    e_x; basic columns are 0; sizes), at every step of the run.
+  - `lib/blandpf.bend`: no basis comes back (Bland), generic over ordered
+    fields. With t the largest entering variable between two equal bases,
+    row i* (leaving where t enters) read at the difference of the two
+    points is > 0 at i* and < 0 summed. No tableau uniqueness was needed.
+  - `lib/pigeon.bend`, `lib/termpf.bend`: distinct Bool lists of length N
+    number at most 2^N, so `solve` finishes (`solve_ends`).
+  - `lib/unsatpf.bend`: at Unsat, slack i's row has nothing to enter
+    (slack entries <= 0, y entries 0). Its multipliers are >= 0, cancel
+    every y column (through I2 at the point y = e_l), and leave a constant
+    lexicographically < 0.
+  - `lib/refpf.bend`: refute's certificates are refutations
+    (`refute_sound`). Coefficients are compared through a field: the walk
+    keeps the basis echelon over the kept equations with pivots their
+    largest monomials; the multipliers expand back over es; monomials the
+    LP never saw have coefficient 0 in every reduced side (a coverage
+    lemma for `ymons`). A constant row's own combination is -|c|.
+  - `lib/satpf.bend`: no certificate means no refutation, so refute
+    decides degree-0 refutability (`refute_ok`). At Sat, two functionals
+    (weights 1 and 0 at the monomial 1, the dictionary's real and delta
+    values at the y's, the pivots' weights back-substituted through the
+    equation rows as in lib/indpf.bend) kill every equation, kept or
+    dropped, and give each side a lexicographic sign >= 0 (> 0 if
+    strict). A refutation read through both would be (k, 0) >= 0, and
+    > 0 when k = 0, never what Refutes0 asks. The point is a value
+    (`Point`, `pt_of_none`), so smaller premises inherit it.
+  - `lib/conflictpf.bend`: the filter's support is a conflict's
+    (`conflict_ok`, the spec's `ConflictOk`), given candidates that are
+    distinct, before c, driving and not red, with which c refutes. Each
+    kept member was kept because c with the others then tested had no
+    refutation; that point restricts to c with the support but the
+    member.
+- **Left to S4:** instantiating these for the pass. The candidates are
+  `kept_before(sk, red, c)` (their four properties come from the pass's
+  invariant). `NoRefute`, `Implied` and `NotImplied` are `refute_ok` on
+  the spec's lists (`pre_eqs ++ eqs_of([c])` in sketch order, which needs
+  the small lemma that eqs_of of c and the earlier kept ones is that
+  concatenation).
 
 - **The system:** monomials are the unknowns. Equalities come from the
   earlier solved rows plus c's tentative ones; inequalities from the kept
