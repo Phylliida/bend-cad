@@ -188,6 +188,47 @@ and `tests/ident_laws.bend`:
 - Proves `DropsOk` and the independence facts.
 
 ### S3. Exact simplex with Bland's rule, and the deletion filter
+*In progress (2026-10-19).* Danielle chose simplex with Bland's rule over
+Fourier–Motzkin. Design as built so far:
+- `lib/simplex.bend` (the code): Dutertre–de Moura's general simplex.
+  - Variables: m slacks s_k = a_k . y with lower bounds -b_k (+ delta if
+    strict), then n free monomials y. Values are a + b delta, compared
+    lexicographically.
+  - The dictionary is integer with a denominator per row: every variable
+    x has a row with D_x x = M_x . (nonbasic). Nonbasic rows are (1, e_x),
+    and basic columns are 0. Nonbasic slacks sit at their bounds and
+    nonbasic y's at 0, so no assignment is stored.
+  - Bland: leave = smallest violated slack; enter = smallest positive
+    entry, or nonzero entry at a free variable.
+  - Pivot: row i becomes (1, e_i), rows with M_xe = 0 are unchanged, and
+    the rest combine. Read in a field, every row R = M/D goes to
+    R - (R_e/R_ie)(R_i - e_i), a linear map. (A common denominator
+    doubled the bits per pivot: 1280 bits, 6 s on oncircle-pairs; per row
+    it stays at the input's 160 bits, 0.45 s for 36 decisions.)
+  - `run(k)` takes 2^k steps by recursion on k; `solve` = run(N).
+- `lib/refute.bend`: equations through S2's walk (drops and rows); a
+  constant row refutes alone; otherwise sides are reduced against the rows
+  and the monomials left are the y's; simplex; the certificate is read
+  back over es and ss (m_k = mu_k bt_k den(s_k); ls from the combinations,
+  0 at drops).
+- `proto/probe_refute.bend`, `proto/simplex_test.bend`: diagnostics.
+- **Proof plan:**
+  - invariants in a field (Z: basic columns 0; U: nonbasic rows e_x;
+    I: R_s = sum_y a_sy R_y; II: L(x) = sum_j R_xj L(x_j));
+  - Bland: if the bases at steps a < b are equal, let t be the largest
+    entering variable in [a, b), entering at k1 and leaving at k2. Take
+    i* (leaving at k1) and Delta = value(k2) - value(k1), which lies in V.
+    Row i* at k1 then gives Delta_i* > 0 on the left and a sum that is
+    < 0 on the right (each term <= 0, t's < 0). No tableau uniqueness is
+    needed;
+  - pigeonhole over bases (distinct Bool lists of length N number at most
+    2^N), so run(N) finishes;
+  - Unsat gives Refutes0, via the coefficient view;
+  - Sat gives a linearized point (two Q-valued functionals, the delta
+    part lexicographic) that kills every equation and satisfies every side,
+    hence no refutation, for any lists those cover;
+  - the deletion filter and `ConflictOk`.
+
 - **The system:** monomials are the unknowns. Equalities come from the
   earlier solved rows plus c's tentative ones; inequalities from the kept
   sides, the entity sides and c's sides. Strictness uses the standard
