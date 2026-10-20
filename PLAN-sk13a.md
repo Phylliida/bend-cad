@@ -362,9 +362,10 @@ As planned:
   and pins (`cls_of` := `classes`, `pins_of` := `pins`); the numeric
   plan is over the system solved; `solve_honest` and `solve_total` are
   wired from `pass_honest` and `total_pass`. `complete_now`'s proof
-  rests on the sk-09 red stage, so the switch breaks it: either S7
-  (completeness over the system solved) follows the switch at once, or
-  `complete_now` leaves the gate until S7. Danielle's call.
+  rests on the sk-09 red stage, so the switch breaks it. **Danielle
+  (2026-10-20): S7 right after the switch** — re-prove completeness over
+  the system solved before the next green commit; nothing leaves the
+  gate.
 - **`final` gains:**
   - the drop certificates (`qzero`; h = 1; rows are earlier solved
     equations);

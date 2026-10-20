@@ -1,4 +1,4 @@
-# HANDOFF — bend-cad (2026-10-20, sk-09 verified solver built; sk-13a S0–S4 done (S4 as proofs about the pass); next: check in with Danielle on the switch, then PLAN-sk13a.md S5)
+# HANDOFF — bend-cad (2026-10-20, sk-09 verified solver built; sk-13a S0–S4 done (S4 as proofs about the pass); next: the switch (S5) with S7 right after it, per Danielle)
 
 Read first: `DESIGN.md` (v0.9: the plan, Danielle's decisions, §3 spec
 numbers, §4–§5 typed IR, forms and meanings as built), `proto/RESULTS.md`
@@ -232,9 +232,10 @@ in kbpf, prepf, ownpf, solvedpf, cwpf, gmpf, clslpf (see PLAN S4 as
 built). The solver itself still reports sk-09's classes: switching
 (`cls_of` := `classes`, `pins_of` := `pins`, the plan over the system
 solved) is S5's first step, and it breaks the gated `complete_now`
-(its proof is the sk-09 red stage's). **Next: check in with Danielle on
-the switch (S7 right after it, or complete_now out of the gate until S7),
-then PLAN-sk13a.md S5.**
+(its proof is the sk-09 red stage's). Danielle decided (2026-10-20): **S7 right
+after the switch** — switch, then re-prove completeness over the system
+solved before the next green commit; nothing leaves the gate. **Next:
+PLAN-sk13a.md S5 (the switch first), with S7 immediately after it.**
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);
