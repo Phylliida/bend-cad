@@ -1,0 +1,250 @@
+# bend-cad: values a + b delta in an ordered field, delta a positive
+# infinitesimal, compared lexicographically (PLAN-sk13a S3: the simplex's
+# strict bounds). A value is a pair (x0, x1); its sign is x0's, or x1's
+# when x0 = 0. Sums and positive (negative) multiples keep (flip) signs.
+# Also: integer comparisons read in F.
+#
+# Generated from tools/drafts/lexpf.draft by tools/expand.py; edit the
+# draft.
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ../spec/mat.bend as M
+import ./flaws.bend as FL
+import ./fring.bend as FR
+import ./ford.bend as FO
+import ./qemb.bend as QE
+import ./zord.bend as ZO
+import ./karith.bend as KA
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+def both_l(-A: Data, -B: Data, h: M.Both(A, B)) -> A:
+  (a, b) = h
+  a
+
+def both_r(-A: Data, -B: Data, h: M.Both(A, B)) -> B:
+  (a, b) = h
+  b
+
+# Integer comparisons in F
+# ------------------------
+
+def ofz_sub(~F: O.OField, +a: S.Z, +b: S.Z) -> {@S(@OZ(b), @OZ(a)) == @OZ(S.Z.sub(b, a)) : @T}:
+  %Equal.sym(@T, @N(@OZ(a)), @OZ(S.Z.neg(a)), FR.ofz_neg(~F, a)) : {@A(@OZ(b), _) == @OZ(S.Z.sub(b, a)) : @T}
+  FR.ofz_add(~F, b, S.Z.neg(a))
+
+def zlt_f(~F: O.OField, +a: S.Z, +b: S.Z, h: {S.Z.cmp(a, b) == LT{} : Cmp}) -> O.lt(F, @OZ(a), @OZ(b)):
+  QE.lt_of_sub(~F, @OZ(a), @OZ(b), (%Equal.sym(@T, @S(@OZ(b), @OZ(a)), @OZ(S.Z.sub(b, a)), ofz_sub(~F, a, b)) : O.lt(F, @0, _)
+    QE.ofz_pos(~F, S.Z.sub(b, a), ZO.lt_pos(a, b, h))))
+
+def zeq_f(~F: O.OField, +a: S.Z, +b: S.Z, h: {S.Z.cmp(a, b) == EQ{} : Cmp}) -> {@OZ(a) == @OZ(b) : @T}:
+  Equal.sym(@T, @OZ(b), @OZ(a), FO.eq_of_sub(~F, @OZ(b), @OZ(a), (%Equal.sym(@T, @S(@OZ(b), @OZ(a)), @OZ(S.Z.sub(b, a)), ofz_sub(~F, a, b)) : {_ == @0 : @T}
+    %Equal.sym(S.Z, S.Z.sub(b, a), S.Z0{}, ZO.eq_zero(a, b, h)) : {@OZ(_) == @0 : @T}
+    {==})))
+
+def zgt_f(~F: O.OField, +a: S.Z, +b: S.Z, h: {S.Z.cmp(a, b) == GT{} : Cmp}) -> O.lt(F, @OZ(b), @OZ(a)):
+  QE.lt_of_sub(~F, @OZ(b), @OZ(a), (%@ZEQ[x=@OZ(a),, y=@OZ(b) | -(y - x) | x - y] : O.lt(F, @0, _)
+    %Equal.sym(@T, @S(@OZ(b), @OZ(a)), @OZ(S.Z.sub(b, a)), ofz_sub(~F, a, b)) : O.lt(F, @0, @N(_))
+    %Equal.sym(@T, @N(@OZ(S.Z.sub(b, a))), @OZ(S.Z.neg(S.Z.sub(b, a))), FR.ofz_neg(~F, S.Z.sub(b, a))) : O.lt(F, @0, _)
+    QE.ofz_pos(~F, S.Z.neg(S.Z.sub(b, a)), ZO.gt_pos(a, b, h))))
+
+# Signs of pairs
+# --------------
+
+def LNeg(~F: O.OField, +x0: @T, +x1: @T) -> Data:
+  Either<&2, &2, O.lt(F, x0, @0), M.Both({x0 == @0 : @T}, O.lt(F, x1, @0))>
+
+def LNonpos(~F: O.OField, +x0: @T, +x1: @T) -> Data:
+  Either<&2, &2, O.lt(F, x0, @0), M.Both({x0 == @0 : @T}, O.le(~F, x1, @0))>
+
+def LPos(~F: O.OField, +x0: @T, +x1: @T) -> Data:
+  Either<&2, &2, O.lt(F, @0, x0), M.Both({x0 == @0 : @T}, O.lt(F, @0, x1))>
+
+def LNonneg(~F: O.OField, +x0: @T, +x1: @T) -> Data:
+  Either<&2, &2, O.lt(F, @0, x0), M.Both({x0 == @0 : @T}, O.le(~F, @0, x1))>
+
+# Order helpers
+# -------------
+
+def lt_rw_l(~F: O.OField, +a: @T, +b: @T, +c: @T, e: {a == b : @T}, h: O.lt(F, a, c)) -> O.lt(F, b, c):
+  FO.lt_subst_l(~F, a, b, c, e, h)
+
+def le_rw_l(~F: O.OField, +a: @T, +b: @T, +c: @T, e: {a == b : @T}, h: O.le(~F, a, c)) -> O.le(~F, b, c):
+  %e : O.le(~F, _, c)
+  h
+
+def le_rw_r(~F: O.OField, +a: @T, +b: @T, +c: @T, e: {a == b : @T}, h: O.le(~F, c, a)) -> O.le(~F, c, b):
+  %e : O.le(~F, c, _)
+  h
+
+# x < 0 and y <= 0: x + y < 0
+def neg_add(~F: O.OField, +x: @T, +y: @T, hx: O.lt(F, x, @0), hy: O.le(~F, y, @0)) -> O.lt(F, @A(x, y), @0):
+  FO.lt_le_trans(~F, @A(x, y), @A(@0, y), @0, O.lt_add(F)(x, @0, y)(hx), le_rw_l(~F, y, @A(@0, y), @0, Equal.sym(@T, @A(@0, y), y, FL.zero_add(~F, y)), hy))
+
+# x <= 0 and y <= 0: x + y <= 0
+def nonpos_add(~F: O.OField, +x: @T, +y: @T, hx: O.le(~F, x, @0), hy: O.le(~F, y, @0)) -> O.le(~F, @A(x, y), @0):
+  match hx:
+    case Inl{l}:
+      FO.lt_le(~F, @A(x, y), @0, neg_add(~F, x, y, l, hy))
+    case Inr{e}:
+      %Equal.sym(@T, x, @0, e) : O.le(~F, @A(_, y), @0)
+      le_rw_l(~F, y, @A(@0, y), @0, Equal.sym(@T, @A(@0, y), y, FL.zero_add(~F, y)), hy)
+
+# x <= 0 and y < 0: x + y < 0
+def neg_add_r(~F: O.OField, +x: @T, +y: @T, hx: O.le(~F, x, @0), hy: O.lt(F, y, @0)) -> O.lt(F, @A(x, y), @0):
+  %O.add_comm(F)(y, x) : O.lt(F, _, @0)
+  neg_add(~F, y, x, hy, hx)
+
+# 0 < -y: y < 0
+def lt0_of_neg(~F: O.OField, +y: @T, h: O.lt(F, @0, @N(y))) -> O.lt(F, y, @0):
+  QE.lt_of_sub(~F, y, @0, (%@ZEQ[y | -y | 0 - y] : O.lt(F, @0, _)
+    h))
+
+# 0 < c, x < 0: c x < 0
+def mul_pos_neg(~F: O.OField, +c: @T, +x: @T, hc: O.lt(F, @0, c), hx: O.lt(F, x, @0)) -> O.lt(F, @M(c, x), @0):
+  lt0_of_neg(~F, @M(c, x), (%@ZEQ[c,, x | c*(-x) | -(c*x)] : O.lt(F, @0, _)
+    O.lt_mul(F)(c, @N(x), hc, FO.neg_pos(~F, x, hx))))
+
+# c < 0, 0 < x: c x < 0
+def mul_neg_pos(~F: O.OField, +c: @T, +x: @T, hc: O.lt(F, c, @0), hx: O.lt(F, @0, x)) -> O.lt(F, @M(c, x), @0):
+  lt0_of_neg(~F, @M(c, x), (%@ZEQ[c,, x | (-c)*x | -(c*x)] : O.lt(F, @0, _)
+    O.lt_mul(F)(@N(c), x, FO.neg_pos(~F, c, hc), hx)))
+
+def zero_eq(~F: O.OField, +a: @T, +b: @T, ea: {a == @0 : @T}, eb: {b == @0 : @T}) -> {@A(a, b) == @0 : @T}:
+  %Equal.sym(@T, a, @0, ea) : {@A(_, b) == @0 : @T}
+  %Equal.sym(@T, b, @0, eb) : {@A(@0, _) == @0 : @T}
+  O.add_zero(F)(@0)
+
+def mul_zero_r(~F: O.OField, +c: @T, +x: @T, e: {x == @0 : @T}) -> {@M(c, x) == @0 : @T}:
+  %Equal.sym(@T, x, @0, e) : {@M(c, _) == @0 : @T}
+  Equal.sym(@T, @0, @M(c, @0), FL.mul_zero(~F, c))
+
+def le0_of_eq(~F: O.OField, +x: @T, e: {x == @0 : @T}) -> O.le(~F, x, @0):
+  Inr{e}
+
+# Sums
+# ----
+
+def lnonpos_add(~F: O.OField, +x0: @T, +x1: @T, +y0: @T, +y1: @T, hx: LNonpos(~F, x0, x1), hy: LNonpos(~F, y0, y1)) -> LNonpos(~F, @A(x0, y0), @A(x1, y1)):
+  match hx hy:
+    case Inl{+u} Inl{+v}:
+      Inl{neg_add(~F, x0, y0, u, FO.lt_le(~F, y0, @0, v))}
+    case Inl{+u} Inr{+v}:
+      Inl{neg_add(~F, x0, y0, u, le0_of_eq(~F, y0, both_l({y0 == @0 : @T}, O.le(~F, y1, @0), v)))}
+    case Inr{+u} Inl{+v}:
+      Inl{neg_add_r(~F, x0, y0, le0_of_eq(~F, x0, both_l({x0 == @0 : @T}, O.le(~F, x1, @0), u)), v)}
+    case Inr{+u} Inr{+v}:
+      Inr{(zero_eq(~F, x0, y0, both_l({x0 == @0 : @T}, O.le(~F, x1, @0), u), both_l({y0 == @0 : @T}, O.le(~F, y1, @0), v)), nonpos_add(~F, x1, y1, both_r({x0 == @0 : @T}, O.le(~F, x1, @0), u), both_r({y0 == @0 : @T}, O.le(~F, y1, @0), v)))}
+
+def lneg_add_l(~F: O.OField, +x0: @T, +x1: @T, +y0: @T, +y1: @T, hx: LNeg(~F, x0, x1), hy: LNonpos(~F, y0, y1)) -> LNeg(~F, @A(x0, y0), @A(x1, y1)):
+  match hx hy:
+    case Inl{+u} Inl{+v}:
+      Inl{neg_add(~F, x0, y0, u, FO.lt_le(~F, y0, @0, v))}
+    case Inl{+u} Inr{+v}:
+      Inl{neg_add(~F, x0, y0, u, le0_of_eq(~F, y0, both_l({y0 == @0 : @T}, O.le(~F, y1, @0), v)))}
+    case Inr{+u} Inl{+v}:
+      Inl{neg_add_r(~F, x0, y0, le0_of_eq(~F, x0, both_l({x0 == @0 : @T}, O.lt(F, x1, @0), u)), v)}
+    case Inr{+u} Inr{+v}:
+      Inr{(zero_eq(~F, x0, y0, both_l({x0 == @0 : @T}, O.lt(F, x1, @0), u), both_l({y0 == @0 : @T}, O.le(~F, y1, @0), v)), neg_add(~F, x1, y1, both_r({x0 == @0 : @T}, O.lt(F, x1, @0), u), both_r({y0 == @0 : @T}, O.le(~F, y1, @0), v)))}
+
+def lneg_add_r(~F: O.OField, +x0: @T, +x1: @T, +y0: @T, +y1: @T, hx: LNonpos(~F, x0, x1), hy: LNeg(~F, y0, y1)) -> LNeg(~F, @A(x0, y0), @A(x1, y1)):
+  match hx hy:
+    case Inl{+u} Inl{+v}:
+      Inl{neg_add(~F, x0, y0, u, FO.lt_le(~F, y0, @0, v))}
+    case Inl{+u} Inr{+v}:
+      Inl{neg_add(~F, x0, y0, u, le0_of_eq(~F, y0, both_l({y0 == @0 : @T}, O.lt(F, y1, @0), v)))}
+    case Inr{+u} Inl{+v}:
+      Inl{neg_add_r(~F, x0, y0, le0_of_eq(~F, x0, both_l({x0 == @0 : @T}, O.le(~F, x1, @0), u)), v)}
+    case Inr{+u} Inr{+v}:
+      Inr{(zero_eq(~F, x0, y0, both_l({x0 == @0 : @T}, O.le(~F, x1, @0), u), both_l({y0 == @0 : @T}, O.lt(F, y1, @0), v)), neg_add_r(~F, x1, y1, both_r({x0 == @0 : @T}, O.le(~F, x1, @0), u), both_r({y0 == @0 : @T}, O.lt(F, y1, @0), v)))}
+
+# Multiples
+# ---------
+
+def lneg_scale(~F: O.OField, +c: @T, +x0: @T, +x1: @T, hc: O.lt(F, @0, c), hx: LNeg(~F, x0, x1)) -> LNeg(~F, @M(c, x0), @M(c, x1)):
+  match hx:
+    case Inl{a}:
+      Inl{mul_pos_neg(~F, c, x0, hc, a)}
+    case Inr{+p}:
+      Inr{(mul_zero_r(~F, c, x0, both_l({x0 == @0 : @T}, O.lt(F, x1, @0), p)), mul_pos_neg(~F, c, x1, hc, both_r({x0 == @0 : @T}, O.lt(F, x1, @0), p)))}
+
+# c < 0, 0 <= x: c x <= 0
+def lnonpos_scale_neg.le(~F: O.OField, +c: @T, +x: @T, hc: O.lt(F, c, @0), hx: O.le(~F, @0, x)) -> O.le(~F, @M(c, x), @0):
+  match hx:
+    case Inl{a}:
+      FO.lt_le(~F, @M(c, x), @0, mul_neg_pos(~F, c, x, hc, a))
+    case Inr{e}:
+      le0_of_eq(~F, @M(c, x), mul_zero_r(~F, c, x, Equal.sym(@T, @0, x, e)))
+
+def lnonpos_scale_neg(~F: O.OField, +c: @T, +x0: @T, +x1: @T, hc: O.lt(F, c, @0), hx: LNonneg(~F, x0, x1)) -> LNonpos(~F, @M(c, x0), @M(c, x1)):
+  match hx:
+    case Inl{a}:
+      Inl{mul_neg_pos(~F, c, x0, hc, a)}
+    case Inr{+p}:
+      Inr{(mul_zero_r(~F, c, x0, both_l({x0 == @0 : @T}, O.le(~F, @0, x1), p)), lnonpos_scale_neg.le(~F, c, x1, hc, both_r({x0 == @0 : @T}, O.le(~F, @0, x1), p)))}
+
+def lnonpos_zero(~F: O.OField, +c: @T, +x0: @T, +x1: @T, e0: {x0 == @0 : @T}, e1: {x1 == @0 : @T}) -> LNonpos(~F, @M(c, x0), @M(c, x1)):
+  Inr{(mul_zero_r(~F, c, x0, e0), le0_of_eq(~F, @M(c, x1), mul_zero_r(~F, c, x1, e1)))}
+
+def lnonpos_czero(~F: O.OField, +x0: @T, +x1: @T) -> LNonpos(~F, @M(@0, x0), @M(@0, x1)):
+  Inr{(FL.zero_mul(~F, x0), le0_of_eq(~F, @M(@0, x1), FL.zero_mul(~F, x1)))}
+
+# Comparing signs
+# ---------------
+
+def lt_irr0(~F: O.OField, +x: @T, h1: O.lt(F, @0, x), h2: O.lt(F, x, @0)) -> Empty:
+  O.lt_irrefl(F)(@0)(O.lt_trans(F)(@0, x, @0)(h1)(h2))
+
+def lt_eq0(~F: O.OField, +x: @T, e: {x == @0 : @T}, h: O.lt(F, @0, x)) -> Empty:
+  O.lt_irrefl(F)(@0)((%e : O.lt(F, @0, _)
+    h))
+
+# a pair is not both positive and negative
+def lpos_lneg(~F: O.OField, +x0: @T, +x1: @T, hp: LPos(~F, x0, x1), hn: LNeg(~F, x0, x1)) -> Empty:
+  match hp hn:
+    case Inl{+u} Inl{+v}:
+      lt_irr0(~F, x0, u, v)
+    case Inl{+u} Inr{+v}:
+      lt_eq0(~F, x0, both_l({x0 == @0 : @T}, O.lt(F, x1, @0), v), u)
+    case Inr{+u} Inl{+v}:
+      lt_eq0(~F, @N(x0), (%Equal.sym(@T, x0, @0, both_l({x0 == @0 : @T}, O.lt(F, @0, x1), u)) : {@N(_) == @0 : @T}
+        Equal.sym(@T, @0, @N(@0), FL.neg_zero(~F))), FO.neg_pos(~F, x0, v))
+    case Inr{+u} Inr{+v}:
+      lt_irr0(~F, x1, both_r({x0 == @0 : @T}, O.lt(F, @0, x1), u), both_r({x0 == @0 : @T}, O.lt(F, x1, @0), v))
+
+# 0 <= a, b < 0: 0 < a - b
+def pos_sub_l(~F: O.OField, +a: @T, +b: @T, ha: O.le(~F, @0, a), hb: O.lt(F, b, @0)) -> O.lt(F, @0, @S(a, b)):
+  FO.pos_add_r(~F, a, @N(b), ha, FO.neg_pos(~F, b, hb))
+
+def pos_sub_r.nn(~F: O.OField, +b: @T, hb: O.le(~F, b, @0)) -> O.le(~F, @0, @N(b)):
+  match hb:
+    case Inl{l}:
+      FO.lt_le(~F, @0, @N(b), FO.neg_pos(~F, b, l))
+    case Inr{e}:
+      Inr{(%Equal.sym(@T, b, @0, e) : {@0 == @N(_) : @T}
+        FL.neg_zero(~F))}
+
+# 0 < a, b <= 0: 0 < a - b
+def pos_sub_r(~F: O.OField, +a: @T, +b: @T, ha: O.lt(F, @0, a), hb: O.le(~F, b, @0)) -> O.lt(F, @0, @S(a, b)):
+  FO.pos_add(~F, a, @N(b), ha, pos_sub_r.nn(~F, b, hb))
+
+def sub_zero2(~F: O.OField, +a: @T, +b: @T, ea: {a == @0 : @T}, eb: {b == @0 : @T}) -> {@S(a, b) == @0 : @T}:
+  %Equal.sym(@T, a, @0, ea) : {@S(_, b) == @0 : @T}
+  %Equal.sym(@T, b, @0, eb) : {@S(@0, _) == @0 : @T}
+  @ZEQ[ | 0 - 0 | 0]
+
+# A >= 0 and B < 0 (lexicographically): A - B > 0
+def lpos_sub(~F: O.OField, +a0: @T, +a1: @T, +b0: @T, +b1: @T, ha: LNonneg(~F, a0, a1), hb: LNeg(~F, b0, b1)) -> LPos(~F, @S(a0, b0), @S(a1, b1)):
+  match ha hb:
+    case Inl{+u} Inl{+v}:
+      Inl{pos_sub_r(~F, a0, b0, u, FO.lt_le(~F, b0, @0, v))}
+    case Inl{+u} Inr{+v}:
+      Inl{pos_sub_r(~F, a0, b0, u, le0_of_eq(~F, b0, both_l({b0 == @0 : @T}, O.lt(F, b1, @0), v)))}
+    case Inr{+u} Inl{+v}:
+      Inl{pos_sub_l(~F, a0, b0, Inr{Equal.sym(@T, a0, @0, both_l({a0 == @0 : @T}, O.le(~F, @0, a1), u))}, v)}
+    case Inr{+u} Inr{+v}:
+      Inr{(sub_zero2(~F, a0, b0, both_l({a0 == @0 : @T}, O.le(~F, @0, a1), u), both_l({b0 == @0 : @T}, O.lt(F, b1, @0), v)), pos_sub_l(~F, a1, b1, both_r({a0 == @0 : @T}, O.le(~F, @0, a1), u), both_r({b0 == @0 : @T}, O.lt(F, b1, @0), v)))}
