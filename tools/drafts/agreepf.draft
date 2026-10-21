@@ -1,0 +1,255 @@
+# bend-cad: two classifications side by side, for honest_unique (PLAN-sk13a
+# S6, law 5 step 1). Proofs only.
+#
+# The induction along the constraints carries, for classifications c1 and
+# c2 (red lists R1, R2, dropped lists D1, D2), two list equalities at each
+# position c: the kept constraints before c are the same (kb_ag), and so
+# are the solved equations before c (ps_red, ps_kept). Here are their steps
+# from c to c + 1, given that c has the same kind in both and, when kept,
+# the same drops among its own equations (SP.agree), and what the Fates at
+# c read through them:
+# - c's own equations not in d, before i, agree (or_cong), and so do the
+#   bases a drop is combined from (basis_ag);
+# - is_amberable agrees (amb_cong);
+# - Derivable against NotDerivable over equal bases, and Implied against
+#   NotImplied over equal kept lists, are contradictions (dnd, imp_ni).
+#
+# Generated from tools/drafts/agreepf.draft by tools/expand.py; edit the
+# draft.
+
+import Base
+import ../spec/ring.bend as E
+import ../spec/sketch.bend as SK
+import ../spec/solve.bend as SV
+import ./karith.bend as KA
+import ./nat.bend as LN
+import ./listpf.bend as L
+import ./kbpf.bend as KB
+import ./ownpf.bend as OW
+import ./solvedpf.bend as SP
+import ./clslpf.bend as CL
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+# Congruences
+# -----------
+
+def band_cong(+a1: Bool, +a2: Bool, +b1: Bool, +b2: Bool, +ha: {a1 == a2 : Bool}, +hb: {b1 == b2 : Bool}) -> {SV.band(a1, b1) == SV.band(a2, b2) : Bool}:
+  %ha : {SV.band(a1, b1) == SV.band(_, b2) : Bool}
+  %hb : {SV.band(a1, b1) == SV.band(a1, _) : Bool}
+  {==}
+
+def pick_cong(+b1: Bool, +b2: Bool, +e: E.QExpr, +X1: List<&2, E.QExpr>, +X2: List<&2, E.QExpr>, +hb: {b1 == b2 : Bool}, +hx: {X1 == X2 : List<&2, E.QExpr>}) -> {SV.solved.pick(b1, e, X1) == SV.solved.pick(b2, e, X2) : List<&2, E.QExpr>}:
+  %hb : {SV.solved.pick(b1, e, X1) == SV.solved.pick(_, e, X2) : List<&2, E.QExpr>}
+  %hx : {SV.solved.pick(b1, e, X1) == SV.solved.pick(b1, e, _) : List<&2, E.QExpr>}
+  {==}
+
+def qcat_cong(+A1: List<&2, E.QExpr>, +A2: List<&2, E.QExpr>, +B1: List<&2, E.QExpr>, +B2: List<&2, E.QExpr>, +ha: {A1 == A2 : List<&2, E.QExpr>}, +hb: {B1 == B2 : List<&2, E.QExpr>}) -> {SK.cat(A1, B1) == SK.cat(A2, B2) : List<&2, E.QExpr>}:
+  %ha : {SK.cat(A1, B1) == SK.cat(_, B2) : List<&2, E.QExpr>}
+  %hb : {SK.cat(A1, B1) == SK.cat(A1, _) : List<&2, E.QExpr>}
+  {==}
+
+# not b, or x1; not b, or x2: the same when b gives x1 = x2
+def bnb_ag(b: Bool, +x1: Bool, +x2: Bool, h: {b == True{} : Bool} -> {x1 == x2 : Bool}) -> {SV.bor(SV.bnot(b), x1) == SV.bor(SV.bnot(b), x2) : Bool}:
+  match b:
+    case True{}:
+      h({==})
+    case False{}:
+      {==}
+
+# Red from kind
+# -------------
+
+def rk1(m: Nat) -> Bool:
+  match m:
+    case 0n:
+      False{}
+    case 1n+q:
+      True{}
+
+# kinds 2 and 3 (over, conflict) are red
+def rk(n: Nat) -> Bool:
+  match n:
+    case 0n:
+      False{}
+    case 1n+m:
+      rk1(m)
+
+def red_kind(k: SV.Class) -> {SV.is_red(k) == rk(SV.kind(k)) : Bool}:
+  match k:
+    case SV.Kept{ds}:
+      {==}
+    case SV.Amber{ds, rs}:
+      {==}
+    case SV.Over{j, s, w}:
+      {==}
+    case SV.Conflict{s}:
+      {==}
+
+# the same kind at c: c is red in both or in neither
+def red_ag(+c1: List<&2, SV.Class>, +c2: List<&2, SV.Class>, +c: Nat, +h: {SV.kind(SV.class_at(c1, c)) == SV.kind(SV.class_at(c2, c)) : Nat}) -> {SV.mem(c, SV.reds(c1)) == SV.mem(c, SV.reds(c2)) : Bool}:
+  %Equal.sym(Bool, SV.mem(c, SV.reds(c1)), SV.is_red(SV.class_at(c1, c)), CL.mem_reds(c1, c)) : {_ == SV.mem(c, SV.reds(c2)) : Bool}
+  %Equal.sym(Bool, SV.mem(c, SV.reds(c2)), SV.is_red(SV.class_at(c2, c)), CL.mem_reds(c2, c)) : {SV.is_red(SV.class_at(c1, c)) == _ : Bool}
+  %Equal.sym(Bool, SV.is_red(SV.class_at(c1, c)), rk(SV.kind(SV.class_at(c1, c))), red_kind(SV.class_at(c1, c))) : {_ == SV.is_red(SV.class_at(c2, c)) : Bool}
+  %Equal.sym(Bool, SV.is_red(SV.class_at(c2, c)), rk(SV.kind(SV.class_at(c2, c))), red_kind(SV.class_at(c2, c))) : {rk(SV.kind(SV.class_at(c1, c))) == _ : Bool}
+  Equal.cong(Nat, Bool, n => rk(n), SV.kind(SV.class_at(c1, c)), SV.kind(SV.class_at(c2, c)), h)
+
+# The kept constraints before c
+# -----------------------------
+
+# with the same kept list before c and c red in both or neither, the same
+# kept list before c + 1
+def kb_ag(+sk: SK.Sketch, +R1: List<&2, Nat>, +R2: List<&2, Nat>, +c: Nat, +hm: {SV.mem(c, R1) == SV.mem(c, R2) : Bool}, +hkb: {SV.kept_before(sk, R1, c) == SV.kept_before(sk, R2, c) : List<&2, Nat>}) -> {SV.kept_before(sk, R1, 1n+c) == SV.kept_before(sk, R2, 1n+c) : List<&2, Nat>}:
+  %Equal.sym(List<&2, Nat>, SV.kept_before(sk, R1, 1n+c), KB.kpk(KB.dcond(sk, R1, c), SV.kept_before(sk, R1, c), c), KB.kb_next(sk, R1, c)) : {_ == SV.kept_before(sk, R2, 1n+c) : List<&2, Nat>}
+  %Equal.sym(List<&2, Nat>, SV.kept_before(sk, R2, 1n+c), KB.kpk(KB.dcond(sk, R2, c), SV.kept_before(sk, R2, c), c), KB.kb_next(sk, R2, c)) : {KB.kpk(KB.dcond(sk, R1, c), SV.kept_before(sk, R1, c), c) == _ : List<&2, Nat>}
+  %hkb : {KB.kpk(KB.dcond(sk, R1, c), SV.kept_before(sk, R1, c), c) == KB.kpk(KB.dcond(sk, R2, c), _, c) : List<&2, Nat>}
+  %hm : {KB.kpk(KB.dcond(sk, R1, c), SV.kept_before(sk, R1, c), c) == KB.kpk(SV.band(SV.driving(sk, c), SV.bnot(_)), SV.kept_before(sk, R1, c), c) : List<&2, Nat>}
+  {==}
+
+def kb_zero(+sk: SK.Sketch, +R1: List<&2, Nat>, +R2: List<&2, Nat>) -> {SV.kept_before(sk, R1, 0n) == SV.kept_before(sk, R2, 0n) : List<&2, Nat>}:
+  %Equal.sym(List<&2, Nat>, SV.kept_before(sk, R1, 0n), Nil{}, KB.kb_zero(sk, R1)) : {_ == SV.kept_before(sk, R2, 0n) : List<&2, Nat>}
+  Equal.sym(List<&2, Nat>, SV.kept_before(sk, R2, 0n), Nil{}, KB.kb_zero(sk, R2))
+
+# c's own equations not dropped
+# -----------------------------
+
+# the agreement at an equation c owns
+def ag_hd(+o: Nat, +c: Nat, +k: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, h: {SV.bor(SV.bnot(SV.eq(o, c)), SP.beq(SV.mem(k, d1), SV.mem(k, d2))) == True{} : Bool}, hc: {SV.eq(o, c) == True{} : Bool}) -> {SV.mem(k, d1) == SV.mem(k, d2) : Bool}:
+  SP.beq_eq(SV.mem(k, d1), SV.mem(k, d2), (%hc : {SV.bor(SV.bnot(_), SP.beq(SV.mem(k, d1), SV.mem(k, d2))) == True{} : Bool}
+    h))
+
+def orc(es: List<&2, E.QExpr>, own_k: List<&2, Nat>, +own: List<&2, Nat>, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +i: Nat, +k: Nat, +ho: {OW.ndrop(k, own) == own_k : List<&2, Nat>}, +hl: {SV.len(own_k) == SV.neqs(es) : Nat}, +hag: {SP.agree(own_k, d1, d2, c, k) == True{} : Bool})
+  -> {SV.own_rest.go(es, own, c, d1, i, k) == SV.own_rest.go(es, own, c, d2, i, k) : List<&2, E.QExpr>}:
+  match es own_k:
+    case Nil{} Nil{}:
+      {==}
+    case Nil{} Con{+o, +ot}:
+      absurd({SV.own_rest.go(Nil{}, own, c, d1, i, k) == SV.own_rest.go(Nil{}, own, c, d2, i, k) : List<&2, E.QExpr>}, SP.len_nc(o, ot, hl))
+    case Con{+e, +t} Nil{}:
+      absurd({SV.own_rest.go(Con{e, t}, own, c, d1, i, k) == SV.own_rest.go(Con{e, t}, own, c, d2, i, k) : List<&2, E.QExpr>}, SP.len_cn(e, t, hl))
+    case Con{+e, +t} Con{+o, +ot}:
+      +hno = OW.nth_of(own, k, o, ot, ho)
+      +hh = L.band_l(SV.bor(SV.bnot(SV.eq(o, c)), SP.beq(SV.mem(k, d1), SV.mem(k, d2))), SP.agree(ot, d1, d2, c, 1n+k), hag)
+      pick_cong(SV.band(SV.lt(k, i), SV.band(SV.eq(SV.nth(own, k), c), SV.bnot(SV.mem(k, d1)))), SV.band(SV.lt(k, i), SV.band(SV.eq(SV.nth(own, k), c), SV.bnot(SV.mem(k, d2)))), e, SV.own_rest.go(t, own, c, d1, i, 1n+k), SV.own_rest.go(t, own, c, d2, i, 1n+k),
+        Equal.cong(Bool, Bool, z => SV.band(SV.lt(k, i), z), SV.band(SV.eq(SV.nth(own, k), c), SV.bnot(SV.mem(k, d1))), SV.band(SV.eq(SV.nth(own, k), c), SV.bnot(SV.mem(k, d2))),
+          SP.band_ag(SV.eq(SV.nth(own, k), c), SV.bnot(SV.mem(k, d1)), SV.bnot(SV.mem(k, d2)), hc => Equal.cong(Bool, Bool, z => SV.bnot(z), SV.mem(k, d1), SV.mem(k, d2), ag_hd(o, c, k, d1, d2, hh, (%hno : {SV.eq(_, c) == True{} : Bool}
+            hc))))),
+        orc(t, ot, own, c, d1, d2, i, 1n+k, OW.ndrop_step(k, own, o, ot, ho), LN.succ_inj(SV.len(ot), SV.neqs(t), hl), L.band_r(SV.bor(SV.bnot(SV.eq(o, c)), SP.beq(SV.mem(k, d1), SV.mem(k, d2))), SP.agree(ot, d1, d2, c, 1n+k), hag)))
+
+# d1 and d2 agree at c's equations: c's own equations not in them, before
+# any i, are the same
+def or_cong(+sk: SK.Sketch, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +i: Nat, +hag: {SP.agree(SV.owners(sk), d1, d2, c, 0n) == True{} : Bool}) -> {SV.own_rest(sk, c, d1, i) == SV.own_rest(sk, c, d2, i) : List<&2, E.QExpr>}:
+  orc(SK.Sketch.eqs(sk), SV.owners(sk), SV.owners(sk), c, d1, d2, i, 0n, {==}, OW.len_owners(sk), hag)
+
+# the bases a drop of c is combined from
+def basis_ag(+sk: SK.Sketch, +R1: List<&2, Nat>, +D1: List<&2, Nat>, +R2: List<&2, Nat>, +D2: List<&2, Nat>, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +i: Nat,
+  +hps: {SV.presolved(sk, R1, D1, c) == SV.presolved(sk, R2, D2, c) : List<&2, E.QExpr>}, +hor: {SV.own_rest(sk, c, d1, i) == SV.own_rest(sk, c, d2, i) : List<&2, E.QExpr>})
+  -> {SV.basis(sk, R1, D1, c, d1, i) == SV.basis(sk, R2, D2, c, d2, i) : List<&2, E.QExpr>}:
+  qcat_cong(SV.presolved(sk, R1, D1, c), SV.presolved(sk, R2, D2, c), SV.own_rest(sk, c, d1, i), SV.own_rest(sk, c, d2, i), hps, hor)
+
+def adc(own_s: List<&2, Nat>, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +c: Nat, +k: Nat, +hag: {SP.agree(own_s, d1, d2, c, k) == True{} : Bool}) -> {SV.alldrop.go(own_s, d1, c, k) == SV.alldrop.go(own_s, d2, c, k) : Bool}:
+  match own_s:
+    case Nil{}:
+      {==}
+    case Con{+o, +t}:
+      +hh = L.band_l(SV.bor(SV.bnot(SV.eq(o, c)), SP.beq(SV.mem(k, d1), SV.mem(k, d2))), SP.agree(t, d1, d2, c, 1n+k), hag)
+      band_cong(SV.bor(SV.bnot(SV.eq(o, c)), SV.mem(k, d1)), SV.bor(SV.bnot(SV.eq(o, c)), SV.mem(k, d2)), SV.alldrop.go(t, d1, c, 1n+k), SV.alldrop.go(t, d2, c, 1n+k),
+        bnb_ag(SV.eq(o, c), SV.mem(k, d1), SV.mem(k, d2), hc => ag_hd(o, c, k, d1, d2, hh, hc)),
+        adc(t, d1, d2, c, 1n+k, L.band_r(SV.bor(SV.bnot(SV.eq(o, c)), SP.beq(SV.mem(k, d1), SV.mem(k, d2))), SP.agree(t, d1, d2, c, 1n+k), hag)))
+
+# all of c's equations in d1 exactly when all are in d2
+def amb_cong(+sk: SK.Sketch, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +hag: {SP.agree(SV.owners(sk), d1, d2, c, 0n) == True{} : Bool}) -> {SV.is_amberable(sk, c, d1) == SV.is_amberable(sk, c, d2) : Bool}:
+  adc(SV.owners(sk), d1, d2, c, 0n, hag)
+
+# The solved equations before c
+# -----------------------------
+
+def dropped_at(+own: List<&2, Nat>, +cls: List<&2, SV.Class>, +c: Nat, +j: Nat, +hD: {CL.downs(own, cls, 0n) == True{} : Bool}, +nc: {SV.nth(own, j) == c : Nat}) -> {SV.mem(j, SV.dropped(cls)) == SV.mem(j, SV.kdrops(SV.class_at(cls, c))) : Bool}:
+  Equal.trans(Bool, SV.mem(j, SV.dropped(cls)), SV.mem(j, SV.kdrops(SV.class_at(cls, SV.nth(own, j)))), SV.mem(j, SV.kdrops(SV.class_at(cls, c))), CL.mem_dropped(own, cls, j, hD),
+    Equal.cong(Nat, Bool, x => SV.mem(j, SV.kdrops(SV.class_at(cls, x))), SV.nth(own, j), c, nc))
+
+def beq_refl(a: Bool) -> {SP.beq(a, a) == True{} : Bool}:
+  match a:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def agd.c(b: Bool, +own: List<&2, Nat>, +cls: List<&2, SV.Class>, +c: Nat, +j: Nat, +o: Nat, +ot: List<&2, Nat>, e: {SV.eq(o, c) == b : Bool}, +ho: {OW.ndrop(j, own) == Con{o, ot} : List<&2, Nat>}, +hD: {CL.downs(own, cls, 0n) == True{} : Bool})
+  -> {SV.bor(SV.bnot(b), SP.beq(SV.mem(j, SV.dropped(cls)), SV.mem(j, SV.kdrops(SV.class_at(cls, c))))) == True{} : Bool}:
+  match b:
+    case True{}:
+      %Equal.sym(Bool, SV.mem(j, SV.dropped(cls)), SV.mem(j, SV.kdrops(SV.class_at(cls, c))), dropped_at(own, cls, c, j, hD, Equal.trans(Nat, SV.nth(own, j), o, c, OW.nth_of(own, j, o, ot, ho), L.eq_ok(o, c, e)))) : {SP.beq(_, SV.mem(j, SV.kdrops(SV.class_at(cls, c)))) == True{} : Bool}
+      beq_refl(SV.mem(j, SV.kdrops(SV.class_at(cls, c))))
+    case False{}:
+      {==}
+
+def agd(own_j: List<&2, Nat>, +own: List<&2, Nat>, +cls: List<&2, SV.Class>, +c: Nat, +j: Nat, +ho: {OW.ndrop(j, own) == own_j : List<&2, Nat>}, +hD: {CL.downs(own, cls, 0n) == True{} : Bool})
+  -> {SP.agree(own_j, SV.dropped(cls), SV.kdrops(SV.class_at(cls, c)), c, j) == True{} : Bool}:
+  match own_j:
+    case Nil{}:
+      {==}
+    case Con{+o, +ot}:
+      L.band_i(SV.bor(SV.bnot(SV.eq(o, c)), SP.beq(SV.mem(j, SV.dropped(cls)), SV.mem(j, SV.kdrops(SV.class_at(cls, c))))), SP.agree(ot, SV.dropped(cls), SV.kdrops(SV.class_at(cls, c)), c, 1n+j),
+        agd.c(SV.eq(o, c), own, cls, c, j, o, ot, {==}, ho, hD),
+        agd(ot, own, cls, c, 1n+j, OW.ndrop_step(j, own, o, ot, ho), hD))
+
+# each class dropping only its own: at c's equations the dropped list is
+# c's class's drops
+def agree_dropped(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +c: Nat, +hD: {CL.downs(SV.owners(sk), cls, 0n) == True{} : Bool}) -> {SP.agree(SV.owners(sk), SV.dropped(cls), SV.kdrops(SV.class_at(cls, c)), c, 0n) == True{} : Bool}:
+  agd(SV.owners(sk), SV.owners(sk), cls, c, 0n, {==}, hD)
+
+# c red in both: the same solved equations before c + 1
+def ps_red(+sk: SK.Sketch, +R1: List<&2, Nat>, +D1: List<&2, Nat>, +R2: List<&2, Nat>, +D2: List<&2, Nat>, +c: Nat, +h1: {SV.mem(c, R1) == True{} : Bool}, +h2: {SV.mem(c, R2) == True{} : Bool},
+  +hps: {SV.presolved(sk, R1, D1, c) == SV.presolved(sk, R2, D2, c) : List<&2, E.QExpr>}) -> {SV.presolved(sk, R1, D1, 1n+c) == SV.presolved(sk, R2, D2, 1n+c) : List<&2, E.QExpr>}:
+  %Equal.sym(List<&2, E.QExpr>, SV.presolved(sk, R1, D1, 1n+c), SV.presolved(sk, R1, D1, c), SP.presolved_same(sk, R1, D1, c, SP.zc_red(SV.owners(sk), c, R1, h1))) : {_ == SV.presolved(sk, R2, D2, 1n+c) : List<&2, E.QExpr>}
+  %Equal.sym(List<&2, E.QExpr>, SV.presolved(sk, R2, D2, 1n+c), SV.presolved(sk, R2, D2, c), SP.presolved_same(sk, R2, D2, c, SP.zc_red(SV.owners(sk), c, R2, h2))) : {SV.presolved(sk, R1, D1, c) == _ : List<&2, E.QExpr>}
+  hps
+
+
+@MACRO R1 SV.reds(c1)
+@MACRO R2 SV.reds(c2)
+@MACRO D1 SV.dropped(c1)
+@MACRO D2 SV.dropped(c2)
+@MACRO KD1 SV.kdrops(SV.class_at(c1, c))
+@MACRO KD2 SV.kdrops(SV.class_at(c2, c))
+@MACRO NQ SV.neqs(SK.Sketch.eqs(sk))
+@MACRO PS1 SV.presolved(sk, $R1, $D1, c)
+@MACRO PS2 SV.presolved(sk, $R2, $D2, c)
+
+# c kept in both, with the same drops among its own equations: the same
+# solved equations before c + 1
+def ps_kept(+sk: SK.Sketch, +c1: List<&2, SV.Class>, +c2: List<&2, SV.Class>, +c: Nat, +h1: {SV.mem(c, $R1) == False{} : Bool}, +h2: {SV.mem(c, $R2) == False{} : Bool},
+  +hD1: {CL.downs(SV.owners(sk), c1, 0n) == True{} : Bool}, +hD2: {CL.downs(SV.owners(sk), c2, 0n) == True{} : Bool}, +hag: {SP.agree(SV.owners(sk), $KD1, $KD2, c, 0n) == True{} : Bool},
+  +hps: {$PS1 == $PS2 : List<&2, E.QExpr>}) -> {SV.presolved(sk, $R1, $D1, 1n+c) == SV.presolved(sk, $R2, $D2, 1n+c) : List<&2, E.QExpr>}:
+  %Equal.sym(List<&2, E.QExpr>, SV.presolved(sk, $R1, $D1, 1n+c), SK.cat($PS1, SV.own_rest(sk, c, $KD1, $NQ)), SP.presolved_kept(sk, $R1, $D1, $KD1, c, h1, agree_dropped(sk, c1, c, hD1))) : {_ == SV.presolved(sk, $R2, $D2, 1n+c) : List<&2, E.QExpr>}
+  %Equal.sym(List<&2, E.QExpr>, SV.presolved(sk, $R2, $D2, 1n+c), SK.cat($PS2, SV.own_rest(sk, c, $KD2, $NQ)), SP.presolved_kept(sk, $R2, $D2, $KD2, c, h2, agree_dropped(sk, c2, c, hD2))) : {SK.cat($PS1, SV.own_rest(sk, c, $KD1, $NQ)) == _ : List<&2, E.QExpr>}
+  qcat_cong($PS1, $PS2, SV.own_rest(sk, c, $KD1, $NQ), SV.own_rest(sk, c, $KD2, $NQ), hps, or_cong(sk, c, $KD1, $KD2, $NQ, hag))
+
+def ps_zero(+sk: SK.Sketch, +R1: List<&2, Nat>, +D1: List<&2, Nat>, +R2: List<&2, Nat>, +D2: List<&2, Nat>) -> {SV.presolved(sk, R1, D1, 0n) == SV.presolved(sk, R2, D2, 0n) : List<&2, E.QExpr>}:
+  %Equal.sym(List<&2, E.QExpr>, SV.presolved(sk, R1, D1, 0n), Nil{}, SP.presolved_zero(sk, R1, D1)) : {_ == SV.presolved(sk, R2, D2, 0n) : List<&2, E.QExpr>}
+  Equal.sym(List<&2, E.QExpr>, SV.presolved(sk, R2, D2, 0n), Nil{}, SP.presolved_zero(sk, R2, D2))
+
+# What the Fates read
+# -------------------
+
+# derivable over one basis, not over an equal one
+def dnd(+sk: SK.Sketch, +R1: List<&2, Nat>, +D1: List<&2, Nat>, +R2: List<&2, Nat>, +D2: List<&2, Nat>, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +i: Nat,
+  +hb: {SV.basis(sk, R1, D1, c, d1, i) == SV.basis(sk, R2, D2, c, d2, i) : List<&2, E.QExpr>}, hd: SV.Derivable(sk, R1, D1, c, d1, i), hn: SV.NotDerivable(sk, R2, D2, c, d2, i)) -> Empty:
+  match hd:
+    case (+ls, hi):
+      hn(ls, (%hb : SV.Ident(SV.eqat(SK.Sketch.eqs(sk), i), SV.lin(ls, _))
+        hi))
+
+# implied with one kept list, not with an equal one
+def imp_ni(+sk: SK.Sketch, +R1: List<&2, Nat>, +R2: List<&2, Nat>, +c: Nat, +i: Nat, +hkb: {SV.kept_before(sk, R1, c) == SV.kept_before(sk, R2, c) : List<&2, Nat>},
+  hi: SV.Implied(sk, R1, c, i), hn: SV.NotImplied(sk, R2, c, i)) -> Empty:
+  match hi:
+    case (+ls, h1):
+      match h1:
+        case (+ms, h2):
+          match h2:
+            case (+k, hr):
+              hn(ls, ms, k, (%hkb : SV.Refutes0(SV.eqs_of(sk, _), SK.cats(SK.cats(SV.csides(sk, _), SV.esides(sk)), [SV.negate(SV.side_at(SV.csides(sk, [c]), i))]), ls, ms, k)
+                hr))

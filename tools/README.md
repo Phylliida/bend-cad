@@ -42,6 +42,7 @@ the checker verifies the output.
 | `lib/refusedpf.bend` | `python3 tools/expand.py tools/drafts/refusedpf.draft lib/refusedpf.bend` |
 | `lib/conflawpf.bend` | `python3 tools/expand.py tools/drafts/conflawpf.draft lib/conflawpf.bend` |
 | `lib/amberlawpf.bend` | `python3 tools/expand.py tools/drafts/amberlawpf.draft lib/amberlawpf.bend` |
+| `lib/agreepf.bend` | `python3 tools/expand.py tools/drafts/agreepf.draft lib/agreepf.bend` |
 
 `@MACRO NAME text` (a line) makes every `$NAME` below stand for `text`
 (textual, longest names first, macros may use macros): long hypothesis lists
