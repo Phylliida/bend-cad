@@ -894,6 +894,26 @@ def yinj(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +n: 
   +hsn = Equal.trans(Nat, GJ.nrows(~F, smat(~F, C.app(~F, C.fit(~F, n, N.ofkv(~K, ~F, ~H, yc)), N.ofkv(~K, ~F, ~H, pc)), C.app(~F, C.fit(~F, n, N.ofkv(~K, ~F, ~H, yc)), N.ofkv(~K, ~F, ~H, pc)), eqs, n, 0n)), CK.eqlen(eqs), n, nrows_smat(~F, C.app(~F, C.fit(~F, n, N.ofkv(~K, ~F, ~H, yc)), N.ofkv(~K, ~F, ~H, pc)), C.app(~F, C.fit(~F, n, N.ofkv(~K, ~F, ~H, yc)), N.ofkv(~K, ~F, ~H, pc)), eqs, n, 0n), hen)
   yinj.go(~K, ~F, ~H, eqs, n, yc, yr, q, ym, pc, pr, ok, w, lw, e, hsn, GJ.inv_of_inj(~F, smat(~F, C.app(~F, C.fit(~F, n, N.ofkv(~K, ~F, ~H, yc)), N.ofkv(~K, ~F, ~H, pc)), C.app(~F, C.fit(~F, n, N.ofkv(~K, ~F, ~H, yc)), N.ofkv(~K, ~F, ~H, pc)), eqs, n, 0n), n, hsn, rows_smat(~F, C.app(~F, C.fit(~F, n, N.ofkv(~K, ~F, ~H, yc)), N.ofkv(~K, ~F, ~H, pc)), C.app(~F, C.fit(~F, n, N.ofkv(~K, ~F, ~H, yc)), N.ofkv(~K, ~F, ~H, pc)), eqs, n, hen), v => lv => ev => sinj(~K, ~F, ~H, eqs, n, yc, yr, q, ym, pc, pr, ok, v, lv, ev)))
 
+# the slopes at one point of the box (there, the block's Jacobian) are
+# injective
+def jinj.go(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +q: N.NC(K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K), +ok: {CK.check.go(~K, eqs, n, yc, yr, q, ym, pc, pr) == True{} : Bool}, +x: M.Vec(~F), +inx: KB.inbox(~K, ~F, ~H, x, CK.box(~K, n, yc, yr, pc, pr)), +d: M.Vec(~F), +hdl: {M.len(~F, d) == n : Nat}, +ev: {M.matvec(~F, smat(~F, x, x, eqs, n, 0n), d) == GJ.zeros(~F, n) : M.Vec(~F)}) -> {d == GJ.zeros(~F, n) : M.Vec(~F)}:
+  yjinj(~K, ~F, ~H, eqs, n, yc, yr, q, ym, pc, pr, ok, x, x, inx, inx, d, hdl, yz_of(~K, ~F, ~H, eqs, n, yc, yr, q, ym, pc, pr, ok, smat(~F, x, x, eqs, n, 0n), d, ev))
+
+def cert_jinj.c(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +n: Nat, c: C.Cert<K>, +ok: {CK.check.c(~K, eqs, n, c) == True{} : Bool}, +z: M.Vec(~F), hz: C.pinned(~K, ~F, ~H, c, z), +y: M.Vec(~F), hy: C.ball(~K, ~F, ~H, c, y), +d: M.Vec(~F), +hdl: {M.len(~F, d) == n : Nat}, +ev: {M.matvec(~F, smat(~F, C.app(~F, C.fit(~F, n, y), z), C.app(~F, C.fit(~F, n, y), z), eqs, n, 0n), d) == GJ.zeros(~F, n) : M.Vec(~F)}) -> {d == GJ.zeros(~F, n) : M.Vec(~F)}:
+  match c:
+    case C.Cert{+yc, +yr, +q, +ym, +pc, +pr}:
+      (hl, hb) = hy
+      +hyc = KA.nateq_ok(KA.klen(~K, yc), n, x_len_yc(~K, eqs, n, yc, yr, q, ym, pc, pr, ok))
+      +hly = Equal.trans(Nat, M.len(~F, y), M.len(~F, N.ofkv(~K, ~F, ~H, yc)), n, hl, Equal.trans(Nat, M.len(~F, N.ofkv(~K, ~F, ~H, yc)), KA.klen(~K, yc), n, len_ofkv(~K, ~F, ~H, yc), hyc))
+      +hnr = KA.kvle_ok(~K, ~F, ~H, Nil{}, yr, x_nn_yr(~K, eqs, n, yc, yr, q, ym, pc, pr, ok))
+      +hnp = KA.kvle_ok(~K, ~F, ~H, Nil{}, pr, x_nn_pr(~K, eqs, n, yc, yr, q, ym, pc, pr, ok))
+      jinj.go(~K, ~F, ~H, eqs, n, yc, yr, q, ym, pc, pr, ok, C.app(~F, C.fit(~F, n, y), z), box_in(~K, ~F, ~H, n, y, z, yc, yr, pc, pr, hb, hly, hyc, hnr, hz, hnp), d, hdl, ev)
+
+# LAW cert_jinj: at every point of the certificate's box (y in its ball, z
+# pinned), the block's Jacobian, its unknowns' slopes there, is injective
+def cert_jinj(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +eqs: List<&2, E.QExpr>, +n: Nat, c: C.Cert<K>, ok: {CK.check(~K, C.Block{eqs, n}, c) == True{} : Bool}, +z: M.Vec(~F), hz: C.pinned(~K, ~F, ~H, c, z), +y: M.Vec(~F), hy: C.ball(~K, ~F, ~H, c, y), +d: M.Vec(~F), +hdl: {M.len(~F, d) == n : Nat}, +ev: {M.matvec(~F, smat(~F, C.app(~F, C.fit(~F, n, y), z), C.app(~F, C.fit(~F, n, y), z), eqs, n, 0n), d) == GJ.zeros(~F, n) : M.Vec(~F)}) -> {d == GJ.zeros(~F, n) : M.Vec(~F)}:
+  cert_jinj.c(~K, ~F, ~H, eqs, n, c, ok, z, hz, y, hy, d, hdl, ev)
+
 # The fixed point
 # ---------------
 
