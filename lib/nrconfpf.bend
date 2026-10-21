@@ -1,0 +1,200 @@
+# bend-cad: a conflict in one honest classification is a conflict in any
+# other (PLAN-sk13a S6, law 5 step 4). Proofs only.
+#
+# Say c is Conflict{s} in one classification and kept, amber or over in
+# another, with the same kept constraints kb before c in both. The
+# conflict gives a refutation of c and s in the support's order (c's and
+# s's equations in sketch order, then their sides and the entities'); the
+# other gives NoRefute for c and kb in the spec's order (kb's equations,
+# then c's; kb's sides, the entities', then c's). The support is inside kb
+# (sub_kb: its members are kept, driving and before c). Run refute on
+# NoRefute's own lists (lib/satpf.bend: refute_ok, pt_of_none):
+# - it finds a certificate: NoRefute is wrong;
+# - it finds none: a point for them, which is a point for c and s in the
+#   support's order too (pt_back: a point is a fact about each equation
+#   and side, so it survives taking fewer of them, in any order), and a
+#   point has no refutation (ST.pt_noref).
+#
+# Generated from tools/drafts/nrconfpf.draft by tools/expand.py; edit the
+# draft.
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ../spec/sketch.bend as SK
+import ../spec/solve.bend as SV
+import ./karith.bend as KA
+import ./listpf.bend as L
+import ./lqfield.bend as LQF
+import ./refute.bend as RF
+import ./satpf.bend as ST
+import ./conflict.bend as CO
+import ./conflictpf.bend as CP
+import ./prepf.bend as PR
+import ./kbpf.bend as KB
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+# Merging two killed lists
+# ------------------------
+
+def ak_pt(~F: O.OField, +ms: List<&2, List<&2, Nat>>, +cs: List<&2, O.C(F)>, b: Bool, +e: E.QExpr, +A: List<&2, E.QExpr>, h: ST.AllK(~F, ms, cs, SV.solved.pick(b, e, A))) -> ST.AllK(~F, ms, cs, A):
+  match b:
+    case True{}:
+      (h1, h2) = h
+      h2
+    case False{}:
+      h
+
+def akm.c(~F: O.OField, +ms: List<&2, List<&2, Nat>>, +cs: List<&2, O.C(F)>, x: Bool, y: Bool, +e: E.QExpr, +A: List<&2, E.QExpr>, +B: List<&2, E.QExpr>, +Lq: List<&2, E.QExpr>,
+  hA: ST.AllK(~F, ms, cs, SV.solved.pick(y, e, A)), hB: ST.AllK(~F, ms, cs, SV.solved.pick(SV.bor(x, False{}), e, B)), ih: ST.AllK(~F, ms, cs, A) -> ST.AllK(~F, ms, cs, B) -> ST.AllK(~F, ms, cs, Lq))
+  -> ST.AllK(~F, ms, cs, SV.solved.pick(SV.bor(x, y), e, Lq)):
+  match x y:
+    case True{} y:
+      (hb1, hb2) = hB
+      (hb1, ih(ak_pt(~F, ms, cs, y, e, A, hA), hb2))
+    case False{} True{}:
+      (ha1, ha2) = hA
+      (ha1, ih(ha2, hB))
+    case False{} False{}:
+      ih(hA, hB)
+
+# the equations of c and s, from those of s and those of c
+def akm(~F: O.OField, +ms: List<&2, List<&2, Nat>>, +cs: List<&2, O.C(F)>, es: List<&2, E.QExpr>, +own: List<&2, Nat>, +s: List<&2, Nat>, +c: Nat, +k: Nat,
+  hA: ST.AllK(~F, ms, cs, SV.eqs_of.go(es, own, s, k)), hB: ST.AllK(~F, ms, cs, SV.eqs_of.go(es, own, [c], k))) -> ST.AllK(~F, ms, cs, SV.eqs_of.go(es, own, Con{c, s}, k)):
+  match es:
+    case Nil{}:
+      Unit{}
+    case Con{+e, +t}:
+      akm.c(~F, ms, cs, SV.eq(SV.nth(own, k), c), SV.mem(SV.nth(own, k), s), e, SV.eqs_of.go(t, own, s, 1n+k), SV.eqs_of.go(t, own, [c], 1n+k), SV.eqs_of.go(t, own, Con{c, s}, 1n+k), hA, hB,
+        a => b => akm(~F, ms, cs, t, own, s, c, 1n+k, a, b))
+
+def as_pt(~F: O.OField, +ms: List<&2, List<&2, Nat>>, +c0: List<&2, O.C(F)>, +c1: List<&2, O.C(F)>, b: Bool, +X: List<&2, SK.Side>, +A: List<&2, SK.Side>, h: ST.AllS(~F, ms, c0, c1, SV.csides.pick(b, X, A))) -> ST.AllS(~F, ms, c0, c1, A):
+  match b:
+    case True{}:
+      PR.alls_r(~F, ms, c0, c1, X, A, h)
+    case False{}:
+      h
+
+def asm.c(~F: O.OField, +ms: List<&2, List<&2, Nat>>, +c0: List<&2, O.C(F)>, +c1: List<&2, O.C(F)>, x: Bool, y: Bool, +X: List<&2, SK.Side>, +A: List<&2, SK.Side>, +B: List<&2, SK.Side>, +Ls: List<&2, SK.Side>,
+  +hA: ST.AllS(~F, ms, c0, c1, SV.csides.pick(y, X, A)), +hB: ST.AllS(~F, ms, c0, c1, SV.csides.pick(SV.bor(x, False{}), X, B)), ih: ST.AllS(~F, ms, c0, c1, A) -> ST.AllS(~F, ms, c0, c1, B) -> ST.AllS(~F, ms, c0, c1, Ls))
+  -> ST.AllS(~F, ms, c0, c1, SV.csides.pick(SV.bor(x, y), X, Ls)):
+  match x y:
+    case True{} y:
+      PR.alls_cat(~F, ms, c0, c1, X, Ls, PR.alls_l(~F, ms, c0, c1, X, B, hB), ih(as_pt(~F, ms, c0, c1, y, X, A, hA), PR.alls_r(~F, ms, c0, c1, X, B, hB)))
+    case False{} True{}:
+      PR.alls_cat(~F, ms, c0, c1, X, Ls, PR.alls_l(~F, ms, c0, c1, X, A, hA), ih(PR.alls_r(~F, ms, c0, c1, X, A, hA), hB))
+    case False{} False{}:
+      ih(hA, hB)
+
+# the sides of c and s, from those of s and those of c
+def asm(~F: O.OField, +ms: List<&2, List<&2, Nat>>, +c0: List<&2, O.C(F)>, +c1: List<&2, O.C(F)>, +es: List<&2, SK.Ent>, rs: List<&2, SK.Rec>, +s: List<&2, Nat>, +c: Nat, +i: Nat,
+  hA: ST.AllS(~F, ms, c0, c1, SV.csides.go(es, rs, s, i)), hB: ST.AllS(~F, ms, c0, c1, SV.csides.go(es, rs, [c], i))) -> ST.AllS(~F, ms, c0, c1, SV.csides.go(es, rs, Con{c, s}, i)):
+  match rs:
+    case Nil{}:
+      Unit{}
+    case Con{SK.Rec{id, True{}, k}, +t}:
+      asm(~F, ms, c0, c1, es, t, s, c, 1n+i, hA, hB)
+    case Con{SK.Rec{id, False{}, +k}, +t}:
+      asm.c(~F, ms, c0, c1, SV.eq(i, c), SV.mem(i, s), SK.Constraint.sides(es, k), SV.csides.go(es, t, s, 1n+i), SV.csides.go(es, t, [c], 1n+i), SV.csides.go(es, t, Con{c, s}, 1n+i), hA, hB,
+        a => b => asm(~F, ms, c0, c1, es, t, s, c, 1n+i, a, b))
+
+def asm_sk(~F: O.OField, +ms: List<&2, List<&2, Nat>>, +c0: List<&2, O.C(F)>, +c1: List<&2, O.C(F)>, sk: SK.Sketch, +s: List<&2, Nat>, +c: Nat,
+  hA: ST.AllS(~F, ms, c0, c1, SV.csides(sk, s)), hB: ST.AllS(~F, ms, c0, c1, SV.csides(sk, [c]))) -> ST.AllS(~F, ms, c0, c1, SV.csides(sk, Con{c, s})):
+  match sk:
+    case SK.Sketch{vs, +es, +rs}:
+      asm(~F, ms, c0, c1, es, rs, s, c, 0n, hA, hB)
+
+
+# a point for c and kb in the spec's order is one for c and any s inside kb
+# in the support's
+def pt_back(~F: O.OField, +sk: SK.Sketch, +c: Nat, +s: List<&2, Nat>, +kb: List<&2, Nat>, +hs: {SV.sub(s, kb) == True{} : Bool}, p: ST.Point(~F, SK.cat(SV.eqs_of(sk, kb), SV.eqs_of(sk, [c])), SK.cats(SK.cats(SV.csides(sk, kb), SV.esides(sk)), SV.csides(sk, [c]))))
+  -> ST.Point(~F, CO.supp.es(sk, c, s), CO.supp.ss(sk, c, s)):
+  (+ms, p1) = p
+  (+c0, p2) = p1
+  (+c1, p3) = p2
+  (+k0, q1) = p3
+  (+k1, q2) = q1
+  (+sa, q3) = q2
+  +A = SV.eqs_of(sk, kb)
+  +B = SV.eqs_of(sk, [c])
+  +he = CP.eqs_mono(SK.Sketch.eqs(sk), SV.owners(sk), s, kb, 0n, hs)
+  +sKE = PR.alls_l(~F, ms, c0, c1, SK.cats(SV.csides(sk, kb), SV.esides(sk)), SV.csides(sk, [c]), sa)
+  +sC = PR.alls_r(~F, ms, c0, c1, SK.cats(SV.csides(sk, kb), SV.esides(sk)), SV.csides(sk, [c]), sa)
+  +sK = PR.alls_l(~F, ms, c0, c1, SV.csides(sk, kb), SV.esides(sk), sKE)
+  +sE = PR.alls_r(~F, ms, c0, c1, SV.csides(sk, kb), SV.esides(sk), sKE)
+  +sS = CP.alls_sub(~F, ms, c0, c1, SV.csides(sk, s), SV.csides(sk, kb), PR.sides_sub(sk, s, kb, hs), sK)
+  (ms, (c0, (c1, (akm(~F, ms, c0, SK.Sketch.eqs(sk), SV.owners(sk), s, c, 0n, CP.allk_sub(~F, ms, c0, SV.eqs_of(sk, s), A, he, PR.allk_l(~F, ms, c0, A, B, k0)), PR.allk_r(~F, ms, c0, A, B, k0)),
+    (akm(~F, ms, c1, SK.Sketch.eqs(sk), SV.owners(sk), s, c, 0n, CP.allk_sub(~F, ms, c1, SV.eqs_of(sk, s), A, he, PR.allk_l(~F, ms, c1, A, B, k1)), PR.allk_r(~F, ms, c1, A, B, k1)),
+    (PR.alls_cat(~F, ms, c0, c1, SV.csides(sk, Con{c, s}), SV.esides(sk), asm_sk(~F, ms, c0, c1, sk, s, c, sS, sC), sE), q3))))))
+
+# The support is kept before c
+# ----------------------------
+
+def kpk_mem(b: Bool, +kb: List<&2, Nat>, +c: Nat, +i: Nat, +h: {SV.mem(i, kb) == True{} : Bool}) -> {SV.mem(i, KB.kpk(b, kb, c)) == True{} : Bool}:
+  match b:
+    case True{}:
+      %Equal.sym(Bool, SV.mem(i, CO.lsnoc(kb, c)), SV.bor(SV.mem(i, kb), SV.eq(i, c)), KB.mem_snoc(i, kb, c)) : {_ == True{} : Bool}
+      L.bor_l(SV.mem(i, kb), SV.eq(i, c), h)
+    case False{}:
+      h
+
+def in_kb.c(b: Bool, +sk: SK.Sketch, +R: List<&2, Nat>, +m: Nat, +i: Nat, e: {SV.eq(i, m) == b : Bool}, hlt: {SV.lt(i, 1n+m) == True{} : Bool}, +hd: {KB.dcond(sk, R, i) == True{} : Bool},
+  ih: {SV.lt(i, m) == True{} : Bool} -> {SV.mem(i, SV.kept_before(sk, R, m)) == True{} : Bool}) -> {SV.mem(i, KB.kpk(KB.dcond(sk, R, m), SV.kept_before(sk, R, m), m)) == True{} : Bool}:
+  match b:
+    case True{}:
+      %L.eq_ok(i, m, e) : {SV.mem(i, KB.kpk(KB.dcond(sk, R, _), SV.kept_before(sk, R, m), _)) == True{} : Bool}
+      %Equal.sym(Bool, KB.dcond(sk, R, i), True{}, hd) : {SV.mem(i, KB.kpk(_, SV.kept_before(sk, R, m), i)) == True{} : Bool}
+      %Equal.sym(Bool, SV.mem(i, CO.lsnoc(SV.kept_before(sk, R, m), i)), SV.bor(SV.mem(i, SV.kept_before(sk, R, m)), SV.eq(i, i)), KB.mem_snoc(i, SV.kept_before(sk, R, m), i)) : {_ == True{} : Bool}
+      L.bor_r(SV.mem(i, SV.kept_before(sk, R, m)), SV.eq(i, i), L.eq_refl(i))
+    case False{}:
+      kpk_mem(KB.dcond(sk, R, m), SV.kept_before(sk, R, m), m, i, ih(KB.lt_down(i, m, hlt, e)))
+
+# a driving constraint before c, not red, is kept before c
+def in_kb(+sk: SK.Sketch, +R: List<&2, Nat>, c: Nat, +i: Nat, hlt: {SV.lt(i, c) == True{} : Bool}, +hd: {KB.dcond(sk, R, i) == True{} : Bool}) -> {SV.mem(i, SV.kept_before(sk, R, c)) == True{} : Bool}:
+  match c:
+    case 0n:
+      absurd({SV.mem(i, SV.kept_before(sk, R, 0n)) == True{} : Bool}, KA.ft(KB.lt_zero(i, hlt)))
+    case 1n++m:
+      %Equal.sym(List<&2, Nat>, SV.kept_before(sk, R, 1n+m), KB.kpk(KB.dcond(sk, R, m), SV.kept_before(sk, R, m), m), KB.kb_next(sk, R, m)) : {SV.mem(i, _) == True{} : Bool}
+      in_kb.c(SV.eq(i, m), sk, R, m, i, {==}, hlt, hd, hl => in_kb(sk, R, m, i, hl, hd))
+
+# the support: below c, driving, none red
+def sub_kb(+sk: SK.Sketch, +R: List<&2, Nat>, +c: Nat, s: List<&2, Nat>, +hb: {SV.below(s, c) == True{} : Bool}, +hd: {SV.all_driving(sk, s) == True{} : Bool}, +hn: {SV.none_in(s, R) == True{} : Bool})
+  -> {SV.sub(s, SV.kept_before(sk, R, c)) == True{} : Bool}:
+  match s:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      L.band_i(SV.mem(x, SV.kept_before(sk, R, c)), SV.sub(t, SV.kept_before(sk, R, c)),
+        in_kb(sk, R, c, x, L.band_l(SV.lt(x, c), SV.below(t, c), hb), L.band_i(SV.driving(sk, x), SV.bnot(SV.mem(x, R)), L.band_l(SV.driving(sk, x), SV.all_driving(sk, t), hd), L.band_l(SV.bnot(SV.mem(x, R)), SV.none_in(t, R), hn))),
+        sub_kb(sk, R, c, t, L.band_r(SV.lt(x, c), SV.below(t, c), hb), L.band_r(SV.driving(sk, x), SV.all_driving(sk, t), hd), L.band_r(SV.bnot(SV.mem(x, R)), SV.none_in(t, R), hn)))
+
+# Conflict against NoRefute
+# -------------------------
+
+
+def cn.m(mc: Maybe<&2, RF.Cert>, +sk: SK.Sketch, +R2: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, e: {RF.refute(SK.cat(SV.eqs_of(sk, SV.kept_before(sk, R2, c)), SV.eqs_of(sk, [c])), SK.cats(SK.cats(SV.csides(sk, SV.kept_before(sk, R2, c)), SV.esides(sk)), SV.csides(sk, [c]))) == mc : Maybe<&2, RF.Cert>}, +hs: {SV.sub(s, SV.kept_before(sk, R2, c)) == True{} : Bool}, nr: SV.NoRefute(sk, R2, c),
+  +ls: List<&2, S.Q>, +ms: List<&2, S.Q>, +k: S.Q, hr: SV.Refutes0(CO.supp.es(sk, c, s), CO.supp.ss(sk, c, s), ls, ms, k)) -> Empty:
+  match mc:
+    case Some{RF.Cert{+ls2, +ms2, +k2}}:
+      nr(ls2, ms2, k2, (%e : ST.RefOk(SK.cat(SV.eqs_of(sk, SV.kept_before(sk, R2, c)), SV.eqs_of(sk, [c])), SK.cats(SK.cats(SV.csides(sk, SV.kept_before(sk, R2, c)), SV.esides(sk)), SV.csides(sk, [c])), _)
+        ST.refute_ok(SK.cat(SV.eqs_of(sk, SV.kept_before(sk, R2, c)), SV.eqs_of(sk, [c])), SK.cats(SK.cats(SV.csides(sk, SV.kept_before(sk, R2, c)), SV.esides(sk)), SV.csides(sk, [c])))))
+    case None{}:
+      ST.pt_noref.go(~LQF.lqfield(), CO.supp.es(sk, c, s), CO.supp.ss(sk, c, s), pt_back(~LQF.lqfield(), sk, c, s, SV.kept_before(sk, R2, c), hs, ST.pt_of_none(~LQF.lqfield(), SK.cat(SV.eqs_of(sk, SV.kept_before(sk, R2, c)), SV.eqs_of(sk, [c])), SK.cats(SK.cats(SV.csides(sk, SV.kept_before(sk, R2, c)), SV.esides(sk)), SV.csides(sk, [c])), e)), ls, ms, k, hr)
+
+# c a conflict over one red list, without refutation over another, the
+# kept constraints before c the same in both: impossible
+def conf_nr(+sk: SK.Sketch, +R1: List<&2, Nat>, +R2: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, +hkb: {SV.kept_before(sk, R1, c) == SV.kept_before(sk, R2, c) : List<&2, Nat>}, hc: SV.ConflictOk(sk, R1, c, s), nr: SV.NoRefute(sk, R2, c)) -> Empty:
+  (+hb, r) = hc
+  (hr, hmin) = r
+  (+ls, r1) = hr
+  (+ms, r2) = r1
+  (+k, r3) = r2
+  +hb2 = L.band_r(SV.distinct(s), SV.band(SV.below(s, c), SV.band(SV.all_driving(sk, s), SV.none_in(s, R1))), hb)
+  +hb3 = L.band_r(SV.below(s, c), SV.band(SV.all_driving(sk, s), SV.none_in(s, R1)), hb2)
+  cn.m(RF.refute(SK.cat(SV.eqs_of(sk, SV.kept_before(sk, R2, c)), SV.eqs_of(sk, [c])), SK.cats(SK.cats(SV.csides(sk, SV.kept_before(sk, R2, c)), SV.esides(sk)), SV.csides(sk, [c]))), sk, R2, c, s, {==}, (%hkb : {SV.sub(s, _) == True{} : Bool}
+    sub_kb(sk, R1, c, s, L.band_l(SV.below(s, c), SV.band(SV.all_driving(sk, s), SV.none_in(s, R1)), hb2), L.band_l(SV.all_driving(sk, s), SV.none_in(s, R1), hb3), L.band_r(SV.all_driving(sk, s), SV.none_in(s, R1), hb3))),
+    nr, ls, ms, k, r3)
