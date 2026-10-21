@@ -1,0 +1,96 @@
+# bend-cad: law 11, solve_refused (PLAN-sk13a S6): what a refusal means
+# today. If no level certifies the drawing g0, the drawing itself is not a
+# regular solution of the system solved in the free variables: if it were,
+# law 10 (lib/completepf.bend: solve_complete) would certify every drawing
+# near it at some level, and g0 is as near to itself as can be. Proofs
+# only.
+#
+# Generated from tools/drafts/refusedpf.draft by tools/expand.py; edit the
+# draft.
+
+import Base
+import ../spec/num.bend as S
+import ../spec/field.bend as O
+import ../spec/mat.bend as M
+import ../spec/knum.bend as N
+import ../spec/real.bend as CR
+import ../spec/sketch.bend as SK
+import ../spec/box.bend as BX
+import ../spec/solve.bend as SV
+import ../spec/deriv.bend as DV
+import ./karith.bend as KA
+import ./kinst.bend as KI
+import ./solve.bend as SO
+import ./completepf.bend as CPF
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+# The drawing is near itself
+# --------------------------
+
+def pinned_self(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, +g0: N.KVec(~K), pins: List<&2, Nat>) -> SV.PinnedAt(~K, ~F, ~H, N.ofkv(~K, ~F, ~H, g0), pins, g0):
+  match pins:
+    case Nil{}:
+      Unit{}
+    case Con{+v, t}:
+      ({==}, pinned_self(~K, ~F, ~H, g0, t))
+
+# a - a = 0 < d
+def sub_self_lt(~F: O.OField, +a: O.C(F), +d: O.C(F), +hd: O.lt(F, O.zero(F), d)) -> O.lt(F, O.sub(~F, a, a), d):
+  %Equal.sym(O.C(F), O.add(F, a, O.neg(F, a)), O.zero(F), O.add_neg(F)(a)) : O.lt(F, _, d)
+  hd
+
+def close_self(~F: O.OField, +a: O.C(F), +d: O.C(F), +hd: O.lt(F, O.zero(F), d)) -> SV.Close(~F, a, a, d):
+  (sub_self_lt(~F, a, d, hd), sub_self_lt(~F, a, d, hd))
+
+def near_go_self(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, b: Bool, +g0: N.KVec(~K), +d: O.C(F), +hd: O.lt(F, O.zero(F), d), +v: Nat) -> SV.Near.go(~K, ~F, ~H, b, g0, N.ofkv(~K, ~F, ~H, g0), d, g0, v):
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      close_self(~F, O.lookup(~F, N.ofkv(~K, ~F, ~H, g0), v), d, hd)
+
+def near_self(~K: N.Num, ~F: O.OField, ~H: N.Emb<K, F>, n: Nat, +v: Nat, +g0: N.KVec(~K), +d: O.C(F), +hd: O.lt(F, O.zero(F), d), +pins: List<&2, Nat>) -> SV.Near(~K, ~F, ~H, n, v, g0, N.ofkv(~K, ~F, ~H, g0), d, pins, g0):
+  match n:
+    case 0n:
+      Unit{}
+    case 1n+m:
+      (near_go_self(~K, ~F, ~H, SV.mem(v, pins), g0, d, hd, v), near_self(~K, ~F, ~H, m, 1n+v, g0, d, hd, pins))
+
+# The law
+# -------
+
+@MACRO DN ~KI.dnum()
+@MACRO NV SO.nvars(sk)
+@MACRO PINS SO.pins_of(sk)
+@MACRO X0 N.ofkv($DN, ~F, ~H, g0)
+@MACRO FIN ({SO.Out.ok(SO.solve_l(sk, g, l)) == True{} : Bool} & BX.inbox($DN, ~F, ~H, SO.Out.gc(SO.solve_l(sk, g, l)), SO.Out.gr(SO.solve_l(sk, g, l)), x))
+@MACRO RP ~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, hn: @l: Nat -> {SO.Out.ok(SO.solve_l(sk, g0, l)) == False{} : Bool}, +x: M.Vec(~F), +hx: {x == $X0 : M.Vec(~F)}
+
+# a level that certifies g0 contradicts hn
+def ref.fin(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, hn: {SO.Out.ok(SO.solve_l(sk, g0, l)) == False{} : Bool}, +x: M.Vec(~F), f: ({SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool} & BX.inbox($DN, ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), x))) -> Empty:
+  match f:
+    case (hok, hin):
+      KA.tf(Equal.trans(Bool, True{}, SO.Out.ok(SO.solve_l(sk, g0, l)), False{}, Equal.sym(Bool, SO.Out.ok(SO.solve_l(sk, g0, l)), True{}, hok), hn))
+
+def ref.l($RP, +d: O.C(F), +hd: O.lt(F, O.zero(F), d), q: &l: Nat -> (@g: List<&2, S.D> -> SV.Near($DN, ~F, ~H, $NV, 0n, g, x, d, $PINS, g0) -> $FIN)) -> Empty:
+  match q:
+    case (+l, f):
+      ref.fin(~F, ~H, sk, g0, l, hn(l), x, f(g0, (%Equal.sym(M.Vec(~F), x, $X0, hx) : SV.Near($DN, ~F, ~H, $NV, 0n, g0, _, d, $PINS, g0)
+        near_self($DN, ~F, ~H, $NV, 0n, g0, d, hd, $PINS))))
+
+def ref.d($RP, s: &d: O.C(F) -> (O.lt(F, O.zero(F), d) & (&l: Nat -> (@g: List<&2, S.D> -> SV.Near($DN, ~F, ~H, $NV, 0n, g, x, d, $PINS, g0) -> $FIN)))) -> Empty:
+  match s:
+    case (+d, p):
+      match p:
+        case (+hd, q):
+          ref.l(~F, ~H, sk, g0, hn, x, hx, d, hd, q)
+
+# LAW 11 (ROADMAP solve_refused): if no level certifies the drawing g0,
+# then g0 read in F is not a regular solution of the system solved in the
+# solver's free variables (with the pins at their drawn values and the
+# sides strict, as law 10 reads one)
+def solve_refused(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +dy: {SV.dyadic(SV.mark(SV.reds(SO.cls_of(sk)), sk)) == True{} : Bool}, +g0: List<&2, S.D>, hn: @l: Nat -> {SO.Out.ok(SO.solve_l(sk, g0, l)) == False{} : Bool}, +x: M.Vec(~F), +hx: {x == N.ofkv(~KI.dnum(), ~F, ~H, g0) : M.Vec(~F)}, +hl: {M.len(~F, x) == SO.nvars(sk) : Nat}, hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk)))), hs: SV.Strict(~F, x, SK.Sketch.sides(SV.mark(SV.cat(SV.reds(SO.cls_of(sk)), SV.ambers(SO.cls_of(sk))), sk)), SO.pins_of(sk)), hr: DV.Regular(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)))) -> Empty:
+  ref.d(~F, ~H, sk, g0, hn, x, hx, CPF.solve_complete(~F, ~R, ~H, sk, w, cov, dy, g0, x, hl, (%Equal.sym(M.Vec(~F), x, $X0, hx) : SV.PinnedAt($DN, ~F, ~H, _, $PINS, g0)
+    pinned_self($DN, ~F, ~H, g0, $PINS)), hz, hs, hr))

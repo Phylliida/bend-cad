@@ -523,7 +523,9 @@ As planned:
   - dropped premises rewrite to solved ones inside `Ident`;
   - an over-determined set inside a matchable list is impossible
     (pigeonhole).
-- **Law 11 (`solve_refused`)** from law 10.
+- **Law 11 (`solve_refused`)** from law 10. Done (2026-10-20,
+  lib/refusedpf.bend): the drawing is as near to itself as any d > 0, so
+  law 10 would certify it at some level.
 
 ### S7. `solve_complete` v2
 - `lib/completepf.bend` (C1–C6) with the kept system replaced by the

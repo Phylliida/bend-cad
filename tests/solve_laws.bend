@@ -1,9 +1,9 @@
 # The solver's proven laws (ROADMAP.bend) with their proofs
 # (lib/solvepf.bend: the verdict laws; lib/regpf.bend: solve_regular;
 # lib/blamepf.bend: solve_blame; lib/totalpf.bend: solve_total,
-# solve_honest; lib/completepf.bend: solve_complete), restated so the gate
-# checks the proofs and tools/lawsync.py checks the statements match
-# ROADMAP's.
+# solve_honest; lib/completepf.bend: solve_complete; lib/refusedpf.bend:
+# solve_refused), restated so the gate checks the proofs and
+# tools/lawsync.py checks the statements match ROADMAP's.
 
 import Base
 import ../spec/num.bend as S
@@ -23,6 +23,7 @@ import ../spec/deriv.bend as DV
 import ../lib/completepf.bend as CPF
 import ../lib/regpf.bend as RGP
 import ../lib/blamepf.bend as BLM
+import ../lib/refusedpf.bend as RFD
 
 def solve_exists(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}) -> (&x: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), x) & SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk)))):
   SP.solve_exists(~F, ~R, ~H, sk, g0, l, ok)
@@ -47,3 +48,6 @@ def solve_honest(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk
 
 def solve_complete(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +dy: {SV.dyadic(SV.mark(SV.reds(SO.cls_of(sk)), sk)) == True{} : Bool}, +g0: List<&2, S.D>, +x: M.Vec(~F), +hl: {M.len(~F, x) == SO.nvars(sk) : Nat}, +hp: SV.PinnedAt(~KI.dnum(), ~F, ~H, x, SO.pins_of(sk), g0), hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk)))), hs: SV.Strict(~F, x, SK.Sketch.sides(SV.mark(SV.cat(SV.reds(SO.cls_of(sk)), SV.ambers(SO.cls_of(sk))), sk)), SO.pins_of(sk)), hr: DV.Regular(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)))) -> &d: O.C(F) -> (O.lt(F, O.zero(F), d) & (&l: Nat -> (@g: List<&2, S.D> -> SV.Near(~KI.dnum(), ~F, ~H, SO.nvars(sk), 0n, g, x, d, SO.pins_of(sk), g0) -> ({SO.Out.ok(SO.solve_l(sk, g, l)) == True{} : Bool} & BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g, l)), SO.Out.gr(SO.solve_l(sk, g, l)), x))))):
   CPF.solve_complete(~F, ~R, ~H, sk, w, cov, dy, g0, x, hl, hp, hz, hs, hr)
+
+def solve_refused(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +dy: {SV.dyadic(SV.mark(SV.reds(SO.cls_of(sk)), sk)) == True{} : Bool}, +g0: List<&2, S.D>, hn: @l: Nat -> {SO.Out.ok(SO.solve_l(sk, g0, l)) == False{} : Bool}, +x: M.Vec(~F), +hx: {x == N.ofkv(~KI.dnum(), ~F, ~H, g0) : M.Vec(~F)}, +hl: {M.len(~F, x) == SO.nvars(sk) : Nat}, hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk)))), hs: SV.Strict(~F, x, SK.Sketch.sides(SV.mark(SV.cat(SV.reds(SO.cls_of(sk)), SV.ambers(SO.cls_of(sk))), sk)), SO.pins_of(sk)), hr: DV.Regular(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)))) -> Empty:
+  RFD.solve_refused(~F, ~R, ~H, sk, w, cov, dy, g0, hn, x, hx, hl, hz, hs, hr)

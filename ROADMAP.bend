@@ -61,8 +61,9 @@ import ./lib/solve.bend as SO
 #
 # Proven: solve_exists, solve_unique, solve_pins (lib/solvepf.bend),
 # solve_regular (lib/regpf.bend), solve_blame (lib/blamepf.bend),
-# solve_total and solve_honest (lib/totalpf.bend), and solve_complete
-# (lib/completepf.bend), restated in tests/solve_laws.bend. The classes,
+# solve_total and solve_honest (lib/totalpf.bend), solve_complete
+# (lib/completepf.bend) and solve_refused (lib/refusedpf.bend), restated
+# in tests/solve_laws.bend. The classes,
 # pins and structure are the single pass's (lib/pass.bend; PLAN-sk13a S4,
 # switched in S5), and the verdict certifies the dropped equations and
 # amber sides by their combinations and refutations (lib/verdict.bend);
