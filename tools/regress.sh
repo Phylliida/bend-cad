@@ -43,14 +43,14 @@ wait
 while read -r name limit want; do
   d="$tmp/sk/$name"
   code="$(cat "$d/code" 2>/dev/null || echo none)"
-  got="$(head -3 "$d/out" | paste -sd ';' | sed 's/;/; /g')"
+  got="$(head -4 "$d/out" | paste -sd ';' | sed 's/;/; /g')"
   t="$(awk -v m="$(cat "$d/ms" 2>/dev/null || echo 0)" 'BEGIN{printf "%.1f", m/1000}')"
   if [ "$code" = 124 ]; then
     echo "sketch $name: over its ${limit} s limit"; echo bad >> "$tmp/sk/bad"
   elif [ "$code" != 0 ] || [ "$got" != "$want" ]; then
     echo "sketch $name: got \"$got\" (exit $code), want \"$want\""; echo bad >> "$tmp/sk/bad"
   else
-    printf 'sketch %-20s %6s s  %s\n' "$name" "$t" "$got"
+    printf 'sketch %-20s %6s s  %.110s\n' "$name" "$t" "$got"
   fi
 done < <(command grep -v '^#' proto/sketches/expected)
 [ -e "$tmp/sk/bad" ] && ok=0

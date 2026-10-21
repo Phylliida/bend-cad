@@ -62,8 +62,11 @@ canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
 #cons li { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 6px; border: 1px solid transparent; }
 #cons li:hover { background: var(--bg); }
 #cons li.red { border-color: var(--bad); color: var(--bad); }
-#cons li.dup { color: var(--muted); }
-#cons li.dup .nm { text-decoration: line-through; }
+#cons li.amber { border-color: var(--warn); }
+#cons li.amber .st { color: var(--warn); }
+#cons li .no { color: var(--muted); font-size: 11px; min-width: 2.2em; font-variant-numeric: tabular-nums; }
+#cons li .st { display: block; font-style: normal; font-size: 11px; color: var(--muted); }
+#cons li.red .st { color: var(--bad); }
 #cons li.sel { background: var(--accent-soft); }
 #cons li .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #cons li input { width: 72px; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);

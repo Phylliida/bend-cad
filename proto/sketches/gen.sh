@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Regenerates each sketch's solver input from its GUI export: NAME.in is what
-# the page sends (gui/pipeline.js's prepare: relaxed, ordered, dyadic),
-# NAME.raw.in the same with the repeats the page leaves out (written only
-# when it differs). Needs bun (BUN=..., or the newest in the nix store).
+# Regenerates each sketch's solver input from its GUI export, as
+# gui/pipeline.js's prepare makes it (relaxed, ordered, dyadic): NAME.in
+# with exact repeats left out (the page's request before PLAN-sk13a S8),
+# NAME.raw.in with them, the page's request now (written only when it
+# differs). Needs bun (BUN=..., or the newest in the nix store).
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 root=../..

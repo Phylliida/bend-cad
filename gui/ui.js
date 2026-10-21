@@ -80,7 +80,7 @@ const S = {
   pending: null,      // line/circle in progress: {kind, from: pointId}
   mouse: { x: 0, y: 0, wx: 0, wy: 0 },
   undo: [], redo: [],
-  cert: { state: "idle", ok: null, red: new Set(), pinned: new Set(), ms: 0, msg: "", pinsCount: 0, nvars: 0 },
+  cert: { state: "idle", ok: null, red: new Set(), pinned: new Set(), status: new Map(), ms: 0, msg: "", pinsCount: 0, nvars: 0 },
   opts: { relax: true, order: true, dyadic: true, auto: true },
   seq: 0, applied: 0, inflight: false, again: false,
   space: false,
@@ -176,7 +176,7 @@ function changed(opts = {}) {
 
 async function certify(opts = {}) {
   if (S.inflight) { S.again = true; S.againOpts = opts; return; }
-  if (!S.sk.ents.length) { S.cert = { ...S.cert, state: "idle", ok: null, red: new Set(), pinned: new Set() }; setStatus("", "Empty sketch"); renderPanels(); return; }
+  if (!S.sk.ents.length) { S.cert = { ...S.cert, state: "idle", ok: null, red: new Set(), pinned: new Set(), status: new Map() }; setStatus("", "Empty sketch"); renderPanels(); return; }
   const seq = ++S.seq;
   let prep;
   try {
@@ -207,9 +207,11 @@ async function certify(opts = {}) {
       // apply only if the sketch has not been edited structurally since
       const res = PL.finish(S.sk, prep, ans);
       touched();
-      S.cert = { state: ans.ok ? "ok" : "fail", ok: ans.ok, red: res.red, pinned: res.pinned, ms: ans.ms, pinsCount: res.pinsCount, nvars: res.nvars, residual: prep.residual, msg: "" };
+      S.cert = { state: ans.ok ? "ok" : "fail", ok: ans.ok, red: res.red, pinned: res.pinned, status: res.status, ms: ans.ms, pinsCount: res.pinsCount, nvars: res.nvars, residual: prep.residual, msg: "" };
       if (ans.ok) {
-        setStatus(res.red.size ? "warn" : "ok", (res.red.size ? `Certified, ${res.red.size} red` : "Certified") + ` · ${ans.ms} ms`);
+        const amb = countStatus("amber");
+        const parts = [res.red.size ? `${res.red.size} red` : "", amb ? `${amb} redundant` : ""].filter(Boolean);
+        setStatus(res.red.size ? "warn" : "ok", ["Certified" + (parts.length ? ", " + parts.join(", ") : ""), `${ans.ms} ms`].join(" · "));
       } else {
         S.cert.msg = reason(prep);
         setStatus("warn", "Not certified");
@@ -218,6 +220,40 @@ async function certify(opts = {}) {
     render(); renderPanels();
   }
   if (S.again) { S.again = false; certify(S.againOpts || {}); }
+}
+
+function countStatus(k) {
+  let n = 0;
+  for (const st of S.cert.status.values()) if (st.k === k) n++;
+  return n;
+}
+
+// what the solver said about a constraint, in words ("" for kept)
+function statusText(con, num) {
+  const st = S.cert.status.get(con.id);
+  if (!st || S.cert.ok === null) return "";
+  const refs = st.with.map(id => "#" + num.get(id)).filter(r => r !== "#undefined").join(", ");
+  switch (st.k) {
+    case "conflict":
+      if (!st.with.length) return "cannot hold";
+      return (S.cert.ok ? "conflicts with " : "cannot all hold with ") + refs;
+    case "over": return "over-determined" + (refs ? " with " + refs : "");
+    case "amber": return "redundant" + (S.cert.ok ? ", holds anyway" : "");
+    case "partly": return "partly implied by earlier ones";
+    default: return "";
+  }
+}
+
+function statusTitle(con) {
+  const st = S.cert.status.get(con.id);
+  if (!st || S.cert.ok === null) return "";
+  switch (st.k) {
+    case "conflict": return "Red: it cannot hold together with the constraints listed (its support: drop any one of them and the rest can), and the solver leaves it out";
+    case "over": return "Red: with earlier constraints it fixes more than the variables it uses can carry, so the solver leaves it out";
+    case "amber": return "Redundant: every equation follows from earlier constraints and every side condition is implied; the solver drops it" + (S.cert.ok ? ", and it holds in the certified drawing" : "");
+    case "partly": return "Kept: some of its equations follow from earlier constraints and are dropped from the system solved";
+    default: return "";
+  }
 }
 
 function reason(prep) {
@@ -235,10 +271,7 @@ function selEnts() { return S.sel.map(E).filter(Boolean); }
 
 function addCon(kind, ents, extra = {}) {
   const dup = M.duplicateOf(S.sk, { kind, ents, driven: false, ...extra });
-  if (dup) {
-    $("hint").textContent = `Already constrained: ${M.CK[kind].label} ${ents.map(entName).join(" ")} is there.`;
-    return null;
-  }
+  if (dup) $("hint").textContent = `Already constrained: ${M.CK[kind].label} ${ents.map(entName).join(" ")} repeats #${S.sk.cons.indexOf(dup) + 1}; the solver will mark it redundant.`;
   const c = M.addConstraint(S.sk, kind, ents, extra);
   if (!S.opts.relax) { touched(); M.presatisfy(S.sk, c); }
   return c;
@@ -357,7 +390,7 @@ function openDimension(editCon = null) {
   const close = () => { pop.style.display = "none"; cv.focus(); };
   const ok = () => {
     const v = Number(val.value);
-    if (!Number.isFinite(v) || (v < 0 && kinds[0][0] !== "angle")) { val.style.borderColor = "var(--bad)"; return; }
+    if (!Number.isFinite(v)) { val.style.borderColor = "var(--bad)"; return; }
     const [k, ents] = kinds[kindSel ? +kindSel.value : 0];
     snapshot();
     if (editCon) {
@@ -623,7 +656,7 @@ function setTool(id) {
 let css = {};
 function readColors() {
   const st = getComputedStyle(document.documentElement);
-  for (const k of ["canvas", "grid", "grid-major", "geom", "construct", "sel", "hover", "pinned", "dim", "bad", "ok", "muted", "panel", "line", "ink"]) css[k] = st.getPropertyValue("--" + k).trim();
+  for (const k of ["canvas", "grid", "grid-major", "geom", "construct", "sel", "hover", "pinned", "dim", "bad", "warn", "ok", "muted", "panel", "line", "ink"]) css[k] = st.getPropertyValue("--" + k).trim();
 }
 
 function resize() {
@@ -793,7 +826,8 @@ function draw() {
   // constraint glyphs and dimensions
   const glyphCount = new Map();
   for (const c of S.sk.cons) {
-    const color = S.cert.red.has(c.id) ? css.bad : (hc === c.id ? css.sel : css.dim);
+    const st = S.cert.ok === null ? undefined : S.cert.status.get(c.id);
+    const color = S.cert.red.has(c.id) ? css.bad : hc === c.id ? css.sel : st && st.k === "amber" ? css.warn : css.dim;
     if (M.CK[c.kind].value) { drawDimension(c, color); continue; }
     const g = GLYPH[c.kind];
     const p = glyphPos(c);
@@ -872,6 +906,7 @@ function renderPanels() {
     rows.push(["Variables", String(c.nvars)]);
     rows.push(["Held (pins)", `${c.pinsCount} at drawn values`]);
     rows.push(["Red", String(c.red.size)]);
+    rows.push(["Redundant", String(countStatus("amber"))]);
     if (c.ok) rows.push(["Time", `${c.ms} ms`]);
     if (!c.ok && c.msg) rows.push(["Why", c.msg]);
   }
@@ -879,15 +914,17 @@ function renderPanels() {
   // constraints
   const ul = $("cons");
   if (!S.sk.cons.length) { ul.innerHTML = `<li class="empty">No constraints yet</li>`; return; }
-  ul.innerHTML = S.sk.cons.map(con => {
+  const num = new Map(S.sk.cons.map((con, i) => [con.id, i + 1]));
+  ul.innerHTML = S.sk.cons.map((con, i) => {
     const k = M.CK[con.kind];
     const red = S.cert.red.has(con.id);
-    const dup = M.duplicateOf(S.sk, con);
+    const st = S.cert.ok === null ? undefined : S.cert.status.get(con.id);
+    const cl = red ? "red" : st && st.k === "amber" ? "amber" : st && st.k === "partly" ? "part" : "";
     const v = k.value ? `<input data-val="${con.id}" value="${con.value}">` : "";
     const fx = con.kind === "fix" ? ` (${nice(con.fx)}, ${nice(con.fy)})` : "";
-    const why = red ? "Red: flagged by the solver (over-determined)" : dup ? "Repeats an earlier constraint; left out of the solve" : "";
-    return `<li data-con="${con.id}" class="${red ? "red" : ""} ${dup ? "dup" : ""} ${S.selCon === con.id ? "sel" : ""}" title="${why}">
-      <span class="nm">${k.label} ${con.ents.map(entName).join(" ")}${fx}</span>${v}<button class="x" data-del="${con.id}" title="Delete">×</button></li>`;
+    const say = statusText(con, num);
+    return `<li data-con="${con.id}" class="${cl} ${S.selCon === con.id ? "sel" : ""}" title="${escapeHtml(statusTitle(con))}">
+      <span class="no">#${i + 1}</span><span class="nm">${k.label} ${con.ents.map(entName).join(" ")}${fx}${say ? `<em class="st">${escapeHtml(say)}</em>` : ""}</span>${v}<button class="x" data-del="${con.id}" title="Delete">×</button></li>`;
   }).join("");
   for (const li of ul.querySelectorAll("[data-con]")) {
     const id = +li.dataset.con;
@@ -900,7 +937,7 @@ function renderPanels() {
     inp.onchange = () => {
       const con = S.sk.cons.find(c => c.id === +inp.dataset.val);
       const v = Number(inp.value);
-      if (!con || !Number.isFinite(v) || (v < 0 && con.kind !== "angle")) { inp.value = con ? con.value : ""; return; }
+      if (!con || !Number.isFinite(v)) { inp.value = con ? con.value : ""; return; }
       snapshot();
       con.value = v;
       if (!S.opts.relax) { touched(); M.presatisfy(S.sk, con); }
@@ -919,7 +956,7 @@ function escapeHtml(s) { return String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp
 // Header buttons and settings
 // ---------------------------
 
-$("b-new").onclick = () => { snapshot(); S.sk = M.emptySketch(); S.sel = []; S.cert = { ...S.cert, ok: null, red: new Set(), pinned: new Set() }; changed(); };
+$("b-new").onclick = () => { snapshot(); S.sk = M.emptySketch(); S.sel = []; S.cert = { ...S.cert, ok: null, red: new Set(), pinned: new Set(), status: new Map() }; changed(); };
 $("b-example").onclick = () => { snapshot(); S.sk = PL.example(); S.sel = []; S.view = { cx: 3.5, cy: 3, s: 60 }; changed({ force: true }); };
 $("b-undo").onclick = undo;
 $("b-redo").onclick = redo;

@@ -1,15 +1,29 @@
 # What gui/solve_cli answers on each sketch here (tools/regress.sh): the
-# name, a time limit in seconds, then the answer's ok, red and pins lines
-# joined by "; " (the box is not compared). A .raw name is the sketch with
-# the repeats the page leaves out. Since sk-13a's switch (PLAN-sk13a S5)
+# name, a time limit in seconds, then the answer's ok, red, pins and cls
+# lines joined by "; " (the box is not compared). A .raw name is the sketch
+# with the repeats left out of its plain input (the page sent that before
+# S8; it sends every constraint now). Since sk-13a's switch (PLAN-sk13a S5)
 # the repeats are amber and the raw sketches certify like the others;
 # vertical-twice stays refused until sk-13b (its Over constraint is the
-# same, two positions on in the raw sketch).
-zeros                 20  ok True; red; pins 0 1 2 3 4 5 6 7 8 9 10
-base                  20  ok True; red; pins 0 1 2
-oncircle-thrice       20  ok True; red; pins 0 1 2
-oncircle-thrice.raw   30  ok True; red; pins 0 1 2
-oncircle-pairs        20  ok True; red; pins 0 1 2 3
-oncircle-pairs.raw    30  ok True; red; pins 0 1 2 3
-vertical-twice        90  ok False; red 32; pins
-vertical-twice.raw    90  ok False; red 34; pins
+# same, two positions on in the raw sketch). The rest, from hchain on, are
+# PLAN-sk13a S8's small sketches (s8.mjs).
+zeros                  20  ok True; red; pins 0 1 2 3 4 5 6 7 8 9 10; cls K K K K K K K K K K K K K K K K K
+base                   20  ok True; red; pins 0 1 2; cls K K K K K K K K K K K K K K K
+oncircle-thrice        20  ok True; red; pins 0 1 2; cls K K K K K K K K K K K K K K K
+oncircle-thrice.raw    30  ok True; red; pins 0 1 2; cls K K K K K K K K K K K K A/13 K K K A/17
+oncircle-pairs         20  ok True; red; pins 0 1 2 3; cls K K K K K K K K K K K K K K K K K K K K K K K K K K K K
+oncircle-pairs.raw     30  ok True; red; pins 0 1 2 3; cls K K K K K K K K K K K K K K K K K K K K K K K A/24 K A/26 K K K K
+vertical-twice         90  ok False; red 32; pins; cls K K K K K K K K K K K K K K K K K K K K K K K K K K K K K K K K O/33/33,27,20,19,17,21,18,15,16,14,26,22,31,23,1,2,6,4,7,3,0,5,25,29,28,32,12,13,30,24/17,15,20,16,14,11,28,30,29,19,25,26,24,1,2,4,27,3,6,0,5,22,21,23,12,32,13,18,31
+vertical-twice.raw     90  ok False; red 34; pins; cls K K K K K K K K K K K K K K K K K K K K K K K A/24 K A/26 K K K K K K K K O/35/35,29,20,19,17,21,18,15,16,14,28,22,33,23,1,2,6,4,7,3,0,5,27,31,30,34,12,13,32,25/17,15,20,16,14,11,28,30,29,19,25,26,24,1,2,4,27,3,6,0,5,22,21,23,12,32,13,18,31
+hchain                 20  ok True; red; pins 0 1; cls K K K K A/4
+hchain-bad             20  ok True; red 4; pins 0 1; cls K K K K C/2,3
+midpoint-part          20  ok True; red; pins 0 1 2; cls K K K/3
+distance-neg           20  ok True; red 1; pins 0 1 2; cls K C/
+radius-neg             20  ok True; red 1; pins 0 1; cls K C/
+angle-opposite         20  ok True; red 1; pins 0 1 2 3 4; cls K C/0
+equal-self             20  ok True; red; pins 0 1 2 3; cls A/0
+horizontal-vdist       20  ok True; red 1; pins 0 1 2; cls K C/0
+coincident-twice       20  ok True; red; pins 0 1; cls K
+coincident-twice.raw   20  ok True; red; pins 0 1; cls K A/3,2
+vch-support            20  ok True; red 2; pins 0 1; cls K K/1 C/1
+cancel                 20  ok True; red 0; pins 0 1 2 3 4; cls C/

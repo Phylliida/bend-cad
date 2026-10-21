@@ -83,13 +83,13 @@ integer term of `e`. Then `tools/expand.py` turns the shorthand `@A(`,
   type-check; each is filled by an extra False == True hypothesis in
   `proto/_stmtcheck.bend` (generated, ignored), so only the statement is
   checked.
-- `tools/regress.sh` (not in the gate, about 2 min): builds
+- `tools/regress.sh` (not in the gate, about a minute): builds
   `proto/solve_run.bend` natively and compares its answers with
   `proto/solve_run.expected` (the circle, the over-constrained pair, a free
   point, circles that cannot meet, the audit's midpoint and tiny-radius
   sketches); builds `proto/skel_cmp.bend` and checks that the solver's
   structure of each kept system equals `structure(kept, nv)`; and builds
   `gui/solve_cli.bend` and runs it on the GUI sketches in `proto/sketches/`
-  (README there), each against its answer and time limit in
-  `proto/sketches/expected`. The slowest sketch (a refusal sk-13 should
-  remove) sets the time.
+  (README there), each against its answer (ok, red, pins and every
+  constraint's class) and time limit in `proto/sketches/expected`. The
+  slowest sketch (vertical-twice, a refusal for sk-13b) sets the time.

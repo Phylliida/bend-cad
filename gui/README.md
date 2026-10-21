@@ -16,9 +16,12 @@ is newer.
 ## What runs where
 
 - **Verified:** `SO.solve` (lib/solve.bend) answers every request: the
-  verdict, the red constraints, the pins, and the certified box. Its laws
-  (solve_exists, solve_unique, solve_red, solve_pins, solve_total) hold for
-  whatever it is given.
+  verdict, each constraint's class, the pins, and the certified box. Its
+  laws (ROADMAP.bend, all proven) hold for whatever it is given: among
+  them, the classes are the honest ones (solve_honest), honest classes are
+  unique (honest_unique), a redundant constraint holds wherever the rest do
+  (solve_amber), and a conflict cannot hold together with its support
+  (solve_conflict).
 - **Untrusted, and only shaping the input:**
   - `gui/solve_cli.bend` parses the sketch file and prints the answer.
   - `gui/serve.py` writes the file and runs the binary.
@@ -34,11 +37,31 @@ is newer.
       well-conditioned set to solve for.
     - *Dimensions as dyadics*: below.
 
-## Three limits of the v1 solver this makes visible
+## What the list says
 
-All three are already in solve_complete's hypotheses (the third as
-Regular: a repeat makes the kept system singular), and the first two are
-stated in DESIGN.md.
+Each constraint is numbered, and after a solve it says what the solver
+made of it:
+
+- **conflicts with #a, #b** (red): it cannot hold together with those,
+  its support, and dropping any one of them would remove the conflict.
+  On a refusal it reads **cannot all hold with #a, #b**; with no support
+  at all, **cannot hold** (a negative length, for example). The solver
+  leaves it out and certifies the rest.
+- **over-determined** (red): with the earlier constraints named it fixes
+  more than the variables it uses can carry.
+- **redundant** (amber): every equation follows from earlier constraints
+  and every side condition is implied, so the solver drops it, and when
+  the sketch certifies it **holds anyway**. An exact repeat is redundant.
+- **partly implied by earlier ones**: kept, with some of its equations
+  dropped because earlier constraints give them.
+
+Hover a constraint for the longer reading. Red constraints are drawn red,
+redundant ones amber; points drawn hollow have a coordinate the solver held
+at its drawn value.
+
+## Two limits of the v1 solver this makes visible
+
+Both are in solve_complete's hypotheses and stated in DESIGN.md.
 
 - **Constants must be dyadic (Q19).** The certifying arithmetic holds only
   rationals with a power-of-two denominator, so a dimension of 3.6, or an
@@ -53,18 +76,12 @@ stated in DESIGN.md.
   cases, and *Relax the drawing first* brings the drawing near a solution,
   which is where the solver is complete. Turn both off to see the raw
   behavior.
-- **Redundancy is found by structure.** A constraint is red when some
-  part of the sketch has more equations than variables. A constraint
-  repeated exactly is not over-determined by that count (each copy can be
-  matched to a different variable), yet it makes its block singular, and
-  the solver then refuses without a red constraint. So the page does not
-  add a repeat, and leaves out of the request any repeat it finds (from an
-  older file, or after an edit), shown struck through in the list.
-  Constraints that are dependent without being equal (a fourth right angle
-  on a quadrilateral that has three) still meet this limit.
 
-Points drawn hollow have a coordinate the solver held at its drawn value.
-Red constraints are listed in red and drawn red.
+Redundancy and conflicts are found exactly for consequences that are
+constant combinations of the equations (degree 0). A dependency that needs
+more, like a direction made vertical twice through a chain of
+perpendiculars and parallels (proto/sketches: vertical-twice), is still
+refused; that is sk-13b.
 
 ## Files
 

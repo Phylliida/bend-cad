@@ -9,7 +9,11 @@ The page sends the sketch as JSON:
   ents: [[id, construction, kind, a, b, c?]]
   cons: [[driven, kind, args...]]  dimension values as decimal strings
   g0:   [float]               the drawn value of each variable
-and gets back {ok, red, pins, gc, gr, ms} with red as constraint positions.
+and gets back {ok, red, pins, cls, own, gc, gr, ms}: red as constraint
+positions; cls one class per constraint position, {k: "kept" | "amber" |
+"over" | "conflict", drops: equation positions, j, s, w for over (its
+equation, its set of equations, its variables), s for conflict (its
+support, constraint positions)}; own each equation's constraint position.
 """
 import json, os, subprocess, sys, tempfile, time
 from fractions import Fraction
@@ -67,8 +71,22 @@ def sketch_text(sk):
     return "\n".join([vars_, ents, ",".join(cons), g0]) + "\n"
 
 
+def nums(t):
+    return [int(x) for x in t.split(",") if x != ""]
+
+
+def parse_cls(tok):
+    """one class token of solve_cli's cls line: K, K/d, A, A/d, O/j/s/w, C/s"""
+    f = tok.split("/")
+    if f[0] in ("K", "A"):
+        return {"k": "kept" if f[0] == "K" else "amber", "drops": nums(f[1]) if len(f) > 1 else []}
+    if f[0] == "O":
+        return {"k": "over", "drops": [], "j": int(f[1]), "s": nums(f[2]), "w": nums(f[3])}
+    return {"k": "conflict", "drops": [], "s": nums(f[1])}
+
+
 def parse_out(text):
-    res = {"ok": False, "red": [], "pins": [], "gc": [], "gr": []}
+    res = {"ok": False, "red": [], "pins": [], "cls": [], "own": [], "gc": [], "gr": []}
     for line in text.splitlines():
         parts = line.split()
         if not parts:
@@ -76,8 +94,10 @@ def parse_out(text):
         tag, rest = parts[0], parts[1:]
         if tag == "ok":
             res["ok"] = rest[:1] == ["True"]
-        elif tag in ("red", "pins"):
+        elif tag in ("red", "pins", "own"):
             res[tag] = [int(t) for t in rest]
+        elif tag == "cls":
+            res["cls"] = [parse_cls(t) for t in rest]
         elif tag in ("gc", "gr"):
             res[tag] = [undyadic(t) for t in rest]
     return res

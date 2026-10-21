@@ -1,0 +1,1 @@
+{"nextVar":3,"nextEnt":2,"nextCon":2,"vars":{"0":{"kind":0,"val":0},"1":{"kind":0,"val":0},"2":{"kind":1,"val":3}},"ents":[{"id":0,"kind":"pt","construction":false,"x":0,"y":1},{"id":1,"kind":"circ","construction":false,"c":0,"r":2}],"cons":[{"id":0,"kind":"radius","ents":[1],"driven":false,"value":3},{"id":1,"kind":"radius","ents":[1],"driven":false,"value":-5}]}

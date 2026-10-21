@@ -6,7 +6,7 @@ import { relax, chooseOrder, permute } from "./relax.js";
 
 // heavy: base variable ids that should resist moving (a dragged point)
 export function prepare(sk, opts, heavy = []) {
-  const map = M.toSolver(sk, { dyadic: opts.dyadic, repeats: opts.repeats });
+  const map = M.toSolver(sk, { dyadic: opts.dyadic, dedupe: opts.dedupe });
   let residual = 0;
   if (opts.relax) {
     // a dragged point's classes resist moving
@@ -31,7 +31,7 @@ export function finish(sk, prep, ans) {
   const gc = new Array(order.length);
   if (ans.ok && ans.gc) ans.gc.forEach((x, k) => { gc[order[k]] = x; });
   const pins = (ans.pins || []).map(k => order[k]);
-  const res = M.applyAnswer(sk, map, { ok: ans.ok, red: ans.red, pins, gc: ans.ok ? gc : [] });
+  const res = M.applyAnswer(sk, map, { ok: ans.ok, red: ans.red, pins, cls: ans.cls, own: ans.own, gc: ans.ok ? gc : [] });
   return { ...res, pinsCount: pins.length, nvars: order.length };
 }
 

@@ -11,8 +11,12 @@
 #      values are rationals "n/d" with n, d in binary, n signed
 #   3: the drawn geometry, one dyadic "m:e" (= m 2^-e, m signed binary)
 #      per variable
-# Output lines: ok, red (constraint ids), pins (variables), gc and gr
-# (the certified box's centers and radii as dyadics).
+# Output lines: ok, red (constraint positions), pins (variables), cls (each
+# constraint's class, by position: K kept, A amber, each with "/" and its
+# dropped equations' positions if any; O/j/s/w over, with its equation j,
+# set s of equation positions and variables w; C/s conflict, with its
+# support s of constraint positions), own (each equation's constraint), gc
+# and gr (the certified box's centers and radii as dyadics).
 
 import Base
 import ../spec/num.bend as S
@@ -521,10 +525,51 @@ def nshow(xs: List<&2, Nat>) -> String:
     case Con{h, t}:
       " " ++ Nat.show(h) ++ nshow(t)
 
-def show(o: SO.Out) -> String:
+# a list of numbers, comma separated
+def csl.t(xs: List<&2, Nat>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case Con{h, t}:
+      "," ++ Nat.show(h) ++ csl.t(t)
+
+def csl(xs: List<&2, Nat>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case Con{h, t}:
+      Nat.show(h) ++ csl.t(t)
+
+# the dropped equations, if any
+def dl(xs: List<&2, Nat>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case Con{h, t}:
+      "/" ++ csl(Con{h, t})
+
+def cshow(k: SV.Class) -> String:
+  match k:
+    case SV.Kept{ds}:
+      "K" ++ dl(SV.drops(ds))
+    case SV.Amber{ds, rs}:
+      "A" ++ dl(SV.drops(ds))
+    case SV.Over{j, s, w}:
+      "O/" ++ Nat.show(j) ++ "/" ++ csl(s) ++ "/" ++ csl(w)
+    case SV.Conflict{s}:
+      "C/" ++ csl(s)
+
+def clsshow(cls: List<&2, SV.Class>) -> String:
+  match cls:
+    case Nil{}:
+      ""
+    case Con{h, t}:
+      " " ++ cshow(h) ++ clsshow(t)
+
+def show(+sk: SK.Sketch, o: SO.Out) -> String:
   match o:
     case SO.Out{ok, +cls, pins, gc, gr, plan}:
-      "ok " ++ Bool.show(ok) ++ "\nred" ++ nshow(SV.reds(cls)) ++ "\npins" ++ nshow(pins) ++ "\ngc" ++ dsshow(gc) ++ "\ngr" ++ dsshow(gr)
+      "ok " ++ Bool.show(ok) ++ "\nred" ++ nshow(SV.reds(cls)) ++ "\npins" ++ nshow(pins) ++ "\ncls" ++ clsshow(cls) ++ "\nown" ++ nshow(SV.owners(sk)) ++ "\ngc" ++ dsshow(gc) ++ "\ngr" ++ dsshow(gr)
 
 # The run
 # -------
@@ -542,7 +587,8 @@ def sketch(+ls: List<&2, String>) -> SK.Sketch:
   SK.Sketch{vks(B.toks(line(ls, 0n))), ents(String.split(line(ls, 1n), ',')), recs(String.split(line(ls, 2n), ','))}
 
 def run.go(+ls: List<&2, String>) -> String:
-  show(SO.solve(sketch(ls), ds(B.toks(line(ls, 3n)))))
+  +sk = sketch(ls)
+  show(sk, SO.solve(sk, ds(B.toks(line(ls, 3n)))))
 
 def run(s: String) -> String:
   run.go(String.split(s, '\n'))

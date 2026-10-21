@@ -1,0 +1,1 @@
+{"nextVar":4,"nextEnt":3,"nextCon":1,"vars":{"0":{"kind":0,"val":0},"1":{"kind":0,"val":0},"2":{"kind":0,"val":3},"3":{"kind":0,"val":1}},"ents":[{"id":0,"kind":"pt","construction":false,"x":0,"y":1},{"id":1,"kind":"pt","construction":false,"x":2,"y":3},{"id":2,"kind":"seg","construction":false,"p":0,"q":1}],"cons":[{"id":0,"kind":"equalLength","ents":[2,2],"driven":false}]}

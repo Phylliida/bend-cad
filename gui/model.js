@@ -209,8 +209,10 @@ export function qval(x, dyadic) {
   return m + "/" + 2 ** e;
 }
 
-// opts.repeats keeps the repeats duplicateOf finds (for diagnosis: the
-// solver's answer to the sketch as drawn, tools/diag)
+// every constraint is sent, repeats included: the solver marks a repeat
+// amber (redundant, every equation dropped). opts.dedupe leaves out the
+// repeats duplicateOf finds, for the tools that compare with the requests
+// the page sent before sk-13a (tools/diag, proto/sketches)
 export function toSolver(sk, opts = { dyadic: true }) {
   const dy = opts.dyadic;
   const find = classes(sk);
@@ -235,7 +237,7 @@ export function toSolver(sk, opts = { dyadic: true }) {
   });
   const cons = [], owner = [];
   for (const c of sk.cons) {
-    if (!opts.repeats && duplicateOf(sk, c)) continue;
+    if (opts.dedupe && duplicateOf(sk, c)) continue;
     const k = CK[c.kind], E = c.ents.map(i => eid.get(i));
     const dr = c.driven ? 1 : 0;
     const v = c.value;
@@ -275,7 +277,8 @@ export function toSolver(sk, opts = { dyadic: true }) {
 // write a certified answer back: every variable gets its box center (the
 // drawing shows a class at its representative's); returns the set of
 // pinned base variables (a class is shown pinned when one of its variables
-// is: the merges hold the rest) and the red constraint ids
+// is: the merges hold the rest), the red constraint ids, and each
+// constraint's status (status below)
 export function applyAnswer(sk, map, ans) {
   const find = classes(sk);
   const pinned = new Set(), red = new Set();
@@ -290,7 +293,39 @@ export function applyAnswer(sk, map, ans) {
   for (const v of Object.keys(sk.vars)) {
     if (pinCls.has(find(Number(v)))) pinned.add(Number(v));
   }
-  return { pinned, red };
+  return { pinned, red, status: status(map, ans) };
+}
+
+// each constraint's class, from its records' (a Fix is two records):
+//   conflict: with its support's constraints (with), possibly none
+//   over:     over-determined, with the other constraints owning equations
+//             of its set
+//   amber:    redundant: every equation follows from earlier ones and
+//             every side condition is implied
+//   partly:   kept, some of its equations follow from earlier ones
+//   kept:     kept
+export function status(map, ans) {
+  const out = new Map();
+  const cls = ans.cls || [], own = ans.own || [];
+  const ids = r => map.owner[r];
+  const per = new Map();
+  cls.forEach((k, r) => {
+    const id = ids(r);
+    if (id === undefined) return;
+    if (!per.has(id)) per.set(id, []);
+    per.get(id).push({ r, ...k });
+  });
+  for (const [id, ks] of per) {
+    const others = rs => [...new Set(rs.map(ids).filter(x => x !== undefined && x !== id))];
+    const conf = ks.filter(k => k.k === "conflict");
+    const over = ks.filter(k => k.k === "over");
+    if (conf.length) out.set(id, { k: "conflict", with: others(conf.flatMap(k => k.s)) });
+    else if (over.length) out.set(id, { k: "over", with: others(over.flatMap(k => k.s.map(e => own[e]))) });
+    else if (ks.every(k => k.k === "amber")) out.set(id, { k: "amber", with: [] });
+    else if (ks.some(k => k.k === "amber" || k.drops.length)) out.set(id, { k: "partly", with: [] });
+    else out.set(id, { k: "kept", with: [] });
+  }
+  return out;
 }
 
 // deleting an entity deletes what depends on it
@@ -321,10 +356,8 @@ export function conKey(c) {
   return JSON.stringify([c.kind, ents, vals]);
 }
 
-// the earlier driving constraint that c repeats, if any. A repeat is not
-// redundant by structure (each copy can be matched to another variable),
-// so the solver would keep both copies and meet a singular block: the
-// request leaves repeats out, and the page does not add them.
+// the earlier driving constraint that c repeats, if any (the solver marks
+// a repeat amber; toSolver's dedupe leaves repeats out)
 export function duplicateOf(sk, c) {
   if (c.driven) return null;
   const key = conKey(c);
@@ -346,6 +379,9 @@ export function addConstraint(sk, kind, ents, extra = {}) {
 // constraint holds there, and the verified solver then certifies the whole
 // sketch from it. This only edits the drawing the solver starts from.
 export function presatisfy(sk, c) {
+  // a negative length cannot hold (its side condition fails): the solver
+  // says so, and the drawing stays where it is
+  if (c.value !== undefined && c.value < 0 && c.kind !== "angle") return;
   const find = classes(sk);
   const E = c.ents.map(i => ent(sk, i));
   const P = p => pos(sk, p, find);
