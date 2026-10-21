@@ -534,6 +534,97 @@ As planned:
   - dropped premises rewrite to solved ones inside `Ident`;
   - an over-determined set inside a matchable list is impossible
     (pigeonhole).
+
+#### Law 5 plan (written 2026-10-20, before starting)
+
+- **Statement (ROADMAP):** for any two honest classifications c1, c2 of
+  sk, every constraint has the same kind in both, and every equation is
+  dropped in both or in neither.
+- **The argument (the v4 audit's, in today's names):**
+  - Go along the constraints in order. Suppose c1 and c2 agree before c:
+    the same kinds (so the same reds before c), and the same drops for
+    every equation of an earlier constraint.
+  - Then everything a Fate at c reads is the same list in both:
+    kept_before, pre_eqs, pre_sides, neg_pre, presolved, and clean's
+    earlier part.
+  - At c, with the same driven flag:
+    - **Driven:** both are Kept with no drops.
+    - **Kept/Amber vs Kept/Amber:** first the drops agree, equation by
+      equation along c's own. own_rest only looks at earlier positions,
+      so the bases agree; then Derivable in one contradicts NotDerivable
+      in the other. With the same drops, is_amberable agrees, and Amber's
+      Implied contradicts Kept's NotImplied.
+    - **Conflict vs not:** every non-Conflict class has NoRefute. The
+      support s is within kept_before, and NoRefute's premises are the
+      kept constraints' full equations (dropped ones included), so no
+      rewriting of drops is needed.
+    - **Over vs Kept/Amber:** the drops agree (Over's own DropsOk). By
+      clean, Over's set s lies inside Kept's matchable list. Its matched
+      variables are distinct and inside w, and there are more of them
+      than w has: pigeonhole.
+- **Two obstacles found while planning:**
+  1. *Honest is a Type, used once.* The Fate at c reads the whole dropped
+     list, at the positions of earlier equations. Those entries are the
+     earlier constraints' drops only if no later constraint's drops
+     contain them. Only the later Fates say that (each class drops only
+     its own equations, below neqs), and they are not read yet.
+     - Fix: a first pass reads each Fate's Data parts into one Bool fact
+       and puts the Fate back together, so it is not consumed ("read and
+       rebuild").
+     - The main pass then walks the rebuilt Honest, carrying its
+       agreement facts as Bools, which are Data and so reusable.
+  2. *Two orders of the same premises.* NoRefute is stated for
+     pre_eqs ++ eqs_of([c]), with pre_sides ++ csides([c]): premises
+     first. ConflictOk's refutation, and the pass's refute, use
+     eqs_of(c :: S) with csides(c :: S) ++ esides: equation order.
+     - Case on refutable(sk, c, kept_before).
+     - If it is False, the existing Point lemmas give the contradiction
+       (satpf pt_of_none, conflictpf supp_mono_e/s and pt_sub, satpf
+       pt_noref), as conflictpf's fi.x does.
+     - If it is True, the certificate's refutation has to be carried
+       into NoRefute's order. This needs a reorder lemma for Refutes0: the
+       coefficients follow their equations and sides, the identity is
+       checked by evaluating in an ordered field (identpf ident_all and
+       eq_q, where sums reorder by the field laws), and refok's
+       conditions carry over.
+- **Steps, each a green commit:**
+  1. **Agreement Bools and congruence.**
+     - "Same red membership before c" and "same dropped membership at
+       every equation owned before c" (Bool recursions, reusable).
+     - Equal-list lemmas under them: kept_before, pre_eqs, pre_sides,
+       neg_pre, presolved, own_rest (agreeing below i), basis, clean's
+       earlier part, is_amberable.
+     - Red membership from kinds (clslpf mem_reds_rjk, like vsdpf
+       mem_ambers).
+  2. **Read and rebuild:** Honest.go to (each class's drops are its own
+     equations, below neqs) & Honest.go. With it, an equation is
+     dropped iff it is among its owner's drops.
+  3. **Drops at c:** two DropsOk with agreeing premises have the same
+     drops. Walk the owners in lockstep, consuming both drops_ok.go once.
+  4. **Conflict vs NoRefute:**
+     - kept_before contains the support (from distinct, below, driving,
+       none_in).
+     - The reorder lemma (supp order to NoRefute's order).
+     - The contradiction in both cases of refutable.
+  5. **Over vs Kept/Amber:**
+     - Matchable's list is a filter of the equations by index
+       (presolved, then c's own undropped).
+     - clean plus agreement put s inside it, at distinct positions.
+     - The matched variables at those positions are distinct and in w
+       (Depends against DependsWithin), so L.pig contradicts lt(|w|, |s|).
+  6. **Kept vs Amber:** Implied against NotImplied, with equal premises.
+  7. **The induction and the law:**
+     - Pass 2 over both rebuilt Honests in lockstep.
+     - The conclusion for any c (past the end both are Kept{[]}) and any
+       j (through step 2's characterization, then the drops agreement).
+- **Not needed:** owners being nondecreasing (the agreement keys on
+  owner < c), a decision procedure (audit 4.6), and wf (the statement's
+  w goes unused).
+- **Size and risk:** the largest proof since C4, likely over several
+  sessions. Steps 4 and 5 are the bulk: step 4's evaluation arithmetic,
+  and step 5's index bookkeeping (filters indexed by nth(owners, k), and
+  positions in them). Both are the kind of list work done for laws 7 and
+  8. No spec change.
 - **Law 11 (`solve_refused`)** from law 10. Done (2026-10-20,
   lib/refusedpf.bend): the drawing is as near to itself as any d > 0, so
   law 10 would certify it at some level.
