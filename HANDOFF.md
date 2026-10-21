@@ -267,7 +267,11 @@ PLAN-sk13w.md** (verified machine-word arithmetic: word numbers in exact
 correspondence with S.Z/S.D, twins of the proposer and the verdict proven
 to return exactly what today's do, so no law changes), from slowsketches
 sketch(6) and (7) (13.6 s: one 32×32 block, bit-list numbers, the verdict
-run twice).
+run twice). **Danielle chose sk-13w, W1 then W0 (2026-10-21). W1 is done:**
+the verdict runs once (PLAN-sk13w W1, "Done": about 12% fewer
+instructions on sketches 6 and 7). Next: W0, the measurement spike.
+For timings on a loaded machine, count user-mode instructions
+(tools/diag/icount.c; wall time swung 2x between identical runs today).
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);

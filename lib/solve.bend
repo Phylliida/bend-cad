@@ -4,22 +4,23 @@
 # the drawing's values) and a class for each constraint (spec/solve.bend:
 # Kept, Amber, Over, Conflict).
 #
-# The classes are the single pass's (lib/pass.bend: classes, PLAN-sk13a
-# S4), and so is the structure: the system solved (the sketch's equations
-# whose constraint is not red and that are not dropped), its pins and its
-# blocks (lib/pass.bend: pins, skel). search does the numbers
-# (lib/numer.bend: Newton, Y and radii at precisions 64 .. 512) over the
-# system solved. seal then recomputes the verdict from the answer alone:
+# The classes are the single pass's (lib/pass.bend: classes, PLAN-sk13a S4),
+# and so is the structure: the system solved (the sketch's equations whose
+# constraint is not red and that are not dropped), its pins and its blocks
+# (lib/pass.bend: pins, skel). The search does the numbers (lib/numer.bend:
+# Newton, Y and radii at precisions 64 .. 512) over the system solved, and
+# judges each answer by the verdict (final), which reads the answer alone:
 # every pin held at its drawn value with radius 0, the sketch with the red
 # constraints made driven well formed (lib/wfdec.bend), covered by the box,
 # the plan checked over the system solved (its orders every variable once,
 # the pins first, and as many equations as that system has), the side
-# conditions of the
-# constraints neither red nor amber checked over the box (lib/plan.bend),
-# and the dropped equations and amber side conditions certified by their
-# combinations and refutations (lib/verdict.bend). So the verdict laws
-# (solve_exists, solve_unique, solve_pins, solve_regular) need nothing
-# from search: they follow from the verdict and the sk-06 laws.
+# conditions of the constraints neither red nor amber checked over the box
+# (lib/plan.bend), and the dropped equations and amber side conditions
+# certified by their combinations and refutations (lib/verdict.bend). The
+# answer's ok is the verdict the search reached on it, computed once
+# (lib/solvepf.bend: verdict proves it is final of that answer). So the
+# verdict laws (solve_exists, solve_unique, solve_pins, solve_regular) need
+# nothing else from search: they follow from the verdict and the sk-06 laws.
 
 import Base
 import ../spec/num.bend as S
@@ -160,8 +161,9 @@ def pr.plan(m: NU.PR) -> PL.Plan<KI.dnum()>:
     case NU.PStop{}:
       noplan()
 
-# the answer is built through projections, so that its classes and pins
-# are visibly cls_of(sk) and pins_of(sk) whatever the numbers do
+# an answer at one precision, for the verdict to judge (which never reads
+# its ok). Answers are built through projections, so that their classes
+# and pins are visibly cls_of(sk) and pins_of(sk) whatever the numbers do
 def found(+cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +m: NU.PR) -> Out:
   Out{pr.ok(m), cls, pins, pr.gc(m), pr.gr(m), pr.plan(m)}
 
@@ -233,17 +235,32 @@ def accept(m: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class
     case NU.PStop{}:
       False{}
 
+# the loop's answer and the verdict it reached on it
+type Run is Data:
+  Run{ok: Bool, m: NU.PR}
+
+def run.ok(r: Run) -> Bool:
+  match r:
+    case Run{ok, m}:
+      ok
+
+def run.m(r: Run) -> NU.PR:
+  match r:
+    case Run{ok, m}:
+      m
+
 # the first precision whose answer passes the whole verdict (side
-# conditions included: a box too wide for one is retried higher). Every
-# failure moves on to the next precision, a block whose Newton did not
-# settle included: at a low precision an ill-conditioned block can fail
-# to settle or lose a pivot that a higher one keeps
-def ploop(ps: List<&2, Nat>, ok: Bool, cur: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> NU.PR:
+# conditions included: a box too wide for one is retried higher), with
+# that verdict. Every failure moves on to the next precision, a block
+# whose Newton did not settle included: at a low precision an
+# ill-conditioned block can fail to settle or lose a pivot that a higher
+# one keeps
+def ploop(ps: List<&2, Nat>, ok: Bool, cur: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> Run:
   match ps ok:
     case Nil{} ok:
-      cur
+      Run{ok, cur}
     case Con{p, t} True{}:
-      cur
+      Run{True{}, cur}
     case Con{+p, t} False{}:
       +nx = NU.plan(es, nv, skel, g0, p)
       ploop(t, accept(nx, sk, g0, cls, pins), nx, sk, g0, cls, pins, es, nv, skel)
@@ -277,17 +294,17 @@ def pins_of(+sk: SK.Sketch) -> List<&2, Nat>:
 # the loop from its first precision's answer (starting it with a literal
 # "not yet" would let the checker unfold the whole verdict symbolically
 # wherever a law mentions solve, ~40 s per file)
-def ploop.start(ps: List<&2, Nat>, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> NU.PR:
+def ploop.start(ps: List<&2, Nat>, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> Run:
   match ps:
     case Nil{}:
-      NU.PRetry{}
+      Run{False{}, NU.PRetry{}}
     case Con{+p, t}:
       +nx = NU.plan(es, nv, skel, g0, p)
       ploop(t, accept(nx, sk, g0, cls, pins), nx, sk, g0, cls, pins, es, nv, skel)
 
-# The search over w precisions from level l
-def search_lw(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat) -> Out:
-  found(cls_of(sk), pins_of(sk), ploop.start(precisions(l, w), sk, g0, cls_of(sk), pins_of(sk), kept(sk), nvars(sk), skel_of(sk)))
+# the loop's answer with its verdict, built through projections like found
+def answer(+cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +r: Run) -> Out:
+  Out{run.ok(r), cls, pins, pr.gc(run.m(r)), pr.gr(run.m(r)), pr.plan(run.m(r))}
 
 # For the UI: equation j is the k-th equation of its constraint (a red
 # constraint shows all red; expanded, it names the equation of its Why)
@@ -311,13 +328,10 @@ def eqk(own: List<&2, Nat>, +c: Nat, j: Nat) -> Nat:
 def eqlabel(+sk: SK.Sketch, +j: Nat) -> Nat:
   eqk(SV.owners(sk), SV.nth(SV.owners(sk), j), j)
 
-def seal(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: Out) -> Out:
-  Out{final(sk, g0, x), Out.cls(x), Out.pins(x), Out.gc(x), Out.gr(x), Out.plan(x)}
-
 # The solver over w precisions from level l; at level l (seven precisions
 # from the l-th: "try harder"); and at level 0 (64 .. 512 bits)
 def solve_lw(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat) -> Out:
-  seal(sk, g0, search_lw(sk, g0, l, w))
+  answer(cls_of(sk), pins_of(sk), ploop.start(precisions(l, w), sk, g0, cls_of(sk), pins_of(sk), kept(sk), nvars(sk), skel_of(sk)))
 
 def solve_l(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat) -> Out:
   solve_lw(sk, g0, l, 7n)

@@ -1127,13 +1127,17 @@ believed without proof.
 
 ### 10.2 Laws (drafts in ROADMAP.bend, for review)
 
-*As built (2026-10-14).* `solve(sk, g0)` (`lib/solve.bend`) is
-`seal(search(sk, g0))`: `search` runs the stages, and `seal` recomputes the
-verdict from the answer alone (every pin held at its drawn value with
-radius 0; every red constraint explained; the sketch less the red
-constraints well formed, covered by the box, its plan and side conditions
-checked). The laws follow from the verdict and the sk-06 sketch laws, so
-they hold whatever the search did (`lib/solvepf.bend`; restated with
+*As built (2026-10-14; the verdict computed once since 2026-10-21).*
+`solve(sk, g0)` (`lib/solve.bend`) runs the stages and judges each
+precision's answer by the verdict `final`, which reads the answer alone
+(every pin held at its drawn value with radius 0; every red constraint
+explained; the sketch less the red constraints well formed, covered by the
+box, its plan and side conditions checked). Its ok is the verdict reached
+on the answer it returns: the loop keeps it, and `verdict` in
+`lib/solvepf.bend` proves a True ok is a True `final` of that answer
+(until 2026-10-21 a `seal` step recomputed it). The laws follow from the
+verdict and the sk-06 sketch laws, so they hold whatever else the search
+did (`lib/solvepf.bend`; restated with
 proofs in `tests/solve_laws.bend`). Trusted additions: `spec/solve.bend`
 (`mark`: constraints at given positions made driven; `owners`; `overdet`,
 a Hall violator: distinct equations of the system whose variables all lie

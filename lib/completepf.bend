@@ -1378,35 +1378,26 @@ def plan_top(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +ha: {D.adjb
 # The precision loop
 # ------------------
 
-def ploop_true(t: List<&2, Nat>, +cur: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {SO.ploop(t, True{}, cur, sk, g0, cls, pins, es, nv, skel) == cur : NU.PR}:
+def ploop_true(t: List<&2, Nat>, +cur: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {SO.ploop(t, True{}, cur, sk, g0, cls, pins, es, nv, skel) == SO.Run{True{}, cur} : SO.Run}:
   match t:
     case Nil{}:
       {==}
     case Con{p, r}:
       {==}
 
-def final_of(nx: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, h: {SO.accept(nx, sk, g0, cls, pins) == True{} : Bool}) -> {SO.final(sk, g0, SO.found(cls, pins, nx)) == True{} : Bool}:
-  match nx:
-    case NU.POk{+y}:
-      h
-    case NU.PRetry{}:
-      FO.absurd({SO.final(sk, g0, SO.found(cls, pins, NU.PRetry{})) == True{} : Bool}, KA.ft(h))
-    case NU.PStop{}:
-      FO.absurd({SO.final(sk, g0, SO.found(cls, pins, NU.PStop{})) == True{} : Bool}, KA.ft(h))
-
 # the answer the solver gives, and it holds x
 def Fin(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +x: M.Vec(~F), o: SO.Out) -> Data:
   M.Both({SO.Out.ok(o) == True{} : Bool}, BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(o), SO.Out.gr(o), x))
 
 def slp(+sk: SK.Sketch, +g: List<&2, S.D>, +ps: List<&2, Nat>) -> SO.Out:
-  SO.seal(sk, g, SO.found(SO.cls_of(sk), SO.pins_of(sk), SO.ploop.start(ps, sk, g, SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk))))
+  SO.answer(SO.cls_of(sk), SO.pins_of(sk), SO.ploop.start(ps, sk, g, SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk)))
 
 
 def fin_go(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g: List<&2, S.D>, +x: M.Vec(~F), +l: Nat, +hacc: {SO.accept(NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, pfirst(l, 64n, 96n)), sk, g, SO.cls_of(sk), SO.pins_of(sk)) == True{} : Bool}, inb: BX.inbox(~KI.dnum(), ~F, ~H, SO.pr.gc(NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, pfirst(l, 64n, 96n))), SO.pr.gr(NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, pfirst(l, 64n, 96n))), x)) -> Fin(~F, ~H, x, SO.solve_l(sk, g, l)):
   %Equal.sym(List<&2, Nat>, SO.precs.from(l, 1n+6n, 64n, 96n), Con{pfirst(l, 64n, 96n), ptail(l, 6n, 64n, 96n)}, pf_head(l, 6n, 64n, 96n)) : Fin(~F, ~H, x, slp(sk, g, _))
-  %Equal.sym(Bool, SO.accept(NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, pfirst(l, 64n, 96n)), sk, g, SO.cls_of(sk), SO.pins_of(sk)), True{}, hacc) : Fin(~F, ~H, x, SO.seal(sk, g, SO.found(SO.cls_of(sk), SO.pins_of(sk), SO.ploop(ptail(l, 6n, 64n, 96n), _, NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, pfirst(l, 64n, 96n)), sk, g, SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk)))))
-  %Equal.sym(NU.PR, SO.ploop(ptail(l, 6n, 64n, 96n), True{}, NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, pfirst(l, 64n, 96n)), sk, g, SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk)), NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, pfirst(l, 64n, 96n)), ploop_true(ptail(l, 6n, 64n, 96n), NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, pfirst(l, 64n, 96n)), sk, g, SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk))) : Fin(~F, ~H, x, SO.seal(sk, g, SO.found(SO.cls_of(sk), SO.pins_of(sk), _)))
-  (final_of(NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, pfirst(l, 64n, 96n)), sk, g, SO.cls_of(sk), SO.pins_of(sk), hacc), inb)
+  %Equal.sym(Bool, SO.accept(NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, pfirst(l, 64n, 96n)), sk, g, SO.cls_of(sk), SO.pins_of(sk)), True{}, hacc) : Fin(~F, ~H, x, SO.answer(SO.cls_of(sk), SO.pins_of(sk), SO.ploop(ptail(l, 6n, 64n, 96n), _, NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, pfirst(l, 64n, 96n)), sk, g, SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk))))
+  %Equal.sym(SO.Run, SO.ploop(ptail(l, 6n, 64n, 96n), True{}, NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, pfirst(l, 64n, 96n)), sk, g, SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk)), SO.Run{True{}, NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, pfirst(l, 64n, 96n))}, ploop_true(ptail(l, 6n, 64n, 96n), NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, pfirst(l, 64n, 96n)), sk, g, SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk))) : Fin(~F, ~H, x, SO.answer(SO.cls_of(sk), SO.pins_of(sk), _))
+  ({==}, inb)
 
 # level l's search stops at its first precision, with that answer
 def fin_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g: List<&2, S.D>, +x: M.Vec(~F), +l: Nat, h: AnsOK(~F, ~H, sk, g, x, NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, pfirst(l, 64n, 96n)))) -> Fin(~F, ~H, x, SO.solve_l(sk, g, l)):

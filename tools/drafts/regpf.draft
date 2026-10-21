@@ -838,4 +838,4 @@ def regular_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<
   reg_plan(~F, ~H, SV.solved(sk, SV.reds(SO.Out.cls(x)), SV.dropped(SO.Out.cls(x))), SO.Out.gc(x), SO.Out.gr(x), SO.nvars(sk), SO.Out.pins(x), SO.Out.plan(x), SPF.hD(sk, g0, x, h), SPF.hS(sk, g0, x, h), y, hb)
 
 def solve_regular(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}, +x: M.Vec(~F), +h: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), x), m: SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk))) -> DV.Regular(~F, x, SV.solved(sk, SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), SV.dropped(SO.Out.cls(SO.solve_l(sk, g0, l)))), SV.free(SO.nvars(sk), 0n, SO.Out.pins(SO.solve_l(sk, g0, l)))):
-  regular_of(~F, ~H, sk, g0, SO.search_lw(sk, g0, l, 7n), ok, x, h)
+  regular_of(~F, ~H, sk, g0, SO.solve_l(sk, g0, l), SPF.verdict(sk, g0, l, ok), x, h)

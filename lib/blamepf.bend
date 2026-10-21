@@ -232,6 +232,7 @@ def blame_pair(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<
           (y, mo(~F, y, SV.support(SO.Out.cls(SO.solve_l(sk, g0, l)), c), SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk, hn, hm))
 
 def solve_blame(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}, +c: Nat) -> (&x: M.Vec(~F) -> SK.Sketch.means(~F, x, SV.only(SV.support(SO.Out.cls(SO.solve_l(sk, g0, l)), c), sk))):
-  +X = SO.search_lw(sk, g0, l, 7n)
-  hon = TP.solve_honest(sk, wf_of(sk, g0, X, ok), cov_of(sk, g0, X, ok), g0, l)
+  +X = SO.solve_l(sk, g0, l)
+  +v = SPF.verdict(sk, g0, l, ok)
+  hon = TP.solve_honest(sk, wf_of(sk, g0, X, v), cov_of(sk, g0, X, v), g0, l)
   blame_pair(~F, ~H, sk, g0, l, c, supp_nin(sk, SO.Out.cls(SO.solve_l(sk, g0, l)), c, hon), SPF.solve_exists(~F, ~R, ~H, sk, g0, l, ok))

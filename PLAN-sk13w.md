@@ -101,6 +101,17 @@ The search's acceptance and `seal`'s `ok` are the same check of the same
 answer. `seal` takes the search's result, with a lemma that it is the same
 Bool. About 15–20% of a solve today, and it stays a win after the switch.
 
+**Done (2026-10-21).** The loop returns a `Run` (the answer and the verdict
+it reached on it) and `seal` is gone. `lib/solvepf.bend`: `loop_ok`
+(the loop's bit is accept of its answer, by induction on the precisions),
+`start_ok`, `run_final`, and `verdict` (a True ok is a True `final` of the
+solver's answer). The four verdict laws and solve_blame take it; the
+completeness proof's last step got shorter (no `final_of`). No law's
+statement changed. Gate and regression pass, the answers byte-identical.
+Measured in user-mode instructions (the machine was loaded, so wall time
+was noise): sketch 6 from 104.5 G to 91.7 G, sketch 7 from 141.2 G to
+123.7 G, about 12% each, a little under the estimate.
+
 ### W2. Word naturals and integers (lib/wnat.bend, lib/wint.bend)
 
 - The representation, normal forms, and conversions with `S.Pos` and `S.Z`,

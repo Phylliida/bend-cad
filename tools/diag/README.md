@@ -22,6 +22,12 @@ python3 tools/diag/totext.py req.json > sketch.in    # solve_cli's input
 (cd dir_with_sketch.in && time /path/to/bend-cad/gui/solve_cli --threads 1)
 ```
 
+On a loaded machine wall and CPU times swing by 2x between identical runs.
+`icount.c` counts the run's user-mode instructions instead, which repeat
+exactly (`gcc -O2 -o icount tools/diag/icount.c`, then
+`icount /path/to/solve_cli --threads 1`; it prints to stderr). Compare two
+builds of the solver this way.
+
 ## 2. Which stage is slow: `proto/probe_stage.bend`
 
 Build it once: `bin/bend proto/probe_stage.bend -o proto/probe_stage`

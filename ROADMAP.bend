@@ -35,9 +35,10 @@ import ./lib/solve.bend as SO
 # constraints and DS = dropped(CLS) the dropped equations; solved(sk,
 # RED, DS) is the system solved.
 #
-# From the verdict (when ok is True, at every level; solve recomputes its
-# verdict from its answer alone, lib/solve.bend: seal, so these use
-# nothing about how the answer was found):
+# From the verdict (when ok is True, at every level; ok is the verdict the
+# search reached on the answer it returns, lib/solve.bend: final, which
+# reads the answer alone, so these use nothing else about how the answer
+# was found):
 # - solve_exists: in every complete ordered field some geometry in the
 #   box means the sketch with the red constraints made driven;
 # - solve_unique: in every ordered field only one does (given the box's
