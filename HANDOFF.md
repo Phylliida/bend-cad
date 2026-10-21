@@ -254,9 +254,10 @@ law 8 solve_conflict (lib/conflawpf.bend), law 6 solve_drop
 (lib/droplawpf.bend), law 7 solve_amber (lib/amberlawpf.bend), and law 5
 honest_unique (lib/uniqpf.bend, over agreepf, hreadpf, nrconfpf and
 overpf; PLAN S6, "Done"). Every law in ROADMAP.bend is now proven and
-restated in tests/solve_laws.bend. **Next: S8** (the page and the CLI:
-classes with their supports and witnesses, the new regression sketches),
-**then S9** (the audit, and Danielle's sign-off on the laws).
+restated in tests/solve_laws.bend. **S8 is done (2026-10-21):** the page
+and the CLI show each constraint's class (gui/README.md, "What the list
+says"); the regression compares classes and has PLAN S8's small sketches.
+**Next: S9** (the audit, and Danielle's sign-off on the laws).
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);

@@ -692,6 +692,15 @@ As planned:
   - a repeated Coincident;
   - the audit's Vertical/Coincident/HDistance support case;
   - x − x + y.
+- **Done (2026-10-21, dd892cc):** gui/solve_cli prints a `cls` line and
+  the owners, the page numbers its constraints and words each class as
+  above (gui/README.md, "What the list says"), sends repeats (they come
+  back amber) and allows negative dimensions (they cannot hold). The
+  regression compares classes too and has the small sketches
+  (proto/sketches/s8.mjs); every answer is the honest one (the
+  Coincident alone is the HDistance's support; Radius −5 cannot hold
+  by itself). REGRESS: PASS. Merges were already listed like any
+  constraint.
 
 ### S9. Audit and sign-off
 - An independent audit of the proofs' statements against SK13A-REVIEW.md.
