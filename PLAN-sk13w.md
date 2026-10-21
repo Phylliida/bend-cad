@@ -202,6 +202,13 @@ was noise): sketch 6 from 104.5 G to 91.7 G, sketch 7 from 141.2 G to
 
 ### W6. The switch
 
+**The base is a parameter (found in W2).** The checker evaluates closed
+terms eagerly: a type mentioning `RW.wbp(22n)` (2^23 − 1, computed) builds
+2^23 in unary and overflows the stack, while the same law with a variable
+`lp` checks at once. So the fast solver takes `lp` as an argument, every
+theorem holds for all lp (`solve_l(lp, ..) == solve_ref_l(..)` for every
+lp), and only the CLI's `main` passes 22.
+
 - `solve_ref_l` (today's definition, renamed), `solve_l` on the twins, and
   `solve_l == solve_ref_l`.
 - Every restated law rewrites once; the demos evaluate `solve_ref`.

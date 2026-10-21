@@ -47,6 +47,7 @@ the checker verifies the output.
 | `lib/nrconfpf.bend` | `python3 tools/expand.py tools/drafts/nrconfpf.draft lib/nrconfpf.bend` |
 | `lib/overpf.bend` | `python3 tools/expand.py tools/drafts/overpf.draft lib/overpf.bend` |
 | `lib/uniqpf.bend` | `python3 tools/expand.py tools/drafts/uniqpf.draft lib/uniqpf.bend` |
+| `lib/wmagpf.bend` | `python3 tools/expand.py tools/drafts/wmagpf.draft lib/wmagpf.bend` |
 
 `@MACRO NAME text` (a line) makes every `$NAME` below stand for `text`
 (textual, longest names first, macros may use macros): long hypothesis lists
@@ -61,7 +62,9 @@ normalizer call; `@FT[set | e]` is the field term of `e`;
 one normalizer call (`x = Σ ci ri`); `@CERTEQ[set | X | Y | ...]` proves
 `X = Y` the same way. For integers: `@RING[set | target | source]` is one
 `R.ring_eq` call proving `{target == source}` in ℤ, and `@ZT[set | e]` is the
-integer term of `e`. Then `tools/expand.py` turns the shorthand `@A(`,
+integer term of `e`. For Nat: `@NRING[set | target | source]` is one
+`NR.ring_eq` call (no subtraction; `dbl(e)` is `Nat.double`), and `@NT[set |
+e]` is the Nat term. Then `tools/expand.py` turns the shorthand `@A(`,
 `@M(`, `@S(`, `@N(`, `@0`, `@1`, `@T`, `@LK(` ... into Bend.
 
 # Test-data generators (untrusted)

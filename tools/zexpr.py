@@ -6,6 +6,9 @@
 #   @CERTEQ[set | X | Y | c1 ; r1 | ... || hyps]  FO.eq_of_sub(...) proving {X == Y}
 #   @RING[set | target | source]   R.ring_eq call proving {target == source} in Z
 #   @ZT[set | expr]                the integer term of expr
+#   @NRING[set | target | source]  NR.ring_eq call proving {target == source} in Nat
+#   @NT[set | expr]                the Nat term of expr (no subtraction;
+#                                  dbl(e) is Nat.double)
 # "set" is a name defined by @ATOMS, or an inline atom list. Atoms are
 # "name=term" (or a bare name, its own term); "m:=expr" is a textual macro.
 import re
@@ -43,6 +46,8 @@ def parse(s):
         if t == '(':
             x = expr(); eat(')'); return x
         if t.isdigit(): return ('num', int(t))
+        if t == 'dbl' and peek() == '(':
+            eat('('); x = expr(); eat(')'); return ('dbl', x)
         return ('var', t)
     x = expr(); assert peek() is None, s
     return x
@@ -74,6 +79,25 @@ def zt(ast, names, terms):
     if k == 'neg': return "S.Z.neg(" + zt(ast[1], names, terms) + ")"
     a, b = zt(ast[1], names, terms), zt(ast[2], names, terms)
     return {'+': "S.Z.add(%s, %s)", '-': "S.Z.sub(%s, %s)", '*': "S.Z.mul(%s, %s)"}[k] % (a, b)
+
+def n(ast, names):
+    k = ast[0]
+    if k == 'var':
+        assert ast[1] in names, (ast[1], names); return "NR.NVar{" + str(names.index(ast[1])) + "n}"
+    if k == 'num': return "NR.NCst{" + str(ast[1]) + "n}"
+    if k == 'dbl': return "NR.NDbl{" + n(ast[1], names) + "}"
+    assert k in ('+', '*'), ("no subtraction in Nat", ast)
+    tag = {'+': 'NAdd', '*': 'NMul'}[k]
+    return "NR." + tag + "{" + n(ast[1], names) + ", " + n(ast[2], names) + "}"
+
+def nt(ast, names, terms):
+    k = ast[0]
+    if k == 'var': return terms[names.index(ast[1])]
+    if k == 'num': return str(ast[1]) + "n"
+    if k == 'dbl': return "Nat.double(" + nt(ast[1], names, terms) + ")"
+    assert k in ('+', '*'), ("no subtraction in Nat", ast)
+    a, b = nt(ast[1], names, terms), nt(ast[2], names, terms)
+    return {'+': "Nat.add(%s, %s)", '*': "Nat.mul(%s, %s)"}[k] % (a, b)
 
 SETS = {}
 def atomset(spec):
@@ -126,7 +150,7 @@ def expand(src):
             SETS[m.group(1)] = atomset(m.group(2)); continue
         lines.append(line)
     src = "".join(lines)
-    for tag in ["@CERTEQ[", "@CERT[", "@ZEQ[", "@FT[", "@RING[", "@ZT["]:
+    for tag in ["@CERTEQ[", "@CERT[", "@ZEQ[", "@FT[", "@NRING[", "@NT[", "@RING[", "@ZT["]:
         while True:
             k = src.find(tag)
             if k < 0: break
@@ -139,6 +163,10 @@ def expand(src):
             names, terms, _ = st
             if tag == "@ZEQ[":
                 out = "FR.fring_eq(~F, [" + ", ".join(terms) + "], " + z(P(parts[1], st), names) + ", " + z(P(parts[2], st), names) + ", {==})"
+            elif tag == "@NRING[":
+                out = "NR.ring_eq([" + ", ".join(terms) + "], " + n(P(parts[1], st), names) + ", " + n(P(parts[2], st), names) + ", {==})"
+            elif tag == "@NT[":
+                out = nt(P(parts[1], st), names, terms)
             elif tag == "@RING[":
                 out = "R.ring_eq([" + ", ".join(terms) + "], " + z(P(parts[1], st), names) + ", " + z(P(parts[2], st), names) + ", {==})"
             elif tag == "@ZT[":
