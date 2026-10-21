@@ -11,7 +11,8 @@
 # and injective by forward substitution (bm_inj). The plan's orders are
 # exactly the solved equations and the free variables (the verdict checks
 # it), so the Jacobian in the sketch's order has an inverse too
-# (lib/permpf.bend: perm_inv).
+# (lib/permpf.bend: perm_inv). The law reads the plan and its shape off
+# a True verdict (lib/solvepf.bend: hD, hS).
 
 import Base
 import ../spec/num.bend as S
@@ -50,6 +51,7 @@ import ./pblkpf.bend as PB
 import ./maxpf.bend as MX
 import ./tarjanpf.bend as TJ
 import ./perfpf.bend as PF
+import ./solvepf.bend as SPF
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -787,3 +789,14 @@ def reg_plan(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +eqs: List<&2, E.QExpr>, +gc
       +hel = KA.nateq_ok(PL.nlen(ep), CK.eqlen(eqs), KA.band_l(KA.nateq(PL.nlen(ep), CK.eqlen(eqs)), SO.nl_eq(SO.ntake(np, vp), pins), s3))
       +hpn = nl_eq_ok(SO.ntake(np, vp), pins, KA.band_r(KA.nateq(PL.nlen(ep), CK.eqlen(eqs)), SO.nl_eq(SO.ntake(np, vp), pins), s3))
       plan_regular(~F, ~H, eqs, gc, gr, vp, ep, np, bs, hc, nv, pins, hgc, hvl, hvd, hel, hpn, x, hb)
+
+# The law
+# -------
+
+# a True verdict: every point of the box is a regular point of the system
+# solved in the free variables
+def regular_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}, +y: M.Vec(~F), +hb: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(x), SO.Out.gr(x), y)) -> DV.Regular(~F, y, SV.solved(sk, SV.reds(SO.Out.cls(x)), SV.dropped(SO.Out.cls(x))), SV.free(SO.nvars(sk), 0n, SO.Out.pins(x))):
+  reg_plan(~F, ~H, SV.solved(sk, SV.reds(SO.Out.cls(x)), SV.dropped(SO.Out.cls(x))), SO.Out.gc(x), SO.Out.gr(x), SO.nvars(sk), SO.Out.pins(x), SO.Out.plan(x), SPF.hD(sk, g0, x, h), SPF.hS(sk, g0, x, h), y, hb)
+
+def solve_regular(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}, +x: M.Vec(~F), +h: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), x), m: SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk))) -> DV.Regular(~F, x, SV.solved(sk, SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), SV.dropped(SO.Out.cls(SO.solve_l(sk, g0, l)))), SV.free(SO.nvars(sk), 0n, SO.Out.pins(SO.solve_l(sk, g0, l)))):
+  regular_of(~F, ~H, sk, g0, SO.search_lw(sk, g0, l, 7n), ok, x, h)
