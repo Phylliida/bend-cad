@@ -17,6 +17,7 @@ purpose, and check that the answers stay right.
 | oncircle-thrice | sketch(2).json | the same OnCircle three times; in the raw input the repeats are amber (refused before sk-13a) |
 | oncircle-pairs | sketch(3).json | two OnCircle pairs repeated; in the raw input the repeats are amber (refused after every precision before sk-13a) |
 | vertical-twice | sketch(4).json | (3) with a direction dependency: segment 28 is made vertical twice, through #25 perpendicular, #27 and #38 parallel (tools/diag/README.md §4); refused with or without repeats (Over at #32), a dependency of degree above 0, for sk-13b; the slowest here |
+| angle-lines | slowsketches sketch(5).json | a right triangle with an Angle of 47 between two of its sides, meant as the angle between the lines; read between the segments' directions as drawn it was 180 off (the cross product held, dot > 0 failed), refused after every precision (21 s). Since 2026-10-21 the page reads an angle between lines, the second segment backwards when the drawing says so (rev), and it certifies in half a second |
 
 Since S0a (PLAN-sk13a.md, 2026-10-19) the inputs keep every variable and
 send merges as equations (Q29); before, merged points shared variables.

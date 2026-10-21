@@ -59,6 +59,18 @@ Hover a constraint for the longer reading. Red constraints are drawn red,
 redundant ones amber; points drawn hollow have a coordinate the solver held
 at its drawn value.
 
+## Angles
+
+An angle's value is the angle between the two lines, the way the drawing
+shows it (the dialog offers it in [0, 180)). The solver's Angle is between
+directions, so the page reads the second segment backwards when that
+brings the drawn angle nearer the value. It chooses when the angle is made
+or edited, and once for an older sketch's angles, so a drag does not flip
+it. Before 2026-10-21 the page always read the segments as drawn, and an
+angle meant between lines could be 180 degrees off: its equation held, its
+side condition (the directions agree) failed, and the solver refused after
+trying every precision (proto/sketches: angle-lines).
+
 ## Two limits of the v1 solver this makes visible
 
 Both are in solve_complete's hypotheses and stated in DESIGN.md.

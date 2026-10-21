@@ -6,7 +6,8 @@
 # the repeats are amber and the raw sketches certify like the others;
 # vertical-twice stays refused until sk-13b (its Over constraint is the
 # same, two positions on in the raw sketch). The rest, from hchain on, are
-# PLAN-sk13a S8's small sketches (s8.mjs).
+# PLAN-sk13a S8's small sketches (s8.mjs); angle-lines is Danielle's
+# slowsketches sketch(5).
 zeros                  20  ok True; red; pins 0 1 2 3 4 5 6 7 8 9 10; cls K K K K K K K K K K K K K K K K K
 base                   20  ok True; red; pins 0 1 2; cls K K K K K K K K K K K K K K K
 oncircle-thrice        20  ok True; red; pins 0 1 2; cls K K K K K K K K K K K K K K K
@@ -27,3 +28,4 @@ coincident-twice       20  ok True; red; pins 0 1; cls K
 coincident-twice.raw   20  ok True; red; pins 0 1; cls K A/3,2
 vch-support            20  ok True; red 2; pins 0 1; cls K K/1 C/1
 cancel                 20  ok True; red 0; pins 0 1 2 3 4; cls C/
+angle-lines            20  ok True; red; pins 0 1 2 3 4 5 6 7 8 9 10; cls K K K K

@@ -44,12 +44,14 @@ sketch("radius-neg", sk => {
   C(sk, "radius", [c], { value: -5 });
 });
 
-// an angle of 30 degrees, then of 210 (the opposite direction)
+// an angle of 30 degrees, then of 210 (the opposite direction; both read
+// the segments as drawn, rev false, else the page would read 210 as the
+// same lines at 30)
 sketch("angle-opposite", sk => {
   const o = P(sk, 0, 0), a = P(sk, 4, 0), b = P(sk, 3.4, 2);
   const s = S(sk, o, a), t = S(sk, o, b);
-  C(sk, "angle", [s, t], { value: 30 });
-  C(sk, "angle", [s, t], { value: 210 });
+  C(sk, "angle", [s, t], { value: 30, rev: false });
+  C(sk, "angle", [s, t], { value: 210, rev: false });
 });
 
 // a segment as long as itself
