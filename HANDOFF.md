@@ -262,7 +262,12 @@ written (2026-10-21), for Danielle's review: PLAN-sk13s.md v2**
 (signed HDistance/VDistance/LineDistance; Honest and every law proven once
 for every proof layer d, layer 0 being sk-13a's; the solver deepens a
 layer only after a refusal; a proven fast stop with a refusal reason),
-from slowsketches sketch(5) (proto/sketches: angle-lines).
+from slowsketches sketch(5) (proto/sketches: angle-lines). **And
+PLAN-sk13w.md** (verified machine-word arithmetic: word numbers in exact
+correspondence with S.Z/S.D, twins of the proposer and the verdict proven
+to return exactly what today's do, so no law changes), from slowsketches
+sketch(6) and (7) (13.6 s: one 32×32 block, bit-list numbers, the verdict
+run twice).
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);
