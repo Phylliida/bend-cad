@@ -513,6 +513,10 @@ As planned:
   - `solve_drop` by induction on positions;
   - `solve_amber` by induction along the order;
   - `solve_conflict` from Refutes0's soundness in every ordered field.
+    Done (2026-10-20, lib/conflawpf.bend): ConflictOk's refutation, read
+    by ckpf's `ref_of`, has no point (vsdpf's `refute_at`), and a
+    geometry meaning only c and its support meets exactly eqs_of and
+    csides of them (`only_eqs`, via an index-free `selq`; `only_sides`).
 - **Law 5 (`honest_unique`),** about the spec alone: induction along the
   order. Each mismatched case is a direct contradiction from the cases'
   conditions; no decision procedure is needed (audit 4.6). The lemmas:

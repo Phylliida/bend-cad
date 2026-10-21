@@ -249,7 +249,8 @@ lib/regpf.bend, with the plan's shape checked in `final` (PLAN S5,
 "Steps 4-5 done").
 **Law 3 is done (2026-10-20):** `solve_blame`, through lib/blamepf.bend
 (PLAN S5, "Law 3 done"). S5's laws are all proven.
-**Next: S6** (law 11, solve_refused, done: lib/refusedpf.bend).
+**Next: S6** (done so far: law 11 solve_refused, lib/refusedpf.bend;
+law 8 solve_conflict, lib/conflawpf.bend).
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);

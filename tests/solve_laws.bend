@@ -1,9 +1,10 @@
 # The solver's proven laws (ROADMAP.bend) with their proofs
 # (lib/solvepf.bend: the verdict laws; lib/regpf.bend: solve_regular;
-# lib/blamepf.bend: solve_blame; lib/totalpf.bend: solve_total,
-# solve_honest; lib/completepf.bend: solve_complete; lib/refusedpf.bend:
-# solve_refused), restated so the gate checks the proofs and
-# tools/lawsync.py checks the statements match ROADMAP's.
+# lib/blamepf.bend: solve_blame; lib/conflawpf.bend: solve_conflict;
+# lib/totalpf.bend: solve_total, solve_honest; lib/completepf.bend:
+# solve_complete; lib/refusedpf.bend: solve_refused), restated so the
+# gate checks the proofs and tools/lawsync.py checks the statements match
+# ROADMAP's.
 
 import Base
 import ../spec/num.bend as S
@@ -24,6 +25,7 @@ import ../lib/completepf.bend as CPF
 import ../lib/regpf.bend as RGP
 import ../lib/blamepf.bend as BLM
 import ../lib/refusedpf.bend as RFD
+import ../lib/conflawpf.bend as CFL
 
 def solve_exists(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}) -> (&x: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), x) & SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk)))):
   SP.solve_exists(~F, ~R, ~H, sk, g0, l, ok)
@@ -39,6 +41,9 @@ def solve_regular(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: Li
 
 def solve_blame(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}, +c: Nat) -> (&x: M.Vec(~F) -> SK.Sketch.means(~F, x, SV.only(SV.support(SO.Out.cls(SO.solve_l(sk, g0, l)), c), sk))):
   BLM.solve_blame(~F, ~R, ~H, sk, g0, l, ok, c)
+
+def solve_conflict(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat, +c: Nat, hc: {SV.is_conflict(SV.class_at(SO.Out.cls(SO.solve_l(sk, g0, l)), c)) == True{} : Bool}, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SV.only(Con{c, SV.support(SO.Out.cls(SO.solve_l(sk, g0, l)), c)}, sk))) -> Empty:
+  CFL.solve_conflict(~F, sk, w, cov, g0, l, c, hc, x, m)
 
 def solve_total(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat) -> ({SO.Out.cls(SO.solve_l(sk, g0, l)) == SO.cls_of(sk) : List<&2, SV.Class>} & ({SO.Out.pins(SO.solve_l(sk, g0, l)) == SO.pins_of(sk) : List<&2, Nat>} & ({WF.wf_dec(SV.mark(SV.reds(SO.cls_of(sk)), sk)) == True{} : Bool} & ({SV.distinct(SO.pins_of(sk)) == True{} : Bool} & ({SV.below(SO.pins_of(sk), SO.nvars(sk)) == True{} : Bool} & (&m: List<&2, Nat> -> SV.Perfect(SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)), m))))))):
   TP.solve_total(sk, w, cov, g0, l)
