@@ -618,7 +618,7 @@ def pick1(k: Nat, +p: Nat, +s: String) -> String:
 def pick(k: Nat, +p: Nat, +s: String) -> String:
   match k:
     case 0n:
-      "red" ++ nshow(SO.red_of(sk.of(s)))
+      "red" ++ nshow(SV.reds(SO.cls_of(sk.of(s))))
     case 1n+a:
       pick1(a, p, s)
 
