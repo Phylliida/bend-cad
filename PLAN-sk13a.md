@@ -510,7 +510,10 @@ As planned:
 
 ### S6. Corollaries and uniqueness
 - **Laws 6–8,** from law 4 and the spec:
-  - `solve_drop` by induction on positions;
+  - `solve_drop` by induction on positions. Done (2026-10-20,
+    lib/droplawpf.bend): the pass's answer passes the verdict's drop
+    check (ckpf's `ck_pass`), which vrdpf's `dropped_zero` reads at each
+    dropped position;
   - `solve_amber` by induction along the order;
   - `solve_conflict` from Refutes0's soundness in every ordered field.
     Done (2026-10-20, lib/conflawpf.bend): ConflictOk's refutation, read
