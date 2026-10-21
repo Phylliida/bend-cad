@@ -1106,6 +1106,8 @@ def sides_ans($SKP, +x: M.Vec(~F), +g: List<&2, S.D>, +hl: {M.len(~F, x) == $NV 
 @MACRO VC PL.check($DN, SO.kept(sk), $GCU, $GRU, $PLF)
 @MACRO VX VD.exact(sk, SO.cls_of(sk))
 @MACRO VS PL.check_sides($DN, $SDK, $GCU, $GRU)
+@MACRO VSH SO.shape($NV, CK.eqlen(SO.kept(sk)), $GCU, $PINS, $PLF)
+@MACRO VZ KA.band($VSH, $VX)
 @MACRO VXP +hwf: {WF.wf_dec(sk) == True{} : Bool}, +cov: {BX.Sketch.within(sk, $NV) == True{} : Bool}, +dy: {SV.dyadic(SV.mark($RC, sk)) == True{} : Bool}, +hex: {VD.exact(sk, SO.cls_of(sk)) == True{} : Bool}
 @MACRO VXA hwf, cov, dy, hex
 
@@ -1116,13 +1118,55 @@ def within_ans($SKP, +cov: {BX.Sketch.within(sk, $NV) == True{} : Bool}, +gcf: L
   %Equal.sym(Nat, List.length(&2, S.D, $GCU), $NV, length_up($NV, 0n, gcf, $VP)) : {BX.Sketch.within(SV.mark(SV.reds(SO.cls_of(sk)), sk), _) == True{} : Bool}
   w_mark(SV.reds(SO.cls_of(sk)), sk, $NV, cov)
 
+def nateq_of(+a: Nat, +b: Nat, +e: {a == b : Nat}) -> {KA.nateq(a, b) == True{} : Bool}:
+  %e : {KA.nateq(a, _) == True{} : Bool}
+  KA.nateq_refl(a)
+
+def nl_eq_refl(xs: List<&2, Nat>) -> {SO.nl_eq(xs, xs) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      L.band_i(SV.eq(x, x), SO.nl_eq(t, t), L.eq_refl(x), nl_eq_refl(t))
+
+def positions_len(xs: List<&2, Nat>, +vp: List<&2, Nat>) -> {SV.len(ST.positions(xs, vp)) == SV.len(xs) : Nat}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, t}:
+      %Equal.sym(Nat, SV.len(ST.positions(t, vp)), SV.len(t), positions_len(t, vp)) : {1n+_ == 1n+SV.len(t) : Nat}
+      {==}
+
+# the equation order has a place for each kept equation: the blocks'
+# equations are the kept ones, each once
+def ep_len($SKP) -> {PL.nlen($EP) == CK.eqlen(SO.kept(sk)) : Nat}:
+  +hgd = gd_kd($KVS, $NQ0, $NV, $GOOD, PF.vend_pass(sk, GM.adjb_dadjs($FULL, $NV, ha)))
+  +la = KA.natle_antisym(SV.len(ST.alleqs($KB)), SV.len($GOOD), L.pig(ST.alleqs($KB), $GOOD, SP.sfacts_cd($SFA), SP.sfacts_gc($SFA)), L.pig($GOOD, ST.alleqs($KB), hgd, SP.sfacts_cg($SFA)))
+  Equal.trans(Nat, PL.nlen($EP), SV.len($EP), CK.eqlen(SO.kept(sk)), PB.nlen_sv($EP), Equal.trans(Nat, SV.len($EP), SV.len(ST.alleqs($KB)), CK.eqlen(SO.kept(sk)), positions_len(ST.alleqs($KB), $GOOD), Equal.trans(Nat, SV.len(ST.alleqs($KB)), SV.len($GOOD), CK.eqlen(SO.kept(sk)), la, Equal.sym(Nat, CK.eqlen(SO.kept(sk)), SV.len($GOOD), kept_eqlen($SKA)))))
+
+def sh_pins($SKP) -> {SO.nl_eq(SO.ntake($NP, $VP), $PINS) == True{} : Bool}:
+  %Equal.sym(List<&2, Nat>, SO.ntake($NP, $VP), $FS, fs_pins($SKA)) : {SO.nl_eq(_, $PINS) == True{} : Bool}
+  nl_eq_refl($FS)
+
+@MACRO SH4 KA.band(KA.nateq(PL.nlen($EP), CK.eqlen(SO.kept(sk))), SO.nl_eq(SO.ntake($NP, $VP), $PINS))
+@MACRO SH3 KA.band(SV.distinct($VP), $SH4)
+@MACRO SH2 KA.band(KA.nateq(PL.nlen($VP), $NV), $SH3)
+
+# the plan's orders pass the shape check
+def shape_ans($SKP, +gcf: List<&2, S.D>, +bsf: List<&2, PL.PBlock<KI.dnum()>>) -> {$VSH == True{} : Bool}:
+  KA.band_i(KA.nateq(KA.klen($DN, $GCU), $NV), $SH2, nateq_of(KA.klen($DN, $GCU), $NV, klen_up($NV, 0n, gcf, $VP)),
+  KA.band_i(KA.nateq(PL.nlen($VP), $NV), $SH3, nateq_of(PL.nlen($VP), $NV, Equal.trans(Nat, PL.nlen($VP), SV.len($VP), $NV, PB.nlen_sv($VP), L.eq_ok(SV.len($VP), $NV, SP.sfacts_vpl($SFA)))),
+  KA.band_i(SV.distinct($VP), $SH4, SP.sfacts_vpd($SFA),
+  KA.band_i(KA.nateq(PL.nlen($EP), CK.eqlen(SO.kept(sk))), SO.nl_eq(SO.ntake($NP, $VP), $PINS), nateq_of(PL.nlen($EP), CK.eqlen(SO.kept(sk)), ep_len($SKA)), sh_pins($SKA)))))
+
 # the whole verdict on the answer read back from the blocks' result
 def ans_ok($SKP, $VXP, +x: M.Vec(~F), +g: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, $PGF, $RBP, +hbud: SBud(~F, $BBS, rho, x, $SDK, $PINS)) -> {SO.accept(NU.POk{NU.NP{$PLF, $GCU, $GRU}}, sk, g, SO.cls_of(sk), SO.pins_of(sk)) == True{} : Bool}:
-  KA.band_i($VH, KA.band($VW, KA.band($VI, KA.band($VC, KA.band($VS, $VX)))), held_ans($SKA, g, gcf, grf, hkc, hkr),
-  KA.band_i($VW, KA.band($VI, KA.band($VC, KA.band($VS, $VX))), WC.wf_mark(SV.reds(SO.cls_of(sk)), sk, hwf),
-  KA.band_i($VI, KA.band($VC, KA.band($VS, $VX)), within_ans($SKA, cov, gcf),
-  KA.band_i($VC, KA.band($VS, $VX), cr_ok($SKA, hwf, cov, x, g, $PGA),
-  KA.band_i($VS, $VX, sides_ans($SKA, x, g, hl, $PGA, $RBA, dy, hbud), hex)))))
+  KA.band_i($VH, KA.band($VW, KA.band($VI, KA.band($VC, KA.band($VS, $VZ)))), held_ans($SKA, g, gcf, grf, hkc, hkr),
+  KA.band_i($VW, KA.band($VI, KA.band($VC, KA.band($VS, $VZ))), WC.wf_mark(SV.reds(SO.cls_of(sk)), sk, hwf),
+  KA.band_i($VI, KA.band($VC, KA.band($VS, $VZ)), within_ans($SKA, cov, gcf),
+  KA.band_i($VC, KA.band($VS, $VZ), cr_ok($SKA, hwf, cov, x, g, $PGA),
+  KA.band_i($VS, $VZ, sides_ans($SKA, x, g, hl, $PGA, $RBA, dy, hbud),
+  KA.band_i($VSH, $VX, shape_ans($SKA, gcf, bsf), hex))))))
 
 # the answer at one precision passes the verdict and holds x
 def AnsOK(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g: List<&2, S.D>, +x: M.Vec(~F), nx: NU.PR) -> Data:

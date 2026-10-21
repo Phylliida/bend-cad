@@ -1,12 +1,15 @@
 # bend-cad: the solver's verdict laws (ROADMAP: solve_exists,
-# solve_unique, solve_pins), proven from the verdict seal recomputes
+# solve_unique, solve_pins, solve_regular), proven from the verdict seal
+# recomputes
 # (lib/solve.bend), the sk-06 sketch laws (lib/planpf.bend) and what the
 # exact checks say (lib/vrdpf.bend, lib/vsdpf.bend). Nothing about the
 # search is used: whatever it found, a True verdict carries every
 # hypothesis. The plan gives a point of the box where the system solved
 # holds (and only one); there the drop checks give every equation of the
 # sketch less its red constraints, the box's side checks and the amber
-# refutations every side condition, so it means that sketch.
+# refutations every side condition, so it means that sketch. The plan and
+# its shape make every point of the box a regular point of the system
+# solved in the free variables (lib/regpf.bend).
 
 # Generated from tools/drafts/solvepf.draft by tools/expand.py; edit the
 # draft.
@@ -20,6 +23,7 @@ import ../spec/real.bend as CR
 import ../spec/sketch.bend as SK
 import ../spec/box.bend as BX
 import ../spec/solve.bend as SV
+import ../spec/deriv.bend as DV
 import ./karith.bend as KA
 import ./kinst.bend as KI
 import ./listpf.bend as L
@@ -31,10 +35,12 @@ import ./verdict.bend as VD
 import ./vrdpf.bend as VR
 import ./vsdpf.bend as VS
 import ./solve.bend as SO
+import ./cert.bend as CK
+import ./regpf.bend as RG
 
 # The verdict's parts
 # -------------------
-# final(sk, g0, x) = P && B && C && D && E && X
+# final(sk, g0, x) = P && B && C && D && E && (S && X)
 
 @MACRO CX SO.Out.cls(x)
 @MACRO RX SV.reds(SO.Out.cls(x))
@@ -55,14 +61,18 @@ def pD(+sk: SK.Sketch, +x: SO.Out) -> Bool:
 def pE(+sk: SK.Sketch, +x: SO.Out) -> Bool:
   PL.check_sides(~KI.dnum(), SK.Sketch.sides(SV.mark(SV.cat($RX, SV.ambers($CX)), sk)), SO.Out.gc(x), SO.Out.gr(x))
 
+def pS(+sk: SK.Sketch, +x: SO.Out) -> Bool:
+  SO.shape(SO.nvars(sk), CK.eqlen(SV.solved(sk, $RX, $DX)), SO.Out.gc(x), SO.Out.pins(x), SO.Out.plan(x))
+
 def pX(+sk: SK.Sketch, +x: SO.Out) -> Bool:
   VD.exact(sk, $CX)
 
 @MACRO FIN +sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}
-@MACRO T5 KA.band(pB(sk, x), KA.band(pC(sk, x), KA.band(pD(sk, x), KA.band(pE(sk, x), pX(sk, x)))))
-@MACRO T4 KA.band(pC(sk, x), KA.band(pD(sk, x), KA.band(pE(sk, x), pX(sk, x))))
-@MACRO T3 KA.band(pD(sk, x), KA.band(pE(sk, x), pX(sk, x)))
-@MACRO T2 KA.band(pE(sk, x), pX(sk, x))
+@MACRO TX KA.band(pS(sk, x), pX(sk, x))
+@MACRO T5 KA.band(pB(sk, x), KA.band(pC(sk, x), KA.band(pD(sk, x), KA.band(pE(sk, x), $TX))))
+@MACRO T4 KA.band(pC(sk, x), KA.band(pD(sk, x), KA.band(pE(sk, x), $TX)))
+@MACRO T3 KA.band(pD(sk, x), KA.band(pE(sk, x), $TX))
+@MACRO T2 KA.band(pE(sk, x), $TX)
 
 def r0($FIN) -> {$T5 == True{} : Bool}:
   KA.band_r(pP(sk, g0, x), $T5, h)
@@ -89,10 +99,16 @@ def hD($FIN) -> {pD(sk, x) == True{} : Bool}:
   KA.band_l(pD(sk, x), $T2, r2(sk, g0, x, h))
 
 def hE($FIN) -> {pE(sk, x) == True{} : Bool}:
-  KA.band_l(pE(sk, x), pX(sk, x), r3(sk, g0, x, h))
+  KA.band_l(pE(sk, x), $TX, r3(sk, g0, x, h))
+
+def hTX($FIN) -> {$TX == True{} : Bool}:
+  KA.band_r(pE(sk, x), $TX, r3(sk, g0, x, h))
+
+def hS($FIN) -> {pS(sk, x) == True{} : Bool}:
+  KA.band_l(pS(sk, x), pX(sk, x), hTX(sk, g0, x, h))
 
 def hX($FIN) -> {pX(sk, x) == True{} : Bool}:
-  KA.band_r(pE(sk, x), pX(sk, x), r3(sk, g0, x, h))
+  KA.band_r(pS(sk, x), pX(sk, x), hTX(sk, g0, x, h))
 
 @MACRO DCK VD.dck(SK.Sketch.eqs(sk), SV.owners(sk), $RX, $DX, $CX)
 @MACRO ACK VD.ack(sk, $RX, $CX, 0n)
@@ -126,6 +142,9 @@ def unique_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $FIN, +y1: M.Vec(~F), h1: B
 def pins_of($FIN) -> {SV.held(SO.Out.pins(x), g0, SO.Out.gc(x), SO.Out.gr(x)) == True{} : Bool}:
   hP(sk, g0, x, h)
 
+def regular_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $FIN, +y: M.Vec(~F), +hb: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(x), SO.Out.gr(x), y)) -> DV.Regular(~F, y, SV.solved(sk, $RX, $DX), SV.free(SO.nvars(sk), 0n, SO.Out.pins(x))):
+  RG.reg_plan(~F, ~H, SV.solved(sk, $RX, $DX), SO.Out.gc(x), SO.Out.gr(x), SO.nvars(sk), SO.Out.pins(x), SO.Out.plan(x), hD(sk, g0, x, h), hS(sk, g0, x, h), y, hb)
+
 # The laws
 # --------
 
@@ -137,3 +156,6 @@ def solve_unique(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: Lis
 
 def solve_pins(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}) -> {SV.held(SO.Out.pins(SO.solve_l(sk, g0, l)), g0, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l))) == True{} : Bool}:
   pins_of(sk, g0, SO.search_lw(sk, g0, l, 7n), ok)
+
+def solve_regular(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}, +x: M.Vec(~F), +h: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), x), m: SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk))) -> DV.Regular(~F, x, SV.solved(sk, SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), SV.dropped(SO.Out.cls(SO.solve_l(sk, g0, l)))), SV.free(SO.nvars(sk), 0n, SO.Out.pins(SO.solve_l(sk, g0, l)))):
+  regular_of(~F, ~H, sk, g0, SO.search_lw(sk, g0, l, 7n), ok, x, h)

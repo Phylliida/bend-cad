@@ -469,6 +469,22 @@ As planned:
     block got radius 2^-40. Gate and regression green, outcomes
     unchanged. Debt: radpf/blockpf/scalepf still carry the unused thR
     hypotheses (and blockpf's w2) of the old condition.
+  - Steps 4-5 done (2026-10-20):
+    - Step 4 is certpf's `cert_jinj`: every block's Jacobian is injective
+      anywhere in its certificate's box, read off the sketch through
+      locpf's `jac_loc` and apxpf's `jac_smat`. Invertibility waits for
+      the top.
+    - lib/regpf.bend: the block-order Jacobian is injective by forward
+      substitution along the plan's walk (`rinj`, on `bm_inj`'s
+      [[A, 0], [C, D]]), invertible by one `inv_of_inj`, and carried to
+      the sketch's order by permpf's `perm_inv`.
+    - The three checks became one, solve.bend's `shape`, just before
+      `exact` in `final`. It checks that the box has a coordinate per
+      variable, the variable order lists each variable once with the
+      pins first, and the equation order has a place for each solved
+      equation. completepf's `shape_ans` shows the solver's own answer
+      passes it.
+    - `solve_regular` is restated in tests/solve_laws.bend.
 - **`final` gains:**
   - the drop certificates (`qzero`; h = 1; rows are earlier solved
     equations);

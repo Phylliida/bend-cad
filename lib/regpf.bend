@@ -755,3 +755,35 @@ def plan_regular(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +eqs: List<&2, E.QExpr>,
   +hfe = Equal.trans(Nat, DV.elen(eqs), CK.eqlen(eqs), SV.len(SV.free(nv, 0n, pins)), elen_eq(eqs), Equal.sym(Nat, SV.len(SV.free(nv, 0n, pins)), CK.eqlen(eqs), Equal.trans(Nat, SV.len(SV.free(nv, 0n, pins)), SV.len(ep), CK.eqlen(eqs), hlf, hle)))
   reg_of(~F, x, eqs, SV.free(nv, 0n, pins), SV.len(SV.free(nv, 0n, pins)), PM.nlen_sv(SV.free(nv, 0n, pins)), hfe, (%pk_iota(eqs) : GJ.InvN(~F, DV.jac(~F, x, _, SV.free(nv, 0n, pins)), SV.len(SV.free(nv, 0n, pins)))
     PM.perm_inv(~F, x, eqs, ep, ST.iota(CK.eqlen(eqs), 0n), OW.ndrop(np, vp), SV.free(nv, 0n, pins), hga, BI.dist_r(SO.ntake(np, vp), OW.ndrop(np, vp), dist_app(np, vp, hvd)), PM.free_dist(nv, 0n, pins), huv, hvu, hn, hreg)))
+
+# The verdict's shape check
+# -------------------------
+
+def nl_eq_ok(xs: List<&2, Nat>, ys: List<&2, Nat>, +h: {SO.nl_eq(xs, ys) == True{} : Bool}) -> {xs == ys : List<&2, Nat>}:
+  match xs ys:
+    case Nil{} Nil{}:
+      {==}
+    case Nil{} Con{+b, +t}:
+      absurd({Nil{} == Con{b, t} : List<&2, Nat>}, KA.ft(h))
+    case Con{+a, +s} Nil{}:
+      absurd({Con{a, s} == Nil{} : List<&2, Nat>}, KA.ft(h))
+    case Con{+a, +s} Con{+b, +t}:
+      %L.eq_ok(a, b, L.band_l(SV.eq(a, b), SO.nl_eq(s, t), h)) : {Con{a, s} == Con{_, t} : List<&2, Nat>}
+      %nl_eq_ok(s, t, L.band_r(SV.eq(a, b), SO.nl_eq(s, t), h)) : {Con{a, s} == Con{a, _} : List<&2, Nat>}
+      {==}
+
+
+# a plan that checks and passes the shape check makes every point of the
+# box a regular point of the system in the free variables
+def reg_plan(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +eqs: List<&2, E.QExpr>, +gc: List<&2, S.D>, +gr: List<&2, S.D>, +nv: Nat, +pins: List<&2, Nat>, p: PL.Plan<KI.dnum()>, +hc: {PL.check(~KI.dnum(), eqs, gc, gr, p) == True{} : Bool}, +hs: {SO.shape(nv, CK.eqlen(eqs), gc, pins, p) == True{} : Bool}, +x: M.Vec(~F), +hb: BX.inbox(~KI.dnum(), ~F, ~H, gc, gr, x)) -> DV.Regular(~F, x, eqs, SV.free(nv, 0n, pins)):
+  match p:
+    case PL.Plan{+vp, +ep, +np, +bs}:
+      +hgc = KA.nateq_ok(KA.klen(~KI.dnum(), gc), nv, KA.band_l(KA.nateq(KA.klen(~KI.dnum(), gc), nv), KA.band(KA.nateq(PL.nlen(vp), nv), KA.band(SV.distinct(vp), KA.band(KA.nateq(PL.nlen(ep), CK.eqlen(eqs)), SO.nl_eq(SO.ntake(np, vp), pins)))), hs))
+      +s1 = KA.band_r(KA.nateq(KA.klen(~KI.dnum(), gc), nv), KA.band(KA.nateq(PL.nlen(vp), nv), KA.band(SV.distinct(vp), KA.band(KA.nateq(PL.nlen(ep), CK.eqlen(eqs)), SO.nl_eq(SO.ntake(np, vp), pins)))), hs)
+      +hvl = KA.nateq_ok(PL.nlen(vp), nv, KA.band_l(KA.nateq(PL.nlen(vp), nv), KA.band(SV.distinct(vp), KA.band(KA.nateq(PL.nlen(ep), CK.eqlen(eqs)), SO.nl_eq(SO.ntake(np, vp), pins))), s1))
+      +s2 = KA.band_r(KA.nateq(PL.nlen(vp), nv), KA.band(SV.distinct(vp), KA.band(KA.nateq(PL.nlen(ep), CK.eqlen(eqs)), SO.nl_eq(SO.ntake(np, vp), pins))), s1)
+      +hvd = KA.band_l(SV.distinct(vp), KA.band(KA.nateq(PL.nlen(ep), CK.eqlen(eqs)), SO.nl_eq(SO.ntake(np, vp), pins)), s2)
+      +s3 = KA.band_r(SV.distinct(vp), KA.band(KA.nateq(PL.nlen(ep), CK.eqlen(eqs)), SO.nl_eq(SO.ntake(np, vp), pins)), s2)
+      +hel = KA.nateq_ok(PL.nlen(ep), CK.eqlen(eqs), KA.band_l(KA.nateq(PL.nlen(ep), CK.eqlen(eqs)), SO.nl_eq(SO.ntake(np, vp), pins), s3))
+      +hpn = nl_eq_ok(SO.ntake(np, vp), pins, KA.band_r(KA.nateq(PL.nlen(ep), CK.eqlen(eqs)), SO.nl_eq(SO.ntake(np, vp), pins), s3))
+      plan_regular(~F, ~H, eqs, gc, gr, vp, ep, np, bs, hc, nv, pins, hgc, hvl, hvd, hel, hpn, x, hb)

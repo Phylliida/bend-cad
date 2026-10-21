@@ -565,7 +565,7 @@ for each choice of the parameters: Banach's theorem, proven in Bend (Q18,
      every Jacobian J in the box, |I − Y·J|·r ≤ G·r ≤ q·r, so in the
      r-weighted max norm Y·J is injective, and so (square) J and Y are
      invertible (lib/certpf.bend: `yjinj`, `yinj`; `cert_fix` uses Y's
-     injectivity, law 2 each block's Jacobian). Until 2026-10-20 the third
+     injectivity, law 2 each block's Jacobian, lib/regpf.bend). Until 2026-10-20 the third
      condition was ‖I − J₀,y·Y‖ < 1 (Y injective); with zero radii the
      contraction says nothing about the Jacobian, and a singular block
      passed (y z = 0 at y = 0, radius 0, z's ball around 0).

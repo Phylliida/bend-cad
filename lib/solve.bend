@@ -12,12 +12,14 @@
 # system solved. seal then recomputes the verdict from the answer alone:
 # every pin held at its drawn value with radius 0, the sketch with the red
 # constraints made driven well formed (lib/wfdec.bend), covered by the box,
-# the plan checked over the system solved, the side conditions of the
+# the plan checked over the system solved (its orders every variable once,
+# the pins first, and as many equations as that system has), the side
+# conditions of the
 # constraints neither red nor amber checked over the box (lib/plan.bend),
 # and the dropped equations and amber side conditions certified by their
 # combinations and refutations (lib/verdict.bend). So the verdict laws
-# (solve_exists, solve_unique, solve_pins) need nothing from search: they
-# follow from the verdict and the sk-06 laws.
+# (solve_exists, solve_unique, solve_pins, solve_regular) need nothing
+# from search: they follow from the verdict and the sk-06 laws.
 
 import Base
 import ../spec/num.bend as S
@@ -38,6 +40,7 @@ import ./numer.bend as NU
 import ./wfdec.bend as WF
 import ./pass.bend as PA
 import ./verdict.bend as VD
+import ./cert.bend as CK
 
 # The answer
 # ----------
@@ -171,6 +174,30 @@ def ntake(n: Nat, xs: List<&2, Nat>) -> List<&2, Nat>:
     case 1n+m Con{h, t}:
       Con{h, ntake(m, t)}
 
+# two lists of numbers are the same
+def nl_eq(xs: List<&2, Nat>, ys: List<&2, Nat>) -> Bool:
+  match xs ys:
+    case Nil{} Nil{}:
+      True{}
+    case Nil{} Con{b, t}:
+      False{}
+    case Con{a, s} Nil{}:
+      False{}
+    case Con{a, s} Con{b, t}:
+      SV.band(SV.eq(a, b), nl_eq(s, t))
+
+# the plan's orders: a box coordinate and a place in the variable order
+# for each of the nv variables, every variable once, the np pins first,
+# and a place in the equation order for each of the nq equations
+def shape(+nv: Nat, +nq: Nat, +gc: List<&2, S.D>, +pins: List<&2, Nat>, p: PL.Plan<KI.dnum()>) -> Bool:
+  match p:
+    case PL.Plan{+vp, +ep, +np, bs}:
+      KA.band(KA.nateq(KA.klen(~KI.dnum(), gc), nv),
+      KA.band(KA.nateq(PL.nlen(vp), nv),
+      KA.band(SV.distinct(vp),
+      KA.band(KA.nateq(PL.nlen(ep), nq),
+      nl_eq(ntake(np, vp), pins)))))
+
 # the pins: the first np variables in block order
 def skel.pins(s: ST.Skel) -> List<&2, Nat>:
   match s:
@@ -188,7 +215,8 @@ def final(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: Out) -> Bool:
   KA.band(BX.Sketch.within(SV.mark(SV.reds(Out.cls(x)), sk), List.length(&2, N.NC(KI.dnum()), Out.gc(x))),
   KA.band(PL.check(~KI.dnum(), SV.solved(sk, SV.reds(Out.cls(x)), SV.dropped(Out.cls(x))), Out.gc(x), Out.gr(x), Out.plan(x)),
   KA.band(PL.check_sides(~KI.dnum(), SK.Sketch.sides(SV.mark(SV.cat(SV.reds(Out.cls(x)), SV.ambers(Out.cls(x))), sk)), Out.gc(x), Out.gr(x)),
-  VD.exact(sk, Out.cls(x)))))))
+  KA.band(shape(nvars(sk), CK.eqlen(SV.solved(sk, SV.reds(Out.cls(x)), SV.dropped(Out.cls(x)))), Out.gc(x), Out.pins(x), Out.plan(x)),
+  VD.exact(sk, Out.cls(x))))))))
 
 # The precision loop
 # ------------------

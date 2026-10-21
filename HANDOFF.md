@@ -244,7 +244,10 @@ gate and regression green, the raw OnCircle sketches certify (PLAN S5,
 (2026-10-20, ae9691f):** `solve_complete`, with Strict over the pins (a
 ≥ 0 side over pins only is checked at its exact value on radius-0 balls)
 and dyadic constants needed only on the kept constraints (PLAN S7).
-**Next: S5's laws 1–3 (solve_regular, solve_blame), then S6.**
+**Law 2 is done (2026-10-20):** `solve_regular`, through
+lib/regpf.bend, with the plan's shape checked in `final` (PLAN S5,
+"Steps 4-5 done").
+**Next: law 3 (solve_blame), then S6.**
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);
