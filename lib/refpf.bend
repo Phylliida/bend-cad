@@ -30,6 +30,7 @@ import ./fring.bend as FR
 import ./ford.bend as FO
 import ./qemb.bend as QE
 import ./qfield.bend as QF
+import ./lqfield.bend as LQF
 import ./qnorm.bend as QN
 import ./natring.bend as NR
 import ./redpoly.bend as RP
@@ -1089,6 +1090,8 @@ def lex_ref.go(o: Cmp, +K: S.Z, +T: S.Z, +SP: Bool, ho: {S.Z.cmp(K, S.Z0{}) == o
       absurd({SV.bor(SV.islt(S.Q.cmp(RF.qz(K), SV.qzero())), SV.band(SV.iszz(K), SP)) == True{} : Bool}, KA.ft(h))
 
 
+# (unsat_cols holds in every ordered field; it is read in lib/lqfield.bend's,
+# which checks far faster than qfield's)
 def pv.c(mi: Maybe<&2, Nat>, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, +t: SX.Tab, +i: Nat, +h: {SX.solve(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)) == SX.Unsat{t, i} : SX.Run}, +v: Nat, +vs: List<&2, Nat>, hmi: {mi == midx(Con{v, vs}, RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{})) : Maybe<&2, Nat>})
   -> {pdot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Con{v, vs}) == S.Z0{} : S.Z}:
   match mi:
@@ -1100,7 +1103,7 @@ def pv.c(mi: Maybe<&2, Nat>, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, +t:
         Equal.sym(S.Z, SX.dot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), UN.acol(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), l)), pdot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Con{v, vs}),
           acol_pdot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), ss, RF.Walk.rows(RF.walk(es, Nil{})), RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), l, Con{v, vs}, LX.both_r({mnth(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), l) == Con{v, vs} : List<&2, Nat>}, {SX.ltn(l, RF.mlen(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}))) == True{} : Bool}, hs),
             LX.both_l({mnth(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), l) == Con{v, vs} : List<&2, Nat>}, {SX.ltn(l, RF.mlen(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}))) == True{} : Bool}, hs))),
-        UN.unsat_cols(~QF.qfield(), RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), t, i, h, l, LX.both_r({mnth(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), l) == Con{v, vs} : List<&2, Nat>}, {SX.ltn(l, RF.mlen(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}))) == True{} : Bool}, hs)))
+        UN.unsat_cols(~LQF.lqfield(), RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss), t, i, h, l, LX.both_r({mnth(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), l) == Con{v, vs} : List<&2, Nat>}, {SX.ltn(l, RF.mlen(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}))) == True{} : Bool}, hs)))
 
 # sum_k mu_k p_k is K at 1 and 0 elsewhere
 def pdot_val(+es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, +t: SX.Tab, +i: Nat, +h: {SX.solve(RF.mklp(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)) == SX.Unsat{t, i} : SX.Run}, m: List<&2, Nat>) -> {pdot(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), m) == EL.ifz(RF.iscst(m), RF.ksum(RF.mults(SX.Rw.m(SX.rowat(SX.Tab.rows(t), i)), i, SX.Rw.d(SX.rowat(SX.Tab.rows(t), i)), SX.qlen(RF.ineqs(RF.ymons(RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), Nil{}), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss), ss)), 0n), RF.sres(RF.Walk.rows(RF.walk(es, Nil{})), ss))) : S.Z}:

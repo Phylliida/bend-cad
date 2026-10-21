@@ -28,7 +28,7 @@ import ./flaws.bend as FL
 import ./fring.bend as FR
 import ./ford.bend as FO
 import ./qemb.bend as QE
-import ./qfield.bend as QF
+import ./lqfield.bend as LQF
 import ./qnorm.bend as QN
 import ./natring.bend as NR
 import ./redpoly.bend as RP
@@ -1261,9 +1261,11 @@ def sat_contra(~F: O.OField, $SH, +hc: {RF.crow($WR, 0n) == None{} : Maybe<&2, N
       FL.zero_mul(~F, O.ofq(~F, k))),
     hr)
 
-# the simplex's Sat, with no constant row: no refutation
+# the simplex's Sat, with no constant row: no refutation (sat_contra holds
+# in every ordered field; it is read in lib/lqfield.bend's, which checks far
+# faster than qfield's)
 def sat_noref($SH, +hc: {RF.crow($WR, 0n) == None{} : Maybe<&2, Nat>}) -> NoRef(es, ss):
-  ls => mm => k => hr => sat_contra(~QF.qfield(), $SA, hc, ls, mm, k, hr)
+  ls => mm => k => hr => sat_contra(~LQF.lqfield(), $SA, hc, ls, mm, k, hr)
 
 # refute decides degree-0 refutability: a certificate is a refutation, and
 # none means there is none

@@ -18,7 +18,7 @@ import ../spec/mat.bend as M
 import ../spec/sketch.bend as SK
 import ../spec/solve.bend as SV
 import ./karith.bend as KA
-import ./qfield.bend as QF
+import ./lqfield.bend as LQF
 import ./indpf.bend as IP
 import ./refute.bend as RF
 import ./satpf.bend as ST
@@ -391,12 +391,14 @@ def none_of(m: Maybe<&2, RF.Cert>, h: {CO.issome(m) == False{} : Bool}) -> {m ==
 
 
 # x was kept: c with the others then tested had no refutation, so a point
+# (in lib/lqfield.bend's ordered field: the point is used only here, and
+# that field checks far faster than qfield's)
 def fi.x(+x: Nat, +t: List<&2, Nat>, +sk: SK.Sketch, +c: Nat, +keep: List<&2, Nat>, +R: List<&2, Nat>, hb: {False{} == CO.refutable(sk, c, CO.lcat(keep, t)) : Bool}, hR: SubN(R, t))
   -> ST.NoRef(CO.supp.es(sk, c, SV.unmark(x, CO.lcat(keep, Con{x, R}))), CO.supp.ss(sk, c, SV.unmark(x, CO.lcat(keep, Con{x, R})))):
   +hs = sub_unmark(x, keep, R, t, hR)
-  ST.pt_noref(~QF.qfield(), CO.supp.es(sk, c, SV.unmark(x, CO.lcat(keep, Con{x, R}))), CO.supp.ss(sk, c, SV.unmark(x, CO.lcat(keep, Con{x, R}))),
-    pt_sub(~QF.qfield(), CO.supp.es(sk, c, SV.unmark(x, CO.lcat(keep, Con{x, R}))), CO.supp.es(sk, c, CO.lcat(keep, t)), CO.supp.ss(sk, c, SV.unmark(x, CO.lcat(keep, Con{x, R}))), CO.supp.ss(sk, c, CO.lcat(keep, t)), supp_mono_e(sk, c, SV.unmark(x, CO.lcat(keep, Con{x, R})), CO.lcat(keep, t), hs), supp_mono_s(sk, c, SV.unmark(x, CO.lcat(keep, Con{x, R})), CO.lcat(keep, t), hs),
-      ST.pt_of_none(~QF.qfield(), CO.supp.es(sk, c, CO.lcat(keep, t)), CO.supp.ss(sk, c, CO.lcat(keep, t)),
+  ST.pt_noref(~LQF.lqfield(), CO.supp.es(sk, c, SV.unmark(x, CO.lcat(keep, Con{x, R}))), CO.supp.ss(sk, c, SV.unmark(x, CO.lcat(keep, Con{x, R}))),
+    pt_sub(~LQF.lqfield(), CO.supp.es(sk, c, SV.unmark(x, CO.lcat(keep, Con{x, R}))), CO.supp.es(sk, c, CO.lcat(keep, t)), CO.supp.ss(sk, c, SV.unmark(x, CO.lcat(keep, Con{x, R}))), CO.supp.ss(sk, c, CO.lcat(keep, t)), supp_mono_e(sk, c, SV.unmark(x, CO.lcat(keep, Con{x, R})), CO.lcat(keep, t), hs), supp_mono_s(sk, c, SV.unmark(x, CO.lcat(keep, Con{x, R})), CO.lcat(keep, t), hs),
+      ST.pt_of_none(~LQF.lqfield(), CO.supp.es(sk, c, CO.lcat(keep, t)), CO.supp.ss(sk, c, CO.lcat(keep, t)),
         none_of(RF.refute(CO.supp.es(sk, c, CO.lcat(keep, t)), CO.supp.ss(sk, c, CO.lcat(keep, t))), Equal.sym(Bool, False{}, CO.refutable(sk, c, CO.lcat(keep, t)), hb)))))
 
 def fi.m(bm: Bool, +m: Nat, +x: Nat, +t: List<&2, Nat>, +sk: SK.Sketch, +c: Nat, +keep: List<&2, Nat>, +R: List<&2, Nat>, hbm: {bm == SV.eq(m, x) : Bool},

@@ -11,7 +11,7 @@ import ../spec/num.bend as S
 import ../spec/field.bend as O
 import ./karith.bend as KA
 import ./nat.bend as LN
-import ./qfield.bend as QF
+import ./lqfield.bend as LQF
 import ./simplex.bend as SX
 import ./simppf.bend as SP
 import ./runpf.bend as RN
@@ -88,12 +88,14 @@ def go_head(+lp: SX.LP, k: Nat, +L: Nat, +p: Nat, hg: {RN.isgo(RN.st(lp, BL.plus
   %Equal.sym(Nat, BL.plus(L, 1n+p), 1n+BL.plus(L, p), BL.plus_succ(L, p)) : {RN.isgo(RN.st(lp, _)) == True{} : Bool}
   BL.go_down(lp, k, 0n, 1n+BL.plus(L, p), {==}, hg)
 
-# the bases at p and p + 1 + L differ
+# the bases at p and p + 1 + L differ (Bland's argument holds in every
+# ordered field; it is read in lib/lqfield.bend's, which checks far faster
+# than qfield's)
 def nb.go(b: Bool, +lp: SX.LP, +L: Nat, +p: Nat, +hwf: {SP.lpwf(lp) == True{} : Bool}, +hG: {RN.isgo(RN.st(lp, BL.plus(1n+L, p))) == True{} : Bool}, hb: {b == PH.beq(BL.B(lp, p), BL.B(lp, BL.plus(1n+L, p))) : Bool}) -> {False{} == PH.beq(BL.B(lp, p), BL.B(lp, BL.plus(1n+L, p))) : Bool}:
   match b:
     case True{}:
       absurd({False{} == PH.beq(BL.B(lp, p), BL.B(lp, BL.plus(1n+L, p))) : Bool},
-        BL.bland_main(~QF.qfield(), lp, L, p, hwf, hG, PH.beq_eq(BL.B(lp, p), BL.B(lp, BL.plus(1n+L, p)), Equal.sym(Bool, True{}, PH.beq(BL.B(lp, p), BL.B(lp, BL.plus(1n+L, p))), hb))))
+        BL.bland_main(~LQF.lqfield(), lp, L, p, hwf, hG, PH.beq_eq(BL.B(lp, p), BL.B(lp, BL.plus(1n+L, p)), Equal.sym(Bool, True{}, PH.beq(BL.B(lp, p), BL.B(lp, BL.plus(1n+L, p))), hb))))
     case False{}:
       hb
 

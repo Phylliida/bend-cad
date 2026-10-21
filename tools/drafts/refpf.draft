@@ -30,6 +30,7 @@ import ./fring.bend as FR
 import ./ford.bend as FO
 import ./qemb.bend as QE
 import ./qfield.bend as QF
+import ./lqfield.bend as LQF
 import ./qnorm.bend as QN
 import ./natring.bend as NR
 import ./redpoly.bend as RP
@@ -1118,6 +1119,8 @@ def lex_ref.go(o: Cmp, +K: S.Z, +T: S.Z, +SP: Bool, ho: {S.Z.cmp(K, S.Z0{}) == o
 @MACRO KQ RF.ksum($MUQ, $RS)
 @MACRO TQ SX.dot($MUQ, UN.scol($QQ))
 
+# (unsat_cols holds in every ordered field; it is read in lib/lqfield.bend's,
+# which checks far faster than qfield's)
 def pv.c(mi: Maybe<&2, Nat>, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, +t: SX.Tab, +i: Nat, $HU, +v: Nat, +vs: List<&2, Nat>, hmi: {mi == midx(Con{v, vs}, $YS) : Maybe<&2, Nat>})
   -> {pdot($MUQ, $RS, Con{v, vs}) == S.Z0{} : S.Z}:
   match mi:
@@ -1129,7 +1132,7 @@ def pv.c(mi: Maybe<&2, Nat>, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, +t:
         Equal.sym(S.Z, SX.dot($MUQ, UN.acol($QQ, l)), pdot($MUQ, $RS, Con{v, vs}),
           acol_pdot($MUQ, ss, $WR, $YS, l, Con{v, vs}, LX.both_r({mnth($YS, l) == Con{v, vs} : List<&2, Nat>}, {SX.ltn(l, RF.mlen($YS)) == True{} : Bool}, hs),
             LX.both_l({mnth($YS, l) == Con{v, vs} : List<&2, Nat>}, {SX.ltn(l, RF.mlen($YS)) == True{} : Bool}, hs))),
-        UN.unsat_cols(~QF.qfield(), $LPQ, t, i, h, l, LX.both_r({mnth($YS, l) == Con{v, vs} : List<&2, Nat>}, {SX.ltn(l, RF.mlen($YS)) == True{} : Bool}, hs)))
+        UN.unsat_cols(~LQF.lqfield(), $LPQ, t, i, h, l, LX.both_r({mnth($YS, l) == Con{v, vs} : List<&2, Nat>}, {SX.ltn(l, RF.mlen($YS)) == True{} : Bool}, hs)))
 
 # sum_k mu_k p_k is K at 1 and 0 elsewhere
 def pdot_val(+es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, +t: SX.Tab, +i: Nat, $HU, m: List<&2, Nat>) -> {pdot($MUQ, $RS, m) == EL.ifz(RF.iscst(m), $KQ) : S.Z}:

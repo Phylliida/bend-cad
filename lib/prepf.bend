@@ -18,7 +18,7 @@ import ../spec/sketch.bend as SK
 import ../spec/solve.bend as SV
 import ./karith.bend as KA
 import ./nat.bend as LN
-import ./qfield.bend as QF
+import ./lqfield.bend as LQF
 import ./listpf.bend as LI
 import ./refute.bend as RF
 import ./satpf.bend as ST
@@ -119,11 +119,13 @@ def pt_reord(~F: O.OField, +sk: SK.Sketch, +c: Nat, +kb: List<&2, Nat>, p: ST.Po
 # NoRefute
 # --------
 
-# c with kb not refutable: no refutation of them in the spec's order
+# c with kb not refutable: no refutation of them in the spec's order (the
+# point is read in lib/lqfield.bend's ordered field, which checks far faster
+# than qfield's)
 def no_refute(+sk: SK.Sketch, +c: Nat, +kb: List<&2, Nat>, h: {CO.refutable(sk, c, kb) == False{} : Bool})
   -> ST.NoRef(SK.cat(SV.eqs_of(sk, kb), SV.eqs_of(sk, [c])), SK.cats(SK.cats(SV.csides(sk, kb), SV.esides(sk)), SV.csides(sk, [c]))):
-  ST.pt_noref(~QF.qfield(), SK.cat(SV.eqs_of(sk, kb), SV.eqs_of(sk, [c])), SK.cats(SK.cats(SV.csides(sk, kb), SV.esides(sk)), SV.csides(sk, [c])),
-    pt_reord(~QF.qfield(), sk, c, kb, ST.pt_of_none(~QF.qfield(), CO.supp.es(sk, c, kb), CO.supp.ss(sk, c, kb), CP.none_of(RF.refute(CO.supp.es(sk, c, kb), CO.supp.ss(sk, c, kb)), h))))
+  ST.pt_noref(~LQF.lqfield(), SK.cat(SV.eqs_of(sk, kb), SV.eqs_of(sk, [c])), SK.cats(SK.cats(SV.csides(sk, kb), SV.esides(sk)), SV.csides(sk, [c])),
+    pt_reord(~LQF.lqfield(), sk, c, kb, ST.pt_of_none(~LQF.lqfield(), CO.supp.es(sk, c, kb), CO.supp.ss(sk, c, kb), CP.none_of(RF.refute(CO.supp.es(sk, c, kb), CO.supp.ss(sk, c, kb)), h))))
 
 # the same, as the spec says it, kb being kept_before
 def norefute(+sk: SK.Sketch, +R: List<&2, Nat>, +c: Nat, h: {CO.refutable(sk, c, SV.kept_before(sk, R, c)) == False{} : Bool}) -> SV.NoRefute(sk, R, c):
