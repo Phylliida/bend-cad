@@ -1,7 +1,7 @@
 # The solver's proven laws (ROADMAP.bend) with their proofs
 # (lib/solvepf.bend: the verdict laws; lib/regpf.bend: solve_regular;
 # lib/blamepf.bend: solve_blame; lib/conflawpf.bend: solve_conflict;
-# lib/droplawpf.bend: solve_drop;
+# lib/droplawpf.bend: solve_drop; lib/amberlawpf.bend: solve_amber;
 # lib/totalpf.bend: solve_total, solve_honest; lib/completepf.bend:
 # solve_complete; lib/refusedpf.bend: solve_refused), restated so the
 # gate checks the proofs and tools/lawsync.py checks the statements match
@@ -28,6 +28,7 @@ import ../lib/blamepf.bend as BLM
 import ../lib/refusedpf.bend as RFD
 import ../lib/conflawpf.bend as CFL
 import ../lib/droplawpf.bend as DRL
+import ../lib/amberlawpf.bend as AML
 
 def solve_exists(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}) -> (&x: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), x) & SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk)))):
   SP.solve_exists(~F, ~R, ~H, sk, g0, l, ok)
@@ -49,6 +50,9 @@ def solve_conflict(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), cov: {BX.S
 
 def solve_drop(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat, +x: M.Vec(~F), hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), SV.dropped(SO.Out.cls(SO.solve_l(sk, g0, l)))))) -> SK.Zeros(~F, x, SV.picked(SK.Sketch.eqs(sk), SV.dropped(SO.Out.cls(SO.solve_l(sk, g0, l))))):
   DRL.solve_drop(~F, sk, w, cov, g0, l, x, hz)
+
+def solve_amber(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SV.mark(SV.cat(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), SV.ambers(SO.Out.cls(SO.solve_l(sk, g0, l)))), sk))) -> SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk)):
+  AML.solve_amber(~F, sk, w, cov, g0, l, x, m)
 
 def solve_total(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat) -> ({SO.Out.cls(SO.solve_l(sk, g0, l)) == SO.cls_of(sk) : List<&2, SV.Class>} & ({SO.Out.pins(SO.solve_l(sk, g0, l)) == SO.pins_of(sk) : List<&2, Nat>} & ({WF.wf_dec(SV.mark(SV.reds(SO.cls_of(sk)), sk)) == True{} : Bool} & ({SV.distinct(SO.pins_of(sk)) == True{} : Bool} & ({SV.below(SO.pins_of(sk), SO.nvars(sk)) == True{} : Bool} & (&m: List<&2, Nat> -> SV.Perfect(SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)), m))))))):
   TP.solve_total(sk, w, cov, g0, l)

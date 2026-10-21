@@ -1,0 +1,295 @@
+# bend-cad: law 7, solve_amber (PLAN-sk13a S6): deleting every amber
+# constraint changes no solution. Proofs only.
+#
+# An amber constraint's equations are all dropped (AmberOk, from
+# lib/totalpf.bend: solve_honest), so the system solved is the same with
+# the ambers made driven too, and a geometry meaning the sketch less its
+# reds and ambers solves it. From there the verdict's laws do the rest, as
+# for solve_exists: the drop checks give every equation of the sketch less
+# its reds (lib/vrdpf.bend: zeros_mark), the amber refutations every side
+# condition (lib/vsdpf.bend: sides_mark), and the pass passes those checks
+# (lib/ckpf.bend: ck_pass).
+#
+# Honest is a Type, used once; it is read once into Bool facts (allP),
+# which are Data and reused at every equation.
+#
+# Generated from tools/drafts/amberlawpf.draft by tools/expand.py; edit the
+# draft.
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ../spec/mat.bend as M
+import ../spec/sketch.bend as SK
+import ../spec/box.bend as BX
+import ../spec/solve.bend as SV
+import ./karith.bend as KA
+import ./listpf.bend as L
+import ./nat.bend as LN
+import ./ownpf.bend as OW
+import ./fvec.bend as FV
+import ./keptpf.bend as KP
+import ./solvedpf.bend as SDP
+import ./wfdec.bend as WF
+import ./wfcpf.bend as WC
+import ./covpf.bend as CV
+import ./gmpf.bend as GM
+import ./verdict.bend as VD
+import ./ckpf.bend as CKP
+import ./vrdpf.bend as VR
+import ./vsdpf.bend as VS
+import ./meaning.bend as MN
+import ./solve.bend as SO
+import ./totalpf.bend as TP
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+# Each constraint's fate, read as a Bool
+# --------------------------------------
+
+# c is not amber, or every equation it owns is among its drops
+def pc(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +c: Nat) -> Bool:
+  SV.bor(SV.bnot(SV.is_amber(SV.class_at(cls, c))), SV.alldrop.go(SV.owners(sk), SV.kdrops(SV.class_at(cls, c)), c, 0n))
+
+def allP(+sk: SK.Sketch, +cls: List<&2, SV.Class>, n: Nat, +c0: Nat) -> Bool:
+  match n:
+    case 0n:
+      True{}
+    case 1n+m:
+      SV.band(pc(sk, cls, c0), allP(sk, cls, m, 1n+c0))
+
+def amber_ad(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, h: SV.AmberOk(sk, red, ds, c, d)) -> {SV.is_amberable(sk, c, d) == True{} : Bool}:
+  match h:
+    case (a, b):
+      match b:
+        case (c1, d1):
+          match d1:
+            case (e1, f1):
+              e1
+
+def pc_b(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +dd: List<&2, SV.Drop>, +rs: List<&2, SV.Ref>, b: Bool, h: SV.Fate.pick(sk, red, ds, c, b, SV.Amber{dd, rs})) -> {SV.alldrop.go(SV.owners(sk), SV.drops(dd), c, 0n) == True{} : Bool}:
+  match b:
+    case True{}:
+      absurd({SV.alldrop.go(SV.owners(sk), SV.drops(dd), c, 0n) == True{} : Bool}, h)
+    case False{}:
+      amber_ad(sk, red, ds, c, SV.drops(dd), h)
+
+def pc_k(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, k: SV.Class, b: Bool, h: SV.Fate.pick(sk, red, ds, c, b, k)) -> {SV.bor(SV.bnot(SV.is_amber(k)), SV.alldrop.go(SV.owners(sk), SV.kdrops(k), c, 0n)) == True{} : Bool}:
+  match k:
+    case SV.Kept{d}:
+      {==}
+    case SV.Amber{+dd, +rs}:
+      pc_b(sk, red, ds, c, dd, rs, b, h)
+    case SV.Over{j, s, w}:
+      {==}
+    case SV.Conflict{s}:
+      {==}
+
+def allP_c(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +m: Nat, +c0: Nat, h: SV.Honest.go(sk, cls, 1n+m, c0), ih: SV.Honest.go(sk, cls, m, 1n+c0) -> {allP(sk, cls, m, 1n+c0) == True{} : Bool}) -> {allP(sk, cls, 1n+m, c0) == True{} : Bool}:
+  match h:
+    case (f, r):
+      L.band_i(pc(sk, cls, c0), allP(sk, cls, m, 1n+c0), pc_k(sk, SV.reds(cls), SV.dropped(cls), c0, SV.class_at(cls, c0), SV.driven(sk, c0), f), ih(r))
+
+def allP_of(+sk: SK.Sketch, +cls: List<&2, SV.Class>, n: Nat, +c0: Nat, h: SV.Honest.go(sk, cls, n, c0)) -> {allP(sk, cls, n, c0) == True{} : Bool}:
+  match n:
+    case 0n:
+      {==}
+    case 1n++m:
+      allP_c(sk, cls, m, c0, h, hr => allP_of(sk, cls, m, 1n+c0, hr))
+
+# the j-th fact from c0 on
+def pc_at(+sk: SK.Sketch, +cls: List<&2, SV.Class>, n: Nat, +c0: Nat, j: Nat, h: {allP(sk, cls, n, c0) == True{} : Bool}, hj: {KA.natle(1n+j, n) == True{} : Bool}) -> {pc(sk, cls, Nat.add(j, c0)) == True{} : Bool}:
+  match n j:
+    case 0n j:
+      absurd({pc(sk, cls, Nat.add(j, c0)) == True{} : Bool}, KA.ft(hj))
+    case 1n++m 0n:
+      L.band_l(pc(sk, cls, c0), allP(sk, cls, m, 1n+c0), h)
+    case 1n++m 1n++i:
+      (%Equal.sym(Nat, 1n+Nat.add(i, c0), Nat.add(i, 1n+c0), LN.add_succ(i, c0)) : {pc(sk, cls, _) == True{} : Bool}
+        pc_at(sk, cls, m, 1n+c0, i, L.band_r(pc(sk, cls, c0), allP(sk, cls, m, 1n+c0), h), hj))
+
+@MACRO AP0 allP(sk, cls, SV.ncons(sk), 0n)
+@MACRO KDO SV.kdrops(SV.class_at(cls, o))
+
+# an amber constraint before the end: every equation it owns is dropped
+def amb_ad(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +o: Nat, +hP: {$AP0 == True{} : Bool}, +hk: {KA.natle(1n+o, SV.ncons(sk)) == True{} : Bool}, +ha: {SV.is_amber(SV.class_at(cls, o)) == True{} : Bool}) -> {SV.alldrop.go(SV.owners(sk), $KDO, o, 0n) == True{} : Bool}:
+  (%ha : {SV.bor(SV.bnot(_), SV.alldrop.go(SV.owners(sk), $KDO, o, 0n)) == True{} : Bool}
+    (%Equal.sym(Nat, o, Nat.add(o, 0n), LN.add_zero(o)) : {pc(sk, cls, _) == True{} : Bool}
+      pc_at(sk, cls, SV.ncons(sk), 0n, o, hP, hk)))
+
+# past the last constraint the class is Kept
+def amb_past(cls: List<&2, SV.Class>, c: Nat, h: {SV.lt(c, SV.clsn(cls)) == False{} : Bool}, ha: {SV.is_amber(SV.class_at(cls, c)) == True{} : Bool}) -> Empty:
+  match cls c:
+    case Nil{} c:
+      KA.ft(ha)
+    case Con{y, t} 0n:
+      KA.tf(h)
+    case Con{y, t} 1n+m:
+      amb_past(t, m, h, ha)
+
+def isnil(xs: List<&2, Nat>) -> Bool:
+  match xs:
+    case Nil{}:
+      True{}
+    case Con{h, t}:
+      False{}
+
+def nil_ne(+o: Nat, +t: List<&2, Nat>, h: {Nil{} == Con{o, t} : List<&2, Nat>}) -> Empty:
+  KA.tf(Equal.cong(List<&2, Nat>, Bool, ys => isnil(ys), Nil{}, Con{o, t}, h))
+
+# a list with something from k on is longer than k
+def dp_lt(xs: List<&2, Nat>, k: Nat, +o: Nat, +t: List<&2, Nat>, h: {OW.ndrop(k, xs) == Con{o, t} : List<&2, Nat>}) -> {SV.lt(k, SV.len(xs)) == True{} : Bool}:
+  match xs k:
+    case Nil{} 0n:
+      absurd({SV.lt(0n, SV.len(Nil{})) == True{} : Bool}, nil_ne(o, t, h))
+    case Nil{} 1n+j:
+      absurd({SV.lt(1n+j, SV.len(Nil{})) == True{} : Bool}, nil_ne(o, t, h))
+    case Con{y, ys} 0n:
+      {==}
+    case Con{y, ys} 1n+j:
+      dp_lt(ys, j, o, t, h)
+
+# alldrop at an index owned by c
+def ad_at(own: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +k: Nat, j: Nat, h: {SV.alldrop.go(own, ds, c, k) == True{} : Bool}, hj: {SV.lt(j, SV.len(own)) == True{} : Bool}, he: {SV.eq(SV.nth(own, j), c) == True{} : Bool}) -> {SV.mem(Nat.add(j, k), ds) == True{} : Bool}:
+  match own j:
+    case Nil{} 0n:
+      absurd({SV.mem(Nat.add(0n, k), ds) == True{} : Bool}, KA.ft(hj))
+    case Nil{} 1n++m:
+      absurd({SV.mem(Nat.add(1n+m, k), ds) == True{} : Bool}, KA.ft(hj))
+    case Con{+o, +t} 0n:
+      (%he : {SV.bor(SV.bnot(_), SV.mem(k, ds)) == True{} : Bool}
+        L.band_l(SV.bor(SV.bnot(SV.eq(o, c)), SV.mem(k, ds)), SV.alldrop.go(t, ds, c, 1n+k), h))
+    case Con{+o, +t} 1n++m:
+      (%Equal.sym(Nat, 1n+Nat.add(m, k), Nat.add(m, 1n+k), LN.add_succ(m, k)) : {SV.mem(_, ds) == True{} : Bool}
+        ad_at(t, ds, c, 1n+k, m, L.band_r(SV.bor(SV.bnot(SV.eq(o, c)), SV.mem(k, ds)), SV.alldrop.go(t, ds, c, 1n+k), h), hj, he))
+
+# a class's drops are among the dropped equations
+def kd_sub(cls: List<&2, SV.Class>, c: Nat, +i: Nat, h: {SV.mem(i, SV.kdrops(SV.class_at(cls, c))) == True{} : Bool}) -> {SV.mem(i, SV.dropped(cls)) == True{} : Bool}:
+  match cls c:
+    case Nil{} c:
+      absurd({SV.mem(i, SV.dropped(Nil{})) == True{} : Bool}, KA.ft(h))
+    case Con{+y, +t} 0n:
+      (%Equal.sym(Bool, SV.mem(i, SV.cat(SV.kdrops(y), SV.dropped(t))), SV.bor(SV.mem(i, SV.kdrops(y)), SV.mem(i, SV.dropped(t))), SDP.mem_cat(i, SV.kdrops(y), SV.dropped(t))) : {_ == True{} : Bool}
+        L.bor_l(SV.mem(i, SV.kdrops(y)), SV.mem(i, SV.dropped(t)), h))
+    case Con{+y, +t} 1n+m:
+      (%Equal.sym(Bool, SV.mem(i, SV.cat(SV.kdrops(y), SV.dropped(t))), SV.bor(SV.mem(i, SV.kdrops(y)), SV.mem(i, SV.dropped(t))), SDP.mem_cat(i, SV.kdrops(y), SV.dropped(t))) : {_ == True{} : Bool}
+        L.bor_r(SV.mem(i, SV.kdrops(y)), SV.mem(i, SV.dropped(t)), kd_sub(t, m, i, h)))
+
+# Every equation owned by an amber constraint is dropped
+# ------------------------------------------------------
+
+def allq(os: List<&2, Nat>, +A: List<&2, Nat>, +D: List<&2, Nat>, +k: Nat) -> Bool:
+  match os:
+    case Nil{}:
+      True{}
+    case Con{o, t}:
+      SV.band(SV.bor(SV.bnot(SV.mem(o, A)), SV.mem(k, D)), allq(t, A, D, 1n+k))
+
+@MACRO AQP +sk: SK.Sketch, +cls: List<&2, SV.Class>, +hP: {$AP0 == True{} : Bool}, +hlen: {SV.clsn(cls) == SV.ncons(sk) : Nat}
+@MACRO AQA sk, cls, hP, hlen
+@MACRO HO +ho: {OW.ndrop(k, SV.owners(sk)) == Con{o, t} : List<&2, Nat>}
+
+def aq.lt($AQP, +o: Nat, +k: Nat, +t: List<&2, Nat>, $HO, +ha: {SV.is_amber(SV.class_at(cls, o)) == True{} : Bool}, bl: Bool, el: {SV.lt(o, SV.ncons(sk)) == bl : Bool}) -> {SV.mem(k, SV.dropped(cls)) == True{} : Bool}:
+  match bl:
+    case False{}:
+      absurd({SV.mem(k, SV.dropped(cls)) == True{} : Bool}, amb_past(cls, o, (%Equal.sym(Nat, SV.clsn(cls), SV.ncons(sk), hlen) : {SV.lt(o, _) == False{} : Bool}
+        el), ha))
+    case True{}:
+      +hk = Equal.trans(Bool, KA.natle(1n+o, SV.ncons(sk)), SV.lt(o, SV.ncons(sk)), True{}, Equal.sym(Bool, SV.lt(o, SV.ncons(sk)), KA.natle(1n+o, SV.ncons(sk)), L.lt_sv(o, SV.ncons(sk))), el)
+      kd_sub(cls, o, k, (%Equal.sym(Nat, k, Nat.add(k, 0n), LN.add_zero(k)) : {SV.mem(_, $KDO) == True{} : Bool}
+        ad_at(SV.owners(sk), $KDO, o, 0n, k, amb_ad(sk, cls, o, hP, hk, ha), dp_lt(SV.owners(sk), k, o, t, ho), (%Equal.sym(Nat, SV.nth(SV.owners(sk), k), o, OW.nth_of(SV.owners(sk), k, o, t, ho)) : {SV.eq(_, o) == True{} : Bool}
+          L.eq_refl(o)))))
+
+def aq.c($AQP, +o: Nat, +k: Nat, +t: List<&2, Nat>, $HO, b: Bool, e: {SV.mem(o, SV.ambers(cls)) == b : Bool}) -> {SV.bor(SV.bnot(b), SV.mem(k, SV.dropped(cls))) == True{} : Bool}:
+  match b:
+    case False{}:
+      {==}
+    case True{}:
+      aq.lt($AQA, o, k, t, ho, Equal.trans(Bool, SV.is_amber(SV.class_at(cls, o)), SV.mem(o, SV.ambers(cls)), True{}, Equal.sym(Bool, SV.mem(o, SV.ambers(cls)), SV.is_amber(SV.class_at(cls, o)), VS.mem_ambers(cls, o)), e), SV.lt(o, SV.ncons(sk)), {==})
+
+def aq.go($AQP, os: List<&2, Nat>, +k: Nat, +ho: {OW.ndrop(k, SV.owners(sk)) == os : List<&2, Nat>}) -> {allq(os, SV.ambers(cls), SV.dropped(cls), k) == True{} : Bool}:
+  match os:
+    case Nil{}:
+      {==}
+    case Con{+o, +t}:
+      L.band_i(SV.bor(SV.bnot(SV.mem(o, SV.ambers(cls))), SV.mem(k, SV.dropped(cls))), allq(t, SV.ambers(cls), SV.dropped(cls), 1n+k), aq.c($AQA, o, k, t, ho, SV.mem(o, SV.ambers(cls)), {==}), aq.go($AQA, t, 1n+k, OW.ndrop_step(k, SV.owners(sk), o, t, ho)))
+
+# The system solved, with the ambers made driven too
+# --------------------------------------------------
+
+def bl(bR: Bool, bA: Bool, bD: Bool, h: {SV.bor(SV.bnot(bA), bD) == True{} : Bool}) -> {SV.band(SV.bnot(bR), SV.bnot(bD)) == SV.band(SV.bnot(SV.bor(bR, bA)), SV.bnot(bD)) : Bool}:
+  match bR bA bD:
+    case True{} True{} True{}:
+      {==}
+    case True{} True{} False{}:
+      {==}
+    case True{} False{} True{}:
+      {==}
+    case True{} False{} False{}:
+      {==}
+    case False{} True{} True{}:
+      {==}
+    case False{} True{} False{}:
+      absurd({SV.band(SV.bnot(False{}), SV.bnot(False{})) == SV.band(SV.bnot(SV.bor(False{}, True{})), SV.bnot(False{})) : Bool}, KA.ft(h))
+    case False{} False{} True{}:
+      {==}
+    case False{} False{} False{}:
+      {==}
+
+@MACRO RA SV.cat(R, A)
+@MACRO GR SV.solved.go(t, own, R, D, 1n+k)
+@MACRO GA SV.solved.go(t, own, $RA, D, 1n+k)
+
+def se.go(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +R: List<&2, Nat>, +A: List<&2, Nat>, +D: List<&2, Nat>, +k: Nat, os: List<&2, Nat>, +ho: {OW.ndrop(k, own) == os : List<&2, Nat>}, +hl: {SV.len(os) == SV.neqs(es) : Nat}, +hq: {allq(os, A, D, k) == True{} : Bool}) -> {SV.solved.go(es, own, R, D, k) == SV.solved.go(es, own, $RA, D, k) : List<&2, E.QExpr>}:
+  match es os:
+    case Nil{} os:
+      {==}
+    case Con{+e, +t} Nil{}:
+      absurd({SV.solved.go(Con{e, t}, own, R, D, k) == SV.solved.go(Con{e, t}, own, $RA, D, k) : List<&2, E.QExpr>}, FV.zero_ne(SV.neqs(t), hl))
+    case Con{+e, +t} Con{+o, +ot}:
+      +hn = OW.nth_of(own, k, o, ot, ho)
+      +ih = se.go(t, own, R, A, D, 1n+k, ot, OW.ndrop_step(k, own, o, ot, ho), LN.succ_inj(SV.len(ot), SV.neqs(t), hl), L.band_r(SV.bor(SV.bnot(SV.mem(o, A)), SV.mem(k, D)), allq(ot, A, D, 1n+k), hq))
+      %Equal.sym(Nat, SV.nth(own, k), o, hn) : {SV.solved.pick(SV.band(SV.bnot(SV.mem(_, R)), SV.bnot(SV.mem(k, D))), e, $GR) == SV.solved.pick(SV.band(SV.bnot(SV.mem(SV.nth(own, k), $RA)), SV.bnot(SV.mem(k, D))), e, $GA) : List<&2, E.QExpr>}
+      %Equal.sym(Nat, SV.nth(own, k), o, hn) : {SV.solved.pick(SV.band(SV.bnot(SV.mem(o, R)), SV.bnot(SV.mem(k, D))), e, $GR) == SV.solved.pick(SV.band(SV.bnot(SV.mem(_, $RA)), SV.bnot(SV.mem(k, D))), e, $GA) : List<&2, E.QExpr>}
+      %Equal.sym(Bool, SV.mem(o, $RA), SV.bor(SV.mem(o, R), SV.mem(o, A)), SDP.mem_cat(o, R, A)) : {SV.solved.pick(SV.band(SV.bnot(SV.mem(o, R)), SV.bnot(SV.mem(k, D))), e, $GR) == SV.solved.pick(SV.band(SV.bnot(_), SV.bnot(SV.mem(k, D))), e, $GA) : List<&2, E.QExpr>}
+      %Equal.sym(List<&2, E.QExpr>, $GR, $GA, ih) : {SV.solved.pick(SV.band(SV.bnot(SV.mem(o, R)), SV.bnot(SV.mem(k, D))), e, _) == SV.solved.pick(SV.band(SV.bnot(SV.bor(SV.mem(o, R), SV.mem(o, A))), SV.bnot(SV.mem(k, D))), e, $GA) : List<&2, E.QExpr>}
+      %Equal.sym(Bool, SV.band(SV.bnot(SV.mem(o, R)), SV.bnot(SV.mem(k, D))), SV.band(SV.bnot(SV.bor(SV.mem(o, R), SV.mem(o, A))), SV.bnot(SV.mem(k, D))), bl(SV.mem(o, R), SV.mem(o, A), SV.mem(k, D), L.band_l(SV.bor(SV.bnot(SV.mem(o, A)), SV.mem(k, D)), allq(ot, A, D, 1n+k), hq))) : {SV.solved.pick(_, e, $GA) == SV.solved.pick(SV.band(SV.bnot(SV.bor(SV.mem(o, R), SV.mem(o, A))), SV.bnot(SV.mem(k, D))), e, $GA) : List<&2, E.QExpr>}
+      {==}
+
+@MACRO CLS SO.Out.cls(SO.solve_l(sk, g0, l))
+@MACRO RX SV.reds(cls)
+@MACRO AX SV.ambers(cls)
+@MACRO DX SV.dropped(cls)
+
+def solved_eq(+sk: SK.Sketch, +cls: List<&2, SV.Class>, H: SV.Honest(sk, cls)) -> {SV.solved(sk, $RX, $DX) == SV.solved(sk, SV.cat($RX, $AX), $DX) : List<&2, E.QExpr>}:
+  match H:
+    case (+hlen, hg):
+      se.go(SK.Sketch.eqs(sk), SV.owners(sk), $RX, $AX, $DX, 0n, SV.owners(sk), {==}, KP.owners_len(sk), aq.go(sk, cls, allP_of(sk, cls, SV.ncons(sk), 0n, hg), hlen, SV.owners(sk), 0n, {==}))
+
+# a geometry meaning the sketch less its reds and ambers solves the system
+def zs_amb(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, H: SV.Honest(sk, cls), hz: SK.Zeros(~F, x, SK.Sketch.eqs(SV.mark(SV.cat($RX, $AX), sk)))) -> SK.Zeros(~F, x, SV.solved(sk, $RX, $DX)):
+  (%Equal.sym(List<&2, E.QExpr>, SV.solved(sk, $RX, $DX), SV.solved(sk, SV.cat($RX, $AX), $DX), solved_eq(sk, cls, H)) : SK.Zeros(~F, x, _)
+    VR.zeros_solved(~F, x, sk, SV.cat($RX, $AX), $DX, hz))
+
+# The law
+# -------
+
+def amb_fin(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: List<&2, SV.Class>, +hex: {VD.exact(sk, cls) == True{} : Bool}, +hz: SK.Zeros(~F, x, SV.solved(sk, $RX, $DX)), +hs: SK.Sides(~F, x, SK.Sketch.sides(SV.mark(SV.cat($RX, $AX), sk)))) -> SK.Sketch.means(~F, x, SV.mark($RX, sk)):
+  +hd = L.band_l(VD.dck(SK.Sketch.eqs(sk), SV.owners(sk), $RX, $DX, cls), VD.ack(sk, $RX, cls, 0n), hex)
+  +ha = L.band_r(VD.dck(SK.Sketch.eqs(sk), SV.owners(sk), $RX, $DX, cls), VD.ack(sk, $RX, cls, 0n), hex)
+  MN.sketch_sound(~F, x, SV.mark($RX, sk), WF.wf_ok(SV.mark($RX, sk), WC.wf_mark($RX, sk, WC.wf_dec_ok(sk, w))), (VR.zeros_mark(~F, x, sk, cls, hz, hd), VS.sides_mark(~F, x, sk, cls, hz, hd, ha, hs)))
+
+def amb_m(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: List<&2, SV.Class>, +hex: {VD.exact(sk, cls) == True{} : Bool}, H: SV.Honest(sk, cls), h: SK.Sketch.holds(~F, x, SV.mark(SV.cat($RX, $AX), sk))) -> SK.Sketch.means(~F, x, SV.mark($RX, sk)):
+  match h:
+    case (hz, hs):
+      amb_fin(~F, x, sk, w, cls, hex, zs_amb(~F, x, sk, cls, H, hz), hs)
+
+# LAW 7 (ROADMAP solve_amber): a geometry meaning the sketch less its red
+# and amber constraints means it less its red ones: deleting every amber
+# constraint changes no solution
+def solve_amber(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SV.mark(SV.cat(SV.reds($CLS), SV.ambers($CLS)), sk))) -> SK.Sketch.means(~F, x, SV.mark(SV.reds($CLS), sk)):
+  +hwf = WC.wf_dec_ok(sk, w)
+  +ha = CV.cov(sk, SO.nvars(sk), cov, hwf)
+  amb_m(~F, x, sk, WF.wf_ok(sk, hwf), $CLS, CKP.ck_pass(sk, GM.adjb_dadjs(SK.Sketch.eqs(sk), SO.nvars(sk), ha)), TP.solve_honest(sk, WF.wf_ok(sk, hwf), cov, g0, l), MN.sketch_complete(~F, x, SV.mark(SV.cat(SV.reds($CLS), SV.ambers($CLS)), sk), m))

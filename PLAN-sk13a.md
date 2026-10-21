@@ -514,7 +514,11 @@ As planned:
     lib/droplawpf.bend): the pass's answer passes the verdict's drop
     check (ckpf's `ck_pass`), which vrdpf's `dropped_zero` reads at each
     dropped position;
-  - `solve_amber` by induction along the order;
+  - `solve_amber` by induction along the order. Done (2026-10-20,
+    lib/amberlawpf.bend): an amber constraint's equations are all dropped
+    (AmberOk, read once from Honest into Bool facts), so the system solved
+    is the same with the ambers made driven; then the verdict's lemmas
+    (zeros_mark, sides_mark) as for solve_exists;
   - `solve_conflict` from Refutes0's soundness in every ordered field.
     Done (2026-10-20, lib/conflawpf.bend): ConflictOk's refutation, read
     by ckpf's `ref_of`, has no point (vsdpf's `refute_at`), and a
