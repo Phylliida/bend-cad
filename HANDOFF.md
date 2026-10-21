@@ -258,10 +258,11 @@ restated in tests/solve_laws.bend. **S8 is done (2026-10-21):** the page
 and the CLI show each constraint's class (gui/README.md, "What the list
 says"); the regression compares classes and has PLAN S8's small sketches.
 **Next: S9** (the audit, and Danielle's sign-off on the laws). **Also
-written (2026-10-21), for Danielle's review: PLAN-sk13s.md** (signed
-HDistance/VDistance/LineDistance, fast refusals with a proven reason, and
-refutations with squares, the Positivstellensatz's next layer), from
-slowsketches sketch(5) (proto/sketches: angle-lines).
+written (2026-10-21), for Danielle's review: PLAN-sk13s.md v2**
+(signed HDistance/VDistance/LineDistance; Honest and every law proven once
+for every proof layer d, layer 0 being sk-13a's; the solver deepens a
+layer only after a refusal; a proven fast stop with a refusal reason),
+from slowsketches sketch(5) (proto/sketches: angle-lines).
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);
