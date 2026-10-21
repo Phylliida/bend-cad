@@ -1,0 +1,283 @@
+# bend-cad: an honest classification read once, for honest_unique
+# (PLAN-sk13a S6, law 5 step 2). Proofs only.
+#
+# Honest is a Type, used once, and the induction for honest_unique needs to
+# use it constraint by constraint. But the Fate at c reads the whole
+# dropped list, and that the list's entries at c's earlier constraints'
+# equations are those constraints' drops depends on what the later Fates
+# say: each class drops only its own equations, each below the number of
+# equations (DropsOk). So a first pass reads that out of every Fate as Bool
+# facts (Data, so reusable) and puts each Fate back together (hon_rb):
+# - each class drops only its own constraint's equations (CL.downs), so an
+#   equation is dropped exactly when its owner's class drops it
+#   (CL.mem_dropped);
+# - every dropped equation is below the number of equations.
+#
+# Generated from tools/drafts/hreadpf.draft by tools/expand.py; edit the
+# draft.
+
+import Base
+import ../spec/sketch.bend as SK
+import ../spec/solve.bend as SV
+import ./karith.bend as KA
+import ./nat.bend as LN
+import ./listpf.bend as L
+import ./kbpf.bend as KB
+import ./ownpf.bend as OW
+import ./solvedpf.bend as SP
+import ./clslpf.bend as CL
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+@MACRO OWN SV.owners(sk)
+@MACRO NQ SV.neqs(SK.Sketch.eqs(sk))
+
+# Small facts
+# -----------
+
+# a or b, b false: a
+def borl(a: Bool, +b: Bool, h: {SV.bor(a, b) == True{} : Bool}, hb: {b == False{} : Bool}) -> {a == True{} : Bool}:
+  match a:
+    case True{}:
+      {==}
+    case False{}:
+      absurd({False{} == True{} : Bool}, KA.ft(Equal.trans(Bool, False{}, b, True{}, Equal.sym(Bool, b, False{}, hb), h)))
+
+def below_cat(xs: List<&2, Nat>, +ys: List<&2, Nat>, +n: Nat, +h1: {SV.below(xs, n) == True{} : Bool}, +h2: {SV.below(ys, n) == True{} : Bool}) -> {SV.below(SV.cat(xs, ys), n) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      h2
+    case Con{+x, +t}:
+      L.band_i(SV.lt(x, n), SV.below(SV.cat(t, ys), n), L.band_l(SV.lt(x, n), SV.below(t, n), h1), below_cat(t, ys, n, L.band_r(SV.lt(x, n), SV.below(t, n), h1), h2))
+
+# every entry below n, j not: j is not an entry
+def nmem_ge(xs: List<&2, Nat>, +j: Nat, +n: Nat, +hb: {SV.below(xs, n) == True{} : Bool}, +hj: {SV.lt(j, n) == False{} : Bool}) -> {SV.mem(j, xs) == False{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      L.bor_f(SV.eq(j, x), SV.mem(j, t), Equal.trans(Bool, SV.eq(j, x), SV.eq(x, j), False{}, L.eq_sym(j, x), SP.ne_lt(x, j, n, L.band_l(SV.lt(x, n), SV.below(t, n), hb), hj)),
+        nmem_ge(t, j, n, L.band_r(SV.lt(x, n), SV.below(t, n), hb), hj))
+
+# The drops a Fate allows
+# -----------------------
+
+# at each of the equations from k: c owns it, or it is not in d
+def dn(own_s: List<&2, Nat>, +d: List<&2, Nat>, +c: Nat, +k: Nat) -> Bool:
+  match own_s:
+    case Nil{}:
+      True{}
+    case Con{o, t}:
+      SV.band(SV.bor(SV.eq(o, c), SV.bnot(SV.mem(k, d))), dn(t, d, c, 1n+k))
+
+# the fact at the x-th equation from k
+def dn_at(own_s: List<&2, Nat>, +d: List<&2, Nat>, +c: Nat, +k: Nat, x: Nat, h: {dn(own_s, d, c, k) == True{} : Bool}, hx: {SV.lt(x, SV.len(own_s)) == True{} : Bool}) -> {SV.bor(SV.eq(SV.nth(own_s, x), c), SV.bnot(SV.mem(Nat.add(x, k), d))) == True{} : Bool}:
+  match own_s x:
+    case Nil{} x:
+      absurd({SV.bor(SV.eq(SV.nth(Nil{}, x), c), SV.bnot(SV.mem(Nat.add(x, k), d))) == True{} : Bool}, KA.ft(KB.lt_zero(x, hx)))
+    case Con{+o, +t} 0n:
+      L.band_l(SV.bor(SV.eq(o, c), SV.bnot(SV.mem(k, d))), dn(t, d, c, 1n+k), h)
+    case Con{+o, +t} 1n++y:
+      (%Equal.sym(Nat, 1n+Nat.add(y, k), Nat.add(y, 1n+k), LN.add_succ(y, k)) : {SV.bor(SV.eq(SV.nth(t, y), c), SV.bnot(SV.mem(_, d))) == True{} : Bool}
+        dn_at(t, d, c, 1n+k, y, L.band_r(SV.bor(SV.eq(o, c), SV.bnot(SV.mem(k, d))), dn(t, d, c, 1n+k), h), hx))
+
+# each of d' (inside d, below the number of equations) is owned by c
+def allo_of(+own: List<&2, Nat>, +n: Nat, +d: List<&2, Nat>, +c: Nat, ds: List<&2, Nat>, +hl: {SV.len(own) == n : Nat}, +hdn: {dn(own, d, c, 0n) == True{} : Bool}, +hb: {SV.below(ds, n) == True{} : Bool}, +hs: {L.subl(ds, d) == True{} : Bool})
+  -> {KB.allo(own, ds, c) == True{} : Bool}:
+  match ds:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      +hm = L.subl_hd(x, t, d, hs)
+      L.band_i(SV.eq(SV.nth(own, x), c), KB.allo(own, t, c),
+        borl(SV.eq(SV.nth(own, x), c), SV.bnot(SV.mem(x, d)), (%Equal.sym(Nat, x, Nat.add(x, 0n), LN.add_zero(x)) : {SV.bor(SV.eq(SV.nth(own, x), c), SV.bnot(SV.mem(_, d))) == True{} : Bool}
+          dn_at(own, d, c, 0n, x, hdn, (%Equal.sym(Nat, SV.len(own), n, hl) : {SV.lt(x, _) == True{} : Bool}
+            L.band_l(SV.lt(x, n), SV.below(t, n), hb)))), (%Equal.sym(Bool, SV.mem(x, d), True{}, hm) : {SV.bnot(_) == False{} : Bool}
+            {==})),
+        allo_of(own, n, d, c, t, hl, hdn, L.band_r(SV.lt(x, n), SV.below(t, n), hb), L.subl_tl(x, t, d, hs)))
+
+# What a Fate says about its drops, read and put back
+# ---------------------------------------------------
+
+# d is owned by c and below the number of equations
+def pk_d(+sk: SK.Sketch, +c: Nat, +d: List<&2, Nat>) -> Bool:
+  SV.band(KB.allo($OWN, d, c), SV.below(d, $NQ))
+
+def at_f(+k: Nat, +d: List<&2, Nat>, +e: {SV.mem(k, d) == False{} : Bool}) -> ({SV.bor(False{}, SV.bnot(SV.mem(k, d))) == True{} : Bool} & {SV.mem(k, d) == False{} : Bool}):
+  (L.bnot_t(SV.mem(k, d), e), e)
+
+def at_rb(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, b: Bool, +k: Nat, h: SV.drops_ok.at(sk, R, D, c, d, b, k)) -> ({SV.bor(b, SV.bnot(SV.mem(k, d))) == True{} : Bool} & SV.drops_ok.at(sk, R, D, c, d, b, k)):
+  match b:
+    case True{}:
+      ({==}, h)
+    case False{}:
+      at_f(k, d, h)
+
+def dg_cmb(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +o: Nat, +t: List<&2, Nat>, +k: Nat,
+  p: ({SV.bor(SV.eq(o, c), SV.bnot(SV.mem(k, d))) == True{} : Bool} & SV.drops_ok.at(sk, R, D, c, d, SV.eq(o, c), k)), q: ({dn(t, d, c, 1n+k) == True{} : Bool} & SV.drops_ok.go(sk, R, D, c, d, t, 1n+k)))
+  -> ({dn(Con{o, t}, d, c, k) == True{} : Bool} & SV.drops_ok.go(sk, R, D, c, d, Con{o, t}, k)):
+  match p:
+    case (+ha, a2):
+      match q:
+        case (+hr, r2):
+          (L.band_i(SV.bor(SV.eq(o, c), SV.bnot(SV.mem(k, d))), dn(t, d, c, 1n+k), ha, hr), (a2, r2))
+
+def dg_rb(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, own_s: List<&2, Nat>, +k: Nat, h: SV.drops_ok.go(sk, R, D, c, d, own_s, k)) -> ({dn(own_s, d, c, k) == True{} : Bool} & SV.drops_ok.go(sk, R, D, c, d, own_s, k)):
+  match own_s:
+    case Nil{}:
+      ({==}, h)
+    case Con{+o, +t}:
+      match h:
+        case (a, r):
+          dg_cmb(sk, R, D, c, d, o, t, k, at_rb(sk, R, D, c, d, SV.eq(o, c), k, a), dg_rb(sk, R, D, c, d, t, 1n+k, r))
+
+def dok_cmb(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +hb: {SV.band(SV.distinct(d), SV.below(d, $NQ)) == True{} : Bool}, q: ({dn($OWN, d, c, 0n) == True{} : Bool} & SV.drops_ok.go(sk, R, D, c, d, $OWN, 0n)))
+  -> ({pk_d(sk, c, d) == True{} : Bool} & SV.DropsOk(sk, R, D, c, d)):
+  match q:
+    case (+hdn, g2):
+      +hbl = L.band_r(SV.distinct(d), SV.below(d, $NQ), hb)
+      (L.band_i(KB.allo($OWN, d, c), SV.below(d, $NQ), allo_of($OWN, $NQ, d, c, d, OW.len_owners(sk), hdn, hbl, L.subl_refl(d)), hbl), (hb, g2))
+
+def dok_rb(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, h: SV.DropsOk(sk, R, D, c, d)) -> ({pk_d(sk, c, d) == True{} : Bool} & SV.DropsOk(sk, R, D, c, d)):
+  match h:
+    case (+hb, g):
+      dok_cmb(sk, R, D, c, d, hb, dg_rb(sk, R, D, c, d, $OWN, 0n, g))
+
+# the rest of a kept or amber Fate, around its DropsOk
+def ka_cmb(-A: Type, -B: Type, +sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, nr: A, q: ({pk_d(sk, c, d) == True{} : Bool} & SV.DropsOk(sk, R, D, c, d)), r2: B)
+  -> ({pk_d(sk, c, d) == True{} : Bool} & (A & (SV.DropsOk(sk, R, D, c, d) & B))):
+  match q:
+    case (+hp, dk2):
+      (hp, (nr, (dk2, r2)))
+
+def kok_rb(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, h: SV.KeptOk(sk, R, D, c, d)) -> ({pk_d(sk, c, d) == True{} : Bool} & SV.KeptOk(sk, R, D, c, d)):
+  match h:
+    case (nr, r1):
+      match r1:
+        case (dk, r2):
+          ka_cmb(SV.NoRefute(sk, R, c), (SV.Matchable(SK.cat(SV.presolved(sk, R, D, c), SV.own_rest(sk, c, d, $NQ))) & ({SV.is_amberable(sk, c, d) == True{} : Bool} -> &i: Nat -> ({SV.lt(i, SV.slen(SV.csides(sk, [c]))) == True{} : Bool} & SV.NotImplied(sk, R, c, i)))),
+            sk, R, D, c, d, nr, dok_rb(sk, R, D, c, d, dk), r2)
+
+def aok_rb(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, h: SV.AmberOk(sk, R, D, c, d)) -> ({pk_d(sk, c, d) == True{} : Bool} & SV.AmberOk(sk, R, D, c, d)):
+  match h:
+    case (nr, r1):
+      match r1:
+        case (dk, r2):
+          ka_cmb(SV.NoRefute(sk, R, c), ({SV.is_amberable(sk, c, d) == True{} : Bool} & (@i: Nat -> {SV.lt(i, SV.slen(SV.csides(sk, [c]))) == True{} : Bool} -> SV.Implied(sk, R, c, i))),
+            sk, R, D, c, d, nr, dok_rb(sk, R, D, c, d, dk), r2)
+
+def kd_nil(+sk: SK.Sketch, +c: Nat, +dc: List<&2, SV.Drop>, +e: {SV.drops(dc) == Nil{} : List<&2, Nat>}) -> ({pk_d(sk, c, SV.drops(dc)) == True{} : Bool} & {SV.drops(dc) == Nil{} : List<&2, Nat>}):
+  ((%Equal.sym(List<&2, Nat>, SV.drops(dc), Nil{}, e) : {pk_d(sk, c, _) == True{} : Bool}
+    {==}), e)
+
+def fdr_rb(+sk: SK.Sketch, +c: Nat, k: SV.Class, h: SV.Fate.driven(k)) -> ({pk_d(sk, c, SV.kdrops(k)) == True{} : Bool} & SV.Fate.driven(k)):
+  match k:
+    case SV.Kept{+dc}:
+      kd_nil(sk, c, dc, h)
+    case SV.Amber{dc, rs}:
+      absurd(({pk_d(sk, c, SV.drops(dc)) == True{} : Bool} & Empty), h)
+    case SV.Over{j, s, w}:
+      absurd(({pk_d(sk, c, Nil{}) == True{} : Bool} & Empty), h)
+    case SV.Conflict{s}:
+      absurd(({pk_d(sk, c, Nil{}) == True{} : Bool} & Empty), h)
+
+def fdv_rb(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, k: SV.Class, h: SV.Fate.driving(sk, R, D, c, k)) -> ({pk_d(sk, c, SV.kdrops(k)) == True{} : Bool} & SV.Fate.driving(sk, R, D, c, k)):
+  match k:
+    case SV.Kept{+dc}:
+      kok_rb(sk, R, D, c, SV.drops(dc), h)
+    case SV.Amber{+dc, +rs}:
+      aok_rb(sk, R, D, c, SV.drops(dc), h)
+    case SV.Over{+j, +s, +w}:
+      ({==}, h)
+    case SV.Conflict{+s}:
+      ({==}, h)
+
+def fpk_rb(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, b: Bool, +k: SV.Class, h: SV.Fate.pick(sk, R, D, c, b, k)) -> ({pk_d(sk, c, SV.kdrops(k)) == True{} : Bool} & SV.Fate.pick(sk, R, D, c, b, k)):
+  match b:
+    case True{}:
+      fdr_rb(sk, c, k, h)
+    case False{}:
+      fdv_rb(sk, R, D, c, k, h)
+
+# The whole classification
+# ------------------------
+
+def pp(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +c: Nat) -> Bool:
+  pk_d(sk, c, SV.kdrops(SV.class_at(cls, c)))
+
+def PP(+sk: SK.Sketch, +cls: List<&2, SV.Class>, n: Nat, +c: Nat) -> Bool:
+  match n:
+    case 0n:
+      True{}
+    case 1n+m:
+      SV.band(pp(sk, cls, c), PP(sk, cls, m, 1n+c))
+
+def hg_cmb(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +m: Nat, +c: Nat, p: ({pp(sk, cls, c) == True{} : Bool} & SV.Fate(sk, cls, c)), q: ({PP(sk, cls, m, 1n+c) == True{} : Bool} & SV.Honest.go(sk, cls, m, 1n+c)))
+  -> ({PP(sk, cls, 1n+m, c) == True{} : Bool} & SV.Honest.go(sk, cls, 1n+m, c)):
+  match p:
+    case (+hp, f2):
+      match q:
+        case (+hP, r2):
+          (L.band_i(pp(sk, cls, c), PP(sk, cls, m, 1n+c), hp, hP), (f2, r2))
+
+def hg_rb(+sk: SK.Sketch, +cls: List<&2, SV.Class>, n: Nat, +c: Nat, h: SV.Honest.go(sk, cls, n, c)) -> ({PP(sk, cls, n, c) == True{} : Bool} & SV.Honest.go(sk, cls, n, c)):
+  match n:
+    case 0n:
+      ({==}, h)
+    case 1n++m:
+      match h:
+        case (f, r):
+          hg_cmb(sk, cls, m, c, fpk_rb(sk, SV.reds(cls), SV.dropped(cls), c, SV.driven(sk, c), SV.class_at(cls, c), f), hg_rb(sk, cls, m, 1n+c, r))
+
+def dw(+sk: SK.Sketch, +cls: List<&2, SV.Class>, t: List<&2, SV.Class>, +c: Nat, +hd: {CL.cdrop(c, cls) == t : List<&2, SV.Class>}, +hP: {PP(sk, cls, SV.clsn(t), c) == True{} : Bool}) -> {CL.downs($OWN, t, c) == True{} : Bool}:
+  match t:
+    case Nil{}:
+      {==}
+    case Con{+x, +y}:
+      L.band_i(KB.allo($OWN, SV.kdrops(x), c), CL.downs($OWN, y, 1n+c),
+        (%CL.ca_of(cls, c, x, y, hd) : {KB.allo($OWN, SV.kdrops(_), c) == True{} : Bool}
+          L.band_l(KB.allo($OWN, SV.kdrops(SV.class_at(cls, c)), c), SV.below(SV.kdrops(SV.class_at(cls, c)), $NQ), L.band_l(pp(sk, cls, c), PP(sk, cls, SV.clsn(y), 1n+c), hP))),
+        dw(sk, cls, y, 1n+c, CL.cdrop_step(cls, c, x, y, hd), L.band_r(pp(sk, cls, c), PP(sk, cls, SV.clsn(y), 1n+c), hP)))
+
+def dbw(+sk: SK.Sketch, +cls: List<&2, SV.Class>, t: List<&2, SV.Class>, +c: Nat, +hd: {CL.cdrop(c, cls) == t : List<&2, SV.Class>}, +hP: {PP(sk, cls, SV.clsn(t), c) == True{} : Bool}) -> {SV.below(SV.dropped(t), $NQ) == True{} : Bool}:
+  match t:
+    case Nil{}:
+      {==}
+    case Con{+x, +y}:
+      below_cat(SV.kdrops(x), SV.dropped(y), $NQ,
+        (%CL.ca_of(cls, c, x, y, hd) : {SV.below(SV.kdrops(_), $NQ) == True{} : Bool}
+          L.band_r(KB.allo($OWN, SV.kdrops(SV.class_at(cls, c)), c), SV.below(SV.kdrops(SV.class_at(cls, c)), $NQ), L.band_l(pp(sk, cls, c), PP(sk, cls, SV.clsn(y), 1n+c), hP))),
+        dbw(sk, cls, y, 1n+c, CL.cdrop_step(cls, c, x, y, hd), L.band_r(pp(sk, cls, c), PP(sk, cls, SV.clsn(y), 1n+c), hP)))
+
+# each class drops only its own equations, and every dropped equation is
+# below the number of equations
+def hfacts(+sk: SK.Sketch, +cls: List<&2, SV.Class>) -> Bool:
+  SV.band(CL.downs($OWN, cls, 0n), SV.below(SV.dropped(cls), $NQ))
+
+def hfacts_cl(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +hP: {PP(sk, cls, SV.clsn(cls), 0n) == True{} : Bool}) -> {hfacts(sk, cls) == True{} : Bool}:
+  L.band_i(CL.downs($OWN, cls, 0n), SV.below(SV.dropped(cls), $NQ), dw(sk, cls, cls, 0n, {==}, hP), dbw(sk, cls, cls, 0n, {==}, hP))
+
+def hfacts_of(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +hn: {SV.clsn(cls) == SV.ncons(sk) : Nat}, +hP: {PP(sk, cls, SV.ncons(sk), 0n) == True{} : Bool}) -> {hfacts(sk, cls) == True{} : Bool}:
+  hfacts_cl(sk, cls, (%Equal.sym(Nat, SV.clsn(cls), SV.ncons(sk), hn) : {PP(sk, cls, _, 0n) == True{} : Bool}
+    hP))
+
+def hon_cmb(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +hn: {SV.clsn(cls) == SV.ncons(sk) : Nat}, q: ({PP(sk, cls, SV.ncons(sk), 0n) == True{} : Bool} & SV.Honest.go(sk, cls, SV.ncons(sk), 0n)))
+  -> ({hfacts(sk, cls) == True{} : Bool} & SV.Honest(sk, cls)):
+  match q:
+    case (+hP, g2):
+      (hfacts_of(sk, cls, hn, hP), (hn, g2))
+
+# read the facts out of an honest classification, and give it back
+def hon_rb(+sk: SK.Sketch, +cls: List<&2, SV.Class>, h: SV.Honest(sk, cls)) -> ({hfacts(sk, cls) == True{} : Bool} & SV.Honest(sk, cls)):
+  match h:
+    case (+hn, g):
+      hon_cmb(sk, cls, hn, hg_rb(sk, cls, SV.ncons(sk), 0n, g))
+
+# j is dropped exactly when its owner's class drops it
+def mem_dropped(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +j: Nat, +hf: {hfacts(sk, cls) == True{} : Bool}) -> {SV.mem(j, SV.dropped(cls)) == SV.mem(j, SV.kdrops(SV.class_at(cls, SV.nth($OWN, j)))) : Bool}:
+  CL.mem_dropped($OWN, cls, j, L.band_l(CL.downs($OWN, cls, 0n), SV.below(SV.dropped(cls), $NQ), hf))
+
+# no equation at or past the end is dropped
+def nd_past(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +j: Nat, +hf: {hfacts(sk, cls) == True{} : Bool}, +hj: {SV.lt(j, $NQ) == False{} : Bool}) -> {SV.mem(j, SV.dropped(cls)) == False{} : Bool}:
+  nmem_ge(SV.dropped(cls), j, $NQ, L.band_r(CL.downs($OWN, cls, 0n), SV.below(SV.dropped(cls), $NQ), hf), hj)
