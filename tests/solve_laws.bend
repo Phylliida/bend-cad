@@ -2,10 +2,10 @@
 # (lib/solvepf.bend: the verdict laws; lib/regpf.bend: solve_regular;
 # lib/blamepf.bend: solve_blame; lib/conflawpf.bend: solve_conflict;
 # lib/droplawpf.bend: solve_drop; lib/amberlawpf.bend: solve_amber;
-# lib/totalpf.bend: solve_total, solve_honest; lib/completepf.bend:
-# solve_complete; lib/refusedpf.bend: solve_refused), restated so the
-# gate checks the proofs and tools/lawsync.py checks the statements match
-# ROADMAP's.
+# lib/totalpf.bend: solve_total, solve_honest; lib/uniqpf.bend:
+# honest_unique; lib/completepf.bend: solve_complete; lib/refusedpf.bend:
+# solve_refused), restated so the gate checks the proofs and
+# tools/lawsync.py checks the statements match ROADMAP's.
 
 import Base
 import ../spec/num.bend as S
@@ -29,6 +29,7 @@ import ../lib/refusedpf.bend as RFD
 import ../lib/conflawpf.bend as CFL
 import ../lib/droplawpf.bend as DRL
 import ../lib/amberlawpf.bend as AML
+import ../lib/uniqpf.bend as UQ
 
 def solve_exists(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}) -> (&x: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), x) & SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk)))):
   SP.solve_exists(~F, ~R, ~H, sk, g0, l, ok)
@@ -65,3 +66,6 @@ def solve_complete(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +s
 
 def solve_refused(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +dy: {SV.dyadic(SV.mark(SV.reds(SO.cls_of(sk)), sk)) == True{} : Bool}, +g0: List<&2, S.D>, hn: @l: Nat -> {SO.Out.ok(SO.solve_l(sk, g0, l)) == False{} : Bool}, +x: M.Vec(~F), +hx: {x == N.ofkv(~KI.dnum(), ~F, ~H, g0) : M.Vec(~F)}, +hl: {M.len(~F, x) == SO.nvars(sk) : Nat}, hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk)))), hs: SV.Strict(~F, x, SK.Sketch.sides(SV.mark(SV.cat(SV.reds(SO.cls_of(sk)), SV.ambers(SO.cls_of(sk))), sk)), SO.pins_of(sk)), hr: DV.Regular(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)))) -> Empty:
   RFD.solve_refused(~F, ~R, ~H, sk, w, cov, dy, g0, hn, x, hx, hl, hz, hs, hr)
+
+def honest_unique(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +c1: List<&2, SV.Class>, h1: SV.Honest(sk, c1), +c2: List<&2, SV.Class>, h2: SV.Honest(sk, c2), +c: Nat, +j: Nat) -> M.Both({SV.kind(SV.class_at(c1, c)) == SV.kind(SV.class_at(c2, c)) : Nat}, {SV.mem(j, SV.dropped(c1)) == SV.mem(j, SV.dropped(c2)) : Bool}):
+  UQ.honest_unique(sk, w, c1, h1, c2, h2, c, j)

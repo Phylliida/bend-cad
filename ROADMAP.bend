@@ -59,17 +59,16 @@ import ./lib/solve.bend as SO
 # corollaries: solve_drop, solve_amber, solve_conflict; completeness:
 # solve_complete, and solve_refused, what a refusal means today.
 #
-# Proven: solve_exists, solve_unique, solve_pins (lib/solvepf.bend),
-# solve_regular (lib/regpf.bend), solve_blame (lib/blamepf.bend),
-# solve_conflict (lib/conflawpf.bend), solve_drop (lib/droplawpf.bend),
-# solve_amber (lib/amberlawpf.bend), solve_total and solve_honest
-# (lib/totalpf.bend), solve_complete
-# (lib/completepf.bend) and solve_refused (lib/refusedpf.bend), restated
-# in tests/solve_laws.bend. The classes, pins and structure are the
-# single pass's (lib/pass.bend; PLAN-sk13a S4, switched in S5), and the
-# verdict certifies the dropped equations and amber sides by their
-# combinations and refutations (lib/verdict.bend); the rest is open
-# (PLAN-sk13a.md S6).
+# Proven, all of them: solve_exists, solve_unique, solve_pins
+# (lib/solvepf.bend), solve_regular (lib/regpf.bend), solve_blame
+# (lib/blamepf.bend), solve_conflict (lib/conflawpf.bend), solve_drop
+# (lib/droplawpf.bend), solve_amber (lib/amberlawpf.bend), solve_total and
+# solve_honest (lib/totalpf.bend), honest_unique (lib/uniqpf.bend),
+# solve_complete (lib/completepf.bend) and solve_refused
+# (lib/refusedpf.bend), restated in tests/solve_laws.bend. The classes,
+# pins and structure are the single pass's (lib/pass.bend; PLAN-sk13a S4,
+# switched in S5), and the verdict certifies the dropped equations and
+# amber sides by their combinations and refutations (lib/verdict.bend).
 
 # LAW: in a complete ordered field, the solver's box holds a geometry
 # meaning the sketch less its red constraints

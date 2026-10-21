@@ -625,6 +625,28 @@ As planned:
   and step 5's index bookkeeping (filters indexed by nth(owners, k), and
   positions in them). Both are the kind of list work done for laws 7 and
   8. No spec change.
+- **Done (2026-10-20): `honest_unique`** (lib/uniqpf.bend, restated in
+  tests/solve_laws.bend, in sync), in five files: agreepf, hreadpf,
+  nrconfpf, overpf, uniqpf. No spec change. As built, it differs from
+  the plan in three places:
+  - The induction carries list equalities, not pointwise Bools: the kept
+    constraints before c, and the solved equations before c, are the
+    same in both (agreepf `kb_ag`, `ps_red`, `ps_kept`, from kbpf's
+    `kb_next` and solvedpf's `presolved_kept`/`presolved_same`). The
+    Fates at c read only these lists, c's own drops (`drops_ag`) and the
+    owners.
+  - No reorder lemma for Refutes0: refute is run on NoRefute's own
+    lists. A certificate contradicts NoRefute outright. No certificate
+    gives a Point, and a Point is a fact about each equation and side,
+    so merge lemmas restrict it to the support in the support's order
+    (nrconfpf `pt_back`).
+  - The pigeonhole reads Kept's matchable list through the Over side
+    (its red list less c, its drops before the dropped list) as one
+    ordered filter (overpf `ml_eq`), puts AllWithin in the sketch's order
+    (`aw_ord`), and walks the equations once (`wk`); L.pig twice.
+  - Obstacle 1 went as planned: hreadpf reads each Fate's drop facts and
+    gives the Fate back.
+  - With it every ROADMAP law is proven: S6 is done.
 - **Law 11 (`solve_refused`)** from law 10. Done (2026-10-20,
   lib/refusedpf.bend): the drawing is as near to itself as any d > 0, so
   law 10 would certify it at some level.
