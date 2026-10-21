@@ -141,43 +141,15 @@ export function measure(sk, kind, ents, find = classes(sk)) {
       return Math.abs((b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x)) / L;
     }
     case "angle": {
-      // the angle between the two lines, in [0, 180): which way round the
-      // second segment is read is the constraint's rev (angleRev)
-      const d = drawnAngle(sk, ents, find);
-      return d >= 180 ? d - 180 : d;
+      const [a0, a1] = segPts(sk, E[0], find), [b0, b1] = segPts(sk, E[1], find);
+      const ta = Math.atan2(a1.y - a0.y, a1.x - a0.x), tb = Math.atan2(b1.y - b0.y, b1.x - b0.x);
+      let d = (tb - ta) * 180 / Math.PI;
+      while (d < 0) d += 360;
+      while (d >= 360) d -= 360;
+      return d;
     }
   }
   return 0;
-}
-
-// the angle from the first segment's direction (p to q) to the second's, as
-// drawn, in [0, 360)
-export function drawnAngle(sk, ents, find = classes(sk)) {
-  const E = ents.map(i => ent(sk, i));
-  const [a0, a1] = segPts(sk, E[0], find), [b0, b1] = segPts(sk, E[1], find);
-  const ta = Math.atan2(a1.y - a0.y, a1.x - a0.x), tb = Math.atan2(b1.y - b0.y, b1.x - b0.x);
-  let d = (tb - ta) * 180 / Math.PI;
-  while (d < 0) d += 360;
-  while (d >= 360) d -= 360;
-  return d;
-}
-
-// An angle's value is read as the angle between the two lines, the way
-// the drawing shows it: the solver's Angle is between directions, and the
-// second segment is read backwards (rb) when that brings the drawn angle
-// nearer the value. Chosen when the angle is made or edited, and once for
-// an older sketch's angles (migrate), so it does not flip while dragging.
-export function angleRev(sk, c, find = classes(sk)) {
-  const d = drawnAngle(sk, c.ents, find);
-  const off = x => { const t = (((x - c.value) % 360) + 360) % 360; return Math.min(t, 360 - t); };
-  return off(d + 180) < off(d);
-}
-
-// a sketch saved before angles kept their reading: give each angle one
-export function migrate(sk) {
-  const find = classes(sk);
-  for (const c of sk.cons) if (c.kind === "angle" && c.rev === undefined) c.rev = angleRev(sk, c, find);
-  return sk;
 }
 
 // an exact rational unit vector near angle deg: c = (1 - t^2)/(1 + t^2),
@@ -292,8 +264,7 @@ export function toSolver(sk, opts = { dyadic: true }) {
         // direction, the angle atan2(s, c)
         const th = v * Math.PI / 180;
         const r = dy ? { c: qval(Math.cos(th), true), s: qval(Math.sin(th), true) } : rationalRotation(v);
-        const rb = c.rev === undefined ? angleRev(sk, c, find) : c.rev;
-        cons.push([dr, 12, E[0], 0, E[1], rb ? 1 : 0, r.c, r.s]); owner.push(c.id);
+        cons.push([dr, 12, E[0], 0, E[1], 0, r.c, r.s]); owner.push(c.id);
         break;
       }
       default:
@@ -452,8 +423,7 @@ export function presatisfy(sk, c) {
       const ta = Math.atan2(a1.y - a0.y, a1.x - a0.x);
       const tb = Math.atan2(b1.y - b0.y, b1.x - b0.x);
       let target;
-      // an angle's second segment read backwards (rev) turns half a turn
-      if (c.kind === "angle") target = ta + c.value * Math.PI / 180 + (c.rev ? Math.PI : 0);
+      if (c.kind === "angle") target = ta + c.value * Math.PI / 180;
       else {
         // the nearest of the allowed directions
         const step = c.kind === "parallel" ? Math.PI : Math.PI / 2;

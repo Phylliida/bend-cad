@@ -95,7 +95,7 @@ function load() {
     const o = JSON.parse(localStorage.getItem("bendcad.opts") || "null");
     if (o) Object.assign(S.opts, o);
     const sk = JSON.parse(localStorage.getItem("bendcad.sketch") || "null");
-    if (sk && sk.ents) { S.sk = M.migrate(sk); return true; }
+    if (sk && sk.ents) { S.sk = sk; return true; }
   } catch (e) {}
   return false;
 }
@@ -395,7 +395,6 @@ function openDimension(editCon = null) {
     snapshot();
     if (editCon) {
       editCon.value = v;
-      if (editCon.kind === "angle") editCon.rev = M.angleRev(S.sk, editCon);
       if (!S.opts.relax) { touched(); M.presatisfy(S.sk, editCon); }
     } else {
       const extra = { value: v };
@@ -409,7 +408,6 @@ function openDimension(editCon = null) {
         const a = M.pos(S.sk, E(s.p), f), b = M.pos(S.sk, E(s.q), f);
         extra.rev = (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x) < 0;
       }
-      if (k === "angle") extra.rev = M.angleRev(S.sk, { kind: k, ents, value: v }, f);
       addCon(k, ents, extra);
     }
     close();
@@ -775,8 +773,7 @@ function drawDimension(c, color) {
       const a0 = pt(sa.p), a1 = pt(sa.q), b0 = pt(sb.p), b1 = pt(sb.q);
       // around the second segment's start
       const [ox, oy] = sc(b0);
-      // the second direction as the constraint reads it (rev: backwards)
-      const ta = Math.atan2(a1.y - a0.y, a1.x - a0.x), tb = Math.atan2(b1.y - b0.y, b1.x - b0.x) + (c.rev ? Math.PI : 0);
+      const ta = Math.atan2(a1.y - a0.y, a1.x - a0.x), tb = Math.atan2(b1.y - b0.y, b1.x - b0.x);
       ctx.beginPath(); ctx.arc(ox, oy, 26, -ta, -tb, true); ctx.stroke();
       const tm = ta + ((((tb - ta) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) / 2;
       label(fmt(c.value) + "°", ox + 44 * Math.cos(tm), oy - 44 * Math.sin(tm), color);
@@ -943,7 +940,6 @@ function renderPanels() {
       if (!con || !Number.isFinite(v)) { inp.value = con ? con.value : ""; return; }
       snapshot();
       con.value = v;
-      if (con.kind === "angle") con.rev = M.angleRev(S.sk, con);
       if (!S.opts.relax) { touched(); M.presatisfy(S.sk, con); }
       changed();
     };
@@ -978,7 +974,7 @@ $("f-import").onchange = async () => {
   try {
     const sk = JSON.parse(await f.text());
     if (!sk.ents || !sk.cons || !sk.vars) throw new Error("not a sketch");
-    snapshot(); S.sk = M.migrate(sk); S.sel = []; changed({ force: true });
+    snapshot(); S.sk = sk; S.sel = []; changed({ force: true });
   } catch (e) { setStatus("bad", "Could not read that file"); }
   $("f-import").value = "";
 };
