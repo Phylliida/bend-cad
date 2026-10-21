@@ -95,6 +95,59 @@ their results to `solve`.
   lib/dmat, lib/kinst, lib/dyadic, the D functions in spec/num.bend), so W2
   twins exactly those.
 
+**Done (2026-10-21).** `proto/w0bench.bend` (untrusted, measurement
+only) reads sketch(6)'s 32×32 Jacobian (proto/probe_block stage 4) and
+runs each kernel both ways. Word dyadics are `WD{m: Big, e}` over sk-02's
+verified runtime integers (rt/mag.bend, rt/big.bend) in base 2^23, with
+shifts, bit length and rounding added. User-mode instructions
+(tools/diag/icount.c); every word result converted back is the S.D result
+exactly, mantissa and exponent:
+
+| kernel (sketch 6's block) | S.D | words | ratio |
+|---|---|---|---|
+| the inverse at 96 bits (numer's dinverse: Newton's and Y's kernel) | 7.48 G | 0.55 G | 14× |
+| Y·J through the checker's generic product (KA.kmatmul) | 4.02 G | 0.27 G | 15× |
+| exact A·Aᵀ (ddot) | 0.67 G | 0.09 G | 7× |
+
+- **Where S.D's time goes.** Alignment is part of it: `D.add` peels the
+  common exponent one step at a time and multiplies the other mantissa by
+  `Pos.pow2(k)`; `dcmp` cross-multiplies by powers of two. With alignment
+  by shifting alone (k `XO` wraps, still bit lists), Y·J is 1.67 G, 2.4×;
+  the rest of the 15× is limbs. So bit lists with shifts are not a
+  substitute for words.
+- **Where a solve's time goes** (sketch 6, 91.7 G after W1): classification
+  about 3 G and structure about 6 G (exact rationals and graphs; this plan
+  does not touch them), the plan about 58 G and the verdict about 19 G
+  (nearly all dyadic arithmetic: Newton, Y and the radius search in the
+  32×32 block, then the checker), and about 6 G after the verdict not yet
+  attributed. At the kernels' 14–15× the solve would be about 20 G, some
+  4–5× faster overall. That is an estimate: the slope evaluation and the
+  radius search were not measured on their own.
+- **Natives.** The bench runs natively with limbs below 2^23 (products and
+  carries below 2^46 + 2^24). A Nat is exact through 2^48 − 1, and 2^48
+  stops the run with "a Nat past the largest immediate 2^48-1" (exit 1),
+  never a wrong value.
+- **The primitives.** The checker (plan, cert, kball) uses only `N.Num`'s
+  fields: zero, one, add, mul, neg, cmp, ofq. The proposer (numer.bend)
+  also uses `dsig` and `dround` (rounding: bit length, shift right with
+  rounding, `dznorm`), `dsdiv` (one per pivot, through ℚ), `dsigup` (the
+  radius search, rarely), `dcmp`/`dabs`/`dmax`/`dclose`, and the checker's
+  generic pieces at `dnum` (jac, vals, `CK.check`, `CK.svec`). The exact-ℚ
+  inverse (`qinverse`) is no longer called.
+
+**What W0 changes in the steps below.**
+- W2 mostly exists: sk-02's `spec/big.bend`, `rt/mag.bend`, `rt/big.bend`
+  with `lib/mag.bend` and `lib/big.bend` already prove add, sub, neg, mul
+  and cmp refine `S.Z` for every base (`Big.val`), and `S.Z` has one
+  representation per value, so value refinement is exact. W2 adds
+  normalization, shifts and bit length for a base 2^L, the conversions
+  with `S.Z` (proven inverse to `Big.val`), and the bounds lemma.
+- Rare operations need no fast twin: `dsdiv`, `dsigup` and `ofq` can go
+  through the conversions (to S.D, the S.D operation, back), and their
+  equality with the reference is then immediate from the conversions being
+  inverse. Only the hot ones (add, mul, neg, cmp, dsig, dround) get word
+  algorithms with their own proofs.
+
 ### W1. The verdict once (independent; small)
 
 The search's acceptance and `seal`'s `ok` are the same check of the same
