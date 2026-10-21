@@ -175,6 +175,30 @@ was noise): sketch 6 from 104.5 G to 91.7 G, sketch 7 from 141.2 G to
   (divmod's quotient and remainder, the order), and the bounds lemmas for
   B = 2^23.
 
+**Done (2026-10-21).** Over sk-02's verified integers, for a base
+2^(1 + lp) and every lp:
+- `rt/wmag.bend` + `lib/wmagpf.bend`: shifts (`shl_val`: m 2^k;
+  `shr_val`: the quotient by 2^k, pinned by inequalities, `Floor`), rounding
+  to nearest (`round_val`), bit length (`bits_ok`, `Bits`; `ofpos_bits`:
+  `Mag.bits(ofpos p) = QRD.size p`), conversions with `S.Pos`
+  (`ofpos_nat`, `topos_ofpos`), well-formedness of every result, the
+  uniqueness of a magnitude with no high zero limb (`canon_eq`), and the
+  native bounds (`mul_bound`, `add_bound`: below 2^(2 L)).
+- `rt/wint.bend` + `lib/wintpf.bend`: the canonical form (`Canon`;
+  `Big.canon` keeps the value and is canonical), conversions with `S.Z`
+  (`ofz_val`, `toz_ofz`), one canonical word integer per value
+  (`canon_big_eq`, hence `ofz_of_val`), and `shl_zval` (a product with
+  `Pos.pow2`).
+- `tests/wmag_demo.bend` restates them at the solver's base `wbp(lp)` and
+  computes examples in base 4 by `{==}`.
+- The bound's run-time instance is by reading: limbs below 2^23 keep every
+  native intermediate below 2^46, and 46 <= 48 is a closed check. A closed
+  2^48 cannot appear in a type (see W6).
+
+The W3 twins take the shape `wop(s2w a, s2w b) == s2w(op(a, b))` for every
+S.D input: the word result is canonical and has the right value, so
+`ofz_of_val` makes it equal. No invariant is threaded through the solver.
+
 ### W3. Word dyadics (lib/wdyad.bend)
 
 - `WD`, conversions with `S.D` proven inverse.

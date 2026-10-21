@@ -8,7 +8,9 @@ import ../spec/num.bend as S
 import ../spec/big.bend as SB
 import ../lib/qreduce.bend as QRD
 import ../rt/wmag.bend as RW
+import ../rt/wint.bend as RI
 import ../lib/wmagpf.bend as WM
+import ../lib/wintpf.bend as WI
 
 # The laws at the solver's base
 # -----------------------------
@@ -33,6 +35,31 @@ def topos_w(+lp: Nat, +p: S.Pos) -> {RW.Mag.topos(lp, RW.Mag.ofpos(lp, p)) == So
 
 def canon_w(+lp: Nat, m1: List<&2, Nat>, m2: List<&2, Nat>, w1: SB.Mag.wf(RW.wbp(lp), m1), w2: SB.Mag.wf(RW.wbp(lp), m2), q1: WM.Top(m1), q2: WM.Top(m2), +e: {SB.Mag.val(RW.wbp(lp), m1) == SB.Mag.val(RW.wbp(lp), m2) : Nat}) -> {m1 == m2 : List<&2, Nat>}:
   WM.canon_eq(RW.wbp(lp), m1, m2, w1, w2, q1, q2, e)
+
+# the word integers (rt/wint.bend): Big.ofz is z, canonical, and Big.toz
+# takes it back; a canonical word integer is Big.ofz of its value
+def ofz_w(+lp: Nat, z: S.Z) -> {SB.Big.val(RW.wbp(lp), RI.Big.ofz(lp, z)) == z : S.Z}:
+  WI.ofz_val(RW.wbp(lp), lp, WM.wbp_ok(lp), z)
+
+def toz_w(+lp: Nat, z: S.Z) -> {RI.Big.toz(lp, RI.Big.ofz(lp, z)) == z : S.Z}:
+  WI.toz_ofz(RW.wbp(lp), lp, WM.wbp_ok(lp), z)
+
+def ofval_w(+lp: Nat, +x: SB.Big, cx: WI.Canon(RW.wbp(lp), x)) -> {RI.Big.ofz(lp, SB.Big.val(RW.wbp(lp), x)) == x : SB.Big}:
+  WI.ofz_of_val(RW.wbp(lp), lp, WM.wbp_ok(lp), x, cx)
+
+def canonv_w(+lp: Nat, x: SB.Big) -> {SB.Big.val(RW.wbp(lp), RI.Big.canon(x)) == SB.Big.val(RW.wbp(lp), x) : S.Z}:
+  WI.canon_val(RW.wbp(lp), x)
+
+def shlz_w(+lp: Nat, x: SB.Big, +k: Nat) -> {SB.Big.val(RW.wbp(lp), RI.Big.shl(RW.wbp(lp), lp, x, k)) == S.Z.mul(SB.Big.val(RW.wbp(lp), x), S.Zpos{S.Pos.pow2(k)}) : S.Z}:
+  WI.shl_zval(RW.wbp(lp), lp, WM.wbp_ok(lp), x, k)
+
+# native bounds: limb products and sums are below 2^(2 L), and the run
+# time's 2 L = 46 is within BendRT's 48-bit immediates
+def mulb_w(+lp: Nat, +h: Nat, +k: Nat, +c: Nat, lh: SB.Le(h, RW.wbp(lp)), lk: SB.Le(k, RW.wbp(lp)), lc: SB.Le(c, RW.wbp(lp))) -> SB.Le(1n+Nat.add(Nat.mul(h, k), c), RW.pw(Nat.add(1n+lp, 1n+lp))):
+  WM.mul_bound(RW.wbp(lp), lp, WM.wbp_ok(lp), h, k, c, lh, lk, lc)
+
+def l23() -> SB.Le(Nat.add(1n+22n, 1n+22n), 48n):
+  (2n, {==})
 
 # Examples in base 4
 # ------------------
@@ -65,6 +92,22 @@ def bits13() -> {RW.Mag.bits(1n, [1n, 3n]) == 4n : Nat}:
   {==}
 
 def wbp1() -> {RW.wbp(1n) == 3n : Nat}:
+  {==}
+
+def ofz13() -> {RI.Big.ofz(1n, S.Zneg{thirteen()}) == SB.BNeg{[1n, 3n]} : SB.Big}:
+  {==}
+
+def toz13() -> {RI.Big.toz(1n, SB.BNeg{[1n, 3n]}) == S.Zneg{thirteen()} : S.Z}:
+  {==}
+
+# a negative zero and a high zero limb, canonical
+def canon0() -> {RI.Big.canon(SB.BNeg{[0n, 0n]}) == SB.BPos{[]} : SB.Big}:
+  {==}
+
+def canon13() -> {RI.Big.canon(SB.BPos{[1n, 3n, 0n]}) == SB.BPos{[1n, 3n]} : SB.Big}:
+  {==}
+
+def shlm13() -> {RI.Big.shl(3n, 1n, SB.BNeg{[1n, 3n]}, 3n) == SB.BNeg{[0n, 2n, 2n, 1n]} : SB.Big}:
   {==}
 
 def main() -> Nat:

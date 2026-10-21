@@ -273,8 +273,13 @@ instructions on sketches 6 and 7). **W0 is done:** proto/w0bench.bend, on
 sketch 6's 32×32 Jacobian, words against S.D with identical results: the
 96-bit inverse 14×, the checker's generic product 15×, an exact product 7×
 (PLAN-sk13w W0, "Done": where the time goes; sk-02's verified bigints are
-most of W2; rare operations can go through the conversions). Next, after
-Danielle's go-ahead: W2.
+most of W2; rare operations can go through the conversions). **W2 is
+done** (Danielle: go): rt/wmag.bend + lib/wmagpf.bend (shifts, rounding,
+bit length, conversions with S.Pos, uniqueness, native bounds) and
+rt/wint.bend + lib/wintpf.bend (canonical word integers, conversions with
+S.Z); PLAN-sk13w W2 "Done". The base is a parameter lp everywhere (a
+closed 2^23 in a type is unfolded to unary by the checker). Next: W3, word
+dyadics with exact twins `wop(s2w a, s2w b) == s2w(op(a, b))`.
 For timings on a loaded machine, count user-mode instructions
 (tools/diag/icount.c; wall time swung 2x between identical runs today).
 Same day, before the design:

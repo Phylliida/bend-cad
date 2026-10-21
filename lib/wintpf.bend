@@ -1,0 +1,204 @@
+# bend-cad: runtime big integers in a base 2^L (rt/wint.bend) and the
+# spec's integers. Big.ofz is the spec integer in limbs (ofz_val) and in
+# the canonical form (ofz_canon), Big.toz takes it back (toz_ofz),
+# Big.canon keeps the value and makes the form canonical, and a canonical
+# word integer is the only one of its value (canon_big_eq), so it is
+# Big.ofz of its value (ofz_of_val). Big.shl multiplies by Pos.pow2(k).
+
+# Generated from tools/drafts/wintpf.draft by tools/expand.py; edit the
+# draft.
+
+import Base
+import ./nat.bend as N
+import ./natring.bend as NR
+import ./natord.bend as O
+import ./mag.bend as LM
+import ./pos.bend as P
+import ./z.bend as LZ
+import ./wmagpf.bend as WM
+import ../spec/num.bend as S
+import ../spec/big.bend as SB
+import ../spec/mat.bend as M
+import ../rt/mag.bend as RM
+import ../rt/wmag.bend as RW
+import ../rt/wint.bend as RI
+
+
+# The canonical form
+# ------------------
+
+# limbs below the base, no high zero limb, and zero not negative
+def Canon(+bp: Nat, x: SB.Big) -> Data:
+  match x:
+    case SB.BPos{m}:
+      M.Both(SB.Mag.wf(bp, m), WM.Top(m))
+    case SB.BNeg{m}:
+      M.Both(SB.Mag.wf(bp, m), WM.TopC(m))
+
+def negm_val(+bp: Nat, n: List<&2, Nat>, -v: Nat, e: {SB.Mag.val(bp, n) == v : Nat}) -> {SB.Big.val(bp, RI.Big.negm(n)) == S.Z.of_diff(0n, v) : S.Z}:
+  match n:
+    case Nil{}:
+      %e : {S.Z0{} == S.Z.of_diff(0n, _) : S.Z}
+      {==}
+    case Con{+h, +t}:
+      %e : {S.Z.of_diff(0n, SB.Mag.val(bp, Con{h, t})) == S.Z.of_diff(0n, _) : S.Z}
+      {==}
+
+# Big.canon keeps the value
+def canon_val(+bp: Nat, x: SB.Big) -> {SB.Big.val(bp, RI.Big.canon(x)) == SB.Big.val(bp, x) : S.Z}:
+  match x:
+    case SB.BPos{+m}:
+      %LM.norm_val(bp, m) : {S.Z.of_diff(_, 0n) == S.Z.of_diff(SB.Mag.val(bp, m), 0n) : S.Z}
+      {==}
+    case SB.BNeg{+m}:
+      negm_val(bp, RM.Mag.norm(m), SB.Mag.val(bp, m), Equal.sym(Nat, SB.Mag.val(bp, m), SB.Mag.val(bp, RM.Mag.norm(m)), LM.norm_val(bp, m)))
+
+def negm_canon(+bp: Nat, n: List<&2, Nat>, wn: SB.Mag.wf(bp, n), tn: WM.Top(n)) -> Canon(bp, RI.Big.negm(n)):
+  match n:
+    case Nil{}:
+      (Unit{}, Unit{})
+    case Con{h, t}:
+      (wn, tn)
+
+# and makes the form canonical
+def canon_ok(+bp: Nat, x: SB.Big, wx: SB.Big.wf(bp, x)) -> Canon(bp, RI.Big.canon(x)):
+  match x:
+    case SB.BPos{+m}:
+      (LM.norm_wf(bp, m, wx), WM.norm_top(m))
+    case SB.BNeg{+m}:
+      negm_canon(bp, RM.Mag.norm(m), LM.norm_wf(bp, m, wx), WM.norm_top(m))
+
+# One word integer per value
+# --------------------------
+
+def pos_inj(+a: Nat, +b: Nat, e: {S.Z.of_diff(a, 0n) == S.Z.of_diff(b, 0n) : S.Z}) -> {a == b : Nat}:
+  %LZ.pnat_pos(b) : {a == _ : Nat}
+  %LZ.pnat_pos(a) : {_ == S.Z.pnat(S.Z.of_diff(b, 0n)) : Nat}
+  %e : {S.Z.pnat(S.Z.of_diff(a, 0n)) == S.Z.pnat(_) : Nat}
+  {==}
+
+def neg_inj(+a: Nat, +b: Nat, e: {S.Z.of_diff(0n, a) == S.Z.of_diff(0n, b) : S.Z}) -> {a == b : Nat}:
+  %LZ.nnat_neg(b) : {a == _ : Nat}
+  %LZ.nnat_neg(a) : {_ == S.Z.nnat(S.Z.of_diff(0n, b)) : Nat}
+  %e : {S.Z.nnat(S.Z.of_diff(0n, a)) == S.Z.nnat(_) : Nat}
+  {==}
+
+def posneg.zero(+a: Nat, +b: Nat, e: {S.Z.of_diff(a, 0n) == S.Z.of_diff(0n, b) : S.Z}) -> {0n == b : Nat}:
+  %LZ.nnat_neg(b) : {0n == _ : Nat}
+  %LZ.nnat_pos(a) : {_ == S.Z.nnat(S.Z.of_diff(0n, b)) : Nat}
+  %Equal.sym(S.Z, S.Z.of_diff(a, 0n), S.Z.of_diff(0n, b), e) : {S.Z.nnat(_) == S.Z.nnat(S.Z.of_diff(0n, b)) : Nat}
+  {==}
+
+# a nonnegative value is no negative one
+def posneg_no(+a: Nat, +b: Nat, e: {S.Z.of_diff(a, 0n) == S.Z.of_diff(0n, b) : S.Z}, hb: SB.Le(1n, b)) -> Empty:
+  WM.lt_irrefl(0n, (%Equal.sym(Nat, 0n, b, posneg.zero(a, b, e)) : SB.Le(1n, _)
+    hb))
+
+def topc_pos(+bp: Nat, m: List<&2, Nat>, tm: WM.TopC(m)) -> SB.Le(1n, SB.Mag.val(bp, m)):
+  match m:
+    case Nil{}:
+      WM.absurd(SB.Le(1n, 0n), tm)
+    case Con{+h, +t}:
+      WM.top_pos(bp, t, h, tm)
+
+def bpos_eq(-m1: List<&2, Nat>, -m2: List<&2, Nat>, e: {m1 == m2 : List<&2, Nat>}) -> {SB.BPos{m1} == SB.BPos{m2} : SB.Big}:
+  %e : {SB.BPos{m1} == SB.BPos{_} : SB.Big}
+  {==}
+
+def bneg_eq(-m1: List<&2, Nat>, -m2: List<&2, Nat>, e: {m1 == m2 : List<&2, Nat>}) -> {SB.BNeg{m1} == SB.BNeg{m2} : SB.Big}:
+  %e : {SB.BNeg{m1} == SB.BNeg{_} : SB.Big}
+  {==}
+
+# canonical word integers with the same value are equal
+def canon_big_eq(+bp: Nat, x: SB.Big, y: SB.Big, cx: Canon(bp, x), cy: Canon(bp, y), +e: {SB.Big.val(bp, x) == SB.Big.val(bp, y) : S.Z}) -> {x == y : SB.Big}:
+  match x y:
+    case SB.BPos{+m1} SB.BPos{+m2}:
+      (w1, t1) = cx
+      (w2, t2) = cy
+      bpos_eq(m1, m2, WM.canon_eq(bp, m1, m2, w1, w2, t1, t2, pos_inj(SB.Mag.val(bp, m1), SB.Mag.val(bp, m2), e)))
+    case SB.BNeg{+m1} SB.BNeg{+m2}:
+      (w1, t1) = cx
+      (w2, t2) = cy
+      bneg_eq(m1, m2, WM.canon_eq(bp, m1, m2, w1, w2, WM.topc_top(m1, t1), WM.topc_top(m2, t2), neg_inj(SB.Mag.val(bp, m1), SB.Mag.val(bp, m2), e)))
+    case SB.BPos{+m1} SB.BNeg{+m2}:
+      (w2, t2) = cy
+      WM.absurd({SB.BPos{m1} == SB.BNeg{m2} : SB.Big}, posneg_no(SB.Mag.val(bp, m1), SB.Mag.val(bp, m2), e, topc_pos(bp, m2, t2)))
+    case SB.BNeg{+m1} SB.BPos{+m2}:
+      (w1, t1) = cx
+      WM.absurd({SB.BNeg{m1} == SB.BPos{m2} : SB.Big}, posneg_no(SB.Mag.val(bp, m2), SB.Mag.val(bp, m1), Equal.sym(S.Z, S.Z.of_diff(0n, SB.Mag.val(bp, m1)), S.Z.of_diff(SB.Mag.val(bp, m2), 0n), e), topc_pos(bp, m1, t1)))
+
+# Conversions with the spec's integers
+# ------------------------------------
+
+# Big.ofz is z
+def ofz_val(+bp: Nat, +lp: Nat, +hb: {RW.pw(1n+lp) == 1n+bp : Nat}, z: S.Z) -> {SB.Big.val(bp, RI.Big.ofz(lp, z)) == z : S.Z}:
+  match z:
+    case S.Z0{}:
+      {==}
+    case S.Zpos{+p}:
+      %WM.ofpos_nat(bp, lp, hb, p) : {S.Z.of_diff(_, 0n) == S.Zpos{p} : S.Z}
+      LZ.zpos_diff(p)
+    case S.Zneg{+p}:
+      %WM.ofpos_nat(bp, lp, hb, p) : {S.Z.of_diff(0n, _) == S.Zneg{p} : S.Z}
+      LZ.zneg_diff(p)
+
+# in the canonical form
+def ofz_canon(+bp: Nat, +lp: Nat, +hb: {RW.pw(1n+lp) == 1n+bp : Nat}, z: S.Z) -> Canon(bp, RI.Big.ofz(lp, z)):
+  match z:
+    case S.Z0{}:
+      (Unit{}, Unit{})
+    case S.Zpos{+p}:
+      (WM.ofpos_wf(bp, lp, hb, p), WM.topc_top(RW.Mag.ofpos(lp, p), WM.ofpos_topc(bp, lp, hb, p)))
+    case S.Zneg{+p}:
+      (WM.ofpos_wf(bp, lp, hb, p), WM.ofpos_topc(bp, lp, hb, p))
+
+# and Big.toz takes it back
+def toz_ofz(+bp: Nat, +lp: Nat, +hb: {RW.pw(1n+lp) == 1n+bp : Nat}, z: S.Z) -> {RI.Big.toz(lp, RI.Big.ofz(lp, z)) == z : S.Z}:
+  match z:
+    case S.Z0{}:
+      {==}
+    case S.Zpos{+p}:
+      %Equal.sym(Maybe<&2, S.Pos>, RW.Mag.topos(lp, RW.Mag.ofpos(lp, p)), Some{p}, WM.topos_ofpos(bp, lp, hb, p)) : {RI.Big.zp(_) == S.Zpos{p} : S.Z}
+      {==}
+    case S.Zneg{+p}:
+      %Equal.sym(Maybe<&2, S.Pos>, RW.Mag.topos(lp, RW.Mag.ofpos(lp, p)), Some{p}, WM.topos_ofpos(bp, lp, hb, p)) : {RI.Big.zn(_) == S.Zneg{p} : S.Z}
+      {==}
+
+# a canonical word integer is Big.ofz of its value
+def ofz_of_val(+bp: Nat, +lp: Nat, +hb: {RW.pw(1n+lp) == 1n+bp : Nat}, +x: SB.Big, cx: Canon(bp, x)) -> {RI.Big.ofz(lp, SB.Big.val(bp, x)) == x : SB.Big}:
+  canon_big_eq(bp, RI.Big.ofz(lp, SB.Big.val(bp, x)), x, ofz_canon(bp, lp, hb, SB.Big.val(bp, x)), cx, ofz_val(bp, lp, hb, SB.Big.val(bp, x)))
+
+# Shifts
+# ------
+
+def pow2_nat(k: Nat) -> {S.Pos.nat(S.Pos.pow2(k)) == RW.pw(k) : Nat}:
+  match k:
+    case 0n:
+      {==}
+    case 1n++j:
+      %Equal.sym(Nat, S.Pos.nat(S.Pos.pow2(j)), RW.pw(j), pow2_nat(j)) : {Nat.double(_) == Nat.mul(2n, RW.pw(j)) : Nat}
+      NR.ring_eq([RW.pw(j)], NR.NDbl{NR.NVar{0n}}, NR.NMul{NR.NCst{2n}, NR.NVar{0n}}, {==})
+
+
+# Big.shl is a product with 2^k
+def shl_zval(+bp: Nat, +lp: Nat, +hb: {RW.pw(1n+lp) == 1n+bp : Nat}, x: SB.Big, +k: Nat) -> {SB.Big.val(bp, RI.Big.shl(bp, lp, x, k)) == S.Z.mul(SB.Big.val(bp, x), S.Zpos{S.Pos.pow2(k)}) : S.Z}:
+  match x:
+    case SB.BPos{+m}:
+      %WM.shl_val(bp, lp, hb, m, k) : {S.Z.of_diff(_, 0n) == S.Z.mul(S.Z.of_diff(SB.Mag.val(bp, m), 0n), S.Zpos{S.Pos.pow2(k)}) : S.Z}
+      %LZ.zpos_diff(S.Pos.pow2(k)) : {S.Z.of_diff(Nat.mul(SB.Mag.val(bp, m), RW.pw(k)), 0n) == S.Z.mul(S.Z.of_diff(SB.Mag.val(bp, m), 0n), _) : S.Z}
+      %LZ.mul_hom(SB.Mag.val(bp, m), 0n, S.Pos.nat(S.Pos.pow2(k)), 0n) : {S.Z.of_diff(Nat.mul(SB.Mag.val(bp, m), RW.pw(k)), 0n) == _ : S.Z}
+      %Equal.sym(Nat, S.Pos.nat(S.Pos.pow2(k)), RW.pw(k), pow2_nat(k)) : {S.Z.of_diff(Nat.mul(SB.Mag.val(bp, m), RW.pw(k)), 0n) == S.Z.of_diff(Nat.add(Nat.mul(SB.Mag.val(bp, m), _), Nat.mul(0n, 0n)), Nat.add(Nat.mul(SB.Mag.val(bp, m), 0n), Nat.mul(0n, _))) : S.Z}
+      LZ.od_eq(Nat.mul(SB.Mag.val(bp, m), RW.pw(k)), 0n, Nat.add(Nat.mul(SB.Mag.val(bp, m), RW.pw(k)), Nat.mul(0n, 0n)), Nat.add(Nat.mul(SB.Mag.val(bp, m), 0n), Nat.mul(0n, RW.pw(k))), NR.ring_eq([SB.Mag.val(bp, m), RW.pw(k)], NR.NAdd{NR.NMul{NR.NVar{0n}, NR.NVar{1n}}, NR.NAdd{NR.NMul{NR.NVar{0n}, NR.NCst{0n}}, NR.NMul{NR.NCst{0n}, NR.NVar{1n}}}}, NR.NAdd{NR.NCst{0n}, NR.NAdd{NR.NMul{NR.NVar{0n}, NR.NVar{1n}}, NR.NMul{NR.NCst{0n}, NR.NCst{0n}}}}, {==}))
+    case SB.BNeg{+m}:
+      %WM.shl_val(bp, lp, hb, m, k) : {S.Z.of_diff(0n, _) == S.Z.mul(S.Z.of_diff(0n, SB.Mag.val(bp, m)), S.Zpos{S.Pos.pow2(k)}) : S.Z}
+      %LZ.zpos_diff(S.Pos.pow2(k)) : {S.Z.of_diff(0n, Nat.mul(SB.Mag.val(bp, m), RW.pw(k))) == S.Z.mul(S.Z.of_diff(0n, SB.Mag.val(bp, m)), _) : S.Z}
+      %LZ.mul_hom(0n, SB.Mag.val(bp, m), S.Pos.nat(S.Pos.pow2(k)), 0n) : {S.Z.of_diff(0n, Nat.mul(SB.Mag.val(bp, m), RW.pw(k))) == _ : S.Z}
+      %Equal.sym(Nat, S.Pos.nat(S.Pos.pow2(k)), RW.pw(k), pow2_nat(k)) : {S.Z.of_diff(0n, Nat.mul(SB.Mag.val(bp, m), RW.pw(k))) == S.Z.of_diff(Nat.add(Nat.mul(0n, _), Nat.mul(SB.Mag.val(bp, m), 0n)), Nat.add(Nat.mul(0n, 0n), Nat.mul(SB.Mag.val(bp, m), _))) : S.Z}
+      LZ.od_eq(0n, Nat.mul(SB.Mag.val(bp, m), RW.pw(k)), Nat.add(Nat.mul(0n, RW.pw(k)), Nat.mul(SB.Mag.val(bp, m), 0n)), Nat.add(Nat.mul(0n, 0n), Nat.mul(SB.Mag.val(bp, m), RW.pw(k))), NR.ring_eq([SB.Mag.val(bp, m), RW.pw(k)], NR.NAdd{NR.NCst{0n}, NR.NAdd{NR.NMul{NR.NCst{0n}, NR.NCst{0n}}, NR.NMul{NR.NVar{0n}, NR.NVar{1n}}}}, NR.NAdd{NR.NMul{NR.NVar{0n}, NR.NVar{1n}}, NR.NAdd{NR.NMul{NR.NCst{0n}, NR.NVar{1n}}, NR.NMul{NR.NVar{0n}, NR.NCst{0n}}}}, {==}))
+
+def shl_wf(+bp: Nat, +lp: Nat, +hb: {RW.pw(1n+lp) == 1n+bp : Nat}, x: SB.Big, +k: Nat, wx: SB.Big.wf(bp, x)) -> SB.Big.wf(bp, RI.Big.shl(bp, lp, x, k)):
+  match x:
+    case SB.BPos{m}:
+      WM.shl_wf(bp, lp, hb, m, k, wx)
+    case SB.BNeg{m}:
+      WM.shl_wf(bp, lp, hb, m, k, wx)

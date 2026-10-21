@@ -863,3 +863,35 @@ def norm_top(m: List<&2, Nat>) -> Top(RM.Mag.norm(m)):
 def wbp_ok(+lp: Nat) -> {RW.pw(1n+lp) == 1n+RW.wbp(lp) : Nat}:
   %N.add_comm(Nat.sub(RW.pw(1n+lp), 1n), 1n) : {RW.pw(1n+lp) == _ : Nat}
   Equal.sym(Nat, Nat.add(Nat.sub(RW.pw(1n+lp), 1n), 1n), RW.pw(1n+lp), O.sub_add(RW.pw(1n+lp), 1n, pw_pos(1n+lp)))
+
+# Native bounds
+# -------------
+# Every native operation on limbs (rt/mag.bend, rt/wmag.bend) is a limb
+# times a limb plus a limb (mul1), a sum of two limbs and a carry bit, a
+# limb against 2^r with r <= L, or a quotient or remainder of these. For
+# limbs up to bp = 2^L - 1 each is below 2^(2 L), so a run whose base has
+# 2 L <= n never forms a Nat of n bits; the run time's L = 23 gives
+# 2 L = 46 <= 48 (BendRT's immediates). The exponent stays a variable: a
+# closed 2^48 in a type would be unfolded to unary by the checker.
+
+# (1 + bp)^2 = 2^(2 L)
+def base_sq(+bp: Nat, +lp: Nat, +hb: {RW.pw(1n+lp) == 1n+bp : Nat}) -> {Nat.mul(1n+bp, 1n+bp) == RW.pw(Nat.add(1n+lp, 1n+lp)) : Nat}:
+  %hb : {Nat.mul(_, _) == RW.pw(Nat.add(1n+lp, 1n+lp)) : Nat}
+  pw_add(1n+lp, 1n+lp)
+
+# h k + c < 2^(2 L) for limbs h, k, c
+def mul_bound(+bp: Nat, +lp: Nat, +hb: {RW.pw(1n+lp) == 1n+bp : Nat}, +h: Nat, +k: Nat, +c: Nat, lh: SB.Le(h, bp), lk: SB.Le(k, bp), lc: SB.Le(c, bp)) -> SB.Le(1n+Nat.add(Nat.mul(h, k), c), RW.pw(Nat.add(1n+lp, 1n+lp))):
+  %base_sq(bp, lp, hb) : SB.Le(1n+Nat.add(Nat.mul(h, k), c), _)
+  O.le_trans(1n+Nat.add(Nat.mul(h, k), c), 1n+Nat.add(Nat.mul(bp, bp), bp), Nat.mul(1n+bp, 1n+bp),
+    O.le_succ(Nat.add(Nat.mul(h, k), c), Nat.add(Nat.mul(bp, bp), bp), O.le_add_mono(Nat.mul(h, k), Nat.mul(bp, bp), c, bp, O.le_mul_mono(h, bp, k, bp, lh, lk), lc)),
+    (bp, NR.ring_eq([bp], NR.NAdd{NR.NAdd{NR.NCst{1n}, NR.NAdd{NR.NMul{NR.NVar{0n}, NR.NVar{0n}}, NR.NVar{0n}}}, NR.NVar{0n}}, NR.NMul{NR.NAdd{NR.NCst{1n}, NR.NVar{0n}}, NR.NAdd{NR.NCst{1n}, NR.NVar{0n}}}, {==})))
+
+def add_bound.lo(+bp: Nat, +a: Nat, +b: Nat, +c: Nat, la: SB.Le(a, bp), lb: SB.Le(b, bp), lc: SB.Le(c, 1n)) -> SB.Le(1n+Nat.add(Nat.add(a, b), c), Nat.mul(2n, 1n+bp)):
+  (%NR.ring_eq([bp], NR.NAdd{NR.NCst{1n}, NR.NAdd{NR.NAdd{NR.NVar{0n}, NR.NVar{0n}}, NR.NCst{1n}}}, NR.NMul{NR.NCst{2n}, NR.NAdd{NR.NCst{1n}, NR.NVar{0n}}}, {==}) : SB.Le(1n+Nat.add(Nat.add(a, b), c), _)
+    O.le_succ(Nat.add(Nat.add(a, b), c), Nat.add(Nat.add(bp, bp), 1n), O.le_add_mono(Nat.add(a, b), Nat.add(bp, bp), c, 1n, O.le_add_mono(a, bp, b, bp, la, lb), lc)))
+
+# a + b + c < 2^(2 L) for limbs a, b and a bit c
+def add_bound(+bp: Nat, +lp: Nat, +hb: {RW.pw(1n+lp) == 1n+bp : Nat}, +a: Nat, +b: Nat, +c: Nat, la: SB.Le(a, bp), lb: SB.Le(b, bp), lc: SB.Le(c, 1n)) -> SB.Le(1n+Nat.add(Nat.add(a, b), c), RW.pw(Nat.add(1n+lp, 1n+lp))):
+  %base_sq(bp, lp, hb) : SB.Le(1n+Nat.add(Nat.add(a, b), c), _)
+  O.le_trans(1n+Nat.add(Nat.add(a, b), c), Nat.mul(2n, 1n+bp), Nat.mul(1n+bp, 1n+bp), add_bound.lo(bp, a, b, c, la, lb, lc),
+    O.le_mul_mono(2n, 1n+bp, 1n+bp, 1n+bp, O.le_succ(1n, bp, bp_pos(bp, lp, hb)), O.le_refl(1n+bp)))
