@@ -49,6 +49,7 @@ import ./ownpf.bend as OW
 import ./pblkpf.bend as PB
 import ./maxpf.bend as MX
 import ./tarjanpf.bend as TJ
+import ./perfpf.bend as PF
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -663,6 +664,14 @@ def sub_free($SHP, +hpo: {PL.pars_ok(nv, vp) == True{} : Bool}, ws: List<&2, Nat
       +hv = L.subl_hd(v, t, $VV, hws)
       L.band_i(SV.mem(v, $FR), L.subl(t, $FR), PM.free_mem(nv, 0n, pins, v, {==}, lt_of_mem(nv, vp, v, hpo, L.subl_mem(v, $VV, vp, hv, subl_dp(np, vp))), vv_np($SHA, v, hv)), sub_free($SHA, hpo, t, L.subl_tl(v, t, $VV, hws)))
 
+def mem_tkdp(+u: Nat, +np: Nat, +vp: List<&2, Nat>, +h: {SV.mem(u, vp) == True{} : Bool}) -> {SV.mem(u, ST.app(SO.ntake(np, vp), OW.ndrop(np, vp))) == True{} : Bool}:
+  (%Equal.sym(List<&2, Nat>, ST.app(SO.ntake(np, vp), OW.ndrop(np, vp)), vp, tk_dp(np, vp)) : {SV.mem(u, _) == True{} : Bool}
+    h)
+
+def nt_pins(+u: Nat, +np: Nat, +vp: List<&2, Nat>, +pins: List<&2, Nat>, +hpn: {SO.ntake(np, vp) == pins : List<&2, Nat>}, +h: {SV.mem(u, pins) == False{} : Bool}) -> {SV.mem(u, SO.ntake(np, vp)) == False{} : Bool}:
+  (%Equal.sym(List<&2, Nat>, SO.ntake(np, vp), pins, hpn) : {SV.mem(u, _) == False{} : Bool}
+    h)
+
 # and every free variable is one of them
 def sub_vv($SHP, +hp: {PL.present(vp, nv, 0n) == True{} : Bool}, ws: List<&2, Nat>, +hws: {L.subl(ws, $FR) == True{} : Bool}) -> {L.subl(ws, $VV) == True{} : Bool}:
   match ws:
@@ -671,8 +680,114 @@ def sub_vv($SHP, +hp: {PL.present(vp, nv, 0n) == True{} : Bool}, ws: List<&2, Na
     case Con{+u, +t}:
       +hu = L.subl_hd(u, t, $FR, hws)
       +hmv = mem_of_pos(u, vp, PP.present0(vp, nv, u, hp, PM.free_lt(nv, 0n, pins, u, hu)))
-      +hma = (%Equal.sym(List<&2, Nat>, ST.app(SO.ntake(np, vp), $VV), vp, tk_dp(np, vp)) : {SV.mem(u, _) == True{} : Bool}
-        hmv)
-      +hnt = (%Equal.sym(List<&2, Nat>, SO.ntake(np, vp), pins, hpn) : {SV.mem(u, _) == False{} : Bool}
-        PM.free_np(nv, 0n, pins, u, hu))
-      L.band_i(SV.mem(u, $VV), L.subl(t, $VV), mem_app_rf(u, SO.ntake(np, vp), $VV, hma, hnt), sub_vv($SHA, hp, t, L.subl_tl(u, t, $FR, hws)))
+      L.band_i(SV.mem(u, $VV), L.subl(t, $VV), mem_app_rf(u, SO.ntake(np, vp), $VV, mem_tkdp(u, np, vp, hmv), nt_pins(u, np, vp, pins, hpn, PM.free_np(nv, 0n, pins, u, hu))), sub_vv($SHA, hp, t, L.subl_tl(u, t, $FR, hws)))
+
+# The system in the sketch's order
+# --------------------------------
+
+# eqget reads the head of the list from k on
+def eg_qd(xs: List<&2, E.QExpr>, k: Nat) -> {PL.eqget(xs, k) == OW.qhd(OW.qdrop(k, xs)) : E.QExpr}:
+  match xs k:
+    case Nil{} 0n:
+      {==}
+    case Nil{} 1n+j:
+      {==}
+    case Con{e, t} 0n:
+      {==}
+    case Con{e, t} 1n+j:
+      eg_qd(t, j)
+
+def pk_iota.go(+full: List<&2, E.QExpr>, es: List<&2, E.QExpr>, +d: Nat, +h: {OW.qdrop(d, full) == es : List<&2, E.QExpr>}) -> {KP.pickk(full, 0n, ST.iota(CK.eqlen(es), d)) == es : List<&2, E.QExpr>}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{+e, +t}:
+      +he = Equal.trans(E.QExpr, PL.eqget(full, d), OW.qhd(OW.qdrop(d, full)), e, eg_qd(full, d), Equal.cong(List<&2, E.QExpr>, E.QExpr, y => OW.qhd(y), OW.qdrop(d, full), Con{e, t}, h))
+      %Equal.sym(E.QExpr, PL.eqget(full, d), e, he) : {Con{_, KP.pickk(full, 0n, ST.iota(CK.eqlen(t), 1n+d))} == Con{e, t} : List<&2, E.QExpr>}
+      %Equal.sym(List<&2, E.QExpr>, KP.pickk(full, 0n, ST.iota(CK.eqlen(t), 1n+d)), t, pk_iota.go(full, t, 1n+d, OW.qdrop_step(d, full, e, t, h))) : {Con{e, _} == Con{e, t} : List<&2, E.QExpr>}
+      {==}
+
+# picking every equation in order gives the system back
+def pk_iota(+full: List<&2, E.QExpr>) -> {KP.pickk(full, 0n, ST.iota(CK.eqlen(full), 0n)) == full : List<&2, E.QExpr>}:
+  pk_iota.go(full, full, 0n, {==})
+
+def elen_eq(es: List<&2, E.QExpr>) -> {DV.elen(es) == CK.eqlen(es) : Nat}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{e, t}:
+      %Equal.sym(Nat, DV.elen(t), CK.eqlen(t), elen_eq(t)) : {1n+_ == 1n+CK.eqlen(t) : Nat}
+      {==}
+
+# lf + lp = nv, lp = np and np + le = nv: lf = le
+def len_fr(+lf: Nat, +lp: Nat, +np: Nat, +le: Nat, +nv: Nat, +h1: {Nat.add(lf, lp) == nv : Nat}, +h2: {lp == np : Nat}, +h3: {Nat.add(np, le) == nv : Nat}) -> {lf == le : Nat}:
+  PF.cancel_r(lf, lp, le, nv, h1, Equal.trans(Nat, Nat.add(le, lp), Nat.add(lp, le), nv, LN.add_comm(le, lp), (%Equal.sym(Nat, lp, np, h2) : {Nat.add(_, le) == nv : Nat}
+    h3)))
+
+def po_nv(+a: Nat, +b: Nat, +vp: List<&2, Nat>, +e: {a == b : Nat}, +h: {PL.pars_ok(a, vp) == True{} : Bool}) -> {PL.pars_ok(b, vp) == True{} : Bool}:
+  %e : {PL.pars_ok(_, vp) == True{} : Bool}
+  h
+
+def pr_nv(+a: Nat, +b: Nat, +vp: List<&2, Nat>, +e: {a == b : Nat}, +h: {PL.present(vp, a, 0n) == True{} : Bool}) -> {PL.present(vp, b, 0n) == True{} : Bool}:
+  %e : {PL.present(vp, _, 0n) == True{} : Bool}
+  h
+
+def dist_pins(+np: Nat, +vp: List<&2, Nat>, +pins: List<&2, Nat>, +hpn: {SO.ntake(np, vp) == pins : List<&2, Nat>}, +hvd: {SV.distinct(vp) == True{} : Bool}) -> {SV.distinct(pins) == True{} : Bool}:
+  %hpn : {SV.distinct(_) == True{} : Bool}
+  dist_l(SO.ntake(np, vp), OW.ndrop(np, vp), dist_app(np, vp, hvd))
+
+def below_pins(+nv: Nat, +np: Nat, +vp: List<&2, Nat>, +pins: List<&2, Nat>, +hpn: {SO.ntake(np, vp) == pins : List<&2, Nat>}, +hpo: {PL.pars_ok(nv, vp) == True{} : Bool}) -> {SV.below(pins, nv) == True{} : Bool}:
+  %hpn : {SV.below(_, nv) == True{} : Bool}
+  below_of_pars(nv, SO.ntake(np, vp), pars_tk(nv, np, vp, hpo))
+
+# an inverse with n rows, n the number of variables and of equations
+def reg_of(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +us: List<&2, Nat>, +n: Nat, +h1: {DV.nlen(us) == n : Nat}, +h2: {DV.elen(es) == n : Nat}, inv: GJ.InvN(~F, DV.jac(~F, x, es, us), n)) -> DV.Regular(~F, x, es, us):
+  match inv:
+    case (+y, b):
+      match b:
+        case (iv, hr):
+          (Equal.trans(Nat, DV.nlen(us), n, DV.elen(es), h1, Equal.sym(Nat, DV.elen(es), n, h2)), (y, (%Equal.sym(Nat, DV.nlen(us), n, h1) : DV.Inverse(~F, DV.jac(~F, x, es, us), y, _)
+            iv)))
+
+# an injective Jacobian with as many columns as rows is regular
+def reg_blk(~F: O.OField, +x: M.Vec(~F), +eqs: List<&2, E.QExpr>, +ep: List<&2, Nat>, +vv: List<&2, Nat>, +hl: {SV.len(vv) == SV.len(ep) : Nat}, inj: @w: M.Vec(~F) -> {M.len(~F, w) == SV.len(ep) : Nat} -> {M.matvec(~F, DV.jac(~F, x, KP.pickk(eqs, 0n, ep), vv), w) == GJ.zeros(~F, SV.len(ep)) : M.Vec(~F)} -> {w == GJ.zeros(~F, SV.len(ep)) : M.Vec(~F)}) -> DV.Regular(~F, x, KP.pickk(eqs, 0n, ep), vv):
+  +jp = DV.jac(~F, x, KP.pickk(eqs, 0n, ep), vv)
+  +ha = PM.nrows_pick(~F, x, eqs, ep, vv)
+  reg_of(~F, x, KP.pickk(eqs, 0n, ep), vv, SV.len(ep), Equal.trans(Nat, DV.nlen(vv), SV.len(vv), SV.len(ep), PM.nlen_sv(vv), hl), PM.elen_pick(eqs, ep), GJ.inv_of_inj(~F, jp, SV.len(ep), ha, GJ.rl_all(~F, jp, SV.len(ep), ha, rl_rw(~F, jp, SV.len(vv), SV.len(ep), hl, PM.rl_jac(~F, x, KP.pickk(eqs, 0n, ep), vv))), inj))
+
+@MACRO CRA $DN, eqs, gc, gr, vp, ep, np, bs, ok
+@MACRO PRP ~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +eqs: List<&2, E.QExpr>, +gc: List<&2, S.D>, +gr: List<&2, S.D>, +vp: List<&2, Nat>, +ep: List<&2, Nat>, +np: Nat, +bs: List<&2, PL.PBlock<KI.dnum()>>, +ok: {PL.check.r($DN, eqs, gc, gr, vp, ep, np, bs) == True{} : Bool}
+
+# the plan's box, read in block order
+def hx_of($PRP, +x: M.Vec(~F), +hb: BX.inbox($DN, ~F, ~H, gc, gr, x)) -> BX.inbox($DN, ~F, ~H, $GC2, $GR2, $XP):
+  (%Equal.sym(M.Vec(~F), $XP, PP.zmap(~F, x, vp), xz_eq(~F, x, vp)) : BX.inbox($DN, ~F, ~H, $GC2, $GR2, _)
+    PP.un_in($DN, ~F, ~H, eqs, gc, gr, vp, ep, np, bs, ok, x, hb))
+
+# a plan that checks, whose orders are the variables (the pins first) and
+# the equations, makes every point of its box a regular point of the
+# system in the free variables
+def plan_regular($PRP, +nv: Nat, +pins: List<&2, Nat>, +hgc: {KA.klen($DN, gc) == nv : Nat}, +hvl: {PL.nlen(vp) == nv : Nat}, +hvd: {SV.distinct(vp) == True{} : Bool}, +hel: {PL.nlen(ep) == CK.eqlen(eqs) : Nat}, +hpn: {SO.ntake(np, vp) == pins : List<&2, Nat>}, +x: M.Vec(~F), +hb: BX.inbox($DN, ~F, ~H, gc, gr, x)) -> DV.Regular(~F, x, eqs, $FR):
+  +hcp = PP.cr_inner($CRA)
+  +hX = hx_of(~F, ~H, eqs, gc, gr, vp, ep, np, bs, ok, x, hb)
+  +hgr = PP.cp_len($DN, PL.reorder(vp, eqs, ep), $GC2, $GR2, np, bs, hcp)
+  +hw = PP.cp_walk($DN, PL.reorder(vp, eqs, ep), $GC2, $GR2, np, bs, hcp)
+  +hpo = po_nv(KA.klen($DN, gc), nv, vp, hgc, PP.cr_vp_lt($CRA))
+  +hpr = pr_nv(KA.klen($DN, gc), nv, vp, hgc, PP.cr_vp_has($CRA))
+  +hin = allin_all(eqs, ep, vp, KA.klen($DN, gc), PP.cr_vp_has($CRA), PP.cr_below($CRA))
+  +hwl0 = hwl($WA, bs, ep, np, hw)
+  +hlv = Equal.trans(Nat, SV.len(vp), PL.nlen(vp), nv, Equal.sym(Nat, PL.nlen(vp), SV.len(vp), PB.nlen_sv(vp)), hvl)
+  +hnv = Equal.trans(Nat, Nat.add(np, SV.len(ep)), SV.len(vp), nv, hwl0, hlv)
+  +hle = Equal.trans(Nat, SV.len(ep), PL.nlen(ep), CK.eqlen(eqs), Equal.sym(Nat, PL.nlen(ep), SV.len(ep), PB.nlen_sv(ep)), hel)
+  +hnl = KA.natle_rw(np, Nat.add(np, SV.len(ep)), SV.len(vp), hwl0, natle_addr(np, SV.len(ep)))
+  +hlp = Equal.trans(Nat, SV.len(pins), SV.len(SO.ntake(np, vp)), np, len_cong(pins, SO.ntake(np, vp), Equal.sym(List<&2, Nat>, SO.ntake(np, vp), pins, hpn)), len_tk(np, vp, hnl))
+  +hfl = PF.free_len(nv, pins, dist_pins(np, vp, pins, hpn, hvd), below_pins(nv, np, vp, pins, hpn, hpo))
+  +hlf = len_fr(SV.len($FR), SV.len(pins), np, SV.len(ep), nv, hfl, hlp, hnv)
+  +hlvv = len_dp(np, vp, SV.len(ep), Equal.sym(Nat, Nat.add(np, SV.len(ep)), SV.len(vp), hwl0))
+  +hreg = reg_blk(~F, x, eqs, ep, $VV, hlvv, w => lw => e => rinj($WA, bs, ep, np, $VV, {==}, hw, hin, w, lw, e))
+  +hga = PF.below_iota(ep, CK.eqlen(eqs), below_of_pars(CK.eqlen(eqs), ep, PP.cr_ep_lt($CRA)))
+  +huv = sub_free($SHA, hpo, $VV, L.subl_refl($VV))
+  +hvu = sub_vv($SHA, hpr, $FR, L.subl_refl($FR))
+  +hn = Equal.trans(Nat, SV.len(ST.iota(CK.eqlen(eqs), 0n)), CK.eqlen(eqs), SV.len($FR), PF.iota_len(CK.eqlen(eqs), 0n), Equal.sym(Nat, SV.len($FR), CK.eqlen(eqs), Equal.trans(Nat, SV.len($FR), SV.len(ep), CK.eqlen(eqs), hlf, hle)))
+  +hfe = Equal.trans(Nat, DV.elen(eqs), CK.eqlen(eqs), SV.len($FR), elen_eq(eqs), Equal.sym(Nat, SV.len($FR), CK.eqlen(eqs), Equal.trans(Nat, SV.len($FR), SV.len(ep), CK.eqlen(eqs), hlf, hle)))
+  reg_of(~F, x, eqs, $FR, SV.len($FR), PM.nlen_sv($FR), hfe, (%pk_iota(eqs) : GJ.InvN(~F, DV.jac(~F, x, _, $FR), SV.len($FR))
+    PM.perm_inv(~F, x, eqs, ep, ST.iota(CK.eqlen(eqs), 0n), $VV, $FR, hga, BI.dist_r(SO.ntake(np, vp), $VV, dist_app(np, vp, hvd)), PM.free_dist(nv, 0n, pins), huv, hvu, hn, hreg)))
