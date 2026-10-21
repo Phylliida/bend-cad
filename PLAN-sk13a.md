@@ -485,6 +485,17 @@ As planned:
       equation. completepf's `shape_ans` shows the solver's own answer
       passes it.
     - `solve_regular` is restated in tests/solve_laws.bend.
+- **Law 3 done (2026-10-20):** lib/blamepf.bend.
+  - The geometry is `solve_exists`'s, which means the sketch less its red
+    constraints.
+  - A support has no red member: `ConflictOk` says so, from
+    `solve_honest`. solve_honest wants the sketch well formed and covered
+    by its variables. The verdict checked both for the sketch with its
+    red constraints made driven, and neither check reads the driven
+    flags (`wf_unmark`, `w_unmark`; the shape check makes the box's
+    length the number of variables).
+  - Enforcing only the support asks for a part of what that geometry
+    already meets (`mo`).
 - **`final` gains:**
   - the drop certificates (`qzero`; h = 1; rows are earlier solved
     equations);

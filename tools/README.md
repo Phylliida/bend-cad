@@ -38,6 +38,7 @@ the checker verifies the output.
 | `lib/skdpf.bend` | `python3 tools/expand.py tools/drafts/skdpf.draft lib/skdpf.bend` |
 | `lib/solvepf.bend` | `python3 tools/expand.py tools/drafts/solvepf.draft lib/solvepf.bend` |
 | `lib/regpf.bend` | `python3 tools/expand.py tools/drafts/regpf.draft lib/regpf.bend` |
+| `lib/blamepf.bend` | `python3 tools/expand.py tools/drafts/blamepf.draft lib/blamepf.bend` |
 
 `@MACRO NAME text` (a line) makes every `$NAME` below stand for `text`
 (textual, longest names first, macros may use macros): long hypothesis lists

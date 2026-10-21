@@ -247,7 +247,9 @@ and dyadic constants needed only on the kept constraints (PLAN S7).
 **Law 2 is done (2026-10-20):** `solve_regular`, through
 lib/regpf.bend, with the plan's shape checked in `final` (PLAN S5,
 "Steps 4-5 done").
-**Next: law 3 (solve_blame), then S6.**
+**Law 3 is done (2026-10-20):** `solve_blame`, through lib/blamepf.bend
+(PLAN S5, "Law 3 done"). S5's laws are all proven.
+**Next: S6.**
 Same day, before the design:
 - deduplicated lemmas (Bool Nat facts in karith, field order in fvec);
 - a parallel gate (about 50 s);
