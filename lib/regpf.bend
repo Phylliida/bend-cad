@@ -48,6 +48,7 @@ import ./solve.bend as SO
 import ./ownpf.bend as OW
 import ./pblkpf.bend as PB
 import ./maxpf.bend as MX
+import ./tarjanpf.bend as TJ
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -535,3 +536,109 @@ def rinj(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +x: M.Vec(~F), +vp: List<&2, Nat
       +sd = PM.nrows_pick(~F, x, eqs, OW.ndrop(n, epr), OW.ndrop(n, OW.ndrop(o, vp)))
       %Equal.sym(Nat, SV.len(epr), Nat.add(n, SV.len(OW.ndrop(n, epr))), hle) : {w == GJ.zeros(~F, _) : M.Vec(~F)}
       bm_inj(~F, DV.jac(~F, x, KP.pickk(eqs, 0n, SO.ntake(n, epr)), SO.ntake(n, OW.ndrop(o, vp))), DV.jac(~F, x, KP.pickk(eqs, 0n, OW.ndrop(n, epr)), SO.ntake(n, OW.ndrop(o, vp))), DV.jac(~F, x, KP.pickk(eqs, 0n, OW.ndrop(n, epr)), OW.ndrop(n, OW.ndrop(o, vp))), n, SV.len(OW.ndrop(n, epr)), sa, ra, sc, rc, sd, u => lu => eu => blk_inj(~F, ~H, x, vp, eqs, gc, gr, hX, hgr, hvd, epr, o, n, pars, c, hbo, hin, u, lu, eu), u => lu => eu => rinj(~F, ~H, x, vp, eqs, gc, gr, hX, hgr, hvd, t, OW.ndrop(n, epr), Nat.add(o, n), OW.ndrop(n, OW.ndrop(o, vp)), dp_dp(o, n, vp), hw2, allin_dp(eqs, n, epr, vp, hin), u, lu, eu), w, Equal.trans(Nat, M.len(~F, w), SV.len(epr), Nat.add(n, SV.len(OW.ndrop(n, epr))), lw, hle), e_bm(~F, x, vp, eqs, epr, o, n, hl1, hlc2, hle, hz, w, e_vr(~F, x, vp, eqs, epr, o, vr, hvr, w, e)))
+
+# Back to the sketch's order
+# --------------------------
+
+def xz_eq(~F: O.OField, +x: M.Vec(~F), vp: List<&2, Nat>) -> {LC.xperm(~F, x, vp) == PP.zmap(~F, x, vp) : M.Vec(~F)}:
+  match vp:
+    case Nil{}:
+      {==}
+    case Con{+v, +t}:
+      %Equal.sym(M.Vec(~F), LC.xperm(~F, x, t), PP.zmap(~F, x, t), xz_eq(~F, x, t)) : {Con{O.lookup(~F, x, v), _} == Con{O.lookup(~F, x, v), PP.zmap(~F, x, t)} : M.Vec(~F)}
+      {==}
+
+def below_of_pars(+o: Nat, xs: List<&2, Nat>, +h: {PL.pars_ok(o, xs) == True{} : Bool}) -> {SV.below(xs, o) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+v, +t}:
+      L.band_i(SV.lt(v, o), SV.below(t, o), (%Equal.sym(Bool, SV.lt(v, o), KA.natle(1n+v, o), L.lt_sv(v, o)) : {_ == True{} : Bool}
+        KA.band_l(KA.natle(1n+v, o), PL.pars_ok(o, t), h)), below_of_pars(o, t, KA.band_r(KA.natle(1n+v, o), PL.pars_ok(o, t), h)))
+
+def pars_tk(+o: Nat, n: Nat, xs: List<&2, Nat>, +h: {PL.pars_ok(o, xs) == True{} : Bool}) -> {PL.pars_ok(o, SO.ntake(n, xs)) == True{} : Bool}:
+  match n xs:
+    case 0n xs:
+      {==}
+    case 1n+m Nil{}:
+      {==}
+    case 1n++m Con{+v, +t}:
+      KA.band_i(KA.natle(1n+v, o), PL.pars_ok(o, SO.ntake(m, t)), KA.band_l(KA.natle(1n+v, o), PL.pars_ok(o, t), h), pars_tk(o, m, t, KA.band_r(KA.natle(1n+v, o), PL.pars_ok(o, t), h)))
+
+def lom.go(+o: Nat, +v: Nat, +u: Nat, +t: List<&2, Nat>, b: Bool, e: {SV.eq(v, u) == b : Bool}, hm: {SV.bor(b, SV.mem(v, t)) == True{} : Bool}, hu: {KA.natle(1n+u, o) == True{} : Bool}, ih: {SV.mem(v, t) == True{} : Bool} -> {KA.natle(1n+v, o) == True{} : Bool}) -> {KA.natle(1n+v, o) == True{} : Bool}:
+  match b:
+    case True{}:
+      %Equal.sym(Nat, v, u, L.eq_ok(v, u, e)) : {KA.natle(1n+_, o) == True{} : Bool}
+      hu
+    case False{}:
+      ih(hm)
+
+# a member of a list of numbers below o is below o
+def lt_of_mem(+o: Nat, xs: List<&2, Nat>, +v: Nat, +h: {PL.pars_ok(o, xs) == True{} : Bool}, hm: {SV.mem(v, xs) == True{} : Bool}) -> {KA.natle(1n+v, o) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      absurd({KA.natle(1n+v, o) == True{} : Bool}, L.mem_nil(v, hm))
+    case Con{+u, +t}:
+      lom.go(o, v, u, t, SV.eq(v, u), {==}, hm, KA.band_l(KA.natle(1n+u, o), PL.pars_ok(o, t), h), hm2 => lt_of_mem(o, t, v, KA.band_r(KA.natle(1n+u, o), PL.pars_ok(o, t), h), hm2))
+
+def maf.go(+u: Nat, +t: List<&2, Nat>, +b: List<&2, Nat>, c: Bool, h: {SV.bor(c, SV.mem(u, ST.app(t, b))) == True{} : Bool}, hn: {SV.bor(c, SV.mem(u, t)) == False{} : Bool}, ih: {SV.mem(u, ST.app(t, b)) == True{} : Bool} -> {SV.mem(u, t) == False{} : Bool} -> {SV.mem(u, b) == True{} : Bool}) -> {SV.mem(u, b) == True{} : Bool}:
+  match c:
+    case True{}:
+      absurd({SV.mem(u, b) == True{} : Bool}, KA.tf(hn))
+    case False{}:
+      ih(h, hn)
+
+# in a ++ b and not in a: in b
+def mem_app_rf(+u: Nat, a: List<&2, Nat>, +b: List<&2, Nat>, h: {SV.mem(u, ST.app(a, b)) == True{} : Bool}, hn: {SV.mem(u, a) == False{} : Bool}) -> {SV.mem(u, b) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      h
+    case Con{+x, +t}:
+      maf.go(u, t, b, SV.eq(u, x), h, hn, h2 => hn2 => mem_app_rf(u, t, b, h2, hn2))
+
+def dl.go(+x: Nat, +t: List<&2, Nat>, +b: List<&2, Nat>, c: Bool, e: {SV.mem(x, t) == c : Bool}, h: {SV.bnot(SV.mem(x, ST.app(t, b))) == True{} : Bool}) -> {SV.bnot(c) == True{} : Bool}:
+  match c:
+    case True{}:
+      absurd({SV.bnot(True{}) == True{} : Bool}, KA.ft((%TJ.mem_app_l(x, t, b, e) : {SV.bnot(_) == True{} : Bool}
+        h)))
+    case False{}:
+      {==}
+
+def dist_l(a: List<&2, Nat>, +b: List<&2, Nat>, +d: {SV.distinct(ST.app(a, b)) == True{} : Bool}) -> {SV.distinct(a) == True{} : Bool}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      L.band_i(SV.bnot(SV.mem(x, t)), SV.distinct(t), dl.go(x, t, b, SV.mem(x, t), {==}, L.band_l(SV.bnot(SV.mem(x, ST.app(t, b))), SV.distinct(ST.app(t, b)), d)), dist_l(t, b, L.band_r(SV.bnot(SV.mem(x, ST.app(t, b))), SV.distinct(ST.app(t, b)), d)))
+
+def dist_app(+m: Nat, +vp: List<&2, Nat>, +hvd: {SV.distinct(vp) == True{} : Bool}) -> {SV.distinct(ST.app(SO.ntake(m, vp), OW.ndrop(m, vp))) == True{} : Bool}:
+  (%Equal.sym(List<&2, Nat>, ST.app(SO.ntake(m, vp), OW.ndrop(m, vp)), vp, tk_dp(m, vp)) : {SV.distinct(_) == True{} : Bool}
+    hvd)
+
+
+def vv_np(+nv: Nat, +vp: List<&2, Nat>, +np: Nat, +pins: List<&2, Nat>, +hpn: {SO.ntake(np, vp) == pins : List<&2, Nat>}, +hvd: {SV.distinct(vp) == True{} : Bool}, +v: Nat, +hv: {SV.mem(v, OW.ndrop(np, vp)) == True{} : Bool}) -> {SV.mem(v, pins) == False{} : Bool}:
+  (%hpn : {SV.mem(v, _) == False{} : Bool}
+    BI.disj_mem(OW.ndrop(np, vp), SO.ntake(np, vp), BI.disj_swap(SO.ntake(np, vp), OW.ndrop(np, vp), BI.dist_disj(SO.ntake(np, vp), OW.ndrop(np, vp), dist_app(np, vp, hvd))), v, hv))
+
+# the plan's unknowns are free variables
+def sub_free(+nv: Nat, +vp: List<&2, Nat>, +np: Nat, +pins: List<&2, Nat>, +hpn: {SO.ntake(np, vp) == pins : List<&2, Nat>}, +hvd: {SV.distinct(vp) == True{} : Bool}, +hpo: {PL.pars_ok(nv, vp) == True{} : Bool}, ws: List<&2, Nat>, +hws: {L.subl(ws, OW.ndrop(np, vp)) == True{} : Bool}) -> {L.subl(ws, SV.free(nv, 0n, pins)) == True{} : Bool}:
+  match ws:
+    case Nil{}:
+      {==}
+    case Con{+v, +t}:
+      +hv = L.subl_hd(v, t, OW.ndrop(np, vp), hws)
+      L.band_i(SV.mem(v, SV.free(nv, 0n, pins)), L.subl(t, SV.free(nv, 0n, pins)), PM.free_mem(nv, 0n, pins, v, {==}, lt_of_mem(nv, vp, v, hpo, L.subl_mem(v, OW.ndrop(np, vp), vp, hv, subl_dp(np, vp))), vv_np(nv, vp, np, pins, hpn, hvd, v, hv)), sub_free(nv, vp, np, pins, hpn, hvd, hpo, t, L.subl_tl(v, t, OW.ndrop(np, vp), hws)))
+
+# and every free variable is one of them
+def sub_vv(+nv: Nat, +vp: List<&2, Nat>, +np: Nat, +pins: List<&2, Nat>, +hpn: {SO.ntake(np, vp) == pins : List<&2, Nat>}, +hvd: {SV.distinct(vp) == True{} : Bool}, +hp: {PL.present(vp, nv, 0n) == True{} : Bool}, ws: List<&2, Nat>, +hws: {L.subl(ws, SV.free(nv, 0n, pins)) == True{} : Bool}) -> {L.subl(ws, OW.ndrop(np, vp)) == True{} : Bool}:
+  match ws:
+    case Nil{}:
+      {==}
+    case Con{+u, +t}:
+      +hu = L.subl_hd(u, t, SV.free(nv, 0n, pins), hws)
+      +hmv = mem_of_pos(u, vp, PP.present0(vp, nv, u, hp, PM.free_lt(nv, 0n, pins, u, hu)))
+      +hma = (%Equal.sym(List<&2, Nat>, ST.app(SO.ntake(np, vp), OW.ndrop(np, vp)), vp, tk_dp(np, vp)) : {SV.mem(u, _) == True{} : Bool}
+        hmv)
+      +hnt = (%Equal.sym(List<&2, Nat>, SO.ntake(np, vp), pins, hpn) : {SV.mem(u, _) == False{} : Bool}
+        PM.free_np(nv, 0n, pins, u, hu))
+      L.band_i(SV.mem(u, OW.ndrop(np, vp)), L.subl(t, OW.ndrop(np, vp)), mem_app_rf(u, SO.ntake(np, vp), OW.ndrop(np, vp), hma, hnt), sub_vv(nv, vp, np, pins, hpn, hvd, hp, t, L.subl_tl(u, t, SV.free(nv, 0n, pins), hws)))
