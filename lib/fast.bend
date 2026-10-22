@@ -267,6 +267,9 @@ def wk() -> N.Num:
 def wo() -> PO.POps<wk()>:
   WN.wops(16383n, 13n)
 
-# the solver at word dyadics, base 2^14 (the CLI's)
+# the solver at word dyadics, base 2^14: at level l, and the CLI's (level 0)
+def wsolve_l(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat) -> SO.Out:
+  solve_l(~wk(), ~wo(), sk, g0, l)
+
 def wsolve(+sk: SK.Sketch, +g0: List<&2, S.D>) -> SO.Out:
-  solve(~wk(), ~wo(), sk, g0)
+  wsolve_l(sk, g0, 0n)
