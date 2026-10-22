@@ -14,6 +14,11 @@ import ../lib/wintpf.bend as WI
 import ../rt/wdyad.bend as RD
 import ../lib/wdyadpf.bend as WDP
 import ../lib/kinst.bend as KI
+import ../lib/numer.bend as NU
+import ../lib/wsigpf.bend as WSG
+import ../lib/wnum.bend as WN
+import ../lib/wnumpf.bend as WNP
+import ../spec/knum.bend as N
 
 # The laws at the solver's base
 # -----------------------------
@@ -71,6 +76,23 @@ def neg_w(+lp: Nat, a: S.D) -> {RD.WD.neg(RD.WD.ofd(lp, a)) == RD.WD.ofd(lp, S.D
 
 def cmp_w(+lp: Nat, a: S.D, b: S.D) -> {RD.WD.cmp(RW.wbp(lp), lp, RD.WD.ofd(lp, a), RD.WD.ofd(lp, b)) == KI.dcmp(a, b) : Cmp}:
   WDP.cmp_ok(RW.wbp(lp), lp, WM.wbp_ok(lp), a, b)
+
+# and so is their rounding (lib/numer.bend's dznorm, dsig, dround)
+def znorm_w(+lp: Nat, x: S.D) -> {RD.WD.znorm(RD.WD.ofd(lp, x)) == RD.WD.ofd(lp, NU.dznorm(x)) : RD.WD}:
+  WSG.znorm_ok(RW.wbp(lp), lp, WM.wbp_ok(lp), x)
+
+def sig_w(+lp: Nat, x: S.D, +b: Nat) -> {RD.WD.sig(RW.wbp(lp), lp, RD.WD.ofd(lp, x), b) == RD.WD.ofd(lp, NU.dsig(x, b)) : RD.WD}:
+  WSG.sig_ok(RW.wbp(lp), lp, WM.wbp_ok(lp), x, b)
+
+def dround_w(+lp: Nat, x: S.D, +p: Nat) -> {RD.WD.round(RW.wbp(lp), lp, RD.WD.ofd(lp, x), p) == RD.WD.ofd(lp, NU.dround(x, p)) : RD.WD}:
+  WSG.round_ok(RW.wbp(lp), lp, WM.wbp_ok(lp), x, p)
+
+# the checker's numbers at words: WD.ofd commutes with the instance
+def wadd_w(+lp: Nat, a: S.D, b: S.D) -> {N.nadd(WN.wnum(RW.wbp(lp), lp), RD.WD.ofd(lp, a), RD.WD.ofd(lp, b)) == RD.WD.ofd(lp, N.nadd(KI.dnum(), a, b)) : RD.WD}:
+  WNP.w_add(RW.wbp(lp), lp, WM.wbp_ok(lp), a, b)
+
+def wcmp_w(+lp: Nat, a: S.D, b: S.D) -> {N.ncmp(WN.wnum(RW.wbp(lp), lp), RD.WD.ofd(lp, a), RD.WD.ofd(lp, b)) == N.ncmp(KI.dnum(), a, b) : Cmp}:
+  WNP.w_cmp(RW.wbp(lp), lp, WM.wbp_ok(lp), a, b)
 
 # native bounds: limb products and sums are below 2^(2 L), and the run
 # time's 2 L = 46 is within BendRT's 48-bit immediates
@@ -134,6 +156,13 @@ def wadd13() -> {RD.WD.add(3n, 1n, RD.WD{SB.BPos{[1n, 3n]}, 2n}, RD.WD{SB.BNeg{[
   {==}
 
 def wcmp13() -> {RD.WD.cmp(3n, 1n, RD.WD{SB.BPos{[1n, 3n]}, 2n}, RD.WD{SB.BNeg{[3n]}, 1n}) == GT{} : Cmp}:
+  {==}
+
+# 13/4 to 2 significant bits: 3, both ways
+def wsig13() -> {RD.WD.sig(3n, 1n, RD.WD{SB.BPos{[1n, 3n]}, 2n}, 2n) == RD.WD{SB.BPos{[3n]}, 0n} : RD.WD}:
+  {==}
+
+def dsig13() -> {NU.dsig(S.D{S.Zpos{thirteen()}, 2n}, 2n) == S.D{S.Zpos{S.XI{S.XH{}}}, 0n} : S.D}:
   {==}
 
 def main() -> Nat:

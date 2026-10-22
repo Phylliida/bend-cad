@@ -92,3 +92,14 @@ def Big.toz(+lp: Nat, x: SB.Big) -> S.Z:
       Big.zp(RW.Mag.topos(lp, m))
     case SB.BNeg{m}:
       Big.zn(RW.Mag.topos(lp, m))
+
+# the spec's QRD.size(zpos(z)): the bit length, and 1 for zero
+def Big.size.m(+lp: Nat, m: List<&2, Nat>) -> Nat:
+  match m:
+    case Nil{}:
+      1n
+    case Con{h, t}:
+      RW.Mag.bits(lp, Con{h, t})
+
+def Big.size(+lp: Nat, x: SB.Big) -> Nat:
+  Big.size.m(lp, Big.mag(x))

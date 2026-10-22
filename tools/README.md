@@ -50,6 +50,7 @@ the checker verifies the output.
 | `lib/wmagpf.bend` | `python3 tools/expand.py tools/drafts/wmagpf.draft lib/wmagpf.bend` |
 | `lib/wintpf.bend` | `python3 tools/expand.py tools/drafts/wintpf.draft lib/wintpf.bend` |
 | `lib/wdyadpf.bend` | `python3 tools/expand.py tools/drafts/wdyadpf.draft lib/wdyadpf.bend` |
+| `lib/wsigpf.bend` | `python3 tools/expand.py tools/drafts/wsigpf.draft lib/wsigpf.bend` |
 
 `@MACRO NAME text` (a line) makes every `$NAME` below stand for `text`
 (textual, longest names first, macros may use macros): long hypothesis lists

@@ -278,8 +278,12 @@ done** (Danielle: go): rt/wmag.bend + lib/wmagpf.bend (shifts, rounding,
 bit length, conversions with S.Pos, uniqueness, native bounds) and
 rt/wint.bend + lib/wintpf.bend (canonical word integers, conversions with
 S.Z); PLAN-sk13w W2 "Done". The base is a parameter lp everywhere (a
-closed 2^23 in a type is unfolded to unary by the checker). Next: W3, word
-dyadics with exact twins `wop(s2w a, s2w b) == s2w(op(a, b))`.
+closed 2^23 in a type is unfolded to unary by the checker). **W3 is done:**
+rt/wdyad.bend + lib/wdyadpf.bend, lib/wsigpf.bend (add, mul, neg, cmp,
+dznorm, dsig, dround, each `wop(ofd a, ..) == ofd(op(a, ..))` for every
+S.D input), lib/wnum.bend (the checker's Num at words) and lib/wnumpf.bend.
+Next: W4, the proposer's twins (numer.bend's Newton, inverse, radius
+search).
 For timings on a loaded machine, count user-mode instructions
 (tools/diag/icount.c; wall time swung 2x between identical runs today).
 Same day, before the design:

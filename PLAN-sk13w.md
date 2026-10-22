@@ -208,6 +208,21 @@ S.D input: the word result is canonical and has the right value, so
 - The `N.Num` instance `wnum()` and its map from `KI.dnum()`, commuting with
   every field of `N.Num`.
 
+**Done (2026-10-21).** `rt/wdyad.bend`: `WD{m, e}`, `WD.ofd`/`WD.tod`,
+`WD.add` (the larger exponent; the other mantissa shifted by the native
+exponent comparison), `WD.mul`, `WD.neg`, `WD.cmp`, and the rounding
+twins `WD.znorm`, `WD.sig`, `WD.round`; every result canonical.
+`lib/wdyadpf.bend`: `tod_ofd`, `add_ok` (through S.D.add's closed form,
+`dadd_le`/`dadd_ge`), `mul_ok`, `neg_ok`, `cmp_ok` (`WD.cmp` is
+`KI.dcmp`). `lib/wsigpf.bend`: `znorm_ok`, `sig_ok`, `round_ok` (numer's
+dznorm, dsig, dround), through numer's `pshr` as a quotient and the
+word rounding's. Two quirks are mirrored, not fixed: the spec's
+`QRD.size(zpos(0)) = 1`, and rounding by 2^0 adding one (never reached:
+both callers round by k >= 1). `lib/wnum.bend`: the checker's `N.Num`
+at words, and `lib/wnumpf.bend`: `WD.ofd` commutes with each of its
+fields. Each law is `wop(ofd a, ofd b) == ofd(op(a, b))` for every S.D
+input and every base; `tests/wmag_demo.bend` restates them.
+
 ### W4. The fast proposer (lib/wnumer.bend, lib/wdmat.bend; the large step)
 
 - Twins of numer.bend and dmat.bend, written to mirror them function by
