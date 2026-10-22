@@ -1,0 +1,319 @@
+# bend-cad: runtime dyadics with word mantissas (rt/wdyad.bend) are the
+# spec's S.D exactly. WD.ofd and WD.tod convert (tod_ofd), and each
+# operation on converted inputs is the conversion of S.D's result:
+# add_ok, mul_ok, neg_ok, and cmp_ok (KI.dcmp). Every law holds for every
+# S.D input and every base 2^(1 + lp): the word results are canonical
+# with the right value, so they are the conversion (lib/wintpf.bend:
+# ofz_of_val).
+
+# Generated from tools/drafts/wdyadpf.draft by tools/expand.py; edit the
+# draft.
+
+import Base
+import ./nat.bend as N
+import ./natring.bend as NR
+import ./natord.bend as O
+import ./big.bend as LB
+import ./z.bend as LZ
+import ./zord.bend as ZO
+import ./zring.bend as R
+import ./dyadic.bend as LD
+import ./kinst.bend as KI
+import ./wmagpf.bend as WM
+import ./wintpf.bend as WI
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/big.bend as SB
+import ../spec/mat.bend as M
+import ../rt/big.bend as RB
+import ../rt/wmag.bend as RW
+import ../rt/wint.bend as RI
+import ../rt/wdyad.bend as RD
+
+@MACRO HB hb: {RW.pw(1n+lp) == 1n+bp : Nat}
+@MACRO BH bp, lp, hb
+
+# Helpers
+# -------
+
+def BoolD(b: Bool) -> Type:
+  match b:
+    case True{}:
+      Empty
+    case False{}:
+      Unit
+
+def ft(e: {False{} == True{} : Bool}) -> Empty:
+  %e : BoolD(_)
+  Unit{}
+
+def le_t(c: Cmp, +a: Nat, +b: Nat, e: {c == Nat.cmp(a, b) : Cmp}, h: {RD.le.go(c) == True{} : Bool}) -> SB.Le(a, b):
+  match c:
+    case LT{}:
+      O.le_weaken(a, b, O.cmp_lt(a, b, e))
+    case EQ{}:
+      WM.le_of_eq(a, b, NR.nat_cmp_eq(a, b, e))
+    case GT{}:
+      WM.absurd(SB.Le(a, b), ft(h))
+
+def le_f(c: Cmp, +a: Nat, +b: Nat, e: {c == Nat.cmp(a, b) : Cmp}, h: {RD.le.go(c) == False{} : Bool}) -> SB.Le(1n+b, a):
+  match c:
+    case LT{}:
+      WM.absurd(SB.Le(1n+b, a), ft(Equal.sym(Bool, True{}, False{}, h)))
+    case EQ{}:
+      WM.absurd(SB.Le(1n+b, a), ft(Equal.sym(Bool, True{}, False{}, h)))
+    case GT{}:
+      O.cmp_gt(a, b, e)
+
+# le(a, b) = True gives a <= b
+def le_true(+a: Nat, +b: Nat, h: {RD.le(a, b) == True{} : Bool}) -> SB.Le(a, b):
+  le_t(Nat.cmp(a, b), a, b, {==}, h)
+
+# le(a, b) = False gives b < a
+def le_false(+a: Nat, +b: Nat, h: {RD.le(a, b) == False{} : Bool}) -> SB.Le(1n+b, a):
+  le_f(Nat.cmp(a, b), a, b, {==}, h)
+
+# (a + k) - a = k
+def sub_add_l(a: Nat, +k: Nat) -> {Nat.sub(Nat.add(a, k), a) == k : Nat}:
+  match a:
+    case 0n:
+      match k:
+        case 0n:
+          {==}
+        case 1n+j:
+          {==}
+    case 1n+i:
+      sub_add_l(i, k)
+
+def canon_wf(+bp: Nat, x: SB.Big, cx: WI.Canon(bp, x)) -> SB.Big.wf(bp, x):
+  match x:
+    case SB.BPos{m}:
+      (w, t) = cx
+      w
+    case SB.BNeg{m}:
+      (w, t) = cx
+      w
+
+def ofz_wf(+bp: Nat, +lp: Nat, +$HB, +z: S.Z) -> SB.Big.wf(bp, RI.Big.ofz(lp, z)):
+  canon_wf(bp, RI.Big.ofz(lp, z), WI.ofz_canon($BH, z))
+
+# a canonical x with value z is Big.ofz(z)
+def is_ofz(+bp: Nat, +lp: Nat, +$HB, +x: SB.Big, +z: S.Z, cx: WI.Canon(bp, x), e: {SB.Big.val(bp, x) == z : S.Z}) -> {x == RI.Big.ofz(lp, z) : SB.Big}:
+  %e : {x == RI.Big.ofz(lp, _) : SB.Big}
+  Equal.sym(SB.Big, RI.Big.ofz(lp, SB.Big.val(bp, x)), x, WI.ofz_of_val($BH, x, cx))
+
+# Big.canon(y), for a well-formed y with value z, is Big.ofz(z)
+def canon_is(+bp: Nat, +lp: Nat, +$HB, +y: SB.Big, +z: S.Z, wy: SB.Big.wf(bp, y), e: {SB.Big.val(bp, y) == z : S.Z}) -> {RI.Big.canon(y) == RI.Big.ofz(lp, z) : SB.Big}:
+  is_ofz($BH, RI.Big.canon(y), z, WI.canon_ok(bp, y, wy), Equal.trans(S.Z, SB.Big.val(bp, RI.Big.canon(y)), SB.Big.val(bp, y), z, WI.canon_val(bp, y), e))
+
+def wd_eq(-m1: SB.Big, -m2: SB.Big, -e: Nat, h: {m1 == m2 : SB.Big}) -> {RD.WD{m1, e} == RD.WD{m2, e} : RD.WD}:
+  %h : {RD.WD{m1, e} == RD.WD{_, e} : RD.WD}
+  {==}
+
+def d_eq(-z1: S.Z, -z2: S.Z, -e: Nat, h: {z1 == z2 : S.Z}) -> {S.D{z1, e} == S.D{z2, e} : S.D}:
+  %h : {S.D{z1, e} == S.D{_, e} : S.D}
+  {==}
+
+# Conversions
+# -----------
+
+# WD.tod takes WD.ofd back
+def tod_ofd(+bp: Nat, +lp: Nat, +$HB, x: S.D) -> {RD.WD.tod(lp, RD.WD.ofd(lp, x)) == x : S.D}:
+  match x:
+    case S.D{+m, e}:
+      %Equal.sym(S.Z, RI.Big.toz(lp, RI.Big.ofz(lp, m)), m, WI.toz_ofz($BH, m)) : {S.D{_, e} == S.D{m, e} : S.D}
+      {==}
+
+# Products and negation
+# ---------------------
+
+@MACRO OZ1 RI.Big.ofz(lp, m1)
+@MACRO OZ2 RI.Big.ofz(lp, m2)
+
+def mul_val(+bp: Nat, +lp: Nat, +$HB, +m1: S.Z, +m2: S.Z) -> {SB.Big.val(bp, RB.Big.mul(bp, $OZ1, $OZ2)) == S.Z.mul(m1, m2) : S.Z}:
+  %WI.ofz_val($BH, m1) : {SB.Big.val(bp, RB.Big.mul(bp, $OZ1, $OZ2)) == S.Z.mul(_, m2) : S.Z}
+  %WI.ofz_val($BH, m2) : {SB.Big.val(bp, RB.Big.mul(bp, $OZ1, $OZ2)) == S.Z.mul(SB.Big.val(bp, $OZ1), _) : S.Z}
+  LB.mul_ok(bp, $OZ1, $OZ2)
+
+def mul_ok(+bp: Nat, +lp: Nat, +$HB, a: S.D, b: S.D) -> {RD.WD.mul(bp, RD.WD.ofd(lp, a), RD.WD.ofd(lp, b)) == RD.WD.ofd(lp, S.D.mul(a, b)) : RD.WD}:
+  match a b:
+    case S.D{+m1, +e1} S.D{+m2, +e2}:
+      wd_eq(RI.Big.canon(RB.Big.mul(bp, $OZ1, $OZ2)), RI.Big.ofz(lp, S.Z.mul(m1, m2)), Nat.add(e1, e2),
+        canon_is($BH, RB.Big.mul(bp, $OZ1, $OZ2), S.Z.mul(m1, m2), LB.mul_wf(bp, $OZ1, $OZ2, WM.bp_pos($BH), ofz_wf($BH, m1), ofz_wf($BH, m2)), mul_val($BH, m1, m2)))
+
+def neg_val(+bp: Nat, +lp: Nat, +$HB, +m1: S.Z) -> {SB.Big.val(bp, RB.Big.neg($OZ1)) == S.Z.neg(m1) : S.Z}:
+  %WI.ofz_val($BH, m1) : {SB.Big.val(bp, RB.Big.neg($OZ1)) == S.Z.neg(_) : S.Z}
+  LB.neg_ok(bp, $OZ1)
+
+def neg_ok(+bp: Nat, +lp: Nat, +$HB, a: S.D) -> {RD.WD.neg(RD.WD.ofd(lp, a)) == RD.WD.ofd(lp, S.D.neg(a)) : RD.WD}:
+  match a:
+    case S.D{+m1, +e1}:
+      wd_eq(RI.Big.canon(RB.Big.neg($OZ1)), RI.Big.ofz(lp, S.Z.neg(m1)), e1,
+        canon_is($BH, RB.Big.neg($OZ1), S.Z.neg(m1), LB.neg_wf(bp, $OZ1, ofz_wf($BH, m1)), neg_val($BH, m1)))
+
+# Sums
+# ----
+
+@MACRO PK S.Zpos{S.Pos.pow2(k)}
+
+# S.D.add with the larger exponent second: the first mantissa shifted up
+def dadd_le(e1: Nat, +k: Nat, +m1: S.Z, +m2: S.Z) -> {S.D.add.go(e1, Nat.add(e1, k), m1, m2) == S.D{S.Z.add(S.Z.mul(m1, $PK), m2), Nat.add(e1, k)} : S.D}:
+  match e1:
+    case 0n:
+      match k:
+        case 0n:
+          d_eq(S.Z.add(m1, m2), S.Z.add(S.Z.mul(m1, S.Zpos{S.XH{}}), m2), 0n, @RING[m1,, m2 | m1+m2 | m1*1+m2])
+        case 1n+j:
+          {==}
+    case 1n++i:
+      %Equal.sym(S.D, S.D.add.go(i, Nat.add(i, k), m1, m2), S.D{S.Z.add(S.Z.mul(m1, $PK), m2), Nat.add(i, k)}, dadd_le(i, k, m1, m2)) : {S.D.inc(_) == S.D{S.Z.add(S.Z.mul(m1, $PK), m2), Nat.add(1n+i, k)} : S.D}
+      {==}
+
+# and the larger first: the second shifted up
+def dadd_ge(e2: Nat, +k: Nat, +m1: S.Z, +m2: S.Z) -> {S.D.add.go(Nat.add(e2, k), e2, m1, m2) == S.D{S.Z.add(m1, S.Z.mul(m2, $PK)), Nat.add(e2, k)} : S.D}:
+  match e2:
+    case 0n:
+      match k:
+        case 0n:
+          d_eq(S.Z.add(m1, m2), S.Z.add(m1, S.Z.mul(m2, S.Zpos{S.XH{}})), 0n, @RING[m1,, m2 | m1+m2 | m1+m2*1])
+        case 1n+j:
+          {==}
+    case 1n++i:
+      %Equal.sym(S.D, S.D.add.go(Nat.add(i, k), i, m1, m2), S.D{S.Z.add(m1, S.Z.mul(m2, $PK)), Nat.add(i, k)}, dadd_ge(i, k, m1, m2)) : {S.D.inc(_) == S.D{S.Z.add(m1, S.Z.mul(m2, $PK)), Nat.add(1n+i, k)} : S.D}
+      {==}
+
+@MACRO SH1 RI.Big.shl(bp, lp, $OZ1, k)
+@MACRO SH2 RI.Big.shl(bp, lp, $OZ2, k)
+
+def addl_val(+bp: Nat, +lp: Nat, +$HB, +m1: S.Z, +m2: S.Z, +k: Nat) -> {SB.Big.val(bp, RB.Big.add(bp, $SH1, $OZ2)) == S.Z.add(S.Z.mul(m1, $PK), m2) : S.Z}:
+  %WI.ofz_val($BH, m1) : {SB.Big.val(bp, RB.Big.add(bp, $SH1, $OZ2)) == S.Z.add(S.Z.mul(_, $PK), m2) : S.Z}
+  %WI.ofz_val($BH, m2) : {SB.Big.val(bp, RB.Big.add(bp, $SH1, $OZ2)) == S.Z.add(S.Z.mul(SB.Big.val(bp, $OZ1), $PK), _) : S.Z}
+  %WI.shl_zval($BH, $OZ1, k) : {SB.Big.val(bp, RB.Big.add(bp, $SH1, $OZ2)) == S.Z.add(_, SB.Big.val(bp, $OZ2)) : S.Z}
+  LB.add_ok(bp, $SH1, $OZ2, WI.shl_wf($BH, $OZ1, k, ofz_wf($BH, m1)), ofz_wf($BH, m2))
+
+def addg_val(+bp: Nat, +lp: Nat, +$HB, +m1: S.Z, +m2: S.Z, +k: Nat) -> {SB.Big.val(bp, RB.Big.add(bp, $OZ1, $SH2)) == S.Z.add(m1, S.Z.mul(m2, $PK)) : S.Z}:
+  %WI.ofz_val($BH, m1) : {SB.Big.val(bp, RB.Big.add(bp, $OZ1, $SH2)) == S.Z.add(_, S.Z.mul(m2, $PK)) : S.Z}
+  %WI.ofz_val($BH, m2) : {SB.Big.val(bp, RB.Big.add(bp, $OZ1, $SH2)) == S.Z.add(SB.Big.val(bp, $OZ1), S.Z.mul(_, $PK)) : S.Z}
+  %WI.shl_zval($BH, $OZ2, k) : {SB.Big.val(bp, RB.Big.add(bp, $OZ1, $SH2)) == S.Z.add(SB.Big.val(bp, $OZ1), _) : S.Z}
+  LB.add_ok(bp, $OZ1, $SH2, ofz_wf($BH, m1), WI.shl_wf($BH, $OZ2, k, ofz_wf($BH, m2)))
+
+@MACRO W1 RD.WD{$OZ1, e1}
+@MACRO W2 RD.WD{$OZ2, e2}
+
+# the exponents e1 <= e2 = e1 + k
+def add_le(+bp: Nat, +lp: Nat, +$HB, +m1: S.Z, +e1: Nat, +m2: S.Z, +e2: Nat, +k: Nat, ek: {Nat.add(e1, k) == e2 : Nat}) -> {RD.WD.add.go(True{}, bp, lp, $W1, $W2) == RD.WD.ofd(lp, S.D.add.go(e1, e2, m1, m2)) : RD.WD}:
+  %ek : {RD.WD.add.go(True{}, bp, lp, $W1, RD.WD{$OZ2, _}) == RD.WD.ofd(lp, S.D.add.go(e1, _, m1, m2)) : RD.WD}
+  %Equal.sym(S.D, S.D.add.go(e1, Nat.add(e1, k), m1, m2), S.D{S.Z.add(S.Z.mul(m1, $PK), m2), Nat.add(e1, k)}, dadd_le(e1, k, m1, m2)) : {RD.WD.add.go(True{}, bp, lp, $W1, RD.WD{$OZ2, Nat.add(e1, k)}) == RD.WD.ofd(lp, _) : RD.WD}
+  %Equal.sym(Nat, Nat.sub(Nat.add(e1, k), e1), k, sub_add_l(e1, k)) : {RD.WD{RI.Big.canon(RB.Big.add(bp, RI.Big.shl(bp, lp, $OZ1, _), $OZ2)), Nat.add(e1, k)} == RD.WD{RI.Big.ofz(lp, S.Z.add(S.Z.mul(m1, $PK), m2)), Nat.add(e1, k)} : RD.WD}
+  wd_eq(RI.Big.canon(RB.Big.add(bp, $SH1, $OZ2)), RI.Big.ofz(lp, S.Z.add(S.Z.mul(m1, $PK), m2)), Nat.add(e1, k),
+    canon_is($BH, RB.Big.add(bp, $SH1, $OZ2), S.Z.add(S.Z.mul(m1, $PK), m2), LB.add_wf(bp, $SH1, $OZ2, WM.bp_pos($BH), WI.shl_wf($BH, $OZ1, k, ofz_wf($BH, m1)), ofz_wf($BH, m2)), addl_val($BH, m1, m2, k)))
+
+# the exponents e1 = e2 + k > e2
+def add_ge(+bp: Nat, +lp: Nat, +$HB, +m1: S.Z, +e1: Nat, +m2: S.Z, +e2: Nat, +k: Nat, ek: {Nat.add(e2, k) == e1 : Nat}) -> {RD.WD.add.go(False{}, bp, lp, $W1, $W2) == RD.WD.ofd(lp, S.D.add.go(e1, e2, m1, m2)) : RD.WD}:
+  %ek : {RD.WD.add.go(False{}, bp, lp, RD.WD{$OZ1, _}, $W2) == RD.WD.ofd(lp, S.D.add.go(_, e2, m1, m2)) : RD.WD}
+  %Equal.sym(S.D, S.D.add.go(Nat.add(e2, k), e2, m1, m2), S.D{S.Z.add(m1, S.Z.mul(m2, $PK)), Nat.add(e2, k)}, dadd_ge(e2, k, m1, m2)) : {RD.WD.add.go(False{}, bp, lp, RD.WD{$OZ1, Nat.add(e2, k)}, $W2) == RD.WD.ofd(lp, _) : RD.WD}
+  %Equal.sym(Nat, Nat.sub(Nat.add(e2, k), e2), k, sub_add_l(e2, k)) : {RD.WD{RI.Big.canon(RB.Big.add(bp, $OZ1, RI.Big.shl(bp, lp, $OZ2, _))), Nat.add(e2, k)} == RD.WD{RI.Big.ofz(lp, S.Z.add(m1, S.Z.mul(m2, $PK))), Nat.add(e2, k)} : RD.WD}
+  wd_eq(RI.Big.canon(RB.Big.add(bp, $OZ1, $SH2)), RI.Big.ofz(lp, S.Z.add(m1, S.Z.mul(m2, $PK))), Nat.add(e2, k),
+    canon_is($BH, RB.Big.add(bp, $OZ1, $SH2), S.Z.add(m1, S.Z.mul(m2, $PK)), LB.add_wf(bp, $OZ1, $SH2, WM.bp_pos($BH), ofz_wf($BH, m1), WI.shl_wf($BH, $OZ2, k, ofz_wf($BH, m2))), addg_val($BH, m1, m2, k)))
+
+def add_le.c(+bp: Nat, +lp: Nat, +$HB, +m1: S.Z, +e1: Nat, +m2: S.Z, +e2: Nat, h: SB.Le(e1, e2)) -> {RD.WD.add.go(True{}, bp, lp, $W1, $W2) == RD.WD.ofd(lp, S.D.add.go(e1, e2, m1, m2)) : RD.WD}:
+  (+k, ek) = h
+  add_le($BH, m1, e1, m2, e2, k, ek)
+
+def add_ge.c(+bp: Nat, +lp: Nat, +$HB, +m1: S.Z, +e1: Nat, +m2: S.Z, +e2: Nat, h: SB.Le(e2, e1)) -> {RD.WD.add.go(False{}, bp, lp, $W1, $W2) == RD.WD.ofd(lp, S.D.add.go(e1, e2, m1, m2)) : RD.WD}:
+  (+k, ek) = h
+  add_ge($BH, m1, e1, m2, e2, k, ek)
+
+def add_go_ok(c: Bool, +bp: Nat, +lp: Nat, +$HB, +m1: S.Z, +e1: Nat, +m2: S.Z, +e2: Nat, hc: {RD.le(e1, e2) == c : Bool}) -> {RD.WD.add.go(c, bp, lp, $W1, $W2) == RD.WD.ofd(lp, S.D.add.go(e1, e2, m1, m2)) : RD.WD}:
+  match c:
+    case True{}:
+      add_le.c($BH, m1, e1, m2, e2, le_true(e1, e2, hc))
+    case False{}:
+      add_ge.c($BH, m1, e1, m2, e2, O.le_weaken(e2, e1, le_false(e1, e2, hc)))
+
+def add_ok(+bp: Nat, +lp: Nat, +$HB, a: S.D, b: S.D) -> {RD.WD.add(bp, lp, RD.WD.ofd(lp, a), RD.WD.ofd(lp, b)) == RD.WD.ofd(lp, S.D.add(a, b)) : RD.WD}:
+  match a b:
+    case S.D{+m1, +e1} S.D{+m2, +e2}:
+      add_go_ok(RD.le(e1, e2), $BH, m1, e1, m2, e2, {==})
+
+# Comparison
+# ----------
+
+# a sign is kept by a positive factor
+def zcmp0_scale(s: S.Z, -p: S.Pos) -> {S.Z.cmp(S.Z0{}, S.Z.mul(s, S.Zpos{p})) == S.Z.cmp(S.Z0{}, s) : Cmp}:
+  match s:
+    case S.Z0{}:
+      {==}
+    case S.Zpos{q}:
+      {==}
+    case S.Zneg{q}:
+      {==}
+
+# and so is an order
+def zcmp_scale(+x: S.Z, +y: S.Z, +p: S.Pos) -> {S.Z.cmp(S.Z.mul(x, S.Zpos{p}), S.Z.mul(y, S.Zpos{p})) == S.Z.cmp(x, y) : Cmp}:
+  %Equal.sym(Cmp, S.Z.cmp(S.Z.mul(x, S.Zpos{p}), S.Z.mul(y, S.Zpos{p})), S.Z.cmp(S.Z0{}, S.Z.sub(S.Z.mul(y, S.Zpos{p}), S.Z.mul(x, S.Zpos{p}))), ZO.cmp_sub(S.Z.mul(x, S.Zpos{p}), S.Z.mul(y, S.Zpos{p}))) : {_ == S.Z.cmp(x, y) : Cmp}
+  %Equal.sym(Cmp, S.Z.cmp(x, y), S.Z.cmp(S.Z0{}, S.Z.sub(y, x)), ZO.cmp_sub(x, y)) : {S.Z.cmp(S.Z0{}, S.Z.sub(S.Z.mul(y, S.Zpos{p}), S.Z.mul(x, S.Zpos{p}))) == _ : Cmp}
+  %@RING[x,, y,, q=S.Zpos{p} | (y-x)*q | y*q-x*q] : {S.Z.cmp(S.Z0{}, _) == S.Z.cmp(S.Z0{}, S.Z.sub(y, x)) : Cmp}
+  zcmp0_scale(S.Z.sub(y, x), p)
+
+@MACRO PE1 S.Zpos{S.Pos.pow2(e1)}
+@MACRO PE2 S.Zpos{S.Pos.pow2(e2)}
+
+def cmpl_val(+bp: Nat, +lp: Nat, +$HB, +m1: S.Z, +m2: S.Z, +k: Nat) -> {RB.Big.cmp(bp, $SH1, $OZ2) == S.Z.cmp(S.Z.mul(m1, $PK), m2) : Cmp}:
+  %WI.ofz_val($BH, m1) : {RB.Big.cmp(bp, $SH1, $OZ2) == S.Z.cmp(S.Z.mul(_, $PK), m2) : Cmp}
+  %WI.ofz_val($BH, m2) : {RB.Big.cmp(bp, $SH1, $OZ2) == S.Z.cmp(S.Z.mul(SB.Big.val(bp, $OZ1), $PK), _) : Cmp}
+  %WI.shl_zval($BH, $OZ1, k) : {RB.Big.cmp(bp, $SH1, $OZ2) == S.Z.cmp(_, SB.Big.val(bp, $OZ2)) : Cmp}
+  LB.cmp_ok(bp, $SH1, $OZ2, WM.bp_pos($BH), WI.shl_wf($BH, $OZ1, k, ofz_wf($BH, m1)), ofz_wf($BH, m2))
+
+def cmpg_val(+bp: Nat, +lp: Nat, +$HB, +m1: S.Z, +m2: S.Z, +k: Nat) -> {RB.Big.cmp(bp, $OZ1, $SH2) == S.Z.cmp(m1, S.Z.mul(m2, $PK)) : Cmp}:
+  %WI.ofz_val($BH, m1) : {RB.Big.cmp(bp, $OZ1, $SH2) == S.Z.cmp(_, S.Z.mul(m2, $PK)) : Cmp}
+  %WI.ofz_val($BH, m2) : {RB.Big.cmp(bp, $OZ1, $SH2) == S.Z.cmp(SB.Big.val(bp, $OZ1), S.Z.mul(_, $PK)) : Cmp}
+  %WI.shl_zval($BH, $OZ2, k) : {RB.Big.cmp(bp, $OZ1, $SH2) == S.Z.cmp(SB.Big.val(bp, $OZ1), _) : Cmp}
+  LB.cmp_ok(bp, $OZ1, $SH2, WM.bp_pos($BH), ofz_wf($BH, m1), WI.shl_wf($BH, $OZ2, k, ofz_wf($BH, m2)))
+
+# dcmp at e2 = e1 + k: m1 2^e2 against m2 2^e1 is m1 2^k against m2
+def dcmp_le(+m1: S.Z, +e1: Nat, +m2: S.Z, +k: Nat) -> {S.Z.cmp(S.Z.mul(m1, S.Zpos{S.Pos.pow2(Nat.add(e1, k))}), S.Z.mul(m2, $PE1)) == S.Z.cmp(S.Z.mul(m1, $PK), m2) : Cmp}:
+  %LD.pow2_add(e1, k) : {S.Z.cmp(S.Z.mul(m1, S.Zpos{_}), S.Z.mul(m2, $PE1)) == S.Z.cmp(S.Z.mul(m1, $PK), m2) : Cmp}
+  %@RING[m1,, a=$PE1,, b=$PK | (m1*b)*a | m1*(a*b)] : {S.Z.cmp(_, S.Z.mul(m2, $PE1)) == S.Z.cmp(S.Z.mul(m1, $PK), m2) : Cmp}
+  zcmp_scale(S.Z.mul(m1, $PK), m2, S.Pos.pow2(e1))
+
+def dcmp_ge(+m1: S.Z, +m2: S.Z, +e2: Nat, +k: Nat) -> {S.Z.cmp(S.Z.mul(m1, $PE2), S.Z.mul(m2, S.Zpos{S.Pos.pow2(Nat.add(e2, k))})) == S.Z.cmp(m1, S.Z.mul(m2, $PK)) : Cmp}:
+  %LD.pow2_add(e2, k) : {S.Z.cmp(S.Z.mul(m1, $PE2), S.Z.mul(m2, S.Zpos{_})) == S.Z.cmp(m1, S.Z.mul(m2, $PK)) : Cmp}
+  %@RING[m2,, a=$PE2,, b=$PK | (m2*b)*a | m2*(a*b)] : {S.Z.cmp(S.Z.mul(m1, $PE2), _) == S.Z.cmp(m1, S.Z.mul(m2, $PK)) : Cmp}
+  zcmp_scale(m1, S.Z.mul(m2, $PK), S.Pos.pow2(e2))
+
+@MACRO D1 S.D{m1, e1}
+@MACRO D2 S.D{m2, e2}
+
+def cmp_le(+bp: Nat, +lp: Nat, +$HB, +m1: S.Z, +e1: Nat, +m2: S.Z, +e2: Nat, +k: Nat, ek: {Nat.add(e1, k) == e2 : Nat}) -> {RD.WD.cmp.go(True{}, bp, lp, $W1, $W2) == KI.dcmp($D1, $D2) : Cmp}:
+  %ek : {RD.WD.cmp.go(True{}, bp, lp, $W1, RD.WD{$OZ2, _}) == S.Z.cmp(S.Z.mul(m1, S.Zpos{S.Pos.pow2(_)}), S.Z.mul(m2, $PE1)) : Cmp}
+  %Equal.sym(Nat, Nat.sub(Nat.add(e1, k), e1), k, sub_add_l(e1, k)) : {RB.Big.cmp(bp, RI.Big.shl(bp, lp, $OZ1, _), $OZ2) == S.Z.cmp(S.Z.mul(m1, S.Zpos{S.Pos.pow2(Nat.add(e1, k))}), S.Z.mul(m2, $PE1)) : Cmp}
+  %Equal.sym(Cmp, S.Z.cmp(S.Z.mul(m1, S.Zpos{S.Pos.pow2(Nat.add(e1, k))}), S.Z.mul(m2, $PE1)), S.Z.cmp(S.Z.mul(m1, $PK), m2), dcmp_le(m1, e1, m2, k)) : {RB.Big.cmp(bp, $SH1, $OZ2) == _ : Cmp}
+  cmpl_val($BH, m1, m2, k)
+
+def cmp_ge(+bp: Nat, +lp: Nat, +$HB, +m1: S.Z, +e1: Nat, +m2: S.Z, +e2: Nat, +k: Nat, ek: {Nat.add(e2, k) == e1 : Nat}) -> {RD.WD.cmp.go(False{}, bp, lp, $W1, $W2) == KI.dcmp($D1, $D2) : Cmp}:
+  %ek : {RD.WD.cmp.go(False{}, bp, lp, RD.WD{$OZ1, _}, $W2) == S.Z.cmp(S.Z.mul(m1, $PE2), S.Z.mul(m2, S.Zpos{S.Pos.pow2(_)})) : Cmp}
+  %Equal.sym(Nat, Nat.sub(Nat.add(e2, k), e2), k, sub_add_l(e2, k)) : {RB.Big.cmp(bp, $OZ1, RI.Big.shl(bp, lp, $OZ2, _)) == S.Z.cmp(S.Z.mul(m1, $PE2), S.Z.mul(m2, S.Zpos{S.Pos.pow2(Nat.add(e2, k))})) : Cmp}
+  %Equal.sym(Cmp, S.Z.cmp(S.Z.mul(m1, $PE2), S.Z.mul(m2, S.Zpos{S.Pos.pow2(Nat.add(e2, k))})), S.Z.cmp(m1, S.Z.mul(m2, $PK)), dcmp_ge(m1, m2, e2, k)) : {RB.Big.cmp(bp, $OZ1, $SH2) == _ : Cmp}
+  cmpg_val($BH, m1, m2, k)
+
+def cmp_le.c(+bp: Nat, +lp: Nat, +$HB, +m1: S.Z, +e1: Nat, +m2: S.Z, +e2: Nat, h: SB.Le(e1, e2)) -> {RD.WD.cmp.go(True{}, bp, lp, $W1, $W2) == KI.dcmp($D1, $D2) : Cmp}:
+  (+k, ek) = h
+  cmp_le($BH, m1, e1, m2, e2, k, ek)
+
+def cmp_ge.c(+bp: Nat, +lp: Nat, +$HB, +m1: S.Z, +e1: Nat, +m2: S.Z, +e2: Nat, h: SB.Le(e2, e1)) -> {RD.WD.cmp.go(False{}, bp, lp, $W1, $W2) == KI.dcmp($D1, $D2) : Cmp}:
+  (+k, ek) = h
+  cmp_ge($BH, m1, e1, m2, e2, k, ek)
+
+def cmp_go_ok(c: Bool, +bp: Nat, +lp: Nat, +$HB, +m1: S.Z, +e1: Nat, +m2: S.Z, +e2: Nat, hc: {RD.le(e1, e2) == c : Bool}) -> {RD.WD.cmp.go(c, bp, lp, $W1, $W2) == KI.dcmp($D1, $D2) : Cmp}:
+  match c:
+    case True{}:
+      cmp_le.c($BH, m1, e1, m2, e2, le_true(e1, e2, hc))
+    case False{}:
+      cmp_ge.c($BH, m1, e1, m2, e2, O.le_weaken(e2, e1, le_false(e1, e2, hc)))
+
+# the comparison of converted dyadics is KI.dcmp
+def cmp_ok(+bp: Nat, +lp: Nat, +$HB, a: S.D, b: S.D) -> {RD.WD.cmp(bp, lp, RD.WD.ofd(lp, a), RD.WD.ofd(lp, b)) == KI.dcmp(a, b) : Cmp}:
+  match a b:
+    case S.D{+m1, +e1} S.D{+m2, +e2}:
+      cmp_go_ok(RD.le(e1, e2), $BH, m1, e1, m2, e2, {==})

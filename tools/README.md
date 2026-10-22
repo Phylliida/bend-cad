@@ -49,6 +49,7 @@ the checker verifies the output.
 | `lib/uniqpf.bend` | `python3 tools/expand.py tools/drafts/uniqpf.draft lib/uniqpf.bend` |
 | `lib/wmagpf.bend` | `python3 tools/expand.py tools/drafts/wmagpf.draft lib/wmagpf.bend` |
 | `lib/wintpf.bend` | `python3 tools/expand.py tools/drafts/wintpf.draft lib/wintpf.bend` |
+| `lib/wdyadpf.bend` | `python3 tools/expand.py tools/drafts/wdyadpf.draft lib/wdyadpf.bend` |
 
 `@MACRO NAME text` (a line) makes every `$NAME` below stand for `text`
 (textual, longest names first, macros may use macros): long hypothesis lists

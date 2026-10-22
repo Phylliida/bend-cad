@@ -11,6 +11,9 @@ import ../rt/wmag.bend as RW
 import ../rt/wint.bend as RI
 import ../lib/wmagpf.bend as WM
 import ../lib/wintpf.bend as WI
+import ../rt/wdyad.bend as RD
+import ../lib/wdyadpf.bend as WDP
+import ../lib/kinst.bend as KI
 
 # The laws at the solver's base
 # -----------------------------
@@ -52,6 +55,22 @@ def canonv_w(+lp: Nat, x: SB.Big) -> {SB.Big.val(RW.wbp(lp), RI.Big.canon(x)) ==
 
 def shlz_w(+lp: Nat, x: SB.Big, +k: Nat) -> {SB.Big.val(RW.wbp(lp), RI.Big.shl(RW.wbp(lp), lp, x, k)) == S.Z.mul(SB.Big.val(RW.wbp(lp), x), S.Zpos{S.Pos.pow2(k)}) : S.Z}:
   WI.shl_zval(RW.wbp(lp), lp, WM.wbp_ok(lp), x, k)
+
+# the word dyadics (rt/wdyad.bend) are S.D exactly
+def tod_w(+lp: Nat, x: S.D) -> {RD.WD.tod(lp, RD.WD.ofd(lp, x)) == x : S.D}:
+  WDP.tod_ofd(RW.wbp(lp), lp, WM.wbp_ok(lp), x)
+
+def add_w(+lp: Nat, a: S.D, b: S.D) -> {RD.WD.add(RW.wbp(lp), lp, RD.WD.ofd(lp, a), RD.WD.ofd(lp, b)) == RD.WD.ofd(lp, S.D.add(a, b)) : RD.WD}:
+  WDP.add_ok(RW.wbp(lp), lp, WM.wbp_ok(lp), a, b)
+
+def mul_w(+lp: Nat, a: S.D, b: S.D) -> {RD.WD.mul(RW.wbp(lp), RD.WD.ofd(lp, a), RD.WD.ofd(lp, b)) == RD.WD.ofd(lp, S.D.mul(a, b)) : RD.WD}:
+  WDP.mul_ok(RW.wbp(lp), lp, WM.wbp_ok(lp), a, b)
+
+def neg_w(+lp: Nat, a: S.D) -> {RD.WD.neg(RD.WD.ofd(lp, a)) == RD.WD.ofd(lp, S.D.neg(a)) : RD.WD}:
+  WDP.neg_ok(RW.wbp(lp), lp, WM.wbp_ok(lp), a)
+
+def cmp_w(+lp: Nat, a: S.D, b: S.D) -> {RD.WD.cmp(RW.wbp(lp), lp, RD.WD.ofd(lp, a), RD.WD.ofd(lp, b)) == KI.dcmp(a, b) : Cmp}:
+  WDP.cmp_ok(RW.wbp(lp), lp, WM.wbp_ok(lp), a, b)
 
 # native bounds: limb products and sums are below 2^(2 L), and the run
 # time's 2 L = 46 is within BendRT's 48-bit immediates
@@ -108,6 +127,13 @@ def canon13() -> {RI.Big.canon(SB.BPos{[1n, 3n, 0n]}) == SB.BPos{[1n, 3n]} : SB.
   {==}
 
 def shlm13() -> {RI.Big.shl(3n, 1n, SB.BNeg{[1n, 3n]}, 3n) == SB.BNeg{[0n, 2n, 2n, 1n]} : SB.Big}:
+  {==}
+
+# 13/4 + (-3)/2 = 7/4: the exponents aligned by a shift
+def wadd13() -> {RD.WD.add(3n, 1n, RD.WD{SB.BPos{[1n, 3n]}, 2n}, RD.WD{SB.BNeg{[3n]}, 1n}) == RD.WD{SB.BPos{[3n, 1n]}, 2n} : RD.WD}:
+  {==}
+
+def wcmp13() -> {RD.WD.cmp(3n, 1n, RD.WD{SB.BPos{[1n, 3n]}, 2n}, RD.WD{SB.BNeg{[3n]}, 1n}) == GT{} : Cmp}:
   {==}
 
 def main() -> Nat:
