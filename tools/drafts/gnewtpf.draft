@@ -46,6 +46,7 @@ import ./certhpf.bend as CH
 import ./pops.bend as PO
 import ./gnumer.bend as GN
 import ./gmap.bend as GM
+import ./gelimpf.bend as GE
 
 # Lists
 # -----
@@ -190,4 +191,78 @@ def grow_t($KWR, +r: S.D) -> {GN.grow($G, $h r)) == $h NU.grow(r)) : $NK}:
   %$LSIGUP(S.D.mul(r, $C1716), 8n) : {GN.grow($G, $h r)) == _ : $NK}
   %$HMUL(r, $C1716) : {GN.grow($G, $h r)) == PO.sigup(K, W, _, 8n) : $NK}
   %$LOFD($C1716) : {GN.grow($G, $h r)) == PO.sigup(K, W, N.nmul(K, $h r), _), 8n) : $NK}
+  {==}
+
+# The Newton step and loop
+# ------------------------
+
+def nstep_of_t($KWR, +ys: $DV, m: Maybe<&2, $DM>, +f: $DV, +p: Nat) -> {GN.nstep.of($G, $hv ys), GM.hmm($HH, m), $hv f), p) == GM.hmv($HH, NU.nstep.of(ys, m, f, p)) : Maybe<&2, $VK>}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+inv}:
+      %nstep_round_t($T, ys, NU.dmatvec(inv, f), p) : {Some{GN.nstep.round($G, $hv ys), GN.dmatvec($G, $hm inv), $hv f)), p)} == Some{_} : Maybe<&2, $VK>}
+      %GE.dmatvec_t($T, inv, f) : {Some{GN.nstep.round($G, $hv ys), GN.dmatvec($G, $hm inv), $hv f)), p)} == Some{GN.nstep.round($G, $hv ys), _, p)} : Maybe<&2, $VK>}
+      {==}
+
+def nstep_t($KWR, +eqs: $EQS, +n: Nat, +pc: $DV, +p: Nat, +ys: $DV) -> {GN.nstep($G, eqs, n, $hv pc), p, $hv ys)) == GM.hmv($HH, NU.nstep(eqs, n, pc, p, ys)) : Maybe<&2, $VK>}:
+  %nstep_of_t($T, ys, NU.dinverse(n, NU.wbits(p), NU.jac(eqs, n, NU.dapp(ys, pc))), NU.vals(eqs, NU.dapp(ys, pc)), p) : {GN.nstep($G, eqs, n, $hv pc), p, $hv ys)) == _ : Maybe<&2, $VK>}
+  %GE.dinverse_t($T, n, NU.wbits(p), NU.jac(eqs, n, NU.dapp(ys, pc))) : {GN.nstep($G, eqs, n, $hv pc), p, $hv ys)) == GN.nstep.of($G, $hv ys), _, $hv NU.vals(eqs, NU.dapp(ys, pc))), p) : Maybe<&2, $VK>}
+  %jac_t($T, eqs, n, NU.dapp(ys, pc)) : {GN.nstep($G, eqs, n, $hv pc), p, $hv ys)) == GN.nstep.of($G, $hv ys), GN.dinverse($G, n, NU.wbits(p), _), $hv NU.vals(eqs, NU.dapp(ys, pc))), p) : Maybe<&2, $VK>}
+  %vals_t($T, eqs, NU.dapp(ys, pc)) : {GN.nstep($G, eqs, n, $hv pc), p, $hv ys)) == GN.nstep.of($G, $hv ys), GN.dinverse($G, n, NU.wbits(p), GN.jac($G, eqs, n, $hv NU.dapp(ys, pc)))), _, p) : Maybe<&2, $VK>}
+  %GE.dapp_t($T, ys, pc) : {GN.nstep($G, eqs, n, $hv pc), p, $hv ys)) == GN.nstep.of($G, $hv ys), GN.dinverse($G, n, NU.wbits(p), GN.jac($G, eqs, n, _)), GN.vals($G, eqs, _), p) : Maybe<&2, $VK>}
+  {==}
+
+def newton_t($KWR, k: Nat, +eqs: $EQS, +n: Nat, +pc: $DV, +p: Nat, st: NU.NS) -> {GN.newton($G, k, eqs, n, $hv pc), p, GM.hns($HH, st)) == GM.hmv($HH, NU.newton(k, eqs, n, pc, p, st)) : Maybe<&2, $VK>}:
+  match k st:
+    case 0n NU.NSing{}:
+      {==}
+    case 0n NU.NDone{y}:
+      {==}
+    case 0n NU.NMore{y}:
+      {==}
+    case 1n+j NU.NSing{}:
+      {==}
+    case 1n+j NU.NDone{y}:
+      {==}
+    case 1n+j NU.NMore{+y}:
+      %newton_t($T, j, eqs, n, pc, p, NU.classify(y, p, NU.nstep(eqs, n, pc, p, y))) : {GN.newton($G, j, eqs, n, $hv pc), p, GN.classify($G, $hv y), p, GN.nstep($G, eqs, n, $hv pc), p, $hv y)))) == _ : Maybe<&2, $VK>}
+      %classify_t($T, y, p, NU.nstep(eqs, n, pc, p, y)) : {GN.newton($G, j, eqs, n, $hv pc), p, GN.classify($G, $hv y), p, GN.nstep($G, eqs, n, $hv pc), p, $hv y)))) == GN.newton($G, j, eqs, n, $hv pc), p, _) : Maybe<&2, $VK>}
+      %nstep_t($T, eqs, n, pc, p, y) : {GN.newton($G, j, eqs, n, $hv pc), p, GN.classify($G, $hv y), p, GN.nstep($G, eqs, n, $hv pc), p, $hv y)))) == GN.newton($G, j, eqs, n, $hv pc), p, GN.classify($G, $hv y), p, _)) : Maybe<&2, $VK>}
+      {==}
+
+# The certificate and the radius search
+# -------------------------------------
+
+def mkcert_t($KWR, +n: Nat, +yc: $DV, +r: S.D, +ym: $DM, +pc: $DV, +pr: $DV) -> {GN.mkcert($G, n, $hv yc), $h r), $hm ym), $hv pc), $hv pr)) == $hc NU.mkcert(n, yc, r, ym, pc, pr)) : C.Cert<K>}:
+  %GE.dreps_t($T, n, r) : {GN.mkcert($G, n, $hv yc), $h r), $hm ym), $hv pc), $hv pr)) == C.Cert{$hv yc), _, $h NU.half()), $hm ym), $hv pc), $hv pr)} : C.Cert<K>}
+  %$LOFD(NU.half()) : {GN.mkcert($G, n, $hv yc), $h r), $hm ym), $hv pc), $hv pr)) == C.Cert{$hv yc), GN.dreps($G, n, $h r)), _, $hm ym), $hv pc), $hv pr)} : C.Cert<K>}
+  {==}
+
+def okr_t($KWR, +eqs: $EQS, +n: Nat, +yc: $DV, +r: S.D, +ym: $DM, +pc: $DV, +pr: $DV) -> {GN.okr($G, eqs, n, $hv yc), $h r), $hm ym), $hv pc), $hv pr)) == NU.okr(eqs, n, yc, r, ym, pc, pr) : Bool}:
+  %CH.ccheck_h($D, C.Block{eqs, n}, NU.mkcert(n, yc, r, ym, pc, pr)) : {GN.okr($G, eqs, n, $hv yc), $h r), $hm ym), $hv pc), $hv pr)) == _ : Bool}
+  %mkcert_t($T, n, yc, r, ym, pc, pr) : {GN.okr($G, eqs, n, $hv yc), $h r), $hm ym), $hv pc), $hv pr)) == CK.check(~K, C.Block{eqs, n}, _) : Bool}
+  {==}
+
+def rsearch_t($KWR, k: Nat, ok: Bool, +eqs: $EQS, +n: Nat, +yc: $DV, +r: S.D, +ym: $DM, +pc: $DV, +pr: $DV) -> {GN.rsearch($G, k, ok, eqs, n, $hv yc), $h r), $hm ym), $hv pc), $hv pr)) == GM.hmd($HH, NU.rsearch(k, ok, eqs, n, yc, r, ym, pc, pr)) : Maybe<&2, $NK>}:
+  match k ok:
+    case 0n True{}:
+      {==}
+    case 0n False{}:
+      {==}
+    case 1n+j True{}:
+      {==}
+    case 1n+j False{}:
+      %rsearch_t($T, j, NU.okr(eqs, n, yc, NU.grow(r), ym, pc, pr), eqs, n, yc, NU.grow(r), ym, pc, pr) : {GN.rsearch($G, j, GN.okr($G, eqs, n, $hv yc), GN.grow($G, $h r)), $hm ym), $hv pc), $hv pr)), eqs, n, $hv yc), GN.grow($G, $h r)), $hm ym), $hv pc), $hv pr)) == _ : Maybe<&2, $NK>}
+      %okr_t($T, eqs, n, yc, NU.grow(r), ym, pc, pr) : {GN.rsearch($G, j, GN.okr($G, eqs, n, $hv yc), GN.grow($G, $h r)), $hm ym), $hv pc), $hv pr)), eqs, n, $hv yc), GN.grow($G, $h r)), $hm ym), $hv pc), $hv pr)) == GN.rsearch($G, j, _, eqs, n, $hv yc), $h NU.grow(r)), $hm ym), $hv pc), $hv pr)) : Maybe<&2, $NK>}
+      %grow_t($T, r) : {GN.rsearch($G, j, GN.okr($G, eqs, n, $hv yc), GN.grow($G, $h r)), $hm ym), $hv pc), $hv pr)), eqs, n, $hv yc), GN.grow($G, $h r)), $hm ym), $hv pc), $hv pr)) == GN.rsearch($G, j, GN.okr($G, eqs, n, $hv yc), _, $hm ym), $hv pc), $hv pr)), eqs, n, $hv yc), _, $hm ym), $hv pc), $hv pr)) : Maybe<&2, $NK>}
+      {==}
+
+def r0_t($KWR, +eqs: $EQS, +n: Nat, +yc: $DV, +ym: $DM, +pc: $DV, +pr: $DV, +e: S.D) -> {GN.r0($G, eqs, n, $hv yc), $hm ym), $hv pc), $hv pr), $h e)) == $h NU.r0(eqs, n, yc, ym, pc, pr, e)) : $NK}:
+  %$LSIGUP(S.D.add(S.D.mul(NU.dvmax(CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr)), $C6564), e), 8n) : {GN.r0($G, eqs, n, $hv yc), $hm ym), $hv pc), $hv pr), $h e)) == _ : $NK}
+  %$HADD(S.D.mul(NU.dvmax(CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr)), $C6564), e) : {GN.r0($G, eqs, n, $hv yc), $hm ym), $hv pc), $hv pr), $h e)) == PO.sigup(K, W, _, 8n) : $NK}
+  %$HMUL(NU.dvmax(CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr)), $C6564) : {GN.r0($G, eqs, n, $hv yc), $hm ym), $hv pc), $hv pr), $h e)) == PO.sigup(K, W, N.nadd(K, _, $h e)), 8n) : $NK}
+  %$LOFD($C6564) : {GN.r0($G, eqs, n, $hv yc), $hm ym), $hv pc), $hv pr), $h e)) == PO.sigup(K, W, N.nadd(K, N.nmul(K, $h NU.dvmax(CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr))), _), $h e)), 8n) : $NK}
+  %GE.dvmax_t($T, CK.svec(~KI.dnum(), eqs, n, yc, Nil{}, ym, pc, pr)) : {GN.r0($G, eqs, n, $hv yc), $hm ym), $hv pc), $hv pr), $h e)) == PO.sigup(K, W, N.nadd(K, N.nmul(K, _, PO.ofd(K, W, $C6564)), $h e)), 8n) : $NK}
+  %CH.svec_h($D, eqs, n, yc, Nil{}, ym, pc, pr) : {GN.r0($G, eqs, n, $hv yc), $hm ym), $hv pc), $hv pr), $h e)) == PO.sigup(K, W, N.nadd(K, N.nmul(K, GN.dvmax($G, _), PO.ofd(K, W, $C6564)), $h e)), 8n) : $NK}
   {==}

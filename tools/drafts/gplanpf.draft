@@ -1,0 +1,184 @@
+# bend-cad: lib/gnumer.bend's block and plan return exactly numer.bend's
+# sent through the map h : KI.dnum() -> K of laws R (lib/pops.bend): for
+# every K, W and R, GN.plan(W, es, nv, sk, h g0, p) is h of NU.plan(es,
+# nv, sk, g0, p) (plan_t). Proven like lib/gnewtpf.bend, bottom up through
+# numer's definitions. Untrusted; PLAN-sk13w W4.
+
+@MACRO KWR ~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>
+@MACRO T ~K, ~W, ~R
+@MACRO G ~K, ~W
+@MACRO HH ~K, ~PO.hom(K, W, R)
+@MACRO D ~KI.dnum(), ~K, ~PO.hom(K, W, R)
+@MACRO h KH.hmap(KI.dnum(), K, PO.hom(K, W, R),
+@MACRO hv KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R),
+@MACRO hm KH.hm(~KI.dnum(), ~K, ~PO.hom(K, W, R),
+@MACRO hc KH.hcert(~KI.dnum(), ~K, ~PO.hom(K, W, R),
+@MACRO hpbs KH.hpbs(~KI.dnum(), ~K, ~PO.hom(K, W, R),
+@MACRO NK N.NC(K)
+@MACRO VK N.KVec(~K)
+@MACRO MK N.KMat(~K)
+@MACRO DV List<&2, S.D>
+@MACRO DM List<&2, List<&2, S.D>>
+@MACRO EQS List<&2, E.QExpr>
+@MACRO NL List<&2, Nat>
+@MACRO LOFD PO.l_ofd(K, W, R)
+@MACRO BRK GN.GBR<K>
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/knum.bend as N
+import ./certdef.bend as C
+import ./kinst.bend as KI
+import ./plan.bend as PL
+import ./struct.bend as ST
+import ./numer.bend as NU
+import ./khom.bend as KH
+import ./pops.bend as PO
+import ./gnumer.bend as GN
+import ./gmap.bend as GM
+import ./gelimpf.bend as GE
+import ./gnewtpf.bend as GW
+
+# A block
+# -------
+
+def block_r_t($KWR, m: Maybe<&2, S.D>, +n: Nat, +yc: $DV, +ym: $DM, +pc: $DV, +pr: $DV) -> {GN.block.r($G, GM.hmd($HH, m), n, $hv yc), $hm ym), $hv pc), $hv pr)) == GM.hbr($HH, NU.block.r(m, n, yc, ym, pc, pr)) : $BRK}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+r}:
+      %GW.mkcert_t($T, n, yc, r, ym, pc, pr) : {GN.GBOk{GN.mkcert($G, n, $hv yc), $h r), $hm ym), $hv pc), $hv pr))} == GN.GBOk{_} : $BRK}
+      {==}
+
+def block_ym_t($KWR, +ym: $DM, +eqs: $EQS, +n: Nat, +yc: $DV, +pc: $DV, +pr: $DV, +e: S.D) -> {GN.block.ym($G, $hm ym), eqs, n, $hv yc), $hv pc), $hv pr), $h e)) == GM.hbr($HH, NU.block.ym(ym, eqs, n, yc, pc, pr, e)) : $BRK}:
+  %block_r_t($T, NU.rsearch(64n, NU.okr(eqs, n, yc, NU.r0(eqs, n, yc, ym, pc, pr, e), ym, pc, pr), eqs, n, yc, NU.r0(eqs, n, yc, ym, pc, pr, e), ym, pc, pr), n, yc, ym, pc, pr) : {GN.block.ym($G, $hm ym), eqs, n, $hv yc), $hv pc), $hv pr), $h e)) == _ : $BRK}
+  %GW.rsearch_t($T, 64n, NU.okr(eqs, n, yc, NU.r0(eqs, n, yc, ym, pc, pr, e), ym, pc, pr), eqs, n, yc, NU.r0(eqs, n, yc, ym, pc, pr, e), ym, pc, pr) : {GN.block.ym($G, $hm ym), eqs, n, $hv yc), $hv pc), $hv pr), $h e)) == GN.block.r($G, _, n, $hv yc), $hm ym), $hv pc), $hv pr)) : $BRK}
+  %GW.okr_t($T, eqs, n, yc, NU.r0(eqs, n, yc, ym, pc, pr, e), ym, pc, pr) : {GN.block.ym($G, $hm ym), eqs, n, $hv yc), $hv pc), $hv pr), $h e)) == GN.block.r($G, GN.rsearch($G, 64n, _, eqs, n, $hv yc), $h NU.r0(eqs, n, yc, ym, pc, pr, e)), $hm ym), $hv pc), $hv pr)), n, $hv yc), $hm ym), $hv pc), $hv pr)) : $BRK}
+  %GW.r0_t($T, eqs, n, yc, ym, pc, pr, e) : {GN.block.ym($G, $hm ym), eqs, n, $hv yc), $hv pc), $hv pr), $h e)) == GN.block.r($G, GN.rsearch($G, 64n, GN.okr($G, eqs, n, $hv yc), _, $hm ym), $hv pc), $hv pr)), eqs, n, $hv yc), _, $hm ym), $hv pc), $hv pr)), n, $hv yc), $hm ym), $hv pc), $hv pr)) : $BRK}
+  {==}
+
+def block_y2_t($KWR, m: Maybe<&2, $DM>, +p: Nat, +eqs: $EQS, +n: Nat, +yc: $DV, +pc: $DV, +pr: $DV) -> {GN.block.y2($G, GM.hmm($HH, m), p, eqs, n, $hv yc), $hv pc), $hv pr)) == GM.hbr($HH, NU.block.y2(m, p, eqs, n, yc, pc, pr)) : $BRK}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+inv}:
+      %block_ym_t($T, NU.ysig(Nat.div(p, 2n), inv), eqs, n, yc, pc, pr, NU.eta(p)) : {GN.block.ym($G, GN.ysig($G, Nat.div(p, 2n), $hm inv)), eqs, n, $hv yc), $hv pc), $hv pr), PO.ofd(K, W, NU.eta(p))) == _ : $BRK}
+      %GW.ysig_t($T, Nat.div(p, 2n), inv) : {GN.block.ym($G, GN.ysig($G, Nat.div(p, 2n), $hm inv)), eqs, n, $hv yc), $hv pc), $hv pr), PO.ofd(K, W, NU.eta(p))) == GN.block.ym($G, _, eqs, n, $hv yc), $hv pc), $hv pr), $h NU.eta(p))) : $BRK}
+      %$LOFD(NU.eta(p)) : {GN.block.ym($G, GN.ysig($G, Nat.div(p, 2n), $hm inv)), eqs, n, $hv yc), $hv pc), $hv pr), PO.ofd(K, W, NU.eta(p))) == GN.block.ym($G, GN.ysig($G, Nat.div(p, 2n), $hm inv)), eqs, n, $hv yc), $hv pc), $hv pr), _) : $BRK}
+      {==}
+
+def block_y_t($KWR, m: Maybe<&2, $DV>, +p: Nat, +eqs: $EQS, +n: Nat, +pc: $DV, +pr: $DV) -> {GN.block.y($G, GM.hmv($HH, m), p, eqs, n, $hv pc), $hv pr)) == GM.hbr($HH, NU.block.y(m, p, eqs, n, pc, pr)) : $BRK}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+yc}:
+      %block_y2_t($T, NU.dinverse(n, NU.wbits(p), NU.jac(eqs, n, NU.dapp(yc, pc))), p, eqs, n, yc, pc, pr) : {GN.block.y2($G, GN.dinverse($G, n, NU.wbits(p), GN.jac($G, eqs, n, GN.dapp($G, $hv yc), $hv pc)))), p, eqs, n, $hv yc), $hv pc), $hv pr)) == _ : $BRK}
+      %GE.dinverse_t($T, n, NU.wbits(p), NU.jac(eqs, n, NU.dapp(yc, pc))) : {GN.block.y2($G, GN.dinverse($G, n, NU.wbits(p), GN.jac($G, eqs, n, GN.dapp($G, $hv yc), $hv pc)))), p, eqs, n, $hv yc), $hv pc), $hv pr)) == GN.block.y2($G, _, p, eqs, n, $hv yc), $hv pc), $hv pr)) : $BRK}
+      %GW.jac_t($T, eqs, n, NU.dapp(yc, pc)) : {GN.block.y2($G, GN.dinverse($G, n, NU.wbits(p), GN.jac($G, eqs, n, GN.dapp($G, $hv yc), $hv pc)))), p, eqs, n, $hv yc), $hv pc), $hv pr)) == GN.block.y2($G, GN.dinverse($G, n, NU.wbits(p), _), p, eqs, n, $hv yc), $hv pc), $hv pr)) : $BRK}
+      %GE.dapp_t($T, yc, pc) : {GN.block.y2($G, GN.dinverse($G, n, NU.wbits(p), GN.jac($G, eqs, n, GN.dapp($G, $hv yc), $hv pc)))), p, eqs, n, $hv yc), $hv pc), $hv pr)) == GN.block.y2($G, GN.dinverse($G, n, NU.wbits(p), GN.jac($G, eqs, n, _)), p, eqs, n, $hv yc), $hv pc), $hv pr)) : $BRK}
+      {==}
+
+def block_t($KWR, +eqs: $EQS, +n: Nat, +pc: $DV, +pr: $DV, +y0: $DV, +p: Nat) -> {GN.block($G, eqs, n, $hv pc), $hv pr), $hv y0), p) == GM.hbr($HH, NU.block(eqs, n, pc, pr, y0, p)) : $BRK}:
+  %block_y_t($T, NU.newton(40n, eqs, n, pc, p, NU.NMore{y0}), p, eqs, n, pc, pr) : {GN.block($G, eqs, n, $hv pc), $hv pr), $hv y0), p) == _ : $BRK}
+  %GW.newton_t($T, 40n, eqs, n, pc, p, NU.NMore{y0}) : {GN.block($G, eqs, n, $hv pc), $hv pr), $hv y0), p) == GN.block.y($G, _, p, eqs, n, $hv pc), $hv pr)) : $BRK}
+  {==}
+
+def bcert_n_t($KWR, +n: Nat, +pars: $NL, +sys: $EQS, +g0b: $DV, +p: Nat, +o: Nat, +gc: $DV, +gr: $DV) -> {GN.bcert.n($G, n, pars, sys, $hv g0b), p, o, $hv gc), $hv gr)) == GM.hbr($HH, NU.bcert.n(n, pars, sys, g0b, p, o, gc, gr)) : $BRK}:
+  %block_t($T, PL.renames(o, n, pars, PL.takeq(n, sys)), n, NU.dpick(gc, pars), NU.dpick(gr, pars), NU.dtake(n, NU.ddrop(o, g0b)), p) : {GN.bcert.n($G, n, pars, sys, $hv g0b), p, o, $hv gc), $hv gr)) == _ : $BRK}
+  %GW.dpick_t($T, gc, pars) : {GN.bcert.n($G, n, pars, sys, $hv g0b), p, o, $hv gc), $hv gr)) == GN.block($G, PL.renames(o, n, pars, PL.takeq(n, sys)), n, _, $hv NU.dpick(gr, pars)), $hv NU.dtake(n, NU.ddrop(o, g0b))), p) : $BRK}
+  %GW.dpick_t($T, gr, pars) : {GN.bcert.n($G, n, pars, sys, $hv g0b), p, o, $hv gc), $hv gr)) == GN.block($G, PL.renames(o, n, pars, PL.takeq(n, sys)), n, GN.dpick($G, $hv gc), pars), _, $hv NU.dtake(n, NU.ddrop(o, g0b))), p) : $BRK}
+  %GW.dtake_t($T, n, NU.ddrop(o, g0b)) : {GN.bcert.n($G, n, pars, sys, $hv g0b), p, o, $hv gc), $hv gr)) == GN.block($G, PL.renames(o, n, pars, PL.takeq(n, sys)), n, GN.dpick($G, $hv gc), pars), GN.dpick($G, $hv gr), pars), _, p) : $BRK}
+  %GE.ddrop_t($T, o, g0b) : {GN.bcert.n($G, n, pars, sys, $hv g0b), p, o, $hv gc), $hv gr)) == GN.block($G, PL.renames(o, n, pars, PL.takeq(n, sys)), n, GN.dpick($G, $hv gc), pars), GN.dpick($G, $hv gr), pars), GN.dtake($G, n, _), p) : $BRK}
+  {==}
+
+def bcert_t($KWR, bs: List<&2, ST.SkB>, +sys: $EQS, +g0b: $DV, +p: Nat, +o: Nat, +gc: $DV, +gr: $DV) -> {GN.bcert($G, bs, sys, $hv g0b), p, o, $hv gc), $hv gr)) == GM.hbr($HH, NU.bcert(bs, sys, g0b, p, o, gc, gr)) : $BRK}:
+  match bs:
+    case Nil{}:
+      {==}
+    case Con{ST.SkB{es, vs, pars}, t}:
+      bcert_n_t($T, ST.len(es), pars, sys, g0b, p, o, gc, gr)
+
+# The blocks in turn
+# ------------------
+
+def revpb_t($KWR, xs: List<&2, PL.PBlock<KI.dnum()>>, acc: List<&2, PL.PBlock<KI.dnum()>>) -> {GN.revpb.go($G, $hpbs xs), $hpbs acc)) == $hpbs NU.revpb.go(xs, acc)) : List<&2, PL.PBlock<K>>}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{b, t}:
+      revpb_t($T, t, Con{b, acc})
+
+# the box grown by one certificate's centers and radii
+def gc2_t($KWR, +gc: $DV, +c: C.Cert<KI.dnum()>) -> {GN.dapp($G, $hv gc), GN.cert.yc($G, $hc c))) == $hv NU.dapp(gc, NU.cert.yc(c))) : $VK}:
+  %GE.dapp_t($T, gc, NU.cert.yc(c)) : {GN.dapp($G, $hv gc), GN.cert.yc($G, $hc c))) == _ : $VK}
+  %GW.cyc_t($T, c) : {GN.dapp($G, $hv gc), GN.cert.yc($G, $hc c))) == GN.dapp($G, $hv gc), _) : $VK}
+  {==}
+
+def gr2_t($KWR, +gr: $DV, +n: Nat, +c: C.Cert<KI.dnum()>) -> {GN.dapp($G, $hv gr), GN.dtake($G, n, GN.cert.yr($G, $hc c)))) == $hv NU.dapp(gr, NU.dtake(n, NU.cert.yr(c)))) : $VK}:
+  %GE.dapp_t($T, gr, NU.dtake(n, NU.cert.yr(c))) : {GN.dapp($G, $hv gr), GN.dtake($G, n, GN.cert.yr($G, $hc c)))) == _ : $VK}
+  %GW.dtake_t($T, n, NU.cert.yr(c)) : {GN.dapp($G, $hv gr), GN.dtake($G, n, GN.cert.yr($G, $hc c)))) == GN.dapp($G, $hv gr), _) : $VK}
+  %GW.cyr_t($T, c) : {GN.dapp($G, $hv gr), GN.dtake($G, n, GN.cert.yr($G, $hc c)))) == GN.dapp($G, $hv gr), GN.dtake($G, n, _)) : $VK}
+  {==}
+
+def pblocks_t($KWR, bs: List<&2, ST.SkB>, cur: NU.BR, +sys: $EQS, +g0b: $DV, +p: Nat, +o: Nat, +gc: $DV, +gr: $DV, +acc: List<&2, PL.PBlock<KI.dnum()>>) -> {GN.pblocks($G, bs, GM.hbr($HH, cur), sys, $hv g0b), p, o, $hv gc), $hv gr), $hpbs acc)) == GM.hpbr($HH, NU.pblocks(bs, cur, sys, g0b, p, o, gc, gr, acc)) : GN.GPBR<K>}:
+  match bs cur:
+    case Nil{} NU.BOk{c}:
+      %revpb_t($T, acc, Nil{}) : {GN.GPBOk{GN.GPB{GN.revpb.go($G, $hpbs acc), Nil{}), $hv gc), $hv gr)}} == GN.GPBOk{GN.GPB{_, $hv gc), $hv gr)}} : GN.GPBR<K>}
+      {==}
+    case Nil{} NU.BRetry{}:
+      %revpb_t($T, acc, Nil{}) : {GN.GPBOk{GN.GPB{GN.revpb.go($G, $hpbs acc), Nil{}), $hv gc), $hv gr)}} == GN.GPBOk{GN.GPB{_, $hv gc), $hv gr)}} : GN.GPBR<K>}
+      {==}
+    case Nil{} NU.BStop{}:
+      %revpb_t($T, acc, Nil{}) : {GN.GPBOk{GN.GPB{GN.revpb.go($G, $hpbs acc), Nil{}), $hv gc), $hv gr)}} == GN.GPBOk{GN.GPB{_, $hv gc), $hv gr)}} : GN.GPBR<K>}
+      {==}
+    case Con{ST.SkB{+es, vs, +pars}, +t} NU.BRetry{}:
+      {==}
+    case Con{ST.SkB{+es, vs, +pars}, +t} NU.BStop{}:
+      {==}
+    case Con{ST.SkB{+es, vs, +pars}, +t} NU.BOk{+c}:
+      %pblocks_t($T, t, NU.bcert(t, PL.dropq(ST.len(es), sys), g0b, p, Nat.add(o, ST.len(es)), NU.dapp(gc, NU.cert.yc(c)), NU.dapp(gr, NU.dtake(ST.len(es), NU.cert.yr(c)))), PL.dropq(ST.len(es), sys), g0b, p, Nat.add(o, ST.len(es)), NU.dapp(gc, NU.cert.yc(c)), NU.dapp(gr, NU.dtake(ST.len(es), NU.cert.yr(c))), Con{PL.PBlock{ST.len(es), pars, c}, acc}) : {GN.pblocks($G, t, GN.bcert($G, t, PL.dropq(ST.len(es), sys), $hv g0b), p, Nat.add(o, ST.len(es)), GN.dapp($G, $hv gc), GN.cert.yc($G, $hc c))), GN.dapp($G, $hv gr), GN.dtake($G, ST.len(es), GN.cert.yr($G, $hc c))))), PL.dropq(ST.len(es), sys), $hv g0b), p, Nat.add(o, ST.len(es)), GN.dapp($G, $hv gc), GN.cert.yc($G, $hc c))), GN.dapp($G, $hv gr), GN.dtake($G, ST.len(es), GN.cert.yr($G, $hc c)))), Con{PL.PBlock{ST.len(es), pars, $hc c)}, $hpbs acc)}) == _ : GN.GPBR<K>}
+      %bcert_t($T, t, PL.dropq(ST.len(es), sys), g0b, p, Nat.add(o, ST.len(es)), NU.dapp(gc, NU.cert.yc(c)), NU.dapp(gr, NU.dtake(ST.len(es), NU.cert.yr(c)))) : {GN.pblocks($G, t, GN.bcert($G, t, PL.dropq(ST.len(es), sys), $hv g0b), p, Nat.add(o, ST.len(es)), GN.dapp($G, $hv gc), GN.cert.yc($G, $hc c))), GN.dapp($G, $hv gr), GN.dtake($G, ST.len(es), GN.cert.yr($G, $hc c))))), PL.dropq(ST.len(es), sys), $hv g0b), p, Nat.add(o, ST.len(es)), GN.dapp($G, $hv gc), GN.cert.yc($G, $hc c))), GN.dapp($G, $hv gr), GN.dtake($G, ST.len(es), GN.cert.yr($G, $hc c)))), Con{PL.PBlock{ST.len(es), pars, $hc c)}, $hpbs acc)}) == GN.pblocks($G, t, _, PL.dropq(ST.len(es), sys), $hv g0b), p, Nat.add(o, ST.len(es)), $hv NU.dapp(gc, NU.cert.yc(c))), $hv NU.dapp(gr, NU.dtake(ST.len(es), NU.cert.yr(c)))), Con{PL.PBlock{ST.len(es), pars, $hc c)}, $hpbs acc)}) : GN.GPBR<K>}
+      %gc2_t($T, gc, c) : {GN.pblocks($G, t, GN.bcert($G, t, PL.dropq(ST.len(es), sys), $hv g0b), p, Nat.add(o, ST.len(es)), GN.dapp($G, $hv gc), GN.cert.yc($G, $hc c))), GN.dapp($G, $hv gr), GN.dtake($G, ST.len(es), GN.cert.yr($G, $hc c))))), PL.dropq(ST.len(es), sys), $hv g0b), p, Nat.add(o, ST.len(es)), GN.dapp($G, $hv gc), GN.cert.yc($G, $hc c))), GN.dapp($G, $hv gr), GN.dtake($G, ST.len(es), GN.cert.yr($G, $hc c)))), Con{PL.PBlock{ST.len(es), pars, $hc c)}, $hpbs acc)}) == GN.pblocks($G, t, GN.bcert($G, t, PL.dropq(ST.len(es), sys), $hv g0b), p, Nat.add(o, ST.len(es)), _, $hv NU.dapp(gr, NU.dtake(ST.len(es), NU.cert.yr(c))))), PL.dropq(ST.len(es), sys), $hv g0b), p, Nat.add(o, ST.len(es)), _, $hv NU.dapp(gr, NU.dtake(ST.len(es), NU.cert.yr(c)))), Con{PL.PBlock{ST.len(es), pars, $hc c)}, $hpbs acc)}) : GN.GPBR<K>}
+      %gr2_t($T, gr, ST.len(es), c) : {GN.pblocks($G, t, GN.bcert($G, t, PL.dropq(ST.len(es), sys), $hv g0b), p, Nat.add(o, ST.len(es)), GN.dapp($G, $hv gc), GN.cert.yc($G, $hc c))), GN.dapp($G, $hv gr), GN.dtake($G, ST.len(es), GN.cert.yr($G, $hc c))))), PL.dropq(ST.len(es), sys), $hv g0b), p, Nat.add(o, ST.len(es)), GN.dapp($G, $hv gc), GN.cert.yc($G, $hc c))), GN.dapp($G, $hv gr), GN.dtake($G, ST.len(es), GN.cert.yr($G, $hc c)))), Con{PL.PBlock{ST.len(es), pars, $hc c)}, $hpbs acc)}) == GN.pblocks($G, t, GN.bcert($G, t, PL.dropq(ST.len(es), sys), $hv g0b), p, Nat.add(o, ST.len(es)), GN.dapp($G, $hv gc), GN.cert.yc($G, $hc c))), _), PL.dropq(ST.len(es), sys), $hv g0b), p, Nat.add(o, ST.len(es)), GN.dapp($G, $hv gc), GN.cert.yc($G, $hc c))), _, Con{PL.PBlock{ST.len(es), pars, $hc c)}, $hpbs acc)}) : GN.GPBR<K>}
+      {==}
+
+# The plan
+# --------
+
+def unperm_t($KWR, n: Nat, +k: Nat, +xs: $DV, +vp: $NL) -> {GN.unperm($G, n, k, $hv xs), vp) == $hv NU.unperm(n, k, xs, vp)) : $VK}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+m:
+      %GW.dlook_t($T, xs, ST.pos(k, vp)) : {Con{GN.dlook($G, $hv xs), ST.pos(k, vp)), GN.unperm($G, m, 1n+k, $hv xs), vp)} == Con{_, $hv NU.unperm(m, 1n+k, xs, vp))} : $VK}
+      %unperm_t($T, m, 1n+k, xs, vp) : {Con{GN.dlook($G, $hv xs), ST.pos(k, vp)), GN.unperm($G, m, 1n+k, $hv xs), vp)} == Con{GN.dlook($G, $hv xs), ST.pos(k, vp)), _} : $VK}
+      {==}
+
+def plan_fin_t($KWR, +vp: $NL, +ep: $NL, +np: Nat, +nv: Nat, m: NU.PBR) -> {GN.plan.fin($G, vp, ep, np, nv, GM.hpbr($HH, m)) == GM.hpr($HH, NU.plan.fin(vp, ep, np, nv, m)) : GN.GPR<K>}:
+  match m:
+    case NU.PBRetry{}:
+      {==}
+    case NU.PBStop{}:
+      {==}
+    case NU.PBOk{NU.PB{+bs, +gc, +gr}}:
+      %unperm_t($T, nv, 0n, gc, vp) : {GN.GPOk{GN.GNP{PL.Plan{vp, ep, np, $hpbs bs)}, GN.unperm($G, nv, 0n, $hv gc), vp), GN.unperm($G, nv, 0n, $hv gr), vp)}} == GN.GPOk{GN.GNP{PL.Plan{vp, ep, np, $hpbs bs)}, _, $hv NU.unperm(nv, 0n, gr, vp))}} : GN.GPR<K>}
+      %unperm_t($T, nv, 0n, gr, vp) : {GN.GPOk{GN.GNP{PL.Plan{vp, ep, np, $hpbs bs)}, GN.unperm($G, nv, 0n, $hv gc), vp), GN.unperm($G, nv, 0n, $hv gr), vp)}} == GN.GPOk{GN.GNP{PL.Plan{vp, ep, np, $hpbs bs)}, GN.unperm($G, nv, 0n, $hv gc), vp), _}} : GN.GPR<K>}
+      {==}
+
+def plan_go_t($KWR, +es: $EQS, +nv: Nat, +vp: $NL, +ep: $NL, +np: Nat, +bs: List<&2, ST.SkB>, +g0b: $DV, +p: Nat) -> {GN.plan.go($G, es, nv, vp, ep, np, bs, $hv g0b), p) == GM.hpr($HH, NU.plan.go(es, nv, vp, ep, np, bs, g0b, p)) : GN.GPR<K>}:
+  %plan_fin_t($T, vp, ep, np, nv, NU.pblocks(bs, NU.bcert(bs, PL.reorder(vp, es, ep), g0b, p, np, NU.dtake(np, g0b), NU.dreps(np, NU.dzero())), PL.reorder(vp, es, ep), g0b, p, np, NU.dtake(np, g0b), NU.dreps(np, NU.dzero()), Nil{})) : {GN.plan.go($G, es, nv, vp, ep, np, bs, $hv g0b), p) == _ : GN.GPR<K>}
+  %pblocks_t($T, bs, NU.bcert(bs, PL.reorder(vp, es, ep), g0b, p, np, NU.dtake(np, g0b), NU.dreps(np, NU.dzero())), PL.reorder(vp, es, ep), g0b, p, np, NU.dtake(np, g0b), NU.dreps(np, NU.dzero()), Nil{}) : {GN.plan.go($G, es, nv, vp, ep, np, bs, $hv g0b), p) == GN.plan.fin($G, vp, ep, np, nv, _) : GN.GPR<K>}
+  %bcert_t($T, bs, PL.reorder(vp, es, ep), g0b, p, np, NU.dtake(np, g0b), NU.dreps(np, NU.dzero())) : {GN.plan.go($G, es, nv, vp, ep, np, bs, $hv g0b), p) == GN.plan.fin($G, vp, ep, np, nv, GN.pblocks($G, bs, _, PL.reorder(vp, es, ep), $hv g0b), p, np, $hv NU.dtake(np, g0b)), $hv NU.dreps(np, NU.dzero())), Nil{})) : GN.GPR<K>}
+  %GW.dtake_t($T, np, g0b) : {GN.plan.go($G, es, nv, vp, ep, np, bs, $hv g0b), p) == GN.plan.fin($G, vp, ep, np, nv, GN.pblocks($G, bs, GN.bcert($G, bs, PL.reorder(vp, es, ep), $hv g0b), p, np, _, $hv NU.dreps(np, NU.dzero()))), PL.reorder(vp, es, ep), $hv g0b), p, np, _, $hv NU.dreps(np, NU.dzero())), Nil{})) : GN.GPR<K>}
+  %GE.dreps_t($T, np, NU.dzero()) : {GN.plan.go($G, es, nv, vp, ep, np, bs, $hv g0b), p) == GN.plan.fin($G, vp, ep, np, nv, GN.pblocks($G, bs, GN.bcert($G, bs, PL.reorder(vp, es, ep), $hv g0b), p, np, GN.dtake($G, np, $hv g0b)), _), PL.reorder(vp, es, ep), $hv g0b), p, np, GN.dtake($G, np, $hv g0b)), _, Nil{})) : GN.GPR<K>}
+  %GE.dzero_t($T) : {GN.plan.go($G, es, nv, vp, ep, np, bs, $hv g0b), p) == GN.plan.fin($G, vp, ep, np, nv, GN.pblocks($G, bs, GN.bcert($G, bs, PL.reorder(vp, es, ep), $hv g0b), p, np, GN.dtake($G, np, $hv g0b)), GN.dreps($G, np, _)), PL.reorder(vp, es, ep), $hv g0b), p, np, GN.dtake($G, np, $hv g0b)), GN.dreps($G, np, _), Nil{})) : GN.GPR<K>}
+  {==}
+
+# numer's plan at any K is numer's, mapped
+def plan_t($KWR, +es: $EQS, +nv: Nat, sk: ST.Skel, +g0: $DV, +p: Nat) -> {GN.plan($G, es, nv, sk, $hv g0), p) == GM.hpr($HH, NU.plan(es, nv, sk, g0, p)) : GN.GPR<K>}:
+  match sk:
+    case ST.Skel{+vp, +ep, +np, +bs, red}:
+      %plan_go_t($T, es, nv, vp, ep, np, bs, NU.dpick(g0, vp), p) : {GN.plan.go($G, es, nv, vp, ep, np, bs, GN.dpick($G, $hv g0), vp), p) == _ : GN.GPR<K>}
+      %GW.dpick_t($T, g0, vp) : {GN.plan.go($G, es, nv, vp, ep, np, bs, GN.dpick($G, $hv g0), vp), p) == GN.plan.go($G, es, nv, vp, ep, np, bs, _, p) : GN.GPR<K>}
+      {==}
