@@ -15,9 +15,11 @@ is newer.
 
 ## What runs where
 
-- **Verified:** `SO.solve` (lib/solve.bend) answers every request: the
-  verdict, each constraint's class, the pins, and the certified box. Its
-  laws (ROADMAP.bend, all proven) hold for whatever it is given: among
+- **Verified:** the word solver `FS.wsolve` (lib/fast.bend) answers every
+  request: the verdict, each constraint's class, the pins, and the
+  certified box. It is proven to return exactly `SO.solve`'s answer
+  (lib/solve.bend; ROADMAP: fast_solve), so the laws about `SO.solve`
+  (ROADMAP.bend, all proven) hold for whatever it is given: among
   them, the classes are the honest ones (solve_honest), honest classes are
   unique (honest_unique), a redundant constraint holds wherever the rest do
   (solve_amber), and a conflict cannot hold together with its support
