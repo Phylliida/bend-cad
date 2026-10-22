@@ -1,0 +1,266 @@
+# bend-cad: the block certificate checker (lib/cert.bend) gives the same
+# verdict through a map of computing numbers h : K -> L (lib/khom.bend):
+# CK.check in L of a certificate's image is CK.check in K of the
+# certificate, and the checker's intermediate vectors (the equations'
+# values, the slope enclosures, G r and the self-map's bound) in L are the
+# images of K's. Untrusted; for the word verdict (PLAN-sk13w W5).
+
+@MACRO KLH ~K: N.Num, ~L: N.Num, ~H: KH.Hom<K, L>
+@MACRO T ~K, ~L, ~H
+@MACRO h KH.hmap(K, L, H,
+@MACRO hv KH.hv(~K, ~L, ~H,
+@MACRO hm KH.hm(~K, ~L, ~H,
+@MACRO hb KH.hball(~K, ~L, ~H,
+@MACRO hbv KH.hbv(~K, ~L, ~H,
+@MACRO hbm KH.hbm(~K, ~L, ~H,
+@MACRO hc KH.hcert(~K, ~L, ~H,
+@MACRO CL N.NC(L)
+@MACRO VL N.KVec(~L)
+@MACRO ML N.KMat(~L)
+@MACRO BL KB.KB<L>
+@MACRO HZ KH.h_zero(K, L, H)
+@MACRO zK N.nzero(K)
+@MACRO zL N.nzero(L)
+@MACRO oK N.none(K)
+@MACRO oL N.none(L)
+
+import Base
+import ../spec/ring.bend as E
+import ../spec/knum.bend as N
+import ./certdef.bend as C
+import ./karith.bend as KA
+import ./kball.bend as KB
+import ./cert.bend as CK
+import ./khom.bend as KH
+import ./khompf.bend as KP
+
+# Pieces
+# ------
+
+def zipb_h($KLH, cs: N.KVec(~K), rs: N.KVec(~K)) -> {CK.zipb(~L, $hv cs), $hv rs)) == $hbv CK.zipb(~K, cs, rs)) : List<&2, $BL>}:
+  match cs rs:
+    case Nil{} Nil{}:
+      {==}
+    case Nil{} Con{+r, +rt}:
+      %$HZ : {Con{KB.KB{$zL, $h r)}, CK.zipb(~L, Nil{}, $hv rt))} == Con{KB.KB{_, $h r)}, $hbv CK.zipb(~K, Nil{}, rt))} : List<&2, $BL>}
+      %zipb_h($T, Nil{}, rt) : {Con{KB.KB{$zL, $h r)}, CK.zipb(~L, Nil{}, $hv rt))} == Con{KB.KB{$zL, $h r)}, _} : List<&2, $BL>}
+      {==}
+    case Con{+c, +ct} Nil{}:
+      %$HZ : {Con{KB.KB{$h c), $zL}, CK.zipb(~L, $hv ct), Nil{})} == Con{KB.KB{$h c), _}, $hbv CK.zipb(~K, ct, Nil{}))} : List<&2, $BL>}
+      %zipb_h($T, ct, Nil{}) : {Con{KB.KB{$h c), $zL}, CK.zipb(~L, $hv ct), Nil{})} == Con{KB.KB{$h c), $zL}, _} : List<&2, $BL>}
+      {==}
+    case Con{+c, +ct} Con{+r, +rt}:
+      %zipb_h($T, ct, rt) : {Con{KB.KB{$h c), $h r)}, CK.zipb(~L, $hv ct), $hv rt))} == Con{KB.KB{$h c), $h r)}, _} : List<&2, $BL>}
+      {==}
+
+def srows_h($KLH, +box: List<&2, KB.KB<K>>, +cnt: Nat, +lo: Nat, eqs: List<&2, E.QExpr>) -> {CK.srows(~L, $hbv box), cnt, lo, eqs) == $hbm CK.srows(~K, box, cnt, lo, eqs)) : List<&2, List<&2, $BL>>}:
+  match eqs:
+    case Nil{}:
+      {==}
+    case Con{+e, +es}:
+      %KP.krange_h($T, box, e, cnt, lo) : {Con{KB.krange(~L, $hbv box), e, cnt, lo), CK.srows(~L, $hbv box), cnt, lo, es)} == Con{_, $hbm CK.srows(~K, box, cnt, lo, es))} : List<&2, List<&2, $BL>>}
+      %srows_h($T, box, cnt, lo, es) : {Con{KB.krange(~L, $hbv box), e, cnt, lo), CK.srows(~L, $hbv box), cnt, lo, es)} == Con{KB.krange(~L, $hbv box), e, cnt, lo), _} : List<&2, List<&2, $BL>>}
+      {==}
+
+def mcenters_h($KLH, rows: List<&2, List<&2, KB.KB<K>>>) -> {CK.mcenters(~L, $hbm rows)) == $hm CK.mcenters(~K, rows)) : $ML}:
+  match rows:
+    case Nil{}:
+      {==}
+    case Con{+r, +rs}:
+      %KP.bcenters_h($T, r) : {Con{KB.bcenters(~L, $hbv r)), CK.mcenters(~L, $hbm rs))} == Con{_, $hm CK.mcenters(~K, rs))} : $ML}
+      %mcenters_h($T, rs) : {Con{KB.bcenters(~L, $hbv r)), CK.mcenters(~L, $hbm rs))} == Con{KB.bcenters(~L, $hbv r)), _} : $ML}
+      {==}
+
+def mradii_h($KLH, rows: List<&2, List<&2, KB.KB<K>>>) -> {CK.mradii(~L, $hbm rows)) == $hm CK.mradii(~K, rows)) : $ML}:
+  match rows:
+    case Nil{}:
+      {==}
+    case Con{+r, +rs}:
+      %KP.bradii_h($T, r) : {Con{KB.bradii(~L, $hbv r)), CK.mradii(~L, $hbm rs))} == Con{_, $hm CK.mradii(~K, rs))} : $ML}
+      %mradii_h($T, rs) : {Con{KB.bradii(~L, $hbv r)), CK.mradii(~L, $hbm rs))} == Con{KB.bradii(~L, $hbv r)), _} : $ML}
+      {==}
+
+def kvals_h($KLH, +env: N.KVec(~K), eqs: List<&2, E.QExpr>) -> {CK.kvals(~L, $hv env), eqs) == $hv CK.kvals(~K, env, eqs)) : $VL}:
+  match eqs:
+    case Nil{}:
+      {==}
+    case Con{+e, +es}:
+      %KP.keval_h($T, env, e) : {Con{KB.keval(~L, $hv env), e), CK.kvals(~L, $hv env), es)} == Con{_, $hv CK.kvals(~K, env, es))} : $VL}
+      %kvals_h($T, env, es) : {Con{KB.keval(~L, $hv env), e), CK.kvals(~L, $hv env), es)} == Con{KB.keval(~L, $hv env), e), _} : $VL}
+      {==}
+
+def allheld_h($KLH, eqs: List<&2, E.QExpr>) -> {CK.allheld(~L, eqs) == CK.allheld(~K, eqs) : Bool}:
+  match eqs:
+    case Nil{}:
+      {==}
+    case Con{+e, +es}:
+      %KP.held_h($T, e) : {KA.band(KB.held(~L, e), CK.allheld(~L, es)) == KA.band(_, CK.allheld(~K, es)) : Bool}
+      %allheld_h($T, es) : {KA.band(KB.held(~L, e), CK.allheld(~L, es)) == KA.band(KB.held(~L, e), _) : Bool}
+      {==}
+
+def mlen_h($KLH, a: N.KMat(~K)) -> {CK.mlen(~L, $hm a)) == CK.mlen(~K, a) : Nat}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +rs}:
+      %mlen_h($T, rs) : {1n+CK.mlen(~L, $hm rs)) == 1n+_ : Nat}
+      {==}
+
+# A certificate's fields through h
+# --------------------------------
+
+def yc_h($KLH, c: C.Cert<K>) -> {C.Cert.yc(L, $hc c)) == $hv C.Cert.yc(K, c)) : $VL}:
+  match c:
+    case C.Cert{yc, yr, q, ym, pc, pr}:
+      {==}
+
+def yr_h($KLH, c: C.Cert<K>) -> {C.Cert.yr(L, $hc c)) == $hv C.Cert.yr(K, c)) : $VL}:
+  match c:
+    case C.Cert{yc, yr, q, ym, pc, pr}:
+      {==}
+
+def q_h($KLH, c: C.Cert<K>) -> {C.Cert.q(L, $hc c)) == $h C.Cert.q(K, c)) : $CL}:
+  match c:
+    case C.Cert{yc, yr, q, ym, pc, pr}:
+      {==}
+
+def ym_h($KLH, c: C.Cert<K>) -> {C.Cert.ym(L, $hc c)) == $hm C.Cert.ym(K, c)) : $ML}:
+  match c:
+    case C.Cert{yc, yr, q, ym, pc, pr}:
+      {==}
+
+def pc_h($KLH, c: C.Cert<K>) -> {C.Cert.pc(L, $hc c)) == $hv C.Cert.pc(K, c)) : $VL}:
+  match c:
+    case C.Cert{yc, yr, q, ym, pc, pr}:
+      {==}
+
+def pr_h($KLH, c: C.Cert<K>) -> {C.Cert.pr(L, $hc c)) == $hv C.Cert.pr(K, c)) : $VL}:
+  match c:
+    case C.Cert{yc, yr, q, ym, pc, pr}:
+      {==}
+
+# The conditions
+# --------------
+
+def shape_h($KLH, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> {CK.shape(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == CK.shape(~K, eqs, n, yc, yr, ym, pc, pr) : Bool}:
+  %mlen_h($T, ym) : {CK.shape(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.band(KA.nateq(CK.eqlen(eqs), n), KA.band(KA.nateq(_, n), KA.band(KA.nateq(KA.klen(~K, yc), n), KA.band(KA.natle(KA.klen(~K, yr), n), KA.band(KA.nateq(KA.klen(~K, pc), KA.klen(~K, pr)), KA.band(KA.kvle(~K, Nil{}, yr), KA.band(KA.kvle(~K, Nil{}, pr), KA.band(CK.allheld(~K, eqs), CK.allbelow(Nat.add(n, KA.klen(~K, pc)), eqs))))))))) : Bool}
+  %KP.klen_h($T, yc) : {CK.shape(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.band(KA.nateq(CK.eqlen(eqs), n), KA.band(KA.nateq(CK.mlen(~L, $hm ym)), n), KA.band(KA.nateq(_, n), KA.band(KA.natle(KA.klen(~K, yr), n), KA.band(KA.nateq(KA.klen(~K, pc), KA.klen(~K, pr)), KA.band(KA.kvle(~K, Nil{}, yr), KA.band(KA.kvle(~K, Nil{}, pr), KA.band(CK.allheld(~K, eqs), CK.allbelow(Nat.add(n, KA.klen(~K, pc)), eqs))))))))) : Bool}
+  %KP.klen_h($T, yr) : {CK.shape(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.band(KA.nateq(CK.eqlen(eqs), n), KA.band(KA.nateq(CK.mlen(~L, $hm ym)), n), KA.band(KA.nateq(KA.klen(~L, $hv yc)), n), KA.band(KA.natle(_, n), KA.band(KA.nateq(KA.klen(~K, pc), KA.klen(~K, pr)), KA.band(KA.kvle(~K, Nil{}, yr), KA.band(KA.kvle(~K, Nil{}, pr), KA.band(CK.allheld(~K, eqs), CK.allbelow(Nat.add(n, KA.klen(~K, pc)), eqs))))))))) : Bool}
+  %KP.klen_h($T, pc) : {CK.shape(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.band(KA.nateq(CK.eqlen(eqs), n), KA.band(KA.nateq(CK.mlen(~L, $hm ym)), n), KA.band(KA.nateq(KA.klen(~L, $hv yc)), n), KA.band(KA.natle(KA.klen(~L, $hv yr)), n), KA.band(KA.nateq(_, KA.klen(~K, pr)), KA.band(KA.kvle(~K, Nil{}, yr), KA.band(KA.kvle(~K, Nil{}, pr), KA.band(CK.allheld(~K, eqs), CK.allbelow(Nat.add(n, KA.klen(~K, pc)), eqs))))))))) : Bool}
+  %KP.klen_h($T, pr) : {CK.shape(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.band(KA.nateq(CK.eqlen(eqs), n), KA.band(KA.nateq(CK.mlen(~L, $hm ym)), n), KA.band(KA.nateq(KA.klen(~L, $hv yc)), n), KA.band(KA.natle(KA.klen(~L, $hv yr)), n), KA.band(KA.nateq(KA.klen(~L, $hv pc)), _), KA.band(KA.kvle(~K, Nil{}, yr), KA.band(KA.kvle(~K, Nil{}, pr), KA.band(CK.allheld(~K, eqs), CK.allbelow(Nat.add(n, KA.klen(~K, pc)), eqs))))))))) : Bool}
+  %KP.kvle_h($T, Nil{}, yr) : {CK.shape(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.band(KA.nateq(CK.eqlen(eqs), n), KA.band(KA.nateq(CK.mlen(~L, $hm ym)), n), KA.band(KA.nateq(KA.klen(~L, $hv yc)), n), KA.band(KA.natle(KA.klen(~L, $hv yr)), n), KA.band(KA.nateq(KA.klen(~L, $hv pc)), KA.klen(~L, $hv pr))), KA.band(_, KA.band(KA.kvle(~K, Nil{}, pr), KA.band(CK.allheld(~K, eqs), CK.allbelow(Nat.add(n, KA.klen(~K, pc)), eqs))))))))) : Bool}
+  %KP.kvle_h($T, Nil{}, pr) : {CK.shape(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.band(KA.nateq(CK.eqlen(eqs), n), KA.band(KA.nateq(CK.mlen(~L, $hm ym)), n), KA.band(KA.nateq(KA.klen(~L, $hv yc)), n), KA.band(KA.natle(KA.klen(~L, $hv yr)), n), KA.band(KA.nateq(KA.klen(~L, $hv pc)), KA.klen(~L, $hv pr))), KA.band(KA.kvle(~L, Nil{}, $hv yr)), KA.band(_, KA.band(CK.allheld(~K, eqs), CK.allbelow(Nat.add(n, KA.klen(~K, pc)), eqs))))))))) : Bool}
+  %allheld_h($T, eqs) : {CK.shape(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.band(KA.nateq(CK.eqlen(eqs), n), KA.band(KA.nateq(CK.mlen(~L, $hm ym)), n), KA.band(KA.nateq(KA.klen(~L, $hv yc)), n), KA.band(KA.natle(KA.klen(~L, $hv yr)), n), KA.band(KA.nateq(KA.klen(~L, $hv pc)), KA.klen(~L, $hv pr))), KA.band(KA.kvle(~L, Nil{}, $hv yr)), KA.band(KA.kvle(~L, Nil{}, $hv pr)), KA.band(_, CK.allbelow(Nat.add(n, KA.klen(~K, pc)), eqs))))))))) : Bool}
+  %KP.klen_h($T, pc) : {CK.shape(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.band(KA.nateq(CK.eqlen(eqs), n), KA.band(KA.nateq(CK.mlen(~L, $hm ym)), n), KA.band(KA.nateq(KA.klen(~L, $hv yc)), n), KA.band(KA.natle(KA.klen(~L, $hv yr)), n), KA.band(KA.nateq(KA.klen(~L, $hv pc)), KA.klen(~L, $hv pr))), KA.band(KA.kvle(~L, Nil{}, $hv yr)), KA.band(KA.kvle(~L, Nil{}, $hv pr)), KA.band(CK.allheld(~L, eqs), CK.allbelow(Nat.add(n, _), eqs))))))))) : Bool}
+  {==}
+
+def factor_h($KLH, +q: N.NC(K)) -> {CK.factor(~L, $h q)) == CK.factor(~K, q) : Bool}:
+  %KP.kle0_h($T, q) : {CK.factor(~L, $h q)) == KA.band(_, KA.klt(~K, q, $oK)) : Bool}
+  %KP.klt1_h($T, q) : {CK.factor(~L, $h q)) == KA.band(KA.kle(~L, $zL, $h q)), _) : Bool}
+  {==}
+
+def box_h($KLH, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> {CK.box(~L, n, $hv yc), $hv yr), $hv pc), $hv pr)) == $hbv CK.box(~K, n, yc, yr, pc, pr)) : List<&2, $BL>}:
+  %zipb_h($T, KA.kapp(~K, yc, pc), KA.kapp(~K, KA.kfit(~K, n, yr), pr)) : {CK.box(~L, n, $hv yc), $hv yr), $hv pc), $hv pr)) == _ : List<&2, $BL>}
+  %KP.kapp_h($T, yc, pc) : {CK.box(~L, n, $hv yc), $hv yr), $hv pc), $hv pr)) == CK.zipb(~L, _, $hv KA.kapp(~K, KA.kfit(~K, n, yr), pr))) : List<&2, $BL>}
+  %KP.kapp_h($T, KA.kfit(~K, n, yr), pr) : {CK.box(~L, n, $hv yc), $hv yr), $hv pc), $hv pr)) == CK.zipb(~L, KA.kapp(~L, $hv yc), $hv pc)), _) : List<&2, $BL>}
+  %KP.kfit_h($T, n, yr) : {CK.box(~L, n, $hv yc), $hv yr), $hv pc), $hv pr)) == CK.zipb(~L, KA.kapp(~L, $hv yc), $hv pc)), KA.kapp(~L, _, $hv pr))) : List<&2, $BL>}
+  {==}
+
+def rowsy_h($KLH, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> {CK.rowsy(~L, eqs, n, $hv yc), $hv yr), $hv pc), $hv pr)) == $hbm CK.rowsy(~K, eqs, n, yc, yr, pc, pr)) : List<&2, List<&2, $BL>>}:
+  %srows_h($T, CK.box(~K, n, yc, yr, pc, pr), n, 0n, eqs) : {CK.rowsy(~L, eqs, n, $hv yc), $hv yr), $hv pc), $hv pr)) == _ : List<&2, List<&2, $BL>>}
+  %box_h($T, n, yc, yr, pc, pr) : {CK.rowsy(~L, eqs, n, $hv yc), $hv yr), $hv pc), $hv pr)) == CK.srows(~L, _, n, 0n, eqs) : List<&2, List<&2, $BL>>}
+  {==}
+
+def rowsz_h($KLH, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> {CK.rowsz(~L, eqs, n, $hv yc), $hv yr), $hv pc), $hv pr)) == $hbm CK.rowsz(~K, eqs, n, yc, yr, pc, pr)) : List<&2, List<&2, $BL>>}:
+  %srows_h($T, CK.box(~K, n, yc, yr, pc, pr), KA.klen(~K, pc), n, eqs) : {CK.rowsz(~L, eqs, n, $hv yc), $hv yr), $hv pc), $hv pr)) == _ : List<&2, List<&2, $BL>>}
+  %box_h($T, n, yc, yr, pc, pr) : {CK.rowsz(~L, eqs, n, $hv yc), $hv yr), $hv pc), $hv pr)) == CK.srows(~L, _, KA.klen(~K, pc), n, eqs) : List<&2, List<&2, $BL>>}
+  %KP.klen_h($T, pc) : {CK.rowsz(~L, eqs, n, $hv yc), $hv yr), $hv pc), $hv pr)) == CK.srows(~L, CK.box(~L, n, $hv yc), $hv yr), $hv pc), $hv pr)), _, n, eqs) : List<&2, List<&2, $BL>>}
+  {==}
+
+def imm_h($KLH, +n: Nat, +a: N.KMat(~K), +b: N.KMat(~K)) -> {CK.imm(~L, n, $hm a), $hm b)) == $hm CK.imm(~K, n, a, b)) : $ML}:
+  %KP.kmadd_h($T, KA.kident(~K, n), KA.kmneg(~K, KA.kmatmul(~K, a, b))) : {CK.imm(~L, n, $hm a), $hm b)) == _ : $ML}
+  %KP.kident_h($T, n) : {CK.imm(~L, n, $hm a), $hm b)) == KA.kmadd(~L, _, $hm KA.kmneg(~K, KA.kmatmul(~K, a, b)))) : $ML}
+  %KP.kmneg_h($T, KA.kmatmul(~K, a, b)) : {CK.imm(~L, n, $hm a), $hm b)) == KA.kmadd(~L, KA.kident(~L, n), _) : $ML}
+  %KP.kmatmul_h($T, a, b) : {CK.imm(~L, n, $hm a), $hm b)) == KA.kmadd(~L, KA.kident(~L, n), KA.kmneg(~L, _)) : $ML}
+  {==}
+
+def gvec_h($KLH, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> {CK.gvec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == $hv CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr)) : $VL}:
+  %KP.kvadd_h($T, KA.kmatvec(~K, KA.kmabs(~K, CK.imm(~K, n, ym, CK.mcenters(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr)))), yr), KA.kmatvec(~K, KA.kmabs(~K, ym), KA.kmatvec(~K, CK.mradii(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr)), yr))) : {CK.gvec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == _ : $VL}
+  %KP.kmatvec_h($T, KA.kmabs(~K, CK.imm(~K, n, ym, CK.mcenters(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr)))), yr) : {CK.gvec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, _, $hv KA.kmatvec(~K, KA.kmabs(~K, ym), KA.kmatvec(~K, CK.mradii(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr)), yr)))) : $VL}
+  %KP.kmabs_h($T, CK.imm(~K, n, ym, CK.mcenters(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr)))) : {CK.gvec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kmatvec(~L, _, $hv yr)), $hv KA.kmatvec(~K, KA.kmabs(~K, ym), KA.kmatvec(~K, CK.mradii(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr)), yr)))) : $VL}
+  %imm_h($T, n, ym, CK.mcenters(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr))) : {CK.gvec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kmatvec(~L, KA.kmabs(~L, _), $hv yr)), $hv KA.kmatvec(~K, KA.kmabs(~K, ym), KA.kmatvec(~K, CK.mradii(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr)), yr)))) : $VL}
+  %mcenters_h($T, CK.rowsy(~K, eqs, n, yc, yr, pc, pr)) : {CK.gvec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kmatvec(~L, KA.kmabs(~L, CK.imm(~L, n, $hm ym), _)), $hv yr)), $hv KA.kmatvec(~K, KA.kmabs(~K, ym), KA.kmatvec(~K, CK.mradii(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr)), yr)))) : $VL}
+  %rowsy_h($T, eqs, n, yc, yr, pc, pr) : {CK.gvec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kmatvec(~L, KA.kmabs(~L, CK.imm(~L, n, $hm ym), CK.mcenters(~L, _))), $hv yr)), $hv KA.kmatvec(~K, KA.kmabs(~K, ym), KA.kmatvec(~K, CK.mradii(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr)), yr)))) : $VL}
+  %KP.kmatvec_h($T, KA.kmabs(~K, ym), KA.kmatvec(~K, CK.mradii(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr)), yr)) : {CK.gvec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kmatvec(~L, KA.kmabs(~L, CK.imm(~L, n, $hm ym), CK.mcenters(~L, CK.rowsy(~L, eqs, n, $hv yc), $hv yr), $hv pc), $hv pr))))), $hv yr)), _) : $VL}
+  %KP.kmabs_h($T, ym) : {CK.gvec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kmatvec(~L, KA.kmabs(~L, CK.imm(~L, n, $hm ym), CK.mcenters(~L, CK.rowsy(~L, eqs, n, $hv yc), $hv yr), $hv pc), $hv pr))))), $hv yr)), KA.kmatvec(~L, _, $hv KA.kmatvec(~K, CK.mradii(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr)), yr)))) : $VL}
+  %KP.kmatvec_h($T, CK.mradii(~K, CK.rowsy(~K, eqs, n, yc, yr, pc, pr)), yr) : {CK.gvec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kmatvec(~L, KA.kmabs(~L, CK.imm(~L, n, $hm ym), CK.mcenters(~L, CK.rowsy(~L, eqs, n, $hv yc), $hv yr), $hv pc), $hv pr))))), $hv yr)), KA.kmatvec(~L, KA.kmabs(~L, $hm ym)), _)) : $VL}
+  %mradii_h($T, CK.rowsy(~K, eqs, n, yc, yr, pc, pr)) : {CK.gvec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kmatvec(~L, KA.kmabs(~L, CK.imm(~L, n, $hm ym), CK.mcenters(~L, CK.rowsy(~L, eqs, n, $hv yc), $hv yr), $hv pc), $hv pr))))), $hv yr)), KA.kmatvec(~L, KA.kmabs(~L, $hm ym)), KA.kmatvec(~L, _, $hv yr)))) : $VL}
+  %rowsy_h($T, eqs, n, yc, yr, pc, pr) : {CK.gvec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kmatvec(~L, KA.kmabs(~L, CK.imm(~L, n, $hm ym), CK.mcenters(~L, CK.rowsy(~L, eqs, n, $hv yc), $hv yr), $hv pc), $hv pr))))), $hv yr)), KA.kmatvec(~L, KA.kmabs(~L, $hm ym)), KA.kmatvec(~L, CK.mradii(~L, _), $hv yr)))) : $VL}
+  {==}
+
+def svec_h($KLH, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> {CK.svec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == $hv CK.svec(~K, eqs, n, yc, yr, ym, pc, pr)) : $VL}:
+  %KP.kvadd_h($T, KA.kvadd(~K, KA.kvabs(~K, KA.kmatvec(~K, ym, CK.kvals(~K, KA.kapp(~K, yc, pc), eqs))), KA.kmatvec(~K, KA.kmabs(~K, ym), KA.kmatvec(~K, KA.kmadd(~K, KA.kmabs(~K, CK.mcenters(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), CK.mradii(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), pr))), CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr)) : {CK.svec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == _ : $VL}
+  %KP.kvadd_h($T, KA.kvabs(~K, KA.kmatvec(~K, ym, CK.kvals(~K, KA.kapp(~K, yc, pc), eqs))), KA.kmatvec(~K, KA.kmabs(~K, ym), KA.kmatvec(~K, KA.kmadd(~K, KA.kmabs(~K, CK.mcenters(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), CK.mradii(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), pr))) : {CK.svec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, _, $hv CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr))) : $VL}
+  %KP.kvabs_h($T, KA.kmatvec(~K, ym, CK.kvals(~K, KA.kapp(~K, yc, pc), eqs))) : {CK.svec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kvadd(~L, _, $hv KA.kmatvec(~K, KA.kmabs(~K, ym), KA.kmatvec(~K, KA.kmadd(~K, KA.kmabs(~K, CK.mcenters(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), CK.mradii(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), pr)))), $hv CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr))) : $VL}
+  %KP.kmatvec_h($T, ym, CK.kvals(~K, KA.kapp(~K, yc, pc), eqs)) : {CK.svec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kvadd(~L, KA.kvabs(~L, _), $hv KA.kmatvec(~K, KA.kmabs(~K, ym), KA.kmatvec(~K, KA.kmadd(~K, KA.kmabs(~K, CK.mcenters(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), CK.mradii(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), pr)))), $hv CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr))) : $VL}
+  %kvals_h($T, KA.kapp(~K, yc, pc), eqs) : {CK.svec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kvadd(~L, KA.kvabs(~L, KA.kmatvec(~L, $hm ym), _)), $hv KA.kmatvec(~K, KA.kmabs(~K, ym), KA.kmatvec(~K, KA.kmadd(~K, KA.kmabs(~K, CK.mcenters(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), CK.mradii(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), pr)))), $hv CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr))) : $VL}
+  %KP.kapp_h($T, yc, pc) : {CK.svec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kvadd(~L, KA.kvabs(~L, KA.kmatvec(~L, $hm ym), CK.kvals(~L, _, eqs))), $hv KA.kmatvec(~K, KA.kmabs(~K, ym), KA.kmatvec(~K, KA.kmadd(~K, KA.kmabs(~K, CK.mcenters(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), CK.mradii(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), pr)))), $hv CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr))) : $VL}
+  %KP.kmatvec_h($T, KA.kmabs(~K, ym), KA.kmatvec(~K, KA.kmadd(~K, KA.kmabs(~K, CK.mcenters(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), CK.mradii(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), pr)) : {CK.svec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kvadd(~L, KA.kvabs(~L, KA.kmatvec(~L, $hm ym), CK.kvals(~L, KA.kapp(~L, $hv yc), $hv pc)), eqs))), _), $hv CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr))) : $VL}
+  %KP.kmabs_h($T, ym) : {CK.svec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kvadd(~L, KA.kvabs(~L, KA.kmatvec(~L, $hm ym), CK.kvals(~L, KA.kapp(~L, $hv yc), $hv pc)), eqs))), KA.kmatvec(~L, _, $hv KA.kmatvec(~K, KA.kmadd(~K, KA.kmabs(~K, CK.mcenters(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), CK.mradii(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), pr)))), $hv CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr))) : $VL}
+  %KP.kmatvec_h($T, KA.kmadd(~K, KA.kmabs(~K, CK.mcenters(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), CK.mradii(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), pr) : {CK.svec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kvadd(~L, KA.kvabs(~L, KA.kmatvec(~L, $hm ym), CK.kvals(~L, KA.kapp(~L, $hv yc), $hv pc)), eqs))), KA.kmatvec(~L, KA.kmabs(~L, $hm ym)), _)), $hv CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr))) : $VL}
+  %KP.kmadd_h($T, KA.kmabs(~K, CK.mcenters(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))), CK.mradii(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))) : {CK.svec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kvadd(~L, KA.kvabs(~L, KA.kmatvec(~L, $hm ym), CK.kvals(~L, KA.kapp(~L, $hv yc), $hv pc)), eqs))), KA.kmatvec(~L, KA.kmabs(~L, $hm ym)), KA.kmatvec(~L, _, $hv pr)))), $hv CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr))) : $VL}
+  %KP.kmabs_h($T, CK.mcenters(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr))) : {CK.svec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kvadd(~L, KA.kvabs(~L, KA.kmatvec(~L, $hm ym), CK.kvals(~L, KA.kapp(~L, $hv yc), $hv pc)), eqs))), KA.kmatvec(~L, KA.kmabs(~L, $hm ym)), KA.kmatvec(~L, KA.kmadd(~L, _, $hm CK.mradii(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr)))), $hv pr)))), $hv CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr))) : $VL}
+  %mcenters_h($T, CK.rowsz(~K, eqs, n, yc, yr, pc, pr)) : {CK.svec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kvadd(~L, KA.kvabs(~L, KA.kmatvec(~L, $hm ym), CK.kvals(~L, KA.kapp(~L, $hv yc), $hv pc)), eqs))), KA.kmatvec(~L, KA.kmabs(~L, $hm ym)), KA.kmatvec(~L, KA.kmadd(~L, KA.kmabs(~L, _), $hm CK.mradii(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr)))), $hv pr)))), $hv CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr))) : $VL}
+  %rowsz_h($T, eqs, n, yc, yr, pc, pr) : {CK.svec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kvadd(~L, KA.kvabs(~L, KA.kmatvec(~L, $hm ym), CK.kvals(~L, KA.kapp(~L, $hv yc), $hv pc)), eqs))), KA.kmatvec(~L, KA.kmabs(~L, $hm ym)), KA.kmatvec(~L, KA.kmadd(~L, KA.kmabs(~L, CK.mcenters(~L, _)), $hm CK.mradii(~K, CK.rowsz(~K, eqs, n, yc, yr, pc, pr)))), $hv pr)))), $hv CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr))) : $VL}
+  %mradii_h($T, CK.rowsz(~K, eqs, n, yc, yr, pc, pr)) : {CK.svec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kvadd(~L, KA.kvabs(~L, KA.kmatvec(~L, $hm ym), CK.kvals(~L, KA.kapp(~L, $hv yc), $hv pc)), eqs))), KA.kmatvec(~L, KA.kmabs(~L, $hm ym)), KA.kmatvec(~L, KA.kmadd(~L, KA.kmabs(~L, CK.mcenters(~L, CK.rowsz(~L, eqs, n, $hv yc), $hv yr), $hv pc), $hv pr)))), _), $hv pr)))), $hv CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr))) : $VL}
+  %rowsz_h($T, eqs, n, yc, yr, pc, pr) : {CK.svec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kvadd(~L, KA.kvabs(~L, KA.kmatvec(~L, $hm ym), CK.kvals(~L, KA.kapp(~L, $hv yc), $hv pc)), eqs))), KA.kmatvec(~L, KA.kmabs(~L, $hm ym)), KA.kmatvec(~L, KA.kmadd(~L, KA.kmabs(~L, CK.mcenters(~L, CK.rowsz(~L, eqs, n, $hv yc), $hv yr), $hv pc), $hv pr)))), CK.mradii(~L, _)), $hv pr)))), $hv CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr))) : $VL}
+  %gvec_h($T, eqs, n, yc, yr, ym, pc, pr) : {CK.svec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvadd(~L, KA.kvadd(~L, KA.kvabs(~L, KA.kmatvec(~L, $hm ym), CK.kvals(~L, KA.kapp(~L, $hv yc), $hv pc)), eqs))), KA.kmatvec(~L, KA.kmabs(~L, $hm ym)), KA.kmatvec(~L, KA.kmadd(~L, KA.kmabs(~L, CK.mcenters(~L, CK.rowsz(~L, eqs, n, $hv yc), $hv yr), $hv pc), $hv pr)))), CK.mradii(~L, CK.rowsz(~L, eqs, n, $hv yc), $hv yr), $hv pc), $hv pr)))), $hv pr)))), _) : $VL}
+  {==}
+
+def ccon_h($KLH, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +q: N.NC(K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> {CK.ccon(~L, eqs, n, $hv yc), $hv yr), $h q), $hm ym), $hv pc), $hv pr)) == CK.ccon(~K, eqs, n, yc, yr, q, ym, pc, pr) : Bool}:
+  %KP.kvle_h($T, CK.gvec(~K, eqs, n, yc, yr, ym, pc, pr), KA.kvscale(~K, q, yr)) : {CK.ccon(~L, eqs, n, $hv yc), $hv yr), $h q), $hm ym), $hv pc), $hv pr)) == _ : Bool}
+  %gvec_h($T, eqs, n, yc, yr, ym, pc, pr) : {CK.ccon(~L, eqs, n, $hv yc), $hv yr), $h q), $hm ym), $hv pc), $hv pr)) == KA.kvle(~L, _, $hv KA.kvscale(~K, q, yr))) : Bool}
+  %KP.kvscale_h($T, q, yr) : {CK.ccon(~L, eqs, n, $hv yc), $hv yr), $h q), $hm ym), $hv pc), $hv pr)) == KA.kvle(~L, CK.gvec(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)), _) : Bool}
+  {==}
+
+def cself_h($KLH, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> {CK.cself(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == CK.cself(~K, eqs, n, yc, yr, ym, pc, pr) : Bool}:
+  %KP.kvle_h($T, CK.svec(~K, eqs, n, yc, yr, ym, pc, pr), yr) : {CK.cself(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == _ : Bool}
+  %svec_h($T, eqs, n, yc, yr, ym, pc, pr) : {CK.cself(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.kvle(~L, _, $hv yr)) : Bool}
+  {==}
+
+def cpos_h($KLH, +n: Nat, +yr: N.KVec(~K)) -> {CK.cpos(~L, n, $hv yr)) == CK.cpos(~K, n, yr) : Bool}:
+  %KP.klen_h($T, yr) : {CK.cpos(~L, n, $hv yr)) == KA.band(KA.nateq(_, n), KA.kvlt(~K, Nil{}, yr)) : Bool}
+  %KP.kvlt_h($T, Nil{}, yr) : {CK.cpos(~L, n, $hv yr)) == KA.band(KA.nateq(KA.klen(~L, $hv yr)), n), _) : Bool}
+  {==}
+
+def rest3_h($KLH, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> {CK.rest3(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == CK.rest3(~K, eqs, n, yc, yr, ym, pc, pr) : Bool}:
+  %cself_h($T, eqs, n, yc, yr, ym, pc, pr) : {CK.rest3(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.band(_, CK.cpos(~K, n, yr)) : Bool}
+  %cpos_h($T, n, yr) : {CK.rest3(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)) == KA.band(CK.cself(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)), _) : Bool}
+  {==}
+
+def rest2_h($KLH, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +q: N.NC(K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> {CK.rest2(~L, eqs, n, $hv yc), $hv yr), $h q), $hm ym), $hv pc), $hv pr)) == CK.rest2(~K, eqs, n, yc, yr, q, ym, pc, pr) : Bool}:
+  %ccon_h($T, eqs, n, yc, yr, q, ym, pc, pr) : {CK.rest2(~L, eqs, n, $hv yc), $hv yr), $h q), $hm ym), $hv pc), $hv pr)) == KA.band(_, CK.rest3(~K, eqs, n, yc, yr, ym, pc, pr)) : Bool}
+  %rest3_h($T, eqs, n, yc, yr, ym, pc, pr) : {CK.rest2(~L, eqs, n, $hv yc), $hv yr), $h q), $hm ym), $hv pc), $hv pr)) == KA.band(CK.ccon(~L, eqs, n, $hv yc), $hv yr), $h q), $hm ym), $hv pc), $hv pr)), _) : Bool}
+  {==}
+
+def rest1_h($KLH, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +q: N.NC(K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> {CK.rest1(~L, eqs, n, $hv yc), $hv yr), $h q), $hm ym), $hv pc), $hv pr)) == CK.rest1(~K, eqs, n, yc, yr, q, ym, pc, pr) : Bool}:
+  %factor_h($T, q) : {CK.rest1(~L, eqs, n, $hv yc), $hv yr), $h q), $hm ym), $hv pc), $hv pr)) == KA.band(_, CK.rest2(~K, eqs, n, yc, yr, q, ym, pc, pr)) : Bool}
+  %rest2_h($T, eqs, n, yc, yr, q, ym, pc, pr) : {CK.rest1(~L, eqs, n, $hv yc), $hv yr), $h q), $hm ym), $hv pc), $hv pr)) == KA.band(CK.factor(~L, $h q)), _) : Bool}
+  {==}
+
+def check_go_h($KLH, +eqs: List<&2, E.QExpr>, +n: Nat, +yc: N.KVec(~K), +yr: N.KVec(~K), +q: N.NC(K), +ym: N.KMat(~K), +pc: N.KVec(~K), +pr: N.KVec(~K)) -> {CK.check.go(~L, eqs, n, $hv yc), $hv yr), $h q), $hm ym), $hv pc), $hv pr)) == CK.check.go(~K, eqs, n, yc, yr, q, ym, pc, pr) : Bool}:
+  %shape_h($T, eqs, n, yc, yr, ym, pc, pr) : {CK.check.go(~L, eqs, n, $hv yc), $hv yr), $h q), $hm ym), $hv pc), $hv pr)) == KA.band(_, CK.rest1(~K, eqs, n, yc, yr, q, ym, pc, pr)) : Bool}
+  %rest1_h($T, eqs, n, yc, yr, q, ym, pc, pr) : {CK.check.go(~L, eqs, n, $hv yc), $hv yr), $h q), $hm ym), $hv pc), $hv pr)) == KA.band(CK.shape(~L, eqs, n, $hv yc), $hv yr), $hm ym), $hv pc), $hv pr)), _) : Bool}
+  {==}
+
+def check_c_h($KLH, +eqs: List<&2, E.QExpr>, +n: Nat, c: C.Cert<K>) -> {CK.check.c(~L, eqs, n, $hc c)) == CK.check.c(~K, eqs, n, c) : Bool}:
+  match c:
+    case C.Cert{+yc, +yr, +q, +ym, +pc, +pr}:
+      check_go_h($T, eqs, n, yc, yr, q, ym, pc, pr)
+
+# the checker's verdict on a certificate's image is its verdict on the
+# certificate
+def ccheck_h($KLH, b: C.Block, c: C.Cert<K>) -> {CK.check(~L, b, $hc c)) == CK.check(~K, b, c) : Bool}:
+  match b:
+    case C.Block{+eqs, +n}:
+      check_c_h($T, eqs, n, c)
