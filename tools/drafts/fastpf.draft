@@ -1,0 +1,194 @@
+# bend-cad: the fast solver (lib/fast.bend) returns exactly what the solver
+# (lib/solve.bend) returns, for any computing numbers K with the proposer's
+# operations W and laws R relating them to KI.dnum() (lib/pops.bend): its
+# proposer gives numer's plan through the map (lib/gplanpf.bend: plan_t),
+# its verdict on the mapped answer is SO.final's (the checker through the
+# map: lib/planhpf.bend), and the answer sent back through tod is the
+# solver's. At the CLI's word dyadics in base 2^14 (FS.wsolve), with the
+# word laws at that base, it is SO.solve: wsolve_eq. Every law about the
+# solver holds for it (PLAN-sk13w W6).
+
+@MACRO KWR ~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>
+@MACRO T ~K, ~W, ~R
+@MACRO G ~K, ~W
+@MACRO HH ~K, ~PO.hom(K, W, R)
+@MACRO D ~KI.dnum(), ~K, ~PO.hom(K, W, R)
+@MACRO h KH.hmap(KI.dnum(), K, PO.hom(K, W, R),
+@MACRO hv KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R),
+@MACRO hm KH.hm(~KI.dnum(), ~K, ~PO.hom(K, W, R),
+@MACRO hc KH.hcert(~KI.dnum(), ~K, ~PO.hom(K, W, R),
+@MACRO hpb KH.hpb(~KI.dnum(), ~K, ~PO.hom(K, W, R),
+@MACRO hpbs KH.hpbs(~KI.dnum(), ~K, ~PO.hom(K, W, R),
+@MACRO hpl KH.hplan(~KI.dnum(), ~K, ~PO.hom(K, W, R),
+@MACRO V N.KVec(~K)
+@MACRO DV List<&2, S.D>
+@MACRO DM List<&2, List<&2, S.D>>
+@MACRO DC C.Cert<KI.dnum()>
+@MACRO DP PL.Plan<KI.dnum()>
+@MACRO LOFD PO.l_ofd(K, W, R)
+@MACRO LTOD PO.l_tod(K, W, R)
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/knum.bend as N
+import ../spec/sketch.bend as SK
+import ../spec/box.bend as BX
+import ../spec/solve.bend as SV
+import ./certdef.bend as C
+import ./karith.bend as KA
+import ./kinst.bend as KI
+import ./plan.bend as PL
+import ./struct.bend as ST
+import ./wfdec.bend as WF
+import ./verdict.bend as VD
+import ./cert.bend as CK
+import ./solve.bend as SO
+import ./numer.bend as NU
+import ./pops.bend as PO
+import ./gnumer.bend as GN
+import ./gmap.bend as GM
+import ./khom.bend as KH
+import ./khompf.bend as KP
+import ./planhpf.bend as PH
+import ./fast.bend as FS
+
+# Conversions with S.D
+# --------------------
+
+def ofdv_t($KWR, xs: $DV) -> {FS.ofdv($G, xs) == $hv xs) : $V}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      %$LOFD(x) : {Con{PO.ofd(K, W, x), FS.ofdv($G, t)} == Con{_, $hv t)} : $V}
+      %ofdv_t($T, t) : {Con{PO.ofd(K, W, x), FS.ofdv($G, t)} == Con{PO.ofd(K, W, x), _} : $V}
+      {==}
+
+def todv_t($KWR, xs: $DV) -> {FS.todv($G, $hv xs)) == xs : $DV}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      %$LTOD(x) : {Con{PO.tod(K, W, $h x)), FS.todv($G, $hv t))} == Con{_, t} : $DV}
+      %todv_t($T, t) : {Con{PO.tod(K, W, $h x)), FS.todv($G, $hv t))} == Con{PO.tod(K, W, $h x)), _} : $DV}
+      {==}
+
+def todm_t($KWR, a: $DM) -> {FS.todm($G, $hm a)) == a : $DM}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +t}:
+      %todv_t($T, r) : {Con{FS.todv($G, $hv r)), FS.todm($G, $hm t))} == Con{_, t} : $DM}
+      %todm_t($T, t) : {Con{FS.todv($G, $hv r)), FS.todm($G, $hm t))} == Con{FS.todv($G, $hv r)), _} : $DM}
+      {==}
+
+@MACRO TCL C.Cert{FS.todv($G, $hv yc)), FS.todv($G, $hv yr)), PO.tod(K, W, $h q)), FS.todm($G, $hm ym)), FS.todv($G, $hv pc)), FS.todv($G, $hv pr))}
+
+def todcert_t($KWR, c: $DC) -> {FS.todcert($G, $hc c)) == c : $DC}:
+  match c:
+    case C.Cert{+yc, +yr, +q, +ym, +pc, +pr}:
+      %todv_t($T, yc) : {$TCL == C.Cert{_, yr, q, ym, pc, pr} : $DC}
+      %todv_t($T, yr) : {$TCL == C.Cert{FS.todv($G, $hv yc)), _, q, ym, pc, pr} : $DC}
+      %$LTOD(q) : {$TCL == C.Cert{FS.todv($G, $hv yc)), FS.todv($G, $hv yr)), _, ym, pc, pr} : $DC}
+      %todm_t($T, ym) : {$TCL == C.Cert{FS.todv($G, $hv yc)), FS.todv($G, $hv yr)), PO.tod(K, W, $h q)), _, pc, pr} : $DC}
+      %todv_t($T, pc) : {$TCL == C.Cert{FS.todv($G, $hv yc)), FS.todv($G, $hv yr)), PO.tod(K, W, $h q)), FS.todm($G, $hm ym)), _, pr} : $DC}
+      %todv_t($T, pr) : {$TCL == C.Cert{FS.todv($G, $hv yc)), FS.todv($G, $hv yr)), PO.tod(K, W, $h q)), FS.todm($G, $hm ym)), FS.todv($G, $hv pc)), _} : $DC}
+      {==}
+
+def todpb_t($KWR, b: PL.PBlock<KI.dnum()>) -> {FS.todpb($G, $hpb b)) == b : PL.PBlock<KI.dnum()>}:
+  match b:
+    case PL.PBlock{+n, +pars, +c}:
+      %todcert_t($T, c) : {PL.PBlock{n, pars, FS.todcert($G, $hc c))} == PL.PBlock{n, pars, _} : PL.PBlock<KI.dnum()>}
+      {==}
+
+def todpbs_t($KWR, bs: List<&2, PL.PBlock<KI.dnum()>>) -> {FS.todpbs($G, $hpbs bs)) == bs : List<&2, PL.PBlock<KI.dnum()>>}:
+  match bs:
+    case Nil{}:
+      {==}
+    case Con{+b, +t}:
+      %todpb_t($T, b) : {Con{FS.todpb($G, $hpb b)), FS.todpbs($G, $hpbs t))} == Con{_, t} : List<&2, PL.PBlock<KI.dnum()>>}
+      %todpbs_t($T, t) : {Con{FS.todpb($G, $hpb b)), FS.todpbs($G, $hpbs t))} == Con{FS.todpb($G, $hpb b)), _} : List<&2, PL.PBlock<KI.dnum()>>}
+      {==}
+
+def todplan_t($KWR, p: $DP) -> {FS.todplan($G, $hpl p)) == p : $DP}:
+  match p:
+    case PL.Plan{+vp, +ep, +np, +bs}:
+      %todpbs_t($T, bs) : {PL.Plan{vp, ep, np, FS.todpbs($G, $hpbs bs))} == PL.Plan{vp, ep, np, _} : $DP}
+      {==}
+
+def len_t($KWR, xs: $DV) -> {List.length(&2, N.NC(K), $hv xs)) == List.length(&2, N.NC(KI.dnum()), xs) : Nat}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{x, +t}:
+      %len_t($T, t) : {1n+List.length(&2, N.NC(K), $hv t)) == 1n+_ : Nat}
+      {==}
+
+# The verdict
+# -----------
+
+def shape_t($KWR, +nv: Nat, +nq: Nat, +gc: $DV, +pins: List<&2, Nat>, p: $DP) -> {FS.shape(~K, nv, nq, $hv gc), pins, $hpl p)) == SO.shape(nv, nq, gc, pins, p) : Bool}:
+  match p:
+    case PL.Plan{+vp, +ep, +np, bs}:
+      %KP.klen_h($D, gc) : {KA.band(KA.nateq(KA.klen(~K, $hv gc)), nv), KA.band(KA.nateq(PL.nlen(vp), nv), KA.band(SV.distinct(vp), KA.band(KA.nateq(PL.nlen(ep), nq), SO.nl_eq(SO.ntake(np, vp), pins))))) == KA.band(KA.nateq(_, nv), KA.band(KA.nateq(PL.nlen(vp), nv), KA.band(SV.distinct(vp), KA.band(KA.nateq(PL.nlen(ep), nq), SO.nl_eq(SO.ntake(np, vp), pins))))) : Bool}
+      {==}
+
+@MACRO FMK SV.mark(SV.reds(cls), sk)
+@MACRO FSOL SV.solved(sk, SV.reds(cls), SV.dropped(cls))
+@MACRO FSID SK.Sketch.sides(SV.mark(SV.cat(SV.reds(cls), SV.ambers(cls)), sk))
+@MACRO FEX VD.exact(sk, cls)
+@MACRO FSHL FS.shape(~K, SO.nvars(sk), CK.eqlen($FSOL), $hv gc), pins, $hpl p))
+@MACRO FSHR SO.shape(SO.nvars(sk), CK.eqlen($FSOL), gc, pins, p)
+@MACRO FCHL PL.check(~K, $FSOL, $hv gc), $hv gr), $hpl p))
+@MACRO FCHR PL.check(~KI.dnum(), $FSOL, gc, gr, p)
+@MACRO FSDL PL.check_sides(~K, $FSID, $hv gc), $hv gr))
+@MACRO FSDR PL.check_sides(~KI.dnum(), $FSID, gc, gr)
+@MACRO FLNL List.length(&2, N.NC(K), $hv gc))
+@MACRO FLNR List.length(&2, N.NC(KI.dnum()), gc)
+@MACRO FHDL SV.held(pins, g0, FS.todv($G, $hv gc)), FS.todv($G, $hv gr)))
+@MACRO FL KA.band($FHDL, KA.band(WF.wf_dec($FMK), KA.band(BX.Sketch.within($FMK, $FLNL), KA.band($FCHL, KA.band($FSDL, KA.band($FSHL, $FEX))))))
+
+# SO.final's verdict on an answer is FS.final's on its image
+def final_c($KWR, +sk: SK.Sketch, +g0: $DV, +ok: Bool, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +gc: $DV, +gr: $DV, +p: $DP) -> {FS.final($G, sk, g0, FS.FOut{ok, cls, pins, $hv gc), $hv gr), $hpl p)}) == SO.final(sk, g0, SO.Out{ok, cls, pins, gc, gr, p}) : Bool}:
+  %todv_t($T, gc) : {$FL == KA.band(SV.held(pins, g0, _, gr), KA.band(WF.wf_dec($FMK), KA.band(BX.Sketch.within($FMK, $FLNR), KA.band($FCHR, KA.band($FSDR, KA.band($FSHR, $FEX)))))) : Bool}
+  %todv_t($T, gr) : {$FL == KA.band(SV.held(pins, g0, FS.todv($G, $hv gc)), _), KA.band(WF.wf_dec($FMK), KA.band(BX.Sketch.within($FMK, $FLNR), KA.band($FCHR, KA.band($FSDR, KA.band($FSHR, $FEX)))))) : Bool}
+  %len_t($T, gc) : {$FL == KA.band($FHDL, KA.band(WF.wf_dec($FMK), KA.band(BX.Sketch.within($FMK, _), KA.band($FCHR, KA.band($FSDR, KA.band($FSHR, $FEX)))))) : Bool}
+  %PH.pcheck_h($D, $FSOL, gc, gr, p) : {$FL == KA.band($FHDL, KA.band(WF.wf_dec($FMK), KA.band(BX.Sketch.within($FMK, $FLNL), KA.band(_, KA.band($FSDR, KA.band($FSHR, $FEX)))))) : Bool}
+  %PH.check_sides_h($D, $FSID, gc, gr) : {$FL == KA.band($FHDL, KA.band(WF.wf_dec($FMK), KA.band(BX.Sketch.within($FMK, $FLNL), KA.band($FCHL, KA.band(_, KA.band($FSHR, $FEX)))))) : Bool}
+  %shape_t($T, SO.nvars(sk), CK.eqlen($FSOL), gc, pins, p) : {$FL == KA.band($FHDL, KA.band(WF.wf_dec($FMK), KA.band(BX.Sketch.within($FMK, $FLNL), KA.band($FCHL, KA.band($FSDL, KA.band(_, $FEX)))))) : Bool}
+  {==}
+
+def accept_t($KWR, m: NU.PR, +sk: SK.Sketch, +g0: $DV, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>) -> {FS.accept($G, GM.hpr($HH, m), sk, g0, cls, pins) == SO.accept(m, sk, g0, cls, pins) : Bool}:
+  match m:
+    case NU.POk{NU.NP{+plan, +gc, +gr}}:
+      final_c($T, sk, g0, True{}, cls, pins, gc, gr, plan)
+    case NU.PRetry{}:
+      {==}
+    case NU.PStop{}:
+      {==}
+
+# The answer
+# ----------
+
+def hrun(~K: N.Num, ~H: KH.Hom<KI.dnum(), K>, r: SO.Run) -> FS.FRun<K>:
+  match r:
+    case SO.Run{ok, m}:
+      FS.FRun{ok, GM.hpr(~K, ~H, m)}
+
+def answer_m($KWR, +ok: Bool, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, m: NU.PR) -> {FS.answer($G, cls, pins, FS.FRun{ok, GM.hpr($HH, m)}) == SO.answer(cls, pins, SO.Run{ok, m}) : SO.Out}:
+  match m:
+    case NU.POk{NU.NP{+plan, +gc, +gr}}:
+      %todv_t($T, gc) : {SO.Out{ok, cls, pins, FS.todv($G, $hv gc)), FS.todv($G, $hv gr)), FS.todplan($G, $hpl plan))} == SO.Out{ok, cls, pins, _, gr, plan} : SO.Out}
+      %todv_t($T, gr) : {SO.Out{ok, cls, pins, FS.todv($G, $hv gc)), FS.todv($G, $hv gr)), FS.todplan($G, $hpl plan))} == SO.Out{ok, cls, pins, FS.todv($G, $hv gc)), _, plan} : SO.Out}
+      %todplan_t($T, plan) : {SO.Out{ok, cls, pins, FS.todv($G, $hv gc)), FS.todv($G, $hv gr)), FS.todplan($G, $hpl plan))} == SO.Out{ok, cls, pins, FS.todv($G, $hv gc)), FS.todv($G, $hv gr)), _} : SO.Out}
+      {==}
+    case NU.PRetry{}:
+      {==}
+    case NU.PStop{}:
+      {==}
+
+def answer_t($KWR, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, r: SO.Run) -> {FS.answer($G, cls, pins, hrun($HH, r)) == SO.answer(cls, pins, r) : SO.Out}:
+  match r:
+    case SO.Run{+ok, +m}:
+      answer_m($T, ok, cls, pins, m)
