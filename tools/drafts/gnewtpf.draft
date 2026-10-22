@@ -1,0 +1,193 @@
+# bend-cad: lib/gnumer.bend's Newton, Y and radius search return exactly
+# numer.bend's results sent through the map h : KI.dnum() -> K of laws R
+# (lib/pops.bend), for every K and every operations W with such laws.
+# Each lemma states GN.f(W, h args) = h(NU.f(args)) and is proven by
+# rewriting the right side's images into GN's terms, bottom up, with the
+# map's laws (lib/khom.bend), W's (lib/pops.bend), the checker's
+# parametricity (lib/khompf.bend, lib/certhpf.bend) and the elimination's
+# (lib/gelimpf.bend). Untrusted; PLAN-sk13w W4.
+
+@MACRO KWR ~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>
+@MACRO T ~K, ~W, ~R
+@MACRO G ~K, ~W
+@MACRO HH ~K, ~PO.hom(K, W, R)
+@MACRO D ~KI.dnum(), ~K, ~PO.hom(K, W, R)
+@MACRO h KH.hmap(KI.dnum(), K, PO.hom(K, W, R),
+@MACRO hv KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R),
+@MACRO hm KH.hm(~KI.dnum(), ~K, ~PO.hom(K, W, R),
+@MACRO hc KH.hcert(~KI.dnum(), ~K, ~PO.hom(K, W, R),
+@MACRO NK N.NC(K)
+@MACRO VK N.KVec(~K)
+@MACRO MK N.KMat(~K)
+@MACRO DV List<&2, S.D>
+@MACRO DM List<&2, List<&2, S.D>>
+@MACRO EQS List<&2, E.QExpr>
+@MACRO HADD KH.h_add(KI.dnum(), K, PO.hom(K, W, R))
+@MACRO HMUL KH.h_mul(KI.dnum(), K, PO.hom(K, W, R))
+@MACRO LSIG PO.l_sig(K, W, R)
+@MACRO LROUND PO.l_round(K, W, R)
+@MACRO LSIGUP PO.l_sigup(K, W, R)
+@MACRO LOFD PO.l_ofd(K, W, R)
+@MACRO C1716 S.D{S.Zpos{S.XI{S.XO{S.XO{S.XO{S.XH{}}}}}}, 4n}
+@MACRO C6564 S.D{S.Zpos{S.XI{S.XO{S.XO{S.XO{S.XO{S.XO{S.XH{}}}}}}}}, 6n}
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/knum.bend as N
+import ./certdef.bend as C
+import ./karith.bend as KA
+import ./kinst.bend as KI
+import ./cert.bend as CK
+import ./numer.bend as NU
+import ./khom.bend as KH
+import ./khompf.bend as KP
+import ./certhpf.bend as CH
+import ./pops.bend as PO
+import ./gnumer.bend as GN
+import ./gmap.bend as GM
+
+# Lists
+# -----
+
+def dlook_t($KWR, xs: $DV, k: Nat) -> {GN.dlook($G, $hv xs), k) == $h NU.dlook(xs, k)) : $NK}:
+  match xs k:
+    case Nil{} k:
+      $LOFD(NU.dzero())
+    case Con{x, t} 0n:
+      {==}
+    case Con{x, t} 1n+j:
+      dlook_t($T, t, j)
+
+def dpick_t($KWR, +xs: $DV, ks: List<&2, Nat>) -> {GN.dpick($G, $hv xs), ks) == $hv NU.dpick(xs, ks)) : $VK}:
+  match ks:
+    case Nil{}:
+      {==}
+    case Con{+k, +t}:
+      %dlook_t($T, xs, k) : {Con{GN.dlook($G, $hv xs), k), GN.dpick($G, $hv xs), t)} == Con{_, $hv NU.dpick(xs, t))} : $VK}
+      %dpick_t($T, xs, t) : {Con{GN.dlook($G, $hv xs), k), GN.dpick($G, $hv xs), t)} == Con{GN.dlook($G, $hv xs), k), _} : $VK}
+      {==}
+
+def dtake_t($KWR, n: Nat, xs: $DV) -> {GN.dtake($G, n, $hv xs)) == $hv NU.dtake(n, xs)) : $VK}:
+  match n xs:
+    case 0n xs:
+      {==}
+    case 1n+m Nil{}:
+      {==}
+    case 1n+m Con{+x, +t}:
+      %dtake_t($T, m, t) : {Con{$h x), GN.dtake($G, m, $hv t))} == Con{$h x), _} : $VK}
+      {==}
+
+def cyc_t($KWR, c: C.Cert<KI.dnum()>) -> {GN.cert.yc($G, $hc c)) == $hv NU.cert.yc(c)) : $VK}:
+  match c:
+    case C.Cert{yc, yr, q, ym, pc, pr}:
+      {==}
+
+def cyr_t($KWR, c: C.Cert<KI.dnum()>) -> {GN.cert.yr($G, $hc c)) == $hv NU.cert.yr(c)) : $VK}:
+  match c:
+    case C.Cert{yc, yr, q, ym, pc, pr}:
+      {==}
+
+# The Jacobian and the values: the checker's own
+# ----------------------------------------------
+
+def jac_t($KWR, +eqs: $EQS, +n: Nat, +env: $DV) -> {GN.jac($G, eqs, n, $hv env)) == $hm NU.jac(eqs, n, env)) : $MK}:
+  %CH.mcenters_h($D, CK.srows(~KI.dnum(), CK.zipb(~KI.dnum(), env, Nil{}), n, 0n, eqs)) : {GN.jac($G, eqs, n, $hv env)) == _ : $MK}
+  %CH.srows_h($D, CK.zipb(~KI.dnum(), env, Nil{}), n, 0n, eqs) : {GN.jac($G, eqs, n, $hv env)) == CK.mcenters(~K, _) : $MK}
+  %CH.zipb_h($D, env, Nil{}) : {GN.jac($G, eqs, n, $hv env)) == CK.mcenters(~K, CK.srows(~K, _, n, 0n, eqs)) : $MK}
+  {==}
+
+def vals_t($KWR, +eqs: $EQS, +env: $DV) -> {GN.vals($G, eqs, $hv env)) == $hv NU.vals(eqs, env)) : $VK}:
+  CH.kvals_h($D, env, eqs)
+
+# One Newton step
+# ---------------
+
+def nstep_round_t($KWR, ys: $DV, ds: $DV, +p: Nat) -> {GN.nstep.round($G, $hv ys), $hv ds), p) == $hv NU.nstep.round(ys, ds, p)) : $VK}:
+  match ys ds:
+    case Nil{} ds:
+      {==}
+    case Con{+y, +yt} Nil{}:
+      %$LROUND(y, p) : {Con{PO.round(K, W, $h y), p), GN.nstep.round($G, $hv yt), Nil{}, p)} == Con{_, $hv NU.nstep.round(yt, Nil{}, p))} : $VK}
+      %nstep_round_t($T, yt, Nil{}, p) : {Con{PO.round(K, W, $h y), p), GN.nstep.round($G, $hv yt), Nil{}, p)} == Con{PO.round(K, W, $h y), p), _} : $VK}
+      {==}
+    case Con{+y, +yt} Con{+d, +dt}:
+      %$LROUND(S.D.sub(y, d), p) : {Con{PO.round(K, W, KA.ksub(~K, $h y), $h d)), p), GN.nstep.round($G, $hv yt), $hv dt), p)} == Con{_, $hv NU.nstep.round(yt, dt, p))} : $VK}
+      %KP.ksub_h($D, y, d) : {Con{PO.round(K, W, KA.ksub(~K, $h y), $h d)), p), GN.nstep.round($G, $hv yt), $hv dt), p)} == Con{PO.round(K, W, _, p), $hv NU.nstep.round(yt, dt, p))} : $VK}
+      %nstep_round_t($T, yt, dt, p) : {Con{PO.round(K, W, KA.ksub(~K, $h y), $h d)), p), GN.nstep.round($G, $hv yt), $hv dt), p)} == Con{PO.round(K, W, KA.ksub(~K, $h y), $h d)), p), _} : $VK}
+      {==}
+
+# Newton's states
+# ---------------
+
+def classify_go_t($KWR, same: Bool, +y2: $DV) -> {GN.classify.go($G, same, $hv y2)) == GM.hns($HH, NU.classify.go(same, y2)) : GN.GNS<K>}:
+  match same:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def dclose_t($KWR, xs: $DV, ys: $DV, +t: S.D) -> {GN.dclose($G, $hv xs), $hv ys), $h t)) == NU.dclose(xs, ys, t) : Bool}:
+  match xs ys:
+    case Nil{} Nil{}:
+      {==}
+    case Nil{} Con{y, yt}:
+      {==}
+    case Con{x, xt} Nil{}:
+      {==}
+    case Con{+x, +xt} Con{+y, +yt}:
+      %KP.kle_h($D, NU.dabs(S.D.sub(x, y)), t) : {KA.band(KA.kle(~K, GN.dabs($G, KA.ksub(~K, $h x), $h y))), $h t)), GN.dclose($G, $hv xt), $hv yt), $h t))) == KA.band(_, NU.dclose(xt, yt, t)) : Bool}
+      %KP.kabs_h($D, S.D.sub(x, y)) : {KA.band(KA.kle(~K, GN.dabs($G, KA.ksub(~K, $h x), $h y))), $h t)), GN.dclose($G, $hv xt), $hv yt), $h t))) == KA.band(KA.kle(~K, _, $h t)), NU.dclose(xt, yt, t)) : Bool}
+      %KP.ksub_h($D, x, y) : {KA.band(KA.kle(~K, GN.dabs($G, KA.ksub(~K, $h x), $h y))), $h t)), GN.dclose($G, $hv xt), $hv yt), $h t))) == KA.band(KA.kle(~K, KA.kabs(~K, _), $h t)), NU.dclose(xt, yt, t)) : Bool}
+      %dclose_t($T, xt, yt, t) : {KA.band(KA.kle(~K, GN.dabs($G, KA.ksub(~K, $h x), $h y))), $h t)), GN.dclose($G, $hv xt), $hv yt), $h t))) == KA.band(KA.kle(~K, KA.kabs(~K, KA.ksub(~K, $h x), $h y))), $h t)), _) : Bool}
+      {==}
+
+def classify_far_t($KWR, near: Bool, +ys: $DV, +p: Nat, +y2: $DV) -> {GN.classify.far($G, near, $hv ys), p, $hv y2)) == GM.hns($HH, NU.classify.far(near, ys, p, y2)) : GN.GNS<K>}:
+  match near:
+    case False{}:
+      {==}
+    case True{}:
+      %classify_go_t($T, NU.dclose(ys, y2, S.D{S.Zpos{S.XH{}}, Nat.sub(p, 2n)}), y2) : {GN.classify.go($G, GN.dclose($G, $hv ys), $hv y2), PO.ofd(K, W, S.D{S.Zpos{S.XH{}}, Nat.sub(p, 2n)})), $hv y2)) == _ : GN.GNS<K>}
+      %dclose_t($T, ys, y2, S.D{S.Zpos{S.XH{}}, Nat.sub(p, 2n)}) : {GN.classify.go($G, GN.dclose($G, $hv ys), $hv y2), PO.ofd(K, W, S.D{S.Zpos{S.XH{}}, Nat.sub(p, 2n)})), $hv y2)) == GN.classify.go($G, _, $hv y2)) : GN.GNS<K>}
+      %$LOFD(S.D{S.Zpos{S.XH{}}, Nat.sub(p, 2n)}) : {GN.classify.go($G, GN.dclose($G, $hv ys), $hv y2), PO.ofd(K, W, S.D{S.Zpos{S.XH{}}, Nat.sub(p, 2n)})), $hv y2)) == GN.classify.go($G, GN.dclose($G, $hv ys), $hv y2), _), $hv y2)) : GN.GNS<K>}
+      {==}
+
+def classify_t($KWR, +ys: $DV, +p: Nat, m: Maybe<&2, $DV>) -> {GN.classify($G, $hv ys), p, GM.hmv($HH, m)) == GM.hns($HH, NU.classify(ys, p, m)) : GN.GNS<K>}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+y2}:
+      %classify_far_t($T, NU.dclose(ys, y2, NU.far()), ys, p, y2) : {GN.classify.far($G, GN.dclose($G, $hv ys), $hv y2), PO.ofd(K, W, NU.far())), $hv ys), p, $hv y2)) == _ : GN.GNS<K>}
+      %dclose_t($T, ys, y2, NU.far()) : {GN.classify.far($G, GN.dclose($G, $hv ys), $hv y2), PO.ofd(K, W, NU.far())), $hv ys), p, $hv y2)) == GN.classify.far($G, _, $hv ys), p, $hv y2)) : GN.GNS<K>}
+      %$LOFD(NU.far()) : {GN.classify.far($G, GN.dclose($G, $hv ys), $hv y2), PO.ofd(K, W, NU.far())), $hv ys), p, $hv y2)) == GN.classify.far($G, GN.dclose($G, $hv ys), $hv y2), _), $hv ys), p, $hv y2)) : GN.GNS<K>}
+      {==}
+
+# Y
+# -
+
+def ysigv_t($KWR, +b: Nat, xs: $DV) -> {GN.ysigv($G, b, $hv xs)) == $hv NU.ysigv(b, xs)) : $VK}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      %$LSIG(x, b) : {Con{PO.sig(K, W, $h x), b), GN.ysigv($G, b, $hv t))} == Con{_, $hv NU.ysigv(b, t))} : $VK}
+      %ysigv_t($T, b, t) : {Con{PO.sig(K, W, $h x), b), GN.ysigv($G, b, $hv t))} == Con{PO.sig(K, W, $h x), b), _} : $VK}
+      {==}
+
+def ysig_t($KWR, +b: Nat, a: $DM) -> {GN.ysig($G, b, $hm a)) == $hm NU.ysig(b, a)) : $MK}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +t}:
+      %ysigv_t($T, b, r) : {Con{GN.ysigv($G, b, $hv r)), GN.ysig($G, b, $hm t))} == Con{_, $hm NU.ysig(b, t))} : $MK}
+      %ysig_t($T, b, t) : {Con{GN.ysigv($G, b, $hv r)), GN.ysig($G, b, $hm t))} == Con{GN.ysigv($G, b, $hv r)), _} : $MK}
+      {==}
+
+# The radius search's growth
+# --------------------------
+
+def grow_t($KWR, +r: S.D) -> {GN.grow($G, $h r)) == $h NU.grow(r)) : $NK}:
+  %$LSIGUP(S.D.mul(r, $C1716), 8n) : {GN.grow($G, $h r)) == _ : $NK}
+  %$HMUL(r, $C1716) : {GN.grow($G, $h r)) == PO.sigup(K, W, _, 8n) : $NK}
+  %$LOFD($C1716) : {GN.grow($G, $h r)) == PO.sigup(K, W, N.nmul(K, $h r), _), 8n) : $NK}
+  {==}
