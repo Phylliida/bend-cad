@@ -1,0 +1,545 @@
+# bend-cad: the checker's arithmetic (lib/karith.bend) and balls
+# (lib/kball.bend) commute with a map of computing numbers h : K -> L
+# (lib/khom.bend): each operation on the images is the image of the
+# operation, and each verdict (an order, a length, a held constant) is the
+# same. Untrusted; for the word verdict (PLAN-sk13w W5).
+
+@MACRO KLH ~K: N.Num, ~L: N.Num, ~H: KH.Hom<K, L>
+@MACRO T ~K, ~L, ~H
+@MACRO h KH.hmap(K, L, H,
+@MACRO hv KH.hv(~K, ~L, ~H,
+@MACRO hm KH.hm(~K, ~L, ~H,
+@MACRO hb KH.hball(~K, ~L, ~H,
+@MACRO hbv KH.hbv(~K, ~L, ~H,
+@MACRO CL N.NC(L)
+@MACRO VL N.KVec(~L)
+@MACRO ML N.KMat(~L)
+@MACRO BL KB.KB<L>
+@MACRO HZ KH.h_zero(K, L, H)
+@MACRO HO KH.h_one(K, L, H)
+@MACRO HADD KH.h_add(K, L, H)
+@MACRO HMUL KH.h_mul(K, L, H)
+@MACRO HNEG KH.h_neg(K, L, H)
+@MACRO HCMP KH.h_cmp(K, L, H)
+@MACRO HOFQ KH.h_ofq(K, L, H)
+@MACRO zK N.nzero(K)
+@MACRO zL N.nzero(L)
+@MACRO oK N.none(K)
+@MACRO oL N.none(L)
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/knum.bend as N
+import ./karith.bend as KA
+import ./kball.bend as KB
+import ./khom.bend as KH
+
+# The map's laws, turned around
+# -----------------------------
+
+def hz_r($KLH) -> {$h $zK) == $zL : $CL}:
+  Equal.sym($CL, $zL, $h $zK), $HZ)
+
+def ho_r($KLH) -> {$h $oK) == $oL : $CL}:
+  Equal.sym($CL, $oL, $h $oK), $HO)
+
+# Scalars
+# -------
+
+def ksub_h($KLH, +a: N.NC(K), +b: N.NC(K)) -> {KA.ksub(~L, $h a), $h b)) == $h KA.ksub(~K, a, b)) : $CL}:
+  %$HADD(a, N.nneg(K, b)) : {N.nadd(L, $h a), N.nneg(L, $h b))) == _ : $CL}
+  %$HNEG(b) : {N.nadd(L, $h a), N.nneg(L, $h b))) == N.nadd(L, $h a), _) : $CL}
+  {==}
+
+def kabs_go_h($KLH, c: Cmp, +a: N.NC(K)) -> {KA.kabs.go(~L, c, $h a)) == $h KA.kabs.go(~K, c, a)) : $CL}:
+  match c:
+    case LT{}:
+      $HNEG(a)
+    case EQ{}:
+      {==}
+    case GT{}:
+      {==}
+
+def kabs_h($KLH, +a: N.NC(K)) -> {KA.kabs(~L, $h a)) == $h KA.kabs(~K, a)) : $CL}:
+  %$HCMP(a, $zK) : {KA.kabs.go(~L, N.ncmp(L, $h a), $zL), $h a)) == $h KA.kabs.go(~K, _, a)) : $CL}
+  %$HZ : {KA.kabs.go(~L, N.ncmp(L, $h a), $zL), $h a)) == $h KA.kabs.go(~K, N.ncmp(L, $h a), _), a)) : $CL}
+  kabs_go_h($T, N.ncmp(L, $h a), $zL), a)
+
+def kle_h($KLH, +a: N.NC(K), +b: N.NC(K)) -> {KA.kle(~L, $h a), $h b)) == KA.kle(~K, a, b) : Bool}:
+  %$HCMP(a, b) : {KA.kle.go(N.ncmp(L, $h a), $h b))) == KA.kle.go(_) : Bool}
+  {==}
+
+def klt_h($KLH, +a: N.NC(K), +b: N.NC(K)) -> {KA.klt(~L, $h a), $h b)) == KA.klt(~K, a, b) : Bool}:
+  %$HCMP(a, b) : {KA.klt.go(N.ncmp(L, $h a), $h b))) == KA.klt.go(_) : Bool}
+  {==}
+
+# with 0 or 1 on one side
+def kle0_h($KLH, +b: N.NC(K)) -> {KA.kle(~L, $zL, $h b)) == KA.kle(~K, $zK, b) : Bool}:
+  %hz_r($T) : {KA.kle(~L, _, $h b)) == KA.kle(~K, $zK, b) : Bool}
+  kle_h($T, $zK, b)
+
+def kle0r_h($KLH, +a: N.NC(K)) -> {KA.kle(~L, $h a), $zL) == KA.kle(~K, a, $zK) : Bool}:
+  %hz_r($T) : {KA.kle(~L, $h a), _) == KA.kle(~K, a, $zK) : Bool}
+  kle_h($T, a, $zK)
+
+def klt0_h($KLH, +b: N.NC(K)) -> {KA.klt(~L, $zL, $h b)) == KA.klt(~K, $zK, b) : Bool}:
+  %hz_r($T) : {KA.klt(~L, _, $h b)) == KA.klt(~K, $zK, b) : Bool}
+  klt_h($T, $zK, b)
+
+def klt1_h($KLH, +a: N.NC(K)) -> {KA.klt(~L, $h a), $oL) == KA.klt(~K, a, $oK) : Bool}:
+  %ho_r($T) : {KA.klt(~L, $h a), _) == KA.klt(~K, a, $oK) : Bool}
+  klt_h($T, a, $oK)
+
+# Vectors and matrices
+# --------------------
+
+def kvadd_h($KLH, u: N.KVec(~K), w: N.KVec(~K)) -> {KA.kvadd(~L, $hv u), $hv w)) == $hv KA.kvadd(~K, u, w)) : $VL}:
+  match u w:
+    case Nil{} w:
+      {==}
+    case Con{+a, +us} Nil{}:
+      {==}
+    case Con{+a, +us} Con{+b, +ws}:
+      %$HADD(a, b) : {Con{N.nadd(L, $h a), $h b)), KA.kvadd(~L, $hv us), $hv ws))} == Con{_, $hv KA.kvadd(~K, us, ws))} : $VL}
+      %kvadd_h($T, us, ws) : {Con{N.nadd(L, $h a), $h b)), KA.kvadd(~L, $hv us), $hv ws))} == Con{N.nadd(L, $h a), $h b)), _} : $VL}
+      {==}
+
+def kvneg_h($KLH, u: N.KVec(~K)) -> {KA.kvneg(~L, $hv u)) == $hv KA.kvneg(~K, u)) : $VL}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{+a, +us}:
+      %$HNEG(a) : {Con{N.nneg(L, $h a)), KA.kvneg(~L, $hv us))} == Con{_, $hv KA.kvneg(~K, us))} : $VL}
+      %kvneg_h($T, us) : {Con{N.nneg(L, $h a)), KA.kvneg(~L, $hv us))} == Con{N.nneg(L, $h a)), _} : $VL}
+      {==}
+
+def kvscale_h($KLH, +c: N.NC(K), u: N.KVec(~K)) -> {KA.kvscale(~L, $h c), $hv u)) == $hv KA.kvscale(~K, c, u)) : $VL}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{+a, +us}:
+      %$HMUL(c, a) : {Con{N.nmul(L, $h c), $h a)), KA.kvscale(~L, $h c), $hv us))} == Con{_, $hv KA.kvscale(~K, c, us))} : $VL}
+      %kvscale_h($T, c, us) : {Con{N.nmul(L, $h c), $h a)), KA.kvscale(~L, $h c), $hv us))} == Con{N.nmul(L, $h c), $h a)), _} : $VL}
+      {==}
+
+def kdot_h($KLH, a: N.KVec(~K), v: N.KVec(~K)) -> {KA.kdot(~L, $hv a), $hv v)) == $h KA.kdot(~K, a, v)) : $CL}:
+  match a v:
+    case Nil{} v:
+      $HZ
+    case Con{+x, +xs} Nil{}:
+      $HZ
+    case Con{+x, +xs} Con{+y, +ys}:
+      %$HADD(N.nmul(K, x, y), KA.kdot(~K, xs, ys)) : {N.nadd(L, N.nmul(L, $h x), $h y)), KA.kdot(~L, $hv xs), $hv ys))) == _ : $CL}
+      %$HMUL(x, y) : {N.nadd(L, N.nmul(L, $h x), $h y)), KA.kdot(~L, $hv xs), $hv ys))) == N.nadd(L, _, $h KA.kdot(~K, xs, ys))) : $CL}
+      %kdot_h($T, xs, ys) : {N.nadd(L, N.nmul(L, $h x), $h y)), KA.kdot(~L, $hv xs), $hv ys))) == N.nadd(L, N.nmul(L, $h x), $h y)), _) : $CL}
+      {==}
+
+def kmatvec_h($KLH, a: N.KMat(~K), +v: N.KVec(~K)) -> {KA.kmatvec(~L, $hm a), $hv v)) == $hv KA.kmatvec(~K, a, v)) : $VL}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +rs}:
+      %kdot_h($T, r, v) : {Con{KA.kdot(~L, $hv r), $hv v)), KA.kmatvec(~L, $hm rs), $hv v))} == Con{_, $hv KA.kmatvec(~K, rs, v))} : $VL}
+      %kmatvec_h($T, rs, v) : {Con{KA.kdot(~L, $hv r), $hv v)), KA.kmatvec(~L, $hm rs), $hv v))} == Con{KA.kdot(~L, $hv r), $hv v)), _} : $VL}
+      {==}
+
+def kvecmat_h($KLH, a: N.KVec(~K), b: N.KMat(~K)) -> {KA.kvecmat(~L, $hv a), $hm b)) == $hv KA.kvecmat(~K, a, b)) : $VL}:
+  match a b:
+    case Nil{} b:
+      {==}
+    case Con{+x, +xs} Nil{}:
+      {==}
+    case Con{+x, +xs} Con{+r, +rs}:
+      %kvadd_h($T, KA.kvscale(~K, x, r), KA.kvecmat(~K, xs, rs)) : {KA.kvadd(~L, KA.kvscale(~L, $h x), $hv r)), KA.kvecmat(~L, $hv xs), $hm rs))) == _ : $VL}
+      %kvscale_h($T, x, r) : {KA.kvadd(~L, KA.kvscale(~L, $h x), $hv r)), KA.kvecmat(~L, $hv xs), $hm rs))) == KA.kvadd(~L, _, $hv KA.kvecmat(~K, xs, rs))) : $VL}
+      %kvecmat_h($T, xs, rs) : {KA.kvadd(~L, KA.kvscale(~L, $h x), $hv r)), KA.kvecmat(~L, $hv xs), $hm rs))) == KA.kvadd(~L, KA.kvscale(~L, $h x), $hv r)), _) : $VL}
+      {==}
+
+def kmatmul_h($KLH, a: N.KMat(~K), +b: N.KMat(~K)) -> {KA.kmatmul(~L, $hm a), $hm b)) == $hm KA.kmatmul(~K, a, b)) : $ML}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +rs}:
+      %kvecmat_h($T, r, b) : {Con{KA.kvecmat(~L, $hv r), $hm b)), KA.kmatmul(~L, $hm rs), $hm b))} == Con{_, $hm KA.kmatmul(~K, rs, b))} : $ML}
+      %kmatmul_h($T, rs, b) : {Con{KA.kvecmat(~L, $hv r), $hm b)), KA.kmatmul(~L, $hm rs), $hm b))} == Con{KA.kvecmat(~L, $hv r), $hm b)), _} : $ML}
+      {==}
+
+def kmadd_h($KLH, a: N.KMat(~K), b: N.KMat(~K)) -> {KA.kmadd(~L, $hm a), $hm b)) == $hm KA.kmadd(~K, a, b)) : $ML}:
+  match a b:
+    case Nil{} b:
+      {==}
+    case Con{+r, +rs} Nil{}:
+      {==}
+    case Con{+r, +rs} Con{+t, +ts}:
+      %kvadd_h($T, r, t) : {Con{KA.kvadd(~L, $hv r), $hv t)), KA.kmadd(~L, $hm rs), $hm ts))} == Con{_, $hm KA.kmadd(~K, rs, ts))} : $ML}
+      %kmadd_h($T, rs, ts) : {Con{KA.kvadd(~L, $hv r), $hv t)), KA.kmadd(~L, $hm rs), $hm ts))} == Con{KA.kvadd(~L, $hv r), $hv t)), _} : $ML}
+      {==}
+
+def kmneg_h($KLH, a: N.KMat(~K)) -> {KA.kmneg(~L, $hm a)) == $hm KA.kmneg(~K, a)) : $ML}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +rs}:
+      %kvneg_h($T, r) : {Con{KA.kvneg(~L, $hv r)), KA.kmneg(~L, $hm rs))} == Con{_, $hm KA.kmneg(~K, rs))} : $ML}
+      %kmneg_h($T, rs) : {Con{KA.kvneg(~L, $hv r)), KA.kmneg(~L, $hm rs))} == Con{KA.kvneg(~L, $hv r)), _} : $ML}
+      {==}
+
+def kshift_h($KLH, a: N.KMat(~K)) -> {KA.kshift(~L, $hm a)) == $hm KA.kshift(~K, a)) : $ML}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +rs}:
+      %$HZ : {Con{Con{$zL, $hv r)}, KA.kshift(~L, $hm rs))} == Con{Con{_, $hv r)}, $hm KA.kshift(~K, rs))} : $ML}
+      %kshift_h($T, rs) : {Con{Con{$zL, $hv r)}, KA.kshift(~L, $hm rs))} == Con{Con{$zL, $hv r)}, _} : $ML}
+      {==}
+
+def kident_h($KLH, n: Nat) -> {KA.kident(~L, n) == $hm KA.kident(~K, n)) : $ML}:
+  match n:
+    case 0n:
+      {==}
+    case 1n++k:
+      %$HO : {Con{[$oL], KA.kshift(~L, KA.kident(~L, k))} == Con{[_], $hm KA.kshift(~K, KA.kident(~K, k)))} : $ML}
+      %kshift_h($T, KA.kident(~K, k)) : {Con{[$oL], KA.kshift(~L, KA.kident(~L, k))} == Con{[$oL], _} : $ML}
+      %kident_h($T, k) : {Con{[$oL], KA.kshift(~L, KA.kident(~L, k))} == Con{[$oL], KA.kshift(~L, _)} : $ML}
+      {==}
+
+def kvabs_h($KLH, u: N.KVec(~K)) -> {KA.kvabs(~L, $hv u)) == $hv KA.kvabs(~K, u)) : $VL}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{+a, +us}:
+      %kabs_h($T, a) : {Con{KA.kabs(~L, $h a)), KA.kvabs(~L, $hv us))} == Con{_, $hv KA.kvabs(~K, us))} : $VL}
+      %kvabs_h($T, us) : {Con{KA.kabs(~L, $h a)), KA.kvabs(~L, $hv us))} == Con{KA.kabs(~L, $h a)), _} : $VL}
+      {==}
+
+def kmabs_h($KLH, a: N.KMat(~K)) -> {KA.kmabs(~L, $hm a)) == $hm KA.kmabs(~K, a)) : $ML}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +rs}:
+      %kvabs_h($T, r) : {Con{KA.kvabs(~L, $hv r)), KA.kmabs(~L, $hm rs))} == Con{_, $hm KA.kmabs(~K, rs))} : $ML}
+      %kmabs_h($T, rs) : {Con{KA.kvabs(~L, $hv r)), KA.kmabs(~L, $hm rs))} == Con{KA.kvabs(~L, $hv r)), _} : $ML}
+      {==}
+
+def kfit_h($KLH, n: Nat, u: N.KVec(~K)) -> {KA.kfit(~L, n, $hv u)) == $hv KA.kfit(~K, n, u)) : $VL}:
+  match n u:
+    case 0n u:
+      {==}
+    case 1n++k Nil{}:
+      %$HZ : {Con{$zL, KA.kfit(~L, k, Nil{})} == Con{_, $hv KA.kfit(~K, k, Nil{}))} : $VL}
+      %kfit_h($T, k, Nil{}) : {Con{$zL, KA.kfit(~L, k, Nil{})} == Con{$zL, _} : $VL}
+      {==}
+    case 1n++k Con{+a, +rest}:
+      %kfit_h($T, k, rest) : {Con{$h a), KA.kfit(~L, k, $hv rest))} == Con{$h a), _} : $VL}
+      {==}
+
+def kdrop_h($KLH, n: Nat, u: N.KVec(~K)) -> {KA.kdrop(~L, n, $hv u)) == $hv KA.kdrop(~K, n, u)) : $VL}:
+  match n u:
+    case 0n u:
+      {==}
+    case 1n+k Nil{}:
+      {==}
+    case 1n+k Con{a, rest}:
+      kdrop_h($T, k, rest)
+
+def kapp_h($KLH, u: N.KVec(~K), +w: N.KVec(~K)) -> {KA.kapp(~L, $hv u), $hv w)) == $hv KA.kapp(~K, u, w)) : $VL}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{+a, +us}:
+      %kapp_h($T, us, w) : {Con{$h a), KA.kapp(~L, $hv us), $hv w))} == Con{$h a), _} : $VL}
+      {==}
+
+def kones_h($KLH, n: Nat) -> {KA.kones(~L, n) == $hv KA.kones(~K, n)) : $VL}:
+  match n:
+    case 0n:
+      {==}
+    case 1n++k:
+      %$HO : {Con{$oL, KA.kones(~L, k)} == Con{_, $hv KA.kones(~K, k))} : $VL}
+      %kones_h($T, k) : {Con{$oL, KA.kones(~L, k)} == Con{$oL, _} : $VL}
+      {==}
+
+def kvle_h($KLH, u: N.KVec(~K), w: N.KVec(~K)) -> {KA.kvle(~L, $hv u), $hv w)) == KA.kvle(~K, u, w) : Bool}:
+  match u w:
+    case Nil{} Nil{}:
+      {==}
+    case Nil{} Con{+b, +ws}:
+      %kle0_h($T, b) : {KA.band(KA.kle(~L, $zL, $h b)), KA.kvle(~L, Nil{}, $hv ws))) == KA.band(_, KA.kvle(~K, Nil{}, ws)) : Bool}
+      %kvle_h($T, Nil{}, ws) : {KA.band(KA.kle(~L, $zL, $h b)), KA.kvle(~L, Nil{}, $hv ws))) == KA.band(KA.kle(~L, $zL, $h b)), _) : Bool}
+      {==}
+    case Con{+a, +us} Nil{}:
+      %kle0r_h($T, a) : {KA.band(KA.kle(~L, $h a), $zL), KA.kvle(~L, $hv us), Nil{})) == KA.band(_, KA.kvle(~K, us, Nil{})) : Bool}
+      %kvle_h($T, us, Nil{}) : {KA.band(KA.kle(~L, $h a), $zL), KA.kvle(~L, $hv us), Nil{})) == KA.band(KA.kle(~L, $h a), $zL), _) : Bool}
+      {==}
+    case Con{+a, +us} Con{+b, +ws}:
+      %kle_h($T, a, b) : {KA.band(KA.kle(~L, $h a), $h b)), KA.kvle(~L, $hv us), $hv ws))) == KA.band(_, KA.kvle(~K, us, ws)) : Bool}
+      %kvle_h($T, us, ws) : {KA.band(KA.kle(~L, $h a), $h b)), KA.kvle(~L, $hv us), $hv ws))) == KA.band(KA.kle(~L, $h a), $h b)), _) : Bool}
+      {==}
+
+def kvlt_h($KLH, u: N.KVec(~K), w: N.KVec(~K)) -> {KA.kvlt(~L, $hv u), $hv w)) == KA.kvlt(~K, u, w) : Bool}:
+  match u w:
+    case Nil{} Nil{}:
+      {==}
+    case Nil{} Con{+b, +ws}:
+      %klt0_h($T, b) : {KA.band(KA.klt(~L, $zL, $h b)), KA.kvlt(~L, Nil{}, $hv ws))) == KA.band(_, KA.kvlt(~K, Nil{}, ws)) : Bool}
+      %kvlt_h($T, Nil{}, ws) : {KA.band(KA.klt(~L, $zL, $h b)), KA.kvlt(~L, Nil{}, $hv ws))) == KA.band(KA.klt(~L, $zL, $h b)), _) : Bool}
+      {==}
+    case Con{+a, +us} Nil{}:
+      {==}
+    case Con{+a, +us} Con{+b, +ws}:
+      %klt_h($T, a, b) : {KA.band(KA.klt(~L, $h a), $h b)), KA.kvlt(~L, $hv us), $hv ws))) == KA.band(_, KA.kvlt(~K, us, ws)) : Bool}
+      %kvlt_h($T, us, ws) : {KA.band(KA.klt(~L, $h a), $h b)), KA.kvlt(~L, $hv us), $hv ws))) == KA.band(KA.klt(~L, $h a), $h b)), _) : Bool}
+      {==}
+
+def klen_h($KLH, u: N.KVec(~K)) -> {KA.klen(~L, $hv u)) == KA.klen(~K, u) : Nat}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{+a, +us}:
+      %klen_h($T, us) : {1n+KA.klen(~L, $hv us)) == 1n+_ : Nat}
+      {==}
+
+# Balls
+# -----
+
+def bzero_h($KLH) -> {KB.bzero(~L) == $hb KB.bzero(~K)) : $BL}:
+  %$HZ : {KB.KB{$zL, $zL} == KB.KB{_, $h $zK)} : $BL}
+  %$HZ : {KB.KB{$zL, $zL} == KB.KB{$zL, _} : $BL}
+  {==}
+
+def badd_h($KLH, x: KB.KB<K>, y: KB.KB<K>) -> {KB.badd(~L, $hb x), $hb y)) == $hb KB.badd(~K, x, y)) : $BL}:
+  match x y:
+    case KB.KB{+c1, +r1} KB.KB{+c2, +r2}:
+      %$HADD(c1, c2) : {KB.KB{N.nadd(L, $h c1), $h c2)), N.nadd(L, $h r1), $h r2))} == KB.KB{_, $h N.nadd(K, r1, r2))} : $BL}
+      %$HADD(r1, r2) : {KB.KB{N.nadd(L, $h c1), $h c2)), N.nadd(L, $h r1), $h r2))} == KB.KB{N.nadd(L, $h c1), $h c2)), _} : $BL}
+      {==}
+
+def bneg_h($KLH, x: KB.KB<K>) -> {KB.bneg(~L, $hb x)) == $hb KB.bneg(~K, x)) : $BL}:
+  match x:
+    case KB.KB{+c, +r}:
+      %$HNEG(c) : {KB.KB{N.nneg(L, $h c)), $h r)} == KB.KB{_, $h r)} : $BL}
+      {==}
+
+@MACRO BMK N.nadd(K, N.nadd(K, N.nmul(K, KA.kabs(~K, c1), r2), N.nmul(K, KA.kabs(~K, c2), r1)), N.nmul(K, r1, r2))
+@MACRO BML N.nadd(L, N.nadd(L, N.nmul(L, KA.kabs(~L, $h c1)), $h r2)), N.nmul(L, KA.kabs(~L, $h c2)), $h r1))), N.nmul(L, $h r1), $h r2)))
+
+# the product's radius
+def bmr_h($KLH, +c1: N.NC(K), +r1: N.NC(K), +c2: N.NC(K), +r2: N.NC(K)) -> {$BML == $h $BMK) : $CL}:
+  %$HADD(N.nadd(K, N.nmul(K, KA.kabs(~K, c1), r2), N.nmul(K, KA.kabs(~K, c2), r1)), N.nmul(K, r1, r2)) : {$BML == _ : $CL}
+  %$HADD(N.nmul(K, KA.kabs(~K, c1), r2), N.nmul(K, KA.kabs(~K, c2), r1)) : {$BML == N.nadd(L, _, $h N.nmul(K, r1, r2))) : $CL}
+  %$HMUL(KA.kabs(~K, c1), r2) : {$BML == N.nadd(L, N.nadd(L, _, $h N.nmul(K, KA.kabs(~K, c2), r1))), $h N.nmul(K, r1, r2))) : $CL}
+  %kabs_h($T, c1) : {$BML == N.nadd(L, N.nadd(L, N.nmul(L, _, $h r2)), $h N.nmul(K, KA.kabs(~K, c2), r1))), $h N.nmul(K, r1, r2))) : $CL}
+  %$HMUL(KA.kabs(~K, c2), r1) : {$BML == N.nadd(L, N.nadd(L, N.nmul(L, KA.kabs(~L, $h c1)), $h r2)), _), $h N.nmul(K, r1, r2))) : $CL}
+  %kabs_h($T, c2) : {$BML == N.nadd(L, N.nadd(L, N.nmul(L, KA.kabs(~L, $h c1)), $h r2)), N.nmul(L, _, $h r1))), $h N.nmul(K, r1, r2))) : $CL}
+  %$HMUL(r1, r2) : {$BML == N.nadd(L, N.nadd(L, N.nmul(L, KA.kabs(~L, $h c1)), $h r2)), N.nmul(L, KA.kabs(~L, $h c2)), $h r1))), _) : $CL}
+  {==}
+
+def bmul_h($KLH, x: KB.KB<K>, y: KB.KB<K>) -> {KB.bmul(~L, $hb x), $hb y)) == $hb KB.bmul(~K, x, y)) : $BL}:
+  match x y:
+    case KB.KB{+c1, +r1} KB.KB{+c2, +r2}:
+      %$HMUL(c1, c2) : {KB.KB{N.nmul(L, $h c1), $h c2)), $BML} == KB.KB{_, $h $BMK)} : $BL}
+      %bmr_h($T, c1, r1, c2, r2) : {KB.KB{N.nmul(L, $h c1), $h c2)), $BML} == KB.KB{N.nmul(L, $h c1), $h c2)), _} : $BL}
+      {==}
+
+def blook_h($KLH, xs: List<&2, KB.KB<K>>, i: Nat) -> {KB.blook(~L, $hbv xs), i) == $hb KB.blook(~K, xs, i)) : $BL}:
+  match xs i:
+    case Nil{} j:
+      bzero_h($T)
+    case Con{x, t} 0n:
+      {==}
+    case Con{x, t} 1n+j:
+      blook_h($T, t, j)
+
+def kbc_h($KLH, x: KB.KB<K>) -> {KB.KB.c(L, $hb x)) == $h KB.KB.c(K, x)) : $CL}:
+  match x:
+    case KB.KB{c, r}:
+      {==}
+
+def kbr_h($KLH, x: KB.KB<K>) -> {KB.KB.r(L, $hb x)) == $h KB.KB.r(K, x)) : $CL}:
+  match x:
+    case KB.KB{c, r}:
+      {==}
+
+def bcenters_h($KLH, u: List<&2, KB.KB<K>>) -> {KB.bcenters(~L, $hbv u)) == $hv KB.bcenters(~K, u)) : $VL}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{+a, +us}:
+      %kbc_h($T, a) : {Con{KB.KB.c(L, $hb a)), KB.bcenters(~L, $hbv us))} == Con{_, $hv KB.bcenters(~K, us))} : $VL}
+      %bcenters_h($T, us) : {Con{KB.KB.c(L, $hb a)), KB.bcenters(~L, $hbv us))} == Con{KB.KB.c(L, $hb a)), _} : $VL}
+      {==}
+
+def bradii_h($KLH, u: List<&2, KB.KB<K>>) -> {KB.bradii(~L, $hbv u)) == $hv KB.bradii(~K, u)) : $VL}:
+  match u:
+    case Nil{}:
+      {==}
+    case Con{+a, +us}:
+      %kbr_h($T, a) : {Con{KB.KB.r(L, $hb a)), KB.bradii(~L, $hbv us))} == Con{_, $hv KB.bradii(~K, us))} : $VL}
+      %bradii_h($T, us) : {Con{KB.KB.r(L, $hb a)), KB.bradii(~L, $hbv us))} == Con{KB.KB.r(L, $hb a)), _} : $VL}
+      {==}
+
+# Constants and values
+# --------------------
+
+# L's Maybe of a constant is the image of K's
+def ofq_r($KLH, +q: S.Q) -> {KH.mmap(~K, ~L, KH.hmap(K, L, H), N.nofq(K, q)) == N.nofq(L, q) : Maybe<&2, $CL>}:
+  Equal.sym(Maybe<&2, $CL>, N.nofq(L, q), KH.mmap(~K, ~L, KH.hmap(K, L, H), N.nofq(K, q)), $HOFQ(q))
+
+def kcst_go_h($KLH, m: Maybe<&2, N.NC(K)>) -> {KB.kcst.go(~L, KH.mmap(~K, ~L, KH.hmap(K, L, H), m)) == $h KB.kcst.go(~K, m)) : $CL}:
+  match m:
+    case None{}:
+      $HZ
+    case Some{x}:
+      {==}
+
+def kcst_h($KLH, +q: S.Q) -> {KB.kcst(~L, q) == $h KB.kcst(~K, q)) : $CL}:
+  %ofq_r($T, q) : {KB.kcst.go(~L, _) == $h KB.kcst(~K, q)) : $CL}
+  kcst_go_h($T, N.nofq(K, q))
+
+def held_go_h($KLH, m: Maybe<&2, N.NC(K)>) -> {KB.held.go(~L, KH.mmap(~K, ~L, KH.hmap(K, L, H), m)) == KB.held.go(~K, m) : Bool}:
+  match m:
+    case None{}:
+      {==}
+    case Some{x}:
+      {==}
+
+def held_h($KLH, e: E.QExpr) -> {KB.held(~L, e) == KB.held(~K, e) : Bool}:
+  match e:
+    case E.QVar{i}:
+      {==}
+    case E.QCst{+q}:
+      %ofq_r($T, q) : {KB.held.go(~L, _) == KB.held(~K, E.QCst{q}) : Bool}
+      held_go_h($T, N.nofq(K, q))
+    case E.QAdd{+a, +b}:
+      %held_h($T, a) : {KA.band(KB.held(~L, a), KB.held(~L, b)) == KA.band(_, KB.held(~K, b)) : Bool}
+      %held_h($T, b) : {KA.band(KB.held(~L, a), KB.held(~L, b)) == KA.band(KB.held(~L, a), _) : Bool}
+      {==}
+    case E.QSub{+a, +b}:
+      %held_h($T, a) : {KA.band(KB.held(~L, a), KB.held(~L, b)) == KA.band(_, KB.held(~K, b)) : Bool}
+      %held_h($T, b) : {KA.band(KB.held(~L, a), KB.held(~L, b)) == KA.band(KB.held(~L, a), _) : Bool}
+      {==}
+    case E.QMul{+a, +b}:
+      %held_h($T, a) : {KA.band(KB.held(~L, a), KB.held(~L, b)) == KA.band(_, KB.held(~K, b)) : Bool}
+      %held_h($T, b) : {KA.band(KB.held(~L, a), KB.held(~L, b)) == KA.band(KB.held(~L, a), _) : Bool}
+      {==}
+    case E.QNeg{a}:
+      held_h($T, a)
+
+def klook_h($KLH, xs: N.KVec(~K), i: Nat) -> {KB.klook(~L, $hv xs), i) == $h KB.klook(~K, xs, i)) : $CL}:
+  match xs i:
+    case Nil{} j:
+      $HZ
+    case Con{x, t} 0n:
+      {==}
+    case Con{x, t} 1n+j:
+      klook_h($T, t, j)
+
+def keval_h($KLH, +env: N.KVec(~K), e: E.QExpr) -> {KB.keval(~L, $hv env), e) == $h KB.keval(~K, env, e)) : $CL}:
+  match e:
+    case E.QVar{i}:
+      klook_h($T, env, i)
+    case E.QCst{q}:
+      kcst_h($T, q)
+    case E.QAdd{+a, +b}:
+      %$HADD(KB.keval(~K, env, a), KB.keval(~K, env, b)) : {N.nadd(L, KB.keval(~L, $hv env), a), KB.keval(~L, $hv env), b)) == _ : $CL}
+      %keval_h($T, env, a) : {N.nadd(L, KB.keval(~L, $hv env), a), KB.keval(~L, $hv env), b)) == N.nadd(L, _, $h KB.keval(~K, env, b))) : $CL}
+      %keval_h($T, env, b) : {N.nadd(L, KB.keval(~L, $hv env), a), KB.keval(~L, $hv env), b)) == N.nadd(L, KB.keval(~L, $hv env), a), _) : $CL}
+      {==}
+    case E.QSub{+a, +b}:
+      %ksub_h($T, KB.keval(~K, env, a), KB.keval(~K, env, b)) : {KA.ksub(~L, KB.keval(~L, $hv env), a), KB.keval(~L, $hv env), b)) == _ : $CL}
+      %keval_h($T, env, a) : {KA.ksub(~L, KB.keval(~L, $hv env), a), KB.keval(~L, $hv env), b)) == KA.ksub(~L, _, $h KB.keval(~K, env, b))) : $CL}
+      %keval_h($T, env, b) : {KA.ksub(~L, KB.keval(~L, $hv env), a), KB.keval(~L, $hv env), b)) == KA.ksub(~L, KB.keval(~L, $hv env), a), _) : $CL}
+      {==}
+    case E.QMul{+a, +b}:
+      %$HMUL(KB.keval(~K, env, a), KB.keval(~K, env, b)) : {N.nmul(L, KB.keval(~L, $hv env), a), KB.keval(~L, $hv env), b)) == _ : $CL}
+      %keval_h($T, env, a) : {N.nmul(L, KB.keval(~L, $hv env), a), KB.keval(~L, $hv env), b)) == N.nmul(L, _, $h KB.keval(~K, env, b))) : $CL}
+      %keval_h($T, env, b) : {N.nmul(L, KB.keval(~L, $hv env), a), KB.keval(~L, $hv env), b)) == N.nmul(L, KB.keval(~L, $hv env), a), _) : $CL}
+      {==}
+    case E.QNeg{+a}:
+      %$HNEG(KB.keval(~K, env, a)) : {N.nneg(L, KB.keval(~L, $hv env), a)) == _ : $CL}
+      %keval_h($T, env, a) : {N.nneg(L, KB.keval(~L, $hv env), a)) == N.nneg(L, _) : $CL}
+      {==}
+
+# Balls of values and slopes
+# --------------------------
+
+def kball_h($KLH, +box: List<&2, KB.KB<K>>, e: E.QExpr) -> {KB.kball(~L, $hbv box), e) == $hb KB.kball(~K, box, e)) : $BL}:
+  match e:
+    case E.QVar{i}:
+      blook_h($T, box, i)
+    case E.QCst{+q}:
+      %kcst_h($T, q) : {KB.KB{KB.kcst(~L, q), $zL} == KB.KB{_, $h $zK)} : $BL}
+      %$HZ : {KB.KB{KB.kcst(~L, q), $zL} == KB.KB{KB.kcst(~L, q), _} : $BL}
+      {==}
+    case E.QAdd{+a, +b}:
+      %badd_h($T, KB.kball(~K, box, a), KB.kball(~K, box, b)) : {KB.badd(~L, KB.kball(~L, $hbv box), a), KB.kball(~L, $hbv box), b)) == _ : $BL}
+      %kball_h($T, box, a) : {KB.badd(~L, KB.kball(~L, $hbv box), a), KB.kball(~L, $hbv box), b)) == KB.badd(~L, _, $hb KB.kball(~K, box, b))) : $BL}
+      %kball_h($T, box, b) : {KB.badd(~L, KB.kball(~L, $hbv box), a), KB.kball(~L, $hbv box), b)) == KB.badd(~L, KB.kball(~L, $hbv box), a), _) : $BL}
+      {==}
+    case E.QSub{+a, +b}:
+      %badd_h($T, KB.kball(~K, box, a), KB.bneg(~K, KB.kball(~K, box, b))) : {KB.badd(~L, KB.kball(~L, $hbv box), a), KB.bneg(~L, KB.kball(~L, $hbv box), b))) == _ : $BL}
+      %kball_h($T, box, a) : {KB.badd(~L, KB.kball(~L, $hbv box), a), KB.bneg(~L, KB.kball(~L, $hbv box), b))) == KB.badd(~L, _, $hb KB.bneg(~K, KB.kball(~K, box, b)))) : $BL}
+      %bneg_h($T, KB.kball(~K, box, b)) : {KB.badd(~L, KB.kball(~L, $hbv box), a), KB.bneg(~L, KB.kball(~L, $hbv box), b))) == KB.badd(~L, KB.kball(~L, $hbv box), a), _) : $BL}
+      %kball_h($T, box, b) : {KB.badd(~L, KB.kball(~L, $hbv box), a), KB.bneg(~L, KB.kball(~L, $hbv box), b))) == KB.badd(~L, KB.kball(~L, $hbv box), a), KB.bneg(~L, _)) : $BL}
+      {==}
+    case E.QMul{+a, +b}:
+      %bmul_h($T, KB.kball(~K, box, a), KB.kball(~K, box, b)) : {KB.bmul(~L, KB.kball(~L, $hbv box), a), KB.kball(~L, $hbv box), b)) == _ : $BL}
+      %kball_h($T, box, a) : {KB.bmul(~L, KB.kball(~L, $hbv box), a), KB.kball(~L, $hbv box), b)) == KB.bmul(~L, _, $hb KB.kball(~K, box, b))) : $BL}
+      %kball_h($T, box, b) : {KB.bmul(~L, KB.kball(~L, $hbv box), a), KB.kball(~L, $hbv box), b)) == KB.bmul(~L, KB.kball(~L, $hbv box), a), _) : $BL}
+      {==}
+    case E.QNeg{+a}:
+      %bneg_h($T, KB.kball(~K, box, a)) : {KB.bneg(~L, KB.kball(~L, $hbv box), a)) == _ : $BL}
+      %kball_h($T, box, a) : {KB.bneg(~L, KB.kball(~L, $hbv box), a)) == KB.bneg(~L, _) : $BL}
+      {==}
+
+def kind_h($KLH, b: Bool) -> {KB.kind(~L, b) == $hb KB.kind(~K, b)) : $BL}:
+  match b:
+    case True{}:
+      %$HO : {KB.KB{$oL, $zL} == KB.KB{_, $h $zK)} : $BL}
+      %$HZ : {KB.KB{$oL, $zL} == KB.KB{$oL, _} : $BL}
+      {==}
+    case False{}:
+      bzero_h($T)
+
+@MACRO SLM KB.badd(~L, KB.bmul(~L, KB.kball(~L, $hbv box), a), KB.ksl(~L, i, $hbv box), b)), KB.bmul(~L, KB.kball(~L, $hbv box), b), KB.ksl(~L, i, $hbv box), a)))
+
+def ksl_h($KLH, +i: Nat, +box: List<&2, KB.KB<K>>, e: E.QExpr) -> {KB.ksl(~L, i, $hbv box), e) == $hb KB.ksl(~K, i, box, e)) : $BL}:
+  match e:
+    case E.QVar{j}:
+      kind_h($T, KA.nateq(i, j))
+    case E.QCst{q}:
+      bzero_h($T)
+    case E.QAdd{+a, +b}:
+      %badd_h($T, KB.ksl(~K, i, box, a), KB.ksl(~K, i, box, b)) : {KB.badd(~L, KB.ksl(~L, i, $hbv box), a), KB.ksl(~L, i, $hbv box), b)) == _ : $BL}
+      %ksl_h($T, i, box, a) : {KB.badd(~L, KB.ksl(~L, i, $hbv box), a), KB.ksl(~L, i, $hbv box), b)) == KB.badd(~L, _, $hb KB.ksl(~K, i, box, b))) : $BL}
+      %ksl_h($T, i, box, b) : {KB.badd(~L, KB.ksl(~L, i, $hbv box), a), KB.ksl(~L, i, $hbv box), b)) == KB.badd(~L, KB.ksl(~L, i, $hbv box), a), _) : $BL}
+      {==}
+    case E.QSub{+a, +b}:
+      %badd_h($T, KB.ksl(~K, i, box, a), KB.bneg(~K, KB.ksl(~K, i, box, b))) : {KB.badd(~L, KB.ksl(~L, i, $hbv box), a), KB.bneg(~L, KB.ksl(~L, i, $hbv box), b))) == _ : $BL}
+      %ksl_h($T, i, box, a) : {KB.badd(~L, KB.ksl(~L, i, $hbv box), a), KB.bneg(~L, KB.ksl(~L, i, $hbv box), b))) == KB.badd(~L, _, $hb KB.bneg(~K, KB.ksl(~K, i, box, b)))) : $BL}
+      %bneg_h($T, KB.ksl(~K, i, box, b)) : {KB.badd(~L, KB.ksl(~L, i, $hbv box), a), KB.bneg(~L, KB.ksl(~L, i, $hbv box), b))) == KB.badd(~L, KB.ksl(~L, i, $hbv box), a), _) : $BL}
+      %ksl_h($T, i, box, b) : {KB.badd(~L, KB.ksl(~L, i, $hbv box), a), KB.bneg(~L, KB.ksl(~L, i, $hbv box), b))) == KB.badd(~L, KB.ksl(~L, i, $hbv box), a), KB.bneg(~L, _)) : $BL}
+      {==}
+    case E.QMul{+a, +b}:
+      %badd_h($T, KB.bmul(~K, KB.kball(~K, box, a), KB.ksl(~K, i, box, b)), KB.bmul(~K, KB.kball(~K, box, b), KB.ksl(~K, i, box, a))) : {$SLM == _ : $BL}
+      %bmul_h($T, KB.kball(~K, box, a), KB.ksl(~K, i, box, b)) : {$SLM == KB.badd(~L, _, $hb KB.bmul(~K, KB.kball(~K, box, b), KB.ksl(~K, i, box, a)))) : $BL}
+      %kball_h($T, box, a) : {$SLM == KB.badd(~L, KB.bmul(~L, _, $hb KB.ksl(~K, i, box, b))), $hb KB.bmul(~K, KB.kball(~K, box, b), KB.ksl(~K, i, box, a)))) : $BL}
+      %ksl_h($T, i, box, b) : {$SLM == KB.badd(~L, KB.bmul(~L, KB.kball(~L, $hbv box), a), _), $hb KB.bmul(~K, KB.kball(~K, box, b), KB.ksl(~K, i, box, a)))) : $BL}
+      %bmul_h($T, KB.kball(~K, box, b), KB.ksl(~K, i, box, a)) : {$SLM == KB.badd(~L, KB.bmul(~L, KB.kball(~L, $hbv box), a), KB.ksl(~L, i, $hbv box), b)), _) : $BL}
+      %kball_h($T, box, b) : {$SLM == KB.badd(~L, KB.bmul(~L, KB.kball(~L, $hbv box), a), KB.ksl(~L, i, $hbv box), b)), KB.bmul(~L, _, $hb KB.ksl(~K, i, box, a)))) : $BL}
+      %ksl_h($T, i, box, a) : {$SLM == KB.badd(~L, KB.bmul(~L, KB.kball(~L, $hbv box), a), KB.ksl(~L, i, $hbv box), b)), KB.bmul(~L, KB.kball(~L, $hbv box), b), _)) : $BL}
+      {==}
+    case E.QNeg{+a}:
+      %bneg_h($T, KB.ksl(~K, i, box, a)) : {KB.bneg(~L, KB.ksl(~L, i, $hbv box), a)) == _ : $BL}
+      %ksl_h($T, i, box, a) : {KB.bneg(~L, KB.ksl(~L, i, $hbv box), a)) == KB.bneg(~L, _) : $BL}
+      {==}
+
+def krange_h($KLH, +box: List<&2, KB.KB<K>>, +e: E.QExpr, cnt: Nat, +lo: Nat) -> {KB.krange(~L, $hbv box), e, cnt, lo) == $hbv KB.krange(~K, box, e, cnt, lo)) : List<&2, $BL>}:
+  match cnt:
+    case 0n:
+      {==}
+    case 1n+k:
+      %ksl_h($T, lo, box, e) : {Con{KB.ksl(~L, lo, $hbv box), e), KB.krange(~L, $hbv box), e, k, 1n+lo)} == Con{_, $hbv KB.krange(~K, box, e, k, 1n+lo))} : List<&2, $BL>}
+      %krange_h($T, box, e, k, 1n+lo) : {Con{KB.ksl(~L, lo, $hbv box), e), KB.krange(~L, $hbv box), e, k, 1n+lo)} == Con{KB.ksl(~L, lo, $hbv box), e), _} : List<&2, $BL>}
+      {==}
