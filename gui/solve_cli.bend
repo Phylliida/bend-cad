@@ -1,6 +1,8 @@
-# bend-cad GUI: runs the verified solver (lib/solve.bend) on a sketch read
-# from ./sketch.in and prints its answer. Untrusted driver: parsing and
-# printing only. Native: bin/bend gui/solve_cli.bend -o gui/solve_cli
+# bend-cad GUI: runs the verified solver on a sketch read from ./sketch.in
+# and prints its answer: the word solver (lib/fast.bend: wsolve), whose
+# answer is lib/solve.bend's (ROADMAP: fast_solve), so the laws are about
+# what runs. Untrusted driver: parsing and printing only. Native: bin/bend
+# gui/solve_cli.bend -o gui/solve_cli
 #
 # sketch.in, four lines (numbers decimal unless noted):
 #   0: variable kinds, space separated: 0 coord, 1 length, 2 param, 3 aux
@@ -24,6 +26,7 @@ import ../spec/ring.bend as E
 import ../spec/sketch.bend as SK
 import ../spec/solve.bend as SV
 import ../lib/solve.bend as SO
+import ../lib/fast.bend as FS
 import ../proto/block.bend as B
 
 # Numbers
@@ -588,7 +591,7 @@ def sketch(+ls: List<&2, String>) -> SK.Sketch:
 
 def run.go(+ls: List<&2, String>) -> String:
   +sk = sketch(ls)
-  show(sk, SO.solve(sk, ds(B.toks(line(ls, 3n)))))
+  show(sk, FS.wsolve(sk, ds(B.toks(line(ls, 3n)))))
 
 def run(s: String) -> String:
   run.go(String.split(s, '\n'))

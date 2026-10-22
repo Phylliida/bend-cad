@@ -1859,6 +1859,19 @@ optionally Euclidean-field axioms for SDF laws.
 **Not trusted, and not needed for any claim:** the UI; F32 rendering. The
 proposer is not trusted either: it is verified (§10).
 
+**Machine words (sk-13w, PLAN-sk13w.md).** The solver that runs
+(lib/fast.bend; the CLI) computes with word dyadics, limbs in base 2^12
+held in BendRT's native Nat words, and `fast_solve` proves it returns
+exactly lib/solve.bend's answer, so the laws are about what runs. At run
+time this relies on BendRT's native `nat_add`, `nat_sub`, `nat_mul`,
+`nat_divmod`, `nat_cmp` and `nat_is_lt` agreeing with base.bend's
+definitions below 2^48 (a Nat past 2^48 - 1 stops the run with an error,
+never a wrong value). With limbs below 2^12 every native intermediate (a
+limb product plus carries) stays below 2^24 (lib/wmagpf.bend: `mul_bound`,
+`add_bound`). BendRT already runs every program here, so this narrows
+nothing that was proven; it is a specific reliance, listed here, and
+checkable by testing each operation against its base definition.
+
 **Boundary:** JS-supplied values are unchecked; the typed IR and proposals are
 parsed and validated inside Bend. Differential testing of the JS and C lanes on
 random sketches.

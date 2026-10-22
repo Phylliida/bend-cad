@@ -286,9 +286,12 @@ law solve_refused:
 # The solver that runs (sk-13w, PLAN-sk13w.md)
 # --------------------------------------------
 # The CLI runs lib/fast.bend's solver: the same search and verdict over
-# word dyadics (limbs in base 2^14; lib/gnumer.bend's proposer and the
+# word dyadics (limbs in base 2^12; lib/gnumer.bend's proposer and the
 # generic checker at those numbers). It returns exactly solve_l's answer,
-# at every level, so every law above holds for what runs.
+# at every level, so every law above holds for what runs. Proven
+# (lib/fastpf.bend: solve_l_eq for every computing numbers with the
+# proposer's operations and laws, at the CLI's instance), restated in
+# tests/fast_laws.bend.
 
 # LAW: the word solver's answer is solve_l's
 law fast_solve:

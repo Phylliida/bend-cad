@@ -231,6 +231,28 @@ input and every base; `tests/wmag_demo.bend` restates them.
   back to `S.D` once (linear in their size), so `Out`'s types do not
   change.
 
+**Done (2026-10-22), generic rather than word twins.** Bend instantiates
+a template (`~K`) only at closed arguments, so the checker cannot run at
+`wnum(bp, lp)` with a variable base; and the checker's numbers are unary,
+so a closed computed base (2^23 - 1 from `wbp(22)`) is expanded and
+compared digit by digit whenever two copies of the word instance meet,
+which overflows the stack. So the proposer is written once over any
+numbers (and proven once, generically), and the base is a literal at the
+one closed instance:
+- `lib/pops.bend`: `POps<K>`, the proposer's operations besides `N.Num`'s
+  (ofd, tod, numer's dsig, dround, dsdiv, dsigup), and `PLaws<K, W>`: a
+  map of computing numbers from `KI.dnum()` (lib/khom.bend, `Hom`) whose
+  map is ofd, tod its left inverse, each operation numer's on the images.
+  `lib/wnum.bend`: `wops`; `lib/wnumpf.bend`: `wlaws(bp, lp, hb)` for
+  every base (rounding by W3's twins, the rare operations through S.D).
+- `lib/gnumer.bend`: numer.bend's proposer over any K and W, function by
+  function; numer's number-free functions are used as they are.
+- `lib/gelimpf.bend` (the elimination), `lib/gnewtpf.bend` (Newton, Y,
+  the radius search) and `lib/gplanpf.bend` (the block, the plan):
+  `plan_t`, for every K, W and laws R, `GN.plan(W, es, nv, sk, h g0, p) =
+  hpr(NU.plan(es, nv, sk, g0, p))`, by rewriting numer's images into
+  gnumer's terms bottom up. `lib/gmap.bend` maps numer's result types.
+
 ### W5. The fast verdict
 
 - The parametricity lemmas for the checker functions the verdict uses:
@@ -238,6 +260,16 @@ input and every base; `tests/wmag_demo.bend` restates them.
   between two `N.Num` instances.
 - `final_fast` runs them at `wnum()` on the word plan; a lemma that it equals
   `final` on the converted answer.
+
+**Done (2026-10-22).** `lib/khom.bend`: `Hom<K, L>` (h sends zero, one,
+add, mul and neg to L's exactly, with the same comparisons and L holding
+exactly the images of K's rationals) and the checker's data through it.
+`lib/khompf.bend` (karith, kball), `lib/certhpf.bend` (cert:
+`ccheck_h`, CK.check of a certificate's image is CK.check of the
+certificate) and `lib/planhpf.bend` (`pcheck_h`, `check_sides_h`): every
+checker function commutes with a Hom, each lemma by induction mirroring
+its function. `lib/fast.bend`'s `final` is SO.final with its plan and
+sides checked in K (lib/fastpf.bend).
 
 ### W6. The switch
 

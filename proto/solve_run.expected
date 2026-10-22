@@ -4,3 +4,4 @@ free:   certified True, box of 2, pins {0 1}, red {}
 far:    certified False, box of 0, pins {0 1 2 3}, red {}
 mid:    certified True, box of 6, pins {}, red {}
 tiny:   certified True, box of 3, pins {0 1}, red {}
+the reference agrees: True

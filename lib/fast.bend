@@ -6,7 +6,7 @@
 # answer is sent back to S.D once, at the end. With laws relating K to
 # KI.dnum() (lib/pops.bend: PLaws) it returns exactly what SO.solve does
 # (lib/fastpf.bend: fsolve_eq), so every law about the solver holds for
-# it. The CLI runs it at word dyadics in base 2^14 (wsolve below).
+# it. The CLI runs it at word dyadics in base 2^12 (wsolve below).
 
 import Base
 import ../spec/num.bend as S
@@ -250,24 +250,23 @@ def solve_l(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: N
 def solve(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>) -> SO.Out:
   solve_l(~K, ~W, sk, g0, 0n)
 
-# Word dyadics in base 2^14
+# Word dyadics in base 2^12
 # -------------------------
-# A template's arguments are closed terms, so the CLI's base is fixed here.
-# It is 2^14 (lp = 13): the checker's numbers are unary, so a type naming
-# a computed 2^(1 + lp) - 1 has it expanded and compared digit by digit,
-# and the base must be a literal; 2^14 is the largest for which the
-# checker can still evaluate the hypothesis 2^14 = 16383 + 1 that the
-# theorem at this base needs (lib/fastpf.bend: wsolve_eq). A larger base
-# saves little: sketch 6 (a 32x32 block) took 4% fewer instructions at
-# 2^23.
+# A template's arguments are closed terms, so the CLI's base is fixed here,
+# as a literal (the checker's numbers are unary: a computed 2^(1 + lp) - 1
+# in a type is expanded and compared digit by digit). The theorem at this
+# instance (ROADMAP: fast_solve; tests/fast_laws.bend) checks the generic
+# proof again at these closed numbers, which takes about 47 s at 2^12, 98 s
+# at 2^13, and overflows the checker's stack at 2^14. Larger bases save
+# little: on sketch 6 (a 32x32 block) 2^14 took 4% fewer instructions.
 
 def wk() -> N.Num:
-  WN.wnum(16383n, 13n)
+  WN.wnum(4095n, 11n)
 
 def wo() -> PO.POps<wk()>:
-  WN.wops(16383n, 13n)
+  WN.wops(4095n, 11n)
 
-# the solver at word dyadics, base 2^14: at level l, and the CLI's (level 0)
+# the solver at word dyadics, base 2^12: at level l, and the CLI's (level 0)
 def wsolve_l(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat) -> SO.Out:
   solve_l(~wk(), ~wo(), sk, g0, l)
 

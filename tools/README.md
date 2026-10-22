@@ -51,6 +51,13 @@ the checker verifies the output.
 | `lib/wintpf.bend` | `python3 tools/expand.py tools/drafts/wintpf.draft lib/wintpf.bend` |
 | `lib/wdyadpf.bend` | `python3 tools/expand.py tools/drafts/wdyadpf.draft lib/wdyadpf.bend` |
 | `lib/wsigpf.bend` | `python3 tools/expand.py tools/drafts/wsigpf.draft lib/wsigpf.bend` |
+| `lib/khompf.bend` | `python3 tools/expand.py tools/drafts/khompf.draft lib/khompf.bend` |
+| `lib/certhpf.bend` | `python3 tools/expand.py tools/drafts/certhpf.draft lib/certhpf.bend` |
+| `lib/planhpf.bend` | `python3 tools/expand.py tools/drafts/planhpf.draft lib/planhpf.bend` |
+| `lib/gelimpf.bend` | `python3 tools/expand.py tools/drafts/gelimpf.draft lib/gelimpf.bend` |
+| `lib/gnewtpf.bend` | `python3 tools/expand.py tools/drafts/gnewtpf.draft lib/gnewtpf.bend` |
+| `lib/gplanpf.bend` | `python3 tools/expand.py tools/drafts/gplanpf.draft lib/gplanpf.bend` |
+| `lib/fastpf.bend` | `python3 tools/expand.py tools/drafts/fastpf.draft lib/fastpf.bend` |
 
 `@MACRO NAME text` (a line) makes every `$NAME` below stand for `text`
 (textual, longest names first, macros may use macros): long hypothesis lists
