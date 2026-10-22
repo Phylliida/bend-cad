@@ -195,9 +195,6 @@ def r_ync() -> PM.PE:
 def r_thlc() -> PM.PE:
   pp(pt(at(6n), r_ea()), pt(pt(at(4n), r_al()), pt(at(6n), at(8n))))
 
-def r_thrc() -> PM.PE:
-  pp(pt(pt(at(6n), at(8n)), pt(pt(at(6n), r_ea()), r_bt2())), pt(pt(at(6n), at(8n)), pt(at(4n), r_al())))
-
 def r_sbc() -> PM.PE:
   pp(pt(r_ync(), pp(pt(pt(at(6n), at(8n)), r_en()), pt(pt(at(7n), at(8n)), at(1n)))), pt(r_ync(), pt(pt(at(7n), at(8n)), at(1n))))
 
@@ -233,9 +230,6 @@ def cv_s4($KP, +tt: @T) -> {NW.settle($KA) == PM.peval(~F, $AV, r_settle()) : @T
   {==}
 
 def cv_w1($KP, +tt: @T) -> {@A(NW.dx($KA), BK.rbc($KA)) == PM.peval(~F, $AV, r_w1()) : @T}:
-  {==}
-
-def cv_w2($KP, +tt: @T) -> {BK.thrc($KA) == PM.peval(~F, $AV, r_thrc()) : @T}:
   {==}
 
 def cv_w3($KP, +tt: @T) -> {@A(@A(BK.thlc($KA), @M(BK.ync($KA), @M(FR.ofn(~F, n), @M(lam, BK.rbc($KA))))), @M(BK.ync($KA), @M(FR.ofn(~F, m), @M(lam, BK.rbc($KA))))) == PM.peval(~F, $AV, r_w3()) : @T}:
@@ -344,7 +338,6 @@ def ain(~F: O.OField, +n: Nat, +g: @T, +bb: @T, +hg: O.le(~F, @0, g), +hb: O.le(
 @MACRO QS1 PM.peval(~F, $CT, r_s1())
 @MACRO QS2 PM.peval(~F, $CT, r_s2())
 @MACRO QW1 PM.peval(~F, $CT, r_w1())
-@MACRO QW2 PM.peval(~F, $CT, r_thrc())
 @MACRO QW3 PM.peval(~F, $CT, r_w3())
 @MACRO QW4 PM.peval(~F, $CT, r_w4())
 @MACRO QS4 PM.peval(~F, $CT, r_settle())
@@ -353,8 +346,7 @@ def ain(~F: O.OField, +n: Nat, +g: @T, +bb: @T, +hg: O.le(~F, @0, g), +hb: O.le(
 @MACRO Q7 @A($QS4, $QAS)
 @MACRO Q6 @A(@M($N64, $QW4), $Q7)
 @MACRO Q5 @A(@A($QW3, $QW3), $Q6)
-@MACRO Q4 @A($QW2, $Q5)
-@MACRO Q3 @A($QW1, $Q4)
+@MACRO Q3 @A($QW1, $Q5)
 @MACRO Q2 @A($QS2, $Q3)
 @MACRO Q1 @A($QS1, $Q2)
 
@@ -379,11 +371,8 @@ def nn6($QPH, $QNP) -> O.le(~F, @0, $Q6):
 def nn5($QPH, $QNP) -> O.le(~F, @0, $Q5):
   FO.nonneg_add(~F, @A($QW3, $QW3), $Q6, FO.nonneg_add(~F, $QW3, $QW3, qnn($QAH, $QNA, r_w3()), qnn($QAH, $QNA, r_w3())), nn6($QAH, $QNA))
 
-def nn4($QPH, $QNP) -> O.le(~F, @0, $Q4):
-  FO.nonneg_add(~F, $QW2, $Q5, qnn($QAH, $QNA, r_thrc()), nn5($QAH, $QNA))
-
 def nn3($QPH, $QNP) -> O.le(~F, @0, $Q3):
-  FO.nonneg_add(~F, $QW1, $Q4, qnn($QAH, $QNA, r_w1()), nn4($QAH, $QNA))
+  FO.nonneg_add(~F, $QW1, $Q5, qnn($QAH, $QNA, r_w1()), nn5($QAH, $QNA))
 
 def nn2($QPH, $QNP) -> O.le(~F, @0, $Q2):
   FO.nonneg_add(~F, $QS2, $Q3, qnn($QAH, $QNA, r_s2()), nn3($QAH, $QNA))
@@ -394,11 +383,8 @@ def in2($QPH, $QNP) -> O.le(~F, $Q2, $Q1):
 def in3($QPH, $QNP) -> O.le(~F, $Q3, $Q1):
   DM.le_trans(~F, $Q3, $Q2, $Q1, FV.le_addl(~F, $QS2, $Q3, qnn($QAH, $QNA, r_s2())), in2($QAH, $QNA))
 
-def in4($QPH, $QNP) -> O.le(~F, $Q4, $Q1):
-  DM.le_trans(~F, $Q4, $Q3, $Q1, FV.le_addl(~F, $QW1, $Q4, qnn($QAH, $QNA, r_w1())), in3($QAH, $QNA))
-
 def in5($QPH, $QNP) -> O.le(~F, $Q5, $Q1):
-  DM.le_trans(~F, $Q5, $Q4, $Q1, FV.le_addl(~F, $QW2, $Q5, qnn($QAH, $QNA, r_thrc())), in4($QAH, $QNA))
+  DM.le_trans(~F, $Q5, $Q3, $Q1, FV.le_addl(~F, $QW1, $Q5, qnn($QAH, $QNA, r_w1())), in3($QAH, $QNA))
 
 def in6($QPH, $QNP) -> O.le(~F, $Q6, $Q1):
   DM.le_trans(~F, $Q6, $Q5, $Q1, FV.le_addl(~F, @A($QW3, $QW3), $Q6, FO.nonneg_add(~F, $QW3, $QW3, qnn($QAH, $QNA, r_w3()), qnn($QAH, $QNA, r_w3()))), in5($QAH, $QNA))
@@ -420,10 +406,7 @@ def tq_s2($QPH, $QNP, $SQP) -> O.lt(F, @M($VB, $QS2), @1):
   part(~F, $VB, $QS2, $Q1, BK.vb_nn(~F, p), DM.le_trans(~F, $QS2, $Q2, $Q1, FV.le_addr(~F, $QS2, $Q3, nn3($QAH, $QNA)), in2($QAH, $QNA)), hsq)
 
 def tq_w1($QPH, $QNP, $SQP) -> O.lt(F, @M($VB, $QW1), @1):
-  part(~F, $VB, $QW1, $Q1, BK.vb_nn(~F, p), DM.le_trans(~F, $QW1, $Q3, $Q1, FV.le_addr(~F, $QW1, $Q4, nn4($QAH, $QNA)), in3($QAH, $QNA)), hsq)
-
-def tq_w2($QPH, $QNP, $SQP) -> O.lt(F, @M($VB, $QW2), @1):
-  part(~F, $VB, $QW2, $Q1, BK.vb_nn(~F, p), DM.le_trans(~F, $QW2, $Q4, $Q1, FV.le_addr(~F, $QW2, $Q5, nn5($QAH, $QNA)), in4($QAH, $QNA)), hsq)
+  part(~F, $VB, $QW1, $Q1, BK.vb_nn(~F, p), DM.le_trans(~F, $QW1, $Q3, $Q1, FV.le_addr(~F, $QW1, $Q5, nn5($QAH, $QNA)), in3($QAH, $QNA)), hsq)
 
 def tq_w3($QPH, $QNP, $SQP) -> O.lt(F, @M($VB, @A($QW3, $QW3)), @1):
   part(~F, $VB, @A($QW3, $QW3), $Q1, BK.vb_nn(~F, p), DM.le_trans(~F, @A($QW3, $QW3), $Q5, $Q1, FV.le_addr(~F, @A($QW3, $QW3), $Q6, nn6($QAH, $QNA)), in5($QAH, $QNA)), hsq)
@@ -495,9 +478,6 @@ def s2_sc($SHP) -> O.le(~F, @A(@M(b, @M(FR.ofn(~F, n), @M(lam, NW.dx($KA)))), @M
 def w1_sc($SHP) -> O.le(~F, @A(NW.dx($KA), BK.rbc($KA)), @1):
   cond_t($KAH, $NNA, $SCA, r_w1(), {==}, @1, FO.lt_le(~F, @M($VB, $QW1), @1, tq_w1($QAH, $QNA, $SQA)))
 
-def w2_sc($SHP) -> O.lt(F, BK.thrc($KA), @1):
-  FO.le_lt_trans(~F, BK.thrc($KA), @M($VB, $QW2), @1, cond_t($KAH, $NNA, $SCA, r_thrc(), {==}, @M($VB, $QW2), FO.le_refl(~F, @M($VB, $QW2))), tq_w2($QAH, $QNA, $SQA))
-
 def w3_sc($SHP) -> O.le(~F, @A(@A(BK.thlc($KA), @M(BK.ync($KA), @M(FR.ofn(~F, n), @M(lam, BK.rbc($KA))))), @M(BK.ync($KA), @M(FR.ofn(~F, m), @M(lam, BK.rbc($KA))))), M.ofd(~F, NU.half())):
   +s = @M($VB, $QW3)
   +hh = RL.le_rw_l(~F, @M($VB, @A($QW3, $QW3)), @A(s, s), @1, O.mul_add(F)($VB, $QW3, $QW3), FO.lt_le(~F, @M($VB, @A($QW3, $QW3)), @1, tq_w3($QAH, $QNA, $SQA)))
@@ -536,7 +516,7 @@ def rb_sc($KPH, $NNP, $SCP) -> O.le(~F, BK.rbc($KA), @M($HH, phib($QA))):
 # block_ok with its smallness hypotheses in scale form: the drawing within
 # d <= h, the parameters' radii rho <= h T, and t qblk < 1
 def block_sc($CXQ, $Y0P, $PQP, $PRP, $SCP, +hsq: O.lt(F, @M($VB, qblk($QA)), @1)) -> BK.bgood(~F, n, eqs, xb, BK.rbc($KA), pc, pr, NU.block(eqs, n, pc, pr, y0, p)):
-  BK.block_ok($CXQA, hsm_sc($SHA), s1_sc($SHA), s2_sc($SHA), s4_sc($SHA), y0, ly0, hy0, q2, hp2, pr, lpr, hpn, hzr, hpr, w1_sc($SHA), w2_sc($SHA), w3_sc($SHA), w4_sc($SHA))
+  BK.block_ok($CXQA, hsm_sc($SHA), s1_sc($SHA), s2_sc($SHA), s4_sc($SHA), y0, ly0, hy0, q2, hp2, pr, lpr, hpn, hzr, hpr, w1_sc($SHA), w3_sc($SHA), w4_sc($SHA))
 
 # qblk and phib are not negative
 def qblk_nn($QPH, $QNP) -> O.le(~F, @0, qblk($QA)):

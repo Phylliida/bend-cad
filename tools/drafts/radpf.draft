@@ -612,7 +612,7 @@ def ofkm_imm($KH, +n: Nat, +a: N.KMat(~K), +b: N.KMat(~K)) -> {N.ofkm($KHA, CK.i
 # The window
 # ----------
 # Every radius r with 2S <= r and r + rho <= rb passes the checker, given
-# |Y| <= yn, |I - Y Jc| <= thL, |I - Jc Y| <= thR < 1 and the smallness
+# |Y| <= yn, |I - Y Jc| <= thL and the smallness
 # thL + yn n lam rb + yn m lam rho <= 1/2 (S the largest entry of the
 # self-map bound at radius 0).
 
@@ -1060,7 +1060,6 @@ def vlt_of_vn(~F: O.OField, v: M.Vec(~F), +t: @T, +h: O.lt(F, NP.vn(~F, v), t)) 
       (FO.le_lt_trans(~F, a, NP.vn(~F, Con{a, as}), t, lk_le(~F, Con{a, as}, 0n), h),
        vlt_of_vn(~F, as, t, FO.le_lt_trans(~F, NP.vn(~F, as), NP.vn(~F, Con{a, as}), t, FV.fmax_r(~F, FV.fabs(~F, a), NP.vn(~F, as)), h)))
 
-@MACRO THR O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, NW.jc(~F, eqs, n, $PTC), M.ofdm(~F, ym)))), n), thR)
 
 # r > 0 in F: 0 < r in K
 def klt_rf(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +r: S.D, +hr: O.lt(F, @0, M.ofd(~F, r))) -> O.lt(F, N.emap(KI.dnum(), F, H, N.nzero(KI.dnum())), N.emap(KI.dnum(), F, H, r)):
@@ -1117,7 +1116,7 @@ def shape_ok($WXP, +hym: {CK.mlen($DN, ym) == n : Nat}, +hab: {CK.allbelow(Nat.a
   KA.band_i(CK.allheld($DN, eqs), CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs), hh, hab))))))))
 
 # The window: every r > 0 with S <= r/2, r <= rb passes the block checker
-def window_ok($WXP, +hym: {CK.mlen($DN, ym) == n : Nat}, +hab: {CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs) == True{} : Bool}, +thR: @T, +hthr0: O.le(~F, @0, thR), +hthr: $THR, +hthr1: O.lt(F, thR, @1), +hw: O.le(~F, $CW, $QH), +r: S.D, +hr0: O.le(~F, @0, M.ofd(~F, r)), +hr1: O.le(~F, M.ofd(~F, r), rb), +hS: O.le(~F, $SD, @M($QH, M.ofd(~F, r))), +hrp: O.lt(F, @0, M.ofd(~F, r))) -> {NU.okr(eqs, n, yc, r, ym, pc, pr) == True{} : Bool}:
+def window_ok($WXP, +hym: {CK.mlen($DN, ym) == n : Nat}, +hab: {CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs) == True{} : Bool}, +hw: O.le(~F, $CW, $QH), +r: S.D, +hr0: O.le(~F, @0, M.ofd(~F, r)), +hr1: O.le(~F, M.ofd(~F, r), rb), +hS: O.le(~F, $SD, @M($QH, M.ofd(~F, r))), +hrp: O.lt(F, @0, M.ofd(~F, r))) -> {NU.okr(eqs, n, yc, r, ym, pc, pr) == True{} : Bool}:
   KA.band_i(CK.shape($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), CK.rest1($DN, eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr), shape_ok($WXA, hym, hab, r, hr0),
   KA.band_i(CK.factor($DN, NU.half()), CK.rest2($DN, eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr), {==},
   KA.band_i(CK.ccon($DN, eqs, n, yc, NU.dreps(n, r), NU.half(), ym, pc, pr), CK.rest3($DN, eqs, n, yc, NU.dreps(n, r), ym, pc, pr), ccon_ok($WXA, hym, r, hr0, hr1, hw),
@@ -1283,8 +1282,8 @@ def rgood($SVP, +eta: S.D, m: Maybe<&2, S.D>) -> Data:
 
 @MACRO WXQ +n: Nat, +eqs: List<&2, E.QExpr>, +hn: {CK.eqlen(eqs) == n : Nat}, +hh: {CK.allheld($DN, eqs) == True{} : Bool}, +yc: List<&2, S.D>, +pc: List<&2, S.D>, +pr: List<&2, S.D>, +lyc: {KA.klen($DN, yc) == n : Nat}, +lpp: {KA.klen($DN, pc) == KA.klen($DN, pr) : Nat}, +ym: List<&2, List<&2, S.D>>, +bb: @T, +lam: @T, +ms: @T, +rb: @T, +hb: O.le(~F, @0, bb), +hl0: O.le(~F, @0, lam), +hrb: O.le(~F, @0, rb), +hq: AP.eqok(~F, bb, lam, ms, eqs), +hc: M.vbnd.all(~F, $PTC, @S(bb, rb)), +hpn: FV.rnn(~F, M.ofdv(~F, pr)), +hpr: M.vbnd.all(~F, M.ofdv(~F, pr), rb), +yn: @T, +thL: @T, +hyn: O.le(~F, NP.mnorm(~F, M.ofdm(~F, ym), n), yn), +hthl: O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, M.ofdm(~F, ym), NW.jc(~F, eqs, n, $PTC)))), n), thL), +hyn0: O.le(~F, @0, yn), +hthl0: O.le(~F, @0, thL)
 @MACRO WXB n, eqs, hn, hh, yc, pc, pr, lyc, lpp, ym, bb, lam, ms, rb, hb, hl0, hrb, hq, hc, hpn, hpr, yn, thL, hyn, hthl, hyn0, hthl0
-@MACRO RSQ $WXQ, +hym: {CK.mlen($DN, ym) == n : Nat}, +hab: {CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs) == True{} : Bool}, +thR: @T, +hthr0: O.le(~F, @0, thR), +hthr: $THR, +hthr1: O.lt(F, thR, @1), +hw: O.le(~F, $CW, $QH), +eta: S.D, +hE: O.lt(F, @0, $ETA), +hU: O.le(~F, $UBE, rb)
-@MACRO RSB $WXB, hym, hab, thR, hthr0, hthr, hthr1, hw, eta, hE, hU
+@MACRO RSQ $WXQ, +hym: {CK.mlen($DN, ym) == n : Nat}, +hab: {CK.allbelow(Nat.add(n, KA.klen($DN, pc)), eqs) == True{} : Bool}, +hw: O.le(~F, $CW, $QH), +eta: S.D, +hE: O.lt(F, @0, $ETA), +hU: O.le(~F, $UBE, rb)
+@MACRO RSB $WXB, hym, hab, hw, eta, hE, hU
 
 def lo_nn(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ) -> O.le(~F, @0, $LO):
   FO.nonneg_add(~F, @M($SD, $C65), $ETA, FO.mul_nonneg(~F, $SD, $C65, dvmax_nn(~F, $S0), c65_nn(~F, ~H)), FO.lt_le(~F, @0, $ETA, hE))
@@ -1303,7 +1302,7 @@ def lo_le(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +hlo: O.le(~F, $
 
 # a radius that passes the window but failed: impossible
 def no_fail(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +eok: {NU.okr(eqs, n, yc, r, ym, pc, pr) == False{} : Bool}, +hlo: O.le(~F, $LO, M.ofd(~F, r)), +hhi: O.le(~F, M.ofd(~F, r), $UBE), hS: O.le(~F, $SD, @M($QH, M.ofd(~F, r)))) -> Empty:
-  KA.ft(Equal.trans(Bool, False{}, NU.okr(eqs, n, yc, r, ym, pc, pr), True{}, Equal.sym(Bool, NU.okr(eqs, n, yc, r, ym, pc, pr), False{}, eok), window_ok(~F, ~H, $WXB, hym, hab, thR, hthr0, hthr, hthr1, hw, r, r_nn(~F, ~H, $RSB, r, hlo), DM.le_trans(~F, M.ofd(~F, r), $UBE, rb, hhi, hU), hS, r_pos(~F, ~H, $RSB, r, hlo))))
+  KA.ft(Equal.trans(Bool, False{}, NU.okr(eqs, n, yc, r, ym, pc, pr), True{}, Equal.sym(Bool, NU.okr(eqs, n, yc, r, ym, pc, pr), False{}, eok), window_ok(~F, ~H, $WXB, hym, hab, hw, r, r_nn(~F, ~H, $RSB, r, hlo), DM.le_trans(~F, M.ofd(~F, r), $UBE, rb, hhi, hU), hS, r_pos(~F, ~H, $RSB, r, hlo))))
 
 def fail_lt.go(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $RSQ, +r: S.D, +eok: {NU.okr(eqs, n, yc, r, ym, pc, pr) == False{} : Bool}, +hlo: O.le(~F, $LO, M.ofd(~F, r)), +hhi: O.le(~F, M.ofd(~F, r), $UBE), t: Or(O.lt(F, $SD, @M($QH, M.ofd(~F, r))), Or({$SD == @M($QH, M.ofd(~F, r)) : @T}, O.lt(F, @M($QH, M.ofd(~F, r)), $SD)))) -> O.lt(F, @M($QH, M.ofd(~F, r)), $SD):
   match t:

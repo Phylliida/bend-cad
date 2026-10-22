@@ -64,8 +64,8 @@ import ./nat.bend as LN
 
 # The constants
 # -------------
-# vb = 2^-(p/2) (Y's rounding), yn bounds |Y|, thL |I - Y J|, thR
-# |I - J Y|, sbc the self-map bound S at radius 0, ubc the search's
+# vb = 2^-(p/2) (Y's rounding), yn bounds |Y|, thL |I - Y J|, sbc the
+# self-map bound S at radius 0, ubc the search's
 # upper bound (at S + e, e = 2^-(p+1) the start's inflation), rbc = ubc +
 # rho every radius in sight.
 
@@ -77,9 +77,6 @@ def ync($KP) -> @T:
 
 def thlc($KP) -> @T:
   @A(@M(FR.ofn(~F, n), NW.ea($KA)), @M(@M($VB, NW.al($KA)), $JN))
-
-def thrc($KP) -> @T:
-  @A(@M($JN, @M(@M(FR.ofn(~F, n), NW.ea($KA)), NW.bt2(~F, b))), @M($JN, @M($VB, NW.al($KA))))
 
 def sbc($KP) -> @T:
   @A(@M(ync($KA), @A(@M(@M(FR.ofn(~F, n), ms), NW.en($KA)), @M(@M(FR.ofn(~F, m), ms), rho))), @M(ync($KA), @M(@M(FR.ofn(~F, m), ms), rho)))
@@ -321,18 +318,11 @@ def nrows_y($CXP, $AIQ) -> {GJ.nrows(~F, M.ofdm(~F, $YY)) == n : Nat}:
 def mlen_y($CXP, $AIQ) -> {CK.mlen($DN, $YY) == n : Nat}:
   Equal.trans(Nat, CK.mlen($DN, $YY), CK.mlen($DN, inv), n, mlen_ysig(Nat.div(p, 2n), inv), Equal.trans(Nat, CK.mlen($DN, inv), GJ.nrows(~F, M.ofdm(~F, inv)), n, Equal.sym(Nat, GJ.nrows(~F, M.ofdm(~F, inv)), CK.mlen($DN, inv), nrows_ofdm(~F, inv)), hA))
 
-def thr_ok($CXP, $YCP, $AIP) -> O.le(~F, NP.mnorm(~F, M.madd(~F, M.ident(~F, n), M.mneg(~F, M.matmul(~F, $JC, M.ofdm(~F, $YY)))), n), thrc($KA)):
-  AP.thr_mn(~F, n, $JC, M.ofdm(~F, inv), M.ofdm(~F, $YY), NW.ea($KA), NW.ea_nn($KA, $NNA), ha, hA, AP.nrows_jacn(~F, $PTC, eqs, n, hn), @M($VB, NW.al($KA)), ya_mn($CXA, $YCA, $AIA), $JN, jc_mn($CXA, $YCA), FO.mul_nonneg(~F, $VB, NW.al($KA), vb_nn(~F, p), NW.al_nn($KA, $NNA)), FO.mul_nonneg(~F, FR.ofn(~F, n), ms, DG.ofn_nn(~F, n), hm0), NW.bt2(~F, b), jc_inv($CXA, $YCA), nrows_y($CXA, inv, hA))
-
 def ync_nn($KP, $NNP) -> O.le(~F, @0, ync($KA)):
   FO.mul_nonneg(~F, @A(@1, $VB), NW.al($KA), FO.nonneg_add(~F, @1, $VB, FO.one_nn(~F), vb_nn(~F, p)), NW.al_nn($KA, $NNA))
 
 def thlc_nn($KP, $NNP) -> O.le(~F, @0, thlc($KA)):
   FO.nonneg_add(~F, @M(FR.ofn(~F, n), NW.ea($KA)), @M(@M($VB, NW.al($KA)), $JN), FO.mul_nonneg(~F, FR.ofn(~F, n), NW.ea($KA), DG.ofn_nn(~F, n), NW.ea_nn($KA, $NNA)), FO.mul_nonneg(~F, @M($VB, NW.al($KA)), $JN, FO.mul_nonneg(~F, $VB, NW.al($KA), vb_nn(~F, p), NW.al_nn($KA, $NNA)), FO.mul_nonneg(~F, FR.ofn(~F, n), ms, DG.ofn_nn(~F, n), hm0)))
-
-def thrc_nn($KP, $NNP) -> O.le(~F, @0, thrc($KA)):
-  +jn0 = FO.mul_nonneg(~F, FR.ofn(~F, n), ms, DG.ofn_nn(~F, n), hm0)
-  FO.nonneg_add(~F, @M($JN, @M(@M(FR.ofn(~F, n), NW.ea($KA)), NW.bt2(~F, b))), @M($JN, @M($VB, NW.al($KA))), FO.mul_nonneg(~F, $JN, @M(@M(FR.ofn(~F, n), NW.ea($KA)), NW.bt2(~F, b)), jn0, FO.mul_nonneg(~F, @M(FR.ofn(~F, n), NW.ea($KA)), NW.bt2(~F, b), FO.mul_nonneg(~F, FR.ofn(~F, n), NW.ea($KA), DG.ofn_nn(~F, n), NW.ea_nn($KA, $NNA)), NW.bt2_nn(~F, b, hb0))), FO.mul_nonneg(~F, $JN, @M($VB, NW.al($KA)), jn0, FO.mul_nonneg(~F, $VB, NW.al($KA), vb_nn(~F, p), NW.al_nn($KA, $NNA))))
 
 def sbc_nn($KP, $NNP) -> O.le(~F, @0, sbc($KA)):
   +y0 = ync_nn($KA, $NNA)
@@ -355,10 +345,11 @@ def rbc_nn($KPH, $NNP) -> O.le(~F, @0, rbc($KA)):
 # The block's smallness conditions
 # --------------------------------
 # w1: the box of radius rb about the center keeps magnitude below bb;
-# w2: thR < 1; w3: the window, cw <= 1/2; w4: x_b in the box.
+# w3: the window, cw <= 1/2; w4: x_b in the box. (The checker's old
+# injectivity condition needed a w2, |I - J Y| < 1; cpos replaced it.)
 
-@MACRO WSP +w1: O.le(~F, @A(NW.dx($KA), rbc($KA)), @1), +w2: O.lt(F, thrc($KA), @1), +w3: O.le(~F, @A(@A(thlc($KA), @M(ync($KA), @M(FR.ofn(~F, n), @M(lam, rbc($KA))))), @M(ync($KA), @M(FR.ofn(~F, m), @M(lam, rbc($KA))))), M.ofd(~F, NU.half())), +w4: O.le(~F, @M($C65, @A(thlc($KA), @M(ync($KA), @M(FR.ofn(~F, n), @M(lam, NW.dx($KA)))))), @S($C65, @1))
-@MACRO WSA w1, w2, w3, w4
+@MACRO WSP +w1: O.le(~F, @A(NW.dx($KA), rbc($KA)), @1), +w3: O.le(~F, @A(@A(thlc($KA), @M(ync($KA), @M(FR.ofn(~F, n), @M(lam, rbc($KA))))), @M(ync($KA), @M(FR.ofn(~F, m), @M(lam, rbc($KA))))), M.ofd(~F, NU.half())), +w4: O.le(~F, @M($C65, @A(thlc($KA), @M(ync($KA), @M(FR.ofn(~F, n), @M(lam, NW.dx($KA)))))), @S($C65, @1))
+@MACRO WSA w1, w3, w4
 
 def w3k($CXP, $WSP) -> O.le(~F, @A(@A(thlc($KA), @M(ync($KA), @M(FR.ofn(~F, n), @M(lam, rbc($KA))))), @M(ync($KA), @M(FR.ofn(~F, $KPC), @M(lam, rbc($KA))))), M.ofd(~F, NU.half())):
   %Equal.sym(Nat, $KPC, m, klen_m($CXA)) : O.le(~F, @A(@A(thlc($KA), @M(ync($KA), @M(FR.ofn(~F, n), @M(lam, rbc($KA))))), @M(ync($KA), @M(FR.ofn(~F, _), @M(lam, rbc($KA))))), M.ofd(~F, NU.half()))
@@ -462,7 +453,6 @@ def bym_ok($CXP, $YCP, $PRP, $AIP, $WSP) -> bgood(~F, n, eqs, xb, rbc($KA), pc, 
   +hprb = NW.vall_le(~F, M.ofdv(~F, pr), rho, rb, hpr, rho_le_rb($CXA))
   +hyn = y_mn($CXA, $YCA, $AIA)
   +hthl = thl_ok($CXA, $YCA, $AIA)
-  +hthr = thr_ok($CXA, $YCA, $AIA)
   +hU = ub_rb($CXA, $YCA, $PRA, $AIA, $WSA)
   +hab = hab_k($CXA)
   +hw = w3k($CXA, $WSA)
@@ -470,7 +460,7 @@ def bym_ok($CXP, $YCP, $PRP, $AIP, $WSP) -> bgood(~F, n, eqs, xb, rbc($KA), pc, 
   +hBr = NW.vall_appsub(~F, xb, M.ofdv(~F, yc), xz, M.ofdv(~F, pc), NW.dx($KA), Equal.trans(Nat, M.len(~F, xb), n, M.len(~F, M.ofdv(~F, yc)), lxb, Equal.sym(Nat, M.len(~F, M.ofdv(~F, yc)), n, lyc)), NW.vall_le(~F, BX.vsub(~F, xb, M.ofdv(~F, yc)), NW.en($KA), NW.dx($KA), NW.vall_swap(~F, M.ofdv(~F, yc), xb, NW.en($KA), hyc_all($CXA, $YCA)), NW.en_le_dx($CXA)), zx_dx($CXA))
   +hib = RD.inbox_ok(~F, ~H, n, eqs, hn, hh, yc, pc, pr, hab, lycK, $YY, hpn, xb, xz, lxb, lxz_k($CXA), hz, hzr, bb, lam, ms, hbb0, hl0, hq, ync($KA), thlc($KA), hyn, hthl, ync_nn($KA, $NNA), thlc_nn($KA, $NNA), NW.dx($KA), NW.dx_nn($KA, $NNA), cen_mag($CXA, $YCA, NW.dx($KA), s1), hZr, hBr, w4)
   br_ok($CXA, $YCA, $PRA, $AIA, $WSA, hU, hib, NU.rsearch(64n, NU.okr(eqs, n, yc, NU.r0(eqs, n, yc, $YY, pc, pr, NU.eta(p)), $YY, pc, pr), eqs, n, yc, NU.r0(eqs, n, yc, $YY, pc, pr, NU.eta(p)), $YY, pc, pr),
-    RD.rs_init(~F, ~H, n, eqs, hn, hh, yc, pc, pr, lycK, lpp, $YY, bb, lam, ms, rb, hbb0, hl0, hrb, hq, hcr, hpn, hprb, ync($KA), thlc($KA), hyn, hthl, ync_nn($KA, $NNA), thlc_nn($KA, $NNA), mlen_y($CXA, inv, hA), hab, thrc($KA), thrc_nn($KA, $NNA), hthr, w2, hw, NU.eta(p), DM.dpos(~F, S.XH{}, 1n+p), hU))
+    RD.rs_init(~F, ~H, n, eqs, hn, hh, yc, pc, pr, lycK, lpp, $YY, bb, lam, ms, rb, hbb0, hl0, hrb, hq, hcr, hpn, hprb, ync($KA), thlc($KA), hyn, hthl, ync_nn($KA, $NNA), thlc_nn($KA, $NNA), mlen_y($CXA, inv, hA), hab, hw, NU.eta(p), DM.dpos(~F, S.XH{}, 1n+p), hU))
 
 # the elimination at the center succeeded
 def by2_ok($CXP, $YCP, $PRP, $WSP, minv: Maybe<&2, List<&2, List<&2, S.D>>>, hres: DG.dinv_res(~F, n, $JC, NW.ea($KA), minv)) -> bgood(~F, n, eqs, xb, rbc($KA), pc, pr, NU.block.y2(minv, p, eqs, n, yc, pc, pr)):
