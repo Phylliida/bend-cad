@@ -1,0 +1,350 @@
+# bend-cad: lib/gnumer.bend's elimination (the approximate inverse) and its
+# list helpers return exactly lib/numer.bend's results sent through the map
+# h : KI.dnum() -> K of the proposer's laws R (lib/pops.bend): for every S.D
+# input, GN.f on the images is the image of NU.f. Untrusted; for the fast
+# proposer (PLAN-sk13w W4).
+
+@MACRO KWR ~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>
+@MACRO T ~K, ~W, ~R
+@MACRO G ~K, ~W
+@MACRO HH ~K, ~PO.hom(K, W, R)
+@MACRO D ~KI.dnum(), ~K, ~PO.hom(K, W, R)
+@MACRO h KH.hmap(KI.dnum(), K, PO.hom(K, W, R),
+@MACRO hv KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R),
+@MACRO hm KH.hm(~KI.dnum(), ~K, ~PO.hom(K, W, R),
+@MACRO C N.NC(K)
+@MACRO V N.KVec(~K)
+@MACRO M N.KMat(~K)
+@MACRO MM Maybe<&2, N.KMat(~K)>
+@MACRO HADD KH.h_add(KI.dnum(), K, PO.hom(K, W, R))
+@MACRO HMUL KH.h_mul(KI.dnum(), K, PO.hom(K, W, R))
+@MACRO HNEG KH.h_neg(KI.dnum(), K, PO.hom(K, W, R))
+@MACRO HCMP KH.h_cmp(KI.dnum(), K, PO.hom(K, W, R))
+@MACRO LOFD PO.l_ofd(K, W, R)
+@MACRO LSIG PO.l_sig(K, W, R)
+@MACRO LSDIV PO.l_sdiv(K, W, R)
+
+import Base
+import ../spec/num.bend as S
+import ../spec/knum.bend as N
+import ./kinst.bend as KI
+import ./karith.bend as KA
+import ./khom.bend as KH
+import ./khompf.bend as KP
+import ./numer.bend as NU
+import ./gnumer.bend as GN
+import ./gmap.bend as GM
+import ./pops.bend as PO
+
+# Constants and comparisons
+# -------------------------
+
+def dzero_t($KWR) -> {GN.dzero($G) == $h NU.dzero()) : $C}:
+  $LOFD(NU.dzero())
+
+def done_t($KWR) -> {GN.done($G) == $h NU.done()) : $C}:
+  $LOFD(NU.done())
+
+def dmax_go_t($KWR, c: Cmp, +a: S.D, +b: S.D) -> {GN.dmax.go($G, c, $h a), $h b)) == $h NU.dmax.go(c, a, b)) : $C}:
+  match c:
+    case LT{}:
+      {==}
+    case EQ{}:
+      {==}
+    case GT{}:
+      {==}
+
+def dmax_t($KWR, +a: S.D, +b: S.D) -> {GN.dmax($G, $h a), $h b)) == $h NU.dmax(a, b)) : $C}:
+  %$HCMP(a, b) : {GN.dmax.go($G, N.ncmp(K, $h a), $h b)), $h a), $h b)) == $h NU.dmax.go(_, a, b)) : $C}
+  dmax_go_t($T, N.ncmp(K, $h a), $h b)), a, b)
+
+def dvmax_t($KWR, xs: List<&2, S.D>) -> {GN.dvmax($G, $hv xs)) == $h NU.dvmax(xs)) : $C}:
+  match xs:
+    case Nil{}:
+      dzero_t($T)
+    case Con{+x, +t}:
+      %dmax_t($T, x, NU.dvmax(t)) : {GN.dmax($G, $h x), GN.dvmax($G, $hv t))) == _ : $C}
+      %dvmax_t($T, t) : {GN.dmax($G, $h x), GN.dvmax($G, $hv t))) == GN.dmax($G, $h x), _) : $C}
+      {==}
+
+def dreps_t($KWR, n: Nat, +x: S.D) -> {GN.dreps($G, n, $h x)) == $hv NU.dreps(n, x)) : $V}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+m:
+      %dreps_t($T, m, x) : {Con{$h x), GN.dreps($G, m, $h x))} == Con{$h x), _} : $V}
+      {==}
+
+def dabs_t($KWR, +x: S.D) -> {GN.dabs($G, $h x)) == $h NU.dabs(x)) : $C}:
+  KP.kabs_h($D, x)
+
+# Arithmetic at w significant bits
+# --------------------------------
+
+def dsadd_t($KWR, +w: Nat, +a: S.D, +b: S.D) -> {GN.dsadd($G, w, $h a), $h b)) == $h NU.dsadd(w, a, b)) : $C}:
+  %$LSIG(N.nadd(KI.dnum(), a, b), w) : {PO.sig(K, W, N.nadd(K, $h a), $h b)), w) == _ : $C}
+  %$HADD(a, b) : {PO.sig(K, W, N.nadd(K, $h a), $h b)), w) == PO.sig(K, W, _, w) : $C}
+  {==}
+
+def dsmul_t($KWR, +w: Nat, +a: S.D, +b: S.D) -> {GN.dsmul($G, w, $h a), $h b)) == $h NU.dsmul(w, a, b)) : $C}:
+  %$LSIG(N.nmul(KI.dnum(), a, b), w) : {PO.sig(K, W, N.nmul(K, $h a), $h b)), w) == _ : $C}
+  %$HMUL(a, b) : {PO.sig(K, W, N.nmul(K, $h a), $h b)), w) == PO.sig(K, W, _, w) : $C}
+  {==}
+
+# Rows and entries
+# ----------------
+
+def dget_t($KWR, xs: List<&2, S.D>, k: Nat) -> {GN.dget($G, $hv xs), k) == $h NU.dget(xs, k)) : $C}:
+  match xs k:
+    case Nil{} k:
+      dzero_t($T)
+    case Con{x, t} 0n:
+      {==}
+    case Con{x, t} 1n+j:
+      dget_t($T, t, j)
+
+def drow_t($KWR, xs: List<&2, List<&2, S.D>>, k: Nat) -> {GN.drow($G, $hm xs), k) == $hv NU.drow(xs, k)) : $V}:
+  match xs k:
+    case Nil{} k:
+      {==}
+    case Con{x, t} 0n:
+      {==}
+    case Con{x, t} 1n+j:
+      drow_t($T, t, j)
+
+def dset_t($KWR, xs: List<&2, List<&2, S.D>>, k: Nat, +r: List<&2, S.D>) -> {GN.dset($G, $hm xs), k, $hv r)) == $hm NU.dset(xs, k, r)) : $M}:
+  match xs k:
+    case Nil{} k:
+      {==}
+    case Con{x, t} 0n:
+      {==}
+    case Con{+x, +t} 1n+j:
+      %dset_t($T, t, j, r) : {Con{$hv x), GN.dset($G, $hm t), j, $hv r))} == Con{$hv x), _} : $M}
+      {==}
+
+def dscale_t($KWR, +w: Nat, +c: S.D, xs: List<&2, S.D>) -> {GN.dscale($G, w, $h c), $hv xs)) == $hv NU.dscale(w, c, xs)) : $V}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      %dsmul_t($T, w, c, x) : {Con{GN.dsmul($G, w, $h c), $h x)), GN.dscale($G, w, $h c), $hv t))} == Con{_, $hv NU.dscale(w, c, t))} : $V}
+      %dscale_t($T, w, c, t) : {Con{GN.dsmul($G, w, $h c), $h x)), GN.dscale($G, w, $h c), $hv t))} == Con{GN.dsmul($G, w, $h c), $h x)), _} : $V}
+      {==}
+
+@MACRO AXL Con{GN.dsadd($G, w, $h x), N.nneg(K, GN.dsmul($G, w, $h c), $h y)))), GN.daxpy($G, w, $hv t), $h c), $hv u))}
+
+# xs - c ys
+def daxpy_t($KWR, +w: Nat, xs: List<&2, S.D>, +c: S.D, ys: List<&2, S.D>) -> {GN.daxpy($G, w, $hv xs), $h c), $hv ys)) == $hv NU.daxpy(w, xs, c, ys)) : $V}:
+  match xs ys:
+    case Nil{} ys:
+      {==}
+    case Con{x, t} Nil{}:
+      {==}
+    case Con{+x, +t} Con{+y, +u}:
+      %dsadd_t($T, w, x, S.D.neg(NU.dsmul(w, c, y))) : {$AXL == Con{_, $hv NU.daxpy(w, t, c, u))} : $V}
+      %$HNEG(NU.dsmul(w, c, y)) : {$AXL == Con{GN.dsadd($G, w, $h x), _), $hv NU.daxpy(w, t, c, u))} : $V}
+      %dsmul_t($T, w, c, y) : {$AXL == Con{GN.dsadd($G, w, $h x), N.nneg(K, _)), $hv NU.daxpy(w, t, c, u))} : $V}
+      %daxpy_t($T, w, t, c, u) : {$AXL == Con{GN.dsadd($G, w, $h x), N.nneg(K, GN.dsmul($G, w, $h c), $h y)))), _} : $V}
+      {==}
+
+def dzeros_t($KWR, n: Nat) -> {GN.dzeros($G, n) == $hv NU.dzeros(n)) : $V}:
+  match n:
+    case 0n:
+      {==}
+    case 1n+m:
+      %dzero_t($T) : {Con{GN.dzero($G), GN.dzeros($G, m)} == Con{_, $hv NU.dzeros(m))} : $V}
+      %dzeros_t($T, m) : {Con{GN.dzero($G), GN.dzeros($G, m)} == Con{GN.dzero($G), _} : $V}
+      {==}
+
+def dunit_t($KWR, n: Nat, +k: Nat) -> {GN.dunit($G, n, k) == $hv NU.dunit(n, k)) : $V}:
+  match n k:
+    case 0n k:
+      {==}
+    case 1n+m 0n:
+      %done_t($T) : {Con{GN.done($G), GN.dzeros($G, m)} == Con{_, $hv NU.dzeros(m))} : $V}
+      %dzeros_t($T, m) : {Con{GN.done($G), GN.dzeros($G, m)} == Con{GN.done($G), _} : $V}
+      {==}
+    case 1n+m 1n+j:
+      %dzero_t($T) : {Con{GN.dzero($G), GN.dunit($G, m, j)} == Con{_, $hv NU.dunit(m, j))} : $V}
+      %dunit_t($T, m, j) : {Con{GN.dzero($G), GN.dunit($G, m, j)} == Con{GN.dzero($G), _} : $V}
+      {==}
+
+def dapp_t($KWR, xs: List<&2, S.D>, +ys: List<&2, S.D>) -> {GN.dapp($G, $hv xs), $hv ys)) == $hv NU.dapp(xs, ys)) : $V}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      %dapp_t($T, t, ys) : {Con{$h x), GN.dapp($G, $hv t), $hv ys))} == Con{$h x), _} : $V}
+      {==}
+
+def daugment_t($KWR, a: List<&2, List<&2, S.D>>, +n: Nat, +k: Nat) -> {GN.daugment($G, $hm a), n, k) == $hm NU.daugment(a, n, k)) : $M}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +t}:
+      %dapp_t($T, r, NU.dunit(n, k)) : {Con{GN.dapp($G, $hv r), GN.dunit($G, n, k)), GN.daugment($G, $hm t), n, 1n+k)} == Con{_, $hm NU.daugment(t, n, 1n+k))} : $M}
+      %dunit_t($T, n, k) : {Con{GN.dapp($G, $hv r), GN.dunit($G, n, k)), GN.daugment($G, $hm t), n, 1n+k)} == Con{GN.dapp($G, $hv r), _), $hm NU.daugment(t, n, 1n+k))} : $M}
+      %daugment_t($T, t, n, 1n+k) : {Con{GN.dapp($G, $hv r), GN.dunit($G, n, k)), GN.daugment($G, $hm t), n, 1n+k)} == Con{GN.dapp($G, $hv r), GN.dunit($G, n, k)), _} : $M}
+      {==}
+
+def ddrop_t($KWR, n: Nat, xs: List<&2, S.D>) -> {GN.ddrop($G, n, $hv xs)) == $hv NU.ddrop(n, xs)) : $V}:
+  match n xs:
+    case 0n xs:
+      {==}
+    case 1n+m Nil{}:
+      {==}
+    case 1n+m Con{x, t}:
+      ddrop_t($T, m, t)
+
+# The pivot
+# ---------
+
+def dpivot_bx_t($KWR, le: Bool, +bx: S.D, +x: S.D) -> {GN.dpivot.bx($G, le, $h bx), $h x)) == $h NU.dpivot.bx(le, bx, x)) : $C}:
+  match le:
+    case False{}:
+      {==}
+    case True{}:
+      dmax_t($T, bx, x)
+
+@MACRO PDG NU.dget(r, c)
+@MACRO PAB NU.dabs(NU.dget(r, c))
+@MACRO PLE KA.natle(k, i)
+@MACRO PKA GN.dabs($G, GN.dget($G, $hv r), c))
+@MACRO PLHS GN.dpivot($G, $hm t), c, k, 1n+i, NU.dpivot.best($PLE, N.ncmp(K, $PKA, $h bx)), i, best), GN.dpivot.bx($G, $PLE, $h bx), $PKA))
+
+# the same pivot row: the comparisons are the same
+def dpivot_t($KWR, rows: List<&2, List<&2, S.D>>, +c: Nat, +k: Nat, +i: Nat, best: Maybe<&2, Nat>, +bx: S.D) -> {GN.dpivot($G, $hm rows), c, k, i, best, $h bx)) == NU.dpivot(rows, c, k, i, best, bx) : Maybe<&2, Nat>}:
+  match rows:
+    case Nil{}:
+      {==}
+    case Con{+r, +t}:
+      %dpivot_t($T, t, c, k, 1n+i, NU.dpivot.best($PLE, KI.dcmp($PAB, bx), i, best), NU.dpivot.bx($PLE, bx, $PAB)) : {$PLHS == _ : Maybe<&2, Nat>}
+      %$HCMP($PAB, bx) : {$PLHS == GN.dpivot($G, $hm t), c, k, 1n+i, NU.dpivot.best($PLE, _, i, best), $h NU.dpivot.bx($PLE, bx, $PAB))) : Maybe<&2, Nat>}
+      %dpivot_bx_t($T, $PLE, bx, $PAB) : {$PLHS == GN.dpivot($G, $hm t), c, k, 1n+i, NU.dpivot.best($PLE, N.ncmp(K, $h $PAB), $h bx)), i, best), _) : Maybe<&2, Nat>}
+      %dabs_t($T, $PDG) : {$PLHS == GN.dpivot($G, $hm t), c, k, 1n+i, NU.dpivot.best($PLE, N.ncmp(K, _, $h bx)), i, best), GN.dpivot.bx($G, $PLE, $h bx), $h $PAB))) : Maybe<&2, Nat>}
+      %dabs_t($T, $PDG) : {$PLHS == GN.dpivot($G, $hm t), c, k, 1n+i, NU.dpivot.best($PLE, N.ncmp(K, GN.dabs($G, $h $PDG)), $h bx)), i, best), GN.dpivot.bx($G, $PLE, $h bx), _)) : Maybe<&2, Nat>}
+      %dget_t($T, r, c) : {$PLHS == GN.dpivot($G, $hm t), c, k, 1n+i, NU.dpivot.best($PLE, N.ncmp(K, GN.dabs($G, _), $h bx)), i, best), GN.dpivot.bx($G, $PLE, $h bx), GN.dabs($G, $h $PDG)))) : Maybe<&2, Nat>}
+      %dget_t($T, r, c) : {$PLHS == GN.dpivot($G, $hm t), c, k, 1n+i, NU.dpivot.best($PLE, N.ncmp(K, $PKA, $h bx)), i, best), GN.dpivot.bx($G, $PLE, $h bx), GN.dabs($G, _))) : Maybe<&2, Nat>}
+      {==}
+
+# Elimination
+# -----------
+
+def dswap_t($KWR, +rows: List<&2, List<&2, S.D>>, +a: Nat, +b: Nat) -> {GN.dswap($G, $hm rows), a, b) == $hm NU.dswap(rows, a, b)) : $M}:
+  %dset_t($T, NU.dset(rows, a, NU.drow(rows, b)), b, NU.drow(rows, a)) : {GN.dset($G, GN.dset($G, $hm rows), a, GN.drow($G, $hm rows), b)), b, GN.drow($G, $hm rows), a)) == _ : $M}
+  %dset_t($T, rows, a, NU.drow(rows, b)) : {GN.dset($G, GN.dset($G, $hm rows), a, GN.drow($G, $hm rows), b)), b, GN.drow($G, $hm rows), a)) == GN.dset($G, _, b, $hv NU.drow(rows, a))) : $M}
+  %drow_t($T, rows, b) : {GN.dset($G, GN.dset($G, $hm rows), a, GN.drow($G, $hm rows), b)), b, GN.drow($G, $hm rows), a)) == GN.dset($G, GN.dset($G, $hm rows), a, _), b, $hv NU.drow(rows, a))) : $M}
+  %drow_t($T, rows, a) : {GN.dset($G, GN.dset($G, $hm rows), a, GN.drow($G, $hm rows), b)), b, GN.drow($G, $hm rows), a)) == GN.dset($G, GN.dset($G, $hm rows), a, GN.drow($G, $hm rows), b)), b, _) : $M}
+  {==}
+
+def dclear_ax_t($KWR, +w: Nat, +r: List<&2, S.D>, +p: List<&2, S.D>, +c: Nat) -> {GN.dclear.ax($G, w, $hv r), $hv p), c) == $hv NU.dclear.ax(w, r, p, c)) : $V}:
+  %daxpy_t($T, w, r, NU.dget(r, c), p) : {GN.daxpy($G, w, $hv r), GN.dget($G, $hv r), c), $hv p)) == _ : $V}
+  %dget_t($T, r, c) : {GN.daxpy($G, w, $hv r), GN.dget($G, $hv r), c), $hv p)) == GN.daxpy($G, w, $hv r), _, $hv p)) : $V}
+  {==}
+
+def dclear_go_t($KWR, b: Bool, +w: Nat, +r: List<&2, S.D>, +p: List<&2, S.D>, +c: Nat) -> {GN.dclear.go($G, b, w, $hv r), $hv p), c) == $hv NU.dclear.go(b, w, r, p, c)) : $V}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      dclear_ax_t($T, w, r, p, c)
+
+def dclear_t($KWR, rows: List<&2, List<&2, S.D>>, +w: Nat, +p: List<&2, S.D>, +c: Nat, +i: Nat) -> {GN.dclear($G, $hm rows), w, $hv p), c, i) == $hm NU.dclear(rows, w, p, c, i)) : $M}:
+  match rows:
+    case Nil{}:
+      {==}
+    case Con{+r, +t}:
+      %dclear_go_t($T, KA.nateq(i, c), w, r, p, c) : {Con{GN.dclear.go($G, KA.nateq(i, c), w, $hv r), $hv p), c), GN.dclear($G, $hm t), w, $hv p), c, 1n+i)} == Con{_, $hm NU.dclear(t, w, p, c, 1n+i))} : $M}
+      %dclear_t($T, t, w, p, c, 1n+i) : {Con{GN.dclear.go($G, KA.nateq(i, c), w, $hv r), $hv p), c), GN.dclear($G, $hm t), w, $hv p), c, 1n+i)} == Con{GN.dclear.go($G, KA.nateq(i, c), w, $hv r), $hv p), c), _} : $M}
+      {==}
+
+@MACRO ERW NU.drow(rows, c)
+@MACRO ESD NU.dsdiv(w, NU.done(), NU.dget(NU.drow(rows, c), c))
+@MACRO EKRW GN.drow($G, $hm rows), c)
+@MACRO ELHS GN.dclear($G, $hm rows), w, GN.dscale($G, w, PO.sdiv(K, W, w, GN.done($G), GN.dget($G, $EKRW, c)), $EKRW), c, 0n)
+
+def delim_t($KWR, +w: Nat, +rows: List<&2, List<&2, S.D>>, +c: Nat) -> {GN.delim($G, w, $hm rows), c) == $hm NU.delim(w, rows, c)) : $M}:
+  %dclear_t($T, rows, w, NU.dscale(w, $ESD, $ERW), c, 0n) : {$ELHS == _ : $M}
+  %dscale_t($T, w, $ESD, $ERW) : {$ELHS == GN.dclear($G, $hm rows), w, _, c, 0n) : $M}
+  %$LSDIV(w, NU.done(), NU.dget($ERW, c)) : {$ELHS == GN.dclear($G, $hm rows), w, GN.dscale($G, w, _, $hv $ERW)), c, 0n) : $M}
+  %done_t($T) : {$ELHS == GN.dclear($G, $hm rows), w, GN.dscale($G, w, PO.sdiv(K, W, w, _, $h NU.dget($ERW, c))), $hv $ERW)), c, 0n) : $M}
+  %dget_t($T, $ERW, c) : {$ELHS == GN.dclear($G, $hm rows), w, GN.dscale($G, w, PO.sdiv(K, W, w, GN.done($G), _), $hv $ERW)), c, 0n) : $M}
+  %drow_t($T, rows, c) : {$ELHS == GN.dclear($G, $hm rows), w, GN.dscale($G, w, PO.sdiv(K, W, w, GN.done($G), GN.dget($G, _, c)), $hv $ERW)), c, 0n) : $M}
+  %drow_t($T, rows, c) : {$ELHS == GN.dclear($G, $hm rows), w, GN.dscale($G, w, PO.sdiv(K, W, w, GN.done($G), GN.dget($G, $EKRW, c)), _), c, 0n) : $M}
+  {==}
+
+@MACRO GR2 NU.delim(w, NU.dswap(rows, c, r), c)
+@MACRO GK2 GN.delim($G, w, GN.dswap($G, $hm rows), c, r), c)
+@MACRO GLHS GN.dgj($G, m, w, 1n+c, GN.dpivot($G, $GK2, 1n+c, 1n+c, 0n, None{}, GN.dzero($G)), $GK2)
+@MACRO GPV NU.dpivot($GR2, 1n+c, 1n+c, 0n, None{}, NU.dzero())
+
+# the same pivots, so the same eliminations
+def dgj_t($KWR, k: Nat, +w: Nat, +c: Nat, piv: Maybe<&2, Nat>, +rows: List<&2, List<&2, S.D>>) -> {GN.dgj($G, k, w, c, piv, $hm rows)) == GM.hmm($HH, NU.dgj(k, w, c, piv, rows)) : $MM}:
+  match k piv:
+    case 0n piv:
+      {==}
+    case 1n+m None{}:
+      {==}
+    case 1n+m Some{+r}:
+      %dgj_t($T, m, w, 1n+c, $GPV, $GR2) : {$GLHS == _ : $MM}
+      %dpivot_t($T, $GR2, 1n+c, 1n+c, 0n, None{}, NU.dzero()) : {$GLHS == GN.dgj($G, m, w, 1n+c, _, $hm $GR2)) : $MM}
+      %dzero_t($T) : {$GLHS == GN.dgj($G, m, w, 1n+c, GN.dpivot($G, $hm $GR2), 1n+c, 1n+c, 0n, None{}, _), $hm $GR2)) : $MM}
+      %delim_t($T, w, NU.dswap(rows, c, r), c) : {$GLHS == GN.dgj($G, m, w, 1n+c, GN.dpivot($G, _, 1n+c, 1n+c, 0n, None{}, GN.dzero($G)), $hm $GR2)) : $MM}
+      %dswap_t($T, rows, c, r) : {$GLHS == GN.dgj($G, m, w, 1n+c, GN.dpivot($G, GN.delim($G, w, _, c), 1n+c, 1n+c, 0n, None{}, GN.dzero($G)), $hm $GR2)) : $MM}
+      %delim_t($T, w, NU.dswap(rows, c, r), c) : {$GLHS == GN.dgj($G, m, w, 1n+c, GN.dpivot($G, $GK2, 1n+c, 1n+c, 0n, None{}, GN.dzero($G)), _) : $MM}
+      %dswap_t($T, rows, c, r) : {$GLHS == GN.dgj($G, m, w, 1n+c, GN.dpivot($G, $GK2, 1n+c, 1n+c, 0n, None{}, GN.dzero($G)), GN.delim($G, w, _, c)) : $MM}
+      {==}
+
+def drights_t($KWR, +n: Nat, rows: List<&2, List<&2, S.D>>) -> {GN.drights($G, n, $hm rows)) == $hm NU.drights(n, rows)) : $M}:
+  match rows:
+    case Nil{}:
+      {==}
+    case Con{+r, +t}:
+      %ddrop_t($T, n, r) : {Con{GN.ddrop($G, n, $hv r)), GN.drights($G, n, $hm t))} == Con{_, $hm NU.drights(n, t))} : $M}
+      %drights_t($T, n, t) : {Con{GN.ddrop($G, n, $hv r)), GN.drights($G, n, $hm t))} == Con{GN.ddrop($G, n, $hv r)), _} : $M}
+      {==}
+
+def dinv_of_t($KWR, +n: Nat, m: Maybe<&2, List<&2, List<&2, S.D>>>) -> {GN.dinv.of($G, n, GM.hmm($HH, m)) == GM.hmm($HH, NU.dinv.of(n, m)) : $MM}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+rows}:
+      %drights_t($T, n, rows) : {Some{GN.drights($G, n, $hm rows))} == Some{_} : $MM}
+      {==}
+
+def dgj0_t($KWR, +n: Nat, +w: Nat, +rows: List<&2, List<&2, S.D>>) -> {GN.dgj0($G, n, w, $hm rows)) == GM.hmm($HH, NU.dgj0(n, w, rows)) : $MM}:
+  %dgj_t($T, n, w, 0n, NU.dpivot(rows, 0n, 0n, 0n, None{}, NU.dzero()), rows) : {GN.dgj($G, n, w, 0n, GN.dpivot($G, $hm rows), 0n, 0n, 0n, None{}, GN.dzero($G)), $hm rows)) == _ : $MM}
+  %dpivot_t($T, rows, 0n, 0n, 0n, None{}, NU.dzero()) : {GN.dgj($G, n, w, 0n, GN.dpivot($G, $hm rows), 0n, 0n, 0n, None{}, GN.dzero($G)), $hm rows)) == GN.dgj($G, n, w, 0n, _, $hm rows)) : $MM}
+  %dzero_t($T) : {GN.dgj($G, n, w, 0n, GN.dpivot($G, $hm rows), 0n, 0n, 0n, None{}, GN.dzero($G)), $hm rows)) == GN.dgj($G, n, w, 0n, GN.dpivot($G, $hm rows), 0n, 0n, 0n, None{}, _), $hm rows)) : $MM}
+  {==}
+
+# the approximate inverse
+def dinverse_t($KWR, +n: Nat, +w: Nat, +a: List<&2, List<&2, S.D>>) -> {GN.dinverse($G, n, w, $hm a)) == GM.hmm($HH, NU.dinverse(n, w, a)) : $MM}:
+  %dinv_of_t($T, n, NU.dgj0(n, w, NU.daugment(a, n, 0n))) : {GN.dinv.of($G, n, GN.dgj0($G, n, w, GN.daugment($G, $hm a), n, 0n))) == _ : $MM}
+  %dgj0_t($T, n, w, NU.daugment(a, n, 0n)) : {GN.dinv.of($G, n, GN.dgj0($G, n, w, GN.daugment($G, $hm a), n, 0n))) == GN.dinv.of($G, n, _) : $MM}
+  %daugment_t($T, a, n, 0n) : {GN.dinv.of($G, n, GN.dgj0($G, n, w, GN.daugment($G, $hm a), n, 0n))) == GN.dinv.of($G, n, GN.dgj0($G, n, w, _)) : $MM}
+  {==}
+
+# Products
+# --------
+
+def ddot_t($KWR, xs: List<&2, S.D>, ys: List<&2, S.D>) -> {GN.ddot($G, $hv xs), $hv ys)) == $h NU.ddot(xs, ys)) : $C}:
+  match xs ys:
+    case Nil{} ys:
+      dzero_t($T)
+    case Con{x, t} Nil{}:
+      dzero_t($T)
+    case Con{+x, +t} Con{+y, +u}:
+      %$HADD(S.D.mul(x, y), NU.ddot(t, u)) : {N.nadd(K, N.nmul(K, $h x), $h y)), GN.ddot($G, $hv t), $hv u))) == _ : $C}
+      %$HMUL(x, y) : {N.nadd(K, N.nmul(K, $h x), $h y)), GN.ddot($G, $hv t), $hv u))) == N.nadd(K, _, $h NU.ddot(t, u))) : $C}
+      %ddot_t($T, t, u) : {N.nadd(K, N.nmul(K, $h x), $h y)), GN.ddot($G, $hv t), $hv u))) == N.nadd(K, N.nmul(K, $h x), $h y)), _) : $C}
+      {==}
+
+def dmatvec_t($KWR, a: List<&2, List<&2, S.D>>, +v: List<&2, S.D>) -> {GN.dmatvec($G, $hm a), $hv v)) == $hv NU.dmatvec(a, v)) : $V}:
+  match a:
+    case Nil{}:
+      {==}
+    case Con{+r, +t}:
+      %ddot_t($T, r, v) : {Con{GN.ddot($G, $hv r), $hv v)), GN.dmatvec($G, $hm t), $hv v))} == Con{_, $hv NU.dmatvec(t, v))} : $V}
+      %dmatvec_t($T, t, v) : {Con{GN.ddot($G, $hv r), $hv v)), GN.dmatvec($G, $hm t), $hv v))} == Con{GN.ddot($G, $hv r), $hv v)), _} : $V}
+      {==}
