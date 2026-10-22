@@ -467,8 +467,8 @@ As planned:
     and `cert_fix` from them; law 10's search and window re-proven
     (radpf, blockpf's ubc, scalepf's reflection). The circle demo's exact
     block got radius 2^-40. Gate and regression green, outcomes
-    unchanged. Debt: radpf/blockpf/scalepf still carry the unused thR
-    hypotheses (and blockpf's w2) of the old condition.
+    unchanged. (The unused thR hypotheses of the old condition, and
+    blockpf's w2, were removed from radpf/blockpf/scalepf on 2026-10-22.)
   - Steps 4-5 done (2026-10-20):
     - Step 4 is certpf's `cert_jinj`: every block's Jacobian is injective
       anywhere in its certificate's box, read off the sketch through
