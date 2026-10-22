@@ -278,13 +278,48 @@ terms eagerly: a type mentioning `RW.wbp(22n)` (2^23 − 1, computed) builds
 2^23 in unary and overflows the stack, while the same law with a variable
 `lp` checks at once. So the fast solver takes `lp` as an argument, every
 theorem holds for all lp (`solve_l(lp, ..) == solve_ref_l(..)` for every
-lp), and only the CLI's `main` passes 22.
+lp), and only the CLI's `main` passes 22. (Superseded as built, below: a
+template's arguments must be closed, so the libraries are proven for every
+base and the solver runs at one closed instance with a literal base.)
 
 - `solve_ref_l` (today's definition, renamed), `solve_l` on the twins, and
   `solve_l == solve_ref_l`.
 - Every restated law rewrites once; the demos evaluate `solve_ref`.
 - Gate and regression green; times for sketches 6 and 7 and every
   regression sketch, before and after; tools/README.md's numbers.
+
+**Done (2026-10-22), with the law added rather than renamed.**
+`lib/solve.bend` keeps its names and every law stays about `solve_l`; the
+fast solver is `lib/fast.bend`, and one new law in ROADMAP.bend,
+`fast_solve: FS.wsolve_l(sk, g0, l) == SO.solve_l(sk, g0, l)`, carries
+every law to what runs (no law's statement or proof changed).
+- `lib/fast.bend`: `solve_lw` etc. over any K and W (the same loop; the
+  verdict with its plan and side checks in K and the rest read through
+  tod; the answer sent back to S.D once). It computes the pass's results
+  once (SO.solve_lw reruns the pass about ten times) and is definitionally
+  SO.solve_lw's form with them substituted. `lib/fastpf.bend`:
+  `solve_l_eq` for every K, W and laws R.
+- The CLI's instance is base 2^12, a literal (`wk`, `wo`): the checker
+  re-checks the generic proof at a closed instance, 47 s at 2^12 (98 s at
+  2^13, a stack overflow at 2^14, from the unary base arithmetic it meets
+  comparing word terms), and 2^14 ran sketch 6 only 4% faster.
+  `tests/fast_laws.bend` restates `fast_solve` as `solve_l_eq` at `wk`,
+  `wo`, `wlaws(4095, 11, {==})`, with 2^12 = 4095 + 1 evaluated by the
+  checker (a planted 2^13 is refused).
+- `gui/solve_cli.bend` and `proto/solve_run.bend` run `FS.wsolve`;
+  solve_run also checks at run time that the reference gives the same
+  boxes. Gate and regression pass; the regression takes about a minute
+  (from about two).
+
+| sketch | reference (S.D) | words, base 2^12 | ratio |
+|---|---|---|---|
+| sketch 6 (32x32 block) | 91.7 G | 19.4 G | 4.7x |
+| sketch 7 | 123.7 G | 23.4 G | 5.3x |
+
+(user-mode instructions; answers byte-identical.) Of the 4.7x, about a
+factor of two is the words and the rest the pass computed once. In the
+fast solve the exact simplex of the pass (two walks) and the runtime's
+memory management now dominate; the dyadic arithmetic is a minority.
 
 ### W7. Audit and sign-off
 

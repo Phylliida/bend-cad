@@ -282,8 +282,20 @@ closed 2^23 in a type is unfolded to unary by the checker). **W3 is done:**
 rt/wdyad.bend + lib/wdyadpf.bend, lib/wsigpf.bend (add, mul, neg, cmp,
 dznorm, dsig, dround, each `wop(ofd a, ..) == ofd(op(a, ..))` for every
 S.D input), lib/wnum.bend (the checker's Num at words) and lib/wnumpf.bend.
-Next: W4, the proposer's twins (numer.bend's Newton, inverse, radius
-search).
+**W4, W5 and W6 are done (2026-10-22): the CLI runs the word solver,
+proven to answer exactly as solve_l** (ROADMAP: `fast_solve`, restated in
+tests/fast_laws.bend; PLAN-sk13w W4-W6 "Done"). The proposer is written
+once over any computing numbers (lib/gnumer.bend over lib/pops.bend's
+operations, proven in gelimpf, gnewtpf, gplanpf), the checker commutes
+with any exact map of computing numbers (lib/khom.bend; khompf, certhpf,
+planhpf), and lib/fast.bend is the solver over them (fastpf), with the
+pass computed once. The CLI's instance is base 2^12: templates need closed
+arguments, the checker's unary numbers overflow on a computed base or
+above 2^13, and 2^14 was only 4% faster. Sketch 6: 19.4 G instructions
+(reference 91.7 G); sketch 7: 23.4 G (123.7 G). Two teammates (forks)
+wrote the W5 files and gelimpf/fastpf (Danielle allowed it for sk-13w).
+Next: W7 (an independent audit), then the old thR debt in
+radpf/blockpf/scalepf.
 For timings on a loaded machine, count user-mode instructions
 (tools/diag/icount.c; wall time swung 2x between identical runs today).
 Same day, before the design:
