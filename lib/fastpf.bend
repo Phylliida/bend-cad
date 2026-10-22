@@ -35,6 +35,7 @@ import ./planhpf.bend as PH
 import ./fast.bend as FS
 import ./gplanpf.bend as GQ
 import ./wnumpf.bend as WP
+import ./pass.bend as PA
 
 # Conversions with S.D
 # --------------------
@@ -194,7 +195,48 @@ def start_t(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, ps: List<&2, Nat>, +s
 # ----------
 
 # FS.solve_lw shares the pass's results; unshared, it is this
+# walk2 is PA.pass and PA.pass_st at once
+def cons_cls(+c: SV.Class, w: FS.PW) -> {Con{c, FS.PW.cls(w)} == FS.PW.cls(FS.pw.cons(c, w)) : List<&2, SV.Class>}:
+  match w:
+    case FS.PW{cls, st}:
+      {==}
+
+def cons_st(+c: SV.Class, w: FS.PW) -> {FS.PW.st(w) == FS.PW.st(FS.pw.cons(c, w)) : PA.PS}:
+  match w:
+    case FS.PW{cls, st}:
+      {==}
+
+
+def walk2_cls(rs: List<&2, SK.Rec>, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +i: Nat, +st: PA.PS) -> {FS.PW.cls(FS.walk2(rs, es, own, sk, adj, f, i, st)) == PA.pass(rs, es, own, sk, adj, f, i, st) : List<&2, SV.Class>}:
+  match rs:
+    case Nil{}:
+      {==}
+    case Con{SK.Rec{id, True{}, k}, +t}:
+      %cons_cls(SV.Kept{Nil{}}, FS.walk2(t, es, own, sk, adj, f, 1n+i, st)) : {_ == Con{SV.Kept{Nil{}}, PA.pass(t, es, own, sk, adj, f, 1n+i, st)} : List<&2, SV.Class>}
+      %walk2_cls(t, es, own, sk, adj, f, 1n+i, st) : {Con{SV.Kept{Nil{}}, FS.PW.cls(FS.walk2(t, es, own, sk, adj, f, 1n+i, st))} == Con{SV.Kept{Nil{}}, _} : List<&2, SV.Class>}
+      {==}
+    case Con{SK.Rec{id, False{}, k}, +t}:
+      %cons_cls(PA.PO.k(PA.one(es, own, sk, adj, f, i, st)), FS.walk2(t, es, own, sk, adj, f, 1n+i, PA.PO.st(PA.one(es, own, sk, adj, f, i, st)))) : {_ == Con{PA.PO.k(PA.one(es, own, sk, adj, f, i, st)), PA.pass(t, es, own, sk, adj, f, 1n+i, PA.PO.st(PA.one(es, own, sk, adj, f, i, st)))} : List<&2, SV.Class>}
+      %walk2_cls(t, es, own, sk, adj, f, 1n+i, PA.PO.st(PA.one(es, own, sk, adj, f, i, st))) : {Con{PA.PO.k(PA.one(es, own, sk, adj, f, i, st)), FS.PW.cls(FS.walk2(t, es, own, sk, adj, f, 1n+i, PA.PO.st(PA.one(es, own, sk, adj, f, i, st))))} == Con{PA.PO.k(PA.one(es, own, sk, adj, f, i, st)), _} : List<&2, SV.Class>}
+      {==}
+
+def walk2_st(rs: List<&2, SK.Rec>, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +i: Nat, +st: PA.PS) -> {FS.PW.st(FS.walk2(rs, es, own, sk, adj, f, i, st)) == PA.pass_st(rs, es, own, sk, adj, f, i, st) : PA.PS}:
+  match rs:
+    case Nil{}:
+      {==}
+    case Con{SK.Rec{id, True{}, k}, +t}:
+      %cons_st(SV.Kept{Nil{}}, FS.walk2(t, es, own, sk, adj, f, 1n+i, st)) : {_ == PA.pass_st(t, es, own, sk, adj, f, 1n+i, st) : PA.PS}
+      walk2_st(t, es, own, sk, adj, f, 1n+i, st)
+    case Con{SK.Rec{id, False{}, k}, +t}:
+      %cons_st(PA.PO.k(PA.one(es, own, sk, adj, f, i, st)), FS.walk2(t, es, own, sk, adj, f, 1n+i, PA.PO.st(PA.one(es, own, sk, adj, f, i, st)))) : {_ == PA.pass_st(t, es, own, sk, adj, f, 1n+i, PA.PO.st(PA.one(es, own, sk, adj, f, i, st))) : PA.PS}
+      walk2_st(t, es, own, sk, adj, f, 1n+i, PA.PO.st(PA.one(es, own, sk, adj, f, i, st)))
+
+
+# FS.solve_lw is SO.solve_lw's form: the pass's results once (walk2), each
+# named once
 def solve_lw_unf(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat) -> {FS.solve_lw(~K, ~W, sk, g0, l, w) == FS.answer(~K, ~W, SO.cls_of(sk), SO.pins_of(sk), FS.ploop.start(~K, ~W, SO.precisions(l, w), sk, g0, FS.ofdv(~K, ~W, g0), SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk))) : SO.Out}:
+  %walk2_cls(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk))) : {FS.solve_lw(~K, ~W, sk, g0, l, w) == FS.answer(~K, ~W, _, PA.pins(sk), FS.ploop.start(~K, ~W, SO.precisions(l, w), sk, g0, FS.ofdv(~K, ~W, g0), _, PA.pins(sk), SV.solved(sk, SV.reds(_), SV.dropped(_)), PA.nvars(sk), PA.skel(sk))) : SO.Out}
+  %walk2_st(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk))) : {FS.solve_lw(~K, ~W, sk, g0, l, w) == FS.answer(~K, ~W, FS.PW.cls(FS.walk2(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)))), ST.KD.red(PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.PS.bp(_))), FS.ploop.start(~K, ~W, SO.precisions(l, w), sk, g0, FS.ofdv(~K, ~W, g0), FS.PW.cls(FS.walk2(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)))), ST.KD.red(PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.PS.bp(_))), SV.solved(sk, SV.reds(FS.PW.cls(FS.walk2(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk))))), SV.dropped(FS.PW.cls(FS.walk2(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)))))), PA.nvars(sk), ST.renum(ST.skel.kd(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.PS.bp(_), PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.PS.bp(_))), PA.PS.bp(_)))) : SO.Out}
   {==}
 
 

@@ -313,13 +313,15 @@ every law to what runs (no law's statement or proof changed).
 
 | sketch | reference (S.D) | words, base 2^12 | ratio |
 |---|---|---|---|
-| sketch 6 (32x32 block) | 91.7 G | 19.4 G | 4.7x |
-| sketch 7 | 123.7 G | 23.4 G | 5.3x |
+| sketch 6 (32x32 block) | 91.7 G | 16.5 G | 5.6x |
+| sketch 7 | 123.7 G | 19.5 G | 6.3x |
 
-(user-mode instructions; answers byte-identical.) Of the 4.7x, about a
-factor of two is the words and the rest the pass computed once. In the
-fast solve the exact simplex of the pass (two walks) and the runtime's
-memory management now dominate; the dyadic arithmetic is a minority.
+(user-mode instructions; answers byte-identical.) About a factor of two
+is the words; the rest is the pass run once (one walk, `walk2`, giving
+both PA.pass's classes and PA.pass_st's state; fastpf's walk2_cls and
+walk2_st). In the fast solve the runtime's memory management (about half,
+callgrind's term_drop), the pass's exact simplex and the word arithmetic
+remain, none dominant.
 
 ### W7. Audit and sign-off
 

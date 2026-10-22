@@ -225,12 +225,46 @@ def ploop.start(~K: N.Num, ~W: PO.POps<K>, ps: List<&2, Nat>, +sk: SK.Sketch, +g
 def answer(~K: N.Num, ~W: PO.POps<K>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +r: FRun<K>) -> SO.Out:
   SO.Out{run.ok(K, r), cls, pins, todv(~K, ~W, pr.gc(~K, run.m(K, r))), todv(~K, ~W, pr.gr(~K, run.m(K, r))), todplan(~K, ~W, pr.plan(~K, run.m(K, r)))}
 
+# The pass, once
+# --------------
+# PA.pass gives the classes and PA.pass_st the state the same walk ends
+# with; walk2 is that walk once, giving both (lib/fastpf.bend: walk2_cls,
+# walk2_st).
+
+type PW is Data:
+  PW{cls: List<&2, SV.Class>, st: PA.PS}
+
+def PW.cls(w: PW) -> List<&2, SV.Class>:
+  match w:
+    case PW{cls, st}:
+      cls
+
+def PW.st(w: PW) -> PA.PS:
+  match w:
+    case PW{cls, st}:
+      st
+
+def pw.cons(c: SV.Class, w: PW) -> PW:
+  match w:
+    case PW{cls, st}:
+      PW{Con{c, cls}, st}
+
+def walk2(rs: List<&2, SK.Rec>, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +i: Nat, +st: PA.PS) -> PW:
+  match rs:
+    case Nil{}:
+      PW{Nil{}, st}
+    case Con{SK.Rec{id, True{}, k}, t}:
+      pw.cons(SV.Kept{Nil{}}, walk2(t, es, own, sk, adj, f, 1n+i, st))
+    case Con{SK.Rec{id, False{}, k}, t}:
+      +o = PA.one(es, own, sk, adj, f, i, st)
+      pw.cons(PA.PO.k(o), walk2(t, es, own, sk, adj, f, 1n+i, PA.PO.st(o)))
+
 # The solver (SO.solve_lw, SO.solve_l, SO.solve)
 # ----------------------------------------------
 # SO.solve_lw names the pass's results (classes, solved positions, pins,
-# structure) separately, and each runs the pass again; here each is
-# computed once and passed on. The terms are SO.solve_lw's with the shared
-# values substituted, so the two are equal by definition.
+# structure) separately, and each runs the pass again; here the pass runs
+# once (walk2) and each result is computed once and passed on. With
+# walk2's lemmas the terms are SO.solve_lw's (lib/fastpf.bend: solve_lw_unf).
 
 def solve_kv(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat, +cls: List<&2, SV.Class>, +sp: List<&2, Nat>, +kv: ST.KD) -> SO.Out:
   answer(~K, ~W, cls, ST.KD.red(kv), ploop.start(~K, ~W, SO.precisions(l, w), sk, g0, ofdv(~K, ~W, g0), cls, ST.KD.red(kv), SV.solved(sk, SV.reds(cls), SV.dropped(cls)), PA.nvars(sk), ST.renum(ST.skel.kd(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), sp, kv), sp)))
@@ -238,8 +272,11 @@ def solve_kv(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: 
 def solve_st(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat, +cls: List<&2, SV.Class>, +sp: List<&2, Nat>, +da: List<&2, List<&2, Nat>>) -> SO.Out:
   solve_kv(~K, ~W, sk, g0, l, w, cls, sp, PA.kvs(da, ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), sp))
 
+def solve_pw(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat, +da: List<&2, List<&2, Nat>>, +pw: PW) -> SO.Out:
+  solve_st(~K, ~W, sk, g0, l, w, PW.cls(pw), PA.PS.bp(PW.st(pw)), da)
+
 def solve_da(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat, +da: List<&2, List<&2, Nat>>) -> SO.Out:
-  solve_st(~K, ~W, sk, g0, l, w, PA.pass(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, da, 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk))), PA.PS.bp(PA.pass_st(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, da, 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)))), da)
+  solve_pw(~K, ~W, sk, g0, l, w, da, walk2(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, da, 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk))))
 
 def solve_lw(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat) -> SO.Out:
   solve_da(~K, ~W, sk, g0, l, w, PA.dadjs(SK.Sketch.eqs(sk)))
