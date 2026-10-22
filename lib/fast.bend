@@ -24,6 +24,7 @@ import ./wfdec.bend as WF
 import ./verdict.bend as VD
 import ./cert.bend as CK
 import ./solve.bend as SO
+import ./pass.bend as PA
 import ./pops.bend as PO
 import ./gnumer.bend as GN
 import ./wnum.bend as WN
@@ -226,9 +227,22 @@ def answer(~K: N.Num, ~W: PO.POps<K>, +cls: List<&2, SV.Class>, +pins: List<&2, 
 
 # The solver (SO.solve_lw, SO.solve_l, SO.solve)
 # ----------------------------------------------
+# SO.solve_lw names the pass's results (classes, solved positions, pins,
+# structure) separately, and each runs the pass again; here each is
+# computed once and passed on. The terms are SO.solve_lw's with the shared
+# values substituted, so the two are equal by definition.
+
+def solve_kv(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat, +cls: List<&2, SV.Class>, +sp: List<&2, Nat>, +kv: ST.KD) -> SO.Out:
+  answer(~K, ~W, cls, ST.KD.red(kv), ploop.start(~K, ~W, SO.precisions(l, w), sk, g0, ofdv(~K, ~W, g0), cls, ST.KD.red(kv), SV.solved(sk, SV.reds(cls), SV.dropped(cls)), PA.nvars(sk), ST.renum(ST.skel.kd(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), sp, kv), sp)))
+
+def solve_st(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat, +cls: List<&2, SV.Class>, +sp: List<&2, Nat>, +da: List<&2, List<&2, Nat>>) -> SO.Out:
+  solve_kv(~K, ~W, sk, g0, l, w, cls, sp, PA.kvs(da, ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), sp))
+
+def solve_da(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat, +da: List<&2, List<&2, Nat>>) -> SO.Out:
+  solve_st(~K, ~W, sk, g0, l, w, PA.pass(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, da, 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk))), PA.PS.bp(PA.pass_st(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, da, 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)))), da)
 
 def solve_lw(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat) -> SO.Out:
-  answer(~K, ~W, SO.cls_of(sk), SO.pins_of(sk), ploop.start(~K, ~W, SO.precisions(l, w), sk, g0, ofdv(~K, ~W, g0), SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk)))
+  solve_da(~K, ~W, sk, g0, l, w, PA.dadjs(SK.Sketch.eqs(sk)))
 
 def solve_l(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat) -> SO.Out:
   solve_lw(~K, ~W, sk, g0, l, 7n)
