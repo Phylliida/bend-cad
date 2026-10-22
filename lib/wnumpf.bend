@@ -1,7 +1,8 @@
 # bend-cad: WD.ofd maps KI.dnum() into wnum (lib/wnum.bend) and commutes
 # with every operation of spec/knum.bend's Num: zero, one, add, mul, neg,
 # cmp and ofq, for every base 2^(1 + lp): a map of computing numbers
-# (lib/khom.bend), wh.
+# (lib/khom.bend), wh. With the proposer's operations at words (wops),
+# the laws lib/gnumerpf.bend needs (lib/pops.bend), wlaws.
 
 import Base
 import ../spec/num.bend as S
@@ -10,6 +11,9 @@ import ./kinst.bend as KI
 import ./wnum.bend as WN
 import ./khom.bend as KH
 import ./wdyadpf.bend as WDP
+import ./wsigpf.bend as WSP
+import ./numer.bend as NU
+import ./pops.bend as PO
 import ../rt/wmag.bend as RW
 import ../rt/wdyad.bend as RD
 
@@ -52,3 +56,23 @@ def wh(+bp: Nat, +lp: Nat, +hb: {RW.pw(1n+lp) == 1n+bp : Nat}) -> KH.Hom<KI.dnum
     a => w_neg(bp, lp, hb, a),
     a => b => w_cmp(bp, lp, hb, a, b),
     q => wofq_mm(bp, lp, KI.dofq(q))}
+
+# the rare operations go through S.D, so they commute by tod_ofd
+def sdiv_ok(+bp: Nat, +lp: Nat, +hb: {RW.pw(1n+lp) == 1n+bp : Nat}, +w: Nat, +a: S.D, +b: S.D) -> {RD.WD.ofd(lp, NU.dsdiv(w, RD.WD.tod(lp, RD.WD.ofd(lp, a)), RD.WD.tod(lp, RD.WD.ofd(lp, b)))) == RD.WD.ofd(lp, NU.dsdiv(w, a, b)) : RD.WD}:
+  %Equal.sym(S.D, RD.WD.tod(lp, RD.WD.ofd(lp, a)), a, WDP.tod_ofd(bp, lp, hb, a)) : {RD.WD.ofd(lp, NU.dsdiv(w, _, RD.WD.tod(lp, RD.WD.ofd(lp, b)))) == RD.WD.ofd(lp, NU.dsdiv(w, a, b)) : RD.WD}
+  %Equal.sym(S.D, RD.WD.tod(lp, RD.WD.ofd(lp, b)), b, WDP.tod_ofd(bp, lp, hb, b)) : {RD.WD.ofd(lp, NU.dsdiv(w, a, _)) == RD.WD.ofd(lp, NU.dsdiv(w, a, b)) : RD.WD}
+  {==}
+
+def sigup_ok(+bp: Nat, +lp: Nat, +hb: {RW.pw(1n+lp) == 1n+bp : Nat}, +x: S.D, +b: Nat) -> {RD.WD.ofd(lp, NU.dsigup(RD.WD.tod(lp, RD.WD.ofd(lp, x)), b)) == RD.WD.ofd(lp, NU.dsigup(x, b)) : RD.WD}:
+  %Equal.sym(S.D, RD.WD.tod(lp, RD.WD.ofd(lp, x)), x, WDP.tod_ofd(bp, lp, hb, x)) : {RD.WD.ofd(lp, NU.dsigup(_, b)) == RD.WD.ofd(lp, NU.dsigup(x, b)) : RD.WD}
+  {==}
+
+# the proposer's laws at words
+def wlaws(+bp: Nat, +lp: Nat, +hb: {RW.pw(1n+lp) == 1n+bp : Nat}) -> PO.PLaws<WN.wnum(bp, lp), WN.wops(bp, lp)>:
+  PO.PLaws{wh(bp, lp, hb),
+    x => {==},
+    x => WDP.tod_ofd(bp, lp, hb, x),
+    x => b => WSP.sig_ok(bp, lp, hb, x, b),
+    x => p => WSP.round_ok(bp, lp, hb, x, p),
+    w => a => b => sdiv_ok(bp, lp, hb, w, a, b),
+    x => b => sigup_ok(bp, lp, hb, x, b)}
