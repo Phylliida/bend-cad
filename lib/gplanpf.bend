@@ -4,6 +4,9 @@
 # nv, sk, g0, p) (plan_t). Proven like lib/gnewtpf.bend, bottom up through
 # numer's definitions. Untrusted; PLAN-sk13w W4.
 
+# Generated from tools/drafts/gplanpf.draft by tools/expand.py; edit the
+# draft.
+
 
 import Base
 import ../spec/num.bend as S

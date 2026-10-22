@@ -2,7 +2,7 @@
 # with every operation of spec/knum.bend's Num: zero, one, add, mul, neg,
 # cmp and ofq, for every base 2^(1 + lp): a map of computing numbers
 # (lib/khom.bend), wh. With the proposer's operations at words (wops),
-# the laws lib/gnumerpf.bend needs (lib/pops.bend), wlaws.
+# the laws lib/gplanpf.bend's plan_t needs (lib/pops.bend), wlaws.
 
 import Base
 import ../spec/num.bend as S
@@ -34,9 +34,6 @@ def w_neg(+bp: Nat, +lp: Nat, +hb: {RW.pw(1n+lp) == 1n+bp : Nat}, a: S.D) -> {N.
 
 def w_cmp(+bp: Nat, +lp: Nat, +hb: {RW.pw(1n+lp) == 1n+bp : Nat}, a: S.D, b: S.D) -> {N.ncmp(WN.wnum(bp, lp), RD.WD.ofd(lp, a), RD.WD.ofd(lp, b)) == N.ncmp(KI.dnum(), a, b) : Cmp}:
   WDP.cmp_ok(bp, lp, hb, a, b)
-
-def w_ofq(+bp: Nat, +lp: Nat, q: S.Q) -> {N.nofq(WN.wnum(bp, lp), q) == WN.wofq.m(lp, N.nofq(KI.dnum(), q)) : Maybe<&2, RD.WD>}:
-  {==}
 
 # the Maybe map of lib/wnum.bend is KH.mmap's
 def wofq_mm(+bp: Nat, +lp: Nat, m: Maybe<&2, S.D>) -> {WN.wofq.m(lp, m) == KH.mmap(~KI.dnum(), ~WN.wnum(bp, lp), x => RD.WD.ofd(lp, x), m) : Maybe<&2, RD.WD>}:

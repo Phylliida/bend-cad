@@ -5,7 +5,7 @@
 # the generic checker in K and its other parts read through tod. The
 # answer is sent back to S.D once, at the end. With laws relating K to
 # KI.dnum() (lib/pops.bend: PLaws) it returns exactly what SO.solve does
-# (lib/fastpf.bend: fsolve_eq), so every law about the solver holds for
+# (lib/fastpf.bend: solve_l_eq), so every law about the solver holds for
 # it. The CLI runs it at word dyadics in base 2^12 (wsolve below).
 
 import Base

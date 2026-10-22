@@ -1,4 +1,4 @@
-# Runtime magnitudes in a base 2^L, L = 1 + lp (2^23 at run time): shifts,
+# Runtime magnitudes in a base 2^L, L = 1 + lp (2^12 at run time): shifts,
 # bit length, rounding to nearest, and conversions with the spec's binary
 # positives. Verified in lib/wmagpf.bend. The rt/mag.bend operations take
 # bp = 2^L - 1, so these take bp and lp both.
@@ -157,7 +157,7 @@ def Mag.topos(+lp: Nat, m: List<&2, Nat>) -> Maybe<&2, S.Pos>:
 # The base
 # --------
 
-# bp for the base 2^(1 + lp): computed once at the top, so that no large
-# literal is ever unfolded by the checker
+# bp for the base 2^(1 + lp), the base the laws are stated at (the CLI's
+# instance, lib/fast.bend, writes its bp as a literal)
 def wbp(+lp: Nat) -> Nat:
   Nat.sub(pw(1n+lp), 1n)

@@ -1,4 +1,4 @@
-# HANDOFF — bend-cad (2026-10-20, sk-13a S0–S4 done; S5's switch done; law 10 (solve_complete) proven as stated (S7); next: S5's laws 1–3, then S6)
+# HANDOFF — bend-cad (2026-10-22: every ROADMAP law proven; sk-13w done through W7, the CLI runs the word solver, proven to answer as solve_l; awaiting Danielle's sign-off)
 
 Read first: `DESIGN.md` (v0.9: the plan, Danielle's decisions, §3 spec
 numbers, §4–§5 typed IR, forms and meanings as built), `proto/RESULTS.md`
@@ -277,8 +277,9 @@ most of W2; rare operations can go through the conversions). **W2 is
 done** (Danielle: go): rt/wmag.bend + lib/wmagpf.bend (shifts, rounding,
 bit length, conversions with S.Pos, uniqueness, native bounds) and
 rt/wint.bend + lib/wintpf.bend (canonical word integers, conversions with
-S.Z); PLAN-sk13w W2 "Done". The base is a parameter lp everywhere (a
-closed 2^23 in a type is unfolded to unary by the checker). **W3 is done:**
+S.Z); PLAN-sk13w W2 "Done". The libraries hold for every base (a closed
+computed 2^(1+lp) in a type is unfolded to unary by the checker; the CLI's
+instance is a literal, W6). **W3 is done:**
 rt/wdyad.bend + lib/wdyadpf.bend, lib/wsigpf.bend (add, mul, neg, cmp,
 dznorm, dsig, dround, each `wop(ofd a, ..) == ofd(op(a, ..))` for every
 S.D input), lib/wnum.bend (the checker's Num at words) and lib/wnumpf.bend.
@@ -289,13 +290,15 @@ once over any computing numbers (lib/gnumer.bend over lib/pops.bend's
 operations, proven in gelimpf, gnewtpf, gplanpf), the checker commutes
 with any exact map of computing numbers (lib/khom.bend; khompf, certhpf,
 planhpf), and lib/fast.bend is the solver over them (fastpf), with the
-pass computed once. The CLI's instance is base 2^12: templates need closed
+pass walked once. The CLI's instance is base 2^12: templates need closed
 arguments, the checker's unary numbers overflow on a computed base or
-above 2^13, and 2^14 was only 4% faster. Sketch 6: 19.4 G instructions
-(reference 91.7 G); sketch 7: 23.4 G (123.7 G). Two teammates (forks)
+above 2^13, and 2^14 was only 4% faster. Sketch 6: 16.5 G instructions
+(reference 91.7 G); sketch 7: 19.5 G (123.7 G). Two teammates (forks)
 wrote the W5 files and gelimpf/fastpf (Danielle allowed it for sk-13w).
-Next: W7 (an independent audit), then the old thR debt in
-radpf/blockpf/scalepf.
+**W7 done:** an independent audit (AUDIT-sk13w.md) found no blocker; its
+doc and tooling findings are fixed. The old thR debt in
+radpf/blockpf/scalepf is paid. Next: Danielle's sign-off on `fast_solve`
+and the sk-13w design (generic numbers, base 2^12); then sk-13s or Q26.
 For timings on a loaded machine, count user-mode instructions
 (tools/diag/icount.c; wall time swung 2x between identical runs today).
 Same day, before the design:

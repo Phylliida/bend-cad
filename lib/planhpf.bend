@@ -3,6 +3,9 @@
 # box's and the plan's images is PL.check in K of the box and the plan, and
 # so is PL.check_sides. Untrusted; for the word verdict (PLAN-sk13w W5).
 
+# Generated from tools/drafts/planhpf.draft by tools/expand.py; edit the
+# draft.
+
 
 import Base
 import ../spec/ring.bend as E

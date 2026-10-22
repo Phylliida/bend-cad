@@ -1,6 +1,7 @@
 # Runtime magnitudes: lists of limbs in base 1 + bp, least significant
 # first (spec/big.bend says what they mean). Verified in lib/mag.bend. The
-# base is a parameter; the runtime passes bp = 65535n at the top.
+# base is a parameter (the solver's word instance, lib/fast.bend, has
+# bp = 4095).
 #
 # Carries: each step computes s, emits s mod B and carries s div B (Bend
 # cannot destructure a computed pair, so mod and div are separate calls).

@@ -4,6 +4,9 @@
 # input, GN.f on the images is the image of NU.f. Untrusted; for the fast
 # proposer (PLAN-sk13w W4).
 
+# Generated from tools/drafts/gelimpf.draft by tools/expand.py; edit the
+# draft.
+
 
 import Base
 import ../spec/num.bend as S

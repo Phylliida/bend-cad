@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Native regression for the solver (not in the gate: about 2 min, most of it
+# Native regression for the solver (not in the gate: about a minute, most of it
 # the slowest GUI sketch; builds and sketches run in parallel):
 # - proto/solve_run.bend's answers must match proto/solve_run.expected;
 # - proto/skel_cmp.bend's two structures of each kept system must agree;

@@ -5,6 +5,9 @@
 # values, the slope enclosures, G r and the self-map's bound) in L are the
 # images of K's. Untrusted; for the word verdict (PLAN-sk13w W5).
 
+# Generated from tools/drafts/certhpf.draft by tools/expand.py; edit the
+# draft.
+
 
 import Base
 import ../spec/ring.bend as E

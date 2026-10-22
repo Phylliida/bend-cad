@@ -100,7 +100,8 @@ e]` is the Nat term. Then `tools/expand.py` turns the shorthand `@A(`,
   `proto/solve_run.bend` natively and compares its answers with
   `proto/solve_run.expected` (the circle, the over-constrained pair, a free
   point, circles that cannot meet, the audit's midpoint and tiny-radius
-  sketches); builds `proto/skel_cmp.bend` and checks that the solver's
+  sketches, solved by the word solver the CLI runs, and a last line saying
+  whether lib/solve.bend's reference gave the same boxes); builds `proto/skel_cmp.bend` and checks that the solver's
   structure of each kept system equals `structure(kept, nv)`; and builds
   `gui/solve_cli.bend` and runs it on the GUI sketches in `proto/sketches/`
   (README there), each against its answer (ok, red, pins and every

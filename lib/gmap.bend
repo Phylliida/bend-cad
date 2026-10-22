@@ -1,8 +1,8 @@
 # bend-cad: numer.bend's results (Maybe values, Newton's states, block and
 # plan outcomes) sent entry by entry through a map of computing numbers
 # h : KI.dnum() -> K (lib/khom.bend), as lib/gnumer.bend's. Untrusted; the
-# statements of lib/gnumerpf.bend and lib/gplanpf.bend use them (PLAN-sk13w
-# W4).
+# statements of lib/gelimpf.bend, lib/gnewtpf.bend and lib/gplanpf.bend use
+# them (PLAN-sk13w W4).
 
 import Base
 import ../spec/num.bend as S

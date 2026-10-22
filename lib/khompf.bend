@@ -4,6 +4,9 @@
 # operation, and each verdict (an order, a length, a held constant) is the
 # same. Untrusted; for the word verdict (PLAN-sk13w W5).
 
+# Generated from tools/drafts/khompf.draft by tools/expand.py; edit the
+# draft.
+
 
 import Base
 import ../spec/num.bend as S

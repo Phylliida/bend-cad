@@ -10,8 +10,8 @@ python3 gui/serve.py 9000       # another port
 
 The first start builds the solver binary `gui/solve_cli` from
 `gui/solve_cli.bend` with `bin/bend` (about 20 s); it rebuilds when that
-file or any of the solver's sources (`lib/`, `spec/`, `proto/block.bend`)
-is newer.
+file or any of the solver's sources (`lib/`, `spec/`, `rt/`,
+`proto/block.bend`, `proto/int.bend`) is newer, when the server starts.
 
 ## What runs where
 

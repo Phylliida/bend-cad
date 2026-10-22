@@ -7,6 +7,9 @@
 # parametricity (lib/khompf.bend, lib/certhpf.bend) and the elimination's
 # (lib/gelimpf.bend). Untrusted; PLAN-sk13w W4.
 
+# Generated from tools/drafts/gnewtpf.draft by tools/expand.py; edit the
+# draft.
+
 
 import Base
 import ../spec/num.bend as S

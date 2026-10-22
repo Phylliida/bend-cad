@@ -4,7 +4,7 @@
 # written once over any K with such operations W; with laws R relating K to
 # KI.dnum() (a map of computing numbers, lib/khom.bend, and each operation
 # sending the images of S.D values to the images of numer's results), it
-# returns exactly numer's plan, mapped (lib/gnumerpf.bend). The word
+# returns exactly numer's plan, mapped (lib/gplanpf.bend: plan_t). The word
 # dyadics are one such K (lib/wnum.bend: wops; lib/wnumpf.bend: wlaws), for
 # every base (PLAN-sk13w W4).
 

@@ -5,7 +5,7 @@
 # function it mirrors numer.bend, with S.D's operations as K's and numer's
 # constants sent through W's ofd; numer's functions that compute with no
 # numbers are used as they are. With laws relating K to KI.dnum(), it
-# returns exactly numer's plan sent through the map (lib/gnumerpf.bend:
+# returns exactly numer's plan sent through the map (lib/gplanpf.bend:
 # plan_t), so nothing numer.bend's proofs say is reopened. At word dyadics
 # (lib/wnum.bend: wnum, wops) it is the fast proposer (PLAN-sk13w W4).
 

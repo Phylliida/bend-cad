@@ -106,8 +106,8 @@ def parse_out(text):
 def sources():
     """the files the solver binary is built from: the CLI and every .bend it
     can import (a change to the solver in lib/ must rebuild it too)"""
-    out = [SRC, os.path.join(ROOT, "proto", "block.bend")]
-    for sub in ("lib", "spec"):
+    out = [SRC, os.path.join(ROOT, "proto", "block.bend"), os.path.join(ROOT, "proto", "int.bend")]
+    for sub in ("lib", "spec", "rt"):
         d = os.path.join(ROOT, sub)
         out += [os.path.join(d, f) for f in os.listdir(d) if f.endswith(".bend")]
     return out

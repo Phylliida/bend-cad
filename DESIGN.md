@@ -157,7 +157,8 @@ signed lists of limbs in base B = 1 + bp, least significant first; limbs are
 runtime `Nat` (native, capped at 2^48 − 1, fail-stop). The base is a
 **parameter** of every operation and law: the checker unfolds a literal such as
 `65536n` to unary (a stack overflow), so proofs are generic in B and the
-runtime passes bp = 65535 at the top (instantiation checks; `tests/big_demo`).
+runtime passes a literal bp at the top (`tests/big_demo`: 65535; the
+solver's word instance, lib/fast.bend: 4095).
 Meaning `Big.val` into spec `Z`; well-formedness `Big.wf` = every limb ≤ bp.
 Carries use `Nat.mod`/`Nat.div` (two native divisions per limb); subtraction
 borrows by one comparison per limb so every limb is an exact `Nat.sub`. With
@@ -1863,12 +1864,15 @@ proposer is not trusted either: it is verified (§10).
 (lib/fast.bend; the CLI) computes with word dyadics, limbs in base 2^12
 held in BendRT's native Nat words, and `fast_solve` proves it returns
 exactly lib/solve.bend's answer, so the laws are about what runs. At run
-time this relies on BendRT's native `nat_add`, `nat_sub`, `nat_mul`,
-`nat_divmod`, `nat_cmp` and `nat_is_lt` agreeing with base.bend's
-definitions below 2^48 (a Nat past 2^48 - 1 stops the run with an error,
-never a wrong value). With limbs below 2^12 every native intermediate (a
-limb product plus carries) stays below 2^24 (lib/wmagpf.bend: `mul_bound`,
-`add_bound`). BendRT already runs every program here, so this narrows
+time this relies on BendRT's native Nat operations (`nat_add`, `nat_sub`,
+`nat_mul`, `nat_divmod`, `nat_cmp`, `nat_is_lt`, `nat_double`, and Succ
+and predecessor matching) agreeing with base.bend's definitions below
+2^48 (a Nat past 2^48 - 1 stops the run with an error, never a wrong
+value). Every limb operation (a limb product plus carries) stays below
+2^24: lib/wmagpf.bend's `mul_bound` and `add_bound` (below 2^(2L), for
+every L) read at L = 12, and `tests/wmag_demo.bend`'s `l12` checks
+24 <= 48. Exponents, bit counts and shift amounts are S.D's own (the word
+numbers carry S.D's exponents exactly), so they add no new reliance. BendRT already runs every program here, so this narrows
 nothing that was proven; it is a specific reliance, listed here, and
 checkable by testing each operation against its base definition.
 

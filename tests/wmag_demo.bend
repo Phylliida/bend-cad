@@ -1,7 +1,8 @@
 # Runtime magnitudes in a base 2^L (rt/wmag.bend): lib/wmagpf.bend's laws at
-# the base RW.wbp(lp) the solver uses, for every lp (the CLI passes 22: a
-# closed 2^23 would be unfolded to unary by the checker), and concrete
-# examples computed by {==} in base 4 (lp = 1, bp = 3).
+# the base RW.wbp(lp) = 2^(1 + lp) - 1, for every lp (the CLI's instance is
+# lib/fast.bend's literal 4095, lp = 11; a closed computed 2^(1 + lp) would
+# be unfolded to unary by the checker), and concrete examples computed by
+# {==} in base 4 (lp = 1, bp = 3).
 
 import Base
 import ../spec/num.bend as S
@@ -94,13 +95,13 @@ def wadd_w(+lp: Nat, a: S.D, b: S.D) -> {N.nadd(WN.wnum(RW.wbp(lp), lp), RD.WD.o
 def wcmp_w(+lp: Nat, a: S.D, b: S.D) -> {N.ncmp(WN.wnum(RW.wbp(lp), lp), RD.WD.ofd(lp, a), RD.WD.ofd(lp, b)) == N.ncmp(KI.dnum(), a, b) : Cmp}:
   WNP.w_cmp(RW.wbp(lp), lp, WM.wbp_ok(lp), a, b)
 
-# native bounds: limb products and sums are below 2^(2 L), and the run
-# time's 2 L = 46 is within BendRT's 48-bit immediates
+# native bounds: limb products and sums are below 2^(2 L), and the CLI's
+# 2 L = 24 (L = 12) is within BendRT's 48-bit immediates
 def mulb_w(+lp: Nat, +h: Nat, +k: Nat, +c: Nat, lh: SB.Le(h, RW.wbp(lp)), lk: SB.Le(k, RW.wbp(lp)), lc: SB.Le(c, RW.wbp(lp))) -> SB.Le(1n+Nat.add(Nat.mul(h, k), c), RW.pw(Nat.add(1n+lp, 1n+lp))):
   WM.mul_bound(RW.wbp(lp), lp, WM.wbp_ok(lp), h, k, c, lh, lk, lc)
 
-def l23() -> SB.Le(Nat.add(1n+22n, 1n+22n), 48n):
-  (2n, {==})
+def l12() -> SB.Le(Nat.add(1n+11n, 1n+11n), 48n):
+  (24n, {==})
 
 # Examples in base 4
 # ------------------

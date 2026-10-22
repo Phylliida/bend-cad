@@ -4,9 +4,13 @@
 # proposer gives numer's plan through the map (lib/gplanpf.bend: plan_t),
 # its verdict on the mapped answer is SO.final's (the checker through the
 # map: lib/planhpf.bend), and the answer sent back through tod is the
-# solver's. At the CLI's word dyadics in base 2^14 (FS.wsolve), with the
-# word laws at that base, it is SO.solve: wsolve_eq. Every law about the
-# solver holds for it (PLAN-sk13w W6).
+# solver's (solve_l_eq). At the CLI's word dyadics in base 2^12 (FS.wk,
+# FS.wo), with the word laws at that base, this is ROADMAP's fast_solve,
+# restated in tests/fast_laws.bend, so every law about the solver holds
+# for what runs (PLAN-sk13w W6).
+
+# Generated from tools/drafts/fastpf.draft by tools/expand.py; edit the
+# draft.
 
 @MACRO KWR ~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>
 @MACRO T ~K, ~W, ~R
@@ -296,6 +300,3 @@ def solve_lw_eq($KWR, +sk: SK.Sketch, +g0: $DV, +l: Nat, +w: Nat) -> {FS.solve_l
 
 def solve_l_eq($KWR, +sk: SK.Sketch, +g0: $DV, +l: Nat) -> {FS.solve_l($G, sk, g0, l) == SO.solve_l(sk, g0, l) : SO.Out}:
   solve_lw_eq($T, sk, g0, l, 7n)
-
-def solve_eq($KWR, +sk: SK.Sketch, +g0: $DV) -> {FS.solve($G, sk, g0) == SO.solve(sk, g0) : SO.Out}:
-  solve_l_eq($T, sk, g0, 0n)

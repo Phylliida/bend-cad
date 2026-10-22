@@ -3,7 +3,8 @@
 # quotient, pinned by inequalities), Mag.bits is the bit length (Bits),
 # Mag.ofpos and Mag.topos convert with the spec's positives, and a
 # magnitude with no high zero limb (Top) is the only one of its value.
-# The base is 1 + bp = 2^(1 + lp) for any lp (hb); the run time's is 2^23.
+# The base is 1 + bp = 2^(1 + lp) for any lp (hb); the CLI's is 2^12
+# (lib/fast.bend).
 
 # Generated from tools/drafts/wmagpf.draft by tools/expand.py; edit the
 # draft.
@@ -882,10 +883,10 @@ def wbp_ok(+lp: Nat) -> {RW.pw(1n+lp) == 1n+RW.wbp(lp) : Nat}:
 # -------------
 # Every native operation on limbs (rt/mag.bend, rt/wmag.bend) is a limb
 # times a limb plus a limb (mul1), a sum of two limbs and a carry bit, a
-# limb against 2^r with r <= L, or a quotient or remainder of these. For
-# limbs up to bp = 2^L - 1 each is below 2^(2 L), so a run whose base has
-# 2 L <= n never forms a Nat of n bits; the run time's L = 23 gives
-# 2 L = 46 <= 48 (BendRT's immediates). The exponent stays a variable: a
+# limb against 2^r with r <= lp = L - 1, or a quotient or remainder of
+# these. For limbs up to bp = 2^L - 1 each is below 2^(2 L), so a run whose
+# base has 2 L <= n never forms a Nat of n bits; the CLI's L = 12 gives
+# 2 L = 24 <= 48 (BendRT's immediates; tests/wmag_demo.bend: l12). The exponent stays a variable: a
 # closed 2^48 in a type would be unfolded to unary by the checker.
 
 # (1 + bp)^2 = 2^(2 L)

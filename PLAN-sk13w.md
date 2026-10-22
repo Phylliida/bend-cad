@@ -1,5 +1,12 @@
 # Plan: sk-13w, verified machine-word arithmetic (v1, 2026-10-21, for Danielle's review)
 
+*Built 2026-10-22 (W0-W6; W7's audit: AUDIT-sk13w.md). The body below is
+the v1 plan as reviewed; each step's "Done" note says what was built, and
+where they differ the Done note holds: the proposer and the solver are
+generic over their numbers rather than word twins, nothing was renamed
+(the new law `fast_solve` links the solver that runs to `solve_l`), and
+the CLI's base is 2^12, not 2^23.*
+
 The solver's numbers become machine words at run time, and nothing about
 what it computes changes. The fast solver is proven to return exactly what
 today's returns, so every law keeps its statement and its proof. Nothing
@@ -158,7 +165,7 @@ Bool. About 15–20% of a solve today, and it stays a win after the switch.
 it reached on it) and `seal` is gone. `lib/solvepf.bend`: `loop_ok`
 (the loop's bit is accept of its answer, by induction on the precisions),
 `start_ok`, `run_final`, and `verdict` (a True ok is a True `final` of the
-solver's answer). The four verdict laws and solve_blame take it; the
+solver's answer). The verdict laws and solve_blame take it; the
 completeness proof's last step got shorter (no `final_of`). No law's
 statement changed. Gate and regression pass, the answers byte-identical.
 Measured in user-mode instructions (the machine was loaded, so wall time
@@ -189,11 +196,12 @@ was noise): sketch 6 from 104.5 G to 91.7 G, sketch 7 from 141.2 G to
   (`ofz_val`, `toz_ofz`), one canonical word integer per value
   (`canon_big_eq`, hence `ofz_of_val`), and `shl_zval` (a product with
   `Pos.pow2`).
-- `tests/wmag_demo.bend` restates them at the solver's base `wbp(lp)` and
-  computes examples in base 4 by `{==}`.
-- The bound's run-time instance is by reading: limbs below 2^23 keep every
-  native intermediate below 2^46, and 46 <= 48 is a closed check. A closed
-  2^48 cannot appear in a type (see W6).
+- `tests/wmag_demo.bend` restates them at the base `wbp(lp)` for every lp
+  and computes examples in base 4 by `{==}`.
+- The bound's run-time instance is by reading: limbs below 2^L keep every
+  native intermediate below 2^(2L), and at the CLI's L = 12 (W6) that is
+  2^24; 24 <= 48 is a closed check (`l12`). A closed 2^48 cannot appear in
+  a type (see W6).
 
 The W3 twins take the shape `wop(s2w a, s2w b) == s2w(op(a, b))` for every
 S.D input: the word result is canonical and has the right value, so
