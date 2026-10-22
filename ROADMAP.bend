@@ -18,6 +18,7 @@ import ./spec/deriv.bend as DV
 import ./lib/kinst.bend as KI
 import ./lib/wfdec.bend as WF
 import ./lib/solve.bend as SO
+import ./lib/fast.bend as FS
 
 # The verified solver (sk-09, DESIGN §10), with sk-13a's classes (v5,
 # SK13A-REVIEW.md, after four audits; spec/solve.bend). History: the
@@ -281,3 +282,17 @@ law solve_refused:
   for  hs: SV.Strict(~F, x, SK.Sketch.sides(SV.mark(SV.cat(SV.reds(SO.cls_of(sk)), SV.ambers(SO.cls_of(sk))), sk)), SO.pins_of(sk))
   for  hr: DV.Regular(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)))
   Empty
+
+# The solver that runs (sk-13w, PLAN-sk13w.md)
+# --------------------------------------------
+# The CLI runs lib/fast.bend's solver: the same search and verdict over
+# word dyadics (limbs in base 2^14; lib/gnumer.bend's proposer and the
+# generic checker at those numbers). It returns exactly solve_l's answer,
+# at every level, so every law above holds for what runs.
+
+# LAW: the word solver's answer is solve_l's
+law fast_solve:
+  for +sk: SK.Sketch
+  for +g0: List<&2, S.D>
+  for +l: Nat
+  {FS.wsolve_l(sk, g0, l) == SO.solve_l(sk, g0, l) : SO.Out}
