@@ -667,11 +667,25 @@ give both component identities that Valid's SameV asks for.
     root, so rebuilt root hulls keep HInvD.
   - lib/dcderpf.bend: ks.der and hs.der in VD form, with conclusions the
     same as asked.
-  - Remaining: merges keep MOkD; new links keep LOkD (from the
-    collapsed sets: Free, Full, and Tied with its decomposition
-    identity); new K facts are KGens (frame-back, and complex line with
-    its relation); explosion witnesses; and the round keeps the
-    skeleton's invariant.
+  - lib/dcmergepf.bend: merges keep MOkD (a merge's derivation is itself
+    a member record of the old root under the new).
+  - lib/dcclxpf.bend: frame-back and complex-line K facts are KGens (the
+    elimination's multipliers split over the hull's generators and the
+    inserted ones; i and the encoding are linear).
+  - lib/labnzpf.bend: labels are nonzero (|gh|² = |g|²|h|², the pair
+    test's (1, 0) and (−c, 1)). A tied set divides by |u|², and an open
+    member's query scales by 1/|w|². This is kept as a separate list
+    invariant beside MOkD and LOkD.
+  - All gated through tests/dir_draft.bend; the gate is still about a
+    minute.
+  - Remaining: nonzero lists kept by merges and links; collapsed sets
+    (generators, Free, Full, Tied with the decomposition identity
+    y = combination + (dot(u, rest)/|u|²) u), their label tests and the
+    new links (LOkD); explosion witnesses; the initial state; and the
+    round keeping the skeleton's invariant.
+  - Speed lesson: a four-atom degree-2 normalizer identity with squares
+    took over 120 s. One square at a time, plus degree-1
+    rearrangements, takes seconds.
 - Next, the proofs, in order:
   - every derivation built is valid with its stated form (the members',
     links', generators', the new K facts', and the explosion witnesses);

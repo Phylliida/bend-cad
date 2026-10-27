@@ -23,6 +23,13 @@
 # - lib/indsetpf.bend (B3): forms inserted in turn, each with a nonzero
 #   residual, combine into the span only with every coefficient 0
 #   (IP.indset_ok): the complex-line check's core.
+# - The closure (lib/dclose.bend, B3) and its soundness so far: the open
+#   test (lib/dcopenpf.bend), VD, a reusable Data form of validity
+#   (lib/dcvd.bend), reusable span invariants (lib/dcinvpf.bend), forms
+#   below t (lib/dcbelowpf.bend), root generators and rebuilt hulls
+#   (lib/dcgenpf.bend), member derivations (lib/dcderpf.bend), merges
+#   (lib/dcmergepf.bend), new K facts (lib/dcclxpf.bend), and nonzero
+#   labels (lib/labnzpf.bend).
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -50,6 +57,14 @@ import ../lib/lab.bend as LB
 import ../lib/labpf.bend as LP
 import ../lib/indset.bend as IS
 import ../lib/indsetpf.bend as IP
+import ../lib/dclose.bend as DC
+import ../lib/dcopenpf.bend as OPF
+import ../lib/dcvd.bend as VDF
+import ../lib/dcinvpf.bend as IVF
+import ../lib/dcgenpf.bend as GNF
+import ../lib/dcmergepf.bend as MGF
+import ../lib/dcclxpf.bend as CXF
+import ../lib/labnzpf.bend as NZF
 import ../lib/elim.bend as EL
 import ../lib/elimpf.bend as EP
 import ../spec/solve.bend as SS
@@ -230,3 +245,27 @@ def b3_klab_some(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E
 def b3_indset(vs: List<&2, E.QExpr>, +B: List<&2, E.QExpr>, +rows: List<&2, EL.Row>, +hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, +hl: {EL.rlen(rows) == SS.neqs(B) : Nat},
   +hi: {IS.indset(vs, rows) == True{} : Bool}, ls: List<&2, S.Q>, +hin: SN.InSpan(SS.lin(ls, vs), B)) -> {IS.allz(ls, vs) == True{} : Bool}:
   IP.indset_ok(vs, B, rows, hr, hl, hi, ls, hin)
+
+def b3_open(+es: List<&2, SK.Ent>, +ctx: List<&2, E.QExpr>, n: DR.Node, h: {DC.isopen(es, OPF.cspan(ctx), n) == True{} : Bool}) -> DR.Open(es, ctx, n):
+  OPF.open_of(es, ctx, n, h)
+
+def b3_valid(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, d: DR.Der, h: VDF.VD(es, fs, ctx, d)) -> DR.Valid(es, fs, ctx, d):
+  VDF.valid_of(es, fs, ctx, d, h)
+
+def b3_rhull(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +r: DR.Node,
+  hk: IVF.KInvD(es, fs, ctx, t, DC.Sk.k(s)), hms: GNF.MsOk(es, fs, ctx, t, DC.Sk.ms(s)), +hls: GNF.LsOk(es, fs, ctx, t, DC.Sk.ls(s)), +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool})
+  -> IVF.HInvD(es, fs, ctx, r, t, DC.rhull(es, fs, t, s, r)):
+  GNF.rhull_inv(es, fs, ctx, t, s, r, hk, hms, hls, hz, hb)
+
+def b3_merges(rs: List<&2, DR.Node>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, hro: MGF.AllOpenD(es, ctx, rs),
+  +hk: IVF.KInvD(es, fs, ctx, t, DC.Sk.k(s)), +hms: GNF.MsOk(es, fs, ctx, t, DC.Sk.ms(s)), +hls: GNF.LsOk(es, fs, ctx, t, DC.Sk.ls(s)), +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool})
+  -> MGF.OptMs(es, fs, ctx, t, DC.mgs(rs, es, fs, t, s)):
+  MGF.mgs_ok(rs, es, fs, ctx, t, s, hro, hk, hms, hls, hz, hb)
+
+def b3_lines(rs: List<&2, DR.Node>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, hro: MGF.AllOpenD(es, ctx, rs),
+  +hk: IVF.KInvD(es, fs, ctx, t, DC.Sk.k(s)), +hms: GNF.MsOk(es, fs, ctx, t, DC.Sk.ms(s)), +hls: GNF.LsOk(es, fs, ctx, t, DC.Sk.ls(s)), +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool})
+  -> CXF.OptK(es, fs, ctx, t, DC.clxs(rs, es, fs, t, s)):
+  CXF.clxs_ok(rs, es, fs, ctx, t, s, hro, hk, hms, hls, hz, hb)
+
+def b3_nz(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +h: HS.HS, +z: SK.VE, +w: DR.Lab, hw: {LB.hs.lab(es, fs, t, h, z) == Some{w} : Maybe<&2, DR.Lab>}) -> NZF.Nz(w):
+  NZF.hs_lab_nz(es, fs, t, h, z, w, hw)
