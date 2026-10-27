@@ -34,6 +34,11 @@ import ./dcgenpf.bend as GN
 import ./dcmergepf.bend as MG
 import ./dcreppf.bend as RP
 import ./dctiedpf.bend as TP
+import ./kspacepf.bend as KP
+import ./cwpf.bend as CW
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
 
 # Spans decided by rows
 # ---------------------
@@ -330,3 +335,277 @@ def hin_lin(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +r: DR.Node, +h: HS.H
   -> HIn(es, fs, r, h, DR.vlin(m1, y1, m2, y2)):
   (+ls1, +sv1) = h1
   hin_lin.go(es, fs, r, h, m1, y1, m2, y2, ls1, sv1, h2)
+
+# Lists of derivations by position
+# --------------------------------
+
+def dat(ds: List<&2, DR.Der>, n: Nat) -> Maybe<&2, DR.Der>:
+  match ds n:
+    case Nil{} n:
+      None{}
+    case Con{d, tl} 0n:
+      Some{d}
+    case Con{d, tl} 1n+m:
+      dat(tl, m)
+
+# d is in ds
+def InD(+d: DR.Der, +ds: List<&2, DR.Der>) -> Data:
+  Sigma<&2, &2, Nat, n => {dat(ds, n) == Some{d} : Maybe<&2, DR.Der>}>
+
+def dis_some(m: Maybe<&2, DR.Der>) -> Bool:
+  match m:
+    case Some{x}:
+      True{}
+    case None{}:
+      False{}
+
+def dsome_or(m: Maybe<&2, DR.Der>, +d: DR.Der) -> DR.Der:
+  match m:
+    case Some{x}:
+      x
+    case None{}:
+      d
+
+def dsome_inj(+x: DR.Der, +y: DR.Der, h: {Some{x} == Some{y} : Maybe<&2, DR.Der>}) -> {x == y : DR.Der}:
+  Equal.cong(Maybe<&2, DR.Der>, DR.Der, m => dsome_or(m, x), Some{x}, Some{y}, h)
+
+def dnone_some(+y: DR.Der, h: {None{} == Some{y} : Maybe<&2, DR.Der>}) -> Empty:
+  %Equal.sym(Bool, False{}, True{}, Equal.cong(Maybe<&2, DR.Der>, Bool, m => dis_some(m), None{}, Some{y}, h)) : PP.none_some.p(_)
+  Unit{}
+
+def ind_hd(+d: DR.Der, +tl: List<&2, DR.Der>) -> InD(d, Con{d, tl}):
+  (0n, {==})
+
+def ind_tl.go(+d: DR.Der, +h0: DR.Der, +tl: List<&2, DR.Der>, +n: Nat, +e: {dat(tl, n) == Some{d} : Maybe<&2, DR.Der>}) -> InD(d, Con{h0, tl}):
+  (1n+n, e)
+
+def ind_tl(+d: DR.Der, +h0: DR.Der, +tl: List<&2, DR.Der>, h: InD(d, tl)) -> InD(d, Con{h0, tl}):
+  (+n, +e) = h
+  ind_tl.go(d, h0, tl, n, e)
+
+def dat_cat_l(xs: List<&2, DR.Der>, +ys: List<&2, DR.Der>, n: Nat, +d: DR.Der, e: {dat(xs, n) == Some{d} : Maybe<&2, DR.Der>}) -> {dat(DC.dcat(xs, ys), n) == Some{d} : Maybe<&2, DR.Der>}:
+  match xs n:
+    case Nil{} n:
+      absurd({dat(DC.dcat(Nil{}, ys), n) == Some{d} : Maybe<&2, DR.Der>}, dnone_some(d, e))
+    case Con{+x, +xt} 0n:
+      e
+    case Con{+x, +xt} 1n+m:
+      dat_cat_l(xt, ys, m, d, e)
+
+def dlen_cat(xs: List<&2, DR.Der>, +ys: List<&2, DR.Der>, +n: Nat, +d: DR.Der, e: {dat(ys, n) == Some{d} : Maybe<&2, DR.Der>}) -> {dat(DC.dcat(xs, ys), Nat.add(DC.dlen(xs), n)) == Some{d} : Maybe<&2, DR.Der>}:
+  match xs:
+    case Nil{}:
+      e
+    case Con{+x, +xt}:
+      dlen_cat(xt, ys, n, d, e)
+
+def ind_cat_l.go(+d: DR.Der, +xs: List<&2, DR.Der>, +ys: List<&2, DR.Der>, +n: Nat, +e: {dat(xs, n) == Some{d} : Maybe<&2, DR.Der>}) -> InD(d, DC.dcat(xs, ys)):
+  (n, dat_cat_l(xs, ys, n, d, e))
+
+def ind_cat_l(+d: DR.Der, +xs: List<&2, DR.Der>, +ys: List<&2, DR.Der>, h: InD(d, xs)) -> InD(d, DC.dcat(xs, ys)):
+  (+n, +e) = h
+  ind_cat_l.go(d, xs, ys, n, e)
+
+def ind_cat_r.go(+d: DR.Der, +xs: List<&2, DR.Der>, +ys: List<&2, DR.Der>, +n: Nat, +e: {dat(ys, n) == Some{d} : Maybe<&2, DR.Der>}) -> InD(d, DC.dcat(xs, ys)):
+  (Nat.add(DC.dlen(xs), n), dlen_cat(xs, ys, n, d, e))
+
+def ind_cat_r(+d: DR.Der, +xs: List<&2, DR.Der>, +ys: List<&2, DR.Der>, h: InD(d, ys)) -> InD(d, DC.dcat(xs, ys)):
+  (+n, +e) = h
+  ind_cat_r.go(d, xs, ys, n, e)
+
+# Adding a row
+# ------------
+
+def ri.len(+B: List<&2, E.QExpr>, +rows: List<&2, EL.Row>, +e: E.QExpr, +x: EL.Row, hl: {EL.rlen(rows) == SV.neqs(B) : Nat}) -> {EL.rlen(EL.rsnoc(rows, x)) == SV.neqs(EP.qsnoc(B, e)) : Nat}:
+  %Equal.sym(Nat, SV.neqs(EP.qsnoc(B, e)), 1n+SV.neqs(B), CW.neqs_qsnoc(B, e)) : {EL.rlen(EL.rsnoc(rows, x)) == _ : Nat}
+  %Equal.sym(Nat, EL.rlen(EL.rsnoc(rows, x)), 1n+EL.rlen(rows), CW.rlen_rsnoc(rows, x)) : {_ == 1n+SV.neqs(B) : Nat}
+  %Equal.sym(Nat, EL.rlen(rows), SV.neqs(B), hl) : {1n+_ == 1n+SV.neqs(B) : Nat}
+  {==}
+
+# a new row: the rows decide the span of B and e
+def ri.snoc(+B: List<&2, E.QExpr>, +rows: List<&2, EL.Row>, +e: E.QExpr, +h: RI(B, rows), +hne: {EP.isnil(EP.resp(EL.resid(rows, e))) == False{} : Bool})
+  -> RI(EP.qsnoc(B, e), EL.rsnoc(rows, EL.row_of(EL.resid(rows, e)))):
+  (+hr, +hl) = h
+  (EP.new_rinv(B, rows, e, hr, hl, hne), ri.len(B, rows, e, EL.row_of(EL.resid(rows, e)), hl))
+
+# hs: adding d keeps the rows deciding the span, d passes, and so does
+# everything that passed
+
+def hs_add.ri(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +rows: List<&2, EL.Row>, +ds: List<&2, DR.Der>, +d: DR.Der, eb: {b == EP.isnil(EP.resp(EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)))) : Bool}, +hr: RI(HS.encs(HS.hxs(es, fs, ds), t), rows))
+  -> RI(HS.encs(HS.hxs(es, fs, HS.hs.ds(HS.hs.pick(b, rows, ds, EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)), d))), t), HS.hs.rows(HS.hs.pick(b, rows, ds, EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)), d))):
+  match b:
+    case True{}:
+      hr
+    case False{}:
+      %Equal.sym(List<&2, E.QExpr>, HS.encs(HS.hxs(es, fs, KS.dsnoc(ds, d)), t), EP.qsnoc(HS.encs(HS.hxs(es, fs, ds), t), HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)), HP.encs_snoc(es, fs, t, ds, d)) : RI(_, EL.rsnoc(rows, EL.row_of(EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)))))
+      ri.snoc(HS.encs(HS.hxs(es, fs, ds), t), rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t), hr, Equal.sym(Bool, False{}, EP.isnil(EP.resp(EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)))), eb))
+
+def hs_add.new(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +rows: List<&2, EL.Row>, +ds: List<&2, DR.Der>, +d: DR.Der, eb: {b == EP.isnil(EP.resp(EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)))) : Bool}, +hr: RI(HS.encs(HS.hxs(es, fs, ds), t), rows))
+  -> Inb(HS.hs.rows(HS.hs.pick(b, rows, ds, EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)), d)), HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)):
+  match b:
+    case True{}:
+      Equal.sym(Bool, True{}, EP.isnil(EP.resp(EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)))), eb)
+    case False{}:
+      ri.zero(EP.qsnoc(HS.encs(HS.hxs(es, fs, ds), t), HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)), EL.rsnoc(rows, EL.row_of(EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)))), HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t), ri.snoc(HS.encs(HS.hxs(es, fs, ds), t), rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t), hr, Equal.sym(Bool, False{}, EP.isnil(EP.resp(EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)))), eb)), SN.in_last(HS.encs(HS.hxs(es, fs, ds), t), HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)))
+
+def hs_add.mono(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +rows: List<&2, EL.Row>, +ds: List<&2, DR.Der>, +d: DR.Der, +e: E.QExpr, eb: {b == EP.isnil(EP.resp(EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)))) : Bool}, +hr: RI(HS.encs(HS.hxs(es, fs, ds), t), rows), hz: Inb(rows, e))
+  -> Inb(HS.hs.rows(HS.hs.pick(b, rows, ds, EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)), d)), e):
+  match b:
+    case True{}:
+      hz
+    case False{}:
+      ri.zero(EP.qsnoc(HS.encs(HS.hxs(es, fs, ds), t), HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)), EL.rsnoc(rows, EL.row_of(EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)))), e, ri.snoc(HS.encs(HS.hxs(es, fs, ds), t), rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t), hr, Equal.sym(Bool, False{}, EP.isnil(EP.resp(EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)))), eb)),
+        SN.in_snoc(e, HS.encs(HS.hxs(es, fs, ds), t), HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t), ri.in(HS.encs(HS.hxs(es, fs, ds), t), rows, e, hr, hz)))
+
+def hs_add_ri(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, h: HS.HS, +d: DR.Der, hr: RI(HS.encs(HS.hxs(es, fs, HS.hs.ds(h)), t), HS.hs.rows(h))) -> RI(HS.encs(HS.hxs(es, fs, HS.hs.ds(HS.hs.add(es, fs, t, h, d))), t), HS.hs.rows(HS.hs.add(es, fs, t, h, d))):
+  match h:
+    case HS.HS{+rows, +ds}:
+      hs_add.ri(EP.isnil(EP.resp(EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)))), es, fs, t, rows, ds, d, {==}, hr)
+
+def hs_add_new(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, h: HS.HS, +d: DR.Der, hr: RI(HS.encs(HS.hxs(es, fs, HS.hs.ds(h)), t), HS.hs.rows(h))) -> Inb(HS.hs.rows(HS.hs.add(es, fs, t, h, d)), HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)):
+  match h:
+    case HS.HS{+rows, +ds}:
+      hs_add.new(EP.isnil(EP.resp(EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)))), es, fs, t, rows, ds, d, {==}, hr)
+
+def hs_add_mono(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, h: HS.HS, +d: DR.Der, +e: E.QExpr, hr: RI(HS.encs(HS.hxs(es, fs, HS.hs.ds(h)), t), HS.hs.rows(h)), hz: Inb(HS.hs.rows(h), e)) -> Inb(HS.hs.rows(HS.hs.add(es, fs, t, h, d)), e):
+  match h:
+    case HS.HS{+rows, +ds}:
+      hs_add.mono(EP.isnil(EP.resp(EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)))), es, fs, t, rows, ds, d, e, {==}, hr, hz)
+
+def hs_fold_ri(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +h: HS.HS, +hr: RI(HS.encs(HS.hxs(es, fs, HS.hs.ds(h)), t), HS.hs.rows(h))) -> RI(HS.encs(HS.hxs(es, fs, HS.hs.ds(DC.hfold(ds, es, fs, t, h))), t), HS.hs.rows(DC.hfold(ds, es, fs, t, h))):
+  match ds:
+    case Nil{}:
+      hr
+    case Con{+d0, tl}:
+      hs_fold_ri(tl, es, fs, t, HS.hs.add(es, fs, t, h, d0), hs_add_ri(es, fs, t, h, d0, hr))
+
+def hs_fold_mono(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +h: HS.HS, +e: E.QExpr, +hr: RI(HS.encs(HS.hxs(es, fs, HS.hs.ds(h)), t), HS.hs.rows(h)), hz: Inb(HS.hs.rows(h), e)) -> Inb(HS.hs.rows(DC.hfold(ds, es, fs, t, h)), e):
+  match ds:
+    case Nil{}:
+      hz
+    case Con{+d0, tl}:
+      hs_fold_mono(tl, es, fs, t, HS.hs.add(es, fs, t, h, d0), e, hs_add_ri(es, fs, t, h, d0, hr), hs_add_mono(es, fs, t, h, d0, e, hr, hz))
+
+# every derivation folded in passes
+def hs_fold_in(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +h: HS.HS, +d: DR.Der, n: Nat, en: {dat(ds, n) == Some{d} : Maybe<&2, DR.Der>}, +hr: RI(HS.encs(HS.hxs(es, fs, HS.hs.ds(h)), t), HS.hs.rows(h))) -> Inb(HS.hs.rows(DC.hfold(ds, es, fs, t, h)), HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)):
+  match ds n:
+    case Nil{} n:
+      absurd(Inb(HS.hs.rows(DC.hfold(Nil{}, es, fs, t, h)), HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)), dnone_some(d, en))
+    case Con{+d0, +tl} 0n:
+      %dsome_inj(d0, d, en) : Inb(HS.hs.rows(DC.hfold(Con{d0, tl}, es, fs, t, h)), HS.enc(DR.Jd.x(DR.concl(es, fs, _)), t))
+      hs_fold_mono(tl, es, fs, t, HS.hs.add(es, fs, t, h, d0), HS.enc(DR.Jd.x(DR.concl(es, fs, d0)), t), hs_add_ri(es, fs, t, h, d0, hr), hs_add_new(es, fs, t, h, d0, hr))
+    case Con{+d0, +tl} 1n+m:
+      hs_fold_in(tl, es, fs, t, HS.hs.add(es, fs, t, h, d0), d, m, en, hs_add_ri(es, fs, t, h, d0, hr))
+
+# ks: adding d keeps the rows deciding the span, d passes, and so does
+# everything that passed
+
+def ks_add.ri(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +rows: List<&2, EL.Row>, +ds: List<&2, DR.Der>, +d: DR.Der, eb: {b == EP.isnil(EP.resp(EL.resid(rows, DR.Jd.e(DR.concl(es, fs, d))))) : Bool}, +hr: RI(KS.kexprs(es, fs, ds), rows))
+  -> RI(KS.kexprs(es, fs, KS.ks.ds(KS.ks.pick(b, rows, ds, EL.resid(rows, DR.Jd.e(DR.concl(es, fs, d))), d))), KS.ks.rows(KS.ks.pick(b, rows, ds, EL.resid(rows, DR.Jd.e(DR.concl(es, fs, d))), d))):
+  match b:
+    case True{}:
+      hr
+    case False{}:
+      %Equal.sym(List<&2, E.QExpr>, KS.kexprs(es, fs, KS.dsnoc(ds, d)), EP.qsnoc(KS.kexprs(es, fs, ds), DR.Jd.e(DR.concl(es, fs, d))), KP.kexprs_snoc(es, fs, ds, d)) : RI(_, EL.rsnoc(rows, EL.row_of(EL.resid(rows, DR.Jd.e(DR.concl(es, fs, d))))))
+      ri.snoc(KS.kexprs(es, fs, ds), rows, DR.Jd.e(DR.concl(es, fs, d)), hr, Equal.sym(Bool, False{}, EP.isnil(EP.resp(EL.resid(rows, DR.Jd.e(DR.concl(es, fs, d))))), eb))
+
+def ks_add.new(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +rows: List<&2, EL.Row>, +ds: List<&2, DR.Der>, +d: DR.Der, eb: {b == EP.isnil(EP.resp(EL.resid(rows, DR.Jd.e(DR.concl(es, fs, d))))) : Bool}, +hr: RI(KS.kexprs(es, fs, ds), rows))
+  -> Inb(KS.ks.rows(KS.ks.pick(b, rows, ds, EL.resid(rows, DR.Jd.e(DR.concl(es, fs, d))), d)), DR.Jd.e(DR.concl(es, fs, d))):
+  match b:
+    case True{}:
+      Equal.sym(Bool, True{}, EP.isnil(EP.resp(EL.resid(rows, DR.Jd.e(DR.concl(es, fs, d))))), eb)
+    case False{}:
+      ri.zero(EP.qsnoc(KS.kexprs(es, fs, ds), DR.Jd.e(DR.concl(es, fs, d))), EL.rsnoc(rows, EL.row_of(EL.resid(rows, DR.Jd.e(DR.concl(es, fs, d))))), DR.Jd.e(DR.concl(es, fs, d)), ri.snoc(KS.kexprs(es, fs, ds), rows, DR.Jd.e(DR.concl(es, fs, d)), hr, Equal.sym(Bool, False{}, EP.isnil(EP.resp(EL.resid(rows, DR.Jd.e(DR.concl(es, fs, d))))), eb)), SN.in_last(KS.kexprs(es, fs, ds), DR.Jd.e(DR.concl(es, fs, d))))
+
+def ks_add.mono(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +rows: List<&2, EL.Row>, +ds: List<&2, DR.Der>, +d: DR.Der, +e: E.QExpr, eb: {b == EP.isnil(EP.resp(EL.resid(rows, DR.Jd.e(DR.concl(es, fs, d))))) : Bool}, +hr: RI(KS.kexprs(es, fs, ds), rows), hz: Inb(rows, e))
+  -> Inb(KS.ks.rows(KS.ks.pick(b, rows, ds, EL.resid(rows, DR.Jd.e(DR.concl(es, fs, d))), d)), e):
+  match b:
+    case True{}:
+      hz
+    case False{}:
+      ri.zero(EP.qsnoc(KS.kexprs(es, fs, ds), DR.Jd.e(DR.concl(es, fs, d))), EL.rsnoc(rows, EL.row_of(EL.resid(rows, DR.Jd.e(DR.concl(es, fs, d))))), e, ri.snoc(KS.kexprs(es, fs, ds), rows, DR.Jd.e(DR.concl(es, fs, d)), hr, Equal.sym(Bool, False{}, EP.isnil(EP.resp(EL.resid(rows, DR.Jd.e(DR.concl(es, fs, d))))), eb)),
+        SN.in_snoc(e, KS.kexprs(es, fs, ds), DR.Jd.e(DR.concl(es, fs, d)), ri.in(KS.kexprs(es, fs, ds), rows, e, hr, hz)))
+
+def ks_add_ri(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, h: KS.KS, +d: DR.Der, hr: RI(KS.kexprs(es, fs, KS.ks.ds(h)), KS.ks.rows(h))) -> RI(KS.kexprs(es, fs, KS.ks.ds(KS.ks.add(es, fs, h, d))), KS.ks.rows(KS.ks.add(es, fs, h, d))):
+  match h:
+    case KS.KS{+rows, +ds}:
+      ks_add.ri(EP.isnil(EP.resp(EL.resid(rows, DR.Jd.e(DR.concl(es, fs, d))))), es, fs, rows, ds, d, {==}, hr)
+
+def ks_add_new(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, h: KS.KS, +d: DR.Der, hr: RI(KS.kexprs(es, fs, KS.ks.ds(h)), KS.ks.rows(h))) -> Inb(KS.ks.rows(KS.ks.add(es, fs, h, d)), DR.Jd.e(DR.concl(es, fs, d))):
+  match h:
+    case KS.KS{+rows, +ds}:
+      ks_add.new(EP.isnil(EP.resp(EL.resid(rows, DR.Jd.e(DR.concl(es, fs, d))))), es, fs, rows, ds, d, {==}, hr)
+
+def ks_add_mono(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, h: KS.KS, +d: DR.Der, +e: E.QExpr, hr: RI(KS.kexprs(es, fs, KS.ks.ds(h)), KS.ks.rows(h)), hz: Inb(KS.ks.rows(h), e)) -> Inb(KS.ks.rows(KS.ks.add(es, fs, h, d)), e):
+  match h:
+    case KS.KS{+rows, +ds}:
+      ks_add.mono(EP.isnil(EP.resp(EL.resid(rows, DR.Jd.e(DR.concl(es, fs, d))))), es, fs, rows, ds, d, e, {==}, hr, hz)
+
+# ts: adding d keeps the rows deciding the span, d passes, and so does
+# everything that passed
+
+def ts_add.ri(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +u: DR.Lab, +rows: List<&2, EL.Row>, +ds: List<&2, DR.Der>, +d: DR.Der, eb: {b == EP.isnil(EP.resp(EL.resid(rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))))) : Bool}, +hr: RI(DC.crosses(es, fs, u, ds), rows))
+  -> RI(DC.crosses(es, fs, u, DC.ts.ds(DC.ts.pick(b, rows, ds, EL.resid(rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))), d))), DC.ts.rows(DC.ts.pick(b, rows, ds, EL.resid(rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))), d))):
+  match b:
+    case True{}:
+      hr
+    case False{}:
+      %Equal.sym(List<&2, E.QExpr>, DC.crosses(es, fs, u, KS.dsnoc(ds, d)), EP.qsnoc(DC.crosses(es, fs, u, ds), SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))), RP.crosses_snoc(es, fs, u, ds, d)) : RI(_, EL.rsnoc(rows, EL.row_of(EL.resid(rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))))))
+      ri.snoc(DC.crosses(es, fs, u, ds), rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d))), hr, Equal.sym(Bool, False{}, EP.isnil(EP.resp(EL.resid(rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))))), eb))
+
+def ts_add.new(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +u: DR.Lab, +rows: List<&2, EL.Row>, +ds: List<&2, DR.Der>, +d: DR.Der, eb: {b == EP.isnil(EP.resp(EL.resid(rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))))) : Bool}, +hr: RI(DC.crosses(es, fs, u, ds), rows))
+  -> Inb(DC.ts.rows(DC.ts.pick(b, rows, ds, EL.resid(rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))), d)), SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))):
+  match b:
+    case True{}:
+      Equal.sym(Bool, True{}, EP.isnil(EP.resp(EL.resid(rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))))), eb)
+    case False{}:
+      ri.zero(EP.qsnoc(DC.crosses(es, fs, u, ds), SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))), EL.rsnoc(rows, EL.row_of(EL.resid(rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))))), SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d))), ri.snoc(DC.crosses(es, fs, u, ds), rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d))), hr, Equal.sym(Bool, False{}, EP.isnil(EP.resp(EL.resid(rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))))), eb)), SN.in_last(DC.crosses(es, fs, u, ds), SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))))
+
+def ts_add.mono(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +u: DR.Lab, +rows: List<&2, EL.Row>, +ds: List<&2, DR.Der>, +d: DR.Der, +e: E.QExpr, eb: {b == EP.isnil(EP.resp(EL.resid(rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))))) : Bool}, +hr: RI(DC.crosses(es, fs, u, ds), rows), hz: Inb(rows, e))
+  -> Inb(DC.ts.rows(DC.ts.pick(b, rows, ds, EL.resid(rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))), d)), e):
+  match b:
+    case True{}:
+      hz
+    case False{}:
+      ri.zero(EP.qsnoc(DC.crosses(es, fs, u, ds), SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))), EL.rsnoc(rows, EL.row_of(EL.resid(rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))))), e, ri.snoc(DC.crosses(es, fs, u, ds), rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d))), hr, Equal.sym(Bool, False{}, EP.isnil(EP.resp(EL.resid(rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))))), eb)),
+        SN.in_snoc(e, DC.crosses(es, fs, u, ds), SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d))), ri.in(DC.crosses(es, fs, u, ds), rows, e, hr, hz)))
+
+def ts_add_ri(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +u: DR.Lab, h: DC.TS, +d: DR.Der, hr: RI(DC.crosses(es, fs, u, DC.ts.ds(h)), DC.ts.rows(h))) -> RI(DC.crosses(es, fs, u, DC.ts.ds(DC.ts.add(es, fs, u, h, d))), DC.ts.rows(DC.ts.add(es, fs, u, h, d))):
+  match h:
+    case DC.TS{+rows, +ds}:
+      ts_add.ri(EP.isnil(EP.resp(EL.resid(rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))))), es, fs, u, rows, ds, d, {==}, hr)
+
+def ts_add_new(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +u: DR.Lab, h: DC.TS, +d: DR.Der, hr: RI(DC.crosses(es, fs, u, DC.ts.ds(h)), DC.ts.rows(h))) -> Inb(DC.ts.rows(DC.ts.add(es, fs, u, h, d)), SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))):
+  match h:
+    case DC.TS{+rows, +ds}:
+      ts_add.new(EP.isnil(EP.resp(EL.resid(rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))))), es, fs, u, rows, ds, d, {==}, hr)
+
+def ts_add_mono(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +u: DR.Lab, h: DC.TS, +d: DR.Der, +e: E.QExpr, hr: RI(DC.crosses(es, fs, u, DC.ts.ds(h)), DC.ts.rows(h)), hz: Inb(DC.ts.rows(h), e)) -> Inb(DC.ts.rows(DC.ts.add(es, fs, u, h, d)), e):
+  match h:
+    case DC.TS{+rows, +ds}:
+      ts_add.mono(EP.isnil(EP.resp(EL.resid(rows, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))))), es, fs, u, rows, ds, d, e, {==}, hr, hz)
+
+def ts_fold_ri(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +u: DR.Lab, +h: DC.TS, +hr: RI(DC.crosses(es, fs, u, DC.ts.ds(h)), DC.ts.rows(h))) -> RI(DC.crosses(es, fs, u, DC.ts.ds(DC.tfold(ds, es, fs, u, h))), DC.ts.rows(DC.tfold(ds, es, fs, u, h))):
+  match ds:
+    case Nil{}:
+      hr
+    case Con{+d0, tl}:
+      ts_fold_ri(tl, es, fs, u, DC.ts.add(es, fs, u, h, d0), ts_add_ri(es, fs, u, h, d0, hr))
+
+def ts_fold_mono(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +u: DR.Lab, +h: DC.TS, +e: E.QExpr, +hr: RI(DC.crosses(es, fs, u, DC.ts.ds(h)), DC.ts.rows(h)), hz: Inb(DC.ts.rows(h), e)) -> Inb(DC.ts.rows(DC.tfold(ds, es, fs, u, h)), e):
+  match ds:
+    case Nil{}:
+      hz
+    case Con{+d0, tl}:
+      ts_fold_mono(tl, es, fs, u, DC.ts.add(es, fs, u, h, d0), e, ts_add_ri(es, fs, u, h, d0, hr), ts_add_mono(es, fs, u, h, d0, e, hr, hz))
+
+# every derivation folded in passes
+def ts_fold_in(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +u: DR.Lab, +h: DC.TS, +d: DR.Der, n: Nat, en: {dat(ds, n) == Some{d} : Maybe<&2, DR.Der>}, +hr: RI(DC.crosses(es, fs, u, DC.ts.ds(h)), DC.ts.rows(h))) -> Inb(DC.ts.rows(DC.tfold(ds, es, fs, u, h)), SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))):
+  match ds n:
+    case Nil{} n:
+      absurd(Inb(DC.ts.rows(DC.tfold(Nil{}, es, fs, u, h)), SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d)))), dnone_some(d, en))
+    case Con{+d0, +tl} 0n:
+      %dsome_inj(d0, d, en) : Inb(DC.ts.rows(DC.tfold(Con{d0, tl}, es, fs, u, h)), SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, _))))
+      ts_fold_mono(tl, es, fs, u, DC.ts.add(es, fs, u, h, d0), SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, d0))), ts_add_ri(es, fs, u, h, d0, hr), ts_add_new(es, fs, u, h, d0, hr))
+    case Con{+d0, +tl} 1n+m:
+      ts_fold_in(tl, es, fs, u, DC.ts.add(es, fs, u, h, d0), d, m, en, ts_add_ri(es, fs, u, h, d0, hr))
