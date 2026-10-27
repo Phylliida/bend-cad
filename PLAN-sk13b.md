@@ -549,8 +549,14 @@ give both component identities that Valid's SameV asks for.
     - a refutation is found iff one exists (Motzkin over K's
       generators, a derived collapse, an Angle on a K-collapsed
       segment).
-- Next: the node kinds and one fixpoint round, then the loops and their
-  sufficiency, then closure.
+- *Spans done 2026-10-27* (lib/spanpf.bend): InSpan as reusable Data,
+  decided exactly both ways by the elimination, grown by appending, and
+  closed under l·e₁ + e₂ and 0. These are the closure proof's linear
+  algebra for K. The hull analogues follow the same pattern over the
+  encoded forms.
+- Next: the label test (find g with conj(g)·z_b in a hull, and prove it
+  finds one whenever one exists), the node kinds and one fixpoint round,
+  then the loops and their sufficiency, then closure.
 - The plan as written:
 - Union–find over segments and F, with labels. Each component keeps its
   *hull*: the real span of the vectors known parallel to its root,
