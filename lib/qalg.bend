@@ -76,3 +76,11 @@ def ch4(+a: S.Q, +b: S.Q, +c: S.Q, +d: S.Q, +e: S.Q, h1: S.Q.eq(a, b), h2: S.Q.e
 # -(a + b) = -a + -b
 def negadd(+a: S.Q, +b: S.Q) -> S.Q.eq(S.Q.neg(S.Q.add(a, b)), S.Q.add(S.Q.neg(a), S.Q.neg(b))):
   QR.qring_eq([a, b], E.QNeg{E.QAdd{E.QVar{0n}, E.QVar{1n}}}, E.QAdd{E.QNeg{E.QVar{0n}}, E.QNeg{E.QVar{1n}}}, {==})
+
+# (a + b) - (c + d) = (a - c) + (b - d)
+def r4c(+a: S.Q, +b: S.Q, +c: S.Q, +d: S.Q) -> S.Q.eq(S.Q.sub(S.Q.add(a, b), S.Q.add(c, d)), S.Q.add(S.Q.sub(a, c), S.Q.sub(b, d))):
+  QR.qring_eq([a, b, c, d], E.QSub{E.QAdd{E.QVar{0n}, E.QVar{1n}}, E.QAdd{E.QVar{2n}, E.QVar{3n}}}, E.QAdd{E.QSub{E.QVar{0n}, E.QVar{2n}}, E.QSub{E.QVar{1n}, E.QVar{3n}}}, {==})
+
+# (a - b) - (d - e) = (a - d) - (b - e)
+def r4d(+a: S.Q, +b: S.Q, +d: S.Q, +e: S.Q) -> S.Q.eq(S.Q.sub(S.Q.sub(a, b), S.Q.sub(d, e)), S.Q.sub(S.Q.sub(a, d), S.Q.sub(b, e))):
+  QR.qring_eq([a, b, d, e], E.QSub{E.QSub{E.QVar{0n}, E.QVar{1n}}, E.QSub{E.QVar{2n}, E.QVar{3n}}}, E.QSub{E.QSub{E.QVar{0n}, E.QVar{2n}}, E.QSub{E.QVar{1n}, E.QVar{3n}}}, {==})
