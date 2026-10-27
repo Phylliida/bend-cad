@@ -678,11 +678,14 @@ give both component identities that Valid's SameV asks for.
     invariant beside MOkD and LOkD.
   - All gated through tests/dir_draft.bend; the gate is still about a
     minute.
-  - Remaining: nonzero lists kept by merges and links; collapsed sets
-    (generators, Free, Full, Tied with the decomposition identity
-    y = combination + (dot(u, rest)/|u|²) u), their label tests and the
-    new links (LOkD); explosion witnesses; the initial state; and the
-    round keeping the skeleton's invariant.
+  - lib/dcreppf.bend: collapsed sets keep RepOk (generators valid at c;
+    Free hull; Tied span with its tie valid, the same as u (1, 0), u
+    nonzero; Full).
+  - lib/dctiedpf.bend: the tied derivation proves y (y = combination +
+    (dot(u, rest)/|u|²) u, from cross(u, rest) = 0).
+  - Remaining: rep.der and the label tests per kind give the new links
+    (LOkD, nonzero); nonzero lists kept by merges; explosion witnesses;
+    the initial state; and the round keeping the skeleton's invariant.
   - Speed lesson: a four-atom degree-2 normalizer identity with squares
     took over 120 s. One square at a time, plus degree-1
     rearrangements, takes seconds.
