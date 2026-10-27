@@ -22,6 +22,8 @@ import ./labpf.bend as LP
 import ./kspace.bend as KS
 import ./hspace.bend as HS
 import ./lab.bend as LB
+import ./labnzpf.bend as NZ
+import ./dcreppf.bend as RP
 import ./dclose.bend as DC
 import ./dcvd.bend as VD
 import ./dcgenpf.bend as GN
@@ -760,3 +762,288 @@ def kinit_kf(rest: List<&2, DR.Fact>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fa
       (kinit_mono(t, es, fs, 1n+i, KS.ks.add(es, fs, k, DR.DPrem{i}), e, ST.ks_add_ri(es, fs, k, DR.DPrem{i}, hr),
          kinit_kf.hd(es, fs, i, k, e, nd, ds, t, hr, GN.fat_drop(i, fs, DR.Fact{e, nd, ds}, t, ed))),
        kinit_kf(t, es, fs, 1n+i, KS.ks.add(es, fs, k, DR.DPrem{i}), ST.ks_add_ri(es, fs, k, DR.DPrem{i}, hr), GN.fdrop_tl(i, fs, DR.Fact{e, nd, ds}, t, ed)))
+
+# Stored labels
+# -------------
+
+def wsnoc(ws: List<&2, DR.Lab>, +w: DR.Lab) -> List<&2, DR.Lab>:
+  match ws:
+    case Nil{}:
+      Con{w, Nil{}}
+    case Con{h, t}:
+      Con{h, wsnoc(t, w)}
+
+def wsnoc_if(f: Bool, +ws: List<&2, DR.Lab>, +w: DR.Lab) -> List<&2, DR.Lab>:
+  match f:
+    case True{}:
+      wsnoc(ws, w)
+    case False{}:
+      ws
+
+def lst.g(g: Bool, f: Bool, +w: DR.Lab, +S: List<&2, DR.Lab>, +wx: DR.Lab)
+  -> {DC.lstored.pick(g, w, wsnoc_if(f, S, wx)) == wsnoc_if(f, DC.lstored.pick(g, w, S), wx) : List<&2, DR.Lab>}:
+  match g f:
+    case True{} True{}:
+      {==}
+    case True{} False{}:
+      {==}
+    case False{} f:
+      {==}
+
+def lst.nil(f: Bool, +wx: DR.Lab) -> {DC.lstored.pick(f, wx, Nil{}) == wsnoc_if(f, Nil{}, wx) : List<&2, DR.Lab>}:
+  match f:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+# the stored labels after a link is appended
+def lstored_snoc(ls: List<&2, DC.Link>, +c: Nat, +b: DR.Node, +cx: Nat, +bx: DR.Node, +wx: DR.Lab, +dx: DR.Der)
+  -> {DC.lstored(DC.lsnoc(ls, DC.Link{cx, bx, wx, dx}), c, b) == wsnoc_if(SV.band(SV.eq(cx, c), DC.node_eq(bx, b)), DC.lstored(ls, c, b), wx) : List<&2, DR.Lab>}:
+  match ls:
+    case Nil{}:
+      lst.nil(SV.band(SV.eq(cx, c), DC.node_eq(bx, b)), wx)
+    case Con{DC.Link{+c2, +bl, +w, +d}, +t}:
+      Equal.trans(List<&2, DR.Lab>, DC.lstored.pick(SV.band(SV.eq(c2, c), DC.node_eq(bl, b)), w, DC.lstored(DC.lsnoc(t, DC.Link{cx, bx, wx, dx}), c, b)),
+        DC.lstored.pick(SV.band(SV.eq(c2, c), DC.node_eq(bl, b)), w, wsnoc_if(SV.band(SV.eq(cx, c), DC.node_eq(bx, b)), DC.lstored(t, c, b), wx)),
+        wsnoc_if(SV.band(SV.eq(cx, c), DC.node_eq(bx, b)), DC.lstored.pick(SV.band(SV.eq(c2, c), DC.node_eq(bl, b)), w, DC.lstored(t, c, b)), wx),
+        Equal.cong(List<&2, DR.Lab>, List<&2, DR.Lab>, x => DC.lstored.pick(SV.band(SV.eq(c2, c), DC.node_eq(bl, b)), w, x), DC.lstored(DC.lsnoc(t, DC.Link{cx, bx, wx, dx}), c, b),
+          wsnoc_if(SV.band(SV.eq(cx, c), DC.node_eq(bx, b)), DC.lstored(t, c, b), wx), lstored_snoc(t, c, b, cx, bx, wx, dx)),
+        lst.g(SV.band(SV.eq(c2, c), DC.node_eq(bl, b)), SV.band(SV.eq(cx, c), DC.node_eq(bx, b)), w, DC.lstored(t, c, b), wx))
+
+# a fresh label keeps the first two independent
+def pairok_snoc(ws: List<&2, DR.Lab>, +w: DR.Lab, hp: {LS.pairok(ws) == True{} : Bool}, hq: {DC.qspan(ws, w) == False{} : Bool}) -> {LS.pairok(wsnoc(ws, w)) == True{} : Bool}:
+  match ws:
+    case Nil{}:
+      {==}
+    case Con{+w0, Nil{}}:
+      %Equal.sym(Bool, DC.lpar(w0, w), False{}, hq) : {SV.bnot(_) == True{} : Bool}
+      {==}
+    case Con{+w0, Con{+w1, +t}}:
+      hp
+
+def pok_if(f: Bool, +ws: List<&2, DR.Lab>, +w: DR.Lab, hp: {LS.pairok(ws) == True{} : Bool}, hq: {f == True{} : Bool} -> {DC.qspan(ws, w) == False{} : Bool})
+  -> {LS.pairok(wsnoc_if(f, ws, w)) == True{} : Bool}:
+  match f:
+    case True{}:
+      pairok_snoc(ws, w, hp, hq({==}))
+    case False{}:
+      hp
+
+# each link's pair has its first two stored labels independent
+def PairL(sc: List<&2, DC.Link>, +ls: List<&2, DC.Link>) -> Data:
+  match sc:
+    case Nil{}:
+      Unit
+    case Con{DC.Link{+c, +b, w, d}, tl}:
+      SK.Both({LS.pairok(DC.lstored(ls, c, b)) == True{} : Bool}, PairL(tl, ls))
+
+def fr_at(+ls: List<&2, DC.Link>, +c: Nat, +b: DR.Node, +cx: Nat, +bx: DR.Node, +wx: DR.Lab, fr: {DC.qspan(DC.lstored(ls, cx, bx), wx) == False{} : Bool},
+  +hf: {SV.band(SV.eq(cx, c), DC.node_eq(bx, b)) == True{} : Bool}) -> {DC.qspan(DC.lstored(ls, c, b), wx) == False{} : Bool}:
+  %LP2.eq_ok(cx, c, LP2.band_l(SV.eq(cx, c), DC.node_eq(bx, b), hf)) : {DC.qspan(DC.lstored(ls, _, b), wx) == False{} : Bool}
+  %GN.node_eq_ok(bx, b, LP2.band_r(SV.eq(cx, c), DC.node_eq(bx, b), hf)) : {DC.qspan(DC.lstored(ls, cx, _), wx) == False{} : Bool}
+  fr
+
+def pl_one(+ls: List<&2, DC.Link>, +c: Nat, +b: DR.Node, +cx: Nat, +bx: DR.Node, +wx: DR.Lab, +dx: DR.Der, e0: {LS.pairok(DC.lstored(ls, c, b)) == True{} : Bool},
+  +fr: {DC.qspan(DC.lstored(ls, cx, bx), wx) == False{} : Bool}) -> {LS.pairok(DC.lstored(DC.lsnoc(ls, DC.Link{cx, bx, wx, dx}), c, b)) == True{} : Bool}:
+  %Equal.sym(List<&2, DR.Lab>, DC.lstored(DC.lsnoc(ls, DC.Link{cx, bx, wx, dx}), c, b), wsnoc_if(SV.band(SV.eq(cx, c), DC.node_eq(bx, b)), DC.lstored(ls, c, b), wx), lstored_snoc(ls, c, b, cx, bx, wx, dx))
+    : {LS.pairok(_) == True{} : Bool}
+  pok_if(SV.band(SV.eq(cx, c), DC.node_eq(bx, b)), DC.lstored(ls, c, b), wx, e0, hf => fr_at(ls, c, b, cx, bx, wx, fr, hf))
+
+def pl_old(sc: List<&2, DC.Link>, +ls: List<&2, DC.Link>, +cx: Nat, +bx: DR.Node, +wx: DR.Lab, +dx: DR.Der, h: PairL(sc, ls), +fr: {DC.qspan(DC.lstored(ls, cx, bx), wx) == False{} : Bool})
+  -> PairL(sc, DC.lsnoc(ls, DC.Link{cx, bx, wx, dx})):
+  match sc:
+    case Nil{}:
+      Unit{}
+    case Con{DC.Link{+c, +b, w, d}, tl}:
+      (e0, ht) = h
+      (pl_one(ls, c, b, cx, bx, wx, dx, e0, fr), pl_old(tl, ls, cx, bx, wx, dx, ht, fr))
+
+def pl_cat(sc: List<&2, DC.Link>, +all: List<&2, DC.Link>, +cx: Nat, +bx: DR.Node, +wx: DR.Lab, +dx: DR.Der, h: PairL(sc, all),
+  +e: {LS.pairok(DC.lstored(all, cx, bx)) == True{} : Bool}) -> PairL(DC.lsnoc(sc, DC.Link{cx, bx, wx, dx}), all):
+  match sc:
+    case Nil{}:
+      (e, Unit{})
+    case Con{DC.Link{+c, +b, +w, +d}, tl}:
+      (e0, ht) = h
+      (e0, pl_cat(tl, all, cx, bx, wx, dx, ht, e))
+
+def lcons(ws: List<&2, DR.Lab>) -> Bool:
+  match ws:
+    case Nil{}:
+      False{}
+    case Con{w, t}:
+      True{}
+
+def pok_nil(ws: List<&2, DR.Lab>, h: {lcons(ws) == False{} : Bool}) -> {LS.pairok(ws) == True{} : Bool}:
+  match ws:
+    case Nil{}:
+      {==}
+    case Con{w, t}:
+      absurd({LS.pairok(Con{w, t}) == True{} : Bool}, LP.tf(h))
+
+def pok_find.g(g: Bool, +ls: List<&2, DC.Link>, +c: Nat, +b: DR.Node, +c2: Nat, +b2: DR.Node, +w: DR.Lab, +tl: List<&2, DC.Link>,
+  +eg: {g == SV.band(SV.eq(c2, c), DC.node_eq(b2, b)) : Bool}, e0: {LS.pairok(DC.lstored(ls, c2, b2)) == True{} : Bool},
+  hne: {lcons(DC.lstored.pick(g, w, DC.lstored(tl, c, b))) == True{} : Bool}, ih: {lcons(DC.lstored(tl, c, b)) == True{} : Bool} -> {LS.pairok(DC.lstored(ls, c, b)) == True{} : Bool})
+  -> {LS.pairok(DC.lstored(ls, c, b)) == True{} : Bool}:
+  match g:
+    case True{}:
+      %LP2.eq_ok(c2, c, LP2.band_l(SV.eq(c2, c), DC.node_eq(b2, b), Equal.sym(Bool, True{}, SV.band(SV.eq(c2, c), DC.node_eq(b2, b)), eg))) : {LS.pairok(DC.lstored(ls, _, b)) == True{} : Bool}
+      %GN.node_eq_ok(b2, b, LP2.band_r(SV.eq(c2, c), DC.node_eq(b2, b), Equal.sym(Bool, True{}, SV.band(SV.eq(c2, c), DC.node_eq(b2, b)), eg))) : {LS.pairok(DC.lstored(ls, c2, _)) == True{} : Bool}
+      e0
+    case False{}:
+      ih(hne)
+
+def pok_find(sc: List<&2, DC.Link>, +ls: List<&2, DC.Link>, +c: Nat, +b: DR.Node, h: PairL(sc, ls), hne: {lcons(DC.lstored(sc, c, b)) == True{} : Bool})
+  -> {LS.pairok(DC.lstored(ls, c, b)) == True{} : Bool}:
+  match sc:
+    case Nil{}:
+      absurd({LS.pairok(DC.lstored(ls, c, b)) == True{} : Bool}, LP.tf(Equal.sym(Bool, False{}, True{}, hne)))
+    case Con{DC.Link{+c2, +b2, +w, d}, +tl}:
+      (e0, ht) = h
+      pok_find.g(SV.band(SV.eq(c2, c), DC.node_eq(b2, b)), ls, c, b, c2, b2, w, tl, {==}, e0, hne, x => pok_find(tl, ls, c, b, ht, x))
+
+def pairok_of.go(f: Bool, +ls: List<&2, DC.Link>, +c: Nat, +b: DR.Node, ef: {f == lcons(DC.lstored(ls, c, b)) : Bool}, h: PairL(ls, ls)) -> {LS.pairok(DC.lstored(ls, c, b)) == True{} : Bool}:
+  match f:
+    case True{}:
+      pok_find(ls, ls, c, b, h, Equal.sym(Bool, True{}, lcons(DC.lstored(ls, c, b)), ef))
+    case False{}:
+      pok_nil(DC.lstored(ls, c, b), Equal.sym(Bool, False{}, lcons(DC.lstored(ls, c, b)), ef))
+
+# every pair's first two stored labels are independent
+def pairok_of(+ls: List<&2, DC.Link>, +c: Nat, +b: DR.Node, h: PairL(ls, ls)) -> {LS.pairok(DC.lstored(ls, c, b)) == True{} : Bool}:
+  pairok_of.go(lcons(DC.lstored(ls, c, b)), ls, c, b, {==}, h)
+
+def lnzs.pick(g: Bool, +w: DR.Lab, +rest: List<&2, DR.Lab>, +nw: NZ.Nz(w), hr: LS.LNzs(rest)) -> LS.LNzs(DC.lstored.pick(g, w, rest)):
+  match g:
+    case True{}:
+      (nw, hr)
+    case False{}:
+      hr
+
+# the stored labels are nonzero
+def lnzs_of(ls: List<&2, DC.Link>, +c: Nat, +b: DR.Node, h: RP.LsNz(ls)) -> LS.LNzs(DC.lstored(ls, c, b)):
+  match ls:
+    case Nil{}:
+      Unit{}
+    case Con{DC.Link{+c2, +b2, +w, +d}, +tl}:
+      (nw, ht) = h
+      lnzs.pick(SV.band(SV.eq(c2, c), DC.node_eq(b2, b)), w, DC.lstored(tl, c, b), nw, lnzs_of(tl, c, b, ht))
+
+# Fresh links
+# -----------
+
+# a new link's label is outside its pair's stored span
+def Fr(+ls: List<&2, DC.Link>, m: Maybe<&2, DC.Link>) -> Data:
+  match m:
+    case Some{DC.Link{+c, +b, +w, d}}:
+      {DC.qspan(DC.lstored(ls, c, b), w) == False{} : Bool}
+    case None{}:
+      Unit
+
+def FrW(+stored: List<&2, DR.Lab>, m: Maybe<&2, DR.Lab>) -> Data:
+  match m:
+    case Some{+w}:
+      {DC.qspan(stored, w) == False{} : Bool}
+    case None{}:
+      Unit
+
+def FrC(+stored: List<&2, DR.Lab>, m: Maybe<&2, DR.Lab>) -> Data:
+  match m:
+    case Some{+w}:
+      {DC.qspan(stored, DR.Lab.conj(w)) == False{} : Bool}
+    case None{}:
+      Unit
+
+def lkp_fr(f: Bool, +w: DR.Lab, +stored: List<&2, DR.Lab>, ef: {f == DC.qspan(stored, w) : Bool}, +rest: Maybe<&2, DR.Lab>, hr: FrW(stored, rest)) -> FrW(stored, DC.lk.pick(f, w, rest)):
+  match f:
+    case True{}:
+      hr
+    case False{}:
+      Equal.sym(Bool, False{}, DC.qspan(stored, w), ef)
+
+def lkf_fr(ws: List<&2, DR.Lab>, +stored: List<&2, DR.Lab>) -> FrW(stored, DC.lk.first(ws, stored)):
+  match ws:
+    case Nil{}:
+      Unit{}
+    case Con{+w, +t}:
+      lkp_fr(DC.qspan(stored, w), w, stored, {==}, DC.lk.first(t, stored), lkf_fr(t, stored))
+
+def lkpc_fr(f: Bool, +w: DR.Lab, +stored: List<&2, DR.Lab>, ef: {f == DC.qspan(stored, DR.Lab.conj(w)) : Bool}, +rest: Maybe<&2, DR.Lab>, hr: FrC(stored, rest)) -> FrC(stored, DC.lk.pick(f, w, rest)):
+  match f:
+    case True{}:
+      hr
+    case False{}:
+      Equal.sym(Bool, False{}, DC.qspan(stored, DR.Lab.conj(w)), ef)
+
+def lkrf_fr(ws: List<&2, DR.Lab>, +stored: List<&2, DR.Lab>) -> FrC(stored, DC.lk.r.first(ws, stored)):
+  match ws:
+    case Nil{}:
+      Unit{}
+    case Con{+w, +t}:
+      lkpc_fr(DC.qspan(stored, DR.Lab.conj(w)), w, stored, {==}, DC.lk.r.first(t, stored), lkrf_fr(t, stored))
+
+def lkm_fr(m: Maybe<&2, DR.Lab>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk, +c: Nat, +rep: DC.Rep, +b: DR.Node, hm: FrW(DC.lstored(DC.Sk.ls(s), c, b), m),
+  +rest: Maybe<&2, DC.Link>, hr: Fr(DC.Sk.ls(s), rest)) -> Fr(DC.Sk.ls(s), DC.lk.mk(m, es, fs, t, DC.Sk.k(s), c, rep, b, rest)):
+  match m:
+    case None{}:
+      hr
+    case Some{+w}:
+      hm
+
+def lkci_fr(f: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk, +c: Nat, +rep: DC.Rep, +b: DR.Node, +rest: Maybe<&2, DC.Link>, hr: Fr(DC.Sk.ls(s), rest))
+  -> Fr(DC.Sk.ls(s), DC.lk.c.if(f, es, fs, t, s, c, rep, b, rest)):
+  match f:
+    case True{}:
+      hr
+    case False{}:
+      lkm_fr(DC.lk.first(DC.rep.basis(rep, es, fs, t, DR.zdir(es, b)), DC.lstored(DC.Sk.ls(s), c, b)), es, fs, t, s, c, rep, b,
+        lkf_fr(DC.rep.basis(rep, es, fs, t, DR.zdir(es, b)), DC.lstored(DC.Sk.ls(s), c, b)), rest, hr)
+
+def lkc_fr(bs: List<&2, DR.Node>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk, +c: Nat, +rep: DC.Rep) -> Fr(DC.Sk.ls(s), DC.lk.c(bs, es, fs, t, s, c, rep)):
+  match bs:
+    case Nil{}:
+      Unit{}
+    case Con{+b, +tl}:
+      lkci_fr(DC.node_eq(b, DR.NSeg{c}), es, fs, t, s, c, rep, b, DC.lk.c(tl, es, fs, t, s, c, rep), lkc_fr(tl, es, fs, t, s, c, rep))
+
+def lkrm_fr(m: Maybe<&2, DR.Lab>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk, +c: Nat, +r: DR.Node, hm: FrC(DC.lstored(DC.Sk.ls(s), c, r), m),
+  +rest: Maybe<&2, DC.Link>, hr: Fr(DC.Sk.ls(s), rest)) -> Fr(DC.Sk.ls(s), DC.lk.r.mk(m, es, fs, t, s, c, r, rest)):
+  match m:
+    case None{}:
+      hr
+    case Some{+w}:
+      hm
+
+def lkr_fr(rs: List<&2, DR.Node>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk, +c: Nat) -> Fr(DC.Sk.ls(s), DC.lk.r(rs, es, fs, t, s, c)):
+  match rs:
+    case Nil{}:
+      Unit{}
+    case Con{+r, +tl}:
+      lkrm_fr(DC.lk.r.first(DC.lk.r.basis(DC.node_eq(r, DR.NFrame{}), es, fs, t, s, r, DR.zseg(es, c)), DC.lstored(DC.Sk.ls(s), c, r)), es, fs, t, s, c, r,
+        lkrf_fr(DC.lk.r.basis(DC.node_eq(r, DR.NFrame{}), es, fs, t, s, r, DR.zseg(es, c)), DC.lstored(DC.Sk.ls(s), c, r)), DC.lk.r(tl, es, fs, t, s, c), lkr_fr(tl, es, fs, t, s, c))
+
+def lfirst_fr(m: Maybe<&2, DC.Link>, +ls: List<&2, DC.Link>, hm: Fr(ls, m), +rest: Maybe<&2, DC.Link>, hr: Fr(ls, rest)) -> Fr(ls, DC.lfirst(m, rest)):
+  match m:
+    case None{}:
+      hr
+    case Some{+x}:
+      hm
+
+def lksg_fr(f: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk, +c: Nat, +rep: DC.Rep, +bs: List<&2, DR.Node>, +rs: List<&2, DR.Node>,
+  +rest: Maybe<&2, DC.Link>, hr: Fr(DC.Sk.ls(s), rest)) -> Fr(DC.Sk.ls(s), DC.lks.go(f, es, fs, t, s, c, rep, bs, rs, rest)):
+  match f:
+    case True{}:
+      hr
+    case False{}:
+      lfirst_fr(DC.lk.c(bs, es, fs, t, s, c, rep), DC.Sk.ls(s), lkc_fr(bs, es, fs, t, s, c, rep), DC.lfirst(DC.lk.r(rs, es, fs, t, s, c), rest),
+        lfirst_fr(DC.lk.r(rs, es, fs, t, s, c), DC.Sk.ls(s), lkr_fr(rs, es, fs, t, s, c), rest, hr))
+
+# the link the search finds is fresh for its pair
+def lks_fr(cids: List<&2, Nat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk, +bs: List<&2, DR.Node>, +rs: List<&2, DR.Node>)
+  -> Fr(DC.Sk.ls(s), DC.lks(cids, es, fs, t, s, bs, rs)):
+  match cids:
+    case Nil{}:
+      Unit{}
+    case Con{+c, +tl}:
+      lksg_fr(DC.fullc(es, DC.Sk.k(s), c), es, fs, t, s, c, DC.crep(es, fs, t, s, c), bs, rs, DC.lks(tl, es, fs, t, s, bs, rs), lks_fr(tl, es, fs, t, s, bs, rs))
