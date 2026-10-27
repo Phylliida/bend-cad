@@ -14,6 +14,8 @@
 #   (HP.hs_der_ok, HP.hs_out), its invariant kept (HP.hs_add_inv).
 # - lib/spanpf.bend (B3): spans, decided exactly both ways (SN.in_of_zero,
 #   SN.zero_of_in), grown by appending, closed under combination.
+# - lib/pairpf.bend (B3): the pair test, sound (PP.ptest_ok) and complete
+#   (PP.ptest_some_b, PP.ptest_some_a): the label and frame tests' core.
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -35,6 +37,8 @@ import ../lib/seppf.bend as SP
 import ../lib/hspace.bend as HS
 import ../lib/hspacepf.bend as HP
 import ../lib/spanpf.bend as SN
+import ../lib/pair.bend as PT
+import ../lib/pairpf.bend as PP
 import ../lib/elim.bend as EL
 import ../lib/elimpf.bend as EP
 import ../spec/solve.bend as SS
@@ -181,3 +185,12 @@ def b3_hull(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExp
 # B3's spans, as their types
 def b3_span(+B: List<&2, E.QExpr>, +rows: List<&2, EL.Row>, +e: E.QExpr, +h: {EP.rinv(B, rows, 0n) == True{} : Bool}, +hl: {EL.rlen(rows) == SS.neqs(B) : Nat}, +hi: SN.InSpan(e, B)) -> {EP.isnil(EP.resp(EL.resid(rows, e))) == True{} : Bool}:
   SN.zero_of_in(B, rows, e, h, hl, hi)
+
+# B3's pair test, as its types
+def b3_pair_ok(+rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +u: E.QExpr, +v: E.QExpr, +hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, +hl: {EL.rlen(rows) == SS.neqs(B) : Nat}, +p0: PT.Pr,
+  hp: {PT.ptest(rows, B, u, v) == Some{p0} : Maybe<&2, PT.Pr>}) -> SN.InSpan(PT.pcomb(p0, u, v), B):
+  PP.ptest_ok(rows, B, u, v, hr, hl, p0, hp)
+
+def b3_pair_some(+rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +u: E.QExpr, +v: E.QExpr, +a: S.Q, +bb: S.Q, +hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, +hl: {EL.rlen(rows) == SS.neqs(B) : Nat},
+  hb: S.Q.eq(bb, S.Q{S.Z0{}, S.XH{}}) -> Empty, +hi: SN.InSpan(PT.pcomb(PT.Pr{a, bb}, u, v), B)) -> {PP.is_some(PT.ptest(rows, B, u, v)) == True{} : Bool}:
+  PP.ptest_some_b(rows, B, u, v, a, bb, hr, hl, hb, hi)
