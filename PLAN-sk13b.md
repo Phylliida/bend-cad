@@ -562,27 +562,67 @@ give both component identities that Valid's SameV asks for.
 - *Speed:* rational identities are chains of lib/qalg.bend's small lemmas.
   A six-atom normalizer call cost about 130 s; the gate is back to about
   a minute.
-- **Closure, refined** (four node kinds, not three): *frame-tied*,
-  *free*, *void* (both direction parts in K: parallel to everything, by
-  ∥-void), and *collapsed in the context* (free or void, never passed
-  through). The closure properties the fixpoint must reach, each a
-  finite test:
-  - every node whose direction is in K² is void;
-  - every free node fails the frame test;
-  - no free hull contains a rotated frame-tied direction;
-  - every frame-tied node's statements have their frame-back facts in
-    K;
-  - no free open hull has a complex line outside K². The test inserts
-    i·h_j for the hull's own generators: all residuals nonzero means
-    none. This needs independence of a set of rows, sk-13a's indep by
-    induction;
-  - for free a and b, a found label g_ab gives conj(g_ab)·H_b ⊆ H_a and
-    g_ab·z_a ∈ H_b.
-  Turn and through are then a case analysis over the two nodes' kinds.
+- **Closure, as designed 2026-10-27 (supersedes the node kinds above).**
+  The four-kinds note had two gaps. A collapsed node tied to a constant u
+  can hold more than {y : cross(u, y) ∈ K}: nothing passes through it, so
+  its extra facts never reach K. And two independent ties make a node
+  hold every form without being void. The design:
+  - *Explosion.* If 1 ∈ K, or an open node's direction is in K², every
+    judgment is derivable: ∥(F, (0, e)) by ∥-void or ∥-through, then
+    K(e) by frame-back. The closure stops there, with that witness. The
+    refutations that do not explode (Motzkin with sides, an Angle on a
+    K-collapsed segment) do not change derivability, and are detected on
+    the fixpoint.
+  - *Open nodes* (F and the segments not collapsed in the context) form
+    a union–find forest with F always a root. Each open a has a root r
+    and a label ℓ_a ≠ 0, with a derivation of ∥(r, ℓ_a z_a). Its set is
+    P_a = {y : ℓ_a y ∈ P_r}: F's is implicit, {y : Im y ∈ K}, and any
+    other root's is the span of its generators. Two open nodes with a
+    link are rotations of each other (w P_b ⊆ P_a and conj(w) P_a ⊆
+    P_b), which is why components suffice.
+  - *Collapsed nodes* c have three kinds: *Free* (span of generators),
+    *Tied* to u (span plus u·Q[x], so membership is cross(u, y) ∈
+    span(cross(u, g_j))), and *Full* (z_c ∈ K², or two independent
+    ties). They are linked to other nodes by stored derivations of
+    ∥(c, w z_b), at most two independent w per pair.
+  - *The skeleton:* K's generators, the forest, the links, the ties and
+    the Full flags. Every round rebuilds the hulls from the skeleton (the
+    stored derivations stay valid), runs the checks below, and adds one
+    skeleton item for the first failure. Its measure (K's rows, merges,
+    links, ties, Full flags) is bounded: K's rows by pivots in the
+    monomials of the facts and the sketch's base forms (lib/coefpf.bend's
+    coefficients are linear, and lib/elim's rows have distinct pivots),
+    the rest by the number of nodes. So the hull dimensions never need
+    counting.
+  - *Generators,* with derivations:
+    - an open root r: ℓ_a z_a, ℓ_a x for each statement ∥(a, x), and
+      ℓ_a conj(w) z_c for each link ∥(c, w z_a), over r's members a
+      (through at a), plus K²;
+    - a collapsed c: z_c, its statements, w·g for each link ∥(c, w z_r)
+      to an open root (through at r; a link to F's component is a tie
+      instead), and conj(w) z_c' for each link ∥(c', w z_c), plus K².
+  - *Checks* (all passing means closed):
+    - no open root's set holds a nonzero rotation of an open node
+      outside its component (the pair test; a failure merges);
+    - F's generators have their imaginary parts in K (frame-back);
+    - no Free open root has a complex line outside K² (inserting i·g_j
+      for its non-K generators leaves every residual nonzero; failure:
+      complex line);
+    - every node with z ∈ K² is Full (open means explosion);
+    - for collapsed c and every node b, the links span G_cb = {w : w z_b
+      ∈ P_c} (the pair test, then one membership for i·w₁);
+    - for an open root r and collapsed c, conj(G_rc) is in G_cr (turn
+      from r).
+  - *Closure,* rule by rule over the represented sets. Inside a
+    component, a second label for b would give P_r a complex line through
+    z_b, hence z_b ∈ K² (explosion), so labels are unique up to Q.
+- *Labels done 2026-10-27* (lib/lab.bend, lib/labpf.bend): products of
+  labels, the rotation-composition identity g(h x) = (g h) x, and the
+  hull label test, proven sound (a found w has w z in the hull) and
+  complete (if some nonzero w does, it finds one).
+- Next: the frame test, independence of a set, then the skeleton.
 - Scope, honestly: this is the largest proof of sk-13b, several more
   sessions.
-- Next: the label and frame tests, independence of a set, the node kinds
-  and a round, then the loops, then closure.
 - The plan as written:
 - Union–find over segments and F, with labels. Each component keeps its
   *hull*: the real span of the vectors known parallel to its root,

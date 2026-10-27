@@ -16,6 +16,9 @@
 #   SN.zero_of_in), grown by appending, closed under combination.
 # - lib/pairpf.bend (B3): the pair test, sound (PP.ptest_ok) and complete
 #   (PP.ptest_some_b, PP.ptest_some_a): the label and frame tests' core.
+# - lib/labpf.bend (B3): a product of rotations is the rotation by the
+#   product (LP.gmul_comp), and the hull label test is sound (LP.hs_lab_ok)
+#   and complete (LP.hs_lab_some).
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -39,6 +42,8 @@ import ../lib/hspacepf.bend as HP
 import ../lib/spanpf.bend as SN
 import ../lib/pair.bend as PT
 import ../lib/pairpf.bend as PP
+import ../lib/lab.bend as LB
+import ../lib/labpf.bend as LP
 import ../lib/elim.bend as EL
 import ../lib/elimpf.bend as EP
 import ../spec/solve.bend as SS
@@ -194,3 +199,15 @@ def b3_pair_ok(+rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +u: E.QExpr, +v: 
 def b3_pair_some(+rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +u: E.QExpr, +v: E.QExpr, +a: S.Q, +bb: S.Q, +hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, +hl: {EL.rlen(rows) == SS.neqs(B) : Nat},
   hb: S.Q.eq(bb, S.Q{S.Z0{}, S.XH{}}) -> Empty, +hi: SN.InSpan(PT.pcomb(PT.Pr{a, bb}, u, v), B)) -> {PP.is_some(PT.ptest(rows, B, u, v)) == True{} : Bool}:
   PP.ptest_some_b(rows, B, u, v, a, bb, hr, hl, hb, hi)
+
+def b3_comp(g: DR.Lab, h: DR.Lab, +x: SK.VE) -> DR.SameV(DR.gmul(g, DR.gmul(h, x)), DR.gmul(LB.lmul(g, h), x)):
+  LP.gmul_comp(g, h, x)
+
+def b3_lab_ok(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +r: DR.Node, +t: Nat, h: HS.HS, +z: SK.VE, +w: DR.Lab,
+  hi: HP.HInv(es, fs, ctx, r, t, h), hw: {LB.hs.lab(es, fs, t, h, z) == Some{w} : Maybe<&2, DR.Lab>}) -> {HS.hs.inb(h, DR.gmul(w, z), t) == True{} : Bool}:
+  LP.hs_lab_ok(es, fs, ctx, r, t, h, z, w, hi, hw)
+
+def b3_lab_some(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +r: DR.Node, +t: Nat, h: HS.HS, +z: SK.VE, hi: HP.HInv(es, fs, ctx, r, t, h),
+  +a: S.Q, +bb: S.Q, hab: S.Q.eq(a, S.Q{S.Z0{}, S.XH{}}) -> S.Q.eq(bb, S.Q{S.Z0{}, S.XH{}}) -> Empty,
+  +hin: SN.InSpan(HS.enc(DR.gmul(DR.Lab{a, bb}, z), t), HS.encs(HS.hxs(es, fs, HS.hs.ds(h)), t))) -> {LP.lis_some(LB.hs.lab(es, fs, t, h, z)) == True{} : Bool}:
+  LP.hs_lab_some(es, fs, ctx, r, t, h, z, hi, a, bb, hab, hin)
