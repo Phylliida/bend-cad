@@ -18,6 +18,7 @@ import ./qnorm.bend as QN
 import ./identpf.bend as ID
 import ./q.bend as LQ
 import ./qring.bend as QR
+import ./qalg.bend as QA
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -171,6 +172,22 @@ def lc(B: List<&2, E.QExpr>, +l: S.Q, +ls1: List<&2, S.Q>, +ls2: List<&2, S.Q>) 
     case Con{b, bt}:
       Con{S.Q.add(S.Q.mul(l, qhd(ls1)), qhd(ls2)), lc(bt, l, qtl(ls1), qtl(ls2))}
 
+# (l h1 + h2) b + (l r1 + r2) = l (h1 b + r1) + (h2 b + r2), as a chain
+def lc_step(+l: S.Q, +h1: S.Q, +h2: S.Q, +b: S.Q, +r1: S.Q, +r2: S.Q)
+  -> S.Q.eq(S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(l, h1), h2), b), S.Q.add(S.Q.mul(l, r1), r2)), S.Q.add(S.Q.mul(l, S.Q.add(S.Q.mul(h1, b), r1)), S.Q.add(S.Q.mul(h2, b), r2))):
+  LQ.q_trans(S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(l, h1), h2), b), S.Q.add(S.Q.mul(l, r1), r2)),
+    S.Q.add(S.Q.add(S.Q.mul(l, S.Q.mul(h1, b)), S.Q.mul(h2, b)), S.Q.add(S.Q.mul(l, r1), r2)),
+    S.Q.add(S.Q.mul(l, S.Q.add(S.Q.mul(h1, b), r1)), S.Q.add(S.Q.mul(h2, b), r2)),
+    LQ.q_add_cong_l(S.Q.mul(S.Q.add(S.Q.mul(l, h1), h2), b), S.Q.add(S.Q.mul(l, S.Q.mul(h1, b)), S.Q.mul(h2, b)), S.Q.add(S.Q.mul(l, r1), r2),
+      LQ.q_trans(S.Q.mul(S.Q.add(S.Q.mul(l, h1), h2), b), S.Q.add(S.Q.mul(S.Q.mul(l, h1), b), S.Q.mul(h2, b)), S.Q.add(S.Q.mul(l, S.Q.mul(h1, b)), S.Q.mul(h2, b)),
+        QA.rdist(S.Q.mul(l, h1), h2, b), LQ.q_add_cong_l(S.Q.mul(S.Q.mul(l, h1), b), S.Q.mul(l, S.Q.mul(h1, b)), S.Q.mul(h2, b), QA.massoc(l, h1, b)))),
+    LQ.q_trans(S.Q.add(S.Q.add(S.Q.mul(l, S.Q.mul(h1, b)), S.Q.mul(h2, b)), S.Q.add(S.Q.mul(l, r1), r2)),
+      S.Q.add(S.Q.add(S.Q.mul(l, S.Q.mul(h1, b)), S.Q.mul(l, r1)), S.Q.add(S.Q.mul(h2, b), r2)),
+      S.Q.add(S.Q.mul(l, S.Q.add(S.Q.mul(h1, b), r1)), S.Q.add(S.Q.mul(h2, b), r2)),
+      QA.m4(S.Q.mul(l, S.Q.mul(h1, b)), S.Q.mul(h2, b), S.Q.mul(l, r1), r2),
+      LQ.q_add_cong_l(S.Q.add(S.Q.mul(l, S.Q.mul(h1, b)), S.Q.mul(l, r1)), S.Q.mul(l, S.Q.add(S.Q.mul(h1, b), r1)), S.Q.add(S.Q.mul(h2, b), r2),
+        LQ.q_sym(S.Q.mul(l, S.Q.add(S.Q.mul(h1, b), r1)), S.Q.add(S.Q.mul(l, S.Q.mul(h1, b)), S.Q.mul(l, r1)), QA.ldist(l, S.Q.mul(h1, b), r1)))))
+
 def lin_lc.go(+p: List<&2, S.Q>, +l: S.Q, +ls1: List<&2, S.Q>, +ls2: List<&2, S.Q>, +b: E.QExpr, +bt: List<&2, E.QExpr>,
   ih: S.Q.eq(E.qeval(p, SV.lin(lc(bt, l, qtl(ls1), qtl(ls2)), bt)), S.Q.add(S.Q.mul(l, E.qeval(p, SV.lin(qtl(ls1), bt))), E.qeval(p, SV.lin(qtl(ls2), bt)))),
   h1: S.Q.eq(E.qeval(p, SV.lin(ls1, Con{b, bt})), S.Q.add(S.Q.mul(qhd(ls1), E.qeval(p, b)), E.qeval(p, SV.lin(qtl(ls1), bt)))),
@@ -183,9 +200,7 @@ def lin_lc.go(+p: List<&2, S.Q>, +l: S.Q, +ls1: List<&2, S.Q>, +ls2: List<&2, S.
     LQ.q_trans(S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(l, qhd(ls1)), qhd(ls2)), E.qeval(p, b)), S.Q.add(S.Q.mul(l, E.qeval(p, SV.lin(qtl(ls1), bt))), E.qeval(p, SV.lin(qtl(ls2), bt)))),
       S.Q.add(S.Q.mul(l, S.Q.add(S.Q.mul(qhd(ls1), E.qeval(p, b)), E.qeval(p, SV.lin(qtl(ls1), bt)))), S.Q.add(S.Q.mul(qhd(ls2), E.qeval(p, b)), E.qeval(p, SV.lin(qtl(ls2), bt)))),
       S.Q.add(S.Q.mul(l, E.qeval(p, SV.lin(ls1, Con{b, bt}))), E.qeval(p, SV.lin(ls2, Con{b, bt}))),
-      QR.qring_eq([l, qhd(ls1), qhd(ls2), E.qeval(p, b), E.qeval(p, SV.lin(qtl(ls1), bt)), E.qeval(p, SV.lin(qtl(ls2), bt))],
-        E.QAdd{E.QMul{E.QAdd{E.QMul{E.QVar{0n}, E.QVar{1n}}, E.QVar{2n}}, E.QVar{3n}}, E.QAdd{E.QMul{E.QVar{0n}, E.QVar{4n}}, E.QVar{5n}}},
-        E.QAdd{E.QMul{E.QVar{0n}, E.QAdd{E.QMul{E.QVar{1n}, E.QVar{3n}}, E.QVar{4n}}}, E.QAdd{E.QMul{E.QVar{2n}, E.QVar{3n}}, E.QVar{5n}}}, {==}),
+      lc_step(l, qhd(ls1), qhd(ls2), E.qeval(p, b), E.qeval(p, SV.lin(qtl(ls1), bt)), E.qeval(p, SV.lin(qtl(ls2), bt))),
       LQ.q_trans(S.Q.add(S.Q.mul(l, S.Q.add(S.Q.mul(qhd(ls1), E.qeval(p, b)), E.qeval(p, SV.lin(qtl(ls1), bt)))), S.Q.add(S.Q.mul(qhd(ls2), E.qeval(p, b)), E.qeval(p, SV.lin(qtl(ls2), bt)))),
         S.Q.add(S.Q.mul(l, E.qeval(p, SV.lin(ls1, Con{b, bt}))), S.Q.add(S.Q.mul(qhd(ls2), E.qeval(p, b)), E.qeval(p, SV.lin(qtl(ls2), bt)))),
         S.Q.add(S.Q.mul(l, E.qeval(p, SV.lin(ls1, Con{b, bt}))), E.qeval(p, SV.lin(ls2, Con{b, bt}))),

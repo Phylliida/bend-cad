@@ -20,6 +20,7 @@ import ./indpf.bend as IN
 import ./cwpf.bend as CW
 import ./q.bend as LQ
 import ./qring.bend as QR
+import ./qalg.bend as QA
 import ./seppf.bend as SP
 import ./kspace.bend as KS
 import ./kspacepf.bend as KP
@@ -174,6 +175,25 @@ def pchain_ok(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QE
 # lin over the encoded forms is the encoding of clin
 # --------------------------------------------------
 
+# l (x1 + t x2) + (r1 + t r2) = (l x1 + 1 r1) + t (l x2 + 1 r2), as a chain
+def enc_step(+l: S.Q, +x1: S.Q, +x2: S.Q, +t: S.Q, +r1: S.Q, +r2: S.Q)
+  -> S.Q.eq(S.Q.add(S.Q.mul(l, S.Q.add(x1, S.Q.mul(t, x2))), S.Q.add(r1, S.Q.mul(t, r2))), S.Q.add(S.Q.add(S.Q.mul(l, x1), S.Q.mul(DR.qo(), r1)), S.Q.mul(t, S.Q.add(S.Q.mul(l, x2), S.Q.mul(DR.qo(), r2))))):
+  LQ.q_trans(S.Q.add(S.Q.mul(l, S.Q.add(x1, S.Q.mul(t, x2))), S.Q.add(r1, S.Q.mul(t, r2))),
+    S.Q.add(S.Q.add(S.Q.mul(l, x1), S.Q.mul(t, S.Q.mul(l, x2))), S.Q.add(r1, S.Q.mul(t, r2))),
+    S.Q.add(S.Q.add(S.Q.mul(l, x1), S.Q.mul(DR.qo(), r1)), S.Q.mul(t, S.Q.add(S.Q.mul(l, x2), S.Q.mul(DR.qo(), r2)))),
+    LQ.q_add_cong_l(S.Q.mul(l, S.Q.add(x1, S.Q.mul(t, x2))), S.Q.add(S.Q.mul(l, x1), S.Q.mul(t, S.Q.mul(l, x2))), S.Q.add(r1, S.Q.mul(t, r2)),
+      LQ.q_trans(S.Q.mul(l, S.Q.add(x1, S.Q.mul(t, x2))), S.Q.add(S.Q.mul(l, x1), S.Q.mul(l, S.Q.mul(t, x2))), S.Q.add(S.Q.mul(l, x1), S.Q.mul(t, S.Q.mul(l, x2))),
+        QA.ldist(l, x1, S.Q.mul(t, x2)), LQ.q_add_cong_r(S.Q.mul(l, x1), S.Q.mul(l, S.Q.mul(t, x2)), S.Q.mul(t, S.Q.mul(l, x2)), QA.mswap(l, t, x2)))),
+    LQ.q_trans(S.Q.add(S.Q.add(S.Q.mul(l, x1), S.Q.mul(t, S.Q.mul(l, x2))), S.Q.add(r1, S.Q.mul(t, r2))),
+      S.Q.add(S.Q.add(S.Q.mul(l, x1), r1), S.Q.add(S.Q.mul(t, S.Q.mul(l, x2)), S.Q.mul(t, r2))),
+      S.Q.add(S.Q.add(S.Q.mul(l, x1), S.Q.mul(DR.qo(), r1)), S.Q.mul(t, S.Q.add(S.Q.mul(l, x2), S.Q.mul(DR.qo(), r2)))),
+      QA.m4(S.Q.mul(l, x1), S.Q.mul(t, S.Q.mul(l, x2)), r1, S.Q.mul(t, r2)),
+      QA.add_cong(S.Q.add(S.Q.mul(l, x1), r1), S.Q.add(S.Q.mul(l, x1), S.Q.mul(DR.qo(), r1)), S.Q.add(S.Q.mul(t, S.Q.mul(l, x2)), S.Q.mul(t, r2)), S.Q.mul(t, S.Q.add(S.Q.mul(l, x2), S.Q.mul(DR.qo(), r2))),
+        LQ.q_add_cong_r(S.Q.mul(l, x1), r1, S.Q.mul(DR.qo(), r1), LQ.q_sym(S.Q.mul(DR.qo(), r1), r1, QA.one_mul(r1))),
+        LQ.q_trans(S.Q.add(S.Q.mul(t, S.Q.mul(l, x2)), S.Q.mul(t, r2)), S.Q.mul(t, S.Q.add(S.Q.mul(l, x2), r2)), S.Q.mul(t, S.Q.add(S.Q.mul(l, x2), S.Q.mul(DR.qo(), r2))),
+          LQ.q_sym(S.Q.mul(t, S.Q.add(S.Q.mul(l, x2), r2)), S.Q.add(S.Q.mul(t, S.Q.mul(l, x2)), S.Q.mul(t, r2)), QA.ldist(t, S.Q.mul(l, x2), r2)),
+          LQ.q_mul_cong_r(t, S.Q.add(S.Q.mul(l, x2), r2), S.Q.add(S.Q.mul(l, x2), S.Q.mul(DR.qo(), r2)), LQ.q_add_cong_r(S.Q.mul(l, x2), r2, S.Q.mul(DR.qo(), r2), LQ.q_sym(S.Q.mul(DR.qo(), r2), r2, QA.one_mul(r2))))))))
+
 def enc_lin.step(+p: List<&2, S.Q>, +es: List<&2, SK.Ent>, +r: DR.Node, +t: Nat, +l: S.Q, +x: SK.VE, +lt: List<&2, S.Q>, +xt: List<&2, SK.VE>,
   ih: SV.Ident(SV.lin(lt, HS.encs(xt, t)), HS.enc(HS.clin(es, r, lt, xt), t)))
   -> S.Q.eq(E.qeval(p, SV.lin(Con{l, lt}, HS.encs(Con{x, xt}, t))), E.qeval(p, HS.enc(HS.clin(es, r, Con{l, lt}, Con{x, xt}), t))):
@@ -181,10 +201,7 @@ def enc_lin.step(+p: List<&2, S.Q>, +es: List<&2, SK.Ent>, +r: DR.Node, +t: Nat,
     S.Q.add(S.Q.mul(l, E.qeval(p, HS.enc(x, t))), E.qeval(p, HS.enc(HS.clin(es, r, lt, xt), t))),
     E.qeval(p, HS.enc(HS.clin(es, r, Con{l, lt}, Con{x, xt}), t)),
     LQ.q_add_cong_r(S.Q.mul(l, E.qeval(p, HS.enc(x, t))), E.qeval(p, SV.lin(lt, HS.encs(xt, t))), E.qeval(p, HS.enc(HS.clin(es, r, lt, xt), t)), ih(p)),
-    QR.qring_eq([l, E.qeval(p, SK.VE.x(x)), E.qeval(p, SK.VE.y(x)), E.qlookup(p, t), E.qeval(p, SK.VE.x(HS.clin(es, r, lt, xt))), E.qeval(p, SK.VE.y(HS.clin(es, r, lt, xt)))],
-      E.QAdd{E.QMul{E.QVar{0n}, E.QAdd{E.QVar{1n}, E.QMul{E.QVar{3n}, E.QVar{2n}}}}, E.QAdd{E.QVar{4n}, E.QMul{E.QVar{3n}, E.QVar{5n}}}},
-      E.QAdd{E.QAdd{E.QMul{E.QVar{0n}, E.QVar{1n}}, E.QMul{E.QCst{DR.qo()}, E.QVar{4n}}}, E.QMul{E.QVar{3n}, E.QAdd{E.QMul{E.QVar{0n}, E.QVar{2n}}, E.QMul{E.QCst{DR.qo()}, E.QVar{5n}}}}},
-      {==}))
+    enc_step(l, E.qeval(p, SK.VE.x(x)), E.qeval(p, SK.VE.y(x)), E.qlookup(p, t), E.qeval(p, SK.VE.x(HS.clin(es, r, lt, xt))), E.qeval(p, SK.VE.y(HS.clin(es, r, lt, xt)))))
 
 def enc_lin.base(+p: List<&2, S.Q>, +es: List<&2, SK.Ent>, +r: DR.Node, +t: Nat)
   -> S.Q.eq(SP.q0(), E.qeval(p, HS.enc(DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r)), t))):
