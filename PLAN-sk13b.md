@@ -652,6 +652,26 @@ give both component identities that Valid's SameV asks for.
   parallel chains merge, horizontal segments join F, and segments
   collapsed in the context are linked and tied as designed. All eleven
   take 74 ms.
+- *Soundness proofs in progress 2026-10-27:*
+  - lib/dcopenpf.bend: isopen true gives Open.
+  - lib/dcvd.bend: VD, a Data mirror of Valid (identities in the
+    normalizer's form, Open as the closure's test), giving Valid. It is
+    needed because Bend uses a Type-valued proof once, and the closure
+    shares one derivation among many generators.
+  - lib/dcinvpf.bend: KInvD and HInvD (VD and below t per generator),
+    kept by adding and folding, giving KInv and HInv.
+  - lib/dcbelowpf.bend: forms below t (directions under DC.zb,
+    rotations, i, K squared).
+  - lib/dcgenpf.bend: the member and link invariants (MOkD, LOkD), the
+    label identities as Data, and every root generator valid at its
+    root, so rebuilt root hulls keep HInvD.
+  - lib/dcderpf.bend: ks.der and hs.der in VD form, with conclusions the
+    same as asked.
+  - Remaining: merges keep MOkD; new links keep LOkD (from the
+    collapsed sets: Free, Full, and Tied with its decomposition
+    identity); new K facts are KGens (frame-back, and complex line with
+    its relation); explosion witnesses; and the round keeps the
+    skeleton's invariant.
 - Next, the proofs, in order:
   - every derivation built is valid with its stated form (the members',
     links', generators', the new K facts', and the explosion witnesses);
