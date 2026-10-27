@@ -692,10 +692,50 @@ give both component identities that Valid's SameV asks for.
     valid, labels nonzero), or an explosion with its witnesses (a K
     derivation of 1, or an open segment with both parts of its direction
     derived in K). Soundness of the closure is done.
-- Next: the fuel suffices (the measure: K's rank by pivots, merges,
-  links ≤ 2 per pair); then closure of a fixpoint, rule by rule; then the
-  decision interface (a judgment is derivable iff represented, and
-  explosions derive everything).
+- **Closure of a fixpoint, the plan (next, before termination).** If
+  the closure misses a case, the exec code changes, and that would
+  invalidate termination work.
+  - *Represented sets* (Bool, from the state):
+    - K: `ks.inb`.
+    - An open a with member (r, w): r = F gives `Im(w y) ∈ K`; another
+      root gives `w y` in r's rebuilt hull.
+    - A collapsed sketch segment: `rep.inb` of its set.
+    - Any other node: its direction is 0, so every form (z ∈ K²
+      trivially).
+  - *Fixpoint facts* (each check passed):
+    - no explosion;
+    - F's generators have Im in K;
+    - no complex line at free roots (indset);
+    - no root holds a rotation of an outside open node (label tests
+      None; complete by hs_lab_some / ks_lab_some);
+    - links complete for each collapsed c and node b, and from roots
+      (qspan).
+  - *Theorem:* every valid derivation's conclusion is represented, by
+    induction on Der. Membership is invariant under SameV (residuals
+    read the polynomial: zero_of_in / in_of_zero / in_tr).
+  - *Per rule:*
+    - K rules: spans.
+    - DBack: F's set is {Im ∈ K}.
+    - DLine: F's members automatically; free roots by indset; never at
+      collapsed nodes.
+    - DPPrem / DSelf: generators.
+    - DPLin / DKnown: spans plus K².
+    - DFrame: F.
+    - DVoid: Full, or explosion for open nodes.
+    - DTurn / DThrough by the two nodes' kinds:
+      - same component: labels unique up to Q, else a complex line;
+      - different components: a merge would have been found;
+      - collapsed: links and generators.
+  - Then NotDirDerivable is the contrapositive. An explosion derives
+    everything: ∥(F, (0, e)) by ∥-void at F or ∥-through at the open
+    void segment, then K(e) by frame-back, and ∥(a, x) by ∥-void.
+- Then: the fuel suffices. The measure is K's rank, the merges and the
+  links (≤ 2 per pair). K's rank is bounded by pivots in M =
+  monomials(facts) ∪ {1, x_0..x_{t−1}}, since every K fact the closure
+  adds is affine-linear below t: F's and the free roots' non-K
+  generators are rotations of degree-1 forms (MsAff, an invariant like
+  MsNz).
+- Then the decision interface, and B4.
   - Speed lesson: a four-atom degree-2 normalizer identity with squares
     took over 120 s. One square at a time, plus degree-1
     rearrangements, takes seconds.
