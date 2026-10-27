@@ -501,9 +501,19 @@ give both component identities that Valid's SameV asks for.
 - Bend note: an `Ident` is a function, so it cannot be used twice; its
   reusable form is the normalizer's `{qzero(e1 - e2) == True}`
   (lib/identpf.bend: qzero_ident, ident_ok).
-- Next: the hull spaces (encoded generators with K and t·K in one
-  elimination; membership with its Der witness; non-membership), then
-  components with labels, the fixpoint, and closure.
+- **Hull spaces, as designed:** a hull of root r is a list of derivations
+  of ∥(r, g_j). K's generators enter it as the forms (k, 0) and (0, k),
+  each derived by ∥-known from K(k), so the basis is uniform. One
+  elimination runs over the encoded forms g_j,re + t·g_j,im. A zero
+  residual gives multipliers ls, and the witness is the ∥-lin chain over
+  the generators. Its conclusion is the real combination clin(ls, g), and
+  lin over the encoded generators equals the encoding of clin (one
+  induction, pointwise rational identities). The separation lemma then
+  gives SameV(y, clin) as Valid asks. A nonzero residual means no
+  combination (sk-13a's indep). t is a variable index past every
+  expression's variables (the sketch's coverage, `within`).
+- Next: lib/hspace.bend and its proofs, then components with labels, the
+  fixpoint, and closure.
 - The plan as written:
 - Union–find over segments and F, with labels. Each component keeps its
   *hull*: the real span of the vectors known parallel to its root,
