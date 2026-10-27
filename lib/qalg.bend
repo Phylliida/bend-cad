@@ -72,3 +72,7 @@ def ch3(+a: S.Q, +b: S.Q, +c: S.Q, +d: S.Q, h1: S.Q.eq(a, b), h2: S.Q.eq(b, c), 
 
 def ch4(+a: S.Q, +b: S.Q, +c: S.Q, +d: S.Q, +e: S.Q, h1: S.Q.eq(a, b), h2: S.Q.eq(b, c), h3: S.Q.eq(c, d), h4: S.Q.eq(d, e)) -> S.Q.eq(a, e):
   LQ.q_trans(a, d, e, ch3(a, b, c, d, h1, h2, h3), h4)
+
+# -(a + b) = -a + -b
+def negadd(+a: S.Q, +b: S.Q) -> S.Q.eq(S.Q.neg(S.Q.add(a, b)), S.Q.add(S.Q.neg(a), S.Q.neg(b))):
+  QR.qring_eq([a, b], E.QNeg{E.QAdd{E.QVar{0n}, E.QVar{1n}}}, E.QAdd{E.QNeg{E.QVar{0n}}, E.QNeg{E.QVar{1n}}}, {==})
