@@ -28,8 +28,10 @@
 #   (lib/dcvd.bend), reusable span invariants (lib/dcinvpf.bend), forms
 #   below t (lib/dcbelowpf.bend), root generators and rebuilt hulls
 #   (lib/dcgenpf.bend), member derivations (lib/dcderpf.bend), merges
-#   (lib/dcmergepf.bend), new K facts (lib/dcclxpf.bend), and nonzero
-#   labels (lib/labnzpf.bend).
+#   (lib/dcmergepf.bend), new K facts (lib/dcclxpf.bend), nonzero
+#   labels (lib/labnzpf.bend), collapsed sets (lib/dcreppf.bend,
+#   lib/dctiedpf.bend), new links (lib/dclinkpf.bend), and the whole run
+#   (lib/dcroundpf.bend: DRP.dclose_ok, every result keeps the invariant).
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -65,6 +67,7 @@ import ../lib/dcgenpf.bend as GNF
 import ../lib/dcmergepf.bend as MGF
 import ../lib/dcclxpf.bend as CXF
 import ../lib/labnzpf.bend as NZF
+import ../lib/dcroundpf.bend as DRP
 import ../lib/elim.bend as EL
 import ../lib/elimpf.bend as EP
 import ../spec/solve.bend as SS
@@ -269,3 +272,7 @@ def b3_lines(rs: List<&2, DR.Node>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact
 
 def b3_nz(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +h: HS.HS, +z: SK.VE, +w: DR.Lab, hw: {LB.hs.lab(es, fs, t, h, z) == Some{w} : Maybe<&2, DR.Lab>}) -> NZF.Nz(w):
   NZF.hs_lab_nz(es, fs, t, h, z, w, hw)
+
+def b3_close(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat, +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool})
+  -> DRP.OutInv(es, fs, ctx, t, DC.dclose(es, fs, ctx, t, fuel)):
+  DRP.dclose_ok(es, fs, ctx, t, fuel, hz, hb)

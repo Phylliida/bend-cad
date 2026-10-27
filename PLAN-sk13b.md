@@ -683,18 +683,22 @@ give both component identities that Valid's SameV asks for.
     nonzero; Full).
   - lib/dctiedpf.bend: the tied derivation proves y (y = combination +
     (dot(u, rest)/|u|²) u, from cross(u, rest) = 0).
-  - Remaining: rep.der and the label tests per kind give the new links
-    (LOkD, nonzero); nonzero lists kept by merges; explosion witnesses;
-    the initial state; and the round keeping the skeleton's invariant.
+  - lib/dclinkpf.bend: collapsed sets' derivations per kind, their basis
+    labels (members and nonzero), the tied label test, and both kinds of
+    new link.
+  - lib/dcroundpf.bend: nonzero labels kept by merges, each round
+    stage, the initial state, and the run. **dclose_ok: whatever the
+    closure returns keeps the invariant**: a state (K, members and links
+    valid, labels nonzero), or an explosion with its witnesses (a K
+    derivation of 1, or an open segment with both parts of its direction
+    derived in K). Soundness of the closure is done.
+- Next: the fuel suffices (the measure: K's rank by pivots, merges,
+  links ≤ 2 per pair); then closure of a fixpoint, rule by rule; then the
+  decision interface (a judgment is derivable iff represented, and
+  explosions derive everything).
   - Speed lesson: a four-atom degree-2 normalizer identity with squares
     took over 120 s. One square at a time, plus degree-1
     rearrangements, takes seconds.
-- Next, the proofs, in order:
-  - every derivation built is valid with its stated form (the members',
-    links', generators', the new K facts', and the explosion witnesses);
-  - the fuel suffices (the measure);
-  - a fixpoint is closed, rule by rule;
-  - the decision: a judgment is derivable iff the state represents it.
 - Scope, honestly: this is the largest proof of sk-13b, several more
   sessions.
 - The plan as written:
