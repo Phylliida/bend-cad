@@ -18,7 +18,11 @@
 #   (PP.ptest_some_b, PP.ptest_some_a): the label and frame tests' core.
 # - lib/labpf.bend (B3): a product of rotations is the rotation by the
 #   product (LP.gmul_comp), and the hull label test is sound (LP.hs_lab_ok)
-#   and complete (LP.hs_lab_some).
+#   and complete (LP.hs_lab_some), and so is the frame test against K
+#   (LP.ks_lab_ok, LP.ks_lab_some).
+# - lib/indsetpf.bend (B3): forms inserted in turn, each with a nonzero
+#   residual, combine into the span only with every coefficient 0
+#   (IP.indset_ok): the complex-line check's core.
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -44,6 +48,8 @@ import ../lib/pair.bend as PT
 import ../lib/pairpf.bend as PP
 import ../lib/lab.bend as LB
 import ../lib/labpf.bend as LP
+import ../lib/indset.bend as IS
+import ../lib/indsetpf.bend as IP
 import ../lib/elim.bend as EL
 import ../lib/elimpf.bend as EP
 import ../spec/solve.bend as SS
@@ -211,3 +217,16 @@ def b3_lab_some(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.
   +a: S.Q, +bb: S.Q, hab: S.Q.eq(a, S.Q{S.Z0{}, S.XH{}}) -> S.Q.eq(bb, S.Q{S.Z0{}, S.XH{}}) -> Empty,
   +hin: SN.InSpan(HS.enc(DR.gmul(DR.Lab{a, bb}, z), t), HS.encs(HS.hxs(es, fs, HS.hs.ds(h)), t))) -> {LP.lis_some(LB.hs.lab(es, fs, t, h, z)) == True{} : Bool}:
   LP.hs_lab_some(es, fs, ctx, r, t, h, z, hi, a, bb, hab, hin)
+
+def b3_klab_ok(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, k: KS.KS, +z: SK.VE, +w: DR.Lab,
+  hi: KP.KInv(es, fs, ctx, k), hw: {LB.ks.lab(es, fs, k, z) == Some{w} : Maybe<&2, DR.Lab>}) -> {KS.ks.inb(k, SK.VE.y(DR.gmul(w, z))) == True{} : Bool}:
+  LP.ks_lab_ok(es, fs, ctx, k, z, w, hi, hw)
+
+def b3_klab_some(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, k: KS.KS, +z: SK.VE, hi: KP.KInv(es, fs, ctx, k),
+  +a: S.Q, +bb: S.Q, hab: S.Q.eq(a, S.Q{S.Z0{}, S.XH{}}) -> S.Q.eq(bb, S.Q{S.Z0{}, S.XH{}}) -> Empty,
+  +hin: SN.InSpan(SK.VE.y(DR.gmul(DR.Lab{a, bb}, z)), KS.kexprs(es, fs, KS.ks.ds(k)))) -> {LP.lis_some(LB.ks.lab(es, fs, k, z)) == True{} : Bool}:
+  LP.ks_lab_some(es, fs, ctx, k, z, hi, a, bb, hab, hin)
+
+def b3_indset(vs: List<&2, E.QExpr>, +B: List<&2, E.QExpr>, +rows: List<&2, EL.Row>, +hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, +hl: {EL.rlen(rows) == SS.neqs(B) : Nat},
+  +hi: {IS.indset(vs, rows) == True{} : Bool}, ls: List<&2, S.Q>, +hin: SN.InSpan(SS.lin(ls, vs), B)) -> {IS.allz(ls, vs) == True{} : Bool}:
+  IP.indset_ok(vs, B, rows, hr, hl, hi, ls, hin)

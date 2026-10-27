@@ -4,7 +4,9 @@
 # (gmul_comp), and a rotated form's encoding is the pair test's
 # combination of the encodings of z and i z (enc_gmul). So the label test
 # is sound (hs_lab_ok: a found w has w z in the hull) and complete
-# (hs_lab_some: if some nonzero w has w z in the hull, it finds one).
+# (hs_lab_some: if some nonzero w has w z in the hull, it finds one), and
+# so is the frame test against K (ks_lab_ok, ks_lab_some), whose identity
+# is Im(w z) = a Im z + b Re z.
 # Proofs only.
 
 import Base
@@ -20,6 +22,8 @@ import ./qalg.bend as QA
 import ./spanpf.bend as SN
 import ./pair.bend as PT
 import ./pairpf.bend as PP
+import ./kspace.bend as KS
+import ./kspacepf.bend as KP
 import ./hspace.bend as HS
 import ./hspacepf.bend as HP
 import ./lab.bend as LB
@@ -227,3 +231,66 @@ def hs_lab_some(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.
       lis_map(PT.ptest(rows, HS.encs(HS.hxs(es, fs, ds), t), HS.enc(z, t), HS.enc(DR.imul(z), t)),
         lab_some.pick(DR.qnz(bb), rows, HS.encs(HS.hxs(es, fs, ds), t), HS.enc(z, t), HS.enc(DR.imul(z), t), a, bb, {==}, hrv, hl, hab,
           PP.in_tr(HS.enc(DR.gmul(DR.Lab{a, bb}, z), t), PT.pcomb(PT.Pr{a, bb}, HS.enc(z, t), HS.enc(DR.imul(z), t)), HS.encs(HS.hxs(es, fs, ds), t), hin, enc_gmul_r(a, bb, z, t))))
+
+# The frame test
+# --------------
+
+def im_gmul.at(+p: List<&2, S.Q>, +a: S.Q, +b: S.Q, +z: SK.VE)
+  -> S.Q.eq(E.qeval(p, SK.VE.y(DR.gmul(DR.Lab{a, b}, z))), E.qeval(p, PT.pcomb(PT.Pr{a, b}, SK.VE.y(z), SK.VE.x(z)))):
+  LQ.q_add_comm(S.Q.mul(b, E.qeval(p, SK.VE.x(z))), S.Q.mul(a, E.qeval(p, SK.VE.y(z))))
+
+# Im((a + i b) z) = a Im z + b Re z
+def im_gmul(+a: S.Q, +b: S.Q, +z: SK.VE) -> SV.Ident(SK.VE.y(DR.gmul(DR.Lab{a, b}, z)), PT.pcomb(PT.Pr{a, b}, SK.VE.y(z), SK.VE.x(z))):
+  p => im_gmul.at(p, a, b, z)
+
+def im_gmul_r.at(+p: List<&2, S.Q>, +a: S.Q, +b: S.Q, +z: SK.VE)
+  -> S.Q.eq(E.qeval(p, PT.pcomb(PT.Pr{a, b}, SK.VE.y(z), SK.VE.x(z))), E.qeval(p, SK.VE.y(DR.gmul(DR.Lab{a, b}, z)))):
+  LQ.q_add_comm(S.Q.mul(a, E.qeval(p, SK.VE.y(z))), S.Q.mul(b, E.qeval(p, SK.VE.x(z))))
+
+def im_gmul_r(+a: S.Q, +b: S.Q, +z: SK.VE) -> SV.Ident(PT.pcomb(PT.Pr{a, b}, SK.VE.y(z), SK.VE.x(z)), SK.VE.y(DR.gmul(DR.Lab{a, b}, z))):
+  p => im_gmul_r.at(p, a, b, z)
+
+def klab_ok.some(p: PT.Pr, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +z: SK.VE, +w: DR.Lab,
+  +hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, +hl: {EL.rlen(rows) == SV.neqs(B) : Nat},
+  hm: {PT.ptest(rows, B, SK.VE.y(z), SK.VE.x(z)) == Some{p} : Maybe<&2, PT.Pr>}, hw: {Some{LB.lab_of(p)} == Some{w} : Maybe<&2, DR.Lab>})
+  -> SN.InSpan(SK.VE.y(DR.gmul(w, z)), B):
+  match p:
+    case PT.Pr{+a, +bb}:
+      %lsome_inj(DR.Lab{a, bb}, w, hw) : SN.InSpan(SK.VE.y(DR.gmul(_, z)), B)
+      PP.in_tr(PT.pcomb(PT.Pr{a, bb}, SK.VE.y(z), SK.VE.x(z)), SK.VE.y(DR.gmul(DR.Lab{a, bb}, z)), B,
+        PP.ptest_ok(rows, B, SK.VE.y(z), SK.VE.x(z), hr, hl, PT.Pr{a, bb}, hm), im_gmul(a, bb, z))
+
+def klab_ok.go(m: Maybe<&2, PT.Pr>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +z: SK.VE, +w: DR.Lab,
+  +hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, +hl: {EL.rlen(rows) == SV.neqs(B) : Nat},
+  hm: {PT.ptest(rows, B, SK.VE.y(z), SK.VE.x(z)) == m : Maybe<&2, PT.Pr>}, hw: {LB.lab_map(m) == Some{w} : Maybe<&2, DR.Lab>})
+  -> SN.InSpan(SK.VE.y(DR.gmul(w, z)), B):
+  match m:
+    case Some{p}:
+      klab_ok.some(p, rows, B, z, w, hr, hl, hm, hw)
+    case None{}:
+      absurd(SN.InSpan(SK.VE.y(DR.gmul(w, z)), B), lnone_some(w, hw))
+
+# a label the frame test finds is right: Im(w z) is in K
+def ks_lab_ok(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, k: KS.KS, +z: SK.VE, +w: DR.Lab,
+  hi: KP.KInv(es, fs, ctx, k), hw: {LB.ks.lab(es, fs, k, z) == Some{w} : Maybe<&2, DR.Lab>})
+  -> {KS.ks.inb(k, SK.VE.y(DR.gmul(w, z))) == True{} : Bool}:
+  match k:
+    case KS.KS{+rows, +ds}:
+      (+hrv, rr) = hi
+      (+hl, ha) = rr
+      SN.zero_of_in(KS.kexprs(es, fs, ds), rows, SK.VE.y(DR.gmul(w, z)), hrv, hl,
+        klab_ok.go(PT.ptest(rows, KS.kexprs(es, fs, ds), SK.VE.y(z), SK.VE.x(z)), rows, KS.kexprs(es, fs, ds), z, w, hrv, hl, {==}, hw))
+
+# if some nonzero a + i b has Im((a + i b) z) in K, the frame test finds a
+# label
+def ks_lab_some(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, k: KS.KS, +z: SK.VE, hi: KP.KInv(es, fs, ctx, k),
+  +a: S.Q, +bb: S.Q, hab: S.Q.eq(a, S.Q{S.Z0{}, S.XH{}}) -> S.Q.eq(bb, S.Q{S.Z0{}, S.XH{}}) -> Empty,
+  +hin: SN.InSpan(SK.VE.y(DR.gmul(DR.Lab{a, bb}, z)), KS.kexprs(es, fs, KS.ks.ds(k))))
+  -> {lis_some(LB.ks.lab(es, fs, k, z)) == True{} : Bool}:
+  match k:
+    case KS.KS{+rows, +ds}:
+      (hrv, rr) = hi
+      (hl, ha) = rr
+      lis_map(PT.ptest(rows, KS.kexprs(es, fs, ds), SK.VE.y(z), SK.VE.x(z)),
+        lab_some.pick(DR.qnz(bb), rows, KS.kexprs(es, fs, ds), SK.VE.y(z), SK.VE.x(z), a, bb, {==}, hrv, hl, hab,
+          PP.in_tr(SK.VE.y(DR.gmul(DR.Lab{a, bb}, z)), PT.pcomb(PT.Pr{a, bb}, SK.VE.y(z), SK.VE.x(z)), KS.kexprs(es, fs, ds), hin, im_gmul_r(a, bb, z))))

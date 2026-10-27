@@ -1,8 +1,10 @@
 # bend-cad: labels (PLAN-sk13b B3). A label is a Gaussian rational c + i s
 # (spec/dir.bend's Lab); gmul multiplies a form by it. Here: products of
-# labels, and the label test: a nonzero w with w z in a hull, by the pair
-# test (lib/pair.bend) on the encodings of z and i z, since w z = a z +
-# b (i z) for w = a + i b.
+# labels, and the label tests, by the pair test (lib/pair.bend), since
+# w z = a z + b (i z) for w = a + i b:
+# - a nonzero w with w z in a hull, on the encodings of z and i z;
+# - the frame test: a nonzero w with Im(w z) in K (w z parallel to the
+#   frame), on Im z and Im(i z) = Re z.
 #
 # Untrusted in the sense of the rest of lib/: its properties are proven
 # (lib/labpf.bend), nothing about it is assumed.
@@ -13,6 +15,7 @@ import ../spec/ring.bend as E
 import ../spec/sketch.bend as SK
 import ../spec/dir.bend as DR
 import ./pair.bend as PT
+import ./kspace.bend as KS
 import ./hspace.bend as HS
 
 def lmul.go(+c1: S.Q, +s1: S.Q, h: DR.Lab) -> DR.Lab:
@@ -45,3 +48,11 @@ def hs.ptest(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +h: HS.HS, 
 # a nonzero label w with w z in the hull h, or none
 def hs.lab(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +h: HS.HS, +z: SK.VE) -> Maybe<&2, DR.Lab>:
   lab_map(hs.ptest(es, fs, t, h, z))
+
+# the pair test for Im(w z) in K
+def ks.ptest(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +z: SK.VE) -> Maybe<&2, PT.Pr>:
+  PT.ptest(KS.ks.rows(k), KS.kexprs(es, fs, KS.ks.ds(k)), SK.VE.y(z), SK.VE.x(z))
+
+# a nonzero label w with Im(w z) in K, or none
+def ks.lab(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +z: SK.VE) -> Maybe<&2, DR.Lab>:
+  lab_map(ks.ptest(es, fs, k, z))

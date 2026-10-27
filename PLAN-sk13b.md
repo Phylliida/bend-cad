@@ -582,8 +582,8 @@ give both component identities that Valid's SameV asks for.
     P_b), which is why components suffice.
   - *Collapsed nodes* c have three kinds: *Free* (span of generators),
     *Tied* to u (span plus u·Q[x], so membership is cross(u, y) ∈
-    span(cross(u, g_j))), and *Full* (z_c ∈ K², or two independent
-    ties). They are linked to other nodes by stored derivations of
+    span(cross(u, g_j))), and *Full* (z_c ∈ K²; two independent ties
+    force it). They are linked to other nodes by stored derivations of
     ∥(c, w z_b), at most two independent w per pair.
   - *The skeleton:* K's generators, the forest, the links, the ties and
     the Full flags. Every round rebuilds the hulls from the skeleton (the
@@ -598,9 +598,11 @@ give both component identities that Valid's SameV asks for.
     - an open root r: ℓ_a z_a, ℓ_a x for each statement ∥(a, x), and
       ℓ_a conj(w) z_c for each link ∥(c, w z_a), over r's members a
       (through at a), plus K²;
-    - a collapsed c: z_c, its statements, w·g for each link ∥(c, w z_r)
-      to an open root (through at r; a link to F's component is a tie
-      instead), and conj(w) z_c' for each link ∥(c', w z_c), plus K².
+    - a collapsed c: z_c, its statements, w·conj(ℓ_b)·g for each link
+      ∥(c, w z_b) to an open b with root r and g among r's generators
+      (through at b; a link into F's component is a tie instead, and F
+      gets its turned form), and conj(w) z_c' for each link ∥(c', w z_c),
+      plus K².
   - *Checks* (all passing means closed):
     - no open root's set holds a nonzero rotation of an open node
       outside its component (the pair test; a failure merges);
@@ -616,11 +618,34 @@ give both component identities that Valid's SameV asks for.
   - *Closure,* rule by rule over the represented sets. Inside a
     component, a second label for b would give P_r a complex line through
     z_b, hence z_b ∈ K² (explosion), so labels are unique up to Q.
+  - *Audited 2026-10-27* (AUDIT-sk13b-closure.md): no wrong rule or case
+    pair. Six refinements, adopted:
+    - Full is z_c ∈ K² only. Two ties force it: each tie turns at F, and
+      frame-back puts cross(u, z_c) in K. So ties are links on F's side,
+      and F's generators include their turned forms.
+    - A link ∥(c, w z_b) to an open member b gives c the generators
+      w·conj(ℓ_b)·g over the root's generators g (through at b), so no
+      chain of checks is needed.
+    - Rebuilt sets are not monotone. The link check computes a fresh
+      basis of G_cb (the pair test, then i·w₁) and compares it with the
+      stored span.
+    - The complex-line check inserts i·b_j over the hull's kept non-K
+      rows, with K²'s generators first (lib/indset.bend).
+    - Nodes outside the sketch have direction 0 (collapsed, void). The
+      checks range over F and the sketch's segments, and a lemma covers
+      the rest.
+    - A Tied set's generators include K²'s, so its membership includes
+      K.
 - *Labels done 2026-10-27* (lib/lab.bend, lib/labpf.bend): products of
   labels, the rotation-composition identity g(h x) = (g h) x, and the
   hull label test, proven sound (a found w has w z in the hull) and
   complete (if some nonzero w does, it finds one).
-- Next: the frame test, independence of a set, then the skeleton.
+- *Frame test and independence of a set done 2026-10-27*: ks.lab
+  (Im(w z) ∈ K), sound and complete like the hull's (lib/labpf.bend); and
+  lib/indset.bend, lib/indsetpf.bend: forms inserted in turn, each with a
+  nonzero residual, combine into the span only with every coefficient 0.
+- Next: the skeleton (union–find with labels, links, ties), the
+  generator lists and their derivations, then the checks and a round.
 - Scope, honestly: this is the largest proof of sk-13b, several more
   sessions.
 - The plan as written:
