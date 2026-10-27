@@ -3,6 +3,9 @@
 # the switch (B4), when this file is retired.
 # - Its functions run on sketch 8's shape (seg 10 = P0 -> P1, seg 11 =
 #   P1 -> P2; #0 Parallel, #1 Perpendicular), each checked by {==}.
+# - lib/dirpf.bend (B1), imported so the gate checks it: the calculus is
+#   sound in every ordered field (DP.sound), and direction statements are
+#   right for their kinds (DP.dstat_ok).
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -17,6 +20,7 @@ import ../spec/sketch.bend as SK
 import ../spec/box.bend as BX
 import ../spec/_draft13b.bend as SV
 import ../spec/dir.bend as DR
+import ../lib/dirpf.bend as DP
 
 # The functions on an example
 # ---------------------------
@@ -129,3 +133,11 @@ def stmt_honest_unique(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +c1: List<&2, SV.Cla
 # squared length (a Strict side, as the verdict checks it over the box)
 def stmt_strict_nd(~F: O.OField, +sk: SK.Sketch, +cls: List<&2, SV.Class>, +x: M.Vec(~F), +pins: List<&2, Nat>, hn: SV.Strict(~F, x, DR.ndsides(SV.ents(sk), SV.live_nd(cls)), pins), bot: {False{} == True{} : Bool}) -> Unit:
   Unit{}
+
+# B1's two results, as their types (the gate checks lib/dirpf.bend through
+# this import)
+def b1_sound(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +hf: DP.AllFacts(~F, env, es, fs), d: DR.Der, hv: DR.Valid(es, fs, ctx, d), +hl: DR.Longs(~F, env, es, DR.nd(es, fs, d))) -> DP.Holds(~F, env, es, DR.concl(es, fs, d)):
+  DP.sound(~F, env, es, fs, ctx, hf, d, hv, hl)
+
+def b1_stat(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, SK.Ent>, k: SK.Constraint, h: SK.Zeros(~F, env, SK.Constraint.eqs(es, k))) -> DP.StatHolds(~F, env, es, DR.dstat(es, k)):
+  DP.dstat_ok(~F, env, es, k, h)

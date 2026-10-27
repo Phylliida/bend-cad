@@ -150,8 +150,8 @@ Danielle agreed to all four as recommended (2026-10-26).
   | OnLine{p, a} | p − (a's start) |
 
   An Angle whose c or s mentions a variable is not one.
-- Nondegeneracy: `Long(x, s)`, s's endpoints differ at x (spec/geom.bend's
-  `ne`). nd is a list of segments, and a segment may repeat (the
+- Nondegeneracy: `Long(x, s)`, |z_s|^2 > 0 at x (in an ordered field the
+  same as s's endpoints differing; B1 notes why this form). nd is a list of segments, and a segment may repeat (the
   verdict's h is the product over the list). The semantics read it as a
   set.
 
@@ -374,6 +374,34 @@ not need.
   approach; proving checks the rest.
 
 ### B1. The rules, proven once
+*Done 2026-10-27* (lib/dirpf.bend, from tools/drafts/dirpf.draft; the
+gate checks it through tests/dir_draft.bend). As built:
+- **`sound`**: in every ordered field, wherever a derivation's facts hold
+  (each where its own nd is long) and its nd segments are long, its
+  conclusion holds: K(e) evaluates to 0, par(a, x) makes cross(z_a, x) 0.
+  It is one lemma per rule, each a certificate whose identity the
+  normalizer checks (the path lemma included), with |z|^2 cancelled where
+  a rule names a segment.
+- **`dstat_ok`**: every constraint kind's direction statement is right.
+  Parallel and OnLine are their equations; Perpendicular is dot = cross
+  with i z_b; an Angle with constant rotation, taken forwards or reversed,
+  differs from its statement by its sign and (t + s) dot(a, w) (the sine's
+  conjugate t = -s).
+- **One spec change, forced by Bend and harmless:** `Long` is "|z_s|^2 > 0",
+  not "the endpoints differ". Bend is affine for every type: a hypothesis
+  that is a function (ne is "equal implies Empty") cannot be used twice,
+  and the proof uses nd at several places. In an ordered field the two
+  are the same, and |z_s|^2 > 0 is exactly the side condition the
+  verdict checks over the box. Facts' truth is Data the same way: some nd
+  segment has squared length 0, or the fact holds.
+- **Checks**: planted errors rejected (a sign in the path lemma's
+  certificate; labels swapped in K-lin; the spec's nd for through without
+  the segment passed through; Perpendicular given Parallel's statement; a
+  normalizer identity in a helper, caught through the gate's root).
+- **Moved to B4:** the certificate half (a derivation's polynomial
+  identity over solved equations, for the verdict). The pass builds the
+  certificates there, so their identities are proven with it.
+- The plan as written:
 - Each rule's identity as `Ident`, by the ring normalizer on atoms.
 - A derivation gives a certificate: Π_{nd}|s|²·e ≡ Σ q·g over P's
   equations, by induction on the derivation. Composed with dropped

@@ -1028,7 +1028,7 @@ def ctx(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat) -> List<&2, E.QExpr>:
 def Proves.p(+es: List<&2, SK.Ent>, m: Maybe<&2, DR.DStat>, +a: DR.Node, +x: SK.VE) -> Type:
   match m:
     case Some{DR.DStat{+b, +y, l}}:
-      {DR.Node.eq(a, DR.NSeg{b}) == True{} : Bool} & DR.SameV(x, y)
+      {a == DR.NSeg{b} : DR.Node} & DR.SameV(x, y)
     case None{}:
       Empty
 

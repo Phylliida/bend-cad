@@ -122,17 +122,6 @@ type Node is Data:
   # the segment entity s
   NSeg{s: Nat}
 
-def Node.eq(a: Node, b: Node) -> Bool:
-  match a b:
-    case NFrame{} NFrame{}:
-      True{}
-    case NFrame{} NSeg{t}:
-      False{}
-    case NSeg{s} NFrame{}:
-      False{}
-    case NSeg{s} NSeg{t}:
-      Nat.is_eq(s, t)
-
 # segment s's direction
 def zseg(+es: List<&2, SK.Ent>, s: Nat) -> SK.VE:
   SK.Seg.dir(SK.seg(es, s))
@@ -415,21 +404,21 @@ def Valid(+es: List<&2, SK.Ent>, +fs: List<&2, Fact>, +ctx: List<&2, E.QExpr>, d
     case DKLin{+l1, +d1, +l2, +d2}:
       Valid(es, fs, ctx, d1) & (Valid(es, fs, ctx, d2) & (IsK(concl(es, fs, d1)) & IsK(concl(es, fs, d2))))
     case DBack{+d}:
-      Valid(es, fs, ctx, d) & (IsP(concl(es, fs, d)) & {Node.eq(Jd.a(concl(es, fs, d)), NFrame{}) == True{} : Bool})
+      Valid(es, fs, ctx, d) & (IsP(concl(es, fs, d)) & {Jd.a(concl(es, fs, d)) == NFrame{} : Node})
     case DLine{+d1, +d2, +re}:
-      Valid(es, fs, ctx, d1) & (Valid(es, fs, ctx, d2) & (IsP(concl(es, fs, d1)) & (IsP(concl(es, fs, d2)) & ({Node.eq(Jd.a(concl(es, fs, d1)), Jd.a(concl(es, fs, d2))) == True{} : Bool} & (Open(es, ctx, Jd.a(concl(es, fs, d1))) & SameV(Jd.x(concl(es, fs, d2)), imul(Jd.x(concl(es, fs, d1)))))))))
+      Valid(es, fs, ctx, d1) & (Valid(es, fs, ctx, d2) & (IsP(concl(es, fs, d1)) & (IsP(concl(es, fs, d2)) & ({Jd.a(concl(es, fs, d1)) == Jd.a(concl(es, fs, d2)) : Node} & (Open(es, ctx, Jd.a(concl(es, fs, d1))) & SameV(Jd.x(concl(es, fs, d2)), imul(Jd.x(concl(es, fs, d1)))))))))
     case DPPrem{+i}:
       HasStat(fact_at(fs, i))
     case DSelf{+a}:
       Unit
     case DPLin{+m1, +d1, +m2, +d2}:
-      Valid(es, fs, ctx, d1) & (Valid(es, fs, ctx, d2) & (IsP(concl(es, fs, d1)) & (IsP(concl(es, fs, d2)) & {Node.eq(Jd.a(concl(es, fs, d1)), Jd.a(concl(es, fs, d2))) == True{} : Bool})))
+      Valid(es, fs, ctx, d1) & (Valid(es, fs, ctx, d2) & (IsP(concl(es, fs, d1)) & (IsP(concl(es, fs, d2)) & {Jd.a(concl(es, fs, d1)) == Jd.a(concl(es, fs, d2)) : Node})))
     case DKnown{+d, +dr, +di}:
       Valid(es, fs, ctx, d) & (Valid(es, fs, ctx, dr) & (Valid(es, fs, ctx, di) & (IsP(concl(es, fs, d)) & (IsK(concl(es, fs, dr)) & IsK(concl(es, fs, di))))))
     case DTurn{+d, +g, +b}:
       Valid(es, fs, ctx, d) & (IsP(concl(es, fs, d)) & SameV(Jd.x(concl(es, fs, d)), gmul(Lab.conj(g), zseg(es, b))))
     case DThrough{+d1, +d2, +g, +b}:
-      Valid(es, fs, ctx, d1) & (Valid(es, fs, ctx, d2) & (IsP(concl(es, fs, d1)) & (IsP(concl(es, fs, d2)) & (SameV(Jd.x(concl(es, fs, d1)), gmul(Lab.conj(g), zseg(es, b))) & ({Node.eq(Jd.a(concl(es, fs, d2)), NSeg{b}) == True{} : Bool} & Open(es, ctx, NSeg{b}))))))
+      Valid(es, fs, ctx, d1) & (Valid(es, fs, ctx, d2) & (IsP(concl(es, fs, d1)) & (IsP(concl(es, fs, d2)) & (SameV(Jd.x(concl(es, fs, d1)), gmul(Lab.conj(g), zseg(es, b))) & ({Jd.a(concl(es, fs, d2)) == NSeg{b} : Node} & Open(es, ctx, NSeg{b}))))))
     case DFrame{+d, +x}:
       Valid(es, fs, ctx, d) & (IsK(concl(es, fs, d)) & Same(Jd.e(concl(es, fs, d)), SK.VE.y(x)))
     case DVoid{+dr, +di, +a, +x}:
@@ -516,17 +505,19 @@ def RefAngle(+es: List<&2, SK.Ent>, +fs: List<&2, Fact>, +ctx: List<&2, E.QExpr>
 # Nondegeneracy
 # -------------
 
-# segment s has nonzero length at env: its endpoints differ
-def Long(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, SK.Ent>, +s: Nat) -> Type:
-  G.ne(~F, SK.at(~F, env, SK.Seg.p(SK.seg(es, s))), SK.at(~F, env, SK.Seg.q(SK.seg(es, s))))
+# segment s has nonzero length at env, stated as its squared length being
+# positive (in an ordered field the same as its endpoints differing; it is
+# also exactly the side condition Gt0{|z_s|^2} the verdict checks)
+def Long(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, SK.Ent>, +s: Nat) -> Data:
+  O.lt(F, O.zero(F), O.eval(~F, env, SK.VE.norm2(zseg(es, s))))
 
 # every segment of nd has nonzero length
-def Longs(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, SK.Ent>, nd: List<&2, Nat>) -> Type:
+def Longs(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, SK.Ent>, nd: List<&2, Nat>) -> Data:
   match nd:
     case Nil{}:
       Unit
     case Con{+s, t}:
-      Long(~F, env, es, s) & Longs(~F, env, es, t)
+      SK.Both(Long(~F, env, es, s), Longs(~F, env, es, t))
 
 # |s|^2, the factor of nd's segment s in a certificate
 def norm2(+es: List<&2, SK.Ent>, +s: Nat) -> E.QExpr:
