@@ -29,6 +29,16 @@ import ./dcvd.bend as VD
 import ./kspace.bend as KS
 import ./hspace.bend as HS
 import ./dcsetpf.bend as ST
+import ./elim.bend as EL
+import ./elimpf.bend as EP
+import ./spanpf.bend as SN
+import ./pairpf.bend as PP
+import ./pair.bend as PT
+import ./hspacepf.bend as HP
+import ./dcinvpf.bend as IV
+import ./dcbelowpf.bend as BL
+import ./dcreppf.bend as RP
+import ./dclinkpf.bend as LK
 import ./indsetpf.bend as IP
 import ./dcgenpf.bend as GN
 import ./dcmergepf.bend as MG
@@ -470,3 +480,129 @@ def bcore(flag: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +k
       (DR.Lab{da(v, w), db(v, w)}, ldec(v, w, nz))
     case False{}:
       bcore.f(DR.qnz(db(v, w)), es, fs, t, k, st, z, v, w, {==}, ef, ok, to, hv, hw, nz)
+
+# A test finding nothing
+# ----------------------
+
+def lz.b(qb: Bool, +a: S.Q, +b: S.Q, +ea: {DR.qnz(a) == False{} : Bool}, eb: {qb == DR.qnz(b) : Bool}, +m: Maybe<&2, DR.Lab>, +em: {m == None{} : Maybe<&2, DR.Lab>},
+  cmp: (S.Q.eq(a, DR.qz()) -> S.Q.eq(b, DR.qz()) -> Empty) -> {LP.lis_some(m) == True{} : Bool}) -> LZ(DR.Lab{a, b}):
+  match qb:
+    case False{}:
+      (ea, Equal.sym(Bool, False{}, DR.qnz(b), eb))
+    case True{}:
+      absurd(LZ(DR.Lab{a, b}), LP.tf(Equal.sym(Bool, False{}, True{}, Equal.trans(Bool, False{}, LP.lis_some(m), True{},
+        Equal.cong(Maybe<&2, DR.Lab>, Bool, x => LP.lis_some(x), None{}, m, Equal.sym(Maybe<&2, DR.Lab>, m, None{}, em)),
+        cmp(e1 => e2 => LP.qnz_t(b, Equal.sym(Bool, True{}, DR.qnz(b), eb), e2))))))
+
+# a label test that found nothing: every label with v z in the set is 0
+def lz.go(qa: Bool, +a: S.Q, +b: S.Q, ea: {qa == DR.qnz(a) : Bool}, +m: Maybe<&2, DR.Lab>, +em: {m == None{} : Maybe<&2, DR.Lab>},
+  cmp: (S.Q.eq(a, DR.qz()) -> S.Q.eq(b, DR.qz()) -> Empty) -> {LP.lis_some(m) == True{} : Bool}) -> LZ(DR.Lab{a, b}):
+  match qa:
+    case False{}:
+      lz.b(DR.qnz(b), a, b, Equal.sym(Bool, False{}, DR.qnz(a), ea), {==}, m, em, cmp)
+    case True{}:
+      absurd(LZ(DR.Lab{a, b}), LP.tf(Equal.sym(Bool, False{}, True{}, Equal.trans(Bool, False{}, LP.lis_some(m), True{},
+        Equal.cong(Maybe<&2, DR.Lab>, Bool, x => LP.lis_some(x), None{}, m, Equal.sym(Maybe<&2, DR.Lab>, m, None{}, em)),
+        cmp(e1 => e2 => LP.qnz_t(a, Equal.sym(Bool, True{}, DR.qnz(a), ea), e1))))))
+
+def hin_span.go(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +r: DR.Node, +t: Nat, +h: HS.HS, +y: SK.VE, +ls: List<&2, S.Q>, +sv: VD.SameVD(y, HS.clin(es, r, ls, HS.hxs(es, fs, HS.hs.ds(h)))))
+  -> SN.InSpan(HS.enc(y, t), HS.encs(HS.hxs(es, fs, HS.hs.ds(h)), t)):
+  SN.in_of_ident(HS.enc(y, t), HS.encs(HS.hxs(es, fs, HS.hs.ds(h)), t), ls, HP.ident_trans(HS.enc(y, t), HS.enc(HS.clin(es, r, ls, HS.hxs(es, fs, HS.hs.ds(h))), t), SV.lin(ls, HS.encs(HS.hxs(es, fs, HS.hs.ds(h)), t)),
+    ST.enc_cong(y, HS.clin(es, r, ls, HS.hxs(es, fs, HS.hs.ds(h))), t, sv), p => ST.enc_lin_sym.at(p, es, r, t, ls, HS.hxs(es, fs, HS.hs.ds(h)))))
+
+# a hull set member's encoding is in the span of the kept generators'
+def hin_span(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +r: DR.Node, +t: Nat, +h: HS.HS, +y: SK.VE, hi: ST.HIn(es, fs, r, h, y)) -> SN.InSpan(HS.enc(y, t), HS.encs(HS.hxs(es, fs, HS.hs.ds(h)), t)):
+  (+ls, +sv) = hi
+  hin_span.go(es, fs, r, t, h, y, ls, sv)
+
+def zero_h.v(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +r: DR.Node, +t: Nat, +h: HS.HS, +z: SK.VE, +hi: IV.HInvD(es, fs, ctx, r, t, h),
+  +em: {LB.hs.lab(es, fs, t, h, z) == None{} : Maybe<&2, DR.Lab>}, +a: S.Q, +bb: S.Q, +hv: ST.HIn(es, fs, r, h, DR.gmul(DR.Lab{a, bb}, z))) -> LZ(DR.Lab{a, bb}):
+  lz.go(DR.qnz(a), a, bb, {==}, LB.hs.lab(es, fs, t, h, z), em,
+    hab => LP.hs_lab_some(es, fs, ctx, r, t, h, z, IV.hinv_of(es, fs, ctx, r, t, h, hi), a, bb, hab, hin_span(es, fs, r, t, h, DR.gmul(DR.Lab{a, bb}, z), hv)))
+
+# the hull test found nothing
+def zero_h(v: DR.Lab, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +r: DR.Node, +t: Nat, +h: HS.HS, +z: SK.VE, +hi: IV.HInvD(es, fs, ctx, r, t, h),
+  +em: {LB.hs.lab(es, fs, t, h, z) == None{} : Maybe<&2, DR.Lab>}, +hv: ST.HIn(es, fs, r, h, DR.gmul(v, z))) -> LZ(v):
+  match v:
+    case DR.Lab{+a, +bb}:
+      zero_h.v(es, fs, ctx, r, t, h, z, hi, em, a, bb, hv)
+
+def zero_k.v(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +k: KS.KS, +z: SK.VE, +hk: IV.KInvD(es, fs, ctx, t, k),
+  +em: {LB.ks.lab(es, fs, k, z) == None{} : Maybe<&2, DR.Lab>}, +a: S.Q, +bb: S.Q, +hv: {KS.ks.inb(k, SK.VE.y(DR.gmul(DR.Lab{a, bb}, z))) == True{} : Bool}) -> LZ(DR.Lab{a, bb}):
+  lz.go(DR.qnz(a), a, bb, {==}, LB.ks.lab(es, fs, k, z), em,
+    hab => LP.ks_lab_some(es, fs, ctx, k, z, IV.kinv_of(es, fs, ctx, t, k, hk), a, bb, hab,
+      ST.ri.in(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), SK.VE.y(DR.gmul(DR.Lab{a, bb}, z)), ST.kri(es, fs, ctx, t, k, hk), hv)))
+
+# the frame test found nothing
+def zero_k(v: DR.Lab, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +k: KS.KS, +z: SK.VE, +hk: IV.KInvD(es, fs, ctx, t, k),
+  +em: {LB.ks.lab(es, fs, k, z) == None{} : Maybe<&2, DR.Lab>}, +hv: {KS.ks.inb(k, SK.VE.y(DR.gmul(v, z))) == True{} : Bool}) -> LZ(v):
+  match v:
+    case DR.Lab{+a, +bb}:
+      zero_k.v(es, fs, ctx, t, k, z, hk, em, a, bb, hv)
+
+def cgr.at(+p: List<&2, S.Q>, +uu: SK.VE, +a: S.Q, +b: S.Q, +z: SK.VE)
+  -> S.Q.eq(E.qeval(p, PT.pcomb(PT.Pr{a, b}, SK.VE.cross(uu, z), SK.VE.cross(uu, DR.imul(z)))), E.qeval(p, SK.VE.cross(uu, DR.gmul(DR.Lab{a, b}, z)))):
+  LQ.q_sym(E.qeval(p, SK.VE.cross(uu, DR.gmul(DR.Lab{a, b}, z))), E.qeval(p, PT.pcomb(PT.Pr{a, b}, SK.VE.cross(uu, z), SK.VE.cross(uu, DR.imul(z)))), LK.cross_gmul(uu, a, b, z)(p))
+
+# if some nonzero a + i b has (a + i b) z in a tied set, its test finds a
+# label
+def ts_lab_some(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +u: DR.Lab, s: DC.TS, +z: SK.VE, hr: ST.RI(DC.crosses(es, fs, u, DC.ts.ds(s)), DC.ts.rows(s)),
+  +a: S.Q, +bb: S.Q, hab: S.Q.eq(a, DR.qz()) -> S.Q.eq(bb, DR.qz()) -> Empty, +hin: SN.InSpan(SK.VE.cross(DC.lform(u), DR.gmul(DR.Lab{a, bb}, z)), DC.crosses(es, fs, u, DC.ts.ds(s))))
+  -> {LP.lis_some(DC.ts.lab(es, fs, u, s, z)) == True{} : Bool}:
+  match s:
+    case DC.TS{+rows, +ds}:
+      (+hrv, +hl) = hr
+      LP.lis_map(PT.ptest(rows, DC.crosses(es, fs, u, ds), SK.VE.cross(DC.lform(u), z), SK.VE.cross(DC.lform(u), DR.imul(z))),
+        LP.lab_some.pick(DR.qnz(bb), rows, DC.crosses(es, fs, u, ds), SK.VE.cross(DC.lform(u), z), SK.VE.cross(DC.lform(u), DR.imul(z)), a, bb, {==}, hrv, hl, hab,
+          PP.in_tr(SK.VE.cross(DC.lform(u), DR.gmul(DR.Lab{a, bb}, z)), PT.pcomb(PT.Pr{a, bb}, SK.VE.cross(DC.lform(u), z), SK.VE.cross(DC.lform(u), DR.imul(z))), DC.crosses(es, fs, u, ds), hin,
+            p => cgr.at(p, DC.lform(u), a, bb, z))))
+
+def zero_t.v(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +u: DR.Lab, +s: DC.TS, +z: SK.VE, +hr: ST.RI(DC.crosses(es, fs, u, DC.ts.ds(s)), DC.ts.rows(s)),
+  +em: {DC.ts.lab(es, fs, u, s, z) == None{} : Maybe<&2, DR.Lab>}, +a: S.Q, +bb: S.Q, +hv: {DC.ts.inb(s, u, DR.gmul(DR.Lab{a, bb}, z)) == True{} : Bool}) -> LZ(DR.Lab{a, bb}):
+  lz.go(DR.qnz(a), a, bb, {==}, DC.ts.lab(es, fs, u, s, z), em,
+    hab => ts_lab_some(es, fs, u, s, z, hr, a, bb, hab, ST.ri.in(DC.crosses(es, fs, u, DC.ts.ds(s)), DC.ts.rows(s), SK.VE.cross(DC.lform(u), DR.gmul(DR.Lab{a, bb}, z)), hr, hv)))
+
+# the tied test found nothing
+def zero_t(v: DR.Lab, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +u: DR.Lab, +s: DC.TS, +z: SK.VE, +hr: ST.RI(DC.crosses(es, fs, u, DC.ts.ds(s)), DC.ts.rows(s)),
+  +em: {DC.ts.lab(es, fs, u, s, z) == None{} : Maybe<&2, DR.Lab>}, +hv: {DC.ts.inb(s, u, DR.gmul(v, z)) == True{} : Bool}) -> LZ(v):
+  match v:
+    case DR.Lab{+a, +bb}:
+      zero_t.v(es, fs, u, s, z, hr, em, a, bb, hv)
+
+# Complete bases
+# --------------
+
+# the hull's basis spans every v with v z in its set (z below t)
+def bfree_ok(m: Maybe<&2, DR.Lab>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +r: DR.Node, +t: Nat, +k: KS.KS, +h: HS.HS, +z: SK.VE,
+  +em: {LB.hs.lab(es, fs, t, h, z) == m : Maybe<&2, DR.Lab>}, +hi: IV.HInvD(es, fs, ctx, r, t, h), +hzr: HP.VBelow(DR.zdir(es, r), t), +hz: HP.VBelow(z, t),
+  +v: DR.Lab, +hv: ST.HIn(es, fs, r, h, DR.gmul(v, z))) -> LSp(lat0(DC.basis.free(m, t, h, z)), lat1(DC.basis.free(m, t, h, z)), v):
+  match m:
+    case None{}:
+      lsp_zero(v, lab0(), lab0(), zero_h(v, es, fs, ctx, r, t, h, z, hi, em, hv))
+    case Some{+w}:
+      bcore(HS.hs.inb(h, DR.gmul(LB.lmul(DC.li(), w), z), t), es, fs, t, k, ST.SH{h, r}, z, v, w, {==}, Unit{}, ST.hri(es, fs, ctx, r, t, h, hi), hv,
+        ST.hin_of(es, fs, r, t, h, DR.gmul(w, z), ST.hri(es, fs, ctx, r, t, h, hi), ST.hbelow(es, fs, ctx, r, t, h, hi), hzr, BL.vb_gmul(w, z, t, hz),
+          LP.hs_lab_ok(es, fs, ctx, r, t, h, z, w, IV.hinv_of(es, fs, ctx, r, t, h, hi), em)),
+        NZ.hs_lab_nz(es, fs, t, h, z, w, em))
+
+# the frame test's basis spans every v with Im(v z) in K
+def bk_ok(m: Maybe<&2, DR.Lab>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +k: KS.KS, +z: SK.VE,
+  +em: {LB.ks.lab(es, fs, k, z) == m : Maybe<&2, DR.Lab>}, +hk: IV.KInvD(es, fs, ctx, t, k),
+  +v: DR.Lab, +hv: {KS.ks.inb(k, SK.VE.y(DR.gmul(v, z))) == True{} : Bool}) -> LSp(lat0(DC.basis.k(m, k, z)), lat1(DC.basis.k(m, k, z)), v):
+  match m:
+    case None{}:
+      lsp_zero(v, lab0(), lab0(), zero_k(v, es, fs, ctx, t, k, z, hk, em, hv))
+    case Some{+w}:
+      bcore(KS.ks.inb(k, SK.VE.y(DR.gmul(LB.lmul(DC.li(), w), z))), es, fs, t, k, ST.SF{}, z, v, w, {==}, ST.kri(es, fs, ctx, t, k, hk), Unit{}, hv,
+        LP.ks_lab_ok(es, fs, ctx, k, z, w, IV.kinv_of(es, fs, ctx, t, k, hk), em), NZ.ks_lab_nz(es, fs, k, z, w, em))
+
+# a tied set's basis spans every v with v z in it
+def btied_ok(m: Maybe<&2, DR.Lab>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +r: DR.Node, +t: Nat, +k: KS.KS, +u: DR.Lab, +s: DC.TS, +z: SK.VE,
+  +em: {DC.ts.lab(es, fs, u, s, z) == m : Maybe<&2, DR.Lab>}, +hti: RP.TInvD(es, fs, ctx, r, t, u, s),
+  +v: DR.Lab, +hv: {DC.ts.inb(s, u, DR.gmul(v, z)) == True{} : Bool}) -> LSp(lat0(DC.basis.tied(m, u, s, z)), lat1(DC.basis.tied(m, u, s, z)), v):
+  match m:
+    case None{}:
+      lsp_zero(v, lab0(), lab0(), zero_t(v, es, fs, u, s, z, ST.tri(es, fs, ctx, r, t, u, s, hti), em, hv))
+    case Some{+w}:
+      bcore(DC.ts.inb(s, u, DR.gmul(LB.lmul(DC.li(), w), z)), es, fs, t, k, ST.ST{u, s}, z, v, w, {==}, ST.tri(es, fs, ctx, r, t, u, s, hti), Unit{}, hv,
+        LK.ts_lab_ok(es, fs, ctx, r, t, u, s, z, w, hti, em), LK.ts_lab_nz(es, fs, u, s, z, w, em))
