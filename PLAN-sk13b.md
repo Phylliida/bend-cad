@@ -726,6 +726,45 @@ give both component identities that Valid's SameV asks for.
       - same component: labels unique up to Q, else a complex line;
       - different components: a merge would have been found;
       - collapsed: links and generators.
+  - *The hard cases, worked out.* For open nodes, write (r_a, w_a) for
+    a's root and label and Q_r for r's set.
+    - **Turn, both open, different roots:** the merge check found no
+      nonzero v with v z_b in Q_{r_a}. So g = 0, and the conclusion is
+      0.
+    - **Turn, both open, same root r:** let u = w_a conj(g) conj(w_b).
+      Q_r holds y = w_b z_b and (u/|w_b|²) y. If u is not real, Q_r
+      holds i y, a complex line, so y ∈ K², so z_b ∈ K²: an explosion
+      (the void check). So u is real, and w_b g z_a = (u/|w_a|²) w_a z_a
+      ∈ Q_r.
+    - **Through, both open:** the same two cases.
+    - **Turn, a open and c collapsed:** w_a conj(g) is in G_rc. The
+      root-link check puts conj(w_a) g in span(stored(c, r)). c's
+      generators hold u·g' for each stored u and g' ∈ Gen_r, so P_c holds
+      conj(w_a) g w_a z_a = |w_a|² g z_a.
+    - **Turn, c collapsed and b open:** conj(g) is in span(stored(c, b)).
+      b's root's generators hold w_b conj(u) z_c for each stored u, so
+      Q_{r_b} holds w_b g z_c.
+    - **Turn, both collapsed:** the lins generators of c'.
+    - **Through, c collapsed and b open:** conj(g) is in
+      span(stored(c, b)).
+      - When r_b ≠ F, c's generators hold u conj(w_b) H_{r_b}.
+      - When r_b = F, the tie: all of c's ties are parallel to the first,
+        U. Each tie's turned form is a generator of F, so frame-back gives
+        cross(U_i, z_c) ∈ K. Two independent ties would make z_c ∈ K², so
+        c would be Full. So u·P_F ⊆ Tied(U).
+    - **Full nodes** (z ∈ K²): every g z_c ∈ K² is in every set. Links
+      from Full nodes are not needed.
+  - *Extra invariants this needs:*
+    - roots carry (1, DSelf);
+    - every open node has exactly one member record, whose root is a
+      root;
+    - every fact is in K (K only grows);
+    - stored labels per pair are at most two, independent when two;
+    - qspan is sound: a span member is a real combination of the stored
+      labels. That needs the labels nonzero (have) and Cramer for two.
+  - *Label algebra needed:* gmul linear in the label, w conj(w) = |w|²
+    real, real labels act as scalars, and "u not real ⟹ i y in the
+    span of y and u y".
   - Then NotDirDerivable is the contrapositive. An explosion derives
     everything: ∥(F, (0, e)) by ∥-void at F or ∥-through at the open
     void segment, then K(e) by frame-back, and ∥(a, x) by ∥-void.
