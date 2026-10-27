@@ -26,6 +26,9 @@ import ./labnzpf.bend as NZ
 import ./labalgpf.bend as LA
 import ./dclose.bend as DC
 import ./dcvd.bend as VD
+import ./kspace.bend as KS
+import ./hspace.bend as HS
+import ./dcsetpf.bend as ST
 import ./indsetpf.bend as IP
 import ./dcgenpf.bend as GN
 import ./dcmergepf.bend as MG
@@ -309,3 +312,161 @@ def lsp_conj(v: DR.Lab, b0: DR.Lab, b1: DR.Lab, +h: LSp(b0, b1, v)) -> LSp(DR.La
     case DR.Lab{+vc, +vs} DR.Lab{+b0c, +b0s} DR.Lab{+b1c, +b1s}:
       lsp_conj.go(vc, vs, b0c, b0s, b1c, b1s, LA.lab.c(lsp.p(DR.Lab{b0c, b0s}, DR.Lab{b1c, b1s}, DR.Lab{vc, vs}, h)), LA.lab.s(lsp.p(DR.Lab{b0c, b0s}, DR.Lab{b1c, b1s}, DR.Lab{vc, vs}, h)),
         lsp.e(DR.Lab{b0c, b0s}, DR.Lab{b1c, b1s}, DR.Lab{vc, vs}, h))
+
+# Bases
+# -----
+
+def q.r3a(+A: S.Q, +B: S.Q, +C: S.Q) -> S.Q.eq(S.Q.add(S.Q.add(A, B), S.Q.neg(S.Q.sub(B, C))), S.Q.add(A, C)):
+  QR.qring_eq([A, B, C], E.QAdd{E.QAdd{E.QVar{0n}, E.QVar{1n}}, E.QNeg{E.QSub{E.QVar{1n}, E.QVar{2n}}}}, E.QAdd{E.QVar{0n}, E.QVar{2n}}, {==})
+
+def q.r3b(+A: S.Q, +B: S.Q, +C: S.Q) -> S.Q.eq(S.Q.add(S.Q.add(A, B), S.Q.sub(C, A)), S.Q.add(C, B)):
+  QR.qring_eq([A, B, C], E.QAdd{E.QAdd{E.QVar{0n}, E.QVar{1n}}, E.QSub{E.QVar{2n}, E.QVar{0n}}}, E.QAdd{E.QVar{2n}, E.QVar{1n}}, {==})
+
+def q.r01(+c: S.Q, +s: S.Q) -> S.Q.eq(S.Q.sub(S.Q.mul(DR.qz(), c), S.Q.mul(DR.qo(), s)), S.Q.neg(s)):
+  QR.qring_eq([c, s], E.QSub{E.QMul{E.QCst{DR.qz()}, E.QVar{0n}}, E.QMul{E.QCst{DR.qo()}, E.QVar{1n}}}, E.QNeg{E.QVar{1n}}, {==})
+
+def q.r10(+s: S.Q, +c: S.Q) -> S.Q.eq(S.Q.add(S.Q.mul(DR.qz(), s), S.Q.mul(DR.qo(), c)), c):
+  QR.qring_eq([s, c], E.QAdd{E.QMul{E.QCst{DR.qz()}, E.QVar{0n}}, E.QMul{E.QCst{DR.qo()}, E.QVar{1n}}}, E.QVar{1n}, {==})
+
+def q.z0(+b: S.Q, +X: S.Q, h: S.Q.eq(b, DR.qz())) -> S.Q.eq(S.Q.mul(b, X), S.Q.mul(DR.qz(), DR.qz())):
+  LQ.q_trans(S.Q.mul(b, X), S.Q.mul(DR.qz(), X), S.Q.mul(DR.qz(), DR.qz()), LQ.q_mul_cong_l(b, DR.qz(), X, h), QR.qring_eq([X], E.QMul{E.QCst{DR.qz()}, E.QVar{0n}}, E.QMul{E.QCst{DR.qz()}, E.QCst{DR.qz()}}, {==}))
+
+def dec.c(+vc: S.Q, +vs: S.Q, +c: S.Q, +s: S.Q) -> S.Q.eq(S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), c), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.neg(s))), S.Q.mul(vc, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))):
+  LQ.q_trans(S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), c), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.neg(s))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), c), S.Q.neg(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), s))), S.Q.mul(vc, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), LQ.q_add_cong_r(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), c), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.neg(s)), S.Q.neg(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), s)), QA.mneg(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), s)), LQ.q_trans(S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), c), S.Q.neg(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), s))), S.Q.add(S.Q.add(S.Q.mul(vc, S.Q.mul(c, c)), S.Q.mul(vs, S.Q.mul(s, c))), S.Q.neg(S.Q.sub(S.Q.mul(vs, S.Q.mul(c, s)), S.Q.mul(vc, S.Q.mul(s, s))))), S.Q.mul(vc, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), QA.add_cong(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), c), S.Q.add(S.Q.mul(vc, S.Q.mul(c, c)), S.Q.mul(vs, S.Q.mul(s, c))), S.Q.neg(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), s)), S.Q.neg(S.Q.sub(S.Q.mul(vs, S.Q.mul(c, s)), S.Q.mul(vc, S.Q.mul(s, s)))), LQ.q_trans(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), c), S.Q.add(S.Q.mul(S.Q.mul(vc, c), c), S.Q.mul(S.Q.mul(vs, s), c)), S.Q.add(S.Q.mul(vc, S.Q.mul(c, c)), S.Q.mul(vs, S.Q.mul(s, c))), QA.rdist(S.Q.mul(vc, c), S.Q.mul(vs, s), c), QA.add_cong(S.Q.mul(S.Q.mul(vc, c), c), S.Q.mul(vc, S.Q.mul(c, c)), S.Q.mul(S.Q.mul(vs, s), c), S.Q.mul(vs, S.Q.mul(s, c)), QA.massoc(vc, c, c), QA.massoc(vs, s, c))), LQ.q_neg_cong(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), s), S.Q.sub(S.Q.mul(vs, S.Q.mul(c, s)), S.Q.mul(vc, S.Q.mul(s, s))), LQ.q_trans(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), s), S.Q.sub(S.Q.mul(S.Q.mul(vs, c), s), S.Q.mul(S.Q.mul(vc, s), s)), S.Q.sub(S.Q.mul(vs, S.Q.mul(c, s)), S.Q.mul(vc, S.Q.mul(s, s))), QA.rdsub(S.Q.mul(vs, c), S.Q.mul(vc, s), s), QA.sub_cong(S.Q.mul(S.Q.mul(vs, c), s), S.Q.mul(vs, S.Q.mul(c, s)), S.Q.mul(S.Q.mul(vc, s), s), S.Q.mul(vc, S.Q.mul(s, s)), QA.massoc(vs, c, s), QA.massoc(vc, s, s))))), LQ.q_trans(S.Q.add(S.Q.add(S.Q.mul(vc, S.Q.mul(c, c)), S.Q.mul(vs, S.Q.mul(s, c))), S.Q.neg(S.Q.sub(S.Q.mul(vs, S.Q.mul(c, s)), S.Q.mul(vc, S.Q.mul(s, s))))), S.Q.add(S.Q.add(S.Q.mul(vc, S.Q.mul(c, c)), S.Q.mul(vs, S.Q.mul(s, c))), S.Q.neg(S.Q.sub(S.Q.mul(vs, S.Q.mul(s, c)), S.Q.mul(vc, S.Q.mul(s, s))))), S.Q.mul(vc, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), LQ.q_add_cong_r(S.Q.add(S.Q.mul(vc, S.Q.mul(c, c)), S.Q.mul(vs, S.Q.mul(s, c))), S.Q.neg(S.Q.sub(S.Q.mul(vs, S.Q.mul(c, s)), S.Q.mul(vc, S.Q.mul(s, s)))), S.Q.neg(S.Q.sub(S.Q.mul(vs, S.Q.mul(s, c)), S.Q.mul(vc, S.Q.mul(s, s)))), LQ.q_neg_cong(S.Q.sub(S.Q.mul(vs, S.Q.mul(c, s)), S.Q.mul(vc, S.Q.mul(s, s))), S.Q.sub(S.Q.mul(vs, S.Q.mul(s, c)), S.Q.mul(vc, S.Q.mul(s, s))), QA.sub_cong(S.Q.mul(vs, S.Q.mul(c, s)), S.Q.mul(vs, S.Q.mul(s, c)), S.Q.mul(vc, S.Q.mul(s, s)), S.Q.mul(vc, S.Q.mul(s, s)), LQ.q_mul_cong_r(vs, S.Q.mul(c, s), S.Q.mul(s, c), LQ.q_mul_comm(c, s)), LQ.q_refl(S.Q.mul(vc, S.Q.mul(s, s)))))), LQ.q_trans(S.Q.add(S.Q.add(S.Q.mul(vc, S.Q.mul(c, c)), S.Q.mul(vs, S.Q.mul(s, c))), S.Q.neg(S.Q.sub(S.Q.mul(vs, S.Q.mul(s, c)), S.Q.mul(vc, S.Q.mul(s, s))))), S.Q.add(S.Q.mul(vc, S.Q.mul(c, c)), S.Q.mul(vc, S.Q.mul(s, s))), S.Q.mul(vc, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), q.r3a(S.Q.mul(vc, S.Q.mul(c, c)), S.Q.mul(vs, S.Q.mul(s, c)), S.Q.mul(vc, S.Q.mul(s, s))), LQ.q_sym(S.Q.mul(vc, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.add(S.Q.mul(vc, S.Q.mul(c, c)), S.Q.mul(vc, S.Q.mul(s, s))), QA.ldist(vc, S.Q.mul(c, c), S.Q.mul(s, s)))))))
+
+def dec.s(+vc: S.Q, +vs: S.Q, +c: S.Q, +s: S.Q) -> S.Q.eq(S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), s), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), c)), S.Q.mul(vs, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))):
+  LQ.q_trans(S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), s), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), c)), S.Q.add(S.Q.add(S.Q.mul(vc, S.Q.mul(c, s)), S.Q.mul(vs, S.Q.mul(s, s))), S.Q.sub(S.Q.mul(vs, S.Q.mul(c, c)), S.Q.mul(vc, S.Q.mul(s, c)))), S.Q.mul(vs, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), QA.add_cong(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), s), S.Q.add(S.Q.mul(vc, S.Q.mul(c, s)), S.Q.mul(vs, S.Q.mul(s, s))), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), c), S.Q.sub(S.Q.mul(vs, S.Q.mul(c, c)), S.Q.mul(vc, S.Q.mul(s, c))), LQ.q_trans(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), s), S.Q.add(S.Q.mul(S.Q.mul(vc, c), s), S.Q.mul(S.Q.mul(vs, s), s)), S.Q.add(S.Q.mul(vc, S.Q.mul(c, s)), S.Q.mul(vs, S.Q.mul(s, s))), QA.rdist(S.Q.mul(vc, c), S.Q.mul(vs, s), s), QA.add_cong(S.Q.mul(S.Q.mul(vc, c), s), S.Q.mul(vc, S.Q.mul(c, s)), S.Q.mul(S.Q.mul(vs, s), s), S.Q.mul(vs, S.Q.mul(s, s)), QA.massoc(vc, c, s), QA.massoc(vs, s, s))), LQ.q_trans(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), c), S.Q.sub(S.Q.mul(S.Q.mul(vs, c), c), S.Q.mul(S.Q.mul(vc, s), c)), S.Q.sub(S.Q.mul(vs, S.Q.mul(c, c)), S.Q.mul(vc, S.Q.mul(s, c))), QA.rdsub(S.Q.mul(vs, c), S.Q.mul(vc, s), c), QA.sub_cong(S.Q.mul(S.Q.mul(vs, c), c), S.Q.mul(vs, S.Q.mul(c, c)), S.Q.mul(S.Q.mul(vc, s), c), S.Q.mul(vc, S.Q.mul(s, c)), QA.massoc(vs, c, c), QA.massoc(vc, s, c)))), LQ.q_trans(S.Q.add(S.Q.add(S.Q.mul(vc, S.Q.mul(c, s)), S.Q.mul(vs, S.Q.mul(s, s))), S.Q.sub(S.Q.mul(vs, S.Q.mul(c, c)), S.Q.mul(vc, S.Q.mul(s, c)))), S.Q.add(S.Q.add(S.Q.mul(vc, S.Q.mul(c, s)), S.Q.mul(vs, S.Q.mul(s, s))), S.Q.sub(S.Q.mul(vs, S.Q.mul(c, c)), S.Q.mul(vc, S.Q.mul(c, s)))), S.Q.mul(vs, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), LQ.q_add_cong_r(S.Q.add(S.Q.mul(vc, S.Q.mul(c, s)), S.Q.mul(vs, S.Q.mul(s, s))), S.Q.sub(S.Q.mul(vs, S.Q.mul(c, c)), S.Q.mul(vc, S.Q.mul(s, c))), S.Q.sub(S.Q.mul(vs, S.Q.mul(c, c)), S.Q.mul(vc, S.Q.mul(c, s))), QA.sub_cong(S.Q.mul(vs, S.Q.mul(c, c)), S.Q.mul(vs, S.Q.mul(c, c)), S.Q.mul(vc, S.Q.mul(s, c)), S.Q.mul(vc, S.Q.mul(c, s)), LQ.q_refl(S.Q.mul(vs, S.Q.mul(c, c))), LQ.q_mul_cong_r(vc, S.Q.mul(s, c), S.Q.mul(c, s), LQ.q_mul_comm(s, c)))), LQ.q_trans(S.Q.add(S.Q.add(S.Q.mul(vc, S.Q.mul(c, s)), S.Q.mul(vs, S.Q.mul(s, s))), S.Q.sub(S.Q.mul(vs, S.Q.mul(c, c)), S.Q.mul(vc, S.Q.mul(c, s)))), S.Q.add(S.Q.mul(vs, S.Q.mul(c, c)), S.Q.mul(vs, S.Q.mul(s, s))), S.Q.mul(vs, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), q.r3b(S.Q.mul(vc, S.Q.mul(c, s)), S.Q.mul(vs, S.Q.mul(s, s)), S.Q.mul(vs, S.Q.mul(c, c))), LQ.q_sym(S.Q.mul(vs, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.add(S.Q.mul(vs, S.Q.mul(c, c)), S.Q.mul(vs, S.Q.mul(s, s))), QA.ldist(vs, S.Q.mul(c, c), S.Q.mul(s, s))))))
+
+def da.go(+vc: S.Q, +vs: S.Q, w: DR.Lab) -> S.Q:
+  match w:
+    case DR.Lab{+c, +s}:
+      S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))))
+
+def db.go(+vc: S.Q, +vs: S.Q, w: DR.Lab) -> S.Q:
+  match w:
+    case DR.Lab{+c, +s}:
+      S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))))
+
+# v's coordinates against w and i w
+def da(v: DR.Lab, +w: DR.Lab) -> S.Q:
+  match v:
+    case DR.Lab{+vc, +vs}:
+      da.go(vc, vs, w)
+
+def db(v: DR.Lab, +w: DR.Lab) -> S.Q:
+  match v:
+    case DR.Lab{+vc, +vs}:
+      db.go(vc, vs, w)
+
+def ldec.go(+vc: S.Q, +vs: S.Q, +c: S.Q, +s: S.Q, +nz: NZ.Nz(DR.Lab{c, s})) -> LA.LE(DR.Lab{vc, vs}, LA.lcomb(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), DR.Lab{c, s}, S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), LB.lmul(DC.li(), DR.Lab{c, s}))):
+  LA.le_of(vc, vs, S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.sub(S.Q.mul(DR.qz(), c), S.Q.mul(DR.qo(), s)))), S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), s), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.add(S.Q.mul(DR.qz(), s), S.Q.mul(DR.qo(), c)))), LQ.q_sym(S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.sub(S.Q.mul(DR.qz(), c), S.Q.mul(DR.qo(), s)))), vc, LQ.q_trans(S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.sub(S.Q.mul(DR.qz(), c), S.Q.mul(DR.qo(), s)))), S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.neg(s))), vc, LQ.q_add_cong_r(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.sub(S.Q.mul(DR.qz(), c), S.Q.mul(DR.qo(), s))), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.neg(s)), LQ.q_mul_cong_r(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.sub(S.Q.mul(DR.qz(), c), S.Q.mul(DR.qo(), s)), S.Q.neg(s), q.r01(c, s))), LQ.q_trans(S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.neg(s))), S.Q.mul(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), c), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.neg(s)))), vc, q.fac(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), c, S.Q.neg(s)), LQ.q_trans(S.Q.mul(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), c), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.neg(s)))), S.Q.mul(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.mul(vc, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), vc, LQ.q_mul_cong_r(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), c), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.neg(s))), S.Q.mul(vc, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), dec.c(vc, vs, c, s)), LQ.q_trans(S.Q.mul(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.mul(vc, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.mul(vc, S.Q.mul(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))))), vc, q.icn(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), vc, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), LQ.q_trans(S.Q.mul(vc, S.Q.mul(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))))), S.Q.mul(vc, DR.qo()), vc, LQ.q_mul_cong_r(vc, S.Q.mul(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), DR.qo(), LQ.q_mul_inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), e => LP.qnz_t(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), nz, e))), q.m1(vc))))))), LQ.q_sym(S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), s), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.add(S.Q.mul(DR.qz(), s), S.Q.mul(DR.qo(), c)))), vs, LQ.q_trans(S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), s), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.add(S.Q.mul(DR.qz(), s), S.Q.mul(DR.qo(), c)))), S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), s), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c)), vs, LQ.q_add_cong_r(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), s), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.add(S.Q.mul(DR.qz(), s), S.Q.mul(DR.qo(), c))), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c), LQ.q_mul_cong_r(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.add(S.Q.mul(DR.qz(), s), S.Q.mul(DR.qo(), c)), c, q.r10(s, c))), LQ.q_trans(S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), s), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c)), S.Q.mul(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), s), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), c))), vs, q.fac(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), s, c), LQ.q_trans(S.Q.mul(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), s), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), c))), S.Q.mul(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.mul(vs, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), vs, LQ.q_mul_cong_r(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), s), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), c)), S.Q.mul(vs, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), dec.s(vc, vs, c, s)), LQ.q_trans(S.Q.mul(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.mul(vs, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.mul(vs, S.Q.mul(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))))), vs, q.icn(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), vs, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), LQ.q_trans(S.Q.mul(vs, S.Q.mul(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))))), S.Q.mul(vs, DR.qo()), vs, LQ.q_mul_cong_r(vs, S.Q.mul(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), DR.qo(), LQ.q_mul_inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), e => LP.qnz_t(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), nz, e))), q.m1(vs))))))))
+
+# v = a w + b (i w), w nonzero
+def ldec(v: DR.Lab, w: DR.Lab, +nz: NZ.Nz(w)) -> LA.LE(v, LA.lcomb(da(v, w), w, db(v, w), LB.lmul(DC.li(), w))):
+  match v w:
+    case DR.Lab{+vc, +vs} DR.Lab{+c, +s}:
+      ldec.go(vc, vs, c, s, nz)
+
+def ldec1.go(+vc: S.Q, +vs: S.Q, +c: S.Q, +s: S.Q, +nz: NZ.Nz(DR.Lab{c, s}), +hb: {DR.qnz(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))))) == False{} : Bool})
+  -> LA.LE(DR.Lab{vc, vs}, LA.lcomb(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), DR.Lab{c, s}, DR.qz(), lab0())):
+  LA.le_of(vc, vs, S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c), S.Q.mul(DR.qz(), DR.qz())), S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), s), S.Q.mul(DR.qz(), DR.qz())),
+    LQ.q_trans(vc, S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.sub(S.Q.mul(DR.qz(), c), S.Q.mul(DR.qo(), s)))), S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c), S.Q.mul(DR.qz(), DR.qz())), LQ.q_sym(S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.sub(S.Q.mul(DR.qz(), c), S.Q.mul(DR.qo(), s)))), vc, LQ.q_trans(S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.sub(S.Q.mul(DR.qz(), c), S.Q.mul(DR.qo(), s)))), S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.neg(s))), vc, LQ.q_add_cong_r(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.sub(S.Q.mul(DR.qz(), c), S.Q.mul(DR.qo(), s))), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.neg(s)), LQ.q_mul_cong_r(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.sub(S.Q.mul(DR.qz(), c), S.Q.mul(DR.qo(), s)), S.Q.neg(s), q.r01(c, s))), LQ.q_trans(S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.neg(s))), S.Q.mul(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), c), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.neg(s)))), vc, q.fac(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), c, S.Q.neg(s)), LQ.q_trans(S.Q.mul(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), c), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.neg(s)))), S.Q.mul(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.mul(vc, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), vc, LQ.q_mul_cong_r(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), c), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.neg(s))), S.Q.mul(vc, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), dec.c(vc, vs, c, s)), LQ.q_trans(S.Q.mul(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.mul(vc, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.mul(vc, S.Q.mul(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))))), vc, q.icn(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), vc, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), LQ.q_trans(S.Q.mul(vc, S.Q.mul(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))))), S.Q.mul(vc, DR.qo()), vc, LQ.q_mul_cong_r(vc, S.Q.mul(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), DR.qo(), LQ.q_mul_inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), e => LP.qnz_t(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), nz, e))), q.m1(vc))))))), LQ.q_add_cong_r(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.sub(S.Q.mul(DR.qz(), c), S.Q.mul(DR.qo(), s))), S.Q.mul(DR.qz(), DR.qz()), q.z0(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.sub(S.Q.mul(DR.qz(), c), S.Q.mul(DR.qo(), s)), LP.qnz_f(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), hb)))),
+    LQ.q_trans(vs, S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), s), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.add(S.Q.mul(DR.qz(), s), S.Q.mul(DR.qo(), c)))), S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), s), S.Q.mul(DR.qz(), DR.qz())), LQ.q_sym(S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), s), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.add(S.Q.mul(DR.qz(), s), S.Q.mul(DR.qo(), c)))), vs, LQ.q_trans(S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), s), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.add(S.Q.mul(DR.qz(), s), S.Q.mul(DR.qo(), c)))), S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), s), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c)), vs, LQ.q_add_cong_r(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), s), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.add(S.Q.mul(DR.qz(), s), S.Q.mul(DR.qo(), c))), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c), LQ.q_mul_cong_r(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.add(S.Q.mul(DR.qz(), s), S.Q.mul(DR.qo(), c)), c, q.r10(s, c))), LQ.q_trans(S.Q.add(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), s), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), c)), S.Q.mul(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), s), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), c))), vs, q.fac(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), s, c), LQ.q_trans(S.Q.mul(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), s), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), c))), S.Q.mul(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.mul(vs, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), vs, LQ.q_mul_cong_r(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), s), S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), c)), S.Q.mul(vs, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), dec.s(vc, vs, c, s)), LQ.q_trans(S.Q.mul(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), S.Q.mul(vs, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.mul(vs, S.Q.mul(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))))), vs, q.icn(S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), vs, S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))), LQ.q_trans(S.Q.mul(vs, S.Q.mul(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s))))), S.Q.mul(vs, DR.qo()), vs, LQ.q_mul_cong_r(vs, S.Q.mul(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), DR.qo(), LQ.q_mul_inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), e => LP.qnz_t(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)), nz, e))), q.m1(vs))))))), LQ.q_add_cong_r(S.Q.mul(S.Q.mul(S.Q.add(S.Q.mul(vc, c), S.Q.mul(vs, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), s), S.Q.mul(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.add(S.Q.mul(DR.qz(), s), S.Q.mul(DR.qo(), c))), S.Q.mul(DR.qz(), DR.qz()), q.z0(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), S.Q.add(S.Q.mul(DR.qz(), s), S.Q.mul(DR.qo(), c)), LP.qnz_f(S.Q.mul(S.Q.sub(S.Q.mul(vs, c), S.Q.mul(vc, s)), S.Q.inv(S.Q.add(S.Q.mul(c, c), S.Q.mul(s, s)))), hb)))))
+
+# with b = 0, v = a w
+def ldec1(v: DR.Lab, w: DR.Lab, +nz: NZ.Nz(w), hb: {DR.qnz(db(v, w)) == False{} : Bool}) -> LA.LE(v, LA.lcomb(da(v, w), w, DR.qz(), lab0())):
+  match v w:
+    case DR.Lab{+vc, +vs} DR.Lab{+c, +s}:
+      ldec1.go(vc, vs, c, s, nz, hb)
+
+def gi.q(+ib: S.Q, +a: S.Q, +b: S.Q, +W: S.Q, +Y: S.Q) -> S.Q.eq(S.Q.add(S.Q.mul(ib, S.Q.add(S.Q.mul(a, W), S.Q.mul(b, Y))), S.Q.mul(S.Q.neg(S.Q.mul(a, ib)), W)), S.Q.mul(S.Q.mul(b, ib), Y)):
+  QR.qring_eq([ib, a, b, W, Y], E.QAdd{E.QMul{E.QVar{0n}, E.QAdd{E.QMul{E.QVar{1n}, E.QVar{3n}}, E.QMul{E.QVar{2n}, E.QVar{4n}}}}, E.QMul{E.QNeg{E.QMul{E.QVar{1n}, E.QVar{0n}}}, E.QVar{3n}}}, E.QMul{E.QMul{E.QVar{2n}, E.QVar{0n}}, E.QVar{4n}}, {==})
+
+def ginv.c(+a: S.Q, +b: S.Q, +W: S.Q, +Y: S.Q, +hb: {DR.qnz(b) == True{} : Bool}) -> S.Q.eq(S.Q.add(S.Q.mul(S.Q.inv(b), S.Q.add(S.Q.mul(a, W), S.Q.mul(b, Y))), S.Q.mul(S.Q.neg(S.Q.mul(a, S.Q.inv(b))), W)), Y):
+  QA.ch3(S.Q.add(S.Q.mul(S.Q.inv(b), S.Q.add(S.Q.mul(a, W), S.Q.mul(b, Y))), S.Q.mul(S.Q.neg(S.Q.mul(a, S.Q.inv(b))), W)), S.Q.mul(S.Q.mul(b, S.Q.inv(b)), Y), S.Q.mul(DR.qo(), Y), Y,
+    gi.q(S.Q.inv(b), a, b, W, Y), LQ.q_mul_cong_l(S.Q.mul(b, S.Q.inv(b)), DR.qo(), Y, LQ.q_mul_inv(b, e => LP.qnz_t(b, hb, e))), QA.one_mul(Y))
+
+def ginv.ax(+p: List<&2, S.Q>, +a: S.Q, +b: S.Q, +W: SK.VE, +Y: SK.VE, +hb: {DR.qnz(b) == True{} : Bool})
+  -> S.Q.eq(E.qeval(p, SK.VE.x(DR.vlin(S.Q.inv(b), DR.vlin(a, W, b, Y), S.Q.neg(S.Q.mul(a, S.Q.inv(b))), W))), E.qeval(p, SK.VE.x(Y))):
+  ginv.c(a, b, E.qeval(p, SK.VE.x(W)), E.qeval(p, SK.VE.x(Y)), hb)
+
+def ginv.ay(+p: List<&2, S.Q>, +a: S.Q, +b: S.Q, +W: SK.VE, +Y: SK.VE, +hb: {DR.qnz(b) == True{} : Bool})
+  -> S.Q.eq(E.qeval(p, SK.VE.y(DR.vlin(S.Q.inv(b), DR.vlin(a, W, b, Y), S.Q.neg(S.Q.mul(a, S.Q.inv(b))), W))), E.qeval(p, SK.VE.y(Y))):
+  ginv.c(a, b, E.qeval(p, SK.VE.y(W)), E.qeval(p, SK.VE.y(Y)), hb)
+
+# (1/b)(a W + b Y) - (a/b) W = Y
+def ginv(+a: S.Q, +b: S.Q, +W: SK.VE, +Y: SK.VE, +hb: {DR.qnz(b) == True{} : Bool}) -> VD.SameVD(DR.vlin(S.Q.inv(b), DR.vlin(a, W, b, Y), S.Q.neg(S.Q.mul(a, S.Q.inv(b))), W), Y):
+  (ID.qzero_ident(SK.VE.x(DR.vlin(S.Q.inv(b), DR.vlin(a, W, b, Y), S.Q.neg(S.Q.mul(a, S.Q.inv(b))), W)), SK.VE.x(Y), p => ginv.ax(p, a, b, W, Y, hb)),
+   ID.qzero_ident(SK.VE.y(DR.vlin(S.Q.inv(b), DR.vlin(a, W, b, Y), S.Q.neg(S.Q.mul(a, S.Q.inv(b))), W)), SK.VE.y(Y), p => ginv.ay(p, a, b, W, Y, hb)))
+
+# The kinds' Bool tests
+# ---------------------
+
+def TB(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +k: KS.KS, st: ST.St, +y: SK.VE) -> Bool:
+  match st:
+    case ST.SF{}:
+      KS.ks.inb(k, SK.VE.y(y))
+    case ST.SH{+h, +r}:
+      HS.hs.inb(h, y, t)
+    case ST.ST{+u, +s}:
+      DC.ts.inb(s, u, y)
+    case ST.SA{}:
+      True{}
+
+# what reading a set member by its kind's test needs
+def TOk(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, st: ST.St) -> Data:
+  match st:
+    case ST.SF{}:
+      Unit
+    case ST.SH{+h, +r}:
+      ST.RI(HS.encs(HS.hxs(es, fs, HS.hs.ds(h)), t), HS.hs.rows(h))
+    case ST.ST{+u, +s}:
+      Unit
+    case ST.SA{}:
+      Unit
+
+# a member passes its kind's test
+def st_bool(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +k: KS.KS, st: ST.St, +y: SK.VE, +to: TOk(es, fs, t, st), h: ST.InSt(es, fs, k, st, y))
+  -> {TB(es, fs, t, k, st, y) == True{} : Bool}:
+  match st:
+    case ST.SF{}:
+      h
+    case ST.SH{+hh, +r}:
+      ST.hin_bool(es, fs, r, t, hh, y, to, h)
+    case ST.ST{+u, +s}:
+      h
+    case ST.SA{}:
+      {==}
+
+def bcore.no(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +k: KS.KS, +st: ST.St, +z: SK.VE, +v: DR.Lab, +w: DR.Lab,
+  ef: {False{} == TB(es, fs, t, k, st, DR.gmul(LB.lmul(DC.li(), w), z)) : Bool}, +ok: ST.StOk(es, fs, t, k, st), +to: TOk(es, fs, t, st),
+  +hv: ST.InSt(es, fs, k, st, DR.gmul(v, z)), +hw: ST.InSt(es, fs, k, st, DR.gmul(w, z)), +nz: NZ.Nz(w), +hb: {DR.qnz(db(v, w)) == True{} : Bool}) -> Empty:
+  LP.tf(Equal.sym(Bool, False{}, True{}, Equal.trans(Bool, False{}, TB(es, fs, t, k, st, DR.gmul(LB.lmul(DC.li(), w), z)), True{}, ef,
+    st_bool(es, fs, t, k, st, DR.gmul(LB.lmul(DC.li(), w), z), to,
+      ST.st_tr(es, fs, t, k, st, DR.vlin(S.Q.inv(db(v, w)), DR.gmul(v, z), S.Q.neg(S.Q.mul(da(v, w), S.Q.inv(db(v, w)))), DR.gmul(w, z)), DR.gmul(LB.lmul(DC.li(), w), z), ok,
+        ST.st_lin(es, fs, t, k, st, S.Q.inv(db(v, w)), DR.gmul(v, z), S.Q.neg(S.Q.mul(da(v, w), S.Q.inv(db(v, w)))), DR.gmul(w, z), ok, hv, hw),
+        GN.samevd_tr(DR.vlin(S.Q.inv(db(v, w)), DR.gmul(v, z), S.Q.neg(S.Q.mul(da(v, w), S.Q.inv(db(v, w)))), DR.gmul(w, z)), DR.vlin(S.Q.inv(db(v, w)), DR.vlin(da(v, w), DR.gmul(w, z), db(v, w), DR.gmul(LB.lmul(DC.li(), w), z)), S.Q.neg(S.Q.mul(da(v, w), S.Q.inv(db(v, w)))), DR.gmul(w, z)), DR.gmul(LB.lmul(DC.li(), w), z),
+          ST.vcong(S.Q.inv(db(v, w)), DR.gmul(v, z), DR.vlin(da(v, w), DR.gmul(w, z), db(v, w), DR.gmul(LB.lmul(DC.li(), w), z)), S.Q.neg(S.Q.mul(da(v, w), S.Q.inv(db(v, w)))), DR.gmul(w, z), DR.gmul(w, z),
+            GN.samevd_tr(DR.gmul(v, z), DR.gmul(LA.lcomb(da(v, w), w, db(v, w), LB.lmul(DC.li(), w)), z), DR.vlin(da(v, w), DR.gmul(w, z), db(v, w), DR.gmul(LB.lmul(DC.li(), w), z)), LA.gle(v, LA.lcomb(da(v, w), w, db(v, w), LB.lmul(DC.li(), w)), z, ldec(v, w, nz)), LA.gmul_lin(da(v, w), w, db(v, w), LB.lmul(DC.li(), w), z)),
+            MG.samevd_refl(DR.gmul(w, z))),
+          ginv(da(v, w), db(v, w), DR.gmul(w, z), DR.gmul(LB.lmul(DC.li(), w), z), hb)))))))
+
+def bcore.f(qb: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +k: KS.KS, +st: ST.St, +z: SK.VE, +v: DR.Lab, +w: DR.Lab, eb: {qb == DR.qnz(db(v, w)) : Bool},
+  ef: {False{} == TB(es, fs, t, k, st, DR.gmul(LB.lmul(DC.li(), w), z)) : Bool}, +ok: ST.StOk(es, fs, t, k, st), +to: TOk(es, fs, t, st),
+  +hv: ST.InSt(es, fs, k, st, DR.gmul(v, z)), +hw: ST.InSt(es, fs, k, st, DR.gmul(w, z)), +nz: NZ.Nz(w)) -> LSp(w, lab0(), v):
+  match qb:
+    case False{}:
+      (DR.Lab{da(v, w), DR.qz()}, ldec1(v, w, nz, Equal.sym(Bool, False{}, DR.qnz(db(v, w)), eb)))
+    case True{}:
+      absurd(LSp(w, lab0(), v), bcore.no(es, fs, t, k, st, z, v, w, ef, ok, to, hv, hw, nz, Equal.sym(Bool, True{}, DR.qnz(db(v, w)), eb)))
+
+# the basis [w, i w] or [w] (as the test of i w z says) spans every v with
+# v z in the set, w z being in it and w nonzero
+def bcore(flag: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +k: KS.KS, +st: ST.St, +z: SK.VE, +v: DR.Lab, +w: DR.Lab,
+  ef: {flag == TB(es, fs, t, k, st, DR.gmul(LB.lmul(DC.li(), w), z)) : Bool}, +ok: ST.StOk(es, fs, t, k, st), +to: TOk(es, fs, t, st),
+  +hv: ST.InSt(es, fs, k, st, DR.gmul(v, z)), +hw: ST.InSt(es, fs, k, st, DR.gmul(w, z)), +nz: NZ.Nz(w)) -> LSp(lat0(DC.bpair(flag, w)), lat1(DC.bpair(flag, w)), v):
+  match flag:
+    case True{}:
+      (DR.Lab{da(v, w), db(v, w)}, ldec(v, w, nz))
+    case False{}:
+      bcore.f(DR.qnz(db(v, w)), es, fs, t, k, st, z, v, w, {==}, ef, ok, to, hv, hw, nz)
