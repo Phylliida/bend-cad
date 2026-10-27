@@ -554,9 +554,35 @@ give both component identities that Valid's SameV asks for.
   closed under l·e₁ + e₂ and 0. These are the closure proof's linear
   algebra for K. The hull analogues follow the same pattern over the
   encoded forms.
-- Next: the label test (find g with conj(g)·z_b in a hull, and prove it
-  finds one whenever one exists), the node kinds and one fixpoint round,
-  then the loops and their sufficiency, then closure.
+- *Pair test done 2026-10-27* (lib/pair.bend, lib/pairpf.bend): find
+  (a, b), not both 0, with a·u + b·v in a span. Proven sound, and
+  complete for b ≠ 0 and for b = 0 with a ≠ 0. The hull label test is
+  u, v = enc(z_b), enc(i·z_b), and the frame test against K is
+  u, v = Im z, −Re z.
+- *Speed:* rational identities are chains of lib/qalg.bend's small lemmas.
+  A six-atom normalizer call cost about 130 s; the gate is back to about
+  a minute.
+- **Closure, refined** (four node kinds, not three): *frame-tied*,
+  *free*, *void* (both direction parts in K: parallel to everything, by
+  ∥-void), and *collapsed in the context* (free or void, never passed
+  through). The closure properties the fixpoint must reach, each a
+  finite test:
+  - every node whose direction is in K² is void;
+  - every free node fails the frame test;
+  - no free hull contains a rotated frame-tied direction;
+  - every frame-tied node's statements have their frame-back facts in
+    K;
+  - no free open hull has a complex line outside K². The test inserts
+    i·h_j for the hull's own generators: all residuals nonzero means
+    none. This needs independence of a set of rows, sk-13a's indep by
+    induction;
+  - for free a and b, a found label g_ab gives conj(g_ab)·H_b ⊆ H_a and
+    g_ab·z_a ∈ H_b.
+  Turn and through are then a case analysis over the two nodes' kinds.
+- Scope, honestly: this is the largest proof of sk-13b, several more
+  sessions.
+- Next: the label and frame tests, independence of a set, the node kinds
+  and a round, then the loops, then closure.
 - The plan as written:
 - Union–find over segments and F, with labels. Each component keeps its
   *hull*: the real span of the vectors known parallel to its root,
