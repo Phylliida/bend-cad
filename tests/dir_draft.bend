@@ -71,6 +71,12 @@ import ../lib/dcroundpf.bend as DRP
 import ../lib/elim.bend as EL
 import ../lib/elimpf.bend as EP
 import ../spec/solve.bend as SS
+import ../lib/labalgpf.bend as LAF
+import ../lib/dcsetpf.bend as STF
+import ../lib/dcnodepf.bend as NDF
+import ../lib/lspanpf.bend as LSF
+import ../lib/dcfixpf.bend as FXF
+import ../lib/dcreppf.bend as REPF
 
 # The functions on an example
 # ---------------------------
@@ -276,3 +282,20 @@ def b3_nz(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +h: HS.HS, +z:
 def b3_close(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat, +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool})
   -> DRP.OutInv(es, fs, ctx, t, DC.dclose(es, fs, ctx, t, fuel)):
   DRP.dclose_ok(es, fs, ctx, t, fuel, hz, hb)
+
+def b3_conj(w: DR.Lab, +y: SK.VE) -> VDF.SameVD(DR.gmul(DR.Lab.conj(w), DR.gmul(w, y)), DR.vlin(DC.lnorm(w), y, DR.qz(), y)):
+  LAF.conj_w(w, y)
+
+def b3_k2(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +r: DR.Node, +y: SK.VE,
+  +hk: IVF.KInvD(es, fs, ctx, t, DC.Sk.k(s)), +hms: GNF.MsOk(es, fs, ctx, t, DC.Sk.ms(s)), +hls: GNF.LsOk(es, fs, ctx, t, DC.Sk.ls(s)), +hmsn: REPF.MsNz(DC.Sk.ms(s)), +hlsn: REPF.LsNz(DC.Sk.ls(s)),
+  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool},
+  hre: {KS.ks.inb(DC.Sk.k(s), SK.VE.x(y)) == True{} : Bool}, him: {KS.ks.inb(DC.Sk.k(s), SK.VE.y(y)) == True{} : Bool})
+  -> STF.InSt(es, fs, DC.Sk.k(s), NDF.rset(es, fs, t, s, r), y):
+  NDF.k2_in(es, fs, t, DC.Sk.k(s), NDF.rset(es, fs, t, s, r), y, NDF.sok_root(es, fs, ctx, t, s, r, hk, hms, hls, hmsn, hlsn, hz, hb), STF.kri(es, fs, ctx, t, DC.Sk.k(s), hk), hre, him)
+
+def b3_qspan(ws: List<&2, DR.Lab>, +w: DR.Lab, hq: {DC.qspan(ws, w) == True{} : Bool}, hp: {LSF.pairok(ws) == True{} : Bool}, nz: LSF.LNzs(ws)) -> LSF.LSp(LSF.lat0(ws), LSF.lat1(ws), w):
+  LSF.qspan_ok(ws, w, hq, hp, nz)
+
+def b3_fix(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat, +s: DC.Sk, eo: {DC.dclose(es, fs, ctx, t, fuel) == DC.OFix{s} : DC.Out},
+  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}) -> FXF.FixOut(es, fs, ctx, t, DC.segids(es), DC.OFix{s}):
+  FXF.fix_at(es, fs, ctx, t, fuel, s, eo, hz, hb)
