@@ -12,6 +12,8 @@
 #   mentioning t, separates into a = c and b = d (SP.sep).
 # - lib/hspacepf.bend (B3): a hull's membership decided exactly
 #   (HP.hs_der_ok, HP.hs_out), its invariant kept (HP.hs_add_inv).
+# - lib/spanpf.bend (B3): spans, decided exactly both ways (SN.in_of_zero,
+#   SN.zero_of_in), grown by appending, closed under combination.
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -32,6 +34,9 @@ import ../lib/kspacepf.bend as KP
 import ../lib/seppf.bend as SP
 import ../lib/hspace.bend as HS
 import ../lib/hspacepf.bend as HP
+import ../lib/spanpf.bend as SN
+import ../lib/elim.bend as EL
+import ../lib/elimpf.bend as EP
 import ../spec/solve.bend as SS
 
 # The functions on an example
@@ -172,3 +177,7 @@ def b3_sep(+a: E.QExpr, +b: E.QExpr, +c: E.QExpr, +d: E.QExpr, +t: Nat,
 def b3_hull(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +r: DR.Node, +t: Nat, h: HS.HS, +y: SK.VE, hi: HP.HInv(es, fs, ctx, r, t, h), hz: {HS.hs.inb(h, y, t) == True{} : Bool}, +hy: HP.VBelow(y, t), +hr: HP.VBelow(DR.zdir(es, r), t))
   -> ((DR.Valid(es, fs, ctx, HS.hs.der(es, fs, t, r, h, y)) & DR.IsP(DR.concl(es, fs, HS.hs.der(es, fs, t, r, h, y)))) & {DR.Jd.a(DR.concl(es, fs, HS.hs.der(es, fs, t, r, h, y))) == r : DR.Node}) & DR.SameV(DR.Jd.x(DR.concl(es, fs, HS.hs.der(es, fs, t, r, h, y))), y):
   HP.hs_der_ok(es, fs, ctx, r, t, h, y, hi, hz, hy, hr)
+
+# B3's spans, as their types
+def b3_span(+B: List<&2, E.QExpr>, +rows: List<&2, EL.Row>, +e: E.QExpr, +h: {EP.rinv(B, rows, 0n) == True{} : Bool}, +hl: {EL.rlen(rows) == SS.neqs(B) : Nat}, +hi: SN.InSpan(e, B)) -> {EP.isnil(EP.resp(EL.resid(rows, e))) == True{} : Bool}:
+  SN.zero_of_in(B, rows, e, h, hl, hi)
