@@ -27,6 +27,8 @@ import ./labalgpf.bend as LA
 import ./dclose.bend as DC
 import ./dcvd.bend as VD
 import ./indsetpf.bend as IP
+import ./dcgenpf.bend as GN
+import ./dcmergepf.bend as MG
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -229,3 +231,81 @@ def qspan_ok(ws: List<&2, DR.Lab>, +w: DR.Lab, hq: {DC.qspan(ws, w) == True{} : 
       qs1.go(w0, w, hq, nz)
     case Con{+w0, Con{+w1, t}}:
       qs2.go(w0, w1, w, IP.bnot_t(DC.lpar(w0, w1), hp))
+
+# Using spans
+# -----------
+
+# a span read on forms
+def lsp_form(+u0: DR.Lab, +u1: DR.Lab, +v: DR.Lab, +h: LSp(u0, u1, v), +y: SK.VE)
+  -> VD.SameVD(DR.gmul(v, y), DR.vlin(LA.lab.c(lsp.p(u0, u1, v, h)), DR.gmul(u0, y), LA.lab.s(lsp.p(u0, u1, v, h)), DR.gmul(u1, y))):
+  GN.samevd_tr(DR.gmul(v, y), DR.gmul(LA.lcomb(LA.lab.c(lsp.p(u0, u1, v, h)), u0, LA.lab.s(lsp.p(u0, u1, v, h)), u1), y), DR.vlin(LA.lab.c(lsp.p(u0, u1, v, h)), DR.gmul(u0, y), LA.lab.s(lsp.p(u0, u1, v, h)), DR.gmul(u1, y)),
+    LA.gle(v, LA.lcomb(LA.lab.c(lsp.p(u0, u1, v, h)), u0, LA.lab.s(lsp.p(u0, u1, v, h)), u1), y, lsp.e(u0, u1, v, h)),
+    LA.gmul_lin(LA.lab.c(lsp.p(u0, u1, v, h)), u0, LA.lab.s(lsp.p(u0, u1, v, h)), u1, y))
+
+# v is 0 in both parts
+def LZ(+v: DR.Lab) -> Data:
+  SK.Both({DR.qnz(LA.lab.c(v)) == False{} : Bool}, {DR.qnz(LA.lab.s(v)) == False{} : Bool})
+
+def z2.q(+a: S.Q, +b: S.Q) -> S.Q.eq(DR.qz(), S.Q.add(S.Q.mul(DR.qz(), a), S.Q.mul(DR.qz(), b))):
+  QR.qring_eq([a, b], E.QCst{DR.qz()}, E.QAdd{E.QMul{E.QCst{DR.qz()}, E.QVar{0n}}, E.QMul{E.QCst{DR.qz()}, E.QVar{1n}}}, {==})
+
+def lsp_zero.go(+vc: S.Q, +vs: S.Q, +a0: S.Q, +b0: S.Q, +a1: S.Q, +b1: S.Q, +zc: {DR.qnz(vc) == False{} : Bool}, zs: {DR.qnz(vs) == False{} : Bool})
+  -> LSp(DR.Lab{a0, b0}, DR.Lab{a1, b1}, DR.Lab{vc, vs}):
+  (lab0(), LA.le_of(vc, vs, S.Q.add(S.Q.mul(DR.qz(), a0), S.Q.mul(DR.qz(), a1)), S.Q.add(S.Q.mul(DR.qz(), b0), S.Q.mul(DR.qz(), b1)),
+    LQ.q_trans(vc, DR.qz(), S.Q.add(S.Q.mul(DR.qz(), a0), S.Q.mul(DR.qz(), a1)), LP.qnz_f(vc, zc), z2.q(a0, a1)),
+    LQ.q_trans(vs, DR.qz(), S.Q.add(S.Q.mul(DR.qz(), b0), S.Q.mul(DR.qz(), b1)), LP.qnz_f(vs, zs), z2.q(b0, b1))))
+
+# 0 is in every span
+def lsp_zero(v: DR.Lab, u0: DR.Lab, u1: DR.Lab, hz: LZ(v)) -> LSp(u0, u1, v):
+  match v u0 u1:
+    case DR.Lab{+vc, +vs} DR.Lab{+a0, +b0} DR.Lab{+a1, +b1}:
+      (+zc, zs) = hz
+      lsp_zero.go(vc, vs, a0, b0, a1, b1, zc, zs)
+
+def le.c(+g: DR.Lab, +h: DR.Lab, e: LA.LE(g, h)) -> LA.QE(LA.lab.c(g), LA.lab.c(h)):
+  (a, b) = e
+  a
+
+def le.s(+g: DR.Lab, +h: DR.Lab, e: LA.LE(g, h)) -> LA.QE(LA.lab.s(g), LA.lab.s(h)):
+  (a, b) = e
+  b
+
+def tr.q(+l0: S.Q, +l1: S.Q, +m0: S.Q, +m1: S.Q, +n0: S.Q, +n1: S.Q, +U0: S.Q, +U1: S.Q) -> S.Q.eq(S.Q.add(S.Q.mul(l0, S.Q.add(S.Q.mul(m0, U0), S.Q.mul(m1, U1))), S.Q.mul(l1, S.Q.add(S.Q.mul(n0, U0), S.Q.mul(n1, U1)))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(l0, m0), S.Q.mul(l1, n0)), U0), S.Q.mul(S.Q.add(S.Q.mul(l0, m1), S.Q.mul(l1, n1)), U1))):
+  LQ.q_trans(S.Q.add(S.Q.mul(l0, S.Q.add(S.Q.mul(m0, U0), S.Q.mul(m1, U1))), S.Q.mul(l1, S.Q.add(S.Q.mul(n0, U0), S.Q.mul(n1, U1)))), S.Q.add(S.Q.add(S.Q.mul(l0, S.Q.mul(m0, U0)), S.Q.mul(l0, S.Q.mul(m1, U1))), S.Q.add(S.Q.mul(l1, S.Q.mul(n0, U0)), S.Q.mul(l1, S.Q.mul(n1, U1)))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(l0, m0), S.Q.mul(l1, n0)), U0), S.Q.mul(S.Q.add(S.Q.mul(l0, m1), S.Q.mul(l1, n1)), U1)), QA.add_cong(S.Q.mul(l0, S.Q.add(S.Q.mul(m0, U0), S.Q.mul(m1, U1))), S.Q.add(S.Q.mul(l0, S.Q.mul(m0, U0)), S.Q.mul(l0, S.Q.mul(m1, U1))), S.Q.mul(l1, S.Q.add(S.Q.mul(n0, U0), S.Q.mul(n1, U1))), S.Q.add(S.Q.mul(l1, S.Q.mul(n0, U0)), S.Q.mul(l1, S.Q.mul(n1, U1))), QA.ldist(l0, S.Q.mul(m0, U0), S.Q.mul(m1, U1)), QA.ldist(l1, S.Q.mul(n0, U0), S.Q.mul(n1, U1))), LQ.q_trans(S.Q.add(S.Q.add(S.Q.mul(l0, S.Q.mul(m0, U0)), S.Q.mul(l0, S.Q.mul(m1, U1))), S.Q.add(S.Q.mul(l1, S.Q.mul(n0, U0)), S.Q.mul(l1, S.Q.mul(n1, U1)))), S.Q.add(S.Q.add(S.Q.mul(l0, S.Q.mul(m0, U0)), S.Q.mul(l1, S.Q.mul(n0, U0))), S.Q.add(S.Q.mul(l0, S.Q.mul(m1, U1)), S.Q.mul(l1, S.Q.mul(n1, U1)))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(l0, m0), S.Q.mul(l1, n0)), U0), S.Q.mul(S.Q.add(S.Q.mul(l0, m1), S.Q.mul(l1, n1)), U1)), QA.m4(S.Q.mul(l0, S.Q.mul(m0, U0)), S.Q.mul(l0, S.Q.mul(m1, U1)), S.Q.mul(l1, S.Q.mul(n0, U0)), S.Q.mul(l1, S.Q.mul(n1, U1))), LQ.q_trans(S.Q.add(S.Q.add(S.Q.mul(l0, S.Q.mul(m0, U0)), S.Q.mul(l1, S.Q.mul(n0, U0))), S.Q.add(S.Q.mul(l0, S.Q.mul(m1, U1)), S.Q.mul(l1, S.Q.mul(n1, U1)))), S.Q.add(S.Q.add(S.Q.mul(S.Q.mul(l0, m0), U0), S.Q.mul(S.Q.mul(l1, n0), U0)), S.Q.add(S.Q.mul(S.Q.mul(l0, m1), U1), S.Q.mul(S.Q.mul(l1, n1), U1))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(l0, m0), S.Q.mul(l1, n0)), U0), S.Q.mul(S.Q.add(S.Q.mul(l0, m1), S.Q.mul(l1, n1)), U1)), QA.add_cong(S.Q.add(S.Q.mul(l0, S.Q.mul(m0, U0)), S.Q.mul(l1, S.Q.mul(n0, U0))), S.Q.add(S.Q.mul(S.Q.mul(l0, m0), U0), S.Q.mul(S.Q.mul(l1, n0), U0)), S.Q.add(S.Q.mul(l0, S.Q.mul(m1, U1)), S.Q.mul(l1, S.Q.mul(n1, U1))), S.Q.add(S.Q.mul(S.Q.mul(l0, m1), U1), S.Q.mul(S.Q.mul(l1, n1), U1)), QA.add_cong(S.Q.mul(l0, S.Q.mul(m0, U0)), S.Q.mul(S.Q.mul(l0, m0), U0), S.Q.mul(l1, S.Q.mul(n0, U0)), S.Q.mul(S.Q.mul(l1, n0), U0), QA.ma(l0, m0, U0), QA.ma(l1, n0, U0)), QA.add_cong(S.Q.mul(l0, S.Q.mul(m1, U1)), S.Q.mul(S.Q.mul(l0, m1), U1), S.Q.mul(l1, S.Q.mul(n1, U1)), S.Q.mul(S.Q.mul(l1, n1), U1), QA.ma(l0, m1, U1), QA.ma(l1, n1, U1))), QA.add_cong(S.Q.add(S.Q.mul(S.Q.mul(l0, m0), U0), S.Q.mul(S.Q.mul(l1, n0), U0)), S.Q.mul(S.Q.add(S.Q.mul(l0, m0), S.Q.mul(l1, n0)), U0), S.Q.add(S.Q.mul(S.Q.mul(l0, m1), U1), S.Q.mul(S.Q.mul(l1, n1), U1)), S.Q.mul(S.Q.add(S.Q.mul(l0, m1), S.Q.mul(l1, n1)), U1), LQ.q_sym(S.Q.mul(S.Q.add(S.Q.mul(l0, m0), S.Q.mul(l1, n0)), U0), S.Q.add(S.Q.mul(S.Q.mul(l0, m0), U0), S.Q.mul(S.Q.mul(l1, n0), U0)), QA.rdist(S.Q.mul(l0, m0), S.Q.mul(l1, n0), U0)), LQ.q_sym(S.Q.mul(S.Q.add(S.Q.mul(l0, m1), S.Q.mul(l1, n1)), U1), S.Q.add(S.Q.mul(S.Q.mul(l0, m1), U1), S.Q.mul(S.Q.mul(l1, n1), U1)), QA.rdist(S.Q.mul(l0, m1), S.Q.mul(l1, n1), U1))))))
+
+def lsp_trans.go(+vc: S.Q, +vs: S.Q, +b0c: S.Q, +b0s: S.Q, +b1c: S.Q, +b1s: S.Q, +u0c: S.Q, +u0s: S.Q, +u1c: S.Q, +u1s: S.Q, +l0: S.Q, +l1: S.Q, +m0: S.Q, +m1: S.Q, +n0: S.Q, +n1: S.Q,
+  +he: LA.LE(DR.Lab{vc, vs}, LA.lcomb(l0, DR.Lab{b0c, b0s}, l1, DR.Lab{b1c, b1s})), +h0: LA.LE(DR.Lab{b0c, b0s}, LA.lcomb(m0, DR.Lab{u0c, u0s}, m1, DR.Lab{u1c, u1s})),
+  +h1: LA.LE(DR.Lab{b1c, b1s}, LA.lcomb(n0, DR.Lab{u0c, u0s}, n1, DR.Lab{u1c, u1s})))
+  -> LSp(DR.Lab{u0c, u0s}, DR.Lab{u1c, u1s}, DR.Lab{vc, vs}):
+  (DR.Lab{S.Q.add(S.Q.mul(l0, m0), S.Q.mul(l1, n0)), S.Q.add(S.Q.mul(l0, m1), S.Q.mul(l1, n1))},
+   LA.le_of(vc, vs, S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(l0, m0), S.Q.mul(l1, n0)), u0c), S.Q.mul(S.Q.add(S.Q.mul(l0, m1), S.Q.mul(l1, n1)), u1c)), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(l0, m0), S.Q.mul(l1, n0)), u0s), S.Q.mul(S.Q.add(S.Q.mul(l0, m1), S.Q.mul(l1, n1)), u1s)),
+     LQ.q_trans(vc, S.Q.add(S.Q.mul(l0, b0c), S.Q.mul(l1, b1c)), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(l0, m0), S.Q.mul(l1, n0)), u0c), S.Q.mul(S.Q.add(S.Q.mul(l0, m1), S.Q.mul(l1, n1)), u1c)), LA.qe_ok(vc, S.Q.add(S.Q.mul(l0, b0c), S.Q.mul(l1, b1c)), le.c(DR.Lab{vc, vs}, LA.lcomb(l0, DR.Lab{b0c, b0s}, l1, DR.Lab{b1c, b1s}), he)), LQ.q_trans(S.Q.add(S.Q.mul(l0, b0c), S.Q.mul(l1, b1c)), S.Q.add(S.Q.mul(l0, S.Q.add(S.Q.mul(m0, u0c), S.Q.mul(m1, u1c))), S.Q.mul(l1, S.Q.add(S.Q.mul(n0, u0c), S.Q.mul(n1, u1c)))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(l0, m0), S.Q.mul(l1, n0)), u0c), S.Q.mul(S.Q.add(S.Q.mul(l0, m1), S.Q.mul(l1, n1)), u1c)), QA.add_cong(S.Q.mul(l0, b0c), S.Q.mul(l0, S.Q.add(S.Q.mul(m0, u0c), S.Q.mul(m1, u1c))), S.Q.mul(l1, b1c), S.Q.mul(l1, S.Q.add(S.Q.mul(n0, u0c), S.Q.mul(n1, u1c))), LQ.q_mul_cong_r(l0, b0c, S.Q.add(S.Q.mul(m0, u0c), S.Q.mul(m1, u1c)), LA.qe_ok(b0c, S.Q.add(S.Q.mul(m0, u0c), S.Q.mul(m1, u1c)), le.c(DR.Lab{b0c, b0s}, LA.lcomb(m0, DR.Lab{u0c, u0s}, m1, DR.Lab{u1c, u1s}), h0))), LQ.q_mul_cong_r(l1, b1c, S.Q.add(S.Q.mul(n0, u0c), S.Q.mul(n1, u1c)), LA.qe_ok(b1c, S.Q.add(S.Q.mul(n0, u0c), S.Q.mul(n1, u1c)), le.c(DR.Lab{b1c, b1s}, LA.lcomb(n0, DR.Lab{u0c, u0s}, n1, DR.Lab{u1c, u1s}), h1)))), tr.q(l0, l1, m0, m1, n0, n1, u0c, u1c))), LQ.q_trans(vs, S.Q.add(S.Q.mul(l0, b0s), S.Q.mul(l1, b1s)), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(l0, m0), S.Q.mul(l1, n0)), u0s), S.Q.mul(S.Q.add(S.Q.mul(l0, m1), S.Q.mul(l1, n1)), u1s)), LA.qe_ok(vs, S.Q.add(S.Q.mul(l0, b0s), S.Q.mul(l1, b1s)), le.s(DR.Lab{vc, vs}, LA.lcomb(l0, DR.Lab{b0c, b0s}, l1, DR.Lab{b1c, b1s}), he)), LQ.q_trans(S.Q.add(S.Q.mul(l0, b0s), S.Q.mul(l1, b1s)), S.Q.add(S.Q.mul(l0, S.Q.add(S.Q.mul(m0, u0s), S.Q.mul(m1, u1s))), S.Q.mul(l1, S.Q.add(S.Q.mul(n0, u0s), S.Q.mul(n1, u1s)))), S.Q.add(S.Q.mul(S.Q.add(S.Q.mul(l0, m0), S.Q.mul(l1, n0)), u0s), S.Q.mul(S.Q.add(S.Q.mul(l0, m1), S.Q.mul(l1, n1)), u1s)), QA.add_cong(S.Q.mul(l0, b0s), S.Q.mul(l0, S.Q.add(S.Q.mul(m0, u0s), S.Q.mul(m1, u1s))), S.Q.mul(l1, b1s), S.Q.mul(l1, S.Q.add(S.Q.mul(n0, u0s), S.Q.mul(n1, u1s))), LQ.q_mul_cong_r(l0, b0s, S.Q.add(S.Q.mul(m0, u0s), S.Q.mul(m1, u1s)), LA.qe_ok(b0s, S.Q.add(S.Q.mul(m0, u0s), S.Q.mul(m1, u1s)), le.s(DR.Lab{b0c, b0s}, LA.lcomb(m0, DR.Lab{u0c, u0s}, m1, DR.Lab{u1c, u1s}), h0))), LQ.q_mul_cong_r(l1, b1s, S.Q.add(S.Q.mul(n0, u0s), S.Q.mul(n1, u1s)), LA.qe_ok(b1s, S.Q.add(S.Q.mul(n0, u0s), S.Q.mul(n1, u1s)), le.s(DR.Lab{b1c, b1s}, LA.lcomb(n0, DR.Lab{u0c, u0s}, n1, DR.Lab{u1c, u1s}), h1)))), tr.q(l0, l1, m0, m1, n0, n1, u0s, u1s)))))
+
+# spans compose
+def lsp_trans(v: DR.Lab, b0: DR.Lab, b1: DR.Lab, u0: DR.Lab, u1: DR.Lab, +h: LSp(b0, b1, v), +h0: LSp(u0, u1, b0), +h1: LSp(u0, u1, b1)) -> LSp(u0, u1, v):
+  match v b0 b1 u0 u1:
+    case DR.Lab{+vc, +vs} DR.Lab{+b0c, +b0s} DR.Lab{+b1c, +b1s} DR.Lab{+u0c, +u0s} DR.Lab{+u1c, +u1s}:
+      lsp_trans.go(vc, vs, b0c, b0s, b1c, b1s, u0c, u0s, u1c, u1s,
+        LA.lab.c(lsp.p(DR.Lab{b0c, b0s}, DR.Lab{b1c, b1s}, DR.Lab{vc, vs}, h)), LA.lab.s(lsp.p(DR.Lab{b0c, b0s}, DR.Lab{b1c, b1s}, DR.Lab{vc, vs}, h)),
+        LA.lab.c(lsp.p(DR.Lab{u0c, u0s}, DR.Lab{u1c, u1s}, DR.Lab{b0c, b0s}, h0)), LA.lab.s(lsp.p(DR.Lab{u0c, u0s}, DR.Lab{u1c, u1s}, DR.Lab{b0c, b0s}, h0)),
+        LA.lab.c(lsp.p(DR.Lab{u0c, u0s}, DR.Lab{u1c, u1s}, DR.Lab{b1c, b1s}, h1)), LA.lab.s(lsp.p(DR.Lab{u0c, u0s}, DR.Lab{u1c, u1s}, DR.Lab{b1c, b1s}, h1)),
+        lsp.e(DR.Lab{b0c, b0s}, DR.Lab{b1c, b1s}, DR.Lab{vc, vs}, h), lsp.e(DR.Lab{u0c, u0s}, DR.Lab{u1c, u1s}, DR.Lab{b0c, b0s}, h0), lsp.e(DR.Lab{u0c, u0s}, DR.Lab{u1c, u1s}, DR.Lab{b1c, b1s}, h1))
+
+def cj.s(+vs: S.Q, +l0: S.Q, +b0s: S.Q, +l1: S.Q, +b1s: S.Q, +h: LA.QE(vs, S.Q.add(S.Q.mul(l0, b0s), S.Q.mul(l1, b1s)))) -> S.Q.eq(S.Q.neg(vs), S.Q.add(S.Q.mul(l0, S.Q.neg(b0s)), S.Q.mul(l1, S.Q.neg(b1s)))):
+  QA.ch3(S.Q.neg(vs), S.Q.neg(S.Q.add(S.Q.mul(l0, b0s), S.Q.mul(l1, b1s))), S.Q.add(S.Q.neg(S.Q.mul(l0, b0s)), S.Q.neg(S.Q.mul(l1, b1s))), S.Q.add(S.Q.mul(l0, S.Q.neg(b0s)), S.Q.mul(l1, S.Q.neg(b1s))),
+    LQ.q_neg_cong(vs, S.Q.add(S.Q.mul(l0, b0s), S.Q.mul(l1, b1s)), LA.qe_ok(vs, S.Q.add(S.Q.mul(l0, b0s), S.Q.mul(l1, b1s)), h)),
+    QA.negadd(S.Q.mul(l0, b0s), S.Q.mul(l1, b1s)),
+    QA.add_cong(S.Q.neg(S.Q.mul(l0, b0s)), S.Q.mul(l0, S.Q.neg(b0s)), S.Q.neg(S.Q.mul(l1, b1s)), S.Q.mul(l1, S.Q.neg(b1s)),
+      LQ.q_sym(S.Q.mul(l0, S.Q.neg(b0s)), S.Q.neg(S.Q.mul(l0, b0s)), QA.mneg(l0, b0s)), LQ.q_sym(S.Q.mul(l1, S.Q.neg(b1s)), S.Q.neg(S.Q.mul(l1, b1s)), QA.mneg(l1, b1s))))
+
+def lsp_conj.go(+vc: S.Q, +vs: S.Q, +b0c: S.Q, +b0s: S.Q, +b1c: S.Q, +b1s: S.Q, +l0: S.Q, +l1: S.Q, +he: LA.LE(DR.Lab{vc, vs}, LA.lcomb(l0, DR.Lab{b0c, b0s}, l1, DR.Lab{b1c, b1s})))
+  -> LSp(DR.Lab{b0c, S.Q.neg(b0s)}, DR.Lab{b1c, S.Q.neg(b1s)}, DR.Lab{vc, S.Q.neg(vs)}):
+  (DR.Lab{l0, l1}, (le.c(DR.Lab{vc, vs}, LA.lcomb(l0, DR.Lab{b0c, b0s}, l1, DR.Lab{b1c, b1s}), he),
+    LA.qe_of(S.Q.neg(vs), S.Q.add(S.Q.mul(l0, S.Q.neg(b0s)), S.Q.mul(l1, S.Q.neg(b1s))), cj.s(vs, l0, b0s, l1, b1s, le.s(DR.Lab{vc, vs}, LA.lcomb(l0, DR.Lab{b0c, b0s}, l1, DR.Lab{b1c, b1s}), he)))))
+
+# conjugating a span: the same real coefficients
+def lsp_conj(v: DR.Lab, b0: DR.Lab, b1: DR.Lab, +h: LSp(b0, b1, v)) -> LSp(DR.Lab.conj(b0), DR.Lab.conj(b1), DR.Lab.conj(v)):
+  match v b0 b1:
+    case DR.Lab{+vc, +vs} DR.Lab{+b0c, +b0s} DR.Lab{+b1c, +b1s}:
+      lsp_conj.go(vc, vs, b0c, b0s, b1c, b1s, LA.lab.c(lsp.p(DR.Lab{b0c, b0s}, DR.Lab{b1c, b1s}, DR.Lab{vc, vs}, h)), LA.lab.s(lsp.p(DR.Lab{b0c, b0s}, DR.Lab{b1c, b1s}, DR.Lab{vc, vs}, h)),
+        lsp.e(DR.Lab{b0c, b0s}, DR.Lab{b1c, b1s}, DR.Lab{vc, vs}, h))
