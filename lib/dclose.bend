@@ -33,6 +33,7 @@ import ./hspace.bend as HS
 import ./pair.bend as PT
 import ./lab.bend as LB
 import ./indset.bend as IS
+import ./seppf.bend as SP
 
 # Nodes
 # -----
@@ -1020,3 +1021,44 @@ def run(fuel: Nat, o: Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Na
 def dclose(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat) -> Out:
   +cs = sp.of(ctx, SP{Nil{}, Nil{}})
   run(fuel, OStep{sk0(es, fs, cs)}, es, fs, t, cs, segids(es))
+
+# The closure's hypotheses
+# ------------------------
+
+def ptsb.g(g: SK.Geo, +t: Nat) -> Bool:
+  match g:
+    case SK.GPoint{x, y}:
+      SV.band(SV.lt(x, t), SV.lt(y, t))
+    case SK.GSeg{p, q}:
+      True{}
+    case SK.GCirc{c, r}:
+      True{}
+    case SK.GArc{s, e, b}:
+      True{}
+
+# every point's coordinates are below t
+def ptsb(es: List<&2, SK.Ent>, +t: Nat) -> Bool:
+  match es:
+    case Nil{}:
+      True{}
+    case Con{SK.Ent{id, cons, g}, tl}:
+      SV.band(ptsb.g(g, t), ptsb(tl, t))
+
+# t is past every point's coordinates (and so every direction's variables)
+def zb(+es: List<&2, SK.Ent>, +t: Nat) -> Bool:
+  SV.band(SV.lt(0n, t), ptsb(es, t))
+
+def fb.ds(ds: Maybe<&2, DR.DStat>, +t: Nat) -> Bool:
+  match ds:
+    case Some{DR.DStat{a, +x, l}}:
+      SV.band(SP.vbelow(SK.VE.x(x), t), SP.vbelow(SK.VE.y(x), t))
+    case None{}:
+      True{}
+
+# every fact's equation and statement are below t
+def fb(fs: List<&2, DR.Fact>, +t: Nat) -> Bool:
+  match fs:
+    case Nil{}:
+      True{}
+    case Con{DR.Fact{e, nd, ds}, tl}:
+      SV.band(SP.vbelow(e, t), SV.band(fb.ds(ds, t), fb(tl, t)))
