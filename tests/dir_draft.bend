@@ -6,6 +6,8 @@
 # - lib/dirpf.bend (B1), imported so the gate checks it: the calculus is
 #   sound in every ordered field (DP.sound), and direction statements are
 #   right for their kinds (DP.dstat_ok).
+# - lib/kspacepf.bend (B2): K's membership decided exactly (KP.ks_der_ok,
+#   KP.ks_out), its invariant kept (KP.ks_add_inv).
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -21,6 +23,8 @@ import ../spec/box.bend as BX
 import ../spec/_draft13b.bend as SV
 import ../spec/dir.bend as DR
 import ../lib/dirpf.bend as DP
+import ../lib/kspace.bend as KS
+import ../lib/kspacepf.bend as KP
 
 # The functions on an example
 # ---------------------------
@@ -141,3 +145,11 @@ def b1_sound(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, SK.Ent>, +fs: L
 
 def b1_stat(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, SK.Ent>, k: SK.Constraint, h: SK.Zeros(~F, env, SK.Constraint.eqs(es, k))) -> DP.StatHolds(~F, env, es, DR.dstat(es, k)):
   DP.dstat_ok(~F, env, es, k, h)
+
+# B2's results, as their types
+def b2_in(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, k: KS.KS, +e: E.QExpr, h: KP.KInv(es, fs, ctx, k), hz: {KS.ks.inb(k, e) == True{} : Bool})
+  -> (DR.Valid(es, fs, ctx, KS.ks.der(es, fs, k, e)) & DR.IsK(DR.concl(es, fs, KS.ks.der(es, fs, k, e)))) & DR.Same(DR.Jd.e(DR.concl(es, fs, KS.ks.der(es, fs, k, e))), e):
+  KP.ks_der_ok(es, fs, ctx, k, e, h, hz)
+
+def b2_add(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, k: KS.KS, +d: DR.Der, h: KP.KInv(es, fs, ctx, k), hd: DR.Valid(es, fs, ctx, d) & DR.IsK(DR.concl(es, fs, d))) -> KP.KInv(es, fs, ctx, KS.ks.add(es, fs, k, d)):
+  KP.ks_add_inv(es, fs, ctx, k, d, h, hd)

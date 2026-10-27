@@ -161,9 +161,9 @@ def negs0(~F: O.OField, +s: S.Q) -> {O.add(F, O.ofq(~F, S.Q.neg(s)), O.ofq(~F, s
   %Equal.sym(O.C(F), O.ofq(~F, S.Q.neg(s)), O.neg(F, O.ofq(~F, s)), QE.ofq_neg(~F, s)) : {O.add(F, _, O.ofq(~F, s)) == O.zero(F) : O.C(F)}
   FR.fring_eq(~F, [O.ofq(~F, s)], E.ZAdd{E.ZNeg{E.ZVar{0n}}, E.ZVar{0n}}, E.ZCst{S.Z0{}}, {==})
 
-# K-lin
-def r_klin(~F: O.OField, +env: List<&2, O.C(F)>, +l1: S.Q, +e1: E.QExpr, +l2: S.Q, +e2: E.QExpr, h1: {ev(~F, env, e1) == O.zero(F) : O.C(F)}, h2: {ev(~F, env, e2) == O.zero(F) : O.C(F)}) -> {ev(~F, env, E.QAdd{E.QMul{DR.cst(l1), e1}, E.QMul{DR.cst(l2), e2}}) == O.zero(F) : O.C(F)}:
-  FO.cert2(~F, ev(~F, env, E.QAdd{E.QMul{DR.cst(l1), e1}, E.QMul{DR.cst(l2), e2}}), O.ofq(~F, l1), ev(~F, env, e1), O.ofq(~F, l2), ev(~F, env, e2), {==}, h1, h2)
+# K-add
+def r_kadd(~F: O.OField, +env: List<&2, O.C(F)>, +l: S.Q, +e1: E.QExpr, +e2: E.QExpr, h1: {ev(~F, env, e1) == O.zero(F) : O.C(F)}, h2: {ev(~F, env, e2) == O.zero(F) : O.C(F)}) -> {ev(~F, env, E.QAdd{E.QMul{E.QCst{l}, e1}, e2}) == O.zero(F) : O.C(F)}:
+  FO.cert2(~F, ev(~F, env, E.QAdd{E.QMul{E.QCst{l}, e1}, e2}), O.ofq(~F, l), ev(~F, env, e1), O.one(F), ev(~F, env, e2), FR.fring_eq(~F, [O.ofq(~F, l), ev(~F, env, e1), ev(~F, env, e2)], E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{2n}}, E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZMul{E.ZCst{S.Zpos{S.XH{}}}, E.ZVar{2n}}}, {==}), h1, h2)
 
 # frame-back: cross((1, 0), x) = 0 gives Im x = 0
 def r_back(~F: O.OField, +env: List<&2, O.C(F)>, +x: SK.VE, h: {evc(~F, env, DR.zdir(Nil{}, DR.NFrame{}), x) == O.zero(F) : O.C(F)}) -> {ev(~F, env, SK.VE.y(x)) == O.zero(F) : O.C(F)}:
@@ -365,13 +365,15 @@ def lsplit2(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, SK.Ent>, +a: Lis
 
 def sound(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +hf: AllFacts(~F, env, es, fs), d: DR.Der, hv: DR.Valid(es, fs, ctx, d), +hl: DR.Longs(~F, env, es, DR.nd(es, fs, d))) -> Holds(~F, env, es, DR.concl(es, fs, d)):
   match d:
+    case DR.DZero{}:
+      QE.ofq_zero(~F)
     case DR.DPrem{+i}:
       s_prem(~F, env, es, DR.fact_at(fs, i), fact_at_ok(~F, env, es, fs, i, hf), hl)
-    case DR.DKLin{+l1, +d1, +l2, +d2}:
+    case DR.DKAdd{+l, +d1, +d2}:
       (v1, r) = hv
       (v2, ks) = r
       (k1, k2) = ks
-      r_klin(~F, env, l1, DR.Jd.e(DR.concl(es, fs, d1)), l2, DR.Jd.e(DR.concl(es, fs, d2)),
+      r_kadd(~F, env, l, DR.Jd.e(DR.concl(es, fs, d1)), DR.Jd.e(DR.concl(es, fs, d2)),
         kval(~F, env, es, DR.concl(es, fs, d1), k1, sound(~F, env, es, fs, ctx, hf, d1, v1, lsplit1(~F, env, es, DR.nd(es, fs, d1), DR.nd(es, fs, d2), hl))),
         kval(~F, env, es, DR.concl(es, fs, d2), k2, sound(~F, env, es, fs, ctx, hf, d2, v2, lsplit2(~F, env, es, DR.nd(es, fs, d1), DR.nd(es, fs, d2), hl))))
     case DR.DBack{+d}:

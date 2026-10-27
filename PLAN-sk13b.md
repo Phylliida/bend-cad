@@ -186,7 +186,8 @@ rules:
 | rule | from | gives | nd added |
 |---|---|---|---|
 | K-premise | e is an equation of P | K(e) | e's own |
-| K-lin | K(e₁), K(e₂), rationals λ₁, λ₂ | K(λ₁e₁ + λ₂e₂) | |
+| K-zero | | K(0) | |
+| K-add | K(e₁), K(e₂), a rational λ | K(λ·e₁ + e₂) | |
 | ∥-premise | a direction statement cross(z_a, x) in P | ∥(a, x) | its own |
 | ∥-self | | ∥(a, z_a) | |
 | ∥-lin | ∥(a, x₁), ∥(a, x₂), rationals μ₁, μ₂ | ∥(a, μ₁x₁ + μ₂x₂) | |
@@ -466,6 +467,22 @@ components, and all are bounded.
   segment collapsed in K.
 
 ### B2. The linear layer, extended (K)
+*Core done 2026-10-27* (lib/kspace.bend, lib/kspacepf.bend). As built:
+- K holds sk-13a's rows and one derivation per generator. The generators
+  are read off the derivations' conclusions, so the two cannot drift.
+  Adding a generator keeps it only if its residual is not 0.
+- Proven: the invariant (sk-13a's echelon form of the generators, every
+  derivation valid and proving a K judgment) is kept by adding
+  (sk-13a's new_rinv). A zero residual gives a valid derivation proving e:
+  a chain of K-add steps whose conclusion is exactly lin of the
+  generators, which sk-13a's derivable shows is e. A nonzero residual
+  shows no constant combination of the generators is e (sk-13a's indep).
+- Two spec changes made it clean: K(0) (DZero), and K-add (λ·e₁ + e₂) in
+  place of K-lin, so chains have spec/solve.bend's lin shape.
+- The segments' residuals are not kept apart: with the hull encoding
+  (above), each hull test reduces its forms afresh, so there is nothing
+  to keep up to date.
+- The plan as written:
 - Rows for P's equations (the basis's rows, plus the dropped ones' until
   the first direction drop changes the span), and rows for derived
   linear forms, each with its nd.

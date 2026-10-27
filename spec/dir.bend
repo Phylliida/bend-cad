@@ -225,10 +225,13 @@ type Jd is Data:
   JP{a: Node, x: SK.VE}
 
 type Der is Data:
+  # K(0)
+  DZero{}
   # K(e) for the fact e at position i
   DPrem{i: Nat}
-  # K(l1 e1 + l2 e2) from K(e1), K(e2)
-  DKLin{l1: S.Q, d1: Der, l2: S.Q, d2: Der}
+  # K(l e1 + e2) from K(e1), K(e2) (with K(0), every constant
+  # combination, in spec/solve.bend's lin shape)
+  DKAdd{l: S.Q, d1: Der, d2: Der}
   # frame-back: K(Im x) from par(frame, x)
   DBack{d: Der}
   # complex line: K(Re x) (re) or K(Im x) from par(a, x) and par(a, i x),
@@ -312,10 +315,12 @@ def dline.e(re: Bool, +x: SK.VE) -> E.QExpr:
 # what a derivation proves
 def concl(+es: List<&2, SK.Ent>, +fs: List<&2, Fact>, d: Der) -> Jd:
   match d:
+    case DZero{}:
+      JK{zeroe()}
     case DPrem{+i}:
       JK{fact.e(fact_at(fs, i))}
-    case DKLin{+l1, +d1, +l2, +d2}:
-      JK{E.QAdd{E.QMul{cst(l1), Jd.e(concl(es, fs, d1))}, E.QMul{cst(l2), Jd.e(concl(es, fs, d2))}}}
+    case DKAdd{+l, +d1, +d2}:
+      JK{E.QAdd{E.QMul{E.QCst{l}, Jd.e(concl(es, fs, d1))}, Jd.e(concl(es, fs, d2))}}
     case DBack{+d}:
       JK{SK.VE.y(Jd.x(concl(es, fs, d)))}
     case DLine{+d1, +d2, +re}:
@@ -341,9 +346,11 @@ def concl(+es: List<&2, SK.Ent>, +fs: List<&2, Fact>, d: Der) -> Jd:
 # through, every segment a complex line is applied at
 def nd(+es: List<&2, SK.Ent>, +fs: List<&2, Fact>, d: Der) -> List<&2, Nat>:
   match d:
+    case DZero{}:
+      Nil{}
     case DPrem{+i}:
       fact.nd(fact_at(fs, i))
-    case DKLin{+l1, +d1, +l2, +d2}:
+    case DKAdd{+l, +d1, +d2}:
       ncat(nd(es, fs, d1), nd(es, fs, d2))
     case DBack{+d}:
       nd(es, fs, d)
@@ -400,9 +407,11 @@ def HasStat(m: Maybe<&2, Fact>) -> Type:
 # d follows the rules, over the facts fs, with ctx the context
 def Valid(+es: List<&2, SK.Ent>, +fs: List<&2, Fact>, +ctx: List<&2, E.QExpr>, d: Der) -> Type:
   match d:
+    case DZero{}:
+      Unit
     case DPrem{+i}:
       HasFact(fact_at(fs, i))
-    case DKLin{+l1, +d1, +l2, +d2}:
+    case DKAdd{+l, +d1, +d2}:
       Valid(es, fs, ctx, d1) & (Valid(es, fs, ctx, d2) & (IsK(concl(es, fs, d1)) & IsK(concl(es, fs, d2))))
     case DBack{+d}:
       Valid(es, fs, ctx, d) & (IsP(concl(es, fs, d)) & {Jd.a(concl(es, fs, d)) == NFrame{} : Node})
