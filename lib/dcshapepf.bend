@@ -20,11 +20,13 @@ import ../spec/dir.bend as DR
 import ./listpf.bend as LP2
 import ./labpf.bend as LP
 import ./kspace.bend as KS
+import ./lab.bend as LB
 import ./dclose.bend as DC
 import ./dcvd.bend as VD
 import ./dcgenpf.bend as GN
 import ./dcsetpf.bend as ST
 import ./lspanpf.bend as LS
+import ./indsetpf.bend as IP
 import ./pairpf.bend as PP
 
 def absurd(-A: Type, x: Empty) -> A:
@@ -269,3 +271,308 @@ def af_reroot(sc: List<&2, DC.Mem>, +ms: List<&2, DC.Mem>, +old: DR.Node, +new: 
     case Con{DC.Mem{+a0, +r0, +w0, +d0}, tl}:
       (e0, ht) = h
       (af_one(ms, DC.Mem{a0, r0, w0, d0}, old, new, dR, ww, e0), af_reroot(tl, ms, old, new, dR, ww, ht))
+
+# Nodes
+# -----
+
+def node_sym.go(g: Bool, +a: DR.Node, +b: DR.Node, eg: {g == DC.node_eq(b, a) : Bool}, h: {DC.node_eq(a, b) == False{} : Bool}) -> {g == False{} : Bool}:
+  match g:
+    case False{}:
+      {==}
+    case True{}:
+      absurd({True{} == False{} : Bool}, LP.tf(Equal.trans(Bool, True{}, DC.node_eq(a, b), False{},
+        Equal.trans(Bool, True{}, DC.node_eq(a, a), DC.node_eq(a, b), Equal.sym(Bool, DC.node_eq(a, a), True{}, node_refl(a)),
+          Equal.cong(DR.Node, Bool, x => DC.node_eq(a, x), a, b, Equal.sym(DR.Node, b, a, GN.node_eq_ok(b, a, Equal.sym(Bool, True{}, DC.node_eq(b, a), eg))))), h)))
+
+def node_sym(+a: DR.Node, +b: DR.Node, h: {DC.node_eq(a, b) == False{} : Bool}) -> {DC.node_eq(b, a) == False{} : Bool}:
+  node_sym.go(DC.node_eq(b, a), a, b, {==}, h)
+
+def node_sym_t(+a: DR.Node, +b: DR.Node, h: {DC.node_eq(a, b) == True{} : Bool}) -> {DC.node_eq(b, a) == True{} : Bool}:
+  %GN.node_eq_ok(a, b, h) : {DC.node_eq(_, a) == True{} : Bool}
+  node_refl(a)
+
+# Roots
+# -----
+
+def isroot.m(m: Maybe<&2, DC.Mem>, +r: DR.Node) -> Bool:
+  match m:
+    case Some{DC.Mem{a, r2, w, d}}:
+      DC.node_eq(r2, r)
+    case None{}:
+      False{}
+
+# r's record has r as its root
+def isroot(+ms: List<&2, DC.Mem>, +r: DR.Node) -> Bool:
+  isroot.m(DC.mem_of(ms, r), r)
+
+def iroot_keep.m(m: Maybe<&2, DC.Mem>, +r: DR.Node, +old: DR.Node, +new: DR.Node, +dR: DR.Der, +ww: DR.Lab, h: {isroot.m(m, r) == True{} : Bool}, +hr: {DC.node_eq(r, old) == False{} : Bool})
+  -> {isroot.m(mmap(old, new, dR, ww, m), r) == True{} : Bool}:
+  match m:
+    case None{}:
+      absurd({isroot.m(None{}, r) == True{} : Bool}, LP.tf(Equal.sym(Bool, False{}, True{}, h)))
+    case Some{DC.Mem{+a2, +r2, +w2, +d2}}:
+      %Equal.sym(DR.Node, r2, r, GN.node_eq_ok(r2, r, h)) : {isroot.m(Some{DC.reroot.one(DC.node_eq(_, old), a2, _, w2, d2, new, dR, ww, old)}, r) == True{} : Bool}
+      %Equal.sym(Bool, DC.node_eq(r, old), False{}, hr) : {isroot.m(Some{DC.reroot.one(_, a2, r, w2, d2, new, dR, ww, old)}, r) == True{} : Bool}
+      node_refl(r)
+
+# a root whose record is not moved stays a root
+def iroot_keep(+ms: List<&2, DC.Mem>, +r: DR.Node, +old: DR.Node, +new: DR.Node, +dR: DR.Der, +ww: DR.Lab, h: {isroot(ms, r) == True{} : Bool}, +hr: {DC.node_eq(r, old) == False{} : Bool})
+  -> {isroot(DC.reroot(ms, old, new, dR, ww), r) == True{} : Bool}:
+  %Equal.sym(Maybe<&2, DC.Mem>, DC.mem_of(DC.reroot(ms, old, new, dR, ww), r), mmap(old, new, dR, ww, DC.mem_of(ms, r)), mem_reroot(ms, r, old, new, dR, ww)) : {isroot.m(_, r) == True{} : Bool}
+  iroot_keep.m(DC.mem_of(ms, r), r, old, new, dR, ww, h, hr)
+
+# every record's root is a root
+def RootsOk(sc: List<&2, DC.Mem>, +ms: List<&2, DC.Mem>) -> Data:
+  match sc:
+    case Nil{}:
+      Unit
+    case Con{+m, tl}:
+      SK.Both({isroot(ms, DC.Mem.r(m)) == True{} : Bool}, RootsOk(tl, ms))
+
+def rok_one(f: Bool, +ms: List<&2, DC.Mem>, +a0: DR.Node, +r0: DR.Node, +w0: DR.Lab, +d0: DR.Der, +old: DR.Node, +new: DR.Node, +dR: DR.Der, +ww: DR.Lab,
+  ef: {f == DC.node_eq(r0, old) : Bool}, e0: {isroot(ms, r0) == True{} : Bool}, +hn: {isroot(ms, new) == True{} : Bool}, +hon: {DC.node_eq(old, new) == False{} : Bool})
+  -> {isroot(DC.reroot(ms, old, new, dR, ww), DC.Mem.r(DC.reroot.one(f, a0, r0, w0, d0, new, dR, ww, old))) == True{} : Bool}:
+  match f:
+    case True{}:
+      iroot_keep(ms, new, old, new, dR, ww, hn, node_sym(old, new, hon))
+    case False{}:
+      iroot_keep(ms, r0, old, new, dR, ww, e0, Equal.sym(Bool, False{}, DC.node_eq(r0, old), ef))
+
+# rerooting to a root keeps every record's root a root
+def rok_reroot(sc: List<&2, DC.Mem>, +ms: List<&2, DC.Mem>, +old: DR.Node, +new: DR.Node, +dR: DR.Der, +ww: DR.Lab, h: RootsOk(sc, ms),
+  +hn: {isroot(ms, new) == True{} : Bool}, +hon: {DC.node_eq(old, new) == False{} : Bool}) -> RootsOk(DC.reroot(sc, old, new, dR, ww), DC.reroot(ms, old, new, dR, ww)):
+  match sc:
+    case Nil{}:
+      Unit{}
+    case Con{DC.Mem{+a0, +r0, +w0, +d0}, tl}:
+      (e0, ht) = h
+      (rok_one(DC.node_eq(r0, old), ms, a0, r0, w0, d0, old, new, dR, ww, {==}, e0, hn, hon), rok_reroot(tl, ms, old, new, dR, ww, ht, hn, hon))
+
+# Root records
+# ------------
+
+def rrok.go(f: Bool, +a: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der) -> Data:
+  match f:
+    case True{}:
+      {DC.Mem{a, r, w, d} == DC.Mem{r, r, DC.lone(), DR.DSelf{r}} : DC.Mem}
+    case False{}:
+      Unit
+
+# a record whose node is its root is (r, r, 1, DSelf r)
+def rrok(m: DC.Mem) -> Data:
+  match m:
+    case DC.Mem{+a, +r, +w, +d}:
+      rrok.go(DC.node_eq(a, r), a, r, w, d)
+
+def AllRR(sc: List<&2, DC.Mem>) -> Data:
+  match sc:
+    case Nil{}:
+      Unit
+    case Con{+m, tl}:
+      SK.Both(rrok(m), AllRR(tl))
+
+def rr_one.on(+old: DR.Node, +new: DR.Node, +r0: DR.Node, e1: {old == r0 : DR.Node}, e2: {r0 == new : DR.Node}) -> {True{} == DC.node_eq(old, new) : Bool}:
+  %Equal.sym(DR.Node, old, r0, e1) : {True{} == DC.node_eq(_, new) : Bool}
+  %Equal.sym(DR.Node, r0, new, e2) : {True{} == DC.node_eq(_, new) : Bool}
+  Equal.sym(Bool, DC.node_eq(new, new), True{}, node_refl(new))
+
+def rr_one.no(+ms: List<&2, DC.Mem>, +a0: DR.Node, +r0: DR.Node, +w0: DR.Lab, +d0: DR.Der, +old: DR.Node, +new: DR.Node, ea: {a0 == new : DR.Node},
+  ef: {True{} == DC.node_eq(r0, old) : Bool}, f0: {DC.mem_of(ms, a0) == Some{DC.Mem{a0, r0, w0, d0}} : Maybe<&2, DC.Mem>},
+  hn: {isroot(ms, new) == True{} : Bool}, hon: {DC.node_eq(old, new) == False{} : Bool}) -> Empty:
+  LP.tf(Equal.trans(Bool, True{}, DC.node_eq(old, new), False{},
+    rr_one.on(old, new, r0, Equal.sym(DR.Node, r0, old, GN.node_eq_ok(r0, old, Equal.sym(Bool, True{}, DC.node_eq(r0, old), ef))),
+      GN.node_eq_ok(r0, new, Equal.trans(Bool, DC.node_eq(r0, new), isroot(ms, new), True{},
+        Equal.sym(Bool, isroot(ms, new), DC.node_eq(r0, new), Equal.cong(Maybe<&2, DC.Mem>, Bool, x => isroot.m(x, new), DC.mem_of(ms, new), Some{DC.Mem{a0, r0, w0, d0}},
+          Equal.trans(Maybe<&2, DC.Mem>, DC.mem_of(ms, new), DC.mem_of(ms, a0), Some{DC.Mem{a0, r0, w0, d0}}, Equal.cong(DR.Node, Maybe<&2, DC.Mem>, y => DC.mem_of(ms, y), new, a0, Equal.sym(DR.Node, a0, new, ea)), f0))),
+        hn))),
+    hon))
+
+def rr_one.t(g: Bool, +ms: List<&2, DC.Mem>, +a0: DR.Node, +r0: DR.Node, +w0: DR.Lab, +d0: DR.Der, +old: DR.Node, +new: DR.Node, +dR: DR.Der, +ww: DR.Lab,
+  eg: {g == DC.node_eq(a0, new) : Bool}, ef: {True{} == DC.node_eq(r0, old) : Bool}, f0: {DC.mem_of(ms, a0) == Some{DC.Mem{a0, r0, w0, d0}} : Maybe<&2, DC.Mem>},
+  hn: {isroot(ms, new) == True{} : Bool}, hon: {DC.node_eq(old, new) == False{} : Bool})
+  -> rrok.go(g, a0, new, LB.lmul(ww, w0), DR.DThrough{dR, d0, DR.Lab.conj(ww), old}):
+  match g:
+    case False{}:
+      Unit{}
+    case True{}:
+      absurd(rrok.go(True{}, a0, new, LB.lmul(ww, w0), DR.DThrough{dR, d0, DR.Lab.conj(ww), old}),
+        rr_one.no(ms, a0, r0, w0, d0, old, new, GN.node_eq_ok(a0, new, Equal.sym(Bool, True{}, DC.node_eq(a0, new), eg)), ef, f0, hn, hon))
+
+def rr_one(f: Bool, +ms: List<&2, DC.Mem>, +a0: DR.Node, +r0: DR.Node, +w0: DR.Lab, +d0: DR.Der, +old: DR.Node, +new: DR.Node, +dR: DR.Der, +ww: DR.Lab,
+  ef: {f == DC.node_eq(r0, old) : Bool}, rr0: rrok(DC.Mem{a0, r0, w0, d0}), f0: {DC.mem_of(ms, a0) == Some{DC.Mem{a0, r0, w0, d0}} : Maybe<&2, DC.Mem>},
+  hn: {isroot(ms, new) == True{} : Bool}, hon: {DC.node_eq(old, new) == False{} : Bool}) -> rrok(DC.reroot.one(f, a0, r0, w0, d0, new, dR, ww, old)):
+  match f:
+    case False{}:
+      rr0
+    case True{}:
+      rr_one.t(DC.node_eq(a0, new), ms, a0, r0, w0, d0, old, new, dR, ww, {==}, ef, f0, hn, hon)
+
+def rr_reroot.go(+ms: List<&2, DC.Mem>, +a0: DR.Node, +r0: DR.Node, +w0: DR.Lab, +d0: DR.Der, +tl: List<&2, DC.Mem>, +old: DR.Node, +new: DR.Node, +dR: DR.Der, +ww: DR.Lab,
+  rr0: rrok(DC.Mem{a0, r0, w0, d0}), rt: AllRR(tl), hf: AllFirst(Con{DC.Mem{a0, r0, w0, d0}, tl}, ms), +hn: {isroot(ms, new) == True{} : Bool}, +hon: {DC.node_eq(old, new) == False{} : Bool},
+  ih: AllRR(tl) -> AllFirst(tl, ms) -> AllRR(DC.reroot(tl, old, new, dR, ww))) -> AllRR(DC.reroot(Con{DC.Mem{a0, r0, w0, d0}, tl}, old, new, dR, ww)):
+  (f0, ft) = hf
+  (rr_one(DC.node_eq(r0, old), ms, a0, r0, w0, d0, old, new, dR, ww, {==}, rr0, f0, hn, hon), ih(rt, ft))
+
+# rerooting to a root keeps the root records' shape
+def rr_reroot(sc: List<&2, DC.Mem>, +ms: List<&2, DC.Mem>, +old: DR.Node, +new: DR.Node, +dR: DR.Der, +ww: DR.Lab, h: AllRR(sc), hf: AllFirst(sc, ms),
+  +hn: {isroot(ms, new) == True{} : Bool}, +hon: {DC.node_eq(old, new) == False{} : Bool}) -> AllRR(DC.reroot(sc, old, new, dR, ww)):
+  match sc:
+    case Nil{}:
+      Unit{}
+    case Con{DC.Mem{+a0, +r0, +w0, +d0}, +tl}:
+      (rr0, rt) = h
+      rr_reroot.go(ms, a0, r0, w0, d0, tl, old, new, dR, ww, rr0, rt, hf, hn, hon, x => y => rr_reroot(tl, ms, old, new, dR, ww, x, y, hn, hon))
+
+# Record nodes and collapsed segments
+# -----------------------------------
+
+def nmem(+n: DR.Node, ns: List<&2, DR.Node>) -> Bool:
+  match ns:
+    case Nil{}:
+      False{}
+    case Con{h, t}:
+      SV.bor(DC.node_eq(n, h), nmem(n, t))
+
+# every record's node is in ns
+def RecN(sc: List<&2, DC.Mem>, +ns: List<&2, DR.Node>) -> Data:
+  match sc:
+    case Nil{}:
+      Unit
+    case Con{+m, tl}:
+      SK.Both({nmem(DC.Mem.a(m), ns) == True{} : Bool}, RecN(tl, ns))
+
+def recn.one(+ns: List<&2, DR.Node>, +m: DC.Mem, +old: DR.Node, +new: DR.Node, +dR: DR.Der, +ww: DR.Lab, e: {nmem(DC.Mem.a(m), ns) == True{} : Bool})
+  -> {nmem(DC.Mem.a(rone(old, new, dR, ww, m)), ns) == True{} : Bool}:
+  %Equal.sym(DR.Node, DC.Mem.a(rone(old, new, dR, ww, m)), DC.Mem.a(m), rone_a(old, new, dR, ww, m)) : {nmem(_, ns) == True{} : Bool}
+  e
+
+def recn_reroot(sc: List<&2, DC.Mem>, +ns: List<&2, DR.Node>, +old: DR.Node, +new: DR.Node, +dR: DR.Der, +ww: DR.Lab, h: RecN(sc, ns)) -> RecN(DC.reroot(sc, old, new, dR, ww), ns):
+  match sc:
+    case Nil{}:
+      Unit{}
+    case Con{DC.Mem{+a0, +r0, +w0, +d0}, tl}:
+      (e0, ht) = h
+      (recn.one(ns, DC.Mem{a0, r0, w0, d0}, old, new, dR, ww, e0), recn_reroot(tl, ns, old, new, dR, ww, ht))
+
+# each sketch segment is collapsed in the context or has a record
+def RecS(ids: List<&2, Nat>, +es: List<&2, SK.Ent>, +cs: DC.SP, +ms: List<&2, DC.Mem>) -> Data:
+  match ids:
+    case Nil{}:
+      Unit
+    case Con{+s, tl}:
+      SK.Both({SV.bor(DC.coll(es, cs, s), mis_some(DC.mem_of(ms, DR.NSeg{s}))) == True{} : Bool}, RecS(tl, es, cs, ms))
+
+def mis_mmap(+old: DR.Node, +new: DR.Node, +dR: DR.Der, +ww: DR.Lab, m: Maybe<&2, DC.Mem>) -> {mis_some(mmap(old, new, dR, ww, m)) == mis_some(m) : Bool}:
+  match m:
+    case Some{x}:
+      {==}
+    case None{}:
+      {==}
+
+def recs.one(+es: List<&2, SK.Ent>, +cs: DC.SP, +ms: List<&2, DC.Mem>, +s: Nat, +old: DR.Node, +new: DR.Node, +dR: DR.Der, +ww: DR.Lab,
+  e: {SV.bor(DC.coll(es, cs, s), mis_some(DC.mem_of(ms, DR.NSeg{s}))) == True{} : Bool})
+  -> {SV.bor(DC.coll(es, cs, s), mis_some(DC.mem_of(DC.reroot(ms, old, new, dR, ww), DR.NSeg{s}))) == True{} : Bool}:
+  %Equal.sym(Maybe<&2, DC.Mem>, DC.mem_of(DC.reroot(ms, old, new, dR, ww), DR.NSeg{s}), mmap(old, new, dR, ww, DC.mem_of(ms, DR.NSeg{s})), mem_reroot(ms, DR.NSeg{s}, old, new, dR, ww))
+    : {SV.bor(DC.coll(es, cs, s), mis_some(_)) == True{} : Bool}
+  %Equal.sym(Bool, mis_some(mmap(old, new, dR, ww, DC.mem_of(ms, DR.NSeg{s}))), mis_some(DC.mem_of(ms, DR.NSeg{s})), mis_mmap(old, new, dR, ww, DC.mem_of(ms, DR.NSeg{s})))
+    : {SV.bor(DC.coll(es, cs, s), _) == True{} : Bool}
+  e
+
+def recs_reroot(ids: List<&2, Nat>, +es: List<&2, SK.Ent>, +cs: DC.SP, +ms: List<&2, DC.Mem>, +old: DR.Node, +new: DR.Node, +dR: DR.Der, +ww: DR.Lab, h: RecS(ids, es, cs, ms))
+  -> RecS(ids, es, cs, DC.reroot(ms, old, new, dR, ww)):
+  match ids:
+    case Nil{}:
+      Unit{}
+    case Con{+s, tl}:
+      (e0, ht) = h
+      (recs.one(es, cs, ms, s, old, new, dR, ww, e0), recs_reroot(tl, es, cs, ms, old, new, dR, ww, ht))
+
+# The records' shape
+# ------------------
+
+def ShM(+es: List<&2, SK.Ent>, +cs: DC.SP, +ids: List<&2, Nat>, +ms: List<&2, DC.Mem>) -> Data:
+  SK.Both(AllFirst(ms, ms), SK.Both(AllRR(ms), SK.Both(RootsOk(ms, ms), SK.Both({isroot(ms, DR.NFrame{}) == True{} : Bool},
+    SK.Both(RecN(ms, Con{DR.NFrame{}, DC.snodes(ids)}), RecS(ids, es, cs, ms))))))
+
+def sh.af(+es: List<&2, SK.Ent>, +cs: DC.SP, +ids: List<&2, Nat>, +ms: List<&2, DC.Mem>, h: ShM(es, cs, ids, ms)) -> AllFirst(ms, ms):
+  (a, r1) = h
+  a
+
+def sh.rr(+es: List<&2, SK.Ent>, +cs: DC.SP, +ids: List<&2, Nat>, +ms: List<&2, DC.Mem>, h: ShM(es, cs, ids, ms)) -> AllRR(ms):
+  (a, r1) = h
+  (b, r2) = r1
+  b
+
+def sh.ro(+es: List<&2, SK.Ent>, +cs: DC.SP, +ids: List<&2, Nat>, +ms: List<&2, DC.Mem>, h: ShM(es, cs, ids, ms)) -> RootsOk(ms, ms):
+  (a, r1) = h
+  (b, r2) = r1
+  (c, r3) = r2
+  c
+
+def sh.fr(+es: List<&2, SK.Ent>, +cs: DC.SP, +ids: List<&2, Nat>, +ms: List<&2, DC.Mem>, h: ShM(es, cs, ids, ms)) -> {isroot(ms, DR.NFrame{}) == True{} : Bool}:
+  (a, r1) = h
+  (b, r2) = r1
+  (c, r3) = r2
+  (d, r4) = r3
+  d
+
+def sh.rn(+es: List<&2, SK.Ent>, +cs: DC.SP, +ids: List<&2, Nat>, +ms: List<&2, DC.Mem>, h: ShM(es, cs, ids, ms)) -> RecN(ms, Con{DR.NFrame{}, DC.snodes(ids)}):
+  (a, r1) = h
+  (b, r2) = r1
+  (c, r3) = r2
+  (d, r4) = r3
+  (e, f) = r4
+  e
+
+def sh.rs(+es: List<&2, SK.Ent>, +cs: DC.SP, +ids: List<&2, Nat>, +ms: List<&2, DC.Mem>, h: ShM(es, cs, ids, ms)) -> RecS(ids, es, cs, ms):
+  (a, r1) = h
+  (b, r2) = r1
+  (c, r3) = r2
+  (d, r4) = r3
+  (e, f) = r4
+  f
+
+# rerooting a root (not F) under another root keeps the shape
+def reroot_sh(+es: List<&2, SK.Ent>, +cs: DC.SP, +ids: List<&2, Nat>, +ms: List<&2, DC.Mem>, +old: DR.Node, +new: DR.Node, +dR: DR.Der, +ww: DR.Lab, +h: ShM(es, cs, ids, ms),
+  +hn: {isroot(ms, new) == True{} : Bool}, +hon: {DC.node_eq(old, new) == False{} : Bool}, +hof: {DC.node_eq(old, DR.NFrame{}) == False{} : Bool})
+  -> ShM(es, cs, ids, DC.reroot(ms, old, new, dR, ww)):
+  (af_reroot(ms, ms, old, new, dR, ww, sh.af(es, cs, ids, ms, h)),
+   (rr_reroot(ms, ms, old, new, dR, ww, sh.rr(es, cs, ids, ms, h), sh.af(es, cs, ids, ms, h), hn, hon),
+    (rok_reroot(ms, ms, old, new, dR, ww, sh.ro(es, cs, ids, ms, h), hn, hon),
+     (iroot_keep(ms, DR.NFrame{}, old, new, dR, ww, sh.fr(es, cs, ids, ms, h), node_sym(old, DR.NFrame{}, hof)),
+      (recn_reroot(ms, Con{DR.NFrame{}, DC.snodes(ids)}, old, new, dR, ww, sh.rn(es, cs, ids, ms, h)), recs_reroot(ids, es, cs, ms, old, new, dR, ww, sh.rs(es, cs, ids, ms, h)))))))
+
+def hof.eq(+rb: DR.Node, +rr: DR.Node, e1: {rb == DR.NFrame{} : DR.Node}, e2: {rr == DR.NFrame{} : DR.Node}) -> {True{} == DC.node_eq(rb, rr) : Bool}:
+  %Equal.sym(DR.Node, rb, DR.NFrame{}, e1) : {True{} == DC.node_eq(_, rr) : Bool}
+  %Equal.sym(DR.Node, rr, DR.NFrame{}, e2) : {True{} == DC.node_eq(DR.NFrame{}, _) : Bool}
+  {==}
+
+def hof.go(g: Bool, +rb: DR.Node, +rr: DR.Node, eg: {g == DC.node_eq(rb, DR.NFrame{}) : Bool}, ef: {False{} == SV.band(g, SV.bnot(DC.node_eq(rr, DR.NFrame{}))) : Bool},
+  hne: {DC.node_eq(rb, rr) == False{} : Bool}) -> {g == False{} : Bool}:
+  match g:
+    case False{}:
+      {==}
+    case True{}:
+      absurd({True{} == False{} : Bool}, LP.tf(Equal.trans(Bool, True{}, DC.node_eq(rb, rr), False{},
+        hof.eq(rb, rr, GN.node_eq_ok(rb, DR.NFrame{}, Equal.sym(Bool, True{}, DC.node_eq(rb, DR.NFrame{}), eg)),
+          GN.node_eq_ok(rr, DR.NFrame{}, LS.bnot_f(DC.node_eq(rr, DR.NFrame{}), Equal.sym(Bool, False{}, SV.bnot(DC.node_eq(rr, DR.NFrame{})), ef)))),
+        hne)))
+
+def merge_sh.go(f: Bool, +es: List<&2, SK.Ent>, +cs: DC.SP, +ids: List<&2, Nat>, +ms: List<&2, DC.Mem>, +rr: DR.Node, +d1: DR.Der, +w: DR.Lab, +b: DR.Node, +rb: DR.Node, +wb: DR.Lab, +db: DR.Der,
+  +ef: {f == SV.band(DC.node_eq(rb, DR.NFrame{}), SV.bnot(DC.node_eq(rr, DR.NFrame{}))) : Bool}, +h: ShM(es, cs, ids, ms), +hrr: {isroot(ms, rr) == True{} : Bool},
+  +hne: {DC.node_eq(rb, rr) == False{} : Bool}) -> ShM(es, cs, ids, DC.merge.go(f, ms, rr, d1, w, b, rb, wb, db)):
+  match f:
+    case True{}:
+      reroot_sh(es, cs, ids, ms, rr, DR.NFrame{}, DR.DThrough{db, DR.DTurn{d1, DR.Lab.conj(w), b}, DR.Lab.conj(wb), b}, LB.lmul(wb, DR.Lab.conj(w)), h, sh.fr(es, cs, ids, ms, h),
+        IP.bnot_t(DC.node_eq(rr, DR.NFrame{}), LP2.band_r(DC.node_eq(rb, DR.NFrame{}), SV.bnot(DC.node_eq(rr, DR.NFrame{})), Equal.sym(Bool, True{}, SV.band(DC.node_eq(rb, DR.NFrame{}), SV.bnot(DC.node_eq(rr, DR.NFrame{}))), ef))),
+        IP.bnot_t(DC.node_eq(rr, DR.NFrame{}), LP2.band_r(DC.node_eq(rb, DR.NFrame{}), SV.bnot(DC.node_eq(rr, DR.NFrame{})), Equal.sym(Bool, True{}, SV.band(DC.node_eq(rb, DR.NFrame{}), SV.bnot(DC.node_eq(rr, DR.NFrame{}))), ef))))
+    case False{}:
+      reroot_sh(es, cs, ids, ms, rb, rr, DR.DThrough{d1, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(w), b}, LB.lmul(w, DR.Lab.conj(wb)), h, hrr, hne,
+        hof.go(DC.node_eq(rb, DR.NFrame{}), rb, rr, {==}, ef, hne))
+
+# a merge of b's component into the root rr keeps the shape
+def merge_sh(+es: List<&2, SK.Ent>, +cs: DC.SP, +ids: List<&2, Nat>, +ms: List<&2, DC.Mem>, +rr: DR.Node, +d1: DR.Der, +w: DR.Lab, m: DC.Mem, +h: ShM(es, cs, ids, ms),
+  +hrr: {isroot(ms, rr) == True{} : Bool}, hne: {DC.node_eq(DC.Mem.r(m), rr) == False{} : Bool}) -> ShM(es, cs, ids, DC.merge(ms, rr, d1, w, m)):
+  match m:
+    case DC.Mem{+b, +rb, +wb, +db}:
+      merge_sh.go(SV.band(DC.node_eq(rb, DR.NFrame{}), SV.bnot(DC.node_eq(rr, DR.NFrame{}))), es, cs, ids, ms, rr, d1, w, b, rb, wb, db, {==}, h, hrr, hne)
