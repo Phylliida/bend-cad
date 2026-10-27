@@ -517,7 +517,40 @@ give both component identities that Valid's SameV asks for.
   SameV(y, ·) (pchain_x, enc_lin, the separation lemma), and
   non-membership (indep). K's generators enter as (k, 0) and (0, k) by
   `kre`/`kim` (par-known on 0·z_r + 0·z_r).
-- Next: components with labels, the fixpoint, and closure.
+- **The rest of B3, as designed 2026-10-27:**
+  - **Nodes in three kinds.** *Frame-tied* (a's direction is fixed:
+    Im(conj(u_a)·z_a) ∈ K, with a derivation). Its hull is implicit,
+    ∥(a, y) iff Im(conj(u_a)·y) ∈ K, so through-steps at F stay finite.
+    *Free* (an explicit hull). *Collapsed* in the context (an explicit
+    hull, never passed through).
+  - **Events of the fixpoint.**
+    - A free hull containing a constant κ makes the node frame-tied (turn
+      at F).
+    - conj(g)·z_b in a's hull, b open: through adds conj(g)·(b's
+      generators) to a's hull, and turn adds g·z_a to b's.
+    - A free hull touching a frame-tied b makes a frame-tied.
+    - A complex line in a hull gives K both its parts.
+    - K's new rows rebuild the hulls.
+  - **Termination, proven by counting** (Bend needs a visible measure).
+    Echelon rows have distinct pivots, and every pivot is a monomial of
+    something inserted. Those monomials come from a finite set the sketch
+    determines: a rotation conj(g)·x has x's monomials, and Re/Im take a
+    form's. So there are two nested loops with fuel. The outer one runs
+    once per K row (at most |M_K| + 1 times). The inner one, at fixed K,
+    runs the merges, frame-ties and hull rows (at most nodes + Σ|M_H| + 1).
+    Sufficiency is pigeonhole on pivots (lib/pigeon.bend's style, as
+    sk-13a's simplex).
+  - **Closure, rule by rule**, for the final state:
+    - spans are closed (coefficient lists combine);
+    - frame-tied hulls are closed by their definition;
+    - through and turn between free nodes hold by the fixpoint's last
+      round. Another label g' alike to g gives the same span, since a
+      hull with no complex line meets ℂ·z_b in a real line;
+    - a refutation is found iff one exists (Motzkin over K's
+      generators, a derived collapse, an Angle on a K-collapsed
+      segment).
+- Next: the node kinds and one fixpoint round, then the loops and their
+  sufficiency, then closure.
 - The plan as written:
 - Union–find over segments and F, with labels. Each component keeps its
   *hull*: the real span of the vectors known parallel to its root,
