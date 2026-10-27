@@ -1047,3 +1047,286 @@ def lks_fr(cids: List<&2, Nat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +
       Unit{}
     case Con{+c, +tl}:
       lksg_fr(DC.fullc(es, DC.Sk.k(s), c), es, fs, t, s, c, DC.crep(es, fs, t, s, c), bs, rs, DC.lks(tl, es, fs, t, s, bs, rs), lks_fr(tl, es, fs, t, s, bs, rs))
+
+# a fresh link keeps the pair invariant
+def pl_snoc(+ls: List<&2, DC.Link>, l: DC.Link, +h: PairL(ls, ls), +hf: Fr(ls, Some{l})) -> PairL(DC.lsnoc(ls, l), DC.lsnoc(ls, l)):
+  match l:
+    case DC.Link{+cx, +bx, +wx, +dx}:
+      pl_cat(ls, DC.lsnoc(ls, DC.Link{cx, bx, wx, dx}), cx, bx, wx, dx, pl_old(ls, ls, cx, bx, wx, dx, h, hf), pl_one(ls, cx, bx, cx, bx, wx, dx, pairok_of(ls, cx, bx, h), hf))
+
+# The state's shape
+# -----------------
+
+def ShInv(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +cs: DC.SP, +ids: List<&2, Nat>, +s: DC.Sk) -> Data:
+  SK.Both(ShM(es, cs, ids, DC.Sk.ms(s)), SK.Both(KF(DC.Sk.k(s), fs), PairL(DC.Sk.ls(s), DC.Sk.ls(s))))
+
+def shi.m(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +cs: DC.SP, +ids: List<&2, Nat>, +s: DC.Sk, h: ShInv(es, fs, cs, ids, s)) -> ShM(es, cs, ids, DC.Sk.ms(s)):
+  (a, r1) = h
+  a
+
+def shi.k(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +cs: DC.SP, +ids: List<&2, Nat>, +s: DC.Sk, h: ShInv(es, fs, cs, ids, s)) -> KF(DC.Sk.k(s), fs):
+  (a, r1) = h
+  (b, c) = r1
+  b
+
+def shi.l(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +cs: DC.SP, +ids: List<&2, Nat>, +s: DC.Sk, h: ShInv(es, fs, cs, ids, s)) -> PairL(DC.Sk.ls(s), DC.Sk.ls(s)):
+  (a, r1) = h
+  (b, c) = r1
+  c
+
+# The initial records
+# -------------------
+
+# a record (a, a, 1, DSelf a)
+def selfr(m: DC.Mem) -> Data:
+  match m:
+    case DC.Mem{+a, +r, +w, +d}:
+      {DC.Mem{a, r, w, d} == DC.Mem{a, a, DC.lone(), DR.DSelf{a}} : DC.Mem}
+
+def AllSelf(ms: List<&2, DC.Mem>) -> Data:
+  match ms:
+    case Nil{}:
+      Unit
+    case Con{+m, tl}:
+      SK.Both(selfr(m), AllSelf(tl))
+
+def minit_self.pick(f: Bool, +n: DR.Node, +rest: List<&2, DC.Mem>, hr: AllSelf(rest)) -> AllSelf(DC.mpick(f, n, rest)):
+  match f:
+    case True{}:
+      ({==}, hr)
+    case False{}:
+      hr
+
+def minit_self(ns: List<&2, DR.Node>, +es: List<&2, SK.Ent>, +cs: DC.SP) -> AllSelf(DC.minit(ns, es, cs)):
+  match ns:
+    case Nil{}:
+      Unit{}
+    case Con{+n, +t}:
+      minit_self.pick(DC.isopen(es, cs, n), n, DC.minit(t, es, cs), minit_self(t, es, cs))
+
+def self_eq.go(+a: DR.Node, +b: DR.Node, e: {a == b : DR.Node}) -> {DC.Mem{b, b, DC.lone(), DR.DSelf{b}} == DC.Mem{a, a, DC.lone(), DR.DSelf{a}} : DC.Mem}:
+  %e : {DC.Mem{_, _, DC.lone(), DR.DSelf{_}} == DC.Mem{a, a, DC.lone(), DR.DSelf{a}} : DC.Mem}
+  {==}
+
+def self_same.go(+a: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, +a2: DR.Node, +r2: DR.Node, +w2: DR.Lab, +d2: DR.Der, ea: {a == a2 : DR.Node},
+  sh: {DC.Mem{a, r, w, d} == DC.Mem{a, a, DC.lone(), DR.DSelf{a}} : DC.Mem}, sm: {DC.Mem{a2, r2, w2, d2} == DC.Mem{a2, a2, DC.lone(), DR.DSelf{a2}} : DC.Mem})
+  -> {DC.Mem{a, r, w, d} == DC.Mem{a2, r2, w2, d2} : DC.Mem}:
+  Equal.trans(DC.Mem, DC.Mem{a, r, w, d}, DC.Mem{a, a, DC.lone(), DR.DSelf{a}}, DC.Mem{a2, r2, w2, d2}, sh,
+    Equal.trans(DC.Mem, DC.Mem{a, a, DC.lone(), DR.DSelf{a}}, DC.Mem{a2, a2, DC.lone(), DR.DSelf{a2}}, DC.Mem{a2, r2, w2, d2},
+      self_eq.go(a2, a, Equal.sym(DR.Node, a, a2, ea)), Equal.sym(DC.Mem, DC.Mem{a2, r2, w2, d2}, DC.Mem{a2, a2, DC.lone(), DR.DSelf{a2}}, sm)))
+
+# two self records of one node are equal
+def self_same(h: DC.Mem, m: DC.Mem, ea: {DC.Mem.a(h) == DC.Mem.a(m) : DR.Node}, sh: selfr(h), sm: selfr(m)) -> {h == m : DC.Mem}:
+  match h m:
+    case DC.Mem{+a, +r, +w, +d} DC.Mem{+a2, +r2, +w2, +d2}:
+      self_same.go(a, r, w, d, a2, r2, w2, d2, ea, sh, sm)
+
+def af_cons.g(g: Bool, +h: DC.Mem, +t: List<&2, DC.Mem>, +m: DC.Mem, eg: {g == DC.node_eq(DC.Mem.a(h), DC.Mem.a(m)) : Bool},
+  sh: selfr(h), sm: selfr(m), e: {DC.mem_of(t, DC.Mem.a(m)) == Some{m} : Maybe<&2, DC.Mem>}) -> {DC.mem_or(g, h, DC.mem_of(t, DC.Mem.a(m))) == Some{m} : Maybe<&2, DC.Mem>}:
+  match g:
+    case True{}:
+      Equal.cong(DC.Mem, Maybe<&2, DC.Mem>, x => Some{x}, h, m, self_same(h, m, GN.node_eq_ok(DC.Mem.a(h), DC.Mem.a(m), Equal.sym(Bool, True{}, DC.node_eq(DC.Mem.a(h), DC.Mem.a(m)), eg)), sh, sm))
+    case False{}:
+      e
+
+# a self record in front keeps a self list's records first
+def af_cons(sc: List<&2, DC.Mem>, +t: List<&2, DC.Mem>, +h: DC.Mem, hsc: AllFirst(sc, t), ss: AllSelf(sc), +sh: selfr(h)) -> AllFirst(sc, Con{h, t}):
+  match sc:
+    case Nil{}:
+      Unit{}
+    case Con{+m, tl}:
+      (e0, et) = hsc
+      (s0, st) = ss
+      (af_cons.g(DC.node_eq(DC.Mem.a(h), DC.Mem.a(m)), h, t, m, {==}, sh, s0, e0), af_cons(tl, t, h, et, st, sh))
+
+def af_self.hd(h: DC.Mem, +t: List<&2, DC.Mem>) -> {DC.mem_of(Con{h, t}, DC.Mem.a(h)) == Some{h} : Maybe<&2, DC.Mem>}:
+  match h:
+    case DC.Mem{+a, +r, +w, +d}:
+      %Equal.sym(Bool, DC.node_eq(a, a), True{}, node_refl(a)) : {DC.mem_or(_, DC.Mem{a, r, w, d}, DC.mem_of(t, a)) == Some{DC.Mem{a, r, w, d}} : Maybe<&2, DC.Mem>}
+      {==}
+
+# in a self list every record is first
+def af_self(ms: List<&2, DC.Mem>, +hs: AllSelf(ms)) -> AllFirst(ms, ms):
+  match ms:
+    case Nil{}:
+      Unit{}
+    case Con{+h, +t}:
+      (+s0, +st) = hs
+      (af_self.hd(h, t), af_cons(t, t, h, af_self(t, st), st, s0))
+
+def selfr.r(+a: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, s0: {DC.Mem{a, r, w, d} == DC.Mem{a, a, DC.lone(), DR.DSelf{a}} : DC.Mem}) -> {r == a : DR.Node}:
+  Equal.cong(DC.Mem, DR.Node, x => DC.Mem.r(x), DC.Mem{a, r, w, d}, DC.Mem{a, a, DC.lone(), DR.DSelf{a}}, s0)
+
+def rr_selfr.go(+a: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, +s0: {DC.Mem{a, r, w, d} == DC.Mem{a, a, DC.lone(), DR.DSelf{a}} : DC.Mem}) -> rrok.go(DC.node_eq(a, r), a, r, w, d):
+  %Equal.sym(DR.Node, r, a, selfr.r(a, r, w, d, s0)) : rrok.go(DC.node_eq(a, _), a, _, w, d)
+  %Equal.sym(Bool, DC.node_eq(a, a), True{}, node_refl(a)) : rrok.go(_, a, a, w, d)
+  Equal.trans(DC.Mem, DC.Mem{a, a, w, d}, DC.Mem{a, r, w, d}, DC.Mem{a, a, DC.lone(), DR.DSelf{a}},
+    Equal.cong(DR.Node, DC.Mem, x => DC.Mem{a, x, w, d}, a, r, Equal.sym(DR.Node, r, a, selfr.r(a, r, w, d, s0))), s0)
+
+def rr_selfr(m: DC.Mem, s0: selfr(m)) -> rrok(m):
+  match m:
+    case DC.Mem{+a, +r, +w, +d}:
+      rr_selfr.go(a, r, w, d, s0)
+
+def rr_self(ms: List<&2, DC.Mem>, hs: AllSelf(ms)) -> AllRR(ms):
+  match ms:
+    case Nil{}:
+      Unit{}
+    case Con{+m, tl}:
+      (s0, st) = hs
+      (rr_selfr(m, s0), rr_self(tl, st))
+
+def rok_selfr.go(+ms: List<&2, DC.Mem>, +a: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, f0: {DC.mem_of(ms, a) == Some{DC.Mem{a, r, w, d}} : Maybe<&2, DC.Mem>},
+  +s0: {DC.Mem{a, r, w, d} == DC.Mem{a, a, DC.lone(), DR.DSelf{a}} : DC.Mem}) -> {isroot(ms, r) == True{} : Bool}:
+  %Equal.sym(DR.Node, r, a, selfr.r(a, r, w, d, s0)) : {isroot.m(DC.mem_of(ms, _), _) == True{} : Bool}
+  %Equal.sym(Maybe<&2, DC.Mem>, DC.mem_of(ms, a), Some{DC.Mem{a, r, w, d}}, f0) : {isroot.m(_, a) == True{} : Bool}
+  %Equal.sym(DR.Node, r, a, selfr.r(a, r, w, d, s0)) : {DC.node_eq(_, a) == True{} : Bool}
+  node_refl(a)
+
+def rok_selfr(m: DC.Mem, +ms: List<&2, DC.Mem>, f0: {DC.mem_of(ms, DC.Mem.a(m)) == Some{m} : Maybe<&2, DC.Mem>}, s0: selfr(m)) -> {isroot(ms, DC.Mem.r(m)) == True{} : Bool}:
+  match m:
+    case DC.Mem{+a, +r, +w, +d}:
+      rok_selfr.go(ms, a, r, w, d, f0, s0)
+
+def rok_self(sc: List<&2, DC.Mem>, +ms: List<&2, DC.Mem>, hf: AllFirst(sc, ms), hs: AllSelf(sc)) -> RootsOk(sc, ms):
+  match sc:
+    case Nil{}:
+      Unit{}
+    case Con{+m, tl}:
+      (f0, ft) = hf
+      (s0, st) = hs
+      (rok_selfr(m, ms, f0, s0), rok_self(tl, ms, ft, st))
+
+def AllNmem(ns: List<&2, DR.Node>, +full: List<&2, DR.Node>) -> Data:
+  match ns:
+    case Nil{}:
+      Unit
+    case Con{+n, t}:
+      SK.Both({nmem(n, full) == True{} : Bool}, AllNmem(t, full))
+
+def bor_r(a: Bool, +b: Bool, hb: {b == True{} : Bool}) -> {SV.bor(a, b) == True{} : Bool}:
+  match a:
+    case True{}:
+      {==}
+    case False{}:
+      hb
+
+def widen(sc: List<&2, DR.Node>, +t: List<&2, DR.Node>, +h: DR.Node, hs: AllNmem(sc, t)) -> AllNmem(sc, Con{h, t}):
+  match sc:
+    case Nil{}:
+      Unit{}
+    case Con{+n, tl}:
+      (e0, et) = hs
+      (bor_r(DC.node_eq(n, h), nmem(n, t), e0), widen(tl, t, h, et))
+
+def nmem_hd(+h: DR.Node, +t: List<&2, DR.Node>) -> {nmem(h, Con{h, t}) == True{} : Bool}:
+  %Equal.sym(Bool, DC.node_eq(h, h), True{}, node_refl(h)) : {SV.bor(_, nmem(h, t)) == True{} : Bool}
+  {==}
+
+def all_nmem(ns: List<&2, DR.Node>) -> AllNmem(ns, ns):
+  match ns:
+    case Nil{}:
+      Unit{}
+    case Con{+h, +t}:
+      (nmem_hd(h, t), widen(t, t, h, all_nmem(t)))
+
+def recn_minit.pick(f: Bool, +n: DR.Node, +rest: List<&2, DC.Mem>, +full: List<&2, DR.Node>, e0: {nmem(n, full) == True{} : Bool}, hr: RecN(rest, full)) -> RecN(DC.mpick(f, n, rest), full):
+  match f:
+    case True{}:
+      (e0, hr)
+    case False{}:
+      hr
+
+def recn_minit(ns: List<&2, DR.Node>, +es: List<&2, SK.Ent>, +cs: DC.SP, +full: List<&2, DR.Node>, h: AllNmem(ns, full)) -> RecN(DC.minit(ns, es, cs), full):
+  match ns:
+    case Nil{}:
+      Unit{}
+    case Con{+n, +t}:
+      (e0, et) = h
+      recn_minit.pick(DC.isopen(es, cs, n), n, DC.minit(t, es, cs), full, e0, recn_minit(t, es, cs, full, et))
+
+def mis_or(f: Bool, +m0: DC.Mem, +rest: Maybe<&2, DC.Mem>, hr: {mis_some(rest) == True{} : Bool}) -> {mis_some(DC.mem_or(f, m0, rest)) == True{} : Bool}:
+  match f:
+    case True{}:
+      {==}
+    case False{}:
+      hr
+
+def mis_pick(f: Bool, +h: DR.Node, +rest: List<&2, DC.Mem>, +n: DR.Node, hr: {mis_some(DC.mem_of(rest, n)) == True{} : Bool}) -> {mis_some(DC.mem_of(DC.mpick(f, h, rest), n)) == True{} : Bool}:
+  match f:
+    case True{}:
+      mis_or(DC.node_eq(h, n), DC.Mem{h, h, DC.lone(), DR.DSelf{h}}, DC.mem_of(rest, n), hr)
+    case False{}:
+      hr
+
+def minit_has.eq(+h: DR.Node, +n: DR.Node, +rest: List<&2, DC.Mem>, +es: List<&2, SK.Ent>, +cs: DC.SP, e: {n == h : DR.Node}, ho: {DC.isopen(es, cs, n) == True{} : Bool})
+  -> {mis_some(DC.mem_of(DC.mpick(DC.isopen(es, cs, h), h, rest), n)) == True{} : Bool}:
+  %e : {mis_some(DC.mem_of(DC.mpick(DC.isopen(es, cs, _), _, rest), n)) == True{} : Bool}
+  %Equal.sym(Bool, DC.isopen(es, cs, n), True{}, ho) : {mis_some(DC.mem_of(DC.mpick(_, n, rest), n)) == True{} : Bool}
+  %Equal.sym(Bool, DC.node_eq(n, n), True{}, node_refl(n)) : {mis_some(DC.mem_or(_, DC.Mem{n, n, DC.lone(), DR.DSelf{n}}, DC.mem_of(rest, n))) == True{} : Bool}
+  {==}
+
+def minit_has.g(g: Bool, +h: DR.Node, +t: List<&2, DR.Node>, +n: DR.Node, +es: List<&2, SK.Ent>, +cs: DC.SP, eg: {g == DC.node_eq(n, h) : Bool},
+  hn: {SV.bor(g, nmem(n, t)) == True{} : Bool}, +ho: {DC.isopen(es, cs, n) == True{} : Bool}, ih: {nmem(n, t) == True{} : Bool} -> {mis_some(DC.mem_of(DC.minit(t, es, cs), n)) == True{} : Bool})
+  -> {mis_some(DC.mem_of(DC.mpick(DC.isopen(es, cs, h), h, DC.minit(t, es, cs)), n)) == True{} : Bool}:
+  match g:
+    case True{}:
+      minit_has.eq(h, n, DC.minit(t, es, cs), es, cs, GN.node_eq_ok(n, h, Equal.sym(Bool, True{}, DC.node_eq(n, h), eg)), ho)
+    case False{}:
+      mis_pick(DC.isopen(es, cs, h), h, DC.minit(t, es, cs), n, ih(hn))
+
+# an open node of the list has a record
+def minit_has(ns: List<&2, DR.Node>, +n: DR.Node, +es: List<&2, SK.Ent>, +cs: DC.SP, hn: {nmem(n, ns) == True{} : Bool}, +ho: {DC.isopen(es, cs, n) == True{} : Bool})
+  -> {mis_some(DC.mem_of(DC.minit(ns, es, cs), n)) == True{} : Bool}:
+  match ns:
+    case Nil{}:
+      absurd({mis_some(DC.mem_of(Nil{}, n)) == True{} : Bool}, LP.tf(Equal.sym(Bool, False{}, True{}, hn)))
+    case Con{+h, +t}:
+      minit_has.g(DC.node_eq(n, h), h, t, n, es, cs, {==}, hn, ho, x => minit_has(t, n, es, cs, x, ho))
+
+def AllNmemS(ids: List<&2, Nat>, +ns: List<&2, DR.Node>) -> Data:
+  match ids:
+    case Nil{}:
+      Unit
+    case Con{+s, t}:
+      SK.Both({nmem(DR.NSeg{s}, ns) == True{} : Bool}, AllNmemS(t, ns))
+
+def nms_of(ids: List<&2, Nat>, +full: List<&2, DR.Node>, h: AllNmem(DC.snodes(ids), full)) -> AllNmemS(ids, full):
+  match ids:
+    case Nil{}:
+      Unit{}
+    case Con{+s, t}:
+      (e0, et) = h
+      (e0, nms_of(t, full, et))
+
+def ho_of(+es: List<&2, SK.Ent>, +cs: DC.SP, +s: Nat, ef: {False{} == DC.coll(es, cs, s) : Bool}) -> {DC.isopen(es, cs, DR.NSeg{s}) == True{} : Bool}:
+  %ef : {SV.bnot(_) == True{} : Bool}
+  {==}
+
+def recs_mi.one(f: Bool, +s: Nat, +es: List<&2, SK.Ent>, +cs: DC.SP, +ns: List<&2, DR.Node>, ef: {f == DC.coll(es, cs, s) : Bool}, e0: {nmem(DR.NSeg{s}, ns) == True{} : Bool})
+  -> {SV.bor(f, mis_some(DC.mem_of(DC.minit(ns, es, cs), DR.NSeg{s}))) == True{} : Bool}:
+  match f:
+    case True{}:
+      {==}
+    case False{}:
+      minit_has(ns, DR.NSeg{s}, es, cs, e0, ho_of(es, cs, s, ef))
+
+def recs_minit(ids: List<&2, Nat>, +es: List<&2, SK.Ent>, +cs: DC.SP, +ns: List<&2, DR.Node>, hn: AllNmemS(ids, ns)) -> RecS(ids, es, cs, DC.minit(ns, es, cs)):
+  match ids:
+    case Nil{}:
+      Unit{}
+    case Con{+s, tl}:
+      (e0, et) = hn
+      (recs_mi.one(DC.coll(es, cs, s), s, es, cs, ns, {==}, e0), recs_minit(tl, es, cs, ns, et))
+
+# the initial state has the shape
+def sk0_sh(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +cs: DC.SP) -> ShInv(es, fs, cs, DC.segids(es), DC.sk0(es, fs, cs)):
+  ((af_self(DC.minit(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, es, cs), minit_self(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, es, cs)),
+    (rr_self(DC.minit(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, es, cs), minit_self(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, es, cs)),
+     (rok_self(DC.minit(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, es, cs), DC.minit(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, es, cs),
+        af_self(DC.minit(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, es, cs), minit_self(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, es, cs)), minit_self(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, es, cs)),
+      ({==},
+       (recn_minit(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, es, cs, Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, all_nmem(Con{DR.NFrame{}, DC.snodes(DC.segids(es))})),
+        recs_minit(DC.segids(es), es, cs, Con{DR.NFrame{}, DC.snodes(DC.segids(es))},
+          nms_of(DC.segids(es), Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, widen(DC.snodes(DC.segids(es)), DC.snodes(DC.segids(es)), DR.NFrame{}, all_nmem(DC.snodes(DC.segids(es))))))))))),
+   (kinit_kf(fs, es, fs, 0n, KS.ks0(), ({==}, {==}), {==}), Unit{}))
