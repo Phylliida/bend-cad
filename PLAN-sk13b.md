@@ -785,6 +785,19 @@ give both component identities that Valid's SameV asks for.
     - The pair invariant as a Bool: every link's pair has its first two
       stored labels independent (pairok), kept because a link is added
       only when qspan of its pair's stored labels says no.
+    - A hull's Bool test reads y through x + t y, faithful only when y
+      does not mention t, and derivations reach forms that do (par(F,
+      (t, 0)) by frame). So in the theorem a hull set is semantic: real
+      combinations of the hull's kept generators (a Sigma over the
+      coefficients, Data). The Bool test agrees with it both ways for
+      forms below t, which is all the checks and the queries use (one
+      way by linearity of the encoding, the other by the separation
+      lemma). K, F's set and tied sets are exact as they are: their tests
+      are polynomial spans with no encoding.
+    - The sets share one shape: a membership kind (frame, hull, tied,
+      all) closed under SameV and m1 x1 + m2 x2, holding (k, 0) and
+      (0, k) for each K generator k (so K squared, for any form, by the
+      combination K gives). Tied sets need no u != 0 for this.
   - Then NotDirDerivable is the contrapositive. An explosion derives
     everything: ∥(F, (0, e)) by ∥-void at F or ∥-through at the open
     void segment, then K(e) by frame-back, and ∥(a, x) by ∥-void.
