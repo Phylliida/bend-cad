@@ -512,8 +512,12 @@ give both component identities that Valid's SameV asks for.
   gives SameV(y, clin) as Valid asks. A nonzero residual means no
   combination (sk-13a's indep). t is a variable index past every
   expression's variables (the sketch's coverage, `within`).
-- Next: lib/hspace.bend and its proofs, then components with labels, the
-  fixpoint, and closure.
+- *Hull spaces done 2026-10-27* (lib/hspace.bend, lib/hspacepf.bend): the
+  invariant kept by adding, membership with its valid chain proving
+  SameV(y, ·) (pchain_x, enc_lin, the separation lemma), and
+  non-membership (indep). K's generators enter as (k, 0) and (0, k) by
+  `kre`/`kim` (par-known on 0·z_r + 0·z_r).
+- Next: components with labels, the fixpoint, and closure.
 - The plan as written:
 - Union–find over segments and F, with labels. Each component keeps its
   *hull*: the real span of the vectors known parallel to its root,

@@ -10,6 +10,8 @@
 #   KP.ks_out), its invariant kept (KP.ks_add_inv).
 # - lib/seppf.bend (B3): a tagged identity a + t b = c + t d, none of them
 #   mentioning t, separates into a = c and b = d (SP.sep).
+# - lib/hspacepf.bend (B3): a hull's membership decided exactly
+#   (HP.hs_der_ok, HP.hs_out), its invariant kept (HP.hs_add_inv).
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -28,6 +30,8 @@ import ../lib/dirpf.bend as DP
 import ../lib/kspace.bend as KS
 import ../lib/kspacepf.bend as KP
 import ../lib/seppf.bend as SP
+import ../lib/hspace.bend as HS
+import ../lib/hspacepf.bend as HP
 import ../spec/solve.bend as SS
 
 # The functions on an example
@@ -163,3 +167,8 @@ def b3_sep(+a: E.QExpr, +b: E.QExpr, +c: E.QExpr, +d: E.QExpr, +t: Nat,
   +ha: {SP.vbelow(a, t) == True{} : Bool}, +hb: {SP.vbelow(b, t) == True{} : Bool}, +hc: {SP.vbelow(c, t) == True{} : Bool}, +hd: {SP.vbelow(d, t) == True{} : Bool},
   h: SS.Ident(SP.tag(a, b, t), SP.tag(c, d, t))) -> SS.Ident(a, c) & SS.Ident(b, d):
   SP.sep(a, b, c, d, t, ha, hb, hc, hd, h)
+
+# B3's hull membership, as its type
+def b3_hull(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +r: DR.Node, +t: Nat, h: HS.HS, +y: SK.VE, hi: HP.HInv(es, fs, ctx, r, t, h), hz: {HS.hs.inb(h, y, t) == True{} : Bool}, +hy: HP.VBelow(y, t), +hr: HP.VBelow(DR.zdir(es, r), t))
+  -> ((DR.Valid(es, fs, ctx, HS.hs.der(es, fs, t, r, h, y)) & DR.IsP(DR.concl(es, fs, HS.hs.der(es, fs, t, r, h, y)))) & {DR.Jd.a(DR.concl(es, fs, HS.hs.der(es, fs, t, r, h, y))) == r : DR.Node}) & DR.SameV(DR.Jd.x(DR.concl(es, fs, HS.hs.der(es, fs, t, r, h, y))), y):
+  HP.hs_der_ok(es, fs, ctx, r, t, h, y, hi, hz, hy, hr)
