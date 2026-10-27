@@ -20,6 +20,7 @@ import ../spec/dir.bend as DR
 import ./listpf.bend as LP2
 import ./labpf.bend as LP
 import ./kspace.bend as KS
+import ./hspace.bend as HS
 import ./lab.bend as LB
 import ./dclose.bend as DC
 import ./dcvd.bend as VD
@@ -576,3 +577,120 @@ def merge_sh(+es: List<&2, SK.Ent>, +cs: DC.SP, +ids: List<&2, Nat>, +ms: List<&
   match m:
     case DC.Mem{+b, +rb, +wb, +db}:
       merge_sh.go(SV.band(DC.node_eq(rb, DR.NFrame{}), SV.bnot(DC.node_eq(rr, DR.NFrame{}))), es, cs, ids, ms, rr, d1, w, b, rb, wb, db, {==}, h, hrr, hne)
+
+# The merge search keeps the shape
+# --------------------------------
+
+def OptSh(+es: List<&2, SK.Ent>, +cs: DC.SP, +ids: List<&2, Nat>, m: Maybe<&2, List<&2, DC.Mem>>) -> Data:
+  match m:
+    case Some{+ms}:
+      ShM(es, cs, ids, ms)
+    case None{}:
+      Unit
+
+def mgF.pick_sh(m: Maybe<&2, DR.Lab>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +cs: DC.SP, +ids: List<&2, Nat>, +k: KS.KS, +ms: List<&2, DC.Mem>,
+  +b: DR.Node, +rb: DR.Node, +wb: DR.Lab, +db: DR.Der, +h: ShM(es, cs, ids, ms), +hne: {DC.node_eq(rb, DR.NFrame{}) == False{} : Bool},
+  +rest: Maybe<&2, List<&2, DC.Mem>>, hr: OptSh(es, cs, ids, rest)) -> OptSh(es, cs, ids, DC.mgF.pick(m, es, fs, k, ms, DC.Mem{b, rb, wb, db}, b, rest)):
+  match m:
+    case None{}:
+      hr
+    case Some{+w}:
+      merge_sh(es, cs, ids, ms, DR.NFrame{}, DR.DFrame{KS.ks.der(es, fs, k, SK.VE.y(DR.gmul(w, DR.zdir(es, b)))), DR.gmul(w, DR.zdir(es, b))}, w, DC.Mem{b, rb, wb, db}, h, sh.fr(es, cs, ids, ms, h), hne)
+
+def mgF.if_sh(f: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +cs: DC.SP, +ids: List<&2, Nat>, +k: KS.KS, +ms: List<&2, DC.Mem>,
+  +b: DR.Node, +rb: DR.Node, +wb: DR.Lab, +db: DR.Der, ef: {f == SV.bnot(DC.node_eq(rb, DR.NFrame{})) : Bool}, +h: ShM(es, cs, ids, ms),
+  +rest: Maybe<&2, List<&2, DC.Mem>>, hr: OptSh(es, cs, ids, rest)) -> OptSh(es, cs, ids, DC.mgF.if(f, es, fs, k, ms, DC.Mem{b, rb, wb, db}, b, rest)):
+  match f:
+    case True{}:
+      mgF.pick_sh(LB.ks.lab(es, fs, k, DR.zdir(es, b)), es, fs, cs, ids, k, ms, b, rb, wb, db, h,
+        IP.bnot_t(DC.node_eq(rb, DR.NFrame{}), Equal.sym(Bool, True{}, SV.bnot(DC.node_eq(rb, DR.NFrame{})), ef)), rest, hr)
+    case False{}:
+      hr
+
+def mgF_sh(sc: List<&2, DC.Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +cs: DC.SP, +ids: List<&2, Nat>, +k: KS.KS, +ms: List<&2, DC.Mem>, +h: ShM(es, cs, ids, ms))
+  -> OptSh(es, cs, ids, DC.mgF(sc, es, fs, k, ms)):
+  match sc:
+    case Nil{}:
+      Unit{}
+    case Con{DC.Mem{+b, +rb, +wb, +db}, +t}:
+      mgF.if_sh(SV.bnot(DC.node_eq(rb, DR.NFrame{})), es, fs, cs, ids, k, ms, b, rb, wb, db, {==}, h, DC.mgF(t, es, fs, k, ms), mgF_sh(t, es, fs, cs, ids, k, ms, h))
+
+def mgR.pick_sh(m: Maybe<&2, DR.Lab>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +cs: DC.SP, +ids: List<&2, Nat>, +t: Nat, +hh: HS.HS, +r: DR.Node, +ms: List<&2, DC.Mem>,
+  +b: DR.Node, +rb: DR.Node, +wb: DR.Lab, +db: DR.Der, +h: ShM(es, cs, ids, ms), +hrr: {isroot(ms, r) == True{} : Bool}, +hne: {DC.node_eq(rb, r) == False{} : Bool},
+  +rest: Maybe<&2, List<&2, DC.Mem>>, hr: OptSh(es, cs, ids, rest)) -> OptSh(es, cs, ids, DC.mgR.pick(m, es, fs, t, hh, r, ms, DC.Mem{b, rb, wb, db}, b, rest)):
+  match m:
+    case None{}:
+      hr
+    case Some{+w}:
+      merge_sh(es, cs, ids, ms, r, HS.hs.der(es, fs, t, r, hh, DR.gmul(w, DR.zdir(es, b))), w, DC.Mem{b, rb, wb, db}, h, hrr, hne)
+
+def mgR.if_sh(f: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +cs: DC.SP, +ids: List<&2, Nat>, +t: Nat, +hh: HS.HS, +r: DR.Node, +ms: List<&2, DC.Mem>,
+  +b: DR.Node, +rb: DR.Node, +wb: DR.Lab, +db: DR.Der, ef: {f == SV.bnot(DC.node_eq(rb, r)) : Bool}, +h: ShM(es, cs, ids, ms), +hrr: {isroot(ms, r) == True{} : Bool},
+  +rest: Maybe<&2, List<&2, DC.Mem>>, hr: OptSh(es, cs, ids, rest)) -> OptSh(es, cs, ids, DC.mgR.if(f, es, fs, t, hh, r, ms, DC.Mem{b, rb, wb, db}, b, rest)):
+  match f:
+    case True{}:
+      mgR.pick_sh(LB.hs.lab(es, fs, t, hh, DR.zdir(es, b)), es, fs, cs, ids, t, hh, r, ms, b, rb, wb, db, h, hrr,
+        IP.bnot_t(DC.node_eq(rb, r), Equal.sym(Bool, True{}, SV.bnot(DC.node_eq(rb, r)), ef)), rest, hr)
+    case False{}:
+      hr
+
+def mgR_sh(sc: List<&2, DC.Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +cs: DC.SP, +ids: List<&2, Nat>, +t: Nat, +hh: HS.HS, +r: DR.Node, +ms: List<&2, DC.Mem>,
+  +h: ShM(es, cs, ids, ms), +hrr: {isroot(ms, r) == True{} : Bool}) -> OptSh(es, cs, ids, DC.mgR(sc, es, fs, t, hh, r, ms)):
+  match sc:
+    case Nil{}:
+      Unit{}
+    case Con{DC.Mem{+b, +rb, +wb, +db}, +tl}:
+      mgR.if_sh(SV.bnot(DC.node_eq(rb, r)), es, fs, cs, ids, t, hh, r, ms, b, rb, wb, db, {==}, h, hrr, DC.mgR(tl, es, fs, t, hh, r, ms), mgR_sh(tl, es, fs, cs, ids, t, hh, r, ms, h, hrr))
+
+# each of these nodes is a root
+def AllRoot(rs: List<&2, DR.Node>, +ms: List<&2, DC.Mem>) -> Data:
+  match rs:
+    case Nil{}:
+      Unit
+    case Con{+r, +tl}:
+      SK.Both({isroot(ms, r) == True{} : Bool}, AllRoot(tl, ms))
+
+def roots_root.pick(f: Bool, +ms: List<&2, DC.Mem>, +a: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, ef: {f == DC.node_eq(a, r) : Bool},
+  e: {DC.mem_of(ms, a) == Some{DC.Mem{a, r, w, d}} : Maybe<&2, DC.Mem>}, +rest: List<&2, DR.Node>, hr: AllRoot(rest, ms)) -> AllRoot(DC.roots.pick(f, a, rest), ms):
+  match f:
+    case True{}:
+      (Equal.trans(Bool, isroot(ms, a), DC.node_eq(r, a), True{}, Equal.cong(Maybe<&2, DC.Mem>, Bool, x => isroot.m(x, a), DC.mem_of(ms, a), Some{DC.Mem{a, r, w, d}}, e),
+         node_sym_t(a, r, Equal.sym(Bool, True{}, DC.node_eq(a, r), ef))), hr)
+    case False{}:
+      hr
+
+# the roots the search goes over are roots
+def roots_root(sc: List<&2, DC.Mem>, +ms: List<&2, DC.Mem>, h: AllFirst(sc, ms)) -> AllRoot(DC.roots(sc), ms):
+  match sc:
+    case Nil{}:
+      Unit{}
+    case Con{DC.Mem{+a, +r, +w, +d}, +t}:
+      (e0, ht) = h
+      roots_root.pick(DC.node_eq(a, r), ms, a, r, w, d, {==}, e0, DC.roots(t), roots_root(t, ms, ht))
+
+def mgs.root_sh(f: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +cs: DC.SP, +ids: List<&2, Nat>, +t: Nat, +s: DC.Sk, +r: DR.Node,
+  +h: ShM(es, cs, ids, DC.Sk.ms(s)), +hrr: {isroot(DC.Sk.ms(s), r) == True{} : Bool}) -> OptSh(es, cs, ids, DC.mgs.root(f, es, fs, t, s, r)):
+  match f:
+    case True{}:
+      mgF_sh(DC.Sk.ms(s), es, fs, cs, ids, DC.Sk.k(s), DC.Sk.ms(s), h)
+    case False{}:
+      mgR_sh(DC.Sk.ms(s), es, fs, cs, ids, t, DC.rhull(es, fs, t, s, r), r, DC.Sk.ms(s), h, hrr)
+
+def mgs.pick_sh(m: Maybe<&2, List<&2, DC.Mem>>, +es: List<&2, SK.Ent>, +cs: DC.SP, +ids: List<&2, Nat>, hm: OptSh(es, cs, ids, m), +rest: Maybe<&2, List<&2, DC.Mem>>, hr: OptSh(es, cs, ids, rest))
+  -> OptSh(es, cs, ids, DC.mgs.pick(m, rest)):
+  match m:
+    case None{}:
+      hr
+    case Some{+x}:
+      hm
+
+# the first merge keeps the shape
+def mgs_sh(rs: List<&2, DR.Node>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +cs: DC.SP, +ids: List<&2, Nat>, +t: Nat, +s: DC.Sk,
+  +h: ShM(es, cs, ids, DC.Sk.ms(s)), hrs: AllRoot(rs, DC.Sk.ms(s))) -> OptSh(es, cs, ids, DC.mgs(rs, es, fs, t, s)):
+  match rs:
+    case Nil{}:
+      Unit{}
+    case Con{+r, +tl}:
+      (hr0, ht) = hrs
+      mgs.pick_sh(DC.mgs.root(DC.node_eq(r, DR.NFrame{}), es, fs, t, s, r), es, cs, ids, mgs.root_sh(DC.node_eq(r, DR.NFrame{}), es, fs, cs, ids, t, s, r, h, hr0),
+        DC.mgs(tl, es, fs, t, s), mgs_sh(tl, es, fs, cs, ids, t, s, h, ht))
