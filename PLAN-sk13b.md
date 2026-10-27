@@ -765,6 +765,26 @@ give both component identities that Valid's SameV asks for.
   - *Label algebra needed:* gmul linear in the label, w conj(w) = |w|²
     real, real labels act as scalars, and "u not real ⟹ i y in the
     span of y and u y".
+  - *Refinements found re-reading the code (2026-10-27, after a
+    compaction):*
+    - Sketch ids may repeat, so the member list can hold several records
+      for one node (they evolve identically). The theorem reads "the
+      record" as mem_of's, with three Data invariants: every record is
+      the first record of its node (kept by reroot, since mem_of commutes
+      with it); a record with a = r is (a, a, 1, DSelf a); every record's
+      node is F or among snodes(segids). A Bool invariant says each
+      sketch segment is collapsed in ctx or has a record.
+    - A node with no record has the collapsed set crep(c). A segment
+      outside segids has direction 0 (find gives no GSeg), so fullc holds
+      and its set is everything; Open fails at it.
+    - The fixpoint facts stay in their Bool form (mgs(..) == None, and so
+      on), which is Data and reusable; each use extracts its instance by
+      a lemma. A "for all" fact would be a function, usable once.
+    - Turn with a = b needs no link: g z = 2 Re(g) z - conj(g) z, a
+      combination of z_a and the premise.
+    - The pair invariant as a Bool: every link's pair has its first two
+      stored labels independent (pairok), kept because a link is added
+      only when qspan of its pair's stored labels says no.
   - Then NotDirDerivable is the contrapositive. An explosion derives
     everything: ∥(F, (0, e)) by ∥-void at F or ∥-through at the open
     void segment, then K(e) by frame-back, and ∥(a, x) by ∥-void.
