@@ -644,8 +644,20 @@ give both component identities that Valid's SameV asks for.
   (Im(w z) ∈ K), sound and complete like the hull's (lib/labpf.bend); and
   lib/indset.bend, lib/indsetpf.bend: forms inserted in turn, each with a
   nonzero residual, combine into the span only with every coefficient 0.
-- Next: the skeleton (union–find with labels, links, ties), the
-  generator lists and their derivations, then the checks and a round.
+- *The closure's exec code done 2026-10-27* (lib/dclose.bend, unproven
+  yet): the skeleton, generators, the three kinds of collapsed sets, the
+  checks in order (explosion, frame-back, complex line, merges, links),
+  the round and a fuel loop. proto/dclose_run.bend runs it natively on
+  eleven small sketches: parallel/perpendicular conflicts explode,
+  parallel chains merge, horizontal segments join F, and segments
+  collapsed in the context are linked and tied as designed. All eleven
+  take 74 ms.
+- Next, the proofs, in order:
+  - every derivation built is valid with its stated form (the members',
+    links', generators', the new K facts', and the explosion witnesses);
+  - the fuel suffices (the measure);
+  - a fixpoint is closed, rule by rule;
+  - the decision: a judgment is derivable iff the state represents it.
 - Scope, honestly: this is the largest proof of sk-13b, several more
   sessions.
 - The plan as written:
