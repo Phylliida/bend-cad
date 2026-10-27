@@ -235,13 +235,22 @@ def qs2.go(w0: DR.Lab, w1: DR.Lab, w: DR.Lab, h: {DC.lpar(w0, w1) == False{} : B
     case DR.Lab{+c0, +s0} DR.Lab{+c1, +s1} DR.Lab{+c, +s}:
       qs2(c0, s0, c1, s1, c, s, bnot_f(DR.qnz(S.Q.sub(S.Q.mul(c0, s1), S.Q.mul(s0, c1))), h))
 
+# every label of ws is nonzero
+def LNzs(ws: List<&2, DR.Lab>) -> Data:
+  match ws:
+    case Nil{}:
+      Unit
+    case Con{+w, t}:
+      SK.Both(NZ.Nz(w), LNzs(t))
+
 # qspan is sound
-def qspan_ok(ws: List<&2, DR.Lab>, +w: DR.Lab, hq: {DC.qspan(ws, w) == True{} : Bool}, hp: {pairok(ws) == True{} : Bool}, +nz: NZ.Nz(lat0(ws))) -> LSp(lat0(ws), lat1(ws), w):
+def qspan_ok(ws: List<&2, DR.Lab>, +w: DR.Lab, hq: {DC.qspan(ws, w) == True{} : Bool}, hp: {pairok(ws) == True{} : Bool}, nz: LNzs(ws)) -> LSp(lat0(ws), lat1(ws), w):
   match ws:
     case Nil{}:
       absurd(LSp(lab0(), lab0(), w), LP.tf(Equal.sym(Bool, False{}, True{}, hq)))
     case Con{+w0, Nil{}}:
-      qs1.go(w0, w, hq, nz)
+      (n0, nt) = nz
+      qs1.go(w0, w, hq, n0)
     case Con{+w0, Con{+w1, t}}:
       qs2.go(w0, w1, w, IP.bnot_t(DC.lpar(w0, w1), hp))
 

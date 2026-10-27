@@ -694,3 +694,69 @@ def mgs_sh(rs: List<&2, DR.Node>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>,
       (hr0, ht) = hrs
       mgs.pick_sh(DC.mgs.root(DC.node_eq(r, DR.NFrame{}), es, fs, t, s, r), es, cs, ids, mgs.root_sh(DC.node_eq(r, DR.NFrame{}), es, fs, cs, ids, t, s, r, h, hr0),
         DC.mgs(tl, es, fs, t, s), mgs_sh(tl, es, fs, cs, ids, t, s, h, ht))
+
+# K holds every fact
+# ------------------
+
+def KR(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS) -> Data:
+  ST.RI(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k))
+
+# each of the facts fs is in K
+def KF(+k: KS.KS, fs: List<&2, DR.Fact>) -> Data:
+  match fs:
+    case Nil{}:
+      Unit
+    case Con{DR.Fact{+e, nd, ds}, tl}:
+      SK.Both({KS.ks.inb(k, e) == True{} : Bool}, KF(k, tl))
+
+# K only grows
+def kf_add(fs: List<&2, DR.Fact>, +es: List<&2, SK.Ent>, +fs0: List<&2, DR.Fact>, +k: KS.KS, +d: DR.Der, +hr: KR(es, fs0, k), h: KF(k, fs)) -> KF(KS.ks.add(es, fs0, k, d), fs):
+  match fs:
+    case Nil{}:
+      Unit{}
+    case Con{DR.Fact{+e, nd, ds}, tl}:
+      (e0, ht) = h
+      (ST.ks_add_mono(es, fs0, k, d, e, hr, e0), kf_add(tl, es, fs0, k, d, hr, ht))
+
+# the fact at i is in K
+def kf_at(fs: List<&2, DR.Fact>, i: Nat, +k: KS.KS, h: KF(k, fs), hf: DR.HasFact(DR.fact_at(fs, i))) -> {KS.ks.inb(k, DR.fact.e(DR.fact_at(fs, i))) == True{} : Bool}:
+  match fs i:
+    case Nil{} i:
+      absurd({KS.ks.inb(k, DR.fact.e(DR.fact_at(Nil{}, i))) == True{} : Bool}, hf)
+    case Con{DR.Fact{+e, nd, ds}, tl} 0n:
+      (e0, ht) = h
+      e0
+    case Con{DR.Fact{+e, nd, ds}, tl} 1n+j:
+      (e0, ht) = h
+      kf_at(tl, j, k, ht, hf)
+
+def kinit_ri(rest: List<&2, DR.Fact>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +i: Nat, +k: KS.KS, +hr: KR(es, fs, k)) -> KR(es, fs, DC.kinit(es, fs, rest, i, k)):
+  match rest:
+    case Nil{}:
+      hr
+    case Con{f, t}:
+      kinit_ri(t, es, fs, 1n+i, KS.ks.add(es, fs, k, DR.DPrem{i}), ST.ks_add_ri(es, fs, k, DR.DPrem{i}, hr))
+
+def kinit_mono(rest: List<&2, DR.Fact>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +i: Nat, +k: KS.KS, +e: E.QExpr, +hr: KR(es, fs, k), hz: ST.Inb(KS.ks.rows(k), e))
+  -> ST.Inb(KS.ks.rows(DC.kinit(es, fs, rest, i, k)), e):
+  match rest:
+    case Nil{}:
+      hz
+    case Con{f, t}:
+      kinit_mono(t, es, fs, 1n+i, KS.ks.add(es, fs, k, DR.DPrem{i}), e, ST.ks_add_ri(es, fs, k, DR.DPrem{i}, hr), ST.ks_add_mono(es, fs, k, DR.DPrem{i}, e, hr, hz))
+
+def kinit_kf.hd(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +i: Nat, +k: KS.KS, +e: E.QExpr, +nd: List<&2, Nat>, +ds: Maybe<&2, DR.DStat>, +t: List<&2, DR.Fact>, +hr: KR(es, fs, k),
+  ef: {DR.fact_at(fs, i) == Some{DR.Fact{e, nd, ds}} : Maybe<&2, DR.Fact>}) -> ST.Inb(KS.ks.rows(KS.ks.add(es, fs, k, DR.DPrem{i})), e):
+  %ef : ST.Inb(KS.ks.rows(KS.ks.add(es, fs, k, DR.DPrem{i})), DR.fact.e(_))
+  ST.ks_add_new(es, fs, k, DR.DPrem{i}, hr)
+
+# kinit puts every fact into K
+def kinit_kf(rest: List<&2, DR.Fact>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +i: Nat, +k: KS.KS, +hr: KR(es, fs, k), +ed: {GN.fdrop(i, fs) == rest : List<&2, DR.Fact>})
+  -> KF(DC.kinit(es, fs, rest, i, k), rest):
+  match rest:
+    case Nil{}:
+      Unit{}
+    case Con{DR.Fact{+e, +nd, +ds}, +t}:
+      (kinit_mono(t, es, fs, 1n+i, KS.ks.add(es, fs, k, DR.DPrem{i}), e, ST.ks_add_ri(es, fs, k, DR.DPrem{i}, hr),
+         kinit_kf.hd(es, fs, i, k, e, nd, ds, t, hr, GN.fat_drop(i, fs, DR.Fact{e, nd, ds}, t, ed))),
+       kinit_kf(t, es, fs, 1n+i, KS.ks.add(es, fs, k, DR.DPrem{i}), ST.ks_add_ri(es, fs, k, DR.DPrem{i}, hr), GN.fdrop_tl(i, fs, DR.Fact{e, nd, ds}, t, ed)))
