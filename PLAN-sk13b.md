@@ -493,6 +493,18 @@ components, and all are bounded.
   extended to the derived rows).
 
 ### B3. Components and hulls (∥)
+*Started 2026-10-27.* Done: lib/seppf.bend, the way back from the tag
+encoding: if a + t·b and c + t·d are the same polynomial and none of them
+mentions t, then a = c and b = d (at each rational point, t set to 0 and
+to 1). It lets a hull membership found by one elimination of encoded forms
+give both component identities that Valid's SameV asks for.
+- Bend note: an `Ident` is a function, so it cannot be used twice; its
+  reusable form is the normalizer's `{qzero(e1 - e2) == True}`
+  (lib/identpf.bend: qzero_ident, ident_ok).
+- Next: the hull spaces (encoded generators with K and t·K in one
+  elimination; membership with its Der witness; non-membership), then
+  components with labels, the fixpoint, and closure.
+- The plan as written:
 - Union–find over segments and F, with labels. Each component keeps its
   *hull*: the real span of the vectors known parallel to its root,
   reduced modulo K.

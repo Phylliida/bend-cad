@@ -8,6 +8,8 @@
 #   right for their kinds (DP.dstat_ok).
 # - lib/kspacepf.bend (B2): K's membership decided exactly (KP.ks_der_ok,
 #   KP.ks_out), its invariant kept (KP.ks_add_inv).
+# - lib/seppf.bend (B3): a tagged identity a + t b = c + t d, none of them
+#   mentioning t, separates into a = c and b = d (SP.sep).
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -25,6 +27,8 @@ import ../spec/dir.bend as DR
 import ../lib/dirpf.bend as DP
 import ../lib/kspace.bend as KS
 import ../lib/kspacepf.bend as KP
+import ../lib/seppf.bend as SP
+import ../spec/solve.bend as SS
 
 # The functions on an example
 # ---------------------------
@@ -153,3 +157,9 @@ def b2_in(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>
 
 def b2_add(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, k: KS.KS, +d: DR.Der, h: KP.KInv(es, fs, ctx, k), hd: DR.Valid(es, fs, ctx, d) & DR.IsK(DR.concl(es, fs, d))) -> KP.KInv(es, fs, ctx, KS.ks.add(es, fs, k, d)):
   KP.ks_add_inv(es, fs, ctx, k, d, h, hd)
+
+# B3's separation lemma, as its type
+def b3_sep(+a: E.QExpr, +b: E.QExpr, +c: E.QExpr, +d: E.QExpr, +t: Nat,
+  +ha: {SP.vbelow(a, t) == True{} : Bool}, +hb: {SP.vbelow(b, t) == True{} : Bool}, +hc: {SP.vbelow(c, t) == True{} : Bool}, +hd: {SP.vbelow(d, t) == True{} : Bool},
+  h: SS.Ident(SP.tag(a, b, t), SP.tag(c, d, t))) -> SS.Ident(a, c) & SS.Ident(b, d):
+  SP.sep(a, b, c, d, t, ha, hb, hc, hd, h)
