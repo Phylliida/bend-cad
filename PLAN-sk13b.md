@@ -191,8 +191,8 @@ rules:
 | ∥-self | | ∥(a, z_a) | |
 | ∥-lin | ∥(a, x₁), ∥(a, x₂), rationals μ₁, μ₂ | ∥(a, μ₁x₁ + μ₂x₂) | |
 | ∥-known | ∥(a, x), K(Re ℓ), K(Im ℓ) | ∥(a, x + ℓ) | |
-| ∥-turn | ∥(a, conj(g)·z_b), b a segment | ∥(b, g·z_a) | |
-| ∥-through | ∥(a, conj(g)·z_b), ∥(b, x), b a segment not collapsed | ∥(a, conj(g)·x) | b |
+| ∥-turn | ∥(a, conj(g)·z_b), b any node | ∥(b, g·z_a) | |
+| ∥-through | ∥(a, conj(g)·z_b), ∥(b, x), b a node not collapsed | ∥(a, conj(g)·x) | b, if a segment |
 | frame | K(Im x) | ∥(F, x) | |
 | frame-back | ∥(F, x) | K(Im x) | |
 | complex line | ∥(a, x), ∥(a, i·x) | K(Re x), K(Im x) | a, if a segment |
@@ -409,6 +409,61 @@ gate checks it through tests/dir_draft.bend). As built:
   well founded, since every fact refers to earlier positions.
 - Semantics: wherever the solved equations hold and nd is nonzero, a
   derived e vanishes, in every ordered field.
+
+**Turn and through take any node (2026-10-27).** B1 first had b a
+segment. With b allowed to be the frame (z_F = 1), a constant parallel to
+a segment fixes its direction: OnLine with fixed points gives ∥(a, κ),
+and turning at the frame gives ∥(F, conj(κ)·z_a). The rule set is the
+same; the soundness lemmas already took any vectors.
+
+### The decision procedure (B2–B4), as designed 2026-10-27
+
+**State**, for the facts of P (and c's earlier equations):
+- **K**: generator polynomials, each with nd and a derivation (the
+  premise equations first, then derived affine forms), in sk-13a's
+  echelon form (lib/elim.bend). Membership is a zero residual
+  (lib/indpf.bend's result for the independence half).
+- **Components** of the open nodes (F and the segments the context does
+  not collapse), by a union–find with labels. A member v has a label g_v
+  with ∥(r, conj(g_v)·z_v) for the root r, and a derivation of it.
+- **Hulls**, one per component without F, in the root's frame: real
+  spans of complex forms modulo K², each generator with nd and a
+  derivation. A form x = x_re + i·x_im is encoded as the one polynomial
+  x_re + t·x_im (t a fresh variable), so that hull membership modulo K² is
+  membership in the span of the encoded generators, K and t·K: the same
+  elimination again. F's component needs no hull: ∥(F, x) iff Im x ∈ K.
+- **Collapsed segments** (in the context): each has its own hull. They
+  are never passed through, but their statements turn into the open
+  hulls, and through-steps land on them.
+
+**Fixpoint**, each step one of:
+- a premise statement ∥(a, x) joins a's hull (rotated into the root's
+  frame by a's label);
+- a node b joins a component when conj(g)·z_b lies in its hull for some
+  g ≠ 0: a dependence among the hull, z_b and i·z_b, read off the
+  residual's combination. With b = F this is a constant in the hull;
+- a component that reaches F gives K the imaginary parts of its hull
+  (frame-back);
+- a complex line in a hull (the hull, then i times it, become dependent)
+  gives K both parts of it;
+- K's new rows reduce the hulls again.
+
+It ends: each step grows K's rank or a hull's rank, or merges two
+components, and all are bounded.
+
+**Proof obligations:**
+- **Sound**: every state element carries a valid derivation (Der) with
+  its nd, checked against spec/dir.bend's Valid.
+- **Complete**: the final state is closed under every rule, so by
+  induction on a derivation its conclusion lies in the state. The fixpoint
+  tests that passed at the end are what closure means, rule by rule: K a
+  span, hulls spans with K² inside, members' labels consistent, no
+  complex line left, F's component's imaginary parts in K.
+- **Decisions**: c's equation is dropped iff it is in K, or its statement
+  lies in its segment's hull. c is refuted iff the state of P and c
+  refutes: a Motzkin refutation of K's generators with the sides (sk-13a's
+  simplex, lib/refute.bend), a derived collapse, or an Angle on a
+  segment collapsed in K.
 
 ### B2. The linear layer, extended (K)
 - Rows for P's equations (the basis's rows, plus the dropped ones' until

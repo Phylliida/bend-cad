@@ -429,8 +429,8 @@ def sound(~F: O.OField, +env: List<&2, @T>, +es: List<&2, SK.Ent>, +fs: List<&2,
     case DR.DTurn{+d, +g, +b}:
       (v, r) = hv
       (p, sm) = r
-      r_turn(~F, env, DR.zdir(es, DR.Jd.a(DR.concl(es, fs, d))), DR.zseg(es, b), g,
-        same_tr(~F, env, DR.zdir(es, DR.Jd.a(DR.concl(es, fs, d))), DR.Jd.x(DR.concl(es, fs, d)), DR.gmul(DR.Lab.conj(g), DR.zseg(es, b)), sm,
+      r_turn(~F, env, DR.zdir(es, DR.Jd.a(DR.concl(es, fs, d))), DR.zdir(es, b), g,
+        same_tr(~F, env, DR.zdir(es, DR.Jd.a(DR.concl(es, fs, d))), DR.Jd.x(DR.concl(es, fs, d)), DR.gmul(DR.Lab.conj(g), DR.zdir(es, b)), sm,
           pval(~F, env, es, DR.concl(es, fs, d), p, sound(~F, env, es, fs, ctx, hf, d, v, hl))))
     case DR.DThrough{+d1, +d2, +g, +b}:
       (v1, r) = hv
@@ -439,11 +439,12 @@ def sound(~F: O.OField, +env: List<&2, @T>, +es: List<&2, SK.Ent>, +fs: List<&2,
       (p2, r4) = r3
       (sm, r5) = r4
       (e, o) = r5
-      r_through(~F, env, DR.zdir(es, DR.Jd.a(DR.concl(es, fs, d1))), DR.zseg(es, b), DR.Jd.x(DR.concl(es, fs, d2)), g, long_nz(~F, env, es, b, fst(DR.Long(~F, env, es, b), DR.Longs(~F, env, es, DR.ncat(DR.nd(es, fs, d1), DR.nd(es, fs, d2))), hl)),
-        same_tr(~F, env, DR.zdir(es, DR.Jd.a(DR.concl(es, fs, d1))), DR.Jd.x(DR.concl(es, fs, d1)), DR.gmul(DR.Lab.conj(g), DR.zseg(es, b)), sm,
-          pval(~F, env, es, DR.concl(es, fs, d1), p1, sound(~F, env, es, fs, ctx, hf, d1, v1, lsplit1(~F, env, es, DR.nd(es, fs, d1), DR.nd(es, fs, d2), snd(DR.Long(~F, env, es, b), DR.Longs(~F, env, es, DR.ncat(DR.nd(es, fs, d1), DR.nd(es, fs, d2))), hl))))),
-        node_tr(~F, env, es, DR.Jd.a(DR.concl(es, fs, d2)), DR.NSeg{b}, DR.Jd.x(DR.concl(es, fs, d2)), e,
-          pval(~F, env, es, DR.concl(es, fs, d2), p2, sound(~F, env, es, fs, ctx, hf, d2, v2, lsplit2(~F, env, es, DR.nd(es, fs, d1), DR.nd(es, fs, d2), snd(DR.Long(~F, env, es, b), DR.Longs(~F, env, es, DR.ncat(DR.nd(es, fs, d1), DR.nd(es, fs, d2))), hl))))))
+      r_through(~F, env, DR.zdir(es, DR.Jd.a(DR.concl(es, fs, d1))), DR.zdir(es, b), DR.Jd.x(DR.concl(es, fs, d2)), g,
+        node_nz(~F, env, es, b, lsplit1(~F, env, es, DR.Node.segs(b), DR.ncat(DR.nd(es, fs, d1), DR.nd(es, fs, d2)), hl)),
+        same_tr(~F, env, DR.zdir(es, DR.Jd.a(DR.concl(es, fs, d1))), DR.Jd.x(DR.concl(es, fs, d1)), DR.gmul(DR.Lab.conj(g), DR.zdir(es, b)), sm,
+          pval(~F, env, es, DR.concl(es, fs, d1), p1, sound(~F, env, es, fs, ctx, hf, d1, v1, lsplit1(~F, env, es, DR.nd(es, fs, d1), DR.nd(es, fs, d2), lsplit2(~F, env, es, DR.Node.segs(b), DR.ncat(DR.nd(es, fs, d1), DR.nd(es, fs, d2)), hl))))),
+        node_tr(~F, env, es, DR.Jd.a(DR.concl(es, fs, d2)), b, DR.Jd.x(DR.concl(es, fs, d2)), e,
+          pval(~F, env, es, DR.concl(es, fs, d2), p2, sound(~F, env, es, fs, ctx, hf, d2, v2, lsplit2(~F, env, es, DR.nd(es, fs, d1), DR.nd(es, fs, d2), lsplit2(~F, env, es, DR.Node.segs(b), DR.ncat(DR.nd(es, fs, d1), DR.nd(es, fs, d2)), hl))))))
     case DR.DFrame{+d, +x}:
       (v, r) = hv
       (k, sm) = r

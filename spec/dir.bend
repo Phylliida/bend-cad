@@ -242,11 +242,12 @@ type Der is Data:
   DPLin{m1: S.Q, d1: Der, m2: S.Q, d2: Der}
   # par(a, x + l) from par(a, x), K(Re l), K(Im l)
   DKnown{d: Der, dr: Der, di: Der}
-  # turn: par(b, g z_a) from par(a, conj(g) z_b)
-  DTurn{d: Der, g: Lab, b: Nat}
+  # turn: par(b, g z_a) from par(a, conj(g) z_b); b any node (with the
+  # frame, a constant parallel to a fixes a's direction)
+  DTurn{d: Der, g: Lab, b: Node}
   # through: par(a, conj(g) x) from par(a, conj(g) z_b) and par(b, x),
-  # b open
-  DThrough{d1: Der, d2: Der, g: Lab, b: Nat}
+  # b an open node
+  DThrough{d1: Der, d2: Der, g: Lab, b: Node}
   # frame: par(frame, x) from K(Im x)
   DFrame{d: Der, x: SK.VE}
   # void: par(a, x), any x, from K(Re z_a), K(Im z_a)
@@ -328,7 +329,7 @@ def concl(+es: List<&2, SK.Ent>, +fs: List<&2, Fact>, d: Der) -> Jd:
     case DKnown{+d, +dr, +di}:
       JP{Jd.a(concl(es, fs, d)), SK.VE.add(Jd.x(concl(es, fs, d)), SK.VE{Jd.e(concl(es, fs, dr)), Jd.e(concl(es, fs, di))})}
     case DTurn{+d, +g, +b}:
-      JP{NSeg{b}, gmul(g, zdir(es, Jd.a(concl(es, fs, d))))}
+      JP{b, gmul(g, zdir(es, Jd.a(concl(es, fs, d))))}
     case DThrough{+d1, +d2, +g, +b}:
       JP{Jd.a(concl(es, fs, d1)), gmul(Lab.conj(g), Jd.x(concl(es, fs, d2)))}
     case DFrame{+d, +x}:
@@ -359,7 +360,7 @@ def nd(+es: List<&2, SK.Ent>, +fs: List<&2, Fact>, d: Der) -> List<&2, Nat>:
     case DTurn{+d, +g, +b}:
       nd(es, fs, d)
     case DThrough{+d1, +d2, +g, +b}:
-      Con{b, ncat(nd(es, fs, d1), nd(es, fs, d2))}
+      ncat(Node.segs(b), ncat(nd(es, fs, d1), nd(es, fs, d2)))
     case DFrame{+d, +x}:
       nd(es, fs, d)
     case DVoid{+dr, +di, +a, +x}:
@@ -416,9 +417,9 @@ def Valid(+es: List<&2, SK.Ent>, +fs: List<&2, Fact>, +ctx: List<&2, E.QExpr>, d
     case DKnown{+d, +dr, +di}:
       Valid(es, fs, ctx, d) & (Valid(es, fs, ctx, dr) & (Valid(es, fs, ctx, di) & (IsP(concl(es, fs, d)) & (IsK(concl(es, fs, dr)) & IsK(concl(es, fs, di))))))
     case DTurn{+d, +g, +b}:
-      Valid(es, fs, ctx, d) & (IsP(concl(es, fs, d)) & SameV(Jd.x(concl(es, fs, d)), gmul(Lab.conj(g), zseg(es, b))))
+      Valid(es, fs, ctx, d) & (IsP(concl(es, fs, d)) & SameV(Jd.x(concl(es, fs, d)), gmul(Lab.conj(g), zdir(es, b))))
     case DThrough{+d1, +d2, +g, +b}:
-      Valid(es, fs, ctx, d1) & (Valid(es, fs, ctx, d2) & (IsP(concl(es, fs, d1)) & (IsP(concl(es, fs, d2)) & (SameV(Jd.x(concl(es, fs, d1)), gmul(Lab.conj(g), zseg(es, b))) & ({Jd.a(concl(es, fs, d2)) == NSeg{b} : Node} & Open(es, ctx, NSeg{b}))))))
+      Valid(es, fs, ctx, d1) & (Valid(es, fs, ctx, d2) & (IsP(concl(es, fs, d1)) & (IsP(concl(es, fs, d2)) & (SameV(Jd.x(concl(es, fs, d1)), gmul(Lab.conj(g), zdir(es, b))) & ({Jd.a(concl(es, fs, d2)) == b : Node} & Open(es, ctx, b))))))
     case DFrame{+d, +x}:
       Valid(es, fs, ctx, d) & (IsK(concl(es, fs, d)) & Same(Jd.e(concl(es, fs, d)), SK.VE.y(x)))
     case DVoid{+dr, +di, +a, +x}:
