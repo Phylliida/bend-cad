@@ -59,6 +59,9 @@ the checker verifies the output.
 | `lib/gplanpf.bend` | `python3 tools/expand.py tools/drafts/gplanpf.draft lib/gplanpf.bend` |
 | `lib/fastpf.bend` | `python3 tools/expand.py tools/drafts/fastpf.draft lib/fastpf.bend` |
 
+`tools/drafts/roadmap13b.draft` is not expanded: it holds sk-13b's five
+restated laws as ROADMAP.bend will state them, installed at PLAN-sk13b B4.
+
 `@MACRO NAME text` (a line) makes every `$NAME` below stand for `text`
 (textual, longest names first, macros may use macros): long hypothesis lists
 shared by many lemmas.

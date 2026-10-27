@@ -1,4 +1,4 @@
-# bend-cad — Design v0.17 (draft; exact by default; sk-06 done; sk-09: a verified proposer; §8.11 decided, sk-13 under way)
+# bend-cad — Design v0.18 (draft; exact by default; sk-06 done; sk-09: a verified proposer; §8.11 decided, sk-13 under way)
 
 A formally verified 2D sketch constraint solver in Bend 2, aiming at Onshape /
 FreeCAD sketcher parity, feeding an implicit-function (SDF) modeling pipeline.
@@ -882,25 +882,46 @@ per-sketch algebra is needed.
     among them.
   - The certificate is the coefficients λ with Σ λᵢgᵢ ≡ k, checked by the
     ring normalizer: k = 0 means implied, k ≠ 0 means conflict.
-- **Directions.** Parallel, Perpendicular and Angle each say
-  cross(g·a, b) = 0, with a and b segment directions and g a Gaussian
-  dyadic: 1, i, or c + is (§5.1's forms; perpendicular is
-  cross(i·a, b) = −dot(a, b)). So b is a real multiple of g·a.
-  - The constraints are edges of a graph labelled by the group ℂ*/ℝ*
-    (directions of lines). A frame node joins the segments that are
-    horizontal or vertical by a merge, with label 1 or i.
-  - A union–find with labels (near-linear) finds every cycle. If a cycle's
-    labels multiply to a real number, its closing edge is implied;
-    otherwise the cycle is a conflict.
-  - Lemma, proven once, by induction on path length:
-    |b|²·cross(g₁g₂·a, c) = dot(g₁·a, b)·cross(g₂·b, c) + cross(g₁·a, b)·dot(g₂·b, c).
-    §8.7's parallel transitivity is the case g₁ = g₂ = 1.
-  - So a path of holding edges implies the closing edge wherever the
-    path's interior directions are nonzero. Q15 allows zero lengths, so
-    that is not assumed: |b|² > 0 is proven over the certified box with
-    ball arithmetic, like the side conditions (§8.6).
-  - Certificate: the cycle. Check: the exact label product, plus the
-    interior lengths.
+- **Directions** (sk-13b, PLAN-sk13b.md v2, decided 2026-10-26; the
+  calculus is spec/dir.bend). A *direction statement* says a vector is
+  parallel to a segment: Parallel, Perpendicular, an Angle with constant
+  rotation, and OnLine (the point's offset from the line's start). With
+  z_s = dx + i·dy a segment's direction and a frame node of direction 1:
+  - Two judgments, closed under each other: K(e) (e vanishes: the linear
+    layer, extended) and par(a, x) (x is parallel to a's direction). The
+    rules: constant combinations; sums of parallel vectors; adding known
+    vanishing parts; turning a relation around; passing through a segment
+    (the path lemma, |b|²·cross(g₁g₂·a, c) = dot(g₁·a, b)·cross(g₂·b, c) +
+    cross(g₁·a, b)·dot(g₂·b, c)); the frame (par(frame, x) iff Im x
+    vanishes); a complex line (x and i·x both parallel to a force x = 0);
+    and a collapsed segment is parallel to everything.
+  - Each rule is a polynomial identity with polynomial multipliers.
+    Linear facts imply a single direction relation in only four ways (the
+    isotropic 2-planes of cross(g·a, b): a collapse, a tie, two frames),
+    and the rules reach each. With sums and the feedback into K, shared
+    points make directions add, so chords of split lines and Horizontals
+    across split edges are found.
+  - The layer reads every equation of the kept constraints before c (amber
+    ones included), not only the system solved. A dropped equation can be
+    the only one that knows a segment is collapsed. Collapses are read from
+    c's context (those equations and c's) and are never passed through.
+  - Refutations: a Motzkin refutation over K with the sides, a derived
+    collapse of a segment the context does not collapse, or an Angle on a
+    collapsed segment.
+  - **Nondegeneracy is explicit** (Q15: a collapsed segment satisfies any
+    direction relation). Every drop and conflict names nd, the segments
+    whose nonzero length its derivation needs. The drop's certificate is
+    Π_{nd}|s|²·g ≡ Σ q·g_i over solved equations, and the verdict proves
+    |s|² > 0 over the box by ball arithmetic for the drops of every Kept
+    or Amber constraint. nd is the solver's choice, kept small; like the
+    Over witnesses and the supports, two honest solvers may differ in it.
+  - **Limit, already in sk-13a:** a constraint is judged from the ones
+    before it. A later constraint that collapses a segment an earlier
+    direction constraint uses (Parallel{a, b}, then merging b's endpoints)
+    makes that earlier equation vacuous, and the system solved singular:
+    refused. Judging linear constraints first would fix it, but it moves
+    blame in mixed dependencies (Q21); it is to be taken up with the
+    linear presolve.
 - **Lengths.** EqualLength, Distance, OnCircle with its radius, and Radius
   or Diameter relate squared lengths of point pairs and squared radii.
   - The same union–find, on squared-length nodes with constant anchors (d²),
@@ -908,9 +929,11 @@ per-sketch algebra is needed.
     a conflict if they do not.
   - The signs come from the existing side conditions (r > 0, d ≥ 0).
 
-These three layers are **complete for their families**: every dependency or
-conflict among constraints of one family is found and certified. Each
-family gets a law.
+These three layers are **complete for their calculi**: every derivation and
+refutation in the layer's rules is found and certified, and `Honest`
+states the rules, so the sketch still determines the classification. That
+is completeness for the stated proof system, not for every consequence of
+the family (that is the exact decision's job, below).
 
 - **Witness (the rest).** This covers theorems that mix families: a
   midline parallel to a base, points made collinear twice, Pappus-type
@@ -2159,6 +2182,13 @@ laws, `AUDIT-sk09-laws.md`):**
 ---
 
 ## 19. Changelog
+
+**v0.17 → v0.18 (sk-13b decided, PLAN-sk13b.md v2):** §8.11's directions:
+the closure of direction statements (Parallel, Perpendicular, constant
+Angle, OnLine) and the linear layer; explicit nondegeneracy (nd) on every
+direction judgment, checked over the box; the premises read whole; the
+later-collapse limit; completeness restated as completeness for the
+layer's calculus.
 
 **v0.16 → v0.17 (sk-13a statements v5):** one class per constraint;
 `Honest` stated constraint by constraint; dependence by derivative (Q30);

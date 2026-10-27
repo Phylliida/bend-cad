@@ -1,4 +1,4 @@
-# Plan: sk-13b, the direction layer (v2, 2026-10-26, for review)
+# Plan: sk-13b, the direction layer (v2, 2026-10-26; decisions agreed)
 
 This is PLAN-sk13.md's Phase 2 (DESIGN §8.11, "Directions"), worked out
 against sk-13a as built. It has two halves: the trusted part (what the
@@ -62,6 +62,8 @@ nothing red.
 - the existing laws still hold over the solved system.
 
 ## Decisions for Danielle
+
+Danielle agreed to all four as recommended (2026-10-26).
 
 1. **Direction judgments carry nondegeneracy.**
    - #67 in sketches 8 and 9 holds together with #66 when seg93 or seg95
@@ -327,6 +329,38 @@ not need.
 ## Steps
 
 ### B0. Statements
+*Done 2026-10-26.* As built:
+- **Staging, like sk-13a's S0b but without opening proven laws.**
+  - spec/dir.bend is in place. It is new and trusted, and only the draft
+    imports it.
+  - The extended solve spec is spec/_draft13b.bend. It replaces
+    spec/solve.bend at the switch (B4), when the pass decides the layer.
+    Replacing it now would make `solve_honest` false for today's pass
+    (#67 kept), and would turn several proven laws open for many sessions.
+  - tests/dir_draft.bend keeps both checking in the gate: their functions
+    on sketch 8's shape by `{==}`, and the restated laws' content over any
+    honest classification, as statements only.
+  - tools/drafts/roadmap13b.draft holds the five solver-level texts. They
+    are installed, and checked by `tools/stmtcheck.py`, at B4.
+- **Choices made while writing.**
+  - `solve_drop` is restated per drop (equation j with its own nd), not
+    for all drops at once.
+  - Drops read facts with their drops' nd (inherited). Refutations read
+    facts with nd none: where the refuted constraints hold, so do their
+    equations.
+  - `Drop` keeps its `Comb`. The verdict (B5) will require h ≡ ndh(nd).
+  - A conflict's nd may leave out the segments of Angles among the
+    constraints refuted (`angle_args`).
+  - `RAngle` names a constraint position.
+  - dir.bend's `Same` and `dlin` repeat solve's `Ident` and `lin`, to
+    keep dir.bend free of spec/solve.bend (which will import it). To be
+    unified at the switch.
+- **Checks.**
+  - Both files type-check.
+  - Five planted errors were rejected: a wrong nd, a short refutation nd,
+    a constant Angle read as none, a law's missing argument, and an amber
+    nd left out of `live_nd`.
+- The plan as written:
 - spec/dir.bend (new, trusted): directions as complex linear forms,
   labels, direction statements by kind, the two judgments as an
   inductive derivation type, `Long`, the context and collapse.
