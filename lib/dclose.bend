@@ -1104,3 +1104,54 @@ def stat.inb(m: Maybe<&2, DR.DStat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fac
 # the state holds the equation e, or the direction statement m
 def holds(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk, +e: E.QExpr, +m: Maybe<&2, DR.DStat>) -> Bool:
   SV.bor(KS.ks.inb(Sk.k(s), e), stat.inb(m, es, fs, t, s))
+
+# Derivations of what a fixpoint holds
+# ------------------------------------
+
+def rset.der(f: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk, +r: DR.Node, +y: SK.VE) -> DR.Der:
+  match f:
+    case True{}:
+      DR.DFrame{KS.ks.der(es, fs, Sk.k(s), SK.VE.y(y)), y}
+    case False{}:
+      HS.hs.der(es, fs, t, r, rhull(es, fs, t, s, r), y)
+
+# b's record (r, w, d) and dx proving par(r, w y) give par(b, y): d turned
+# to b, passed through r with dx, scaled by 1/|w|²
+def mem.back(+d: DR.Der, +w: DR.Lab, +b: DR.Node, +r: DR.Node, +dx: DR.Der) -> DR.Der:
+  DR.DPLin{S.Q.inv(lnorm(w)), DR.DThrough{DR.DTurn{d, DR.Lab.conj(w), b}, dx, w, r}, DR.qz(), DR.DThrough{DR.DTurn{d, DR.Lab.conj(w), b}, dx, w, r}}
+
+def par.dn(a: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk, +y: SK.VE) -> DR.Der:
+  match a:
+    case DR.NFrame{}:
+      DR.DFrame{KS.ks.der(es, fs, Sk.k(s), SK.VE.y(y)), y}
+    case DR.NSeg{+c}:
+      rep.der(crep(es, fs, t, s, c), es, fs, t, Sk.k(s), c, y)
+
+def par.dm(m: Maybe<&2, Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk, +a: DR.Node, +y: SK.VE) -> DR.Der:
+  match m:
+    case Some{Mem{a2, +r, +w, +d}}:
+      mem.back(d, w, a, r, rset.der(node_eq(r, DR.NFrame{}), es, fs, t, s, r, DR.gmul(w, y)))
+    case None{}:
+      par.dn(a, es, fs, t, s, y)
+
+# a derivation of par(a, y) when the state holds it
+def par.der(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk, +a: DR.Node, +y: SK.VE) -> DR.Der:
+  par.dm(mem_of(Sk.ms(s), a), es, fs, t, s, a, y)
+
+def stat.der(m: Maybe<&2, DR.DStat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk) -> DR.Der:
+  match m:
+    case Some{DR.DStat{+b, +y, l}}:
+      par.der(es, fs, t, s, DR.NSeg{b}, y)
+    case None{}:
+      DR.DZero{}
+
+def hold.pick(f: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk, +e: E.QExpr, +m: Maybe<&2, DR.DStat>) -> DR.Der:
+  match f:
+    case True{}:
+      KS.ks.der(es, fs, Sk.k(s), e)
+    case False{}:
+      stat.der(m, es, fs, t, s)
+
+# a derivation of what the state holds: e by K, or else its statement
+def hold.der(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk, +e: E.QExpr, +m: Maybe<&2, DR.DStat>) -> DR.Der:
+  hold.pick(KS.ks.inb(Sk.k(s), e), es, fs, t, s, e, m)

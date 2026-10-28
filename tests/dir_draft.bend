@@ -39,6 +39,8 @@
 #   lib/dclopf.bend and lib/dcftiepf.bend. Its negative answers decide
 #   NotDirDerivable (lib/dcdecpf.bend, DEC.not_dir): a fixpoint whose sets
 #   hold neither the equation nor its direction statement (DC.holds).
+#   Its positive answers are derivations (lib/dcholdpf.bend, HLD.hold_ok:
+#   DC.hold.der is valid and proves the equation).
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -90,6 +92,7 @@ import ../lib/dcreppf.bend as REPF
 import ../lib/dcreprpf.bend as RRF
 import ../lib/dcclosepf.bend as CCF
 import ../lib/dcdecpf.bend as DEC
+import ../lib/dcholdpf.bend as HLD
 
 # The functions on an example
 # ---------------------------
@@ -334,3 +337,8 @@ def b3_not_dir(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +c
   +hh: {DC.holds(SV.ents(sk), SV.dfacts(sk, cls, red, c, dd, i), t, s, SV.eqat(SK.Sketch.eqs(sk), i), SV.dstat_of(SV.ents(sk), SV.kind_at(sk, c))) == False{} : Bool})
   -> SV.NotDirDerivable(sk, cls, red, c, dd, i):
   DEC.not_dir(sk, cls, red, c, dd, i, t, fuel, s, eo, hz, hb, hh)
+
+def b3_hold(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RRF.Hyp(es, fs, ctx, t, s), +e: E.QExpr, +m: Maybe<&2, DR.DStat>,
+  hh: {DC.holds(es, fs, t, s, e, m) == True{} : Bool}, hb: {DC.fb.ds(m, t) == True{} : Bool})
+  -> DR.Valid(es, fs, ctx, DC.hold.der(es, fs, t, s, e, m)) & SV.Proves(es, m, e, DR.concl(es, fs, DC.hold.der(es, fs, t, s, e, m))):
+  HLD.hold_ok(es, fs, ctx, t, s, H, e, m, hh, hb)
