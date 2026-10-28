@@ -32,6 +32,11 @@
 #   labels (lib/labnzpf.bend), collapsed sets (lib/dcreppf.bend,
 #   lib/dctiedpf.bend), new links (lib/dclinkpf.bend), and the whole run
 #   (lib/dcroundpf.bend: DRP.dclose_ok, every result keeps the invariant).
+# - The closure theorem (lib/dcclosepf.bend, B3): at the closure's
+#   fixpoint every valid derivation's conclusion is represented
+#   (CCF.dclose_closed), with its rules in lib/dcreprpf.bend,
+#   lib/dcturnpf.bend, lib/dcpushpf.bend, lib/dcturncpf.bend,
+#   lib/dclopf.bend and lib/dcftiepf.bend.
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -80,6 +85,8 @@ import ../lib/dclinepf.bend as CLF
 import ../lib/dcreadpf.bend as RDF
 import ../lib/dcshapepf.bend as SHF
 import ../lib/dcreppf.bend as REPF
+import ../lib/dcreprpf.bend as RRF
+import ../lib/dcclosepf.bend as CCF
 
 # The functions on an example
 # ---------------------------
@@ -313,3 +320,7 @@ def b3_mgF(sc: List<&2, DC.Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, 
   +m: DC.Mem, n: Nat, +en: {SHF.mat(sc, n) == Some{m} : Maybe<&2, DC.Mem>}, +hne: {DC.node_eq(DC.Mem.r(m), DR.NFrame{}) == False{} : Bool})
   -> {LB.ks.lab(es, fs, k, DR.zdir(es, DC.Mem.a(m))) == None{} : Maybe<&2, DR.Lab>}:
   RDF.mgF_none(sc, es, fs, k, ms, e, m, n, en, hne)
+
+def b3_closed(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat, +s: DC.Sk, eo: {DC.dclose(es, fs, ctx, t, fuel) == DC.OFix{s} : DC.Out},
+  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}, d: DR.Der, hv: DR.Valid(es, fs, ctx, d)) -> RRF.Repr(es, fs, t, s, DR.concl(es, fs, d)):
+  CCF.dclose_closed(es, fs, ctx, t, fuel, s, eo, hz, hb, d, hv)
