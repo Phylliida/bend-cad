@@ -31,6 +31,7 @@ import ./dcroundpf.bend as RD
 import ./dcsetpf.bend as ST
 import ./dcnodepf.bend as ND
 import ./labalgpf.bend as LA
+import ./labnzpf.bend as NZ
 import ./dcshapepf.bend as SH
 import ./dcfixpf.bend as FX
 
@@ -209,3 +210,138 @@ def rp_k2(m: Maybe<&2, DC.Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +
         k2b.x(es, fs, DC.Sk.k(s), DR.gmul(w, x), k2_gmul(w, es, fs, DC.Sk.k(s), x, ST.kri(es, fs, ctx, t, DC.Sk.k(s), h.k(es, fs, ctx, t, s, H)), hx, hy)), k2b.y(es, fs, DC.Sk.k(s), DR.gmul(w, x), k2_gmul(w, es, fs, DC.Sk.k(s), x, ST.kri(es, fs, ctx, t, DC.Sk.k(s), h.k(es, fs, ctx, t, s, H)), hx, hy)))
     case None{}:
       ND.k2_in(es, fs, t, DC.Sk.k(s), rp.n(a, es, fs, t, s), x, sok_n(a, es, fs, ctx, t, s, H), ST.kri(es, fs, ctx, t, DC.Sk.k(s), h.k(es, fs, ctx, t, s, H)), hx, hy)
+
+# Records at a position
+# ---------------------
+
+def mok_at(ms: List<&2, DC.Mem>, n: Nat, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +m: DC.Mem,
+  en: {SH.mat(ms, n) == Some{m} : Maybe<&2, DC.Mem>}, h: GN.MsOk(es, fs, ctx, t, ms)) -> GN.MOkD(es, fs, ctx, t, m):
+  match ms n:
+    case Nil{} n:
+      absurd(GN.MOkD(es, fs, ctx, t, m), SH.mnone_some(m, en))
+    case Con{+m0, tl} 0n:
+      (a, rt) = h
+      %SH.msome_inj(m0, m, en) : GN.MOkD(es, fs, ctx, t, _)
+      a
+    case Con{+m0, tl} 1n+j:
+      (a, rt) = h
+      mok_at(tl, j, es, fs, ctx, t, m, en, rt)
+
+def mnz.of(m: DC.Mem) -> Data:
+  match m:
+    case DC.Mem{a, r, +w, d}:
+      NZ.Nz(w)
+
+def mnz.hd(m0: DC.Mem, +tl: List<&2, DC.Mem>, h: RP.MsNz(Con{m0, tl})) -> mnz.of(m0):
+  match m0:
+    case DC.Mem{a, r, +w, d}:
+      (b, c) = h
+      b
+
+def mnz.tl(m0: DC.Mem, +tl: List<&2, DC.Mem>, h: RP.MsNz(Con{m0, tl})) -> RP.MsNz(tl):
+  match m0:
+    case DC.Mem{a, r, +w, d}:
+      (b, c) = h
+      c
+
+def mnz_at(ms: List<&2, DC.Mem>, n: Nat, +m: DC.Mem, en: {SH.mat(ms, n) == Some{m} : Maybe<&2, DC.Mem>}, h: RP.MsNz(ms)) -> mnz.of(m):
+  match ms n:
+    case Nil{} n:
+      absurd(mnz.of(m), SH.mnone_some(m, en))
+    case Con{+m0, +tl} 0n:
+      %SH.msome_inj(m0, m, en) : mnz.of(_)
+      mnz.hd(m0, tl, h)
+    case Con{+m0, +tl} 1n+j:
+      mnz_at(tl, j, m, en, mnz.tl(m0, tl, h))
+
+def rr_at(ms: List<&2, DC.Mem>, n: Nat, +m: DC.Mem, en: {SH.mat(ms, n) == Some{m} : Maybe<&2, DC.Mem>}, h: SH.AllRR(ms)) -> SH.rrok(m):
+  match ms n:
+    case Nil{} n:
+      absurd(SH.rrok(m), SH.mnone_some(m, en))
+    case Con{+m0, tl} 0n:
+      (a, rt) = h
+      %SH.msome_inj(m0, m, en) : SH.rrok(_)
+      a
+    case Con{+m0, tl} 1n+j:
+      (a, rt) = h
+      rr_at(tl, j, m, en, rt)
+
+def rok_at(sc: List<&2, DC.Mem>, n: Nat, +ms: List<&2, DC.Mem>, +m: DC.Mem, en: {SH.mat(sc, n) == Some{m} : Maybe<&2, DC.Mem>}, h: SH.RootsOk(sc, ms)) -> {SH.isroot(ms, DC.Mem.r(m)) == True{} : Bool}:
+  match sc n:
+    case Nil{} n:
+      absurd({SH.isroot(ms, DC.Mem.r(m)) == True{} : Bool}, SH.mnone_some(m, en))
+    case Con{+m0, tl} 0n:
+      (a, rt) = h
+      %SH.msome_inj(m0, m, en) : {SH.isroot(ms, DC.Mem.r(_)) == True{} : Bool}
+      a
+    case Con{+m0, tl} 1n+j:
+      (a, rt) = h
+      rok_at(tl, j, ms, m, en, rt)
+
+# Root records
+# ------------
+
+def ne_tt(+a: DR.Node, +r2: DR.Node, +r: DR.Node, ea: {a == r : DR.Node}, er: {r2 == r : DR.Node}) -> {DC.node_eq(a, r2) == True{} : Bool}:
+  %Equal.sym(DR.Node, a, r, ea) : {DC.node_eq(_, r2) == True{} : Bool}
+  %Equal.sym(DR.Node, r2, r, er) : {DC.node_eq(r, _) == True{} : Bool}
+  SH.node_refl(r)
+
+def rootrec.go(+a: DR.Node, +r2: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, ea: {a == r : DR.Node}, +er: {r2 == r : DR.Node},
+  rr: SH.rrok.go(DC.node_eq(a, r2), a, r2, w, d)) -> {DC.Mem{a, r2, w, d} == DC.Mem{r, r, DC.lone(), DR.DSelf{r}} : DC.Mem}:
+  %er : {DC.Mem{a, r2, w, d} == DC.Mem{_, _, DC.lone(), DR.DSelf{_}} : DC.Mem}
+  %ne_tt(a, r2, r, ea, er) : SH.rrok.go(_, a, r2, w, d)
+  rr
+
+def rootrec.s(+ms: List<&2, DC.Mem>, +r: DR.Node, +a: DR.Node, +r2: DR.Node, +w: DR.Lab, +d: DR.Der, em: {DC.mem_of(ms, r) == Some{DC.Mem{a, r2, w, d}} : Maybe<&2, DC.Mem>},
+  hr: {DC.node_eq(r2, r) == True{} : Bool}, hrr: SH.AllRR(ms), +n: Nat, +en: {SH.mat(ms, n) == Some{DC.Mem{a, r2, w, d}} : Maybe<&2, DC.Mem>}, hn: {DC.node_eq(a, r) == True{} : Bool})
+  -> {DC.mem_of(ms, r) == Some{DC.Mem{r, r, DC.lone(), DR.DSelf{r}}} : Maybe<&2, DC.Mem>}:
+  Equal.trans(Maybe<&2, DC.Mem>, DC.mem_of(ms, r), Some{DC.Mem{a, r2, w, d}}, Some{DC.Mem{r, r, DC.lone(), DR.DSelf{r}}}, em,
+    Equal.cong(DC.Mem, Maybe<&2, DC.Mem>, x => Some{x}, DC.Mem{a, r2, w, d}, DC.Mem{r, r, DC.lone(), DR.DSelf{r}},
+      rootrec.go(a, r2, r, w, d, GN.node_eq_ok(a, r, hn), GN.node_eq_ok(r2, r, hr), rr_at(ms, n, DC.Mem{a, r2, w, d}, en, hrr))))
+
+def rootrec.n(+ms: List<&2, DC.Mem>, +r: DR.Node, +a: DR.Node, +r2: DR.Node, +w: DR.Lab, +d: DR.Der, em: {DC.mem_of(ms, r) == Some{DC.Mem{a, r2, w, d}} : Maybe<&2, DC.Mem>},
+  hr: {DC.node_eq(r2, r) == True{} : Bool}, hrr: SH.AllRR(ms), hin: SH.Inm(DC.Mem{a, r2, w, d}, ms), hn: {DC.node_eq(a, r) == True{} : Bool})
+  -> {DC.mem_of(ms, r) == Some{DC.Mem{r, r, DC.lone(), DR.DSelf{r}}} : Maybe<&2, DC.Mem>}:
+  (+n, +en) = hin
+  rootrec.s(ms, r, a, r2, w, d, em, hr, hrr, n, en, hn)
+
+def rootrec.mi(+ms: List<&2, DC.Mem>, +r: DR.Node, +a: DR.Node, +r2: DR.Node, +w: DR.Lab, +d: DR.Der, +em: {DC.mem_of(ms, r) == Some{DC.Mem{a, r2, w, d}} : Maybe<&2, DC.Mem>},
+  hr: {DC.node_eq(r2, r) == True{} : Bool}, hrr: SH.AllRR(ms), mi: SH.MemIn(ms, r, DC.Mem{a, r2, w, d})) -> {DC.mem_of(ms, r) == Some{DC.Mem{r, r, DC.lone(), DR.DSelf{r}}} : Maybe<&2, DC.Mem>}:
+  (hin, hn) = mi
+  rootrec.n(ms, r, a, r2, w, d, em, hr, hrr, hin, hn)
+
+def rootrec.m(mm: Maybe<&2, DC.Mem>, +ms: List<&2, DC.Mem>, +r: DR.Node, +em: {DC.mem_of(ms, r) == mm : Maybe<&2, DC.Mem>}, hr: {SH.isroot.m(mm, r) == True{} : Bool}, hrr: SH.AllRR(ms))
+  -> {DC.mem_of(ms, r) == Some{DC.Mem{r, r, DC.lone(), DR.DSelf{r}}} : Maybe<&2, DC.Mem>}:
+  match mm:
+    case None{}:
+      absurd({DC.mem_of(ms, r) == Some{DC.Mem{r, r, DC.lone(), DR.DSelf{r}}} : Maybe<&2, DC.Mem>}, LP.tf(Equal.sym(Bool, False{}, True{}, hr)))
+    case Some{DC.Mem{+a, +r2, +w, +d}}:
+      rootrec.mi(ms, r, a, r2, w, d, em, hr, hrr, SH.mem_of_in(ms, r, DC.Mem{a, r2, w, d}, em))
+
+# a root's record is (r, r, 1, DSelf r)
+def rootrec(+ms: List<&2, DC.Mem>, +r: DR.Node, hr: {SH.isroot(ms, r) == True{} : Bool}, hrr: SH.AllRR(ms))
+  -> {DC.mem_of(ms, r) == Some{DC.Mem{r, r, DC.lone(), DR.DSelf{r}}} : Maybe<&2, DC.Mem>}:
+  rootrec.m(DC.mem_of(ms, r), ms, r, {==}, hr, hrr)
+
+# F's record
+def frec(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s)) -> {DC.mem_of(DC.Sk.ms(s), DR.NFrame{}) == Some{DC.Mem{DR.NFrame{}, DR.NFrame{}, DC.lone(), DR.DSelf{DR.NFrame{}}}} : Maybe<&2, DC.Mem>}:
+  rootrec(DC.Sk.ms(s), DR.NFrame{}, SH.sh.fr(es, OP.cspan(ctx), DC.segids(es), DC.Sk.ms(s), SH.shi.m(es, fs, OP.cspan(ctx), DC.segids(es), s, h.sh(es, fs, ctx, t, s, H))), SH.sh.rr(es, OP.cspan(ctx), DC.segids(es), DC.Sk.ms(s), SH.shi.m(es, fs, OP.cspan(ctx), DC.segids(es), s, h.sh(es, fs, ctx, t, s, H))))
+
+def rp_eq(+m1: Maybe<&2, DC.Mem>, +m2: Maybe<&2, DC.Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk, +a: DR.Node, +x: SK.VE, e: {m1 == m2 : Maybe<&2, DC.Mem>},
+  h: rp.m(m1, es, fs, t, s, a, x)) -> rp.m(m2, es, fs, t, s, a, x):
+  %e : rp.m(_, es, fs, t, s, a, x)
+  h
+
+def svy(+u: SK.VE, +v: SK.VE, h: VD.SameVD(u, v)) -> VD.SameD(SK.VE.y(u), SK.VE.y(v)):
+  (a, b) = h
+  b
+
+# par(F, x) is represented exactly when Im x is in K
+def frame_in(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +x: SK.VE, h: {KS.ks.inb(DC.Sk.k(s), SK.VE.y(x)) == True{} : Bool}) -> Repr(es, fs, t, s, DR.JP{DR.NFrame{}, x}):
+  rp_eq(Some{DC.Mem{DR.NFrame{}, DR.NFrame{}, DC.lone(), DR.DSelf{DR.NFrame{}}}}, DC.mem_of(DC.Sk.ms(s), DR.NFrame{}), es, fs, t, s, DR.NFrame{}, x, Equal.sym(Maybe<&2, DC.Mem>, DC.mem_of(DC.Sk.ms(s), DR.NFrame{}), Some{DC.Mem{DR.NFrame{}, DR.NFrame{}, DC.lone(), DR.DSelf{DR.NFrame{}}}}, frec(es, fs, ctx, t, s, H)),
+    ST.ri.tr(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), KS.ks.rows(DC.Sk.k(s)), SK.VE.y(x), SK.VE.y(DR.gmul(DC.lone(), x)), ST.kri(es, fs, ctx, t, DC.Sk.k(s), h.k(es, fs, ctx, t, s, H)), h, svy(x, DR.gmul(DC.lone(), x), GN.one(x))))
+
+def frame_out(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +x: SK.VE, h: Repr(es, fs, t, s, DR.JP{DR.NFrame{}, x})) -> {KS.ks.inb(DC.Sk.k(s), SK.VE.y(x)) == True{} : Bool}:
+  ST.ri.tr(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), KS.ks.rows(DC.Sk.k(s)), SK.VE.y(DR.gmul(DC.lone(), x)), SK.VE.y(x), ST.kri(es, fs, ctx, t, DC.Sk.k(s), h.k(es, fs, ctx, t, s, H)),
+    rp_eq(DC.mem_of(DC.Sk.ms(s), DR.NFrame{}), Some{DC.Mem{DR.NFrame{}, DR.NFrame{}, DC.lone(), DR.DSelf{DR.NFrame{}}}}, es, fs, t, s, DR.NFrame{}, x, frec(es, fs, ctx, t, s, H), h),
+    svy(DR.gmul(DC.lone(), x), x, MG.samevd_sym(x, DR.gmul(DC.lone(), x), GN.one(x))))
