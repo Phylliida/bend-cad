@@ -36,6 +36,7 @@ import ./dcshapepf.bend as SH
 import ./dcfixpf.bend as FX
 import ./dcreadpf.bend as RF
 import ./nat.bend as LN
+import ./dclinepf.bend as CL
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -929,3 +930,166 @@ def open_rec(a: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: Li
       fnone(es, fs, ctx, t, s, H, em)
     case DR.NSeg{+c}:
       ho(coll_m(SK.find(c, es), es, fs, ctx, t, s, H, c, {==}, em))
+
+# Line
+# ----
+
+def fx.clx(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: DC.SP, +ids: List<&2, Nat>, +s: DC.Sk, h: FX.Fx(es, fs, t, cs, ids, s))
+  -> {DC.clxs(DC.roots(DC.Sk.ms(s)), es, fs, t, s) == None{} : Maybe<&2, DR.Der>}:
+  (a, r1) = h
+  (b, r2) = r1
+  (c, r3) = r2
+  (d, r4) = r3
+  d
+
+def h.clx(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s)) -> {DC.clxs(DC.roots(DC.Sk.ms(s)), es, fs, t, s) == None{} : Maybe<&2, DR.Der>}:
+  fx.clx(es, fs, t, OP.cspan(ctx), DC.segids(es), s, h.fx(es, fs, ctx, t, s, H))
+
+def gic.x(+c: S.Q, +s0: S.Q, +X: S.Q, +Y: S.Q) -> S.Q.eq(S.Q.sub(S.Q.mul(c, S.Q.neg(Y)), S.Q.mul(s0, X)), S.Q.neg(S.Q.add(S.Q.mul(s0, X), S.Q.mul(c, Y)))):
+  QR.qring_eq([c, s0, X, Y], E.QSub{E.QMul{E.QVar{0n}, E.QNeg{E.QVar{3n}}}, E.QMul{E.QVar{1n}, E.QVar{2n}}}, E.QNeg{E.QAdd{E.QMul{E.QVar{1n}, E.QVar{2n}}, E.QMul{E.QVar{0n}, E.QVar{3n}}}}, {==})
+
+def gic.y(+c: S.Q, +s0: S.Q, +X: S.Q, +Y: S.Q) -> S.Q.eq(S.Q.add(S.Q.mul(s0, S.Q.neg(Y)), S.Q.mul(c, X)), S.Q.sub(S.Q.mul(c, X), S.Q.mul(s0, Y))):
+  QR.qring_eq([c, s0, X, Y], E.QAdd{E.QMul{E.QVar{1n}, E.QNeg{E.QVar{3n}}}, E.QMul{E.QVar{0n}, E.QVar{2n}}}, E.QSub{E.QMul{E.QVar{0n}, E.QVar{2n}}, E.QMul{E.QVar{1n}, E.QVar{3n}}}, {==})
+
+def gic.ax(+p: List<&2, S.Q>, +c: S.Q, +s0: S.Q, +x: SK.VE) -> S.Q.eq(E.qeval(p, SK.VE.x(DR.gmul(DR.Lab{c, s0}, DR.imul(x)))), E.qeval(p, SK.VE.x(DR.imul(DR.gmul(DR.Lab{c, s0}, x))))):
+  gic.x(c, s0, E.qeval(p, SK.VE.x(x)), E.qeval(p, SK.VE.y(x)))
+
+def gic.ay(+p: List<&2, S.Q>, +c: S.Q, +s0: S.Q, +x: SK.VE) -> S.Q.eq(E.qeval(p, SK.VE.y(DR.gmul(DR.Lab{c, s0}, DR.imul(x)))), E.qeval(p, SK.VE.y(DR.imul(DR.gmul(DR.Lab{c, s0}, x))))):
+  gic.y(c, s0, E.qeval(p, SK.VE.x(x)), E.qeval(p, SK.VE.y(x)))
+
+# rotations commute with i
+def gmul_imul(w: DR.Lab, +x: SK.VE) -> VD.SameVD(DR.gmul(w, DR.imul(x)), DR.imul(DR.gmul(w, x))):
+  match w:
+    case DR.Lab{+c, +s0}:
+      (ID.qzero_ident(SK.VE.x(DR.gmul(DR.Lab{c, s0}, DR.imul(x))), SK.VE.x(DR.imul(DR.gmul(DR.Lab{c, s0}, x))), p => gic.ax(p, c, s0, x)),
+       ID.qzero_ident(SK.VE.y(DR.gmul(DR.Lab{c, s0}, DR.imul(x))), SK.VE.y(DR.imul(DR.gmul(DR.Lab{c, s0}, x))), p => gic.ay(p, c, s0, x)))
+
+def ur.q(+n: S.Q, +X: S.Q, +hn: {DR.qnz(n) == True{} : Bool}) -> S.Q.eq(S.Q.add(S.Q.mul(S.Q.inv(n), S.Q.add(S.Q.mul(n, X), S.Q.mul(DR.qz(), X))), S.Q.mul(DR.qz(), S.Q.add(S.Q.mul(n, X), S.Q.mul(DR.qz(), X)))), X):
+  QA.ch3(S.Q.add(S.Q.mul(S.Q.inv(n), S.Q.add(S.Q.mul(n, X), S.Q.mul(DR.qz(), X))), S.Q.mul(DR.qz(), S.Q.add(S.Q.mul(n, X), S.Q.mul(DR.qz(), X)))), S.Q.mul(S.Q.mul(n, S.Q.inv(n)), X), S.Q.mul(DR.qo(), X), X,
+    QR.qring_eq([S.Q.inv(n), n, X], E.QAdd{E.QMul{E.QVar{0n}, E.QAdd{E.QMul{E.QVar{1n}, E.QVar{2n}}, E.QMul{E.QCst{DR.qz()}, E.QVar{2n}}}}, E.QMul{E.QCst{DR.qz()}, E.QAdd{E.QMul{E.QVar{1n}, E.QVar{2n}}, E.QMul{E.QCst{DR.qz()}, E.QVar{2n}}}}}, E.QMul{E.QMul{E.QVar{1n}, E.QVar{0n}}, E.QVar{2n}}, {==}),
+    LQ.q_mul_cong_l(S.Q.mul(n, S.Q.inv(n)), DR.qo(), X, LQ.q_mul_inv(n, e => LP.qnz_t(n, hn, e))), QA.one_mul(X))
+
+def ur.ax(+p: List<&2, S.Q>, +n: S.Q, +x: SK.VE, +hn: {DR.qnz(n) == True{} : Bool}) -> S.Q.eq(E.qeval(p, SK.VE.x(DR.vlin(S.Q.inv(n), DR.vlin(n, x, DR.qz(), x), DR.qz(), DR.vlin(n, x, DR.qz(), x)))), E.qeval(p, SK.VE.x(x))):
+  ur.q(n, E.qeval(p, SK.VE.x(x)), hn)
+
+def ur.ay(+p: List<&2, S.Q>, +n: S.Q, +x: SK.VE, +hn: {DR.qnz(n) == True{} : Bool}) -> S.Q.eq(E.qeval(p, SK.VE.y(DR.vlin(S.Q.inv(n), DR.vlin(n, x, DR.qz(), x), DR.qz(), DR.vlin(n, x, DR.qz(), x)))), E.qeval(p, SK.VE.y(x))):
+  ur.q(n, E.qeval(p, SK.VE.y(x)), hn)
+
+# (1/n) (n x) = x
+def ur(+n: S.Q, +x: SK.VE, +hn: {DR.qnz(n) == True{} : Bool}) -> VD.SameVD(DR.vlin(S.Q.inv(n), DR.vlin(n, x, DR.qz(), x), DR.qz(), DR.vlin(n, x, DR.qz(), x)), x):
+  (ID.qzero_ident(SK.VE.x(DR.vlin(S.Q.inv(n), DR.vlin(n, x, DR.qz(), x), DR.qz(), DR.vlin(n, x, DR.qz(), x))), SK.VE.x(x), p => ur.ax(p, n, x, hn)), ID.qzero_ident(SK.VE.y(DR.vlin(S.Q.inv(n), DR.vlin(n, x, DR.qz(), x), DR.qz(), DR.vlin(n, x, DR.qz(), x))), SK.VE.y(x), p => ur.ay(p, n, x, hn)))
+
+def svx(+u: SK.VE, +v: SK.VE, h: VD.SameVD(u, v)) -> VD.SameD(SK.VE.x(u), SK.VE.x(v)):
+  (a, b) = h
+  a
+
+def unrot.sv(+w: DR.Lab, +x: SK.VE, +hw: NZ.Nz(w)) -> VD.SameVD(DR.vlin(S.Q.inv(DC.lnorm(w)), DR.gmul(DR.Lab.conj(w), DR.gmul(w, x)), DR.qz(), DR.gmul(DR.Lab.conj(w), DR.gmul(w, x))), x):
+  GN.samevd_tr(DR.vlin(S.Q.inv(DC.lnorm(w)), DR.gmul(DR.Lab.conj(w), DR.gmul(w, x)), DR.qz(), DR.gmul(DR.Lab.conj(w), DR.gmul(w, x))), DR.vlin(S.Q.inv(DC.lnorm(w)), DR.vlin(DC.lnorm(w), x, DR.qz(), x), DR.qz(), DR.vlin(DC.lnorm(w), x, DR.qz(), x)), x,
+    ST.vcong(S.Q.inv(DC.lnorm(w)), DR.gmul(DR.Lab.conj(w), DR.gmul(w, x)), DR.vlin(DC.lnorm(w), x, DR.qz(), x), DR.qz(), DR.gmul(DR.Lab.conj(w), DR.gmul(w, x)), DR.vlin(DC.lnorm(w), x, DR.qz(), x), LA.conj_w(w, x), LA.conj_w(w, x)), ur(DC.lnorm(w), x, hw))
+
+def unrot.go(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +w: DR.Lab, +x: SK.VE, +kr: ST.RI(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k)), +hw: NZ.Nz(w),
+  +z2: SK.Both({KS.ks.inb(k, SK.VE.x(DR.gmul(DR.Lab.conj(w), DR.gmul(w, x)))) == True{} : Bool}, {KS.ks.inb(k, SK.VE.y(DR.gmul(DR.Lab.conj(w), DR.gmul(w, x)))) == True{} : Bool})) -> CL.K2(es, fs, k, x):
+  (ST.ri.tr(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), ST.lin2(S.Q.inv(DC.lnorm(w)), SK.VE.x(DR.gmul(DR.Lab.conj(w), DR.gmul(w, x))), DR.qz(), SK.VE.x(DR.gmul(DR.Lab.conj(w), DR.gmul(w, x)))), SK.VE.x(x), kr,
+     ST.ri.lin(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), S.Q.inv(DC.lnorm(w)), SK.VE.x(DR.gmul(DR.Lab.conj(w), DR.gmul(w, x))), DR.qz(), SK.VE.x(DR.gmul(DR.Lab.conj(w), DR.gmul(w, x))), kr, k2b.x(es, fs, k, DR.gmul(DR.Lab.conj(w), DR.gmul(w, x)), z2), k2b.x(es, fs, k, DR.gmul(DR.Lab.conj(w), DR.gmul(w, x)), z2)),
+     svx(DR.vlin(S.Q.inv(DC.lnorm(w)), DR.gmul(DR.Lab.conj(w), DR.gmul(w, x)), DR.qz(), DR.gmul(DR.Lab.conj(w), DR.gmul(w, x))), x, unrot.sv(w, x, hw))),
+   ST.ri.tr(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), ST.lin2(S.Q.inv(DC.lnorm(w)), SK.VE.y(DR.gmul(DR.Lab.conj(w), DR.gmul(w, x))), DR.qz(), SK.VE.y(DR.gmul(DR.Lab.conj(w), DR.gmul(w, x)))), SK.VE.y(x), kr,
+     ST.ri.lin(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), S.Q.inv(DC.lnorm(w)), SK.VE.y(DR.gmul(DR.Lab.conj(w), DR.gmul(w, x))), DR.qz(), SK.VE.y(DR.gmul(DR.Lab.conj(w), DR.gmul(w, x))), kr, k2b.y(es, fs, k, DR.gmul(DR.Lab.conj(w), DR.gmul(w, x)), z2), k2b.y(es, fs, k, DR.gmul(DR.Lab.conj(w), DR.gmul(w, x)), z2)),
+     svy(DR.vlin(S.Q.inv(DC.lnorm(w)), DR.gmul(DR.Lab.conj(w), DR.gmul(w, x)), DR.qz(), DR.gmul(DR.Lab.conj(w), DR.gmul(w, x))), x, unrot.sv(w, x, hw))))
+
+# a form whose rotation by a nonzero label has both parts in K has them too
+def unrot(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +w: DR.Lab, +x: SK.VE, +kr: ST.RI(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k)), +hw: NZ.Nz(w), +h: CL.K2(es, fs, k, DR.gmul(w, x))) -> CL.K2(es, fs, k, x):
+  unrot.go(es, fs, k, w, x, kr, hw, k2_gmul(DR.Lab.conj(w), es, fs, k, DR.gmul(w, x), kr, k2b.x(es, fs, k, DR.gmul(w, x), h), k2b.y(es, fs, k, DR.gmul(w, x), h)))
+
+def roots_hd(m: DC.Mem, +tl: List<&2, DC.Mem>, he: {DC.node_eq(DC.Mem.a(m), DC.Mem.r(m)) == True{} : Bool}) -> {SH.nmem(DC.Mem.a(m), DC.roots(Con{m, tl})) == True{} : Bool}:
+  match m:
+    case DC.Mem{+a, +r, +w, +d}:
+      %Equal.sym(Bool, DC.node_eq(a, r), True{}, he) : {SH.nmem(a, DC.roots.pick(_, a, DC.roots(tl))) == True{} : Bool}
+      SH.nmem_hd(a, DC.roots(tl))
+
+def rpick_tl(f: Bool, +x: DR.Node, +a: DR.Node, +rest: List<&2, DR.Node>, h: {SH.nmem(x, rest) == True{} : Bool}) -> {SH.nmem(x, DC.roots.pick(f, a, rest)) == True{} : Bool}:
+  match f:
+    case True{}:
+      SH.bor_r(DC.node_eq(x, a), SH.nmem(x, rest), h)
+    case False{}:
+      h
+
+def roots_tl(m: DC.Mem, +tl: List<&2, DC.Mem>, +x: DR.Node, h: {SH.nmem(x, DC.roots(tl)) == True{} : Bool}) -> {SH.nmem(x, DC.roots(Con{m, tl})) == True{} : Bool}:
+  match m:
+    case DC.Mem{+a, +r, w, d}:
+      rpick_tl(DC.node_eq(a, r), x, a, DC.roots(tl), h)
+
+# a self-rooted record's node is among the roots
+def roots_in(ms: List<&2, DC.Mem>, n: Nat, +m: DC.Mem, en: {SH.mat(ms, n) == Some{m} : Maybe<&2, DC.Mem>}, he: {DC.node_eq(DC.Mem.a(m), DC.Mem.r(m)) == True{} : Bool})
+  -> {SH.nmem(DC.Mem.a(m), DC.roots(ms)) == True{} : Bool}:
+  match ms n:
+    case Nil{} n:
+      absurd({SH.nmem(DC.Mem.a(m), Nil{}) == True{} : Bool}, SH.mnone_some(m, en))
+    case Con{+m0, +tl} 0n:
+      %Equal.sym(DC.Mem, m0, m, SH.msome_inj(m0, m, en)) : {SH.nmem(DC.Mem.a(m), DC.roots(Con{_, tl})) == True{} : Bool}
+      roots_hd(m, tl, he)
+    case Con{+m0, +tl} 1n+j:
+      roots_tl(m0, tl, DC.Mem.a(m), roots_in(tl, j, m, en, he))
+
+def rn.n(+ms: List<&2, DC.Mem>, +r: DR.Node, hin: SH.Inm(DC.Mem{r, r, DC.lone(), DR.DSelf{r}}, ms)) -> {SH.nmem(r, DC.roots(ms)) == True{} : Bool}:
+  (+n, +en) = hin
+  roots_in(ms, n, DC.Mem{r, r, DC.lone(), DR.DSelf{r}}, en, SH.node_refl(r))
+
+def rn.mi(+ms: List<&2, DC.Mem>, +r: DR.Node, mi: SH.MemIn(ms, r, DC.Mem{r, r, DC.lone(), DR.DSelf{r}})) -> {SH.nmem(r, DC.roots(ms)) == True{} : Bool}:
+  (hin, hn) = mi
+  rn.n(ms, r, hin)
+
+# a record's root is among the roots
+def root_nmem(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +n: Nat, +a2: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, +en: {SH.mat(DC.Sk.ms(s), n) == Some{DC.Mem{a2, r, w, d}} : Maybe<&2, DC.Mem>})
+  -> {SH.nmem(r, DC.roots(DC.Sk.ms(s))) == True{} : Bool}:
+  rn.mi(DC.Sk.ms(s), r, SH.mem_of_in(DC.Sk.ms(s), r, DC.Mem{r, r, DC.lone(), DR.DSelf{r}}, rootrec(DC.Sk.ms(s), r, rok_at(DC.Sk.ms(s), n, DC.Sk.ms(s), DC.Mem{a2, r, w, d}, en, SH.sh.ro(es, OP.cspan(ctx), DC.segids(es), DC.Sk.ms(s), SH.shi.m(es, fs, OP.cspan(ctx), DC.segids(es), s, h.sh(es, fs, ctx, t, s, H)))), SH.sh.rr(es, OP.cspan(ctx), DC.segids(es), DC.Sk.ms(s), SH.shi.m(es, fs, OP.cspan(ctx), DC.segids(es), s, h.sh(es, fs, ctx, t, s, H))))))
+
+# y and i y in a root's set: both parts of y are in K
+def line.root(r: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +y: SK.VE, h1: ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), y), h2: ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.imul(y)),
+  hr: {SH.nmem(r, DC.roots(DC.Sk.ms(s))) == True{} : Bool}) -> CL.K2(es, fs, DC.Sk.k(s), y):
+  match r:
+    case DR.NFrame{}:
+      (h2, h1)
+    case DR.NSeg{+c}:
+      CL.cline(es, fs, ctx, t, s, DR.NSeg{c}, h.k(es, fs, ctx, t, s, H), h.ms(es, fs, ctx, t, s, H), h.ls(es, fs, ctx, t, s, H), h.msn(es, fs, ctx, t, s, H), h.lsn(es, fs, ctx, t, s, H), h.z(es, fs, ctx, t, s, H), h.b(es, fs, ctx, t, s, H), RF.clxs_none(DC.roots(DC.Sk.ms(s)), DR.NSeg{c}, es, fs, t, s, h.clx(es, fs, ctx, t, s, H), hr, {==}), y, h1, h2)
+
+def line.go(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +a2: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, +n: Nat, +en: {SH.mat(DC.Sk.ms(s), n) == Some{DC.Mem{a2, r, w, d}} : Maybe<&2, DC.Mem>}, +x: SK.VE,
+  h1: ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.gmul(w, x)), h2: ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.gmul(w, DR.imul(x)))) -> CL.K2(es, fs, DC.Sk.k(s), x):
+  unrot(es, fs, DC.Sk.k(s), w, x, ST.kri(es, fs, ctx, t, DC.Sk.k(s), h.k(es, fs, ctx, t, s, H)), mnz_at(DC.Sk.ms(s), n, DC.Mem{a2, r, w, d}, en, h.msn(es, fs, ctx, t, s, H)),
+    line.root(r, es, fs, ctx, t, s, H, DR.gmul(w, x), h1, ST.st_tr(es, fs, t, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.gmul(w, DR.imul(x)), DR.imul(DR.gmul(w, x)), rok(r, es, fs, ctx, t, s, H), h2, gmul_imul(w, x)), root_nmem(es, fs, ctx, t, s, H, n, a2, r, w, d, en)))
+
+def line.n(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +a2: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, hin: SH.Inm(DC.Mem{a2, r, w, d}, DC.Sk.ms(s)), +x: SK.VE,
+  h1: ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.gmul(w, x)), h2: ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.gmul(w, DR.imul(x)))) -> CL.K2(es, fs, DC.Sk.k(s), x):
+  (+n, +en) = hin
+  line.go(es, fs, ctx, t, s, H, a2, r, w, d, n, en, x, h1, h2)
+
+def line.mi(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +a: DR.Node, +a2: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, mi: SH.MemIn(DC.Sk.ms(s), a, DC.Mem{a2, r, w, d}), +x: SK.VE,
+  h1: ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.gmul(w, x)), h2: ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.gmul(w, DR.imul(x)))) -> CL.K2(es, fs, DC.Sk.k(s), x):
+  (hin, hn) = mi
+  line.n(es, fs, ctx, t, s, H, a2, r, w, d, hin, x, h1, h2)
+
+def line.m(mm: Maybe<&2, DC.Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +a: DR.Node, +x: SK.VE, em: {DC.mem_of(DC.Sk.ms(s), a) == mm : Maybe<&2, DC.Mem>},
+  h1: rp.m(mm, es, fs, t, s, a, x), h2: rp.m(mm, es, fs, t, s, a, DR.imul(x)), ho: DR.Open(es, ctx, a)) -> CL.K2(es, fs, DC.Sk.k(s), x):
+  match mm:
+    case Some{DC.Mem{+a2, +r, +w, +d}}:
+      line.mi(es, fs, ctx, t, s, H, a, a2, r, w, d, SH.mem_of_in(DC.Sk.ms(s), a, DC.Mem{a2, r, w, d}, em), x, h1, h2)
+    case None{}:
+      absurd(CL.K2(es, fs, DC.Sk.k(s), x), open_rec(a, es, fs, ctx, t, s, H, ho, em))
+
+def dl.pick(re: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +x: SK.VE, h: CL.K2(es, fs, k, x)) -> {KS.ks.inb(k, DR.dline.e(re, x)) == True{} : Bool}:
+  match re:
+    case True{}:
+      k2b.x(es, fs, k, x, h)
+    case False{}:
+      k2b.y(es, fs, k, x, h)
+
+# complex line: x and i x parallel to an open node put both parts of x in K
+def rule_line(j1: DR.Jd, j2: DR.Jd, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +re: Bool, h1: Repr(es, fs, t, s, j1), h2: Repr(es, fs, t, s, j2), p1: DR.IsP(j1), p2: DR.IsP(j2), ea: {DR.Jd.a(j1) == DR.Jd.a(j2) : DR.Node},
+  ho: DR.Open(es, ctx, DR.Jd.a(j1)), sv: DR.SameV(DR.Jd.x(j2), DR.imul(DR.Jd.x(j1)))) -> Repr(es, fs, t, s, DR.JK{DR.dline.e(re, DR.Jd.x(j1))}):
+  match j1 j2:
+    case DR.JP{+a1, +x1} DR.JP{+a2, +x2}:
+      dl.pick(re, es, fs, DC.Sk.k(s), x1, line.m(DC.mem_of(DC.Sk.ms(s), a1), es, fs, ctx, t, s, H, a1, x1, {==}, h1,
+        rp_tr(DC.mem_of(DC.Sk.ms(s), a1), es, fs, ctx, t, s, H, a1, x2, DR.imul(x1), rp_node(a2, a1, es, fs, t, s, x2, Equal.sym(DR.Node, a1, a2, ea), h2), VD.samevd_of(x2, DR.imul(x1), sv)), ho))
+    case DR.JP{+a1, +x1} DR.JK{+e2}:
+      absurd(Repr(es, fs, t, s, DR.JK{DR.dline.e(re, x1)}), p2)
+    case DR.JK{+e1} j2:
+      absurd(Repr(es, fs, t, s, DR.JK{DR.dline.e(re, DR.zerov())}), p1)
