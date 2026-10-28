@@ -677,3 +677,113 @@ def pp.f(mf: Maybe<&2, DR.Fact>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, 
 # a statement's par(a, x) is represented
 def rule_pprem(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +i: Nat, hs: DR.HasStat(DR.fact_at(fs, i))) -> Repr(es, fs, t, s, DR.fact.pj(DR.fact_at(fs, i))):
   pp.f(DR.fact_at(fs, i), es, fs, ctx, t, s, H, i, {==}, hs)
+
+# Void
+# ----
+
+def fx.one(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: DC.SP, +ids: List<&2, Nat>, +s: DC.Sk, h: FX.Fx(es, fs, t, cs, ids, s)) -> {KS.ks.inb(DC.Sk.k(s), DR.cst(DR.qo())) == False{} : Bool}:
+  (a, r1) = h
+  a
+
+def fx.vs(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: DC.SP, +ids: List<&2, Nat>, +s: DC.Sk, h: FX.Fx(es, fs, t, cs, ids, s)) -> {DC.voidseg(ids, es, cs, DC.Sk.k(s)) == None{} : Maybe<&2, Nat>}:
+  (a, r1) = h
+  (b, r2) = r1
+  b
+
+def h.one(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s)) -> {KS.ks.inb(DC.Sk.k(s), DR.cst(DR.qo())) == False{} : Bool}:
+  fx.one(es, fs, t, OP.cspan(ctx), DC.segids(es), s, h.fx(es, fs, ctx, t, s, H))
+
+def h.vs(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s)) -> {DC.voidseg(DC.segids(es), es, OP.cspan(ctx), DC.Sk.k(s)) == None{} : Maybe<&2, Nat>}:
+  fx.vs(es, fs, t, OP.cspan(ctx), DC.segids(es), s, h.fx(es, fs, ctx, t, s, H))
+
+def mok.oa(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +a: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, h: GN.MOkD(es, fs, ctx, t, DC.Mem{a, r, w, d}))
+  -> VD.OpenD(es, ctx, a):
+  (h1, r1) = h
+  (h2, r2) = r1
+  (h3, r3) = r2
+  (h4, r4) = r3
+  (h5, r5) = r4
+  h5
+
+def recn_at(sc: List<&2, DC.Mem>, n: Nat, +ns: List<&2, DR.Node>, +m: DC.Mem, en: {SH.mat(sc, n) == Some{m} : Maybe<&2, DC.Mem>}, h: SH.RecN(sc, ns)) -> {SH.nmem(DC.Mem.a(m), ns) == True{} : Bool}:
+  match sc n:
+    case Nil{} n:
+      absurd({SH.nmem(DC.Mem.a(m), ns) == True{} : Bool}, SH.mnone_some(m, en))
+    case Con{+m0, tl} 0n:
+      (a, rt) = h
+      %SH.msome_inj(m0, m, en) : {SH.nmem(DC.Mem.a(_), ns) == True{} : Bool}
+      a
+    case Con{+m0, tl} 1n+j:
+      (a, rt) = h
+      recn_at(tl, j, ns, m, en, rt)
+
+def btr(f: DR.Node -> Bool, +a2: DR.Node, +a: DR.Node, ea: {a2 == a : DR.Node}, h: {f(a2) == True{} : Bool}) -> {f(a) == True{} : Bool}:
+  Equal.trans(Bool, f(a), f(a2), True{}, Equal.cong(DR.Node, Bool, f, a, a2, Equal.sym(DR.Node, a2, a, ea)), h)
+
+# c's direction in K squared
+def fullc_t(+es: List<&2, SK.Ent>, +k: KS.KS, +c: Nat, hre: {KS.ks.inb(k, SK.VE.x(DR.zseg(es, c))) == True{} : Bool}, him: {KS.ks.inb(k, SK.VE.y(DR.zseg(es, c))) == True{} : Bool})
+  -> {DC.fullc(es, k, c) == True{} : Bool}:
+  %Equal.sym(Bool, KS.ks.inb(k, SK.VE.x(DR.zseg(es, c))), True{}, hre) : {SV.band(_, KS.ks.inb(k, SK.VE.y(DR.zseg(es, c)))) == True{} : Bool}
+  him
+
+def vd.band(+es: List<&2, SK.Ent>, +cs: DC.SP, +k: KS.KS, +c: Nat, hop: {SV.bnot(DC.coll(es, cs, c)) == True{} : Bool}, hf: {DC.fullc(es, k, c) == True{} : Bool})
+  -> {SV.band(SV.bnot(DC.coll(es, cs, c)), DC.fullc(es, k, c)) == True{} : Bool}:
+  %Equal.sym(Bool, SV.bnot(DC.coll(es, cs, c)), True{}, hop) : {SV.band(_, DC.fullc(es, k, c)) == True{} : Bool}
+  hf
+
+# an open node's direction is not in K squared
+def void.node(a: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), hre: {KS.ks.inb(DC.Sk.k(s), SK.VE.x(DR.zdir(es, a))) == True{} : Bool}, him: {KS.ks.inb(DC.Sk.k(s), SK.VE.y(DR.zdir(es, a))) == True{} : Bool},
+  hop: {DC.isopen(es, OP.cspan(ctx), a) == True{} : Bool}, hnm: {SH.nmem(a, Con{DR.NFrame{}, DC.snodes(DC.segids(es))}) == True{} : Bool}) -> Empty:
+  match a:
+    case DR.NFrame{}:
+      LP.tf(Equal.trans(Bool, True{}, KS.ks.inb(DC.Sk.k(s), DR.cst(DR.qo())), False{}, Equal.sym(Bool, KS.ks.inb(DC.Sk.k(s), DR.cst(DR.qo())), True{}, hre), h.one(es, fs, ctx, t, s, H)))
+    case DR.NSeg{+c}:
+      LP.tf(Equal.trans(Bool, True{}, SV.band(SV.bnot(DC.coll(es, OP.cspan(ctx), c)), DC.fullc(es, DC.Sk.k(s), c)), False{},
+        Equal.sym(Bool, SV.band(SV.bnot(DC.coll(es, OP.cspan(ctx), c)), DC.fullc(es, DC.Sk.k(s), c)), True{}, vd.band(es, OP.cspan(ctx), DC.Sk.k(s), c, hop, fullc_t(es, DC.Sk.k(s), c, hre, him))),
+        RF.voidseg_none(DC.segids(es), c, es, OP.cspan(ctx), DC.Sk.k(s), h.vs(es, fs, ctx, t, s, H), hnm)))
+
+def void.go(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +a: DR.Node, +a2: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, +n: Nat, +en: {SH.mat(DC.Sk.ms(s), n) == Some{DC.Mem{a2, r, w, d}} : Maybe<&2, DC.Mem>}, +ea: {a2 == a : DR.Node},
+  hre: {KS.ks.inb(DC.Sk.k(s), SK.VE.x(DR.zdir(es, a))) == True{} : Bool}, him: {KS.ks.inb(DC.Sk.k(s), SK.VE.y(DR.zdir(es, a))) == True{} : Bool}) -> Empty:
+  void.node(a, es, fs, ctx, t, s, H, hre, him,
+    btr(q => DC.isopen(es, OP.cspan(ctx), q), a2, a, ea, mok.oa(es, fs, ctx, t, a2, r, w, d, mok_at(DC.Sk.ms(s), n, es, fs, ctx, t, DC.Mem{a2, r, w, d}, en, h.ms(es, fs, ctx, t, s, H)))),
+    btr(q => SH.nmem(q, Con{DR.NFrame{}, DC.snodes(DC.segids(es))}), a2, a, ea, recn_at(DC.Sk.ms(s), n, Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, DC.Mem{a2, r, w, d}, en, SH.sh.rn(es, OP.cspan(ctx), DC.segids(es), DC.Sk.ms(s), SH.shi.m(es, fs, OP.cspan(ctx), DC.segids(es), s, h.sh(es, fs, ctx, t, s, H))))))
+
+def void.n(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +a: DR.Node, +a2: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, hin: SH.Inm(DC.Mem{a2, r, w, d}, DC.Sk.ms(s)), hn: {DC.node_eq(a2, a) == True{} : Bool},
+  hre: {KS.ks.inb(DC.Sk.k(s), SK.VE.x(DR.zdir(es, a))) == True{} : Bool}, him: {KS.ks.inb(DC.Sk.k(s), SK.VE.y(DR.zdir(es, a))) == True{} : Bool}) -> Empty:
+  (+n, +en) = hin
+  void.go(es, fs, ctx, t, s, H, a, a2, r, w, d, n, en, GN.node_eq_ok(a2, a, hn), hre, him)
+
+def void.mi(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +a: DR.Node, +a2: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, mi: SH.MemIn(DC.Sk.ms(s), a, DC.Mem{a2, r, w, d}),
+  hre: {KS.ks.inb(DC.Sk.k(s), SK.VE.x(DR.zdir(es, a))) == True{} : Bool}, him: {KS.ks.inb(DC.Sk.k(s), SK.VE.y(DR.zdir(es, a))) == True{} : Bool}) -> Empty:
+  (hin, hn) = mi
+  void.n(es, fs, ctx, t, s, H, a, a2, r, w, d, hin, hn, hre, him)
+
+def void.none(a: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +x: SK.VE, em: {DC.mem_of(DC.Sk.ms(s), a) == None{} : Maybe<&2, DC.Mem>},
+  hre: {KS.ks.inb(DC.Sk.k(s), SK.VE.x(DR.zdir(es, a))) == True{} : Bool}, him: {KS.ks.inb(DC.Sk.k(s), SK.VE.y(DR.zdir(es, a))) == True{} : Bool}) -> rp.m(None{}, es, fs, t, s, a, x):
+  match a:
+    case DR.NFrame{}:
+      absurd(rp.m(None{}, es, fs, t, s, DR.NFrame{}, x), fnone(es, fs, ctx, t, s, H, em))
+    case DR.NSeg{+c}:
+      %Equal.sym(Bool, DC.fullc(es, DC.Sk.k(s), c), True{}, fullc_t(es, DC.Sk.k(s), c, hre, him)) : ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep.f(_, es, fs, t, s, c), c), x)
+      Unit{}
+
+def void.m(mm: Maybe<&2, DC.Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +a: DR.Node, +x: SK.VE, em: {DC.mem_of(DC.Sk.ms(s), a) == mm : Maybe<&2, DC.Mem>},
+  hre: {KS.ks.inb(DC.Sk.k(s), SK.VE.x(DR.zdir(es, a))) == True{} : Bool}, him: {KS.ks.inb(DC.Sk.k(s), SK.VE.y(DR.zdir(es, a))) == True{} : Bool}) -> rp.m(mm, es, fs, t, s, a, x):
+  match mm:
+    case Some{DC.Mem{+a2, +r, +w, +d}}:
+      absurd(ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.gmul(w, x)), void.mi(es, fs, ctx, t, s, H, a, a2, r, w, d, SH.mem_of_in(DC.Sk.ms(s), a, DC.Mem{a2, r, w, d}, em), hre, him))
+    case None{}:
+      void.none(a, es, fs, ctx, t, s, H, x, em, hre, him)
+
+# void: par(a, x) for any x, when both parts of z_a are in K
+def rule_void(jr: DR.Jd, ji: DR.Jd, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +a: DR.Node, +x: SK.VE, hr: Repr(es, fs, t, s, jr), hi: Repr(es, fs, t, s, ji), kr: DR.IsK(jr), ki: DR.IsK(ji),
+  sr: DR.Same(DR.Jd.e(jr), SK.VE.x(DR.zdir(es, a))), si: DR.Same(DR.Jd.e(ji), SK.VE.y(DR.zdir(es, a)))) -> Repr(es, fs, t, s, DR.JP{a, x}):
+  match jr ji:
+    case DR.JK{+er} DR.JK{+ei}:
+      void.m(DC.mem_of(DC.Sk.ms(s), a), es, fs, ctx, t, s, H, a, x, {==},
+        ST.ri.tr(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), KS.ks.rows(DC.Sk.k(s)), er, SK.VE.x(DR.zdir(es, a)), ST.kri(es, fs, ctx, t, DC.Sk.k(s), h.k(es, fs, ctx, t, s, H)), hr, VD.samed_of(er, SK.VE.x(DR.zdir(es, a)), sr)),
+        ST.ri.tr(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), KS.ks.rows(DC.Sk.k(s)), ei, SK.VE.y(DR.zdir(es, a)), ST.kri(es, fs, ctx, t, DC.Sk.k(s), h.k(es, fs, ctx, t, s, H)), hi, VD.samed_of(ei, SK.VE.y(DR.zdir(es, a)), si)))
+    case DR.JK{+er} DR.JP{+ai, +xi}:
+      absurd(Repr(es, fs, t, s, DR.JP{a, x}), ki)
+    case DR.JP{+ar, +xr} ji:
+      absurd(Repr(es, fs, t, s, DR.JP{a, x}), kr)
