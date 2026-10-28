@@ -76,6 +76,9 @@ import ../lib/dcsetpf.bend as STF
 import ../lib/dcnodepf.bend as NDF
 import ../lib/lspanpf.bend as LSF
 import ../lib/dcfixpf.bend as FXF
+import ../lib/dclinepf.bend as CLF
+import ../lib/dcreadpf.bend as RDF
+import ../lib/dcshapepf.bend as SHF
 import ../lib/dcreppf.bend as REPF
 
 # The functions on an example
@@ -299,3 +302,14 @@ def b3_qspan(ws: List<&2, DR.Lab>, +w: DR.Lab, hq: {DC.qspan(ws, w) == True{} : 
 def b3_fix(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat, +s: DC.Sk, eo: {DC.dclose(es, fs, ctx, t, fuel) == DC.OFix{s} : DC.Out},
   +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}) -> FXF.FixOut(es, fs, ctx, t, DC.segids(es), DC.OFix{s}):
   FXF.fix_at(es, fs, ctx, t, fuel, s, eo, hz, hb)
+
+def b3_cline(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +r: DR.Node,
+  +hk: IVF.KInvD(es, fs, ctx, t, DC.Sk.k(s)), +hms: GNF.MsOk(es, fs, ctx, t, DC.Sk.ms(s)), +hls: GNF.LsOk(es, fs, ctx, t, DC.Sk.ls(s)), +hmsn: REPF.MsNz(DC.Sk.ms(s)), +hlsn: REPF.LsNz(DC.Sk.ls(s)),
+  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}, +hclx: {DC.clx(es, fs, t, s, r) == None{} : Maybe<&2, DR.Der>},
+  +y: SK.VE, h1: STF.HIn(es, fs, r, DC.rhull(es, fs, t, s, r), y), +h2: STF.HIn(es, fs, r, DC.rhull(es, fs, t, s, r), DR.imul(y))) -> CLF.K2(es, fs, DC.Sk.k(s), y):
+  CLF.cline(es, fs, ctx, t, s, r, hk, hms, hls, hmsn, hlsn, hz, hb, hclx, y, h1, h2)
+
+def b3_mgF(sc: List<&2, DC.Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +ms: List<&2, DC.Mem>, +e: {DC.mgF(sc, es, fs, k, ms) == None{} : Maybe<&2, List<&2, DC.Mem>>},
+  +m: DC.Mem, n: Nat, +en: {SHF.mat(sc, n) == Some{m} : Maybe<&2, DC.Mem>}, +hne: {DC.node_eq(DC.Mem.r(m), DR.NFrame{}) == False{} : Bool})
+  -> {LB.ks.lab(es, fs, k, DR.zdir(es, DC.Mem.a(m))) == None{} : Maybe<&2, DR.Lab>}:
+  RDF.mgF_none(sc, es, fs, k, ms, e, m, n, en, hne)

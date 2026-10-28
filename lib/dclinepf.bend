@@ -36,6 +36,9 @@ import ./dcmergepf.bend as MG
 import ./dcclxpf.bend as CX
 import ./dcsetpf.bend as ST
 import ./dcnodepf.bend as ND
+import ./lspanpf.bend as LS
+import ./dcreppf.bend as RP
+import ./dcinvpf.bend as IV
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -403,3 +406,172 @@ def k2_clin(ls: List<&2, S.Q>, xs: List<&2, SK.VE>, +es: List<&2, SK.Ent>, +fs: 
       k2_base(es, fs, k, r, hr)
     case Con{+l, +lt} Nil{}:
       k2_base(es, fs, k, r, hr)
+
+# Zero coefficients
+# -----------------
+
+def cz.q(+l: S.Q, +X: S.Q, +Z: S.Q, h: S.Q.eq(l, DR.qz())) -> S.Q.eq(S.Q.add(S.Q.mul(l, X), S.Q.mul(DR.qo(), S.Q.add(S.Q.mul(DR.qz(), Z), S.Q.mul(DR.qz(), Z)))), S.Q.add(S.Q.mul(DR.qz(), Z), S.Q.mul(DR.qz(), Z))):
+  LQ.q_trans(S.Q.add(S.Q.mul(l, X), S.Q.mul(DR.qo(), S.Q.add(S.Q.mul(DR.qz(), Z), S.Q.mul(DR.qz(), Z)))), S.Q.add(S.Q.mul(DR.qz(), X), S.Q.mul(DR.qo(), S.Q.add(S.Q.mul(DR.qz(), Z), S.Q.mul(DR.qz(), Z)))), S.Q.add(S.Q.mul(DR.qz(), Z), S.Q.mul(DR.qz(), Z)),
+    LQ.q_add_cong_l(S.Q.mul(l, X), S.Q.mul(DR.qz(), X), S.Q.mul(DR.qo(), S.Q.add(S.Q.mul(DR.qz(), Z), S.Q.mul(DR.qz(), Z))), LQ.q_mul_cong_l(l, DR.qz(), X, h)), QR.qring_eq([X, Z], E.QAdd{E.QMul{E.QCst{DR.qz()}, E.QVar{0n}}, E.QMul{E.QCst{DR.qo()}, E.QAdd{E.QMul{E.QCst{DR.qz()}, E.QVar{1n}}, E.QMul{E.QCst{DR.qz()}, E.QVar{1n}}}}}, E.QAdd{E.QMul{E.QCst{DR.qz()}, E.QVar{1n}}, E.QMul{E.QCst{DR.qz()}, E.QVar{1n}}}, {==}))
+
+def cz.ax(+p: List<&2, S.Q>, +l: S.Q, +x: SK.VE, +es: List<&2, SK.Ent>, +r: DR.Node, +hl: {DR.qnz(l) == False{} : Bool})
+  -> S.Q.eq(E.qeval(p, SK.VE.x(DR.vlin(l, x, DR.qo(), DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))))), E.qeval(p, SK.VE.x(DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))))):
+  cz.q(l, E.qeval(p, SK.VE.x(x)), E.qeval(p, SK.VE.x(DR.zdir(es, r))), LP.qnz_f(l, hl))
+
+def cz.ay(+p: List<&2, S.Q>, +l: S.Q, +x: SK.VE, +es: List<&2, SK.Ent>, +r: DR.Node, +hl: {DR.qnz(l) == False{} : Bool})
+  -> S.Q.eq(E.qeval(p, SK.VE.y(DR.vlin(l, x, DR.qo(), DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))))), E.qeval(p, SK.VE.y(DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))))):
+  cz.q(l, E.qeval(p, SK.VE.y(x)), E.qeval(p, SK.VE.y(DR.zdir(es, r))), LP.qnz_f(l, hl))
+
+def cz(+l: S.Q, +x: SK.VE, +es: List<&2, SK.Ent>, +r: DR.Node, +hl: {DR.qnz(l) == False{} : Bool}) -> VD.SameVD(DR.vlin(l, x, DR.qo(), DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))), DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))):
+  (ID.qzero_ident(SK.VE.x(DR.vlin(l, x, DR.qo(), DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r)))), SK.VE.x(DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))), p => cz.ax(p, l, x, es, r, hl)),
+   ID.qzero_ident(SK.VE.y(DR.vlin(l, x, DR.qo(), DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r)))), SK.VE.y(DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))), p => cz.ay(p, l, x, es, r, hl)))
+
+# every coefficient 0: the combination is 0
+def clin_zero(ls: List<&2, S.Q>, xs: List<&2, SK.VE>, +es: List<&2, SK.Ent>, +r: DR.Node, +t: Nat, +h: {IS.allz(ls, CX.imxs(xs, t)) == True{} : Bool})
+  -> VD.SameVD(HS.clin(es, r, ls, xs), DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))):
+  match ls xs:
+    case Con{+l, +lt} Con{+x, +xt}:
+      GN.samevd_tr(DR.vlin(l, x, DR.qo(), HS.clin(es, r, lt, xt)), DR.vlin(l, x, DR.qo(), DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))), DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r)),
+        ST.vcong(l, x, x, DR.qo(), HS.clin(es, r, lt, xt), DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r)), MG.samevd_refl(x),
+          clin_zero(lt, xt, es, r, t, LP2.band_r(SV.bnot(DR.qnz(l)), IS.allz(lt, CX.imxs(xt, t)), h))),
+        cz(l, x, es, r, IP.bnot_t(DR.qnz(l), LP2.band_l(SV.bnot(DR.qnz(l)), IS.allz(lt, CX.imxs(xt, t)), h))))
+    case Nil{} xs:
+      MG.samevd_refl(DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r)))
+    case Con{+l, +lt} Nil{}:
+      MG.samevd_refl(DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r)))
+
+# i times
+# -------
+
+def ic.ax(+p: List<&2, S.Q>, +a: SK.VE, +b: SK.VE, +hy: VD.SameD(SK.VE.y(a), SK.VE.y(b))) -> S.Q.eq(E.qeval(p, SK.VE.x(DR.imul(a))), E.qeval(p, SK.VE.x(DR.imul(b)))):
+  LQ.q_neg_cong(E.qeval(p, SK.VE.y(a)), E.qeval(p, SK.VE.y(b)), ID.ident_ok(SK.VE.y(a), SK.VE.y(b), hy)(p))
+
+def imul_cong(+a: SK.VE, +b: SK.VE, h: VD.SameVD(a, b)) -> VD.SameVD(DR.imul(a), DR.imul(b)):
+  (+hx, +hy) = h
+  (ID.qzero_ident(SK.VE.x(DR.imul(a)), SK.VE.x(DR.imul(b)), p => ic.ax(p, a, b, hy)), hx)
+
+def is.qx(+A: S.Q, +B: S.Q) -> S.Q.eq(S.Q.add(S.Q.mul(DR.qo(), S.Q.neg(S.Q.add(S.Q.mul(DR.qo(), A), S.Q.mul(DR.qo(), B)))), S.Q.mul(S.Q.neg(DR.qo()), S.Q.neg(A))), S.Q.neg(B)):
+  QR.qring_eq([A, B], E.QAdd{E.QMul{E.QCst{DR.qo()}, E.QNeg{E.QAdd{E.QMul{E.QCst{DR.qo()}, E.QVar{0n}}, E.QMul{E.QCst{DR.qo()}, E.QVar{1n}}}}}, E.QMul{E.QNeg{E.QCst{DR.qo()}}, E.QNeg{E.QVar{0n}}}}, E.QNeg{E.QVar{1n}}, {==})
+
+def is.qy(+A: S.Q, +B: S.Q) -> S.Q.eq(S.Q.add(S.Q.mul(DR.qo(), S.Q.add(S.Q.mul(DR.qo(), A), S.Q.mul(DR.qo(), B))), S.Q.mul(S.Q.neg(DR.qo()), A)), B):
+  QR.qring_eq([A, B], E.QAdd{E.QMul{E.QCst{DR.qo()}, E.QAdd{E.QMul{E.QCst{DR.qo()}, E.QVar{0n}}, E.QMul{E.QCst{DR.qo()}, E.QVar{1n}}}}, E.QMul{E.QNeg{E.QCst{DR.qo()}}, E.QVar{0n}}}, E.QVar{1n}, {==})
+
+def is.ax(+p: List<&2, S.Q>, +a: SK.VE, +b: SK.VE) -> S.Q.eq(E.qeval(p, SK.VE.x(DR.vlin(DR.qo(), DR.imul(DR.vlin(DR.qo(), a, DR.qo(), b)), S.Q.neg(DR.qo()), DR.imul(a)))), E.qeval(p, SK.VE.x(DR.imul(b)))):
+  is.qx(E.qeval(p, SK.VE.y(a)), E.qeval(p, SK.VE.y(b)))
+
+def is.ay(+p: List<&2, S.Q>, +a: SK.VE, +b: SK.VE) -> S.Q.eq(E.qeval(p, SK.VE.y(DR.vlin(DR.qo(), DR.imul(DR.vlin(DR.qo(), a, DR.qo(), b)), S.Q.neg(DR.qo()), DR.imul(a)))), E.qeval(p, SK.VE.y(DR.imul(b)))):
+  is.qy(E.qeval(p, SK.VE.x(a)), E.qeval(p, SK.VE.x(b)))
+
+# i (a + b) - i a = i b
+def isub(+a: SK.VE, +b: SK.VE) -> VD.SameVD(DR.vlin(DR.qo(), DR.imul(DR.vlin(DR.qo(), a, DR.qo(), b)), S.Q.neg(DR.qo()), DR.imul(a)), DR.imul(b)):
+  (ID.qzero_ident(SK.VE.x(DR.vlin(DR.qo(), DR.imul(DR.vlin(DR.qo(), a, DR.qo(), b)), S.Q.neg(DR.qo()), DR.imul(a))), SK.VE.x(DR.imul(b)), p => is.ax(p, a, b)),
+   ID.qzero_ident(SK.VE.y(DR.vlin(DR.qo(), DR.imul(DR.vlin(DR.qo(), a, DR.qo(), b)), S.Q.neg(DR.qo()), DR.imul(a))), SK.VE.y(DR.imul(b)), p => is.ay(p, a, b)))
+
+def vb.q(+K: S.Q, +Z: S.Q) -> S.Q.eq(S.Q.add(S.Q.mul(DR.qo(), K), S.Q.mul(DR.qo(), S.Q.add(S.Q.mul(DR.qz(), Z), S.Q.mul(DR.qz(), Z)))), K):
+  QR.qring_eq([K, Z], E.QAdd{E.QMul{E.QCst{DR.qo()}, E.QVar{0n}}, E.QMul{E.QCst{DR.qo()}, E.QAdd{E.QMul{E.QCst{DR.qz()}, E.QVar{1n}}, E.QMul{E.QCst{DR.qz()}, E.QVar{1n}}}}}, E.QVar{0n}, {==})
+
+def vb1.ax(+p: List<&2, S.Q>, +a: SK.VE, +es: List<&2, SK.Ent>, +r: DR.Node) -> S.Q.eq(E.qeval(p, SK.VE.x(DR.vlin(DR.qo(), a, DR.qo(), DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))))), E.qeval(p, SK.VE.x(a))):
+  vb.q(E.qeval(p, SK.VE.x(a)), E.qeval(p, SK.VE.x(DR.zdir(es, r))))
+
+def vb1.ay(+p: List<&2, S.Q>, +a: SK.VE, +es: List<&2, SK.Ent>, +r: DR.Node) -> S.Q.eq(E.qeval(p, SK.VE.y(DR.vlin(DR.qo(), a, DR.qo(), DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))))), E.qeval(p, SK.VE.y(a))):
+  vb.q(E.qeval(p, SK.VE.y(a)), E.qeval(p, SK.VE.y(DR.zdir(es, r))))
+
+# a + 0 = a
+def vb1(+a: SK.VE, +es: List<&2, SK.Ent>, +r: DR.Node) -> VD.SameVD(DR.vlin(DR.qo(), a, DR.qo(), DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))), a):
+  (ID.qzero_ident(SK.VE.x(DR.vlin(DR.qo(), a, DR.qo(), DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r)))), SK.VE.x(a), p => vb1.ax(p, a, es, r)),
+   ID.qzero_ident(SK.VE.y(DR.vlin(DR.qo(), a, DR.qo(), DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r)))), SK.VE.y(a), p => vb1.ay(p, a, es, r)))
+
+def ng.q(+e: S.Q) -> S.Q.eq(S.Q.add(S.Q.mul(S.Q.neg(DR.qo()), e), S.Q.mul(DR.qz(), e)), S.Q.neg(e)):
+  QR.qring_eq([e], E.QAdd{E.QMul{E.QNeg{E.QCst{DR.qo()}}, E.QVar{0n}}, E.QMul{E.QCst{DR.qz()}, E.QVar{0n}}}, E.QNeg{E.QVar{0n}}, {==})
+
+def ng.at(+p: List<&2, S.Q>, +e: E.QExpr) -> S.Q.eq(E.qeval(p, ST.lin2(S.Q.neg(DR.qo()), e, DR.qz(), e)), E.qeval(p, E.QNeg{e})):
+  ng.q(E.qeval(p, e))
+
+# K holds -e with e
+def kneg(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +e: E.QExpr, +hr: ST.RI(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k)), +h: {KS.ks.inb(k, e) == True{} : Bool})
+  -> {KS.ks.inb(k, E.QNeg{e}) == True{} : Bool}:
+  ST.ri.tr(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), ST.lin2(S.Q.neg(DR.qo()), e, DR.qz(), e), E.QNeg{e}, hr, ST.ri.lin(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), S.Q.neg(DR.qo()), e, DR.qz(), e, hr, h, h),
+    ID.qzero_ident(ST.lin2(S.Q.neg(DR.qo()), e, DR.qz(), e), E.QNeg{e}, p => ng.at(p, e)))
+
+# K squared is closed under i
+def k2_imul(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +x: SK.VE, +hr: ST.RI(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k)), h: K2(es, fs, k, x)) -> K2(es, fs, k, DR.imul(x)):
+  (+hx, +hy) = h
+  (kneg(es, fs, k, SK.VE.y(x), hr, hy), hx)
+
+# The argument
+# ------------
+
+def k2.x(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +x: SK.VE, h: K2(es, fs, k, x)) -> {KS.ks.inb(k, SK.VE.x(x)) == True{} : Bool}:
+  (a, b) = h
+  a
+
+def k2.y(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +x: SK.VE, h: K2(es, fs, k, x)) -> {KS.ks.inb(k, SK.VE.y(x)) == True{} : Bool}:
+  (a, b) = h
+  b
+
+def ri.r(+B: List<&2, E.QExpr>, +rows: List<&2, EL.Row>, h: ST.RI(B, rows)) -> {EP.rinv(B, rows, 0n) == True{} : Bool}:
+  (a, b) = h
+  a
+
+def ri.l(+B: List<&2, E.QExpr>, +rows: List<&2, EL.Row>, h: ST.RI(B, rows)) -> {EL.rlen(rows) == SV.neqs(B) : Nat}:
+  (a, b) = h
+  b
+
+def enc_sym.at(+p: List<&2, S.Q>, +es: List<&2, SK.Ent>, +r: DR.Node, +ls: List<&2, S.Q>, +xs: List<&2, SK.VE>, +t: Nat)
+  -> S.Q.eq(E.qeval(p, SV.lin(ls, CX.imxs(xs, t))), E.qeval(p, HS.enc(DR.imul(HS.clin(es, r, ls, xs)), t))):
+  LQ.q_sym(E.qeval(p, HS.enc(DR.imul(HS.clin(es, r, ls, xs)), t)), E.qeval(p, SV.lin(ls, CX.imxs(xs, t))), CX.encim_clin.at(p, es, r, ls, xs, t))
+
+# the hull's kept list is the K part's, then the rest
+def cl.xs(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk, +r: DR.Node) -> {HS.hxs(es, fs, HS.hs.ds(DC.rhull(es, fs, t, s, r))) == vcat(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r))))) : List<&2, SK.VE>}:
+  Equal.trans(List<&2, SK.VE>, HS.hxs(es, fs, HS.hs.ds(DC.rhull(es, fs, t, s, r))), HS.hxs(es, fs, DC.dcat(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)), DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r))))), vcat(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r))))),
+    Equal.cong(List<&2, DR.Der>, List<&2, SK.VE>, l => HS.hxs(es, fs, l), HS.hs.ds(DC.rhull(es, fs, t, s, r)), DC.dcat(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)), DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))),
+      Equal.sym(List<&2, DR.Der>, DC.dcat(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)), DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))), HS.hs.ds(DC.rhull(es, fs, t, s, r)), pfx_fold(DC.rgens(fs, r, DC.Sk.ms(s), DC.Sk.ls(s)), HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)), es, fs, t, DC.khull(es, fs, t, DC.Sk.k(s), r), pfx_self(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))))),
+    hxs_cat(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)), DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r))), es, fs))
+
+def cl.sv1(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk, +r: DR.Node, +y: SK.VE, +nu: List<&2, S.Q>, sv1: VD.SameVD(y, HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.rhull(es, fs, t, s, r))))))
+  -> VD.SameVD(y, HS.clin(es, r, nu, vcat(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r))))))):
+  %cl.xs(es, fs, t, s, r) : VD.SameVD(y, HS.clin(es, r, nu, _))
+  sv1
+
+def cl.ind(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk, +r: DR.Node, hclx: {DC.clx(es, fs, t, s, r) == None{} : Maybe<&2, DR.Der>})
+  -> {IS.indset(CX.imxs(HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))), t), HS.hs.rows(DC.rhull(es, fs, t, s, r))) == True{} : Bool}:
+  %CX.imx_xs(es, fs, t, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))) : {IS.indset(_, HS.hs.rows(DC.rhull(es, fs, t, s, r))) == True{} : Bool}
+  clgo_ind(DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r))), es, fs, t, r, DC.rhull(es, fs, t, s, r), DC.Sk.k(s), HS.hs.rows(DC.rhull(es, fs, t, s, r)), HS.encs(HS.hxs(es, fs, HS.hs.ds(DC.rhull(es, fs, t, s, r))), t), Nil{}, hclx)
+
+def cl.k2k(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk, +r: DR.Node, +nu: List<&2, S.Q>, +kr: ST.RI(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), KS.ks.rows(DC.Sk.k(s)))) -> K2(es, fs, DC.Sk.k(s), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))))):
+  k2_clin(nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), es, fs, DC.Sk.k(s), r, kr, k2v_of(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)), es, fs, DC.Sk.k(s),
+    k2_fold(DC.kgens(r, KS.ks.ds(DC.Sk.k(s))), es, fs, t, DC.Sk.k(s), HS.hs0(), Unit{}, k2_kgens(KS.ks.ds(DC.Sk.k(s)), es, fs, DC.Sk.k(s), r, kr, ain_all(KS.ks.ds(DC.Sk.k(s)), es, fs)))))
+
+def cl.go(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +r: DR.Node, +hk: IV.KInvD(es, fs, ctx, t, DC.Sk.k(s)), +hms: GN.MsOk(es, fs, ctx, t, DC.Sk.ms(s)), +hls: GN.LsOk(es, fs, ctx, t, DC.Sk.ls(s)), +hmsn: RP.MsNz(DC.Sk.ms(s)), +hlsn: RP.LsNz(DC.Sk.ls(s)), +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}, +hclx: {DC.clx(es, fs, t, s, r) == None{} : Maybe<&2, DR.Der>},
+  +y: SK.VE, +nu: List<&2, S.Q>, +svy: VD.SameVD(y, DR.vlin(DR.qo(), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), DR.qo(), HS.clin(es, r, PT.qdrop(vlen(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), nu), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r))))))), +h2: ST.HIn(es, fs, r, DC.rhull(es, fs, t, s, r), DR.imul(y)), +kr: ST.RI(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), KS.ks.rows(DC.Sk.k(s))), +k2K: K2(es, fs, DC.Sk.k(s), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))))) -> K2(es, fs, DC.Sk.k(s), y):
+  k2_kv(es, fs, DC.Sk.k(s), y, HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), kr,
+    GN.samevd_tr(y, DR.vlin(DR.qo(), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), DR.qo(), HS.clin(es, r, PT.qdrop(vlen(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), nu), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))))), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), svy,
+      GN.samevd_tr(DR.vlin(DR.qo(), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), DR.qo(), HS.clin(es, r, PT.qdrop(vlen(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), nu), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))))), DR.vlin(DR.qo(), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), DR.qo(), DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))),
+        ST.vcong(DR.qo(), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), DR.qo(), HS.clin(es, r, PT.qdrop(vlen(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), nu), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r))))), DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r)), MG.samevd_refl(HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))))),
+          clin_zero(PT.qdrop(vlen(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), nu), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))), es, r, t,
+            IP.indset_ok(CX.imxs(HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))), t), HS.encs(HS.hxs(es, fs, HS.hs.ds(DC.rhull(es, fs, t, s, r))), t), HS.hs.rows(DC.rhull(es, fs, t, s, r)), ri.r(HS.encs(HS.hxs(es, fs, HS.hs.ds(DC.rhull(es, fs, t, s, r))), t), HS.hs.rows(DC.rhull(es, fs, t, s, r)), ST.hri(es, fs, ctx, r, t, DC.rhull(es, fs, t, s, r), GN.rhull_inv(es, fs, ctx, t, s, r, hk, hms, hls, hz, hb))), ri.l(HS.encs(HS.hxs(es, fs, HS.hs.ds(DC.rhull(es, fs, t, s, r))), t), HS.hs.rows(DC.rhull(es, fs, t, s, r)), ST.hri(es, fs, ctx, r, t, DC.rhull(es, fs, t, s, r), GN.rhull_inv(es, fs, ctx, t, s, r, hk, hms, hls, hz, hb))), cl.ind(es, fs, t, s, r, hclx), PT.qdrop(vlen(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), nu),
+              PP.in_tr(HS.enc(DR.imul(HS.clin(es, r, PT.qdrop(vlen(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), nu), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))))), t), SV.lin(PT.qdrop(vlen(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), nu), CX.imxs(HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))), t)), HS.encs(HS.hxs(es, fs, HS.hs.ds(DC.rhull(es, fs, t, s, r))), t),
+                LS.hin_span(es, fs, r, t, DC.rhull(es, fs, t, s, r), DR.imul(HS.clin(es, r, PT.qdrop(vlen(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), nu), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))))),
+                  ST.hin_tr(es, fs, r, DC.rhull(es, fs, t, s, r), DR.vlin(DR.qo(), DR.imul(y), S.Q.neg(DR.qo()), DR.imul(HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))))), DR.imul(HS.clin(es, r, PT.qdrop(vlen(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), nu), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))))),
+                    ST.hin_lin(es, fs, r, DC.rhull(es, fs, t, s, r), DR.qo(), DR.imul(y), S.Q.neg(DR.qo()), DR.imul(HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))))), h2,
+                      ND.k2_in(es, fs, t, DC.Sk.k(s), ST.SH{DC.rhull(es, fs, t, s, r), r}, DR.imul(HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))))), ND.sok_root.go(False{}, es, fs, ctx, t, s, r, hk, hms, hls, hmsn, hlsn, hz, hb), kr,
+                        k2.x(es, fs, DC.Sk.k(s), DR.imul(HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))))), k2_imul(es, fs, DC.Sk.k(s), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), kr, k2K)), k2.y(es, fs, DC.Sk.k(s), DR.imul(HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))))), k2_imul(es, fs, DC.Sk.k(s), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), kr, k2K)))),
+                    GN.samevd_tr(DR.vlin(DR.qo(), DR.imul(y), S.Q.neg(DR.qo()), DR.imul(HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))))), DR.vlin(DR.qo(), DR.imul(DR.vlin(DR.qo(), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), DR.qo(), HS.clin(es, r, PT.qdrop(vlen(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), nu), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r))))))), S.Q.neg(DR.qo()), DR.imul(HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))))), DR.imul(HS.clin(es, r, PT.qdrop(vlen(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), nu), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))))),
+                      ST.vcong(DR.qo(), DR.imul(y), DR.imul(DR.vlin(DR.qo(), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), DR.qo(), HS.clin(es, r, PT.qdrop(vlen(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), nu), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r))))))), S.Q.neg(DR.qo()), DR.imul(HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))))), DR.imul(HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))))), imul_cong(y, DR.vlin(DR.qo(), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), DR.qo(), HS.clin(es, r, PT.qdrop(vlen(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), nu), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))))), svy), MG.samevd_refl(DR.imul(HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))))))),
+                      isub(HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), HS.clin(es, r, PT.qdrop(vlen(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), nu), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r))))))))),
+                p => enc_sym.at(p, es, r, PT.qdrop(vlen(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), nu), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))), t))))),
+        vb1(HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), es, r))),
+    k2.x(es, fs, DC.Sk.k(s), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), k2K), k2.y(es, fs, DC.Sk.k(s), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), k2K))
+
+def cl.nu(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +r: DR.Node, +hk: IV.KInvD(es, fs, ctx, t, DC.Sk.k(s)), +hms: GN.MsOk(es, fs, ctx, t, DC.Sk.ms(s)), +hls: GN.LsOk(es, fs, ctx, t, DC.Sk.ls(s)), +hmsn: RP.MsNz(DC.Sk.ms(s)), +hlsn: RP.LsNz(DC.Sk.ls(s)), +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}, +hclx: {DC.clx(es, fs, t, s, r) == None{} : Maybe<&2, DR.Der>},
+  +y: SK.VE, +nu: List<&2, S.Q>, +sv1: VD.SameVD(y, HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.rhull(es, fs, t, s, r))))), +h2: ST.HIn(es, fs, r, DC.rhull(es, fs, t, s, r), DR.imul(y))) -> K2(es, fs, DC.Sk.k(s), y):
+  cl.go(es, fs, ctx, t, s, r, hk, hms, hls, hmsn, hlsn, hz, hb, hclx, y, nu,
+    GN.samevd_tr(y, HS.clin(es, r, nu, vcat(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))))), DR.vlin(DR.qo(), HS.clin(es, r, nu, HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), DR.qo(), HS.clin(es, r, PT.qdrop(vlen(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r)))), nu), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))))), cl.sv1(es, fs, t, s, r, y, nu, sv1), clin_cat(HS.hxs(es, fs, HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hxs(es, fs, DC.ddrop(DC.dlen(HS.hs.ds(DC.khull(es, fs, t, DC.Sk.k(s), r))), HS.hs.ds(DC.rhull(es, fs, t, s, r)))), es, r, nu)),
+    h2, ST.kri(es, fs, ctx, t, DC.Sk.k(s), hk), cl.k2k(es, fs, t, s, r, nu, ST.kri(es, fs, ctx, t, DC.Sk.k(s), hk)))
+
+# no complex line at a free root whose check found nothing: y and i y in
+# its set put both parts of y in K
+def cline(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +r: DR.Node, +hk: IV.KInvD(es, fs, ctx, t, DC.Sk.k(s)), +hms: GN.MsOk(es, fs, ctx, t, DC.Sk.ms(s)), +hls: GN.LsOk(es, fs, ctx, t, DC.Sk.ls(s)), +hmsn: RP.MsNz(DC.Sk.ms(s)), +hlsn: RP.LsNz(DC.Sk.ls(s)), +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}, +hclx: {DC.clx(es, fs, t, s, r) == None{} : Maybe<&2, DR.Der>},
+  +y: SK.VE, h1: ST.HIn(es, fs, r, DC.rhull(es, fs, t, s, r), y), +h2: ST.HIn(es, fs, r, DC.rhull(es, fs, t, s, r), DR.imul(y))) -> K2(es, fs, DC.Sk.k(s), y):
+  (+nu, +sv1) = h1
+  cl.nu(es, fs, ctx, t, s, r, hk, hms, hls, hmsn, hlsn, hz, hb, hclx, y, nu, sv1, h2)
