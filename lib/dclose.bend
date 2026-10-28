@@ -1062,3 +1062,45 @@ def fb(fs: List<&2, DR.Fact>, +t: Nat) -> Bool:
       True{}
     case Con{DR.Fact{e, nd, ds}, tl}:
       SV.band(SP.vbelow(e, t), SV.band(fb.ds(ds, t), fb(tl, t)))
+
+# Queries
+# -------
+# What a fixpoint holds, read off its sets: a K equation, or a direction
+# statement par(b, y) by b's set (its root's when it has a record, its
+# collapsed set when not).
+
+def rset.inb(f: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk, +r: DR.Node, +y: SK.VE) -> Bool:
+  match f:
+    case True{}:
+      KS.ks.inb(Sk.k(s), SK.VE.y(y))
+    case False{}:
+      HS.hs.inb(rhull(es, fs, t, s, r), y, t)
+
+def par.n(a: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk, +y: SK.VE) -> Bool:
+  match a:
+    case DR.NFrame{}:
+      KS.ks.inb(Sk.k(s), SK.VE.y(y))
+    case DR.NSeg{c}:
+      rep.inb(crep(es, fs, t, s, c), t, y)
+
+def par.m(m: Maybe<&2, Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk, +a: DR.Node, +y: SK.VE) -> Bool:
+  match m:
+    case Some{Mem{a2, +r, +w, d}}:
+      rset.inb(node_eq(r, DR.NFrame{}), es, fs, t, s, r, DR.gmul(w, y))
+    case None{}:
+      par.n(a, es, fs, t, s, y)
+
+# the state holds par(a, y)
+def par.inb(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk, +a: DR.Node, +y: SK.VE) -> Bool:
+  par.m(mem_of(Sk.ms(s), a), es, fs, t, s, a, y)
+
+def stat.inb(m: Maybe<&2, DR.DStat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk) -> Bool:
+  match m:
+    case Some{DR.DStat{+b, +y, l}}:
+      par.inb(es, fs, t, s, DR.NSeg{b}, y)
+    case None{}:
+      False{}
+
+# the state holds the equation e, or the direction statement m
+def holds(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk, +e: E.QExpr, +m: Maybe<&2, DR.DStat>) -> Bool:
+  SV.bor(KS.ks.inb(Sk.k(s), e), stat.inb(m, es, fs, t, s))

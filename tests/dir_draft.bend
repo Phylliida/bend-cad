@@ -36,7 +36,9 @@
 #   fixpoint every valid derivation's conclusion is represented
 #   (CCF.dclose_closed), with its rules in lib/dcreprpf.bend,
 #   lib/dcturnpf.bend, lib/dcpushpf.bend, lib/dcturncpf.bend,
-#   lib/dclopf.bend and lib/dcftiepf.bend.
+#   lib/dclopf.bend and lib/dcftiepf.bend. Its negative answers decide
+#   NotDirDerivable (lib/dcdecpf.bend, DEC.not_dir): a fixpoint whose sets
+#   hold neither the equation nor its direction statement (DC.holds).
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -87,6 +89,7 @@ import ../lib/dcshapepf.bend as SHF
 import ../lib/dcreppf.bend as REPF
 import ../lib/dcreprpf.bend as RRF
 import ../lib/dcclosepf.bend as CCF
+import ../lib/dcdecpf.bend as DEC
 
 # The functions on an example
 # ---------------------------
@@ -324,3 +327,10 @@ def b3_mgF(sc: List<&2, DC.Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, 
 def b3_closed(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat, +s: DC.Sk, eo: {DC.dclose(es, fs, ctx, t, fuel) == DC.OFix{s} : DC.Out},
   +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}, d: DR.Der, hv: DR.Valid(es, fs, ctx, d)) -> RRF.Repr(es, fs, t, s, DR.concl(es, fs, d)):
   CCF.dclose_closed(es, fs, ctx, t, fuel, s, eo, hz, hb, d, hv)
+
+def b3_not_dir(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +c: Nat, +dd: List<&2, Nat>, +i: Nat, +t: Nat, fuel: Nat, +s: DC.Sk,
+  +eo: {DC.dclose(SV.ents(sk), SV.dfacts(sk, cls, red, c, dd, i), SV.ctx(sk, red, c), t, fuel) == DC.OFix{s} : DC.Out}, +hz: {DC.zb(SV.ents(sk), t) == True{} : Bool},
+  +hb: {DC.fb(SV.dfacts(sk, cls, red, c, dd, i), t) == True{} : Bool},
+  +hh: {DC.holds(SV.ents(sk), SV.dfacts(sk, cls, red, c, dd, i), t, s, SV.eqat(SK.Sketch.eqs(sk), i), SV.dstat_of(SV.ents(sk), SV.kind_at(sk, c))) == False{} : Bool})
+  -> SV.NotDirDerivable(sk, cls, red, c, dd, i):
+  DEC.not_dir(sk, cls, red, c, dd, i, t, fuel, s, eo, hz, hb, hh)
