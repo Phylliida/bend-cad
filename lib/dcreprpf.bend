@@ -34,6 +34,7 @@ import ./labalgpf.bend as LA
 import ./labnzpf.bend as NZ
 import ./dcshapepf.bend as SH
 import ./dcfixpf.bend as FX
+import ./dcreadpf.bend as RF
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -426,3 +427,106 @@ def rule_known(j: DR.Jd, jr: DR.Jd, ji: DR.Jd, +es: List<&2, SK.Ent>, +fs: List<
       absurd(Repr(es, fs, t, s, DR.JP{a, SK.VE.add(x, SK.VE{DR.zeroe(), DR.Jd.e(ji)})}), kr)
     case DR.JK{+e} jr ji:
       absurd(Repr(es, fs, t, s, DR.JP{DR.NFrame{}, SK.VE.add(DR.zerov(), SK.VE{DR.Jd.e(jr), DR.Jd.e(ji)})}), p)
+
+# Generators in the sets
+# ----------------------
+
+def fx.fb(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: DC.SP, +ids: List<&2, Nat>, +s: DC.Sk, h: FX.Fx(es, fs, t, cs, ids, s))
+  -> {DC.fback(DC.rgens(fs, DR.NFrame{}, DC.Sk.ms(s), DC.Sk.ls(s)), es, fs, DC.Sk.k(s)) == None{} : Maybe<&2, DR.Der>}:
+  (a, r1) = h
+  (b, r2) = r1
+  (c, r3) = r2
+  c
+
+def h.fb(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s)) -> {DC.fback(DC.rgens(fs, DR.NFrame{}, DC.Sk.ms(s), DC.Sk.ls(s)), es, fs, DC.Sk.k(s)) == None{} : Maybe<&2, DR.Der>}:
+  fx.fb(es, fs, t, OP.cspan(ctx), DC.segids(es), s, h.fx(es, fs, ctx, t, s, H))
+
+def mok.sv(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +a: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, h: GN.MOkD(es, fs, ctx, t, DC.Mem{a, r, w, d}))
+  -> VD.SameVD(DR.Jd.x(DR.concl(es, fs, d)), DR.gmul(w, DR.zdir(es, a))):
+  (h1, r1) = h
+  (h2, r2) = r1
+  (h3, r3) = r2
+  (h4, r4) = r3
+  h4
+
+def rgi.tl(f: Bool, +g: DR.Der, +xs: List<&2, DR.Der>, +rest: List<&2, DR.Der>, h: ST.InD(g, rest)) -> ST.InD(g, DC.dcatif(f, xs, rest)):
+  match f:
+    case True{}:
+      ST.ind_cat_r(g, xs, rest, h)
+    case False{}:
+      h
+
+def rgi.hd(f: Bool, +g: DR.Der, +xs: List<&2, DR.Der>, +rest: List<&2, DR.Der>, ef: {f == True{} : Bool}, h: ST.InD(g, xs)) -> ST.InD(g, DC.dcatif(f, xs, rest)):
+  match f:
+    case True{}:
+      ST.ind_cat_l(g, xs, rest, h)
+    case False{}:
+      absurd(ST.InD(g, rest), LP.tf(Equal.sym(Bool, False{}, True{}, ef)))
+
+# a record's generators are among its root's
+def mg_in(ms: List<&2, DC.Mem>, n: Nat, +fs: List<&2, DR.Fact>, +ls: List<&2, DC.Link>, +r: DR.Node, +m: DC.Mem, +g: DR.Der,
+  en: {SH.mat(ms, n) == Some{m} : Maybe<&2, DC.Mem>}, er: {DC.node_eq(DC.Mem.r(m), r) == True{} : Bool}, h: ST.InD(g, DC.mgens(fs, ls, m))) -> ST.InD(g, DC.rgens(fs, r, ms, ls)):
+  match ms n:
+    case Nil{} n:
+      absurd(ST.InD(g, Nil{}), SH.mnone_some(m, en))
+    case Con{+m0, +tl} 0n:
+      %Equal.sym(DC.Mem, m0, m, SH.msome_inj(m0, m, en)) : ST.InD(g, DC.dcatif(DC.node_eq(DC.Mem.r(_), r), DC.mgens(fs, ls, _), DC.rgens(fs, r, tl, ls)))
+      rgi.hd(DC.node_eq(DC.Mem.r(m), r), g, DC.mgens(fs, ls, m), DC.rgens(fs, r, tl, ls), er, h)
+    case Con{+m0, +tl} 1n+j:
+      rgi.tl(DC.node_eq(DC.Mem.r(m0), r), g, DC.mgens(fs, ls, m0), DC.rgens(fs, r, tl, ls), mg_in(tl, j, fs, ls, r, m, g, en, er, h))
+
+# a root's generators are in its set
+def gen_rset(r: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +g: DR.Der, hg: ST.InD(g, DC.rgens(fs, r, DC.Sk.ms(s), DC.Sk.ls(s))))
+  -> ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.Jd.x(DR.concl(es, fs, g))):
+  match r:
+    case DR.NFrame{}:
+      (+n, +en) = hg
+      RF.fback_none(DC.rgens(fs, DR.NFrame{}, DC.Sk.ms(s), DC.Sk.ls(s)), es, fs, DC.Sk.k(s), h.fb(es, fs, ctx, t, s, H), g, n, en)
+    case DR.NSeg{+c}:
+      ND.gen_root(es, fs, ctx, t, s, DR.NSeg{c}, g, hg, h.k(es, fs, ctx, t, s, H), h.ms(es, fs, ctx, t, s, H), h.ls(es, fs, ctx, t, s, H), h.msn(es, fs, ctx, t, s, H), h.lsn(es, fs, ctx, t, s, H), h.z(es, fs, ctx, t, s, H), h.b(es, fs, ctx, t, s, H))
+
+# a record's set is a root set; it holds K squared
+def rok(+r: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s)) -> ST.StOk(es, fs, t, DC.Sk.k(s), ND.rset(es, fs, t, s, r)):
+  ND.sok_ok(es, fs, t, DC.Sk.k(s), ND.rset(es, fs, t, s, r), ND.sok_root(es, fs, ctx, t, s, r, h.k(es, fs, ctx, t, s, H), h.ms(es, fs, ctx, t, s, H), h.ls(es, fs, ctx, t, s, H), h.msn(es, fs, ctx, t, s, H), h.lsn(es, fs, ctx, t, s, H), h.z(es, fs, ctx, t, s, H), h.b(es, fs, ctx, t, s, H)))
+
+# Self
+# ----
+
+def self.go(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +a: DR.Node, +a2: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, +n: Nat, +en: {SH.mat(DC.Sk.ms(s), n) == Some{DC.Mem{a2, r, w, d}} : Maybe<&2, DC.Mem>}, ea: {a2 == a : DR.Node})
+  -> ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.gmul(w, DR.zdir(es, a))):
+  %ea : ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.gmul(w, DR.zdir(es, _)))
+  ST.st_tr(es, fs, t, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.Jd.x(DR.concl(es, fs, d)), DR.gmul(w, DR.zdir(es, a2)), rok(r, es, fs, ctx, t, s, H),
+    gen_rset(r, es, fs, ctx, t, s, H, d, mg_in(DC.Sk.ms(s), n, fs, DC.Sk.ls(s), r, DC.Mem{a2, r, w, d}, d, en, SH.node_refl(r), ST.ind_hd(d, DC.dcat(DC.lstats(DC.pprems(DC.nstats(fs, a2)), a2, w, d), DC.llinks(DC.Sk.ls(s), a2, w, d))))),
+    mok.sv(es, fs, ctx, t, a2, r, w, d, mok_at(DC.Sk.ms(s), n, es, fs, ctx, t, DC.Mem{a2, r, w, d}, en, h.ms(es, fs, ctx, t, s, H))))
+
+def self.n(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +a: DR.Node, +a2: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, hin: SH.Inm(DC.Mem{a2, r, w, d}, DC.Sk.ms(s)), hn: {DC.node_eq(a2, a) == True{} : Bool})
+  -> ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.gmul(w, DR.zdir(es, a))):
+  (+n, +en) = hin
+  self.go(es, fs, ctx, t, s, H, a, a2, r, w, d, n, en, GN.node_eq_ok(a2, a, hn))
+
+def self.mi(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +a: DR.Node, +a2: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, mi: SH.MemIn(DC.Sk.ms(s), a, DC.Mem{a2, r, w, d}))
+  -> ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.gmul(w, DR.zdir(es, a))):
+  (hin, hn) = mi
+  self.n(es, fs, ctx, t, s, H, a, a2, r, w, d, hin, hn)
+
+def fnone(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), em: {DC.mem_of(DC.Sk.ms(s), DR.NFrame{}) == None{} : Maybe<&2, DC.Mem>}) -> Empty:
+  SH.mnone_some(DC.Mem{DR.NFrame{}, DR.NFrame{}, DC.lone(), DR.DSelf{DR.NFrame{}}}, Equal.trans(Maybe<&2, DC.Mem>, None{}, DC.mem_of(DC.Sk.ms(s), DR.NFrame{}), Some{DC.Mem{DR.NFrame{}, DR.NFrame{}, DC.lone(), DR.DSelf{DR.NFrame{}}}},
+    Equal.sym(Maybe<&2, DC.Mem>, DC.mem_of(DC.Sk.ms(s), DR.NFrame{}), None{}, em), frec(es, fs, ctx, t, s, H)))
+
+def self.none(a: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), em: {DC.mem_of(DC.Sk.ms(s), a) == None{} : Maybe<&2, DC.Mem>}) -> rp.m(None{}, es, fs, t, s, a, DR.zdir(es, a)):
+  match a:
+    case DR.NFrame{}:
+      absurd(rp.m(None{}, es, fs, t, s, DR.NFrame{}, DR.zdir(es, DR.NFrame{})), fnone(es, fs, ctx, t, s, H, em))
+    case DR.NSeg{+c}:
+      ND.gen_coll(es, fs, ctx, t, s, c, DR.DSelf{DR.NSeg{c}}, ST.ind_hd(DR.DSelf{DR.NSeg{c}}, DC.dcat(DC.pprems(DC.stats(fs, c, 0n)), DC.dcat(DC.louts(DC.Sk.ls(s), c, fs, DC.Sk.ms(s), DC.Sk.ls(s)), DC.lins(DC.Sk.ls(s), c)))), h.k(es, fs, ctx, t, s, H), h.ms(es, fs, ctx, t, s, H), h.ls(es, fs, ctx, t, s, H), h.msn(es, fs, ctx, t, s, H), h.lsn(es, fs, ctx, t, s, H), h.z(es, fs, ctx, t, s, H), h.b(es, fs, ctx, t, s, H))
+
+def self.m(mm: Maybe<&2, DC.Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +a: DR.Node, em: {DC.mem_of(DC.Sk.ms(s), a) == mm : Maybe<&2, DC.Mem>}) -> rp.m(mm, es, fs, t, s, a, DR.zdir(es, a)):
+  match mm:
+    case Some{DC.Mem{+a2, +r, +w, +d}}:
+      self.mi(es, fs, ctx, t, s, H, a, a2, r, w, d, SH.mem_of_in(DC.Sk.ms(s), a, DC.Mem{a2, r, w, d}, em))
+    case None{}:
+      self.none(a, es, fs, ctx, t, s, H, em)
+
+# par(a, z_a) is represented
+def rule_self(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +a: DR.Node) -> Repr(es, fs, t, s, DR.JP{a, DR.zdir(es, a)}):
+  self.m(DC.mem_of(DC.Sk.ms(s), a), es, fs, ctx, t, s, H, a, {==})
