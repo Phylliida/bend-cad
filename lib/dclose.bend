@@ -1155,3 +1155,28 @@ def hold.pick(f: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +
 # a derivation of what the state holds: e by K, or else its statement
 def hold.der(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk, +e: E.QExpr, +m: Maybe<&2, DR.DStat>) -> DR.Der:
   hold.pick(KS.ks.inb(Sk.k(s), e), es, fs, t, s, e, m)
+
+# K(e) from an explosion: par(F, (0, e)) by void at F (1 in K) or by turn
+# and through at a void open segment, then frame-back
+def expl.der(o: Out, +es: List<&2, SK.Ent>, +e: E.QExpr) -> DR.Der:
+  match o:
+    case OStep{s}:
+      DR.DZero{}
+    case OFix{s}:
+      DR.DZero{}
+    case OOne{+d}:
+      DR.DBack{DR.DVoid{d, DR.DZero{}, DR.NFrame{}, SK.VE{DR.zeroe(), e}}}
+    case OVoid{+g, +dr, +di}:
+      DR.DBack{DR.DThrough{DR.DTurn{DR.DVoid{dr, di, DR.NSeg{g}, DR.gmul(DR.Lab.conj(lone()), DR.zdir(es, DR.NFrame{}))}, lone(), DR.NFrame{}}, DR.DVoid{dr, di, DR.NSeg{g}, SK.VE{DR.zeroe(), e}}, lone(), DR.NSeg{g}}}
+
+# the run exploded
+def is_expl(o: Out) -> Bool:
+  match o:
+    case OStep{s}:
+      False{}
+    case OFix{s}:
+      False{}
+    case OOne{d}:
+      True{}
+    case OVoid{g, dr, di}:
+      True{}

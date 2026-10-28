@@ -40,7 +40,8 @@
 #   NotDirDerivable (lib/dcdecpf.bend, DEC.not_dir): a fixpoint whose sets
 #   hold neither the equation nor its direction statement (DC.holds).
 #   Its positive answers are derivations (lib/dcholdpf.bend, HLD.hold_ok:
-#   DC.hold.der is valid and proves the equation).
+#   DC.hold.der is valid and proves the equation), and an explosion
+#   derives every equation (lib/dcexplpf.bend, EXP.expl_ok).
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -93,6 +94,7 @@ import ../lib/dcreprpf.bend as RRF
 import ../lib/dcclosepf.bend as CCF
 import ../lib/dcdecpf.bend as DEC
 import ../lib/dcholdpf.bend as HLD
+import ../lib/dcexplpf.bend as EXP
 
 # The functions on an example
 # ---------------------------
@@ -342,3 +344,7 @@ def b3_hold(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExp
   hh: {DC.holds(es, fs, t, s, e, m) == True{} : Bool}, hb: {DC.fb.ds(m, t) == True{} : Bool})
   -> DR.Valid(es, fs, ctx, DC.hold.der(es, fs, t, s, e, m)) & SV.Proves(es, m, e, DR.concl(es, fs, DC.hold.der(es, fs, t, s, e, m))):
   HLD.hold_ok(es, fs, ctx, t, s, H, e, m, hh, hb)
+
+def b3_expl(o: DC.Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +m: Maybe<&2, DR.DStat>, +e: E.QExpr, ho: DRP.OutInv(es, fs, ctx, t, o),
+  hx: {DC.is_expl(o) == True{} : Bool}) -> DR.Valid(es, fs, ctx, DC.expl.der(o, es, e)) & SV.Proves(es, m, e, DR.concl(es, fs, DC.expl.der(o, es, e))):
+  EXP.expl_ok(o, es, fs, ctx, t, m, e, ho, hx)
