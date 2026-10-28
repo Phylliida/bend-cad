@@ -787,3 +787,145 @@ def rule_void(jr: DR.Jd, ji: DR.Jd, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact
       absurd(Repr(es, fs, t, s, DR.JP{a, x}), ki)
     case DR.JP{+ar, +xr} ji:
       absurd(Repr(es, fs, t, s, DR.JP{a, x}), kr)
+
+# Open nodes have records
+# -----------------------
+
+def iseq_ok(a: Nat, b: Nat, h: {Nat.is_eq(a, b) == True{} : Bool}) -> {a == b : Nat}:
+  match a b:
+    case 0n 0n:
+      {==}
+    case 0n 1n+bp:
+      absurd({0n == 1n+bp : Nat}, LP.tf(Equal.sym(Bool, False{}, True{}, h)))
+    case 1n+ap 0n:
+      absurd({1n+ap == 0n : Nat}, LP.tf(Equal.sym(Bool, False{}, True{}, h)))
+    case 1n+ap 1n+bp:
+      Equal.cong(Nat, Nat, n => 1n+n, ap, bp, iseq_ok(ap, bp, h))
+
+def gsome_or(m: Maybe<&2, SK.Geo>, +d: SK.Geo) -> SK.Geo:
+  match m:
+    case Some{x}:
+      x
+    case None{}:
+      d
+
+def gis_some(m: Maybe<&2, SK.Geo>) -> Bool:
+  match m:
+    case Some{x}:
+      True{}
+    case None{}:
+      False{}
+
+def gsome_inj(+x: SK.Geo, +y: SK.Geo, h: {Some{x} == Some{y} : Maybe<&2, SK.Geo>}) -> {x == y : SK.Geo}:
+  Equal.cong(Maybe<&2, SK.Geo>, SK.Geo, m => gsome_or(m, x), Some{x}, Some{y}, h)
+
+def gnone_some(+y: SK.Geo, h: {None{} == Some{y} : Maybe<&2, SK.Geo>}) -> Empty:
+  LP.tf(Equal.sym(Bool, False{}, True{}, Equal.cong(Maybe<&2, SK.Geo>, Bool, m => gis_some(m), None{}, Some{y}, h)))
+
+# segment ids: past one entity
+def sids_mono(g: SK.Geo, +eid: Nat, +c: Nat, +rest: List<&2, Nat>, h: {SH.nmem(DR.NSeg{c}, DC.snodes(rest)) == True{} : Bool}) -> {SH.nmem(DR.NSeg{c}, DC.snodes(DC.segids.of(eid, g, rest))) == True{} : Bool}:
+  match g:
+    case SK.GPoint{x, y}:
+      h
+    case SK.GSeg{p, q}:
+      SH.bor_r(DC.node_eq(DR.NSeg{c}, DR.NSeg{eid}), SH.nmem(DR.NSeg{c}, DC.snodes(rest)), h)
+    case SK.GCirc{cc, r}:
+      h
+    case SK.GArc{a, e, b}:
+      h
+
+def sids_hd(+eid: Nat, +c: Nat, +rest: List<&2, Nat>, ee: {eid == c : Nat}) -> {SH.nmem(DR.NSeg{c}, DC.snodes(Con{eid, rest})) == True{} : Bool}:
+  %Equal.sym(Nat, eid, c, ee) : {SV.bor(SV.eq(c, _), SH.nmem(DR.NSeg{c}, DC.snodes(rest))) == True{} : Bool}
+  %Equal.sym(Bool, SV.eq(c, c), True{}, LP2.eq_refl(c)) : {SV.bor(_, SH.nmem(DR.NSeg{c}, DC.snodes(rest))) == True{} : Bool}
+  {==}
+
+def seg_in.pick(b: Bool, +eid: Nat, g: SK.Geo, +t: List<&2, SK.Ent>, +c: Nat, +p: Nat, +q: Nat, eb: {b == Nat.is_eq(eid, c) : Bool},
+  h: {SK.find.pick(b, g, SK.find(c, t)) == Some{SK.GSeg{p, q}} : Maybe<&2, SK.Geo>}, ih: {SK.find(c, t) == Some{SK.GSeg{p, q}} : Maybe<&2, SK.Geo>} -> {SH.nmem(DR.NSeg{c}, DC.snodes(DC.segids(t))) == True{} : Bool})
+  -> {SH.nmem(DR.NSeg{c}, DC.snodes(DC.segids.of(eid, g, DC.segids(t)))) == True{} : Bool}:
+  match b:
+    case True{}:
+      %Equal.sym(SK.Geo, g, SK.GSeg{p, q}, gsome_inj(g, SK.GSeg{p, q}, h)) : {SH.nmem(DR.NSeg{c}, DC.snodes(DC.segids.of(eid, _, DC.segids(t)))) == True{} : Bool}
+      sids_hd(eid, c, DC.segids(t), iseq_ok(eid, c, Equal.sym(Bool, True{}, Nat.is_eq(eid, c), eb)))
+    case False{}:
+      sids_mono(g, eid, c, DC.segids(t), ih(h))
+
+# a segment entity's id is among the segment ids
+def seg_in(es: List<&2, SK.Ent>, +c: Nat, +p: Nat, +q: Nat, h: {SK.find(c, es) == Some{SK.GSeg{p, q}} : Maybe<&2, SK.Geo>}) -> {SH.nmem(DR.NSeg{c}, DC.snodes(DC.segids(es))) == True{} : Bool}:
+  match es:
+    case Nil{}:
+      absurd({SH.nmem(DR.NSeg{c}, Nil{}) == True{} : Bool}, gnone_some(SK.GSeg{p, q}, h))
+    case Con{SK.Ent{+eid, cst, +g}, +t}:
+      seg_in.pick(Nat.is_eq(eid, c), eid, g, t, c, p, q, {==}, h, x => seg_in(t, c, p, q, x))
+
+def recs.g(g: Bool, +c: Nat, +s0: Nat, +tl: List<&2, Nat>, +es: List<&2, SK.Ent>, +cs: DC.SP, +ms: List<&2, DC.Mem>, eg: {g == SV.eq(c, s0) : Bool},
+  a: {SV.bor(DC.coll(es, cs, s0), SH.mis_some(DC.mem_of(ms, DR.NSeg{s0}))) == True{} : Bool}, hn: {SV.bor(g, SH.nmem(DR.NSeg{c}, DC.snodes(tl))) == True{} : Bool},
+  ih: {SH.nmem(DR.NSeg{c}, DC.snodes(tl)) == True{} : Bool} -> {SV.bor(DC.coll(es, cs, c), SH.mis_some(DC.mem_of(ms, DR.NSeg{c}))) == True{} : Bool})
+  -> {SV.bor(DC.coll(es, cs, c), SH.mis_some(DC.mem_of(ms, DR.NSeg{c}))) == True{} : Bool}:
+  match g:
+    case True{}:
+      %Equal.sym(Nat, c, s0, LP2.eq_ok(c, s0, Equal.sym(Bool, True{}, SV.eq(c, s0), eg))) : {SV.bor(DC.coll(es, cs, _), SH.mis_some(DC.mem_of(ms, DR.NSeg{_}))) == True{} : Bool}
+      a
+    case False{}:
+      ih(hn)
+
+# a segment is collapsed or has a record
+def recs_at(ids: List<&2, Nat>, +c: Nat, +es: List<&2, SK.Ent>, +cs: DC.SP, +ms: List<&2, DC.Mem>, h: SH.RecS(ids, es, cs, ms), hn: {SH.nmem(DR.NSeg{c}, DC.snodes(ids)) == True{} : Bool})
+  -> {SV.bor(DC.coll(es, cs, c), SH.mis_some(DC.mem_of(ms, DR.NSeg{c}))) == True{} : Bool}:
+  match ids:
+    case Nil{}:
+      absurd({SV.bor(DC.coll(es, cs, c), SH.mis_some(DC.mem_of(ms, DR.NSeg{c}))) == True{} : Bool}, LP.tf(Equal.sym(Bool, False{}, True{}, hn)))
+    case Con{+s0, +tl}:
+      (a, rt) = h
+      recs.g(SV.eq(c, s0), c, s0, tl, es, cs, ms, {==}, a, hn, x => recs_at(tl, c, es, cs, ms, rt, x))
+
+def bor_f(a: Bool, h: {SV.bor(a, False{}) == True{} : Bool}) -> {a == True{} : Bool}:
+  match a:
+    case True{}:
+      {==}
+    case False{}:
+      h
+
+def mn_none(m: Maybe<&2, DC.Mem>, +b: Bool, em: {m == None{} : Maybe<&2, DC.Mem>}, h: {SV.bor(b, SH.mis_some(m)) == True{} : Bool}) -> {SV.bor(b, False{}) == True{} : Bool}:
+  match m:
+    case Some{x}:
+      absurd({SV.bor(b, False{}) == True{} : Bool}, SH.mnone_some(x, Equal.sym(Maybe<&2, DC.Mem>, Some{x}, None{}, em)))
+    case None{}:
+      h
+
+def zc.q(+X: S.Q) -> S.Q.eq(S.Q.sub(X, X), DR.qz()):
+  QR.qring_eq([X], E.QSub{E.QVar{0n}, E.QVar{0n}}, E.QCst{DR.qz()}, {==})
+
+# a non-segment's direction is 0: collapsed
+def zc(+es: List<&2, SK.Ent>, +ctx: List<&2, E.QExpr>) -> DR.InSpan(SK.VE.x(SK.Seg.dir(SK.Seg{SK.Pt{0n, 0n}, SK.Pt{0n, 0n}})), ctx) & DR.InSpan(SK.VE.y(SK.Seg.dir(SK.Seg{SK.Pt{0n, 0n}, SK.Pt{0n, 0n}})), ctx):
+  ((Nil{}, p => zc.q(E.qeval(p, SK.var(0n)))), (Nil{}, p => zc.q(E.qeval(p, SK.var(0n)))))
+
+def coll_g(g: SK.Geo, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +c: Nat, eg: {SK.find(c, es) == Some{g} : Maybe<&2, SK.Geo>}, em: {DC.mem_of(DC.Sk.ms(s), DR.NSeg{c}) == None{} : Maybe<&2, DC.Mem>}) -> DR.Collapsed(es, ctx, c):
+  match g:
+    case SK.GPoint{+x, +y}:
+      %Equal.sym(Maybe<&2, SK.Geo>, SK.find(c, es), Some{SK.GPoint{x, y}}, eg) : DR.InSpan(SK.VE.x(SK.Seg.dir(SK.seg.of(es, _))), ctx) & DR.InSpan(SK.VE.y(SK.Seg.dir(SK.seg.of(es, _))), ctx)
+      zc(es, ctx)
+    case SK.GSeg{+p, +q}:
+      OP.coll_sound(es, ctx, c, bor_f(DC.coll(es, OP.cspan(ctx), c), mn_none(DC.mem_of(DC.Sk.ms(s), DR.NSeg{c}), DC.coll(es, OP.cspan(ctx), c), em,
+        recs_at(DC.segids(es), c, es, OP.cspan(ctx), DC.Sk.ms(s), SH.sh.rs(es, OP.cspan(ctx), DC.segids(es), DC.Sk.ms(s), SH.shi.m(es, fs, OP.cspan(ctx), DC.segids(es), s, h.sh(es, fs, ctx, t, s, H))), seg_in(es, c, p, q, eg)))))
+    case SK.GCirc{+cc, +r}:
+      %Equal.sym(Maybe<&2, SK.Geo>, SK.find(c, es), Some{SK.GCirc{cc, r}}, eg) : DR.InSpan(SK.VE.x(SK.Seg.dir(SK.seg.of(es, _))), ctx) & DR.InSpan(SK.VE.y(SK.Seg.dir(SK.seg.of(es, _))), ctx)
+      zc(es, ctx)
+    case SK.GArc{+a, +e, +b}:
+      %Equal.sym(Maybe<&2, SK.Geo>, SK.find(c, es), Some{SK.GArc{a, e, b}}, eg) : DR.InSpan(SK.VE.x(SK.Seg.dir(SK.seg.of(es, _))), ctx) & DR.InSpan(SK.VE.y(SK.Seg.dir(SK.seg.of(es, _))), ctx)
+      zc(es, ctx)
+
+def coll_m(mg: Maybe<&2, SK.Geo>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +c: Nat, eg: {SK.find(c, es) == mg : Maybe<&2, SK.Geo>}, em: {DC.mem_of(DC.Sk.ms(s), DR.NSeg{c}) == None{} : Maybe<&2, DC.Mem>}) -> DR.Collapsed(es, ctx, c):
+  match mg:
+    case Some{+g}:
+      coll_g(g, es, fs, ctx, t, s, H, c, eg, em)
+    case None{}:
+      %Equal.sym(Maybe<&2, SK.Geo>, SK.find(c, es), None{}, eg) : DR.InSpan(SK.VE.x(SK.Seg.dir(SK.seg.of(es, _))), ctx) & DR.InSpan(SK.VE.y(SK.Seg.dir(SK.seg.of(es, _))), ctx)
+      zc(es, ctx)
+
+# an open node has a record
+def open_rec(a: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), ho: DR.Open(es, ctx, a), em: {DC.mem_of(DC.Sk.ms(s), a) == None{} : Maybe<&2, DC.Mem>}) -> Empty:
+  match a:
+    case DR.NFrame{}:
+      fnone(es, fs, ctx, t, s, H, em)
+    case DR.NSeg{+c}:
+      ho(coll_m(SK.find(c, es), es, fs, ctx, t, s, H, c, {==}, em))
