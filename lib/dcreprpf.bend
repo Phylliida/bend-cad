@@ -35,6 +35,7 @@ import ./labnzpf.bend as NZ
 import ./dcshapepf.bend as SH
 import ./dcfixpf.bend as FX
 import ./dcreadpf.bend as RF
+import ./nat.bend as LN
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -530,3 +531,149 @@ def self.m(mm: Maybe<&2, DC.Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>,
 # par(a, z_a) is represented
 def rule_self(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +a: DR.Node) -> Repr(es, fs, t, s, DR.JP{a, DR.zdir(es, a)}):
   self.m(DC.mem_of(DC.Sk.ms(s), a), es, fs, ctx, t, s, H, a, {==})
+
+# Statements
+# ----------
+
+def fds(m: Maybe<&2, DR.Fact>) -> Maybe<&2, DR.DStat>:
+  match m:
+    case Some{DR.Fact{e, nd, ds}}:
+      ds
+    case None{}:
+      None{}
+
+def fis_some(m: Maybe<&2, DR.Fact>) -> Bool:
+  match m:
+    case Some{f}:
+      True{}
+    case None{}:
+      False{}
+
+def fnone_some(+y: DR.Fact, h: {None{} == Some{y} : Maybe<&2, DR.Fact>}) -> Empty:
+  LP.tf(Equal.sym(Bool, False{}, True{}, Equal.cong(Maybe<&2, DR.Fact>, Bool, m => fis_some(m), None{}, Some{y}, h)))
+
+def spk.hd(b: Bool, +i: Nat, +rest: List<&2, Nat>, eb: {b == True{} : Bool}) -> ST.InD(DR.DPPrem{i}, DC.pprems(DC.stats.pick(b, i, rest))):
+  match b:
+    case True{}:
+      ST.ind_hd(DR.DPPrem{i}, DC.pprems(rest))
+    case False{}:
+      absurd(ST.InD(DR.DPPrem{i}, DC.pprems(rest)), LP.tf(Equal.sym(Bool, False{}, True{}, eb)))
+
+def spk.tl(b: Bool, +g: DR.Der, +i: Nat, +rest: List<&2, Nat>, h: ST.InD(g, DC.pprems(rest))) -> ST.InD(g, DC.pprems(DC.stats.pick(b, i, rest))):
+  match b:
+    case True{}:
+      ST.ind_tl(g, DR.DPPrem{i}, DC.pprems(rest), h)
+    case False{}:
+      h
+
+def sok_self(+s: Nat, +x: SK.VE, +l: S.Q, hl: {DR.qnz(l) == True{} : Bool}) -> {DC.stat_ok(Some{DR.DStat{s, x, l}}, s) == True{} : Bool}:
+  %Equal.sym(Bool, SV.eq(s, s), True{}, LP2.eq_refl(s)) : {SV.band(_, DR.qnz(l)) == True{} : Bool}
+  hl
+
+def stats_in.hd(f: DR.Fact, +tl: List<&2, DR.Fact>, +a: Nat, +i0: Nat, +e: E.QExpr, +nd: List<&2, Nat>, +x: SK.VE, +l: S.Q,
+  ej: {Some{f} == Some{DR.Fact{e, nd, Some{DR.DStat{a, x, l}}}} : Maybe<&2, DR.Fact>}, hl: {DR.qnz(l) == True{} : Bool}) -> ST.InD(DR.DPPrem{i0}, DC.pprems(DC.stats(Con{f, tl}, a, i0))):
+  match f:
+    case DR.Fact{+e0, +nd0, +ds0}:
+      %Equal.sym(Maybe<&2, DR.DStat>, ds0, Some{DR.DStat{a, x, l}}, Equal.cong(Maybe<&2, DR.Fact>, Maybe<&2, DR.DStat>, m => fds(m), Some{DR.Fact{e0, nd0, ds0}}, Some{DR.Fact{e, nd, Some{DR.DStat{a, x, l}}}}, ej)) : ST.InD(DR.DPPrem{i0}, DC.pprems(DC.stats.pick(DC.stat_ok(_, a), i0, DC.stats(tl, a, 1n+i0))))
+      spk.hd(DC.stat_ok(Some{DR.DStat{a, x, l}}, a), i0, DC.stats(tl, a, 1n+i0), sok_self(a, x, l, hl))
+
+def stats_in.tl(f: DR.Fact, +tl: List<&2, DR.Fact>, +a: Nat, +i0: Nat, +jj: Nat, ih: ST.InD(DR.DPPrem{Nat.add(jj, 1n+i0)}, DC.pprems(DC.stats(tl, a, 1n+i0))))
+  -> ST.InD(DR.DPPrem{Nat.add(1n+jj, i0)}, DC.pprems(DC.stats(Con{f, tl}, a, i0))):
+  match f:
+    case DR.Fact{+e0, +nd0, +ds0}:
+      %Equal.sym(Nat, 1n+Nat.add(jj, i0), Nat.add(jj, 1n+i0), LN.add_succ(jj, i0)) : ST.InD(DR.DPPrem{_}, DC.pprems(DC.stats.pick(DC.stat_ok(ds0, a), i0, DC.stats(tl, a, 1n+i0))))
+      spk.tl(DC.stat_ok(ds0, a), DR.DPPrem{Nat.add(jj, 1n+i0)}, i0, DC.stats(tl, a, 1n+i0), ih)
+
+# a fact at j with a statement at segment a: DPPrem (j + i0) is among a's statements from i0
+def stats_in(rest: List<&2, DR.Fact>, j: Nat, +a: Nat, +i0: Nat, +e: E.QExpr, +nd: List<&2, Nat>, +x: SK.VE, +l: S.Q,
+  ej: {DR.fact_at(rest, j) == Some{DR.Fact{e, nd, Some{DR.DStat{a, x, l}}}} : Maybe<&2, DR.Fact>}, hl: {DR.qnz(l) == True{} : Bool}) -> ST.InD(DR.DPPrem{Nat.add(j, i0)}, DC.pprems(DC.stats(rest, a, i0))):
+  match rest j:
+    case Nil{} j:
+      absurd(ST.InD(DR.DPPrem{Nat.add(j, i0)}, Nil{}), fnone_some(DR.Fact{e, nd, Some{DR.DStat{a, x, l}}}, ej))
+    case Con{+f, +tl} 0n:
+      stats_in.hd(f, tl, a, i0, e, nd, x, l, ej, hl)
+    case Con{+f, +tl} 1n++jj:
+      stats_in.tl(f, tl, a, i0, jj, stats_in(tl, jj, a, 1n+i0, e, nd, x, l, ej, hl))
+
+def stats_at(+fs: List<&2, DR.Fact>, +i: Nat, +a: Nat, +e: E.QExpr, +nd: List<&2, Nat>, +x: SK.VE, +l: S.Q,
+  ej: {DR.fact_at(fs, i) == Some{DR.Fact{e, nd, Some{DR.DStat{a, x, l}}}} : Maybe<&2, DR.Fact>}, hl: {DR.qnz(l) == True{} : Bool}) -> ST.InD(DR.DPPrem{i}, DC.pprems(DC.stats(fs, a, 0n))):
+  %Equal.sym(Nat, i, Nat.add(i, 0n), LN.add_zero(i)) : ST.InD(DR.DPPrem{_}, DC.pprems(DC.stats(fs, a, 0n)))
+  stats_in(fs, i, a, 0n, e, nd, x, l, ej, hl)
+
+def lst_in.go(ps: List<&2, DR.Der>, n: Nat, +a: DR.Node, +w: DR.Lab, +d: DR.Der, +p: DR.Der, en: {ST.dat(ps, n) == Some{p} : Maybe<&2, DR.Der>})
+  -> {ST.dat(DC.lstats(ps, a, w, d), n) == Some{DC.thr(d, w, a, p)} : Maybe<&2, DR.Der>}:
+  match ps n:
+    case Nil{} n:
+      absurd({None{} == Some{DC.thr(d, w, a, p)} : Maybe<&2, DR.Der>}, ST.dnone_some(p, en))
+    case Con{+p0, +tl} 0n:
+      Equal.cong(DR.Der, Maybe<&2, DR.Der>, q => Some{DC.thr(d, w, a, q)}, p0, p, ST.dsome_inj(p0, p, en))
+    case Con{+p0, +tl} 1n+m:
+      lst_in.go(tl, m, a, w, d, p, en)
+
+def lst_in.n(+ps: List<&2, DR.Der>, +n: Nat, +a: DR.Node, +w: DR.Lab, +d: DR.Der, +p: DR.Der, +en: {ST.dat(ps, n) == Some{p} : Maybe<&2, DR.Der>}) -> ST.InD(DC.thr(d, w, a, p), DC.lstats(ps, a, w, d)):
+  (n, lst_in.go(ps, n, a, w, d, p, en))
+
+# through a member: a statement there gives its root a generator
+def lst_in(+ps: List<&2, DR.Der>, +a: DR.Node, +w: DR.Lab, +d: DR.Der, +p: DR.Der, h: ST.InD(p, ps)) -> ST.InD(DC.thr(d, w, a, p), DC.lstats(ps, a, w, d)):
+  (+n, +en) = h
+  lst_in.n(ps, n, a, w, d, p, en)
+
+def pp.in(+fs: List<&2, DR.Fact>, +ls: List<&2, DC.Link>, +a: Nat, +a2: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, +i: Nat, ea: {a2 == DR.NSeg{a} : DR.Node},
+  hin: ST.InD(DR.DPPrem{i}, DC.pprems(DC.stats(fs, a, 0n)))) -> ST.InD(DC.thr(d, w, a2, DR.DPPrem{i}), DC.mgens(fs, ls, DC.Mem{a2, r, w, d})):
+  %Equal.sym(DR.Node, a2, DR.NSeg{a}, ea) : ST.InD(DC.thr(d, w, _, DR.DPPrem{i}), DC.mgens(fs, ls, DC.Mem{_, r, w, d}))
+  ST.ind_tl(DC.thr(d, w, DR.NSeg{a}, DR.DPPrem{i}), d, DC.dcat(DC.lstats(DC.pprems(DC.stats(fs, a, 0n)), DR.NSeg{a}, w, d), DC.llinks(ls, DR.NSeg{a}, w, d)),
+    ST.ind_cat_l(DC.thr(d, w, DR.NSeg{a}, DR.DPPrem{i}), DC.lstats(DC.pprems(DC.stats(fs, a, 0n)), DR.NSeg{a}, w, d), DC.llinks(ls, DR.NSeg{a}, w, d),
+      lst_in(DC.pprems(DC.stats(fs, a, 0n)), DR.NSeg{a}, w, d, DR.DPPrem{i}, hin)))
+
+def pp.go(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +i: Nat, +a: Nat, +e: E.QExpr, +nd: List<&2, Nat>, +x: SK.VE, +l: S.Q, +a2: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, +n: Nat,
+  +en: {SH.mat(DC.Sk.ms(s), n) == Some{DC.Mem{a2, r, w, d}} : Maybe<&2, DC.Mem>}, ea: {a2 == DR.NSeg{a} : DR.Node}, hin: ST.InD(DR.DPPrem{i}, DC.pprems(DC.stats(fs, a, 0n))),
+  ej: {DR.fact_at(fs, i) == Some{DR.Fact{e, nd, Some{DR.DStat{a, x, l}}}} : Maybe<&2, DR.Fact>}) -> ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.gmul(w, x)):
+  %ej : ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.gmul(w, DR.Jd.x(DR.fact.pj(_))))
+  ST.st_tr(es, fs, t, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.gmul(DR.Lab.conj(DR.Lab.conj(w)), DR.Jd.x(DR.fact.pj(DR.fact_at(fs, i)))), DR.gmul(w, DR.Jd.x(DR.fact.pj(DR.fact_at(fs, i)))), rok(r, es, fs, ctx, t, s, H),
+    gen_rset(r, es, fs, ctx, t, s, H, DC.thr(d, w, a2, DR.DPPrem{i}), mg_in(DC.Sk.ms(s), n, fs, DC.Sk.ls(s), r, DC.Mem{a2, r, w, d}, DC.thr(d, w, a2, DR.DPPrem{i}), en, SH.node_refl(r), pp.in(fs, DC.Sk.ls(s), a, a2, r, w, d, i, ea, hin))),
+    MG.samevd_sym(DR.gmul(w, DR.Jd.x(DR.fact.pj(DR.fact_at(fs, i)))), DR.gmul(DR.Lab.conj(DR.Lab.conj(w)), DR.Jd.x(DR.fact.pj(DR.fact_at(fs, i)))), GN.cc(w, DR.Jd.x(DR.fact.pj(DR.fact_at(fs, i))))))
+
+def pp.n(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +i: Nat, +a: Nat, +e: E.QExpr, +nd: List<&2, Nat>, +x: SK.VE, +l: S.Q, +a2: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der,
+  hin0: SH.Inm(DC.Mem{a2, r, w, d}, DC.Sk.ms(s)), hn: {DC.node_eq(a2, DR.NSeg{a}) == True{} : Bool}, hin: ST.InD(DR.DPPrem{i}, DC.pprems(DC.stats(fs, a, 0n))),
+  ej: {DR.fact_at(fs, i) == Some{DR.Fact{e, nd, Some{DR.DStat{a, x, l}}}} : Maybe<&2, DR.Fact>}) -> ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.gmul(w, x)):
+  (+n, +en) = hin0
+  pp.go(es, fs, ctx, t, s, H, i, a, e, nd, x, l, a2, r, w, d, n, en, GN.node_eq_ok(a2, DR.NSeg{a}, hn), hin, ej)
+
+def pp.mi(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +i: Nat, +a: Nat, +e: E.QExpr, +nd: List<&2, Nat>, +x: SK.VE, +l: S.Q, +a2: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der,
+  mi: SH.MemIn(DC.Sk.ms(s), DR.NSeg{a}, DC.Mem{a2, r, w, d}), hin: ST.InD(DR.DPPrem{i}, DC.pprems(DC.stats(fs, a, 0n))),
+  ej: {DR.fact_at(fs, i) == Some{DR.Fact{e, nd, Some{DR.DStat{a, x, l}}}} : Maybe<&2, DR.Fact>}) -> ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, r), DR.gmul(w, x)):
+  (hin0, hn) = mi
+  pp.n(es, fs, ctx, t, s, H, i, a, e, nd, x, l, a2, r, w, d, hin0, hn, hin, ej)
+
+def pp.m(mm: Maybe<&2, DC.Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +i: Nat, +a: Nat, +e: E.QExpr, +nd: List<&2, Nat>, +x: SK.VE, +l: S.Q, em: {DC.mem_of(DC.Sk.ms(s), DR.NSeg{a}) == mm : Maybe<&2, DC.Mem>},
+  +hin: ST.InD(DR.DPPrem{i}, DC.pprems(DC.stats(fs, a, 0n))), +ej: {DR.fact_at(fs, i) == Some{DR.Fact{e, nd, Some{DR.DStat{a, x, l}}}} : Maybe<&2, DR.Fact>}) -> rp.m(mm, es, fs, t, s, DR.NSeg{a}, x):
+  match mm:
+    case Some{DC.Mem{+a2, +r, +w, +d}}:
+      pp.mi(es, fs, ctx, t, s, H, i, a, e, nd, x, l, a2, r, w, d, SH.mem_of_in(DC.Sk.ms(s), DR.NSeg{a}, DC.Mem{a2, r, w, d}, em), hin, ej)
+    case None{}:
+      %ej : ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, a), a), DR.Jd.x(DR.fact.pj(_)))
+      ND.gen_coll(es, fs, ctx, t, s, a, DR.DPPrem{i}, ST.ind_tl(DR.DPPrem{i}, DR.DSelf{DR.NSeg{a}}, DC.dcat(DC.pprems(DC.stats(fs, a, 0n)), DC.dcat(DC.louts(DC.Sk.ls(s), a, fs, DC.Sk.ms(s), DC.Sk.ls(s)), DC.lins(DC.Sk.ls(s), a))),
+        ST.ind_cat_l(DR.DPPrem{i}, DC.pprems(DC.stats(fs, a, 0n)), DC.dcat(DC.louts(DC.Sk.ls(s), a, fs, DC.Sk.ms(s), DC.Sk.ls(s)), DC.lins(DC.Sk.ls(s), a)), hin)), h.k(es, fs, ctx, t, s, H), h.ms(es, fs, ctx, t, s, H), h.ls(es, fs, ctx, t, s, H), h.msn(es, fs, ctx, t, s, H), h.lsn(es, fs, ctx, t, s, H), h.z(es, fs, ctx, t, s, H), h.b(es, fs, ctx, t, s, H))
+
+def pp.st(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +i: Nat, +a: Nat, +e: E.QExpr, +nd: List<&2, Nat>, +x: SK.VE, +l: S.Q, +ej: {DR.fact_at(fs, i) == Some{DR.Fact{e, nd, Some{DR.DStat{a, x, l}}}} : Maybe<&2, DR.Fact>}, +hl: {DR.qnz(l) == True{} : Bool})
+  -> Repr(es, fs, t, s, DR.JP{DR.NSeg{a}, x}):
+  pp.m(DC.mem_of(DC.Sk.ms(s), DR.NSeg{a}), es, fs, ctx, t, s, H, i, a, e, nd, x, l, {==}, stats_at(fs, i, a, e, nd, x, l, ej, hl), ej)
+
+def pp.ds(ds: Maybe<&2, DR.DStat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +i: Nat, +e: E.QExpr, +nd: List<&2, Nat>, ej: {DR.fact_at(fs, i) == Some{DR.Fact{e, nd, ds}} : Maybe<&2, DR.Fact>}, hs: DR.HasStat(Some{DR.Fact{e, nd, ds}}))
+  -> Repr(es, fs, t, s, DR.fact.pj(Some{DR.Fact{e, nd, ds}})):
+  match ds:
+    case Some{DR.DStat{+a, +x, +l}}:
+      pp.st(es, fs, ctx, t, s, H, i, a, e, nd, x, l, ej, hs)
+    case None{}:
+      absurd(Repr(es, fs, t, s, DR.JK{DR.zeroe()}), hs)
+
+def pp.f(mf: Maybe<&2, DR.Fact>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +i: Nat, ej: {DR.fact_at(fs, i) == mf : Maybe<&2, DR.Fact>}, hs: DR.HasStat(mf)) -> Repr(es, fs, t, s, DR.fact.pj(mf)):
+  match mf:
+    case Some{DR.Fact{+e, +nd, +ds}}:
+      pp.ds(ds, es, fs, ctx, t, s, H, i, e, nd, ej, hs)
+    case None{}:
+      absurd(Repr(es, fs, t, s, DR.JK{DR.zeroe()}), hs)
+
+# a statement's par(a, x) is represented
+def rule_pprem(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +i: Nat, hs: DR.HasStat(DR.fact_at(fs, i))) -> Repr(es, fs, t, s, DR.fact.pj(DR.fact_at(fs, i))):
+  pp.f(DR.fact_at(fs, i), es, fs, ctx, t, s, H, i, {==}, hs)
