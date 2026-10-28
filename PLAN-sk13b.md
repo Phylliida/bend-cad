@@ -837,6 +837,13 @@ give both component identities that Valid's SameV asks for.
     set S when it sends each kept generator in (kept generators are
     among the inputs of the fold); the stored labels' first two are
     link labels or 0.
+  - *Done 2026-10-27 (gate PASS @ecc2e45):* the closure theorem
+    (lib/dcclosepf.bend `dclose_closed`, induction on Der over the rules
+    in dcreprpf, dcturnpf, dcpushpf, dcturncpf, dclopf, dcftiepf) and
+    its negative answers (lib/dcdecpf.bend `not_dir`: DC.holds false at
+    a fixpoint gives the spec's NotDirDerivable). Still owed for B4: the
+    positive answers (DC.holds true or an explosion gives a derivation
+    with its nd), and termination.
 - Then: the fuel suffices. The measure is K's rank, the merges and the
   links (≤ 2 per pair). K's rank is bounded by pivots in M =
   monomials(facts) ∪ {1, x_0..x_{t−1}}, since every K fact the closure
