@@ -181,3 +181,109 @@ def turn.co.q(q: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List
 def turn.co(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +x: SK.VE, +g: DR.Lab, +b: DR.Node, +b2: DR.Node, +rb: DR.Node, +wb: DR.Lab, +db: DR.Der, +nb: Nat, +enb: {SH.mat(DC.Sk.ms(s), nb) == Some{DC.Mem{b2, rb, wb, db}} : Maybe<&2, DC.Mem>}, +eab: {b2 == b : DR.Node}, emb: {DC.mem_of(DC.Sk.ms(s), b) == Some{DC.Mem{b2, rb, wb, db}} : Maybe<&2, DC.Mem>},
   emc: {DC.mem_of(DC.Sk.ms(s), DR.NSeg{c}) == None{} : Maybe<&2, DC.Mem>}, hp: ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), x), sx: VD.SameVD(x, DR.gmul(DR.Lab.conj(g), DR.zdir(es, b)))) -> ST.InSt(es, fs, DC.Sk.k(s), ND.rset(es, fs, t, s, rb), DR.gmul(wb, DR.gmul(g, DR.zdir(es, DR.NSeg{c})))):
   turn.co.q(DC.fullc(es, DC.Sk.k(s), c), es, fs, ctx, t, s, H, c, g, b, b2, rb, wb, db, nb, enb, eab, {==}, emb, emc, ST.st_tr(es, fs, t, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), x, DR.gmul(DR.Lab.conj(g), DR.zdir(es, b)), ND.sok_ok(es, fs, t, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), ND.sok_coll(es, fs, ctx, t, s, c, RR.h.k(es, fs, ctx, t, s, H), RR.h.ms(es, fs, ctx, t, s, H), RR.h.ls(es, fs, ctx, t, s, H), RR.h.msn(es, fs, ctx, t, s, H), RR.h.lsn(es, fs, ctx, t, s, H), RR.h.z(es, fs, ctx, t, s, H), RR.h.b(es, fs, ctx, t, s, H))), hp, sx))
+
+# Turn between collapsed nodes
+# ----------------------------
+
+def cg_lins(+fs: List<&2, DR.Fact>, +s: DC.Sk, +c1: Nat, +g: DR.Der, h: ST.InD(g, DC.lins(DC.Sk.ls(s), c1))) -> ST.InD(g, DC.cgens(fs, s, c1)):
+  ST.ind_tl(g, DR.DSelf{DR.NSeg{c1}}, DC.dcat(DC.pprems(DC.stats(fs, c1, 0n)), DC.dcat(DC.louts(DC.Sk.ls(s), c1, fs, DC.Sk.ms(s), DC.Sk.ls(s)), DC.lins(DC.Sk.ls(s), c1))), ST.ind_cat_r(g, DC.pprems(DC.stats(fs, c1, 0n)), DC.dcat(DC.louts(DC.Sk.ls(s), c1, fs, DC.Sk.ms(s), DC.Sk.ls(s)), DC.lins(DC.Sk.ls(s), c1)),
+    ST.ind_cat_r(g, DC.louts(DC.Sk.ls(s), c1, fs, DC.Sk.ms(s), DC.Sk.ls(s)), DC.lins(DC.Sk.ls(s), c1), h)))
+
+def act_li.go(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +c1: Nat, +w: DR.Lab, +n: Nat, +c2: Nat, +bl: DR.Node, +wl: DR.Lab, +dl: DR.Der, +en: {SH.lat(DC.Sk.ls(s), n) == Some{DC.Link{c2, bl, wl, dl}} : Maybe<&2, DC.Link>}, ec: {SV.eq(c2, c) == True{} : Bool}, eb: {DC.node_eq(bl, DR.NSeg{c1}) == True{} : Bool}, ew: {wl == w : DR.Lab})
+  -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(DR.Lab.conj(w), DR.zdir(es, DR.NSeg{c}))):
+  %ew : ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(DR.Lab.conj(_), DR.zdir(es, DR.NSeg{c})))
+  %LP2.eq_ok(c2, c, ec) : ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(DR.Lab.conj(wl), DR.zdir(es, DR.NSeg{_})))
+  %PU.lok.a(es, fs, ctx, t, c2, bl, wl, dl, PU.lok_at(DC.Sk.ls(s), n, es, fs, ctx, t, DC.Link{c2, bl, wl, dl}, en, RR.h.ls(es, fs, ctx, t, s, H))) : ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(DR.Lab.conj(wl), DR.zdir(es, _)))
+  ND.gen_coll(es, fs, ctx, t, s, c1, DR.DTurn{dl, DR.Lab.conj(wl), DR.NSeg{c1}}, cg_lins(fs, s, c1, DR.DTurn{dl, DR.Lab.conj(wl), DR.NSeg{c1}}, PU.li_in(DC.Sk.ls(s), n, c1, c2, bl, wl, dl, en, eb)), RR.h.k(es, fs, ctx, t, s, H), RR.h.ms(es, fs, ctx, t, s, H), RR.h.ls(es, fs, ctx, t, s, H), RR.h.msn(es, fs, ctx, t, s, H), RR.h.lsn(es, fs, ctx, t, s, H), RR.h.z(es, fs, ctx, t, s, H), RR.h.b(es, fs, ctx, t, s, H))
+
+def act_li.k2(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +c1: Nat, +w: DR.Lab, +n: Nat, +c2: Nat, +bl: DR.Node, +wl: DR.Lab, +dl: DR.Der, +en: {SH.lat(DC.Sk.ls(s), n) == Some{DC.Link{c2, bl, wl, dl}} : Maybe<&2, DC.Link>}, ec: {SV.eq(c2, c) == True{} : Bool}, r1: SK.Both({DC.node_eq(bl, DR.NSeg{c1}) == True{} : Bool}, {wl == w : DR.Lab})) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(DR.Lab.conj(w), DR.zdir(es, DR.NSeg{c}))):
+  (eb, ew) = r1
+  act_li.go(es, fs, ctx, t, s, H, c, c1, w, n, c2, bl, wl, dl, en, ec, eb, ew)
+
+def act_li.k(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +c1: Nat, +w: DR.Lab, +n: Nat, +c2: Nat, +bl: DR.Node, +wl: DR.Lab, +dl: DR.Der, +en: {SH.lat(DC.Sk.ls(s), n) == Some{DC.Link{c2, bl, wl, dl}} : Maybe<&2, DC.Link>}, ok: SK.Both({SV.eq(c2, c) == True{} : Bool}, SK.Both({DC.node_eq(bl, DR.NSeg{c1}) == True{} : Bool}, {wl == w : DR.Lab}))) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(DR.Lab.conj(w), DR.zdir(es, DR.NSeg{c}))):
+  (ec, r1) = ok
+  act_li.k2(es, fs, ctx, t, s, H, c, c1, w, n, c2, bl, wl, dl, en, ec, r1)
+
+def act_li.m(m: Maybe<&2, DC.Link>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +c1: Nat, +w: DR.Lab, +n: Nat, em: {SH.lat(DC.Sk.ls(s), n) == m : Maybe<&2, DC.Link>}, ok: PU.lk.ok(m, c, DR.NSeg{c1}, w)) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(DR.Lab.conj(w), DR.zdir(es, DR.NSeg{c}))):
+  match m:
+    case Some{DC.Link{+c2, +bl, +wl, +dl}}:
+      act_li.k(es, fs, ctx, t, s, H, c, c1, w, n, c2, bl, wl, dl, em, ok)
+    case None{}:
+      absurd(ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(DR.Lab.conj(w), DR.zdir(es, DR.NSeg{c}))), LP.tf(ok))
+
+# a stored label of (c, c1): its link's turn into c1 gives conj(w) z_c in c1's set
+def act_li(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +c1: Nat, +w: DR.Lab, hl: PU.LIn(DC.Sk.ls(s), c, DR.NSeg{c1}, w)) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(DR.Lab.conj(w), DR.zdir(es, DR.NSeg{c}))):
+  (+n, +ok) = hl
+  act_li.m(SH.lat(DC.Sk.ls(s), n), es, fs, ctx, t, s, H, c, c1, w, n, {==}, ok)
+
+def act_li.lz(f: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +c1: Nat, +w: DR.Lab, h: PU.lzor.f(f, DC.Sk.ls(s), c, DR.NSeg{c1}, w)) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(DR.Lab.conj(w), DR.zdir(es, DR.NSeg{c}))):
+  match f:
+    case True{}:
+      %Equal.sym(DR.Lab, w, LS.lab0(), h) : ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(DR.Lab.conj(_), DR.zdir(es, DR.NSeg{c})))
+      zinc(es, fs, ctx, t, s, H, c1, DR.gmul(DR.Lab.conj(LS.lab0()), DR.zdir(es, DR.NSeg{c})), TU.lzv(DR.Lab.conj(LS.lab0()), DR.zdir(es, DR.NSeg{c}), TU.lz_conj(LS.lab0(), ({==}, {==}))))
+    case False{}:
+      act_li(es, fs, ctx, t, s, H, c, c1, w, h)
+
+def act_li.st(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +c1: Nat, +w: DR.Lab, hz: PU.LZor(DC.Sk.ls(s), c, DR.NSeg{c1}, w)) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(DR.Lab.conj(w), DR.zdir(es, DR.NSeg{c}))):
+  (+f, +h) = hz
+  act_li.lz(f, es, fs, ctx, t, s, H, c, c1, w, h)
+
+def turn.cc.l(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +g: DR.Lab, +c1: Nat, +lst: LS.LSp(LS.lat0(DC.lstored(DC.Sk.ls(s), c, DR.NSeg{c1})), LS.lat1(DC.lstored(DC.Sk.ls(s), c, DR.NSeg{c1})), DR.Lab.conj(g))) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(g, DR.zdir(es, DR.NSeg{c}))):
+  ST.st_tr(es, fs, t, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(DR.Lab.conj(DR.Lab.conj(g)), DR.zdir(es, DR.NSeg{c})), DR.gmul(g, DR.zdir(es, DR.NSeg{c})), ND.sok_ok(es, fs, t, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), ND.sok_coll(es, fs, ctx, t, s, c1, RR.h.k(es, fs, ctx, t, s, H), RR.h.ms(es, fs, ctx, t, s, H), RR.h.ls(es, fs, ctx, t, s, H), RR.h.msn(es, fs, ctx, t, s, H), RR.h.lsn(es, fs, ctx, t, s, H), RR.h.z(es, fs, ctx, t, s, H), RR.h.b(es, fs, ctx, t, s, H))),
+    lsp_in(es, fs, t, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.Lab.conj(LS.lat0(DC.lstored(DC.Sk.ls(s), c, DR.NSeg{c1}))), DR.Lab.conj(LS.lat1(DC.lstored(DC.Sk.ls(s), c, DR.NSeg{c1}))), DR.Lab.conj(DR.Lab.conj(g)), DR.zdir(es, DR.NSeg{c}), ND.sok_ok(es, fs, t, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), ND.sok_coll(es, fs, ctx, t, s, c1, RR.h.k(es, fs, ctx, t, s, H), RR.h.ms(es, fs, ctx, t, s, H), RR.h.ls(es, fs, ctx, t, s, H), RR.h.msn(es, fs, ctx, t, s, H), RR.h.lsn(es, fs, ctx, t, s, H), RR.h.z(es, fs, ctx, t, s, H), RR.h.b(es, fs, ctx, t, s, H))), LS.lsp_conj(DR.Lab.conj(g), LS.lat0(DC.lstored(DC.Sk.ls(s), c, DR.NSeg{c1})), LS.lat1(DC.lstored(DC.Sk.ls(s), c, DR.NSeg{c1})), lst),
+      act_li.st(es, fs, ctx, t, s, H, c, c1, LS.lat0(DC.lstored(DC.Sk.ls(s), c, DR.NSeg{c1})), PU.lat0_of(DC.Sk.ls(s), c, DR.NSeg{c1})), act_li.st(es, fs, ctx, t, s, H, c, c1, LS.lat1(DC.lstored(DC.Sk.ls(s), c, DR.NSeg{c1})), PU.lat1_of(DC.Sk.ls(s), c, DR.NSeg{c1}))),
+    MG.samevd_sym(DR.gmul(g, DR.zdir(es, DR.NSeg{c})), DR.gmul(DR.Lab.conj(DR.Lab.conj(g)), DR.zdir(es, DR.NSeg{c})), GN.cc(g, DR.zdir(es, DR.NSeg{c}))))
+
+def turn.cc.b(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +g: DR.Lab, +c1: Nat, bin: RF.BIn(DC.lstored(DC.Sk.ls(s), c, DR.NSeg{c1}), LS.lat0(DC.rep.basis(DC.crep(es, fs, t, s, c), es, fs, t, DR.zdir(es, DR.NSeg{c1}))), LS.lat1(DC.rep.basis(DC.crep(es, fs, t, s, c), es, fs, t, DR.zdir(es, DR.NSeg{c1})))), +lb: LS.LSp(LS.lat0(DC.rep.basis(DC.crep(es, fs, t, s, c), es, fs, t, DR.zdir(es, DR.NSeg{c1}))), LS.lat1(DC.rep.basis(DC.crep(es, fs, t, s, c), es, fs, t, DR.zdir(es, DR.NSeg{c1}))), DR.Lab.conj(g))) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(g, DR.zdir(es, DR.NSeg{c}))):
+  (+b0, +b1) = bin
+  turn.cc.l(es, fs, ctx, t, s, H, c, g, c1, LS.lsp_trans(DR.Lab.conj(g), LS.lat0(DC.rep.basis(DC.crep(es, fs, t, s, c), es, fs, t, DR.zdir(es, DR.NSeg{c1}))), LS.lat1(DC.rep.basis(DC.crep(es, fs, t, s, c), es, fs, t, DR.zdir(es, DR.NSeg{c1}))), LS.lat0(DC.lstored(DC.Sk.ls(s), c, DR.NSeg{c1})), LS.lat1(DC.lstored(DC.Sk.ls(s), c, DR.NSeg{c1})), lb, b0, b1))
+
+def turn.cc.t(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +g: DR.Lab, +c1: Nat, +emc: {DC.mem_of(DC.Sk.ms(s), DR.NSeg{c}) == None{} : Maybe<&2, DC.Mem>}, +hf: {DC.fullc(es, DC.Sk.k(s), c) == False{} : Bool}, hf1: {DC.fullc(es, DC.Sk.k(s), c1) == False{} : Bool}, hne: {DC.node_eq(DR.NSeg{c1}, DR.NSeg{c}) == False{} : Bool}, hv: ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), DR.gmul(DR.Lab.conj(g), DR.zdir(es, DR.NSeg{c1})))) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(g, DR.zdir(es, DR.NSeg{c}))):
+  turn.cc.b(es, fs, ctx, t, s, H, c, g, c1,
+    RF.basis_in(DC.rep.basis(DC.crep(es, fs, t, s, c), es, fs, t, DR.zdir(es, DR.NSeg{c1})), DC.lstored(DC.Sk.ls(s), c, DR.NSeg{c1}), RF.lkc_none(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, DR.NSeg{c1}, es, fs, t, s, c, DC.crep(es, fs, t, s, c), PU.lkc.of(c, es, fs, ctx, t, s, H, PU.lkcr(es, fs, ctx, t, s, H, c, emc, hf)), cseg(es, fs, ctx, t, s, H, c1, hf1), hne),
+      SH.pairok_of(DC.Sk.ls(s), c, DR.NSeg{c1}, SH.shi.l(es, fs, OP.cspan(ctx), DC.segids(es), s, RR.h.sh(es, fs, ctx, t, s, H))), SH.lnzs_of(DC.Sk.ls(s), c, DR.NSeg{c1}, RR.h.lsn(es, fs, ctx, t, s, H))),
+    PU.bc_c(es, fs, ctx, t, s, H, c, DR.zdir(es, DR.NSeg{c1}), DR.Lab.conj(g), hf, BL.zdir_below(es, t, DR.NSeg{c1}, RR.h.z(es, fs, ctx, t, s, H)), hv))
+
+def turn.cc.f1(q1: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +g: DR.Lab, +c1: Nat, eq1: {q1 == DC.fullc(es, DC.Sk.k(s), c1) : Bool}, emc: {DC.mem_of(DC.Sk.ms(s), DR.NSeg{c}) == None{} : Maybe<&2, DC.Mem>}, hf: {DC.fullc(es, DC.Sk.k(s), c) == False{} : Bool}, hne: {DC.node_eq(DR.NSeg{c1}, DR.NSeg{c}) == False{} : Bool}, hv: ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), DR.gmul(DR.Lab.conj(g), DR.zdir(es, DR.NSeg{c1}))))
+  -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(g, DR.zdir(es, DR.NSeg{c}))):
+  match q1:
+    case True{}:
+      %eq1 : ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep.f(_, es, fs, t, s, c1), c1), DR.gmul(g, DR.zdir(es, DR.NSeg{c})))
+      Unit{}
+    case False{}:
+      turn.cc.t(es, fs, ctx, t, s, H, c, g, c1, emc, hf, Equal.sym(Bool, False{}, DC.fullc(es, DC.Sk.k(s), c1), eq1), hne, hv)
+
+def turn.cc.f(q: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +g: DR.Lab, +c1: Nat, +eq: {q == DC.fullc(es, DC.Sk.k(s), c) : Bool}, emc: {DC.mem_of(DC.Sk.ms(s), DR.NSeg{c}) == None{} : Maybe<&2, DC.Mem>}, hne: {DC.node_eq(DR.NSeg{c1}, DR.NSeg{c}) == False{} : Bool}, hv: ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), DR.gmul(DR.Lab.conj(g), DR.zdir(es, DR.NSeg{c1}))))
+  -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(g, DR.zdir(es, DR.NSeg{c}))):
+  match q:
+    case True{}:
+      PU.k2r(es, fs, t, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), g, DR.zdir(es, DR.NSeg{c}), ND.sok_coll(es, fs, ctx, t, s, c1, RR.h.k(es, fs, ctx, t, s, H), RR.h.ms(es, fs, ctx, t, s, H), RR.h.ls(es, fs, ctx, t, s, H), RR.h.msn(es, fs, ctx, t, s, H), RR.h.lsn(es, fs, ctx, t, s, H), RR.h.z(es, fs, ctx, t, s, H), RR.h.b(es, fs, ctx, t, s, H)), ST.kri(es, fs, ctx, t, DC.Sk.k(s), RR.h.k(es, fs, ctx, t, s, H)), LP2.band_l(KS.ks.inb(DC.Sk.k(s), SK.VE.x(DR.zdir(es, DR.NSeg{c}))), KS.ks.inb(DC.Sk.k(s), SK.VE.y(DR.zdir(es, DR.NSeg{c}))), Equal.sym(Bool, True{}, DC.fullc(es, DC.Sk.k(s), c), eq)),
+        LP2.band_r(KS.ks.inb(DC.Sk.k(s), SK.VE.x(DR.zdir(es, DR.NSeg{c}))), KS.ks.inb(DC.Sk.k(s), SK.VE.y(DR.zdir(es, DR.NSeg{c}))), Equal.sym(Bool, True{}, DC.fullc(es, DC.Sk.k(s), c), eq)))
+    case False{}:
+      turn.cc.f1(DC.fullc(es, DC.Sk.k(s), c1), es, fs, ctx, t, s, H, c, g, c1, {==}, emc, Equal.sym(Bool, False{}, DC.fullc(es, DC.Sk.k(s), c), eq), hne, hv)
+
+# turn at one collapsed node: g z = 2 Re(g) z - conj(g) z
+def turn.self(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +x: SK.VE, +g: DR.Lab, emc: {DC.mem_of(DC.Sk.ms(s), DR.NSeg{c}) == None{} : Maybe<&2, DC.Mem>}, hp: ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), x), sx: VD.SameVD(x, DR.gmul(DR.Lab.conj(g), DR.zdir(es, DR.NSeg{c})))) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), DR.gmul(g, DR.zdir(es, DR.NSeg{c}))):
+  ST.st_tr(es, fs, t, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), DR.vlin(S.Q.add(LA.lab.c(g), LA.lab.c(g)), DR.zdir(es, DR.NSeg{c}), S.Q.neg(DR.qo()), DR.gmul(DR.Lab.conj(g), DR.zdir(es, DR.NSeg{c}))), DR.gmul(g, DR.zdir(es, DR.NSeg{c})), ND.sok_ok(es, fs, t, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), ND.sok_coll(es, fs, ctx, t, s, c, RR.h.k(es, fs, ctx, t, s, H), RR.h.ms(es, fs, ctx, t, s, H), RR.h.ls(es, fs, ctx, t, s, H), RR.h.msn(es, fs, ctx, t, s, H), RR.h.lsn(es, fs, ctx, t, s, H), RR.h.z(es, fs, ctx, t, s, H), RR.h.b(es, fs, ctx, t, s, H))),
+    ST.st_lin(es, fs, t, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), S.Q.add(LA.lab.c(g), LA.lab.c(g)), DR.zdir(es, DR.NSeg{c}), S.Q.neg(DR.qo()), DR.gmul(DR.Lab.conj(g), DR.zdir(es, DR.NSeg{c})), ND.sok_ok(es, fs, t, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), ND.sok_coll(es, fs, ctx, t, s, c, RR.h.k(es, fs, ctx, t, s, H), RR.h.ms(es, fs, ctx, t, s, H), RR.h.ls(es, fs, ctx, t, s, H), RR.h.msn(es, fs, ctx, t, s, H), RR.h.lsn(es, fs, ctx, t, s, H), RR.h.z(es, fs, ctx, t, s, H), RR.h.b(es, fs, ctx, t, s, H))), RR.self.none(DR.NSeg{c}, es, fs, ctx, t, s, H, emc), ST.st_tr(es, fs, t, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), x, DR.gmul(DR.Lab.conj(g), DR.zdir(es, DR.NSeg{c})), ND.sok_ok(es, fs, t, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), ND.sok_coll(es, fs, ctx, t, s, c, RR.h.k(es, fs, ctx, t, s, H), RR.h.ms(es, fs, ctx, t, s, H), RR.h.ls(es, fs, ctx, t, s, H), RR.h.msn(es, fs, ctx, t, s, H), RR.h.lsn(es, fs, ctx, t, s, H), RR.h.z(es, fs, ctx, t, s, H), RR.h.b(es, fs, ctx, t, s, H))), hp, sx)),
+    MG.samevd_sym(DR.gmul(g, DR.zdir(es, DR.NSeg{c})), DR.vlin(S.Q.add(LA.lab.c(g), LA.lab.c(g)), DR.zdir(es, DR.NSeg{c}), S.Q.neg(DR.qo()), DR.gmul(DR.Lab.conj(g), DR.zdir(es, DR.NSeg{c}))), LA.g2re(g, DR.zdir(es, DR.NSeg{c}))))
+
+def svc(+es: List<&2, SK.Ent>, +x: SK.VE, +g: DR.Lab, +c: Nat, +c1: Nat, e: {c == c1 : Nat}, sx: VD.SameVD(x, DR.gmul(DR.Lab.conj(g), DR.zdir(es, DR.NSeg{c1})))) -> VD.SameVD(x, DR.gmul(DR.Lab.conj(g), DR.zdir(es, DR.NSeg{c}))):
+  %Equal.sym(Nat, c, c1, e) : VD.SameVD(x, DR.gmul(DR.Lab.conj(g), DR.zdir(es, DR.NSeg{_})))
+  sx
+
+def turn.cc.e(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +x: SK.VE, +g: DR.Lab, +c1: Nat, +e: {c == c1 : Nat}, emc: {DC.mem_of(DC.Sk.ms(s), DR.NSeg{c}) == None{} : Maybe<&2, DC.Mem>}, hp: ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), x), sx: VD.SameVD(x, DR.gmul(DR.Lab.conj(g), DR.zdir(es, DR.NSeg{c1})))) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(g, DR.zdir(es, DR.NSeg{c}))):
+  %e : ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, _), _), DR.gmul(g, DR.zdir(es, DR.NSeg{c})))
+  turn.self(es, fs, ctx, t, s, H, c, x, g, emc, hp, svc(es, x, g, c, c1, e, sx))
+
+def turn.cc.q(q: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +x: SK.VE, +g: DR.Lab, +c1: Nat, +eq: {q == SV.eq(c, c1) : Bool}, emc: {DC.mem_of(DC.Sk.ms(s), DR.NSeg{c}) == None{} : Maybe<&2, DC.Mem>}, hp: ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), x), sx: VD.SameVD(x, DR.gmul(DR.Lab.conj(g), DR.zdir(es, DR.NSeg{c1})))) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(g, DR.zdir(es, DR.NSeg{c}))):
+  match q:
+    case True{}:
+      turn.cc.e(es, fs, ctx, t, s, H, c, x, g, c1, LP2.eq_ok(c, c1, Equal.sym(Bool, True{}, SV.eq(c, c1), eq)), emc, hp, sx)
+    case False{}:
+      turn.cc.f(DC.fullc(es, DC.Sk.k(s), c), es, fs, ctx, t, s, H, c, g, c1, {==}, emc, SH.node_sym(DR.NSeg{c}, DR.NSeg{c1}, Equal.sym(Bool, False{}, SV.eq(c, c1), eq)),
+        ST.st_tr(es, fs, t, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), x, DR.gmul(DR.Lab.conj(g), DR.zdir(es, DR.NSeg{c1})), ND.sok_ok(es, fs, t, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), ND.sok_coll(es, fs, ctx, t, s, c, RR.h.k(es, fs, ctx, t, s, H), RR.h.ms(es, fs, ctx, t, s, H), RR.h.ls(es, fs, ctx, t, s, H), RR.h.msn(es, fs, ctx, t, s, H), RR.h.lsn(es, fs, ctx, t, s, H), RR.h.z(es, fs, ctx, t, s, H), RR.h.b(es, fs, ctx, t, s, H))), hp, sx))
+
+# turn between collapsed nodes: par(c, x), x the same as conj(g) z_c1, gives par(c1, g z_c)
+def turn.cc(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +x: SK.VE, +g: DR.Lab, +c1: Nat, emc: {DC.mem_of(DC.Sk.ms(s), DR.NSeg{c}) == None{} : Maybe<&2, DC.Mem>}, hp: ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c), c), x), sx: VD.SameVD(x, DR.gmul(DR.Lab.conj(g), DR.zdir(es, DR.NSeg{c1})))) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep(es, fs, t, s, c1), c1), DR.gmul(g, DR.zdir(es, DR.NSeg{c}))):
+  turn.cc.q(SV.eq(c, c1), es, fs, ctx, t, s, H, c, x, g, c1, {==}, emc, hp, sx)
