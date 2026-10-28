@@ -484,3 +484,64 @@ def basis_inc(ws: List<&2, DR.Lab>, +st: List<&2, DR.Lab>, +e: {DC.lk.r.first(ws
     case Con{+w0, Con{+w1, +tl}}:
       (LS.qspan_ok(st, DR.Lab.conj(w0), lkp.q(DC.qspan(st, DR.Lab.conj(w0)), w0, DC.lk.r.first(Con{w1, tl}, st), e), hp, nz),
        LS.qspan_ok(st, DR.Lab.conj(w1), lkp.q(DC.qspan(st, DR.Lab.conj(w1)), w1, DC.lk.r.first(tl, st), lkp.r(DC.qspan(st, DR.Lab.conj(w0)), w0, DC.lk.r.first(Con{w1, tl}, st), e)), hp, nz))
+
+# Complex lines
+# -------------
+
+def clp.r(m: Maybe<&2, DR.Der>, +rest: Maybe<&2, DR.Der>, e: {DC.clxs.pick(m, rest) == None{} : Maybe<&2, DR.Der>}) -> {rest == None{} : Maybe<&2, DR.Der>}:
+  match m:
+    case None{}:
+      e
+    case Some{+d}:
+      absurd({rest == None{} : Maybe<&2, DR.Der>}, dsome_none(d, e))
+
+def clp.a(m: Maybe<&2, DR.Der>, +rest: Maybe<&2, DR.Der>, e: {DC.clxs.pick(m, rest) == None{} : Maybe<&2, DR.Der>}) -> {m == None{} : Maybe<&2, DR.Der>}:
+  match m:
+    case None{}:
+      {==}
+    case Some{+d}:
+      absurd({Some{d} == None{} : Maybe<&2, DR.Der>}, dsome_none(d, e))
+
+def cli.r(f: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk, +r: DR.Node, +rest: Maybe<&2, DR.Der>,
+  e: {DC.clxs.if(f, es, fs, t, s, r, rest) == None{} : Maybe<&2, DR.Der>}) -> {rest == None{} : Maybe<&2, DR.Der>}:
+  match f:
+    case True{}:
+      clp.r(DC.clx(es, fs, t, s, r), rest, e)
+    case False{}:
+      e
+
+def cli.a(f: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk, +r: DR.Node, +rest: Maybe<&2, DR.Der>, hf: {f == True{} : Bool},
+  e: {DC.clxs.if(f, es, fs, t, s, r, rest) == None{} : Maybe<&2, DR.Der>}) -> {DC.clx(es, fs, t, s, r) == None{} : Maybe<&2, DR.Der>}:
+  match f:
+    case True{}:
+      clp.a(DC.clx(es, fs, t, s, r), rest, e)
+    case False{}:
+      absurd({DC.clx(es, fs, t, s, r) == None{} : Maybe<&2, DR.Der>}, LP.tf(Equal.sym(Bool, False{}, True{}, hf)))
+
+def clxs_none.nf(+r: DR.Node, +r0: DR.Node, er: {r == r0 : DR.Node}, hne: {DC.node_eq(r, DR.NFrame{}) == False{} : Bool}) -> {SV.bnot(DC.node_eq(r0, DR.NFrame{})) == True{} : Bool}:
+  %er : {SV.bnot(DC.node_eq(_, DR.NFrame{})) == True{} : Bool}
+  %Equal.sym(Bool, DC.node_eq(r, DR.NFrame{}), False{}, hne) : {SV.bnot(_) == True{} : Bool}
+  {==}
+
+def clxs_none.g(g: Bool, +r: DR.Node, +r0: DR.Node, +tl: List<&2, DR.Node>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk,
+  +eg: {g == DC.node_eq(r, r0) : Bool}, +hne: {DC.node_eq(r, DR.NFrame{}) == False{} : Bool},
+  +e: {DC.clxs.if(SV.bnot(DC.node_eq(r0, DR.NFrame{})), es, fs, t, s, r0, DC.clxs(tl, es, fs, t, s)) == None{} : Maybe<&2, DR.Der>},
+  hn: {SV.bor(g, SH.nmem(r, tl)) == True{} : Bool},
+  ih: {DC.clxs(tl, es, fs, t, s) == None{} : Maybe<&2, DR.Der>} -> {SH.nmem(r, tl) == True{} : Bool} -> {DC.clx(es, fs, t, s, r) == None{} : Maybe<&2, DR.Der>})
+  -> {DC.clx(es, fs, t, s, r) == None{} : Maybe<&2, DR.Der>}:
+  match g:
+    case True{}:
+      %Equal.sym(DR.Node, r, r0, GN.node_eq_ok(r, r0, Equal.sym(Bool, True{}, DC.node_eq(r, r0), eg))) : {DC.clx(es, fs, t, s, _) == None{} : Maybe<&2, DR.Der>}
+      cli.a(SV.bnot(DC.node_eq(r0, DR.NFrame{})), es, fs, t, s, r0, DC.clxs(tl, es, fs, t, s),
+        clxs_none.nf(r, r0, GN.node_eq_ok(r, r0, Equal.sym(Bool, True{}, DC.node_eq(r, r0), eg)), hne), e)
+    case False{}:
+      ih(cli.r(SV.bnot(DC.node_eq(r0, DR.NFrame{})), es, fs, t, s, r0, DC.clxs(tl, es, fs, t, s), e), hn)
+
+# the complex-line search found nothing: neither did it at any free root
+def clxs_none(rs: List<&2, DR.Node>, +r: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk, e: {DC.clxs(rs, es, fs, t, s) == None{} : Maybe<&2, DR.Der>},
+  hr: {SH.nmem(r, rs) == True{} : Bool}, +hne: {DC.node_eq(r, DR.NFrame{}) == False{} : Bool}) -> {DC.clx(es, fs, t, s, r) == None{} : Maybe<&2, DR.Der>}:
+  match rs:
+    case Nil{}:
+      absurd({DC.clx(es, fs, t, s, r) == None{} : Maybe<&2, DR.Der>}, LP.tf(Equal.sym(Bool, False{}, True{}, hr)))
+    case Con{+r0, +tl}:
+      clxs_none.g(DC.node_eq(r, r0), r, r0, tl, es, fs, t, s, {==}, hne, e, hr, x => y => clxs_none(tl, r, es, fs, t, s, x, y, hne))
