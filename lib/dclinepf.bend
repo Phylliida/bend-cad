@@ -18,6 +18,7 @@ import ./qalg.bend as QA
 import ./elim.bend as EL
 import ./elimpf.bend as EP
 import ./identpf.bend as ID
+import ./qnorm.bend as QN
 import ./spanpf.bend as SN
 import ./pairpf.bend as PP
 import ./pair.bend as PT
@@ -230,3 +231,175 @@ def clin_cat(xa: List<&2, SK.VE>, +xb: List<&2, SK.VE>, +es: List<&2, SK.Ent>, +
             ST.vcong(DR.qo(), DR.vlin(SN.qhd(ls), x, DR.qo(), HS.clin(es, r, SN.qtl(ls), xt)), HS.clin(es, r, ls, Con{x, xt}), DR.qo(), HS.clin(es, r, PT.qdrop(vlen(xt), SN.qtl(ls)), xb), HS.clin(es, r, PT.qdrop(vlen(xt), SN.qtl(ls)), xb),
               MG.samevd_sym(HS.clin(es, r, ls, Con{x, xt}), DR.vlin(SN.qhd(ls), x, DR.qo(), HS.clin(es, r, SN.qtl(ls), xt)), ST.clin_ht(ls, es, r, x, xt)),
               MG.samevd_refl(HS.clin(es, r, PT.qdrop(vlen(xt), SN.qtl(ls)), xb))))))
+
+# K's generators are in K
+# -----------------------
+
+def in_unit.at(+p: List<&2, S.Q>, +e: E.QExpr, +bt: List<&2, E.QExpr>) -> S.Q.eq(E.qeval(p, e), E.qeval(p, SV.lin(Con{DR.qo(), Nil{}}, Con{e, bt}))):
+  QR.qring_eq([E.qeval(p, e)], E.QVar{0n}, E.QAdd{E.QMul{E.QCst{DR.qo()}, E.QVar{0n}}, E.QCst{DR.qz()}}, {==})
+
+def in_wid.q(+L: S.Q, +B: S.Q) -> S.Q.eq(L, S.Q.add(S.Q.mul(DR.qz(), B), L)):
+  QR.qring_eq([L, B], E.QVar{0n}, E.QAdd{E.QMul{E.QCst{DR.qz()}, E.QVar{1n}}, E.QVar{0n}}, {==})
+
+def in_wid.at(+p: List<&2, S.Q>, +e: E.QExpr, +b: E.QExpr, +bt: List<&2, E.QExpr>, +ls: List<&2, S.Q>, hi: SV.Ident(e, SV.lin(ls, bt)))
+  -> S.Q.eq(E.qeval(p, e), E.qeval(p, SV.lin(Con{DR.qz(), ls}, Con{b, bt}))):
+  LQ.q_trans(E.qeval(p, e), E.qeval(p, SV.lin(ls, bt)), E.qeval(p, SV.lin(Con{DR.qz(), ls}, Con{b, bt})), hi(p), in_wid.q(E.qeval(p, SV.lin(ls, bt)), E.qeval(p, b)))
+
+def in_wid.go(+e: E.QExpr, +b: E.QExpr, +bt: List<&2, E.QExpr>, +ls: List<&2, S.Q>, +q0: {QN.qzero(E.QSub{e, SV.lin(ls, bt)}) == True{} : Bool}) -> SN.InSpan(e, Con{b, bt}):
+  SN.in_of_ident(e, Con{b, bt}, Con{DR.qz(), ls}, p => in_wid.at(p, e, b, bt, ls, ID.ident_ok(e, SV.lin(ls, bt), q0)))
+
+# a span grows to the front
+def in_wid(+e: E.QExpr, +b: E.QExpr, +bt: List<&2, E.QExpr>, h: SN.InSpan(e, bt)) -> SN.InSpan(e, Con{b, bt}):
+  (+ls, +q0) = h
+  in_wid.go(e, b, bt, ls, q0)
+
+# each of the K generators ds (a suffix) is in the span B
+def AIn(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +B: List<&2, E.QExpr>) -> Data:
+  match ds:
+    case Nil{}:
+      Unit
+    case Con{+d, +tl}:
+      SK.Both(SN.InSpan(DR.Jd.e(DR.concl(es, fs, d)), B), AIn(tl, es, fs, B))
+
+def ain_wid(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +b: E.QExpr, +bt: List<&2, E.QExpr>, h: AIn(ds, es, fs, bt)) -> AIn(ds, es, fs, Con{b, bt}):
+  match ds:
+    case Nil{}:
+      Unit{}
+    case Con{+d, +tl}:
+      (a, rt) = h
+      (in_wid(DR.Jd.e(DR.concl(es, fs, d)), b, bt, a), ain_wid(tl, es, fs, b, bt, rt))
+
+def ain_all(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>) -> AIn(ds, es, fs, KS.kexprs(es, fs, ds)):
+  match ds:
+    case Nil{}:
+      Unit{}
+    case Con{+d, +tl}:
+      (SN.in_of_ident(DR.Jd.e(DR.concl(es, fs, d)), KS.kexprs(es, fs, Con{d, tl}), Con{DR.qo(), Nil{}}, p => in_unit.at(p, DR.Jd.e(DR.concl(es, fs, d)), KS.kexprs(es, fs, tl))),
+       ain_wid(tl, es, fs, DR.Jd.e(DR.concl(es, fs, d)), KS.kexprs(es, fs, tl), ain_all(tl, es, fs)))
+
+# Forms with both parts in K
+# --------------------------
+
+def K2(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +x: SK.VE) -> Data:
+  SK.Both({KS.ks.inb(k, SK.VE.x(x)) == True{} : Bool}, {KS.ks.inb(k, SK.VE.y(x)) == True{} : Bool})
+
+def K2L(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, ds: List<&2, DR.Der>) -> Data:
+  match ds:
+    case Nil{}:
+      Unit
+    case Con{+d, +tl}:
+      SK.Both(K2(es, fs, k, DR.Jd.x(DR.concl(es, fs, d))), K2L(es, fs, k, tl))
+
+def svx(+u: SK.VE, +v: SK.VE, h: VD.SameVD(u, v)) -> VD.SameD(SK.VE.x(u), SK.VE.x(v)):
+  (a, b) = h
+  a
+
+def svy(+u: SK.VE, +v: SK.VE, h: VD.SameVD(u, v)) -> VD.SameD(SK.VE.y(u), SK.VE.y(v)):
+  (a, b) = h
+  b
+
+def z0.at(+p: List<&2, S.Q>) -> S.Q.eq(E.qeval(p, DR.zeroe()), E.qeval(p, DR.zeroe())):
+  LQ.q_refl(DR.qz())
+
+# a form the same as (e, 0) or (0, e), e in K, has both parts in K
+def k2_kv(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +x: SK.VE, +y: SK.VE, +hr: ST.RI(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k)), +e: VD.SameVD(x, y), +hx: {KS.ks.inb(k, SK.VE.x(y)) == True{} : Bool},
+  +hy: {KS.ks.inb(k, SK.VE.y(y)) == True{} : Bool}) -> K2(es, fs, k, x):
+  (ST.ri.tr(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), SK.VE.x(y), SK.VE.x(x), hr, hx, svx(y, x, MG.samevd_sym(x, y, e))),
+   ST.ri.tr(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), SK.VE.y(y), SK.VE.y(x), hr, hy, svy(y, x, MG.samevd_sym(x, y, e))))
+
+def k2_kgens.go(+d: DR.Der, +tl: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +r: DR.Node, +hr: ST.RI(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k)), +he: {KS.ks.inb(k, DR.Jd.e(DR.concl(es, fs, d))) == True{} : Bool},
+  ht: K2L(es, fs, k, DC.kgens(r, tl))) -> K2L(es, fs, k, DC.kgens(r, Con{d, tl})):
+  (k2_kv(es, fs, k, DR.Jd.x(DR.concl(es, fs, HS.kre(r, d))), ST.kv.re(DR.Jd.e(DR.concl(es, fs, d))), hr, ND.kre_v(es, fs, r, d), he, ST.ri.z0(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), hr)),
+   (k2_kv(es, fs, k, DR.Jd.x(DR.concl(es, fs, HS.kim(r, d))), ST.kv.im(DR.Jd.e(DR.concl(es, fs, d))), hr, ND.kim_v(es, fs, r, d), ST.ri.z0(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), hr), he), ht))
+
+def k2_kgens(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +r: DR.Node, +hr: ST.RI(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k)), h: AIn(ds, es, fs, KS.kexprs(es, fs, KS.ks.ds(k)))) -> K2L(es, fs, k, DC.kgens(r, ds)):
+  match ds:
+    case Nil{}:
+      Unit{}
+    case Con{+d, +tl}:
+      (a, rt) = h
+      k2_kgens.go(d, tl, es, fs, k, r, hr, ST.ri.zero(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), DR.Jd.e(DR.concl(es, fs, d)), hr, a), k2_kgens(tl, es, fs, k, r, hr, rt))
+
+def k2_snoc(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +d: DR.Der, h: K2L(es, fs, k, ds), +hd: K2(es, fs, k, DR.Jd.x(DR.concl(es, fs, d))))
+  -> K2L(es, fs, k, KS.dsnoc(ds, d)):
+  match ds:
+    case Nil{}:
+      (hd, Unit{})
+    case Con{+d0, +tl}:
+      (a, rt) = h
+      (a, k2_snoc(tl, es, fs, k, d, rt, hd))
+
+def k2_add.pick(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +rows: List<&2, EL.Row>, +ds: List<&2, DR.Der>, +res: EL.Res, +d: DR.Der,
+  h: K2L(es, fs, k, ds), +hd: K2(es, fs, k, DR.Jd.x(DR.concl(es, fs, d)))) -> K2L(es, fs, k, HS.hs.ds(HS.hs.pick(b, rows, ds, res, d))):
+  match b:
+    case True{}:
+      h
+    case False{}:
+      k2_snoc(ds, es, fs, k, d, h, hd)
+
+def k2_add(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +k: KS.KS, h: HS.HS, +d: DR.Der, hk: K2L(es, fs, k, HS.hs.ds(h)), +hd: K2(es, fs, k, DR.Jd.x(DR.concl(es, fs, d))))
+  -> K2L(es, fs, k, HS.hs.ds(HS.hs.add(es, fs, t, h, d))):
+  match h:
+    case HS.HS{+rows, +ds}:
+      k2_add.pick(EP.isnil(EP.resp(EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)))), es, fs, k, rows, ds, EL.resid(rows, HS.enc(DR.Jd.x(DR.concl(es, fs, d)), t)), d, hk, hd)
+
+# folding forms with both parts in K keeps the kept ones so
+def k2_fold(gs: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +k: KS.KS, +h: HS.HS, hk: K2L(es, fs, k, HS.hs.ds(h)), hg: K2L(es, fs, k, gs))
+  -> K2L(es, fs, k, HS.hs.ds(DC.hfold(gs, es, fs, t, h))):
+  match gs:
+    case Nil{}:
+      hk
+    case Con{+d, +tl}:
+      (a, rt) = hg
+      k2_fold(tl, es, fs, t, k, HS.hs.add(es, fs, t, h, d), k2_add(es, fs, t, k, h, d, hk, a), rt)
+
+def K2V(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, xs: List<&2, SK.VE>) -> Data:
+  match xs:
+    case Nil{}:
+      Unit
+    case Con{+x, tl}:
+      SK.Both(K2(es, fs, k, x), K2V(es, fs, k, tl))
+
+def k2v_of(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, h: K2L(es, fs, k, ds)) -> K2V(es, fs, k, HS.hxs(es, fs, ds)):
+  match ds:
+    case Nil{}:
+      Unit{}
+    case Con{+d, +tl}:
+      (a, rt) = h
+      (a, k2v_of(tl, es, fs, k, rt))
+
+def kb.q(+Z: S.Q) -> S.Q.eq(DR.qz(), S.Q.add(S.Q.mul(DR.qz(), Z), S.Q.mul(DR.qz(), Z))):
+  QR.qring_eq([Z], E.QCst{DR.qz()}, E.QAdd{E.QMul{E.QCst{DR.qz()}, E.QVar{0n}}, E.QMul{E.QCst{DR.qz()}, E.QVar{0n}}}, {==})
+
+def k2v.hd(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +x: SK.VE, +xt: List<&2, SK.VE>, h: K2V(es, fs, k, Con{x, xt})) -> K2(es, fs, k, x):
+  (a, rt) = h
+  a
+
+def k2v.tl(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +x: SK.VE, +xt: List<&2, SK.VE>, h: K2V(es, fs, k, Con{x, xt})) -> K2V(es, fs, k, xt):
+  (a, rt) = h
+  rt
+
+def k2_base(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +r: DR.Node, +hr: ST.RI(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k))) -> K2(es, fs, k, DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))):
+  (ST.ri.tr(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), DR.zeroe(), SK.VE.x(DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))), hr, ST.ri.z0(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), hr), ID.qzero_ident(DR.zeroe(), SK.VE.x(DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))), p => kb.q(E.qeval(p, SK.VE.x(DR.zdir(es, r)))))),
+   ST.ri.tr(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), DR.zeroe(), SK.VE.y(DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))), hr, ST.ri.z0(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), hr), ID.qzero_ident(DR.zeroe(), SK.VE.y(DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))), p => kb.q(E.qeval(p, SK.VE.y(DR.zdir(es, r)))))))
+
+def k2_lin.go(+l: S.Q, +x: SK.VE, +rest: SK.VE, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +hr: ST.RI(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k)), x1: {KS.ks.inb(k, SK.VE.x(x)) == True{} : Bool},
+  y1: {KS.ks.inb(k, SK.VE.y(x)) == True{} : Bool}, hrest: K2(es, fs, k, rest)) -> K2(es, fs, k, DR.vlin(l, x, DR.qo(), rest)):
+  (x2, y2) = hrest
+  (ST.ri.lin(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), l, SK.VE.x(x), DR.qo(), SK.VE.x(rest), hr, x1, x2), ST.ri.lin(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k), l, SK.VE.y(x), DR.qo(), SK.VE.y(rest), hr, y1, y2))
+
+def k2_lin(+l: S.Q, +x: SK.VE, +rest: SK.VE, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +hr: ST.RI(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k)), hx: K2(es, fs, k, x), hrest: K2(es, fs, k, rest))
+  -> K2(es, fs, k, DR.vlin(l, x, DR.qo(), rest)):
+  (x1, y1) = hx
+  k2_lin.go(l, x, rest, es, fs, k, hr, x1, y1, hrest)
+
+# a combination of forms with both parts in K has both parts in K
+def k2_clin(ls: List<&2, S.Q>, xs: List<&2, SK.VE>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +r: DR.Node, +hr: ST.RI(KS.kexprs(es, fs, KS.ks.ds(k)), KS.ks.rows(k)), +h: K2V(es, fs, k, xs))
+  -> K2(es, fs, k, HS.clin(es, r, ls, xs)):
+  match ls xs:
+    case Con{+l, +lt} Con{+x, +xt}:
+      k2_lin(l, x, HS.clin(es, r, lt, xt), es, fs, k, hr, k2v.hd(es, fs, k, x, xt, h), k2_clin(lt, xt, es, fs, k, r, hr, k2v.tl(es, fs, k, x, xt, h)))
+    case Nil{} xs:
+      k2_base(es, fs, k, r, hr)
+    case Con{+l, +lt} Nil{}:
+      k2_base(es, fs, k, r, hr)
