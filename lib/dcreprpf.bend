@@ -345,3 +345,84 @@ def frame_out(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QE
   ST.ri.tr(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), KS.ks.rows(DC.Sk.k(s)), SK.VE.y(DR.gmul(DC.lone(), x)), SK.VE.y(x), ST.kri(es, fs, ctx, t, DC.Sk.k(s), h.k(es, fs, ctx, t, s, H)),
     rp_eq(DC.mem_of(DC.Sk.ms(s), DR.NFrame{}), Some{DC.Mem{DR.NFrame{}, DR.NFrame{}, DC.lone(), DR.DSelf{DR.NFrame{}}}}, es, fs, t, s, DR.NFrame{}, x, frec(es, fs, ctx, t, s, H), h),
     svy(DR.gmul(DC.lone(), x), x, MG.samevd_sym(x, DR.gmul(DC.lone(), x), GN.one(x))))
+
+# The rules without nodes to compare
+# ----------------------------------
+
+def rule_zero(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s)) -> Repr(es, fs, t, s, DR.JK{DR.zeroe()}):
+  ST.ri.z0(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), KS.ks.rows(DC.Sk.k(s)), ST.kri(es, fs, ctx, t, DC.Sk.k(s), h.k(es, fs, ctx, t, s, H)))
+
+def rule_prem(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +i: Nat, hf: DR.HasFact(DR.fact_at(fs, i))) -> Repr(es, fs, t, s, DR.JK{DR.fact.e(DR.fact_at(fs, i))}):
+  SH.kf_at(fs, i, DC.Sk.k(s), SH.shi.k(es, fs, OP.cspan(ctx), DC.segids(es), s, h.sh(es, fs, ctx, t, s, H)), hf)
+
+def ka.q(+l: S.Q, +A: S.Q, +B: S.Q) -> S.Q.eq(S.Q.add(S.Q.mul(l, A), S.Q.mul(DR.qo(), B)), S.Q.add(S.Q.mul(l, A), B)):
+  LQ.q_add_cong_r(S.Q.mul(l, A), S.Q.mul(DR.qo(), B), B, QA.one_mul(B))
+
+def ka.at(+p: List<&2, S.Q>, +l: S.Q, +e1: E.QExpr, +e2: E.QExpr) -> S.Q.eq(E.qeval(p, ST.lin2(l, e1, DR.qo(), e2)), E.qeval(p, E.QAdd{E.QMul{E.QCst{l}, e1}, e2})):
+  ka.q(l, E.qeval(p, e1), E.qeval(p, e2))
+
+def rule_kadd(j1: DR.Jd, j2: DR.Jd, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +l: S.Q, h1: Repr(es, fs, t, s, j1), h2: Repr(es, fs, t, s, j2), k1: DR.IsK(j1), k2: DR.IsK(j2))
+  -> Repr(es, fs, t, s, DR.JK{E.QAdd{E.QMul{E.QCst{l}, DR.Jd.e(j1)}, DR.Jd.e(j2)}}):
+  match j1 j2:
+    case DR.JK{+e1} DR.JK{+e2}:
+      ST.ri.tr(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), KS.ks.rows(DC.Sk.k(s)), ST.lin2(l, e1, DR.qo(), e2), E.QAdd{E.QMul{E.QCst{l}, e1}, e2}, ST.kri(es, fs, ctx, t, DC.Sk.k(s), h.k(es, fs, ctx, t, s, H)), ST.ri.lin(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), KS.ks.rows(DC.Sk.k(s)), l, e1, DR.qo(), e2, ST.kri(es, fs, ctx, t, DC.Sk.k(s), h.k(es, fs, ctx, t, s, H)), h1, h2),
+        ID.qzero_ident(ST.lin2(l, e1, DR.qo(), e2), E.QAdd{E.QMul{E.QCst{l}, e1}, e2}, p => ka.at(p, l, e1, e2)))
+    case DR.JK{+e1} DR.JP{+a2, +x2}:
+      absurd(Repr(es, fs, t, s, DR.JK{E.QAdd{E.QMul{E.QCst{l}, e1}, DR.zeroe()}}), k2)
+    case DR.JP{+a1, +x1} j2:
+      absurd(Repr(es, fs, t, s, DR.JK{E.QAdd{E.QMul{E.QCst{l}, DR.zeroe()}, DR.Jd.e(j2)}}), k1)
+
+# a statement about node a, read at the same node b
+def rp_node(+a: DR.Node, +b: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk, +x: SK.VE, e: {a == b : DR.Node}, h: Repr(es, fs, t, s, DR.JP{a, x})) -> Repr(es, fs, t, s, DR.JP{b, x}):
+  %e : Repr(es, fs, t, s, DR.JP{_, x})
+  h
+
+def rule_back(j: DR.Jd, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), h: Repr(es, fs, t, s, j), hp: DR.IsP(j), ha: {DR.Jd.a(j) == DR.NFrame{} : DR.Node}) -> Repr(es, fs, t, s, DR.JK{SK.VE.y(DR.Jd.x(j))}):
+  match j:
+    case DR.JK{+e}:
+      absurd(Repr(es, fs, t, s, DR.JK{SK.VE.y(DR.zerov())}), hp)
+    case DR.JP{+a, +x}:
+      frame_out(es, fs, ctx, t, s, H, x, rp_node(a, DR.NFrame{}, es, fs, t, s, x, ha, h))
+
+def rule_frame(j: DR.Jd, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +x: SK.VE, h: Repr(es, fs, t, s, j), hk: DR.IsK(j), hs: DR.Same(DR.Jd.e(j), SK.VE.y(x))) -> Repr(es, fs, t, s, DR.JP{DR.NFrame{}, x}):
+  match j:
+    case DR.JK{+e}:
+      frame_in(es, fs, ctx, t, s, H, x, ST.ri.tr(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), KS.ks.rows(DC.Sk.k(s)), e, SK.VE.y(x), ST.kri(es, fs, ctx, t, DC.Sk.k(s), h.k(es, fs, ctx, t, s, H)), h, VD.samed_of(e, SK.VE.y(x), hs)))
+    case DR.JP{+a, +x0}:
+      absurd(Repr(es, fs, t, s, DR.JP{DR.NFrame{}, x}), hk)
+
+def rule_plin(j1: DR.Jd, j2: DR.Jd, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), +m1: S.Q, +m2: S.Q, h1: Repr(es, fs, t, s, j1), h2: Repr(es, fs, t, s, j2), p1: DR.IsP(j1), p2: DR.IsP(j2), ea: {DR.Jd.a(j1) == DR.Jd.a(j2) : DR.Node})
+  -> Repr(es, fs, t, s, DR.JP{DR.Jd.a(j1), DR.vlin(m1, DR.Jd.x(j1), m2, DR.Jd.x(j2))}):
+  match j1 j2:
+    case DR.JP{+a1, +x1} DR.JP{+a2, +x2}:
+      rp_lin(DC.mem_of(DC.Sk.ms(s), a1), es, fs, ctx, t, s, H, a1, m1, x1, m2, x2, h1, rp_node(a2, a1, es, fs, t, s, x2, Equal.sym(DR.Node, a1, a2, ea), h2))
+    case DR.JP{+a1, +x1} DR.JK{+e2}:
+      absurd(Repr(es, fs, t, s, DR.JP{a1, DR.vlin(m1, x1, m2, DR.zerov())}), p2)
+    case DR.JK{+e1} j2:
+      absurd(Repr(es, fs, t, s, DR.JP{DR.NFrame{}, DR.vlin(m1, DR.zerov(), m2, DR.Jd.x(j2))}), p1)
+
+def kn.q(+X: S.Q, +Y: S.Q) -> S.Q.eq(S.Q.add(S.Q.mul(DR.qo(), X), S.Q.mul(DR.qo(), Y)), S.Q.add(X, Y)):
+  QR.qring_eq([X, Y], E.QAdd{E.QMul{E.QCst{DR.qo()}, E.QVar{0n}}, E.QMul{E.QCst{DR.qo()}, E.QVar{1n}}}, E.QAdd{E.QVar{0n}, E.QVar{1n}}, {==})
+
+def kn.ax(+p: List<&2, S.Q>, +x: SK.VE, +l: SK.VE) -> S.Q.eq(E.qeval(p, SK.VE.x(DR.vlin(DR.qo(), x, DR.qo(), l))), E.qeval(p, SK.VE.x(SK.VE.add(x, l)))):
+  kn.q(E.qeval(p, SK.VE.x(x)), E.qeval(p, SK.VE.x(l)))
+
+def kn.ay(+p: List<&2, S.Q>, +x: SK.VE, +l: SK.VE) -> S.Q.eq(E.qeval(p, SK.VE.y(DR.vlin(DR.qo(), x, DR.qo(), l))), E.qeval(p, SK.VE.y(SK.VE.add(x, l)))):
+  kn.q(E.qeval(p, SK.VE.y(x)), E.qeval(p, SK.VE.y(l)))
+
+def kn(+x: SK.VE, +l: SK.VE) -> VD.SameVD(DR.vlin(DR.qo(), x, DR.qo(), l), SK.VE.add(x, l)):
+  (ID.qzero_ident(SK.VE.x(DR.vlin(DR.qo(), x, DR.qo(), l)), SK.VE.x(SK.VE.add(x, l)), p => kn.ax(p, x, l)),
+   ID.qzero_ident(SK.VE.y(DR.vlin(DR.qo(), x, DR.qo(), l)), SK.VE.y(SK.VE.add(x, l)), p => kn.ay(p, x, l)))
+
+def rule_known(j: DR.Jd, jr: DR.Jd, ji: DR.Jd, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: Hyp(es, fs, ctx, t, s), h: Repr(es, fs, t, s, j), hr: Repr(es, fs, t, s, jr), hi: Repr(es, fs, t, s, ji), p: DR.IsP(j), kr: DR.IsK(jr), ki: DR.IsK(ji))
+  -> Repr(es, fs, t, s, DR.JP{DR.Jd.a(j), SK.VE.add(DR.Jd.x(j), SK.VE{DR.Jd.e(jr), DR.Jd.e(ji)})}):
+  match j jr ji:
+    case DR.JP{+a, +x} DR.JK{+er} DR.JK{+ei}:
+      rp_tr(DC.mem_of(DC.Sk.ms(s), a), es, fs, ctx, t, s, H, a, DR.vlin(DR.qo(), x, DR.qo(), SK.VE{er, ei}), SK.VE.add(x, SK.VE{er, ei}),
+        rp_lin(DC.mem_of(DC.Sk.ms(s), a), es, fs, ctx, t, s, H, a, DR.qo(), x, DR.qo(), SK.VE{er, ei}, h, rp_k2(DC.mem_of(DC.Sk.ms(s), a), es, fs, ctx, t, s, H, a, SK.VE{er, ei}, hr, hi)), kn(x, SK.VE{er, ei}))
+    case DR.JP{+a, +x} DR.JK{+er} DR.JP{+ai, +xi}:
+      absurd(Repr(es, fs, t, s, DR.JP{a, SK.VE.add(x, SK.VE{er, DR.zeroe()})}), ki)
+    case DR.JP{+a, +x} DR.JP{+ar, +xr} ji:
+      absurd(Repr(es, fs, t, s, DR.JP{a, SK.VE.add(x, SK.VE{DR.zeroe(), DR.Jd.e(ji)})}), kr)
+    case DR.JK{+e} jr ji:
+      absurd(Repr(es, fs, t, s, DR.JP{DR.NFrame{}, SK.VE.add(DR.zerov(), SK.VE{DR.Jd.e(jr), DR.Jd.e(ji)})}), p)
