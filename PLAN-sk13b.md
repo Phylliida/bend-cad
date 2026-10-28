@@ -801,6 +801,42 @@ give both component identities that Valid's SameV asks for.
   - Then NotDirDerivable is the contrapositive. An explosion derives
     everything: ∥(F, (0, e)) by ∥-void at F or ∥-through at the open
     void segment, then K(e) by frame-back, and ∥(a, x) by ∥-void.
+  - *Progress (2026-10-27, lib/dcreprpf.bend):* Repr and the fixpoint
+    hypotheses bundle (Hyp); the rules zero, premise, K-add, frame-back,
+    frame, par-lin, known, self, pprem, void and line, each a lemma
+    `rule_*` from the premises' Repr. Along the way: the collapse test is
+    sound as well as complete (lib/dcopenpf.bend `coll_sound`), and an
+    open node always has a record (`open_rec`: a segment entity is among
+    the segment ids, so collapsed or recorded; a non-segment's direction
+    is 0).
+  - *Turn and through, the remaining rules.* Write P_a for a's set, and
+    (r, w) for an open node's root and label. Cases by records:
+    - both open, different roots: the merge check gives LZ(w_a conj(g))
+      (zero_k / zero_h at mgF_none / mgR_none), so g = 0.
+    - both open, same root: u = w_a conj(g) conj(w_b). Not real: Q_r
+      holds y = w_b z_b and u y, so i y (gmul_i), a complex line
+      (line.root), so z_b in K squared (unrot), against void.node. Real:
+      the conclusion is a real multiple of w_a z_a (turn) or of w_b x
+      (through).
+    - one collapsed c, not Full: the link checks. lk.c gives
+      conj(g) in LSp(stored(c, b)) for turn from c and through at c
+      (bfree_ok / btied_ok, basis_in, lsp_trans); lk.r gives conj(w_a g)
+      in LSp(stored(c, r_a)) for turn into c (bfree_ok / bk_ok,
+      lsp_conj, basis_inc). The stored labels come from links, whose
+      generators carry the conclusion: llinks at b (turn from c),
+      lout.gens over r's generators (into c, r not F), lins (between
+      collapsed nodes).
+    - a link into F's component makes c Tied(U). Every tie T has
+      cross(T, z_c) in K (its turned form is F's generator, then
+      frame-back), so two independent ties make c Full; hence all ties
+      are parallel to U, and cross(U, ·) of the conclusion lies in K,
+      which a Tied set holds.
+    - Full: every form; and a Full c's direction is in K squared.
+    - a = b collapsed: g z = 2 Re(g) z - conj(g) z (g2re).
+  - The shared tools: a rotation gmul(L, ·) sends a hull's set into a
+    set S when it sends each kept generator in (kept generators are
+    among the inputs of the fold); the stored labels' first two are
+    link labels or 0.
 - Then: the fuel suffices. The measure is K's rank, the merges and the
   links (≤ 2 per pair). K's rank is bounded by pivots in M =
   monomials(facts) ∪ {1, x_0..x_{t−1}}, since every K fact the closure
