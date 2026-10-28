@@ -841,9 +841,14 @@ give both component identities that Valid's SameV asks for.
     (lib/dcclosepf.bend `dclose_closed`, induction on Der over the rules
     in dcreprpf, dcturnpf, dcpushpf, dcturncpf, dclopf, dcftiepf) and
     its negative answers (lib/dcdecpf.bend `not_dir`: DC.holds false at
-    a fixpoint gives the spec's NotDirDerivable). Still owed for B4: the
-    positive answers (DC.holds true or an explosion gives a derivation
-    with its nd), and termination.
+    a fixpoint gives the spec's NotDirDerivable). Positive answers too
+    (lib/dcholdpf.bend `hold_ok`: DC.hold.der valid and proving e when
+    DC.holds is true; lib/dcexplpf.bend `expl_ok`: an explosion's
+    DC.expl.der proves any e by K). Still owed for B4: the refutation
+    decision (a refutation is found iff one exists: Motzkin over K's
+    generators, a derived collapse, an Angle on a K-collapsed segment),
+    and termination (the fuel suffices). B4 also needs sub(nd, nd) for
+    the reported nd (the draft spec's own sub, not spec/solve's).
 - Then: the fuel suffices. The measure is K's rank, the merges and the
   links (≤ 2 per pair). K's rank is bounded by pivots in M =
   monomials(facts) ∪ {1, x_0..x_{t−1}}, since every K fact the closure
