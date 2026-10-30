@@ -999,6 +999,8 @@ give both component identities that Valid's SameV asks for.
   optimization. The conflict's nd: Nil when c with s refutes at degree
   0; else the refutation's nd, without the Angles' segments, each segment
   once. Proven: ConflictOk, the irreducibility by B4.1 and dref_complete.
+  - *Done 2026-10-30* (lib/dconflictpf.bend `conflict2_ok`, gated as
+    b4_conflict; a planted wrong nd is rejected).
 - **B4.4, the walk** (each equation k of c, in order):
   - degree 0 against the basis rows, as now: Drop{k, Nil, cert};
   - else the closure of the facts: every equation of kb with its drop's

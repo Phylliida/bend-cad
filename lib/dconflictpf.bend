@@ -1,0 +1,293 @@
+# bend-cad: refutations of both kinds, and the generalized deletion filter
+# gives a conflict (PLAN-sk13b B4.3). Proofs only.
+# - The closure's direction refutation is exact (dsome, dnone): a found
+#   one is a RefOk (lib/drefpf.bend dref_sound, lib/dbridgepf.bend); none
+#   found means none exists, since with DC.dfuel the closure ends at a
+#   fixpoint (lib/dctermpf.bend) where dref_complete applies.
+# - The filter (lib/dconflict.bend filt2) keeps a support that still
+#   refutes, and each member it keeps is needed: when it was tested, c with
+#   the kept and untested candidates but it had no refutation of either
+#   kind, and neither has any sublist of those (degree 0 through points,
+#   lib/conflictpf.bend; directions by lib/dmappf.bend nodir_mono).
+# - The conflict's nd: none at degree 0; else the refutation's nd, without
+#   the Angles' segments, covered by what is left and those segments.
+# So the filter's support with that nd is the spec's ConflictOk.
+#
+# Generated from tools/drafts/dconflictpf.draft by tools/expand.py; edit
+# the draft.
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/sketch.bend as SK
+import ../spec/box.bend as BX
+import ../spec/solve.bend as SV
+import ../spec/_draft13b.bend as DH
+import ../spec/dir.bend as DR
+import ./karith.bend as KA
+import ./listpf.bend as LI
+import ./kbpf.bend as KB
+import ./refute.bend as RF
+import ./satpf.bend as ST
+import ./conflict.bend as CO
+import ./conflictpf.bend as CP
+import ./wfdec.bend as WF
+import ./pass.bend as PA
+import ./dclose.bend as DC
+import ./dcroundpf.bend as DRP
+import ./dctermpf.bend as TRM
+import ./dref.bend as DF
+import ./drefpf.bend as DRF
+import ./dmappf.bend as DMP
+import ./dconflict.bend as DCF
+import ./dbridgepf.bend as BRG
+
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+# The closure's refutation, exact
+# -------------------------------
+
+# a direction refutation the closure finds is one
+def dsome(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, +r: DR.DRef, e: {DCF.dirref(sk, c, cs, cx) == Some{r} : Maybe<&2, DR.DRef>}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}) -> SV.RefOk(sk, c, cs, cx, r):
+  BRG.lref_of(r, sk, c, cs, cx,
+    (%e : DRF.OptR(SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, CO.supp.ss(sk, c, cs), DCF.angl(sk, Con{c, cs}), _)
+      DRF.dref_sound(DCF.dcl(sk, SV.rfacts(sk, Con{c, cs}), cx), SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), CO.supp.ss(sk, c, cs), DCF.angl(sk, Con{c, cs}),
+        DRP.dclose_ok(SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), DC.dfuel(SV.ents(sk), SV.rfacts(sk, Con{c, cs})), BRG.zb_tv(sk, hcov), BRG.fb_rf(sk, Con{c, cs}, hcov, hwf)))))
+
+def dn.o(o: DC.Out, +sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, +eo: {DCF.dcl(sk, SV.rfacts(sk, Con{c, cs}), cx) == o : DC.Out},
+  e: {DF.dref(o, SV.ents(sk), SV.rfacts(sk, Con{c, cs}), CO.supp.ss(sk, c, cs), DCF.angl(sk, Con{c, cs})) == None{} : Maybe<&2, DR.DRef>}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}) -> SV.NoDirRef(sk, c, cs, cx):
+  match o:
+    case DC.OStep{+s}:
+      absurd(SV.NoDirRef(sk, c, cs, cx), TRM.dclose_nostep(SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), s, eo, BRG.zb_tv(sk, hcov), BRG.fb_rf(sk, Con{c, cs}, hcov, hwf)))
+    case DC.OFix{+s}:
+      BRG.nodir_of(sk, c, cs, cx, DRF.dref_complete(SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), DC.dfuel(SV.ents(sk), SV.rfacts(sk, Con{c, cs})), s, CO.supp.ss(sk, c, cs), DCF.angl(sk, Con{c, cs}), eo, BRG.zb_tv(sk, hcov), BRG.fb_rf(sk, Con{c, cs}, hcov, hwf), e))
+    case DC.OOne{+d}:
+      absurd(SV.NoDirRef(sk, c, cs, cx), DRF.dis_some(DR.RMotz{Con{d, Nil{}}, Con{DF.qm1(), Nil{}}, DF.zq(CO.supp.ss(sk, c, cs)), DF.qm1()}, e))
+    case DC.OVoid{+g, +dr, +di}:
+      absurd(SV.NoDirRef(sk, c, cs, cx), DRF.dis_some(DR.RColl{dr, di, g}, e))
+
+# none found means none exists
+def dnone(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, e: {DCF.dirref(sk, c, cs, cx) == None{} : Maybe<&2, DR.DRef>}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}) -> SV.NoDirRef(sk, c, cs, cx):
+  dn.o(DCF.dcl(sk, SV.rfacts(sk, Con{c, cs}), cx), sk, c, cs, cx, {==}, e, hcov, hwf)
+
+def none_of(m: Maybe<&2, DR.DRef>, h: {DCF.issome(m) == False{} : Bool}) -> {m == None{} : Maybe<&2, DR.DRef>}:
+  match m:
+    case None{}:
+      {==}
+    case Some{r}:
+      absurd({Some{r} == None{} : Maybe<&2, DR.DRef>}, KA.tf(h))
+
+def r2f.r(b: Bool, +sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, h: {DCF.ref2.b(b, sk, c, cs, cx) == False{} : Bool}) -> {b == False{} : Bool}:
+  match b:
+    case True{}:
+      absurd({True{} == False{} : Bool}, KA.tf(h))
+    case False{}:
+      {==}
+
+# no refutation of either kind: none at degree 0, none by directions
+def r2f.0(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, h: {DCF.refutable2(sk, c, cs, cx) == False{} : Bool}) -> {CO.refutable(sk, c, cs) == False{} : Bool}:
+  r2f.r(CO.refutable(sk, c, cs), sk, c, cs, cx, h)
+
+def r2f.d(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, +h: {DCF.refutable2(sk, c, cs, cx) == False{} : Bool}) -> {DCF.dirref(sk, c, cs, cx) == None{} : Maybe<&2, DR.DRef>}:
+  none_of(DCF.dirref(sk, c, cs, cx), (%r2f.0(sk, c, cs, cx, h) : {DCF.ref2.b(_, sk, c, cs, cx) == False{} : Bool}
+    h))
+
+# The conflict's nd
+# -----------------
+
+def mem_catl(+v: Nat, xs: List<&2, Nat>, +ys: List<&2, Nat>, h: {SV.mem(v, xs) == True{} : Bool}) -> {SV.mem(v, SV.cat(xs, ys)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      absurd({SV.mem(v, ys) == True{} : Bool}, LI.mem_nil(v, h))
+    case Con{+x, +t}:
+      CP.mem_cons.go(SV.eq(v, x), v, x, t, SV.cat(t, ys), {==}, h, a => mem_catl(v, t, ys, a))
+
+def mem_catr(+v: Nat, xs: List<&2, Nat>, +ys: List<&2, Nat>, +h: {SV.mem(v, ys) == True{} : Bool}) -> {SV.mem(v, SV.cat(xs, ys)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      h
+    case Con{+x, +t}:
+      LI.mem_tl(v, x, SV.cat(t, ys), mem_catr(v, t, ys, h))
+
+def mem_pick(b: Bool, +x: Nat, +acc: List<&2, Nat>, +v: Nat, h: {SV.mem(v, acc) == True{} : Bool}) -> {SV.mem(v, DCF.ndpick(b, x, acc)) == True{} : Bool}:
+  match b:
+    case True{}:
+      h
+    case False{}:
+      %Equal.sym(Bool, SV.mem(v, CO.lsnoc(acc, x)), SV.bor(SV.mem(v, acc), SV.eq(v, x)), KB.mem_snoc(v, acc, x)) : {_ == True{} : Bool}
+      LI.bor_l(SV.mem(v, acc), SV.eq(v, x), h)
+
+# what was kept stays
+def mem_nca(xs: List<&2, Nat>, +ys: List<&2, Nat>, +acc: List<&2, Nat>, +v: Nat, h: {SV.mem(v, acc) == True{} : Bool}) -> {SV.mem(v, DCF.ndclean(xs, ys, acc)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      h
+    case Con{+x, +t}:
+      mem_nca(t, ys, DCF.ndpick(SV.bor(SV.mem(x, ys), SV.mem(x, acc)), x, acc), v, mem_pick(SV.bor(SV.mem(x, ys), SV.mem(x, acc)), x, acc, v, h))
+
+def nch.t(bm: Bool, +x: Nat, +t: List<&2, Nat>, +ys: List<&2, Nat>, +acc: List<&2, Nat>, em: {SV.mem(x, ys) == bm : Bool}, eb: {SV.bor(bm, SV.mem(x, acc)) == True{} : Bool})
+  -> {SV.mem(x, SV.cat(DCF.ndclean(t, ys, acc), ys)) == True{} : Bool}:
+  match bm:
+    case True{}:
+      mem_catr(x, DCF.ndclean(t, ys, acc), ys, em)
+    case False{}:
+      mem_catl(x, DCF.ndclean(t, ys, acc), ys, mem_nca(t, ys, acc, x, eb))
+
+def nch(b: Bool, +x: Nat, +t: List<&2, Nat>, +ys: List<&2, Nat>, +acc: List<&2, Nat>, eb: {SV.bor(SV.mem(x, ys), SV.mem(x, acc)) == b : Bool})
+  -> {SV.mem(x, SV.cat(DCF.ndclean(t, ys, DCF.ndpick(b, x, acc)), ys)) == True{} : Bool}:
+  match b:
+    case True{}:
+      nch.t(SV.mem(x, ys), x, t, ys, acc, {==}, eb)
+    case False{}:
+      mem_catl(x, DCF.ndclean(t, ys, CO.lsnoc(acc, x)), ys, mem_nca(t, ys, CO.lsnoc(acc, x), x,
+        (%Equal.sym(Bool, SV.mem(x, CO.lsnoc(acc, x)), SV.bor(SV.mem(x, acc), SV.eq(x, x)), KB.mem_snoc(x, acc, x)) : {_ == True{} : Bool}
+          LI.bor_r(SV.mem(x, acc), SV.eq(x, x), LI.eq_refl(x)))))
+
+# every entry of xs is in the cleaned list or in ys
+def nc_sub(xs: List<&2, Nat>, +ys: List<&2, Nat>, +acc: List<&2, Nat>) -> {SV.sub(xs, SV.cat(DCF.ndclean(xs, ys, acc), ys)) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      LI.band_i(SV.mem(x, SV.cat(DCF.ndclean(Con{x, t}, ys, acc), ys)), SV.sub(t, SV.cat(DCF.ndclean(Con{x, t}, ys, acc), ys)),
+        nch(SV.bor(SV.mem(x, ys), SV.mem(x, acc)), x, t, ys, acc, {==}), nc_sub(t, ys, DCF.ndpick(SV.bor(SV.mem(x, ys), SV.mem(x, acc)), x, acc)))
+
+# Refuting, with the nd
+# ---------------------
+
+def ro.m(m: Maybe<&2, DR.DRef>, +sk: SK.Sketch, +c: Nat, +s: List<&2, Nat>, +cx: List<&2, E.QExpr>, em: {DCF.dirref(sk, c, s, cx) == m : Maybe<&2, DR.DRef>}, h: {DCF.issome(m) == True{} : Bool}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool})
+  -> Or(SV.Ref0(sk, c, s), SV.DirRefutes(sk, c, s, cx, DCF.cnd.m(m, sk, c, s))):
+  match m:
+    case None{}:
+      absurd(Or(SV.Ref0(sk, c, s), SV.DirRefutes(sk, c, s, cx, Nil{})), KA.ft(h))
+    case Some{+r}:
+      Inr{(r, (dsome(sk, c, s, cx, r, em, hcov, hwf), nc_sub(DR.ref.nd(SV.ents(sk), SV.rfacts(sk, Con{c, s}), r), SV.angle_args(sk, Con{c, s}), Nil{})))}
+
+def ro.b(b: Bool, +sk: SK.Sketch, +c: Nat, +s: List<&2, Nat>, +cx: List<&2, E.QExpr>, eb: {CO.refutable(sk, c, s) == b : Bool}, h: {DCF.ref2.b(b, sk, c, s, cx) == True{} : Bool}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool})
+  -> Or(SV.Ref0(sk, c, s), SV.DirRefutes(sk, c, s, cx, DCF.cnd.b(b, sk, c, s, cx))):
+  match b:
+    case True{}:
+      Inl{CP.rw.go(RF.refute(CO.supp.es(sk, c, s), CO.supp.ss(sk, c, s)), CO.supp.es(sk, c, s), CO.supp.ss(sk, c, s), eb, ST.refute_ok(CO.supp.es(sk, c, s), CO.supp.ss(sk, c, s)))}
+    case False{}:
+      ro.m(DCF.dirref(sk, c, s, cx), sk, c, s, cx, {==}, h, hcov, hwf)
+
+# c with s refutes, of degree 0 or by directions with the conflict's nd
+def ref_or(+sk: SK.Sketch, +c: Nat, +s: List<&2, Nat>, +cx: List<&2, E.QExpr>, h: {DCF.refutable2(sk, c, s, cx) == True{} : Bool}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool})
+  -> Or(SV.Ref0(sk, c, s), SV.DirRefutes(sk, c, s, cx, DCF.cnd(sk, c, s, cx))):
+  ro.b(CO.refutable(sk, c, s), sk, c, s, cx, {==}, h, hcov, hwf)
+
+# The filter
+# ----------
+
+def fs2.c(b: Bool, +x: Nat, +t: List<&2, Nat>, +sk: SK.Sketch, +c: Nat, +cx: List<&2, E.QExpr>, +keep: List<&2, Nat>, ih: @k: List<&2, Nat> -> CP.SubN(DCF.filt2(t, sk, c, cx, k), t))
+  -> CP.SubN(CO.fcons(b, x, DCF.filt2(t, sk, c, cx, CO.kpick(b, keep, x))), Con{x, t}):
+  match b:
+    case True{}:
+      CP.subn_cons_r(DCF.filt2(t, sk, c, cx, keep), x, t, ih(keep))
+    case False{}:
+      Inl{({==}, ih(CO.lsnoc(keep, x)))}
+
+# the support is a sublist of the candidates
+def filt2_sub(rest: List<&2, Nat>, +sk: SK.Sketch, +c: Nat, +cx: List<&2, E.QExpr>, +keep: List<&2, Nat>) -> CP.SubN(DCF.filt2(rest, sk, c, cx, keep), rest):
+  match rest:
+    case Nil{}:
+      Unit{}
+    case Con{+x, +t}:
+      fs2.c(DCF.refutable2(sk, c, CO.lcat(keep, t), cx), x, t, sk, c, cx, keep, k => filt2_sub(t, sk, c, cx, k))
+
+def fr2.c(b: Bool, +x: Nat, +t: List<&2, Nat>, +sk: SK.Sketch, +c: Nat, +cx: List<&2, E.QExpr>, +keep: List<&2, Nat>, hb: {b == DCF.refutable2(sk, c, CO.lcat(keep, t), cx) : Bool},
+  h: {DCF.refutable2(sk, c, CO.lcat(keep, Con{x, t}), cx) == True{} : Bool},
+  ih: @k: List<&2, Nat> -> {DCF.refutable2(sk, c, CO.lcat(k, t), cx) == True{} : Bool} -> {DCF.refutable2(sk, c, CO.lcat(k, DCF.filt2(t, sk, c, cx, k)), cx) == True{} : Bool})
+  -> {DCF.refutable2(sk, c, CO.lcat(keep, CO.fcons(b, x, DCF.filt2(t, sk, c, cx, CO.kpick(b, keep, x)))), cx) == True{} : Bool}:
+  match b:
+    case True{}:
+      ih(keep, Equal.sym(Bool, True{}, DCF.refutable2(sk, c, CO.lcat(keep, t), cx), hb))
+    case False{}:
+      %CP.lcat_snoc(keep, x, DCF.filt2(t, sk, c, cx, CO.lsnoc(keep, x))) : {DCF.refutable2(sk, c, _, cx) == True{} : Bool}
+      ih(CO.lsnoc(keep, x), (%Equal.sym(List<&2, Nat>, CO.lcat(CO.lsnoc(keep, x), t), CO.lcat(keep, Con{x, t}), CP.lcat_snoc(keep, x, t)) : {DCF.refutable2(sk, c, _, cx) == True{} : Bool}
+        h))
+
+# with c, what the filter keeps still refutes
+def filt2_ref(rest: List<&2, Nat>, +sk: SK.Sketch, +c: Nat, +cx: List<&2, E.QExpr>, +keep: List<&2, Nat>, h: {DCF.refutable2(sk, c, CO.lcat(keep, rest), cx) == True{} : Bool})
+  -> {DCF.refutable2(sk, c, CO.lcat(keep, DCF.filt2(rest, sk, c, cx, keep)), cx) == True{} : Bool}:
+  match rest:
+    case Nil{}:
+      h
+    case Con{+x, +t}:
+      fr2.c(DCF.refutable2(sk, c, CO.lcat(keep, t), cx), x, t, sk, c, cx, keep, {==}, h, k => a => filt2_ref(t, sk, c, cx, k, a))
+
+# no refutation of either kind
+def Irr(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>) -> Type:
+  SV.NoRef0(sk, c, cs) & SV.NoDirRef(sk, c, cs, cx)
+
+# x was kept: c with the others then tested had no refutation of either
+# kind, and so neither has c with fewer
+def fi2.x(+x: Nat, +t: List<&2, Nat>, +sk: SK.Sketch, +c: Nat, +cx: List<&2, E.QExpr>, +keep: List<&2, Nat>, +R: List<&2, Nat>, +hb: {False{} == DCF.refutable2(sk, c, CO.lcat(keep, t), cx) : Bool}, +hR: CP.SubN(R, t), +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool})
+  -> Irr(sk, c, SV.unmark(x, CO.lcat(keep, Con{x, R})), cx):
+  +hf = Equal.sym(Bool, False{}, DCF.refutable2(sk, c, CO.lcat(keep, t), cx), hb)
+  (CP.fi.x(x, t, sk, c, keep, R, Equal.sym(Bool, CO.refutable(sk, c, CO.lcat(keep, t)), False{}, r2f.0(sk, c, CO.lcat(keep, t), cx, hf)), hR),
+   DMP.nodir_mono(sk, c, SV.unmark(x, CO.lcat(keep, Con{x, R})), CO.lcat(keep, t), cx, CP.sub_unmark(x, keep, R, t, hR),
+     dnone(sk, c, CO.lcat(keep, t), cx, r2f.d(sk, c, CO.lcat(keep, t), cx, hf), hcov, hwf)))
+
+def fi2.m(bm: Bool, +m: Nat, +x: Nat, +t: List<&2, Nat>, +sk: SK.Sketch, +c: Nat, +cx: List<&2, E.QExpr>, +keep: List<&2, Nat>, +R: List<&2, Nat>, hbm: {bm == SV.eq(m, x) : Bool},
+  hm: {SV.bor(SV.eq(m, x), SV.mem(m, R)) == True{} : Bool}, +hb: {False{} == DCF.refutable2(sk, c, CO.lcat(keep, t), cx) : Bool}, +hR: CP.SubN(R, t), +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool},
+  ih: @m2: Nat -> {SV.mem(m2, R) == True{} : Bool} -> Irr(sk, c, SV.unmark(m2, CO.lcat(CO.lsnoc(keep, x), R)), cx))
+  -> Irr(sk, c, SV.unmark(m, CO.lcat(keep, Con{x, R})), cx):
+  match bm:
+    case True{}:
+      %Equal.sym(Nat, m, x, CP.eq_nat(m, x, Equal.sym(Bool, True{}, SV.eq(m, x), hbm))) : Irr(sk, c, SV.unmark(_, CO.lcat(keep, Con{x, R})), cx)
+      fi2.x(x, t, sk, c, cx, keep, R, hb, hR, hcov, hwf)
+    case False{}:
+      (%CP.lcat_snoc(keep, x, R) : Irr(sk, c, SV.unmark(m, _), cx)
+        ih(m, LI.bor_rf(SV.eq(m, x), SV.mem(m, R), hm, Equal.sym(Bool, False{}, SV.eq(m, x), hbm))))
+
+def fi2.f(+m: Nat, +x: Nat, +t: List<&2, Nat>, +sk: SK.Sketch, +c: Nat, +cx: List<&2, E.QExpr>, +keep: List<&2, Nat>, +R: List<&2, Nat>, hm: {SV.mem(m, Con{x, R}) == True{} : Bool},
+  +hb: {False{} == DCF.refutable2(sk, c, CO.lcat(keep, t), cx) : Bool}, +hR: CP.SubN(R, t), +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool},
+  ih: @m2: Nat -> {SV.mem(m2, R) == True{} : Bool} -> Irr(sk, c, SV.unmark(m2, CO.lcat(CO.lsnoc(keep, x), R)), cx))
+  -> Irr(sk, c, SV.unmark(m, CO.lcat(keep, Con{x, R})), cx):
+  fi2.m(SV.eq(m, x), m, x, t, sk, c, cx, keep, R, {==}, hm, hb, hR, hcov, hwf, ih)
+
+def fi2.c(b: Bool, +x: Nat, +t: List<&2, Nat>, +sk: SK.Sketch, +c: Nat, +cx: List<&2, E.QExpr>, +keep: List<&2, Nat>, +hb: {b == DCF.refutable2(sk, c, CO.lcat(keep, t), cx) : Bool}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool},
+  ihs: @k: List<&2, Nat> -> CP.SubN(DCF.filt2(t, sk, c, cx, k), t), ih: @k: List<&2, Nat> -> @m: Nat -> {SV.mem(m, DCF.filt2(t, sk, c, cx, k)) == True{} : Bool} -> Irr(sk, c, SV.unmark(m, CO.lcat(k, DCF.filt2(t, sk, c, cx, k))), cx))
+  -> @m: Nat -> {SV.mem(m, CO.fcons(b, x, DCF.filt2(t, sk, c, cx, CO.kpick(b, keep, x)))) == True{} : Bool} -> Irr(sk, c, SV.unmark(m, CO.lcat(keep, CO.fcons(b, x, DCF.filt2(t, sk, c, cx, CO.kpick(b, keep, x))))), cx):
+  match b:
+    case True{}:
+      ih(keep)
+    case False{}:
+      m => hm => fi2.f(m, x, t, sk, c, cx, keep, DCF.filt2(t, sk, c, cx, CO.lsnoc(keep, x)), hm, hb, ihs(CO.lsnoc(keep, x)), hcov, hwf, ih(CO.lsnoc(keep, x)))
+
+def fi2.nil(+m: Nat, +sk: SK.Sketch, +c: Nat, +cx: List<&2, E.QExpr>, +keep: List<&2, Nat>, hm: {SV.mem(m, Nil{}) == True{} : Bool}) -> Irr(sk, c, SV.unmark(m, CO.lcat(keep, Nil{})), cx):
+  absurd(Irr(sk, c, SV.unmark(m, CO.lcat(keep, Nil{})), cx), LI.mem_nil(m, hm))
+
+# every member the filter kept is needed, for both kinds
+def filt2_irr(rest: List<&2, Nat>, +sk: SK.Sketch, +c: Nat, +cx: List<&2, E.QExpr>, +keep: List<&2, Nat>, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool})
+  -> @m: Nat -> {SV.mem(m, DCF.filt2(rest, sk, c, cx, keep)) == True{} : Bool} -> Irr(sk, c, SV.unmark(m, CO.lcat(keep, DCF.filt2(rest, sk, c, cx, keep))), cx):
+  match rest:
+    case Nil{}:
+      m => hm => fi2.nil(m, sk, c, cx, keep, hm)
+    case Con{+x, +t}:
+      fi2.c(DCF.refutable2(sk, c, CO.lcat(keep, t), cx), x, t, sk, c, cx, keep, {==}, hcov, hwf, k => filt2_sub(t, sk, c, cx, k), k => filt2_irr(t, sk, c, cx, k, hcov, hwf))
+
+# The theorem
+# -----------
+
+
+# candidates that are distinct, before c, driving and not red, with which c
+# refutes in its context: the filter's support with its nd is a conflict
+# (the extended ConflictOk, spec/_draft13b.bend)
+def conflict2_ok(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +cand: List<&2, Nat>, +hc: {SV.band(SV.distinct(cand), SV.band(SV.below(cand, c), SV.band(SV.all_driving(sk, cand), SV.none_in(cand, red)))) == True{} : Bool}, hr: {DCF.refutable2(sk, c, cand, SV.ctx(sk, red, c)) == True{} : Bool}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool})
+  -> DH.ConflictOk(sk, red, c, DCF.support2(sk, c, SV.ctx(sk, red, c), cand), DCF.cnd(sk, c, DCF.support2(sk, c, SV.ctx(sk, red, c), cand), SV.ctx(sk, red, c))):
+  +hs = filt2_sub(cand, sk, c, SV.ctx(sk, red, c), Nil{})
+  +h2 = LI.band_r(SV.distinct(cand), SV.band(SV.below(cand, c), SV.band(SV.all_driving(sk, cand), SV.none_in(cand, red))), hc)
+  +h3 = LI.band_r(SV.below(cand, c), SV.band(SV.all_driving(sk, cand), SV.none_in(cand, red)), h2)
+  (LI.band_i(SV.distinct(DCF.support2(sk, c, SV.ctx(sk, red, c), cand)), SV.band(SV.below(DCF.support2(sk, c, SV.ctx(sk, red, c), cand), c), SV.band(SV.all_driving(sk, DCF.support2(sk, c, SV.ctx(sk, red, c), cand)), SV.none_in(DCF.support2(sk, c, SV.ctx(sk, red, c), cand), red))),
+     CP.distinct_sub(DCF.support2(sk, c, SV.ctx(sk, red, c), cand), cand, hs, LI.band_l(SV.distinct(cand), SV.band(SV.below(cand, c), SV.band(SV.all_driving(sk, cand), SV.none_in(cand, red))), hc)),
+     LI.band_i(SV.below(DCF.support2(sk, c, SV.ctx(sk, red, c), cand), c), SV.band(SV.all_driving(sk, DCF.support2(sk, c, SV.ctx(sk, red, c), cand)), SV.none_in(DCF.support2(sk, c, SV.ctx(sk, red, c), cand), red)),
+       CP.below_sub(DCF.support2(sk, c, SV.ctx(sk, red, c), cand), cand, c, hs, LI.band_l(SV.below(cand, c), SV.band(SV.all_driving(sk, cand), SV.none_in(cand, red)), h2)),
+       LI.band_i(SV.all_driving(sk, DCF.support2(sk, c, SV.ctx(sk, red, c), cand)), SV.none_in(DCF.support2(sk, c, SV.ctx(sk, red, c), cand), red),
+         CP.drv_sub(sk, DCF.support2(sk, c, SV.ctx(sk, red, c), cand), cand, hs, LI.band_l(SV.all_driving(sk, cand), SV.none_in(cand, red), h3)),
+         CP.nin_sub(DCF.support2(sk, c, SV.ctx(sk, red, c), cand), cand, red, hs, LI.band_r(SV.all_driving(sk, cand), SV.none_in(cand, red), h3))))),
+   (ref_or(sk, c, DCF.support2(sk, c, SV.ctx(sk, red, c), cand), SV.ctx(sk, red, c), filt2_ref(cand, sk, c, SV.ctx(sk, red, c), Nil{}, hr), hcov, hwf),
+    filt2_irr(cand, sk, c, SV.ctx(sk, red, c), Nil{}, hcov, hwf)))

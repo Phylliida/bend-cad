@@ -58,6 +58,9 @@
 #   B4.2): LRefOk over c with cs's facts, sides and kinds is RefOk, both
 #   ways (BRG.lref_of, BRG.nodir_of), and the closure's bound tv holds for
 #   a covered, well-formed sketch (BRG.zb_tv, BRG.fb_rf).
+# - Refutations of both kinds and the generalized deletion filter
+#   (lib/dconflict.bend, lib/dconflictpf.bend, B4.3): the filter's support
+#   with its nd is the extended ConflictOk (DCP.conflict2_ok).
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -117,6 +120,7 @@ import ../lib/drefpf.bend as DRF
 import ../lib/dmappf.bend as DMP
 import ../lib/dconflict.bend as DCF
 import ../lib/dbridgepf.bend as BRG
+import ../lib/dconflictpf.bend as DCP
 import ../lib/wfdec.bend as WFD
 import ../lib/pass.bend as PAS
 
@@ -402,3 +406,10 @@ def b4_nodir_of(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QEx
 def b4_fb(+sk: SK.Sketch, +cs: List<&2, Nat>, +hcov: {BX.Sketch.within(sk, PAS.nvars(sk)) == True{} : Bool}, +hwf: {WFD.wf_dec(sk) == True{} : Bool})
   -> M.Both({DC.zb(SS.ents(sk), DCF.tv(sk)) == True{} : Bool}, {DC.fb(SS.rfacts(sk, cs), DCF.tv(sk)) == True{} : Bool}):
   (BRG.zb_tv(sk, hcov), BRG.fb_rf(sk, cs, hcov, hwf))
+
+# B4.3's conflict, as its type
+def b4_conflict(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +cand: List<&2, Nat>,
+  +hc: {SS.band(SS.distinct(cand), SS.band(SS.below(cand, c), SS.band(SS.all_driving(sk, cand), SS.none_in(cand, red)))) == True{} : Bool},
+  hr: {DCF.refutable2(sk, c, cand, SS.ctx(sk, red, c)) == True{} : Bool}, +hcov: {BX.Sketch.within(sk, PAS.nvars(sk)) == True{} : Bool}, +hwf: {WFD.wf_dec(sk) == True{} : Bool})
+  -> DH.ConflictOk(sk, red, c, DCF.support2(sk, c, SS.ctx(sk, red, c), cand), DCF.cnd(sk, c, DCF.support2(sk, c, SS.ctx(sk, red, c), cand), SS.ctx(sk, red, c))):
+  DCP.conflict2_ok(sk, red, c, cand, hc, hr, hcov, hwf)
