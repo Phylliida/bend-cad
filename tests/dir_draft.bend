@@ -47,6 +47,9 @@
 #   other round takes a measure down: K's pivots among the bases'
 #   monomials (lib/dcbasepf.bend, lib/dckslpf.bend, lib/dcgspanpf.bend,
 #   lib/dcclprogpf.bend), the roots and the link slots (lib/dcslotpf.bend).
+# - The refutation decision (lib/dref.bend, lib/drefpf.bend): whatever
+#   it returns is a refutation (DRF.dref_sound), and at a fixpoint it
+#   returns none only when there is none (DRF.dref_complete).
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -101,6 +104,8 @@ import ../lib/dcdecpf.bend as DEC
 import ../lib/dcholdpf.bend as HLD
 import ../lib/dcexplpf.bend as EXP
 import ../lib/dctermpf.bend as TRM
+import ../lib/dref.bend as DFX
+import ../lib/drefpf.bend as DRF
 
 # The functions on an example
 # ---------------------------
@@ -358,3 +363,12 @@ def b3_expl(o: DC.Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List
 def b3_term(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, eo: {DC.dclose(es, fs, ctx, t, DC.dfuel(es, fs)) == DC.OStep{s} : DC.Out},
   +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}) -> Empty:
   TRM.dclose_nostep(es, fs, ctx, t, s, eo, hz, hb)
+
+def b3_dref_sound(o: DC.Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ss: List<&2, SK.Side>, +as: List<&2, DFX.Ang>, h: DRP.OutInv(es, fs, ctx, t, o))
+  -> DRF.OptR(es, fs, ctx, ss, as, DFX.dref(o, es, fs, ss, as)):
+  DRF.dref_sound(o, es, fs, ctx, t, ss, as, h)
+
+def b3_dref_complete(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +fuel: Nat, +s: DC.Sk, +ss: List<&2, SK.Side>, +as: List<&2, DFX.Ang>,
+  +eo: {DC.dclose(es, fs, ctx, t, fuel) == DC.OFix{s} : DC.Out}, +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool},
+  hn: {DFX.dref(DC.OFix{s}, es, fs, ss, as) == None{} : Maybe<&2, DR.DRef>}) -> DRF.NoLRef(es, fs, ctx, ss, as):
+  DRF.dref_complete(es, fs, ctx, t, fuel, s, ss, as, eo, hz, hb, hn)
