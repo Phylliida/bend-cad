@@ -947,6 +947,80 @@ give both component identities that Valid's SameV asks for.
 - Proven: `solve_honest` for the extended `Honest`, and the global
   theorem.
 
+**As designed 2026-10-30.**
+- **Staging.** The solver keeps running sk-13a's pass until the switch.
+  The new pass is built beside it and proven honest against the draft's
+  Honest, so every proven law stays proven meanwhile. It reuses sk-13a's
+  pass infrastructure (kbpf, clslpf, solvedpf, ownpf, cwpf, gmpf, prepf),
+  which is typed over spec/solve.bend's Class, so Class must be one type
+  first (B4.0). When to switch is for Danielle at the check-in: then, with
+  the laws downstream of Honest open until B5–B7 re-prove them; or after
+  B7, with those laws re-proven against the new pass first.
+- **B4.0, the spec staged** (the gate stays green):
+  - spec/solve.bend takes the shapes agreed in B0, `Drop{j, nd, c}` and
+    `Conflict{s, nd}`, and the draft's definitions that do not clash
+    with its Honest: the direction facts (ents ... NoDirRef), Ref0,
+    NoRef0, NoRefute2 and the laws' nd lists. Its Honest is unchanged and
+    reads no nd, and honest_unique compares kinds and drops only, so no
+    proven law changes meaning.
+  - spec/_draft13b.bend keeps only the extended Honest (drops_ok ...
+    Honest), importing the rest from spec/solve.bend.
+  - sk-13a's pass emits nd = Nil. Patterns change through the drafts
+    (tools/drafts regenerate lib exactly, checked 2026-10-30).
+  - The owed sub(nd, nd) is then prepf's `sub_refl`.
+- **B4.1, reindexing derivations.** Premises are by index (DPrem{i}), so
+  a derivation over the facts of fewer constraints is moved to more by
+  mapping indices. rfacts(sk, c:cs) is a sublist of rfacts(sk, c:cs') for
+  cs within cs' (a SubF witness, as conflictpf's SubE). dmap renumbers a
+  derivation; concl, nd and Valid carry over (an index past the small
+  list maps past the big one, so concl is equal for every derivation). A
+  Motzkin refutation's side multipliers are padded with 0s along the SubS
+  of the sides (conflictpf's supp_mono_s). Result: NoDirRef(sk, c, cs',
+  cx) gives NoDirRef(sk, c, cs, cx). This is the deletion filter's
+  monotonicity.
+- **B4.2, the bridge and coverage.** angl(sk, cs) lists Ang{p, k} for
+  every p in cs with a kind (non-Angles are harmless: angle_seg is None
+  there). LRefOk over (ents, rfacts(c:cs), cx, cats(csides(c:cs),
+  esides), angl(c:cs)) is RefOk(sk, c, cs, cx) both ways. The closure
+  runs with t = 1 + nvars (zb needs t > 0); zb and fb follow from
+  `within`.
+- **B4.3, refutability and the filter generalized** (lib/dconflict.bend).
+  refutable2(c, cs) is sk-13a's degree-0 test, else the closure of
+  rfacts(c:cs) in c's context with dref. Chinneck's filter runs it over
+  every kept constraint, as sk-13a's does. A seed (only the constraints
+  behind the refutation's facts) would need its own refutation proven by
+  moving the derivation to a sublist of facts; it is left as a measured
+  optimization. The conflict's nd: Nil when c with s refutes at degree
+  0; else the refutation's nd, without the Angles' segments, each segment
+  once. Proven: ConflictOk, the irreducibility by B4.1 and dref_complete.
+- **B4.4, the walk** (each equation k of c, in order):
+  - degree 0 against the basis rows, as now: Drop{k, Nil, cert};
+  - else the closure of the facts: every equation of kb with its drop's
+    nd, and c's earlier equations not dropped;
+  - a fixpoint that holds e_k, or an explosion, drops it:
+    Drop{k, DR.nd(der), cert}. The nd is kept as is, repeats included:
+    the certificate's h is one squared length per use;
+  - a fixpoint that does not hold it: e_k joins the basis
+    (NotDirDerivable by DEC.not_dir).
+  - The facts are SV.facts.go over kb with the classes so far. They
+    equal SV.dfacts with the final classes, since a class drops only its
+    own equations (downs), and ofacts reads d only before k.
+  - Proven: DropsOk and DropsNd (lib/dcwpf.bend).
+- **B4.5, the pass** (lib/dpass.bend): one constraint is the degree-0
+  test, else the direction refutation, then the conflict (B4.3), else the
+  walk, then Over, Kept and Amber as now. The state is sk-13a's plus the
+  classes so far. The closure is rerun from the facts for each test;
+  "the tentative closure becomes the premises'" is an optimization to
+  measure, not needed. Proven: the draft's Honest for it
+  (lib/dpasspf.bend), with sk-13a's PInv and its generic lemmas.
+- **B4.6, the certificates** (exec; their proof is B7's): a derivation's
+  identity, composed with the dropped facts' certificates, over solved
+  equations, with h = ndh(nd).
+- **B4.7, a run**: sketches 4, 8 and 9 and proto/dclose_run's eleven,
+  with the cost measured.
+- The global theorem is not needed by Honest; it is taken up where a law
+  needs it (B6).
+
 ### B5. The verdict and soundness
 - `VD.exact` with h from nd. The nd sides are checked over the box by
   `check_sides`, for Kept and Amber drops.
