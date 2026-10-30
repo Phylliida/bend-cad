@@ -879,6 +879,32 @@ give both component identities that Valid's SameV asks for.
   - proto/dclose_run.bend now runs with DC.dfuel: the same eleven
     answers, fuel 42 to 76, about 74 ms.
 - Still owed for B4: the refutation decision, and sub(nd, nd).
+- *The refutation decision, as designed 2026-10-30.* Exec, at the
+  closure's result o, for the facts fs = rfacts(sk, c:cs), the sides
+  ss = csides(sk, c:cs) ++ esides(sk), and the Angles among c:cs:
+  - OOne{d}: RMotz{[d], [−1], zeros(|ss|), −1}.
+  - OVoid{g, dr, di}: RColl{dr, di, g}.
+  - OFix{s}: sk-13a's refute(kexprs(K), ss). Some cert gives
+    RMotz{K's derivations, cert}. None: the first Angle whose first or
+    second segment has both direction parts in K gives
+    RAngle{ks.der(Re z), ks.der(Im z), p, fst}. None: no refutation.
+  - OStep cannot happen with DC.dfuel (dclose_nostep).
+  - *Sound:* K's derivations are valid K judgments (KInv), and the
+    certificate is over exactly their conclusions (refute_ok); OOne and
+    OVoid by OutInv; RAngle by ks_der_ok at the Angle's segment.
+  - *Complete* (None gives NoDirRef):
+    - RMotz{ds, ls, ms, k}: each conclusion is derivable, so in K's span
+      at the fixpoint (dclose_closed: Repr of JK{e} is ks.inb). So
+      lin(ls, conclusions) is a combination of K's generators, with one
+      composed coefficient per generator (padded to refok's lengths): a
+      Refutes0 over kexprs, against refute's NoRef (satpf).
+    - RColl{dr, di, s}: s open with both parts in K contradicts the
+      fixpoint's void check (Fx: voidseg None; a segment outside the
+      sketch is not open).
+    - RAngle{dr, di, p, fst}: by the closure theorem the Angle's segment
+      has both parts in K, so the check finds an Angle (maybe another).
+  - Stated over (es, fs, ss, the Angles); the sk-level RefOk is bridged
+    in B4.
 - Then the decision interface, and B4.
   - Speed lesson: a four-atom degree-2 normalizer identity with squares
     took over 120 s. One square at a time, plus degree-1
