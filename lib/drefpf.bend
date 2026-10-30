@@ -1,5 +1,5 @@
 # bend-cad: the refutation decision is exact (PLAN-sk13b B3, "The
-# refutation decision"). LRefOk is the spec's RefOk (spec/_draft13b.bend)
+# refutation decision"). LRefOk is the spec's RefOk (spec/solve.bend)
 # over explicit side conditions and Angles. Whatever lib/dref.bend's dref
 # returns is a refutation (dref_sound). At a fixpoint, when it returns
 # none there is none (dref_complete): a Motzkin refutation over derivable

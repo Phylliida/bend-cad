@@ -183,7 +183,7 @@ def cf_ok(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +red: List<&2, Nat>, +c: 
         case (hr, hmin):
           cf_m(~F, x, sk, c, s, hr, m)
 
-def cf_c(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, b: Bool, h: SV.Fate.pick(sk, red, ds, c, b, SV.Conflict{s}), m: SK.Sketch.holds(~F, x, SV.only($CS, sk))) -> Empty:
+def cf_c(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, +cns: List<&2, Nat>, b: Bool, h: SV.Fate.pick(sk, red, ds, c, b, SV.Conflict{s, cns}), m: SK.Sketch.holds(~F, x, SV.only($CS, sk))) -> Empty:
   match b:
     case True{}:
       h
@@ -199,8 +199,8 @@ def cf_k(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +red: List<&2, Nat>, +ds: 
       KA.ft(hc)
     case SV.Over{j, s, w}:
       KA.ft(hc)
-    case SV.Conflict{+s}:
-      cf_c(~F, x, sk, red, ds, c, s, b, h, m)
+    case SV.Conflict{+s, +cns}:
+      cf_c(~F, x, sk, red, ds, c, s, cns, b, h, m)
 
 # past the last constraint the class is Kept
 def cf_past(cls: List<&2, SV.Class>, c: Nat, h: {SV.lt(c, SV.clsn(cls)) == False{} : Bool}, hc: {SV.is_conflict(SV.class_at(cls, c)) == True{} : Bool}) -> Empty:

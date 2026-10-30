@@ -84,7 +84,7 @@ def pc_k(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, k: SV
       pc_b(sk, red, ds, c, dd, rs, b, h)
     case SV.Over{j, s, w}:
       {==}
-    case SV.Conflict{s}:
+    case SV.Conflict{s, cns}:
       {==}
 
 def allP_c(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +m: Nat, +c0: Nat, h: SV.Honest.go(sk, cls, 1n+m, c0), ih: SV.Honest.go(sk, cls, m, 1n+c0) -> {allP(sk, cls, m, 1n+c0) == True{} : Bool}) -> {allP(sk, cls, 1n+m, c0) == True{} : Bool}:

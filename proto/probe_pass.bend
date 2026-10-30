@@ -26,7 +26,7 @@ def kshow(k: SV.Class) -> String:
       "amber, dropped:" ++ nshow(SV.drops(ds))
     case SV.Over{j, s, w}:
       "over at " ++ Nat.show(j) ++ ", s:" ++ nshow(s) ++ ", w:" ++ nshow(w)
-    case SV.Conflict{s}:
+    case SV.Conflict{s, cns}:
       "conflict, support:" ++ nshow(s)
 
 def cshow(cls: List<&2, SV.Class>, +i: Nat) -> String:

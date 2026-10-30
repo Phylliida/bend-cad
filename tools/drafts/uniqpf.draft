@@ -182,8 +182,8 @@ def fv_k($FP, +dc1: List<&2, SV.Drop>, k2: SV.Class, +hK2: {SV.class_at(cls2, c)
       absurd({GR(sk, c, SV.Kept{dc1}, SV.Amber{dc2, rs2}) == True{} : Bool}, f_ka($FA, SV.drops(dc1), SV.drops(dc2), h1, h2))
     case SV.Over{+j, +s, +w}:
       absurd({GR(sk, c, SV.Kept{dc1}, SV.Over{j, s, w}) == True{} : Bool}, ovk(sk, cls2, $R1, $D1, c, j, s, w, SV.drops(dc1), $PSY, hf2, kd_over(cls2, c, j, s, w, hK2), h2, h1))
-    case SV.Conflict{+s}:
-      absurd({GR(sk, c, SV.Kept{dc1}, SV.Conflict{s}) == True{} : Bool}, NC.conf_nr(sk, $R2, $R1, c, s, $KBY, h2, nr_k(sk, $R1, $D1, c, SV.drops(dc1), h1)))
+    case SV.Conflict{+s, +cns}:
+      absurd({GR(sk, c, SV.Kept{dc1}, SV.Conflict{s, cns}) == True{} : Bool}, NC.conf_nr(sk, $R2, $R1, c, s, $KBY, h2, nr_k(sk, $R1, $D1, c, SV.drops(dc1), h1)))
 
 def fv_a($FP, +dc1: List<&2, SV.Drop>, +rs1: List<&2, SV.Ref>, k2: SV.Class, +hK2: {SV.class_at(cls2, c) == k2 : SV.Class}, h1: SV.AmberOk(sk, $R1, $D1, c, SV.drops(dc1)), h2: SV.Fate.driving(sk, $R2, $D2, c, k2)) -> {GR(sk, c, SV.Amber{dc1, rs1}, k2) == True{} : Bool}:
   match k2:
@@ -193,8 +193,8 @@ def fv_a($FP, +dc1: List<&2, SV.Drop>, +rs1: List<&2, SV.Ref>, k2: SV.Class, +hK
       f_aa($FA, dc1, dc2, rs1, rs2, h1, h2)
     case SV.Over{+j, +s, +w}:
       absurd({GR(sk, c, SV.Amber{dc1, rs1}, SV.Over{j, s, w}) == True{} : Bool}, ova(sk, $R2, $D2, $R1, $D1, c, j, s, w, SV.drops(dc1), $PSY, h2, h1))
-    case SV.Conflict{+s}:
-      absurd({GR(sk, c, SV.Amber{dc1, rs1}, SV.Conflict{s}) == True{} : Bool}, NC.conf_nr(sk, $R2, $R1, c, s, $KBY, h2, nr_a(sk, $R1, $D1, c, SV.drops(dc1), h1)))
+    case SV.Conflict{+s, +cns}:
+      absurd({GR(sk, c, SV.Amber{dc1, rs1}, SV.Conflict{s, cns}) == True{} : Bool}, NC.conf_nr(sk, $R2, $R1, c, s, $KBY, h2, nr_a(sk, $R1, $D1, c, SV.drops(dc1), h1)))
 
 def fv_o($FP, +j: Nat, +s: List<&2, Nat>, +w: List<&2, Nat>, +hK1: {SV.class_at(cls1, c) == SV.Over{j, s, w} : SV.Class}, k2: SV.Class, h1: SV.OverOk(sk, $R1, $D1, c, j, s, w), h2: SV.Fate.driving(sk, $R2, $D2, c, k2)) -> {GR(sk, c, SV.Over{j, s, w}, k2) == True{} : Bool}:
   match k2:
@@ -204,18 +204,18 @@ def fv_o($FP, +j: Nat, +s: List<&2, Nat>, +w: List<&2, Nat>, +hK1: {SV.class_at(
       absurd({GR(sk, c, SV.Over{j, s, w}, SV.Amber{dc2, rs2}) == True{} : Bool}, ova(sk, $R1, $D1, $R2, $D2, c, j, s, w, SV.drops(dc2), hps, h1, h2))
     case SV.Over{+j2, +s2, +w2}:
       L.band_i(True{}, SP.agree($OWN, Nil{}, Nil{}, c, 0n), {==}, ag_nil($OWN, c, 0n))
-    case SV.Conflict{+s2}:
-      absurd({GR(sk, c, SV.Over{j, s, w}, SV.Conflict{s2}) == True{} : Bool}, NC.conf_nr(sk, $R2, $R1, c, s2, $KBY, h2, nr_o(sk, $R1, $D1, c, j, s, w, h1)))
+    case SV.Conflict{+s2, +cns2}:
+      absurd({GR(sk, c, SV.Over{j, s, w}, SV.Conflict{s2, cns2}) == True{} : Bool}, NC.conf_nr(sk, $R2, $R1, c, s2, $KBY, h2, nr_o(sk, $R1, $D1, c, j, s, w, h1)))
 
-def fv_f($FP, +s: List<&2, Nat>, k2: SV.Class, h1: SV.ConflictOk(sk, $R1, c, s), h2: SV.Fate.driving(sk, $R2, $D2, c, k2)) -> {GR(sk, c, SV.Conflict{s}, k2) == True{} : Bool}:
+def fv_f($FP, +s: List<&2, Nat>, +cns: List<&2, Nat>, k2: SV.Class, h1: SV.ConflictOk(sk, $R1, c, s), h2: SV.Fate.driving(sk, $R2, $D2, c, k2)) -> {GR(sk, c, SV.Conflict{s, cns}, k2) == True{} : Bool}:
   match k2:
     case SV.Kept{+dc2}:
-      absurd({GR(sk, c, SV.Conflict{s}, SV.Kept{dc2}) == True{} : Bool}, NC.conf_nr(sk, $R1, $R2, c, s, hkb, h1, nr_k(sk, $R2, $D2, c, SV.drops(dc2), h2)))
+      absurd({GR(sk, c, SV.Conflict{s, cns}, SV.Kept{dc2}) == True{} : Bool}, NC.conf_nr(sk, $R1, $R2, c, s, hkb, h1, nr_k(sk, $R2, $D2, c, SV.drops(dc2), h2)))
     case SV.Amber{+dc2, +rs2}:
-      absurd({GR(sk, c, SV.Conflict{s}, SV.Amber{dc2, rs2}) == True{} : Bool}, NC.conf_nr(sk, $R1, $R2, c, s, hkb, h1, nr_a(sk, $R2, $D2, c, SV.drops(dc2), h2)))
+      absurd({GR(sk, c, SV.Conflict{s, cns}, SV.Amber{dc2, rs2}) == True{} : Bool}, NC.conf_nr(sk, $R1, $R2, c, s, hkb, h1, nr_a(sk, $R2, $D2, c, SV.drops(dc2), h2)))
     case SV.Over{+j2, +s2, +w2}:
-      absurd({GR(sk, c, SV.Conflict{s}, SV.Over{j2, s2, w2}) == True{} : Bool}, NC.conf_nr(sk, $R1, $R2, c, s, hkb, h1, nr_o(sk, $R2, $D2, c, j2, s2, w2, h2)))
-    case SV.Conflict{+s2}:
+      absurd({GR(sk, c, SV.Conflict{s, cns}, SV.Over{j2, s2, w2}) == True{} : Bool}, NC.conf_nr(sk, $R1, $R2, c, s, hkb, h1, nr_o(sk, $R2, $D2, c, j2, s2, w2, h2)))
+    case SV.Conflict{+s2, +cns2}:
       L.band_i(True{}, SP.agree($OWN, Nil{}, Nil{}, c, 0n), {==}, ag_nil($OWN, c, 0n))
 
 def fdv($FP, k1: SV.Class, k2: SV.Class, +hK1: {SV.class_at(cls1, c) == k1 : SV.Class}, +hK2: {SV.class_at(cls2, c) == k2 : SV.Class}, h1: SV.Fate.driving(sk, $R1, $D1, c, k1), h2: SV.Fate.driving(sk, $R2, $D2, c, k2)) -> {GR(sk, c, k1, k2) == True{} : Bool}:
@@ -226,8 +226,8 @@ def fdv($FP, k1: SV.Class, k2: SV.Class, +hK1: {SV.class_at(cls1, c) == k1 : SV.
       fv_a($FA, dc1, rs1, k2, hK2, h1, h2)
     case SV.Over{+j, +s, +w}:
       fv_o($FA, j, s, w, hK1, k2, h1, h2)
-    case SV.Conflict{+s}:
-      fv_f($FA, s, k2, h1, h2)
+    case SV.Conflict{+s, +cns}:
+      fv_f($FA, s, cns, k2, h1, h2)
 
 # The classes at c, driven: both kept, dropping nothing
 # -----------------------------------------------------
@@ -242,8 +242,8 @@ def fd_k(+sk: SK.Sketch, +c: Nat, +dc1: List<&2, SV.Drop>, k2: SV.Class, h1: {SV
       absurd({GR(sk, c, SV.Kept{dc1}, SV.Amber{dc2, rs2}) == True{} : Bool}, h2)
     case SV.Over{+j2, +s2, +w2}:
       absurd({GR(sk, c, SV.Kept{dc1}, SV.Over{j2, s2, w2}) == True{} : Bool}, h2)
-    case SV.Conflict{+s2}:
-      absurd({GR(sk, c, SV.Kept{dc1}, SV.Conflict{s2}) == True{} : Bool}, h2)
+    case SV.Conflict{+s2, +cns2}:
+      absurd({GR(sk, c, SV.Kept{dc1}, SV.Conflict{s2, cns2}) == True{} : Bool}, h2)
 
 def fdr(+sk: SK.Sketch, +c: Nat, k1: SV.Class, +k2: SV.Class, h1: SV.Fate.driven(k1), h2: SV.Fate.driven(k2)) -> {GR(sk, c, k1, k2) == True{} : Bool}:
   match k1:
@@ -253,8 +253,8 @@ def fdr(+sk: SK.Sketch, +c: Nat, k1: SV.Class, +k2: SV.Class, h1: SV.Fate.driven
       absurd({GR(sk, c, SV.Amber{dc1, rs1}, k2) == True{} : Bool}, h1)
     case SV.Over{+j, +s, +w}:
       absurd({GR(sk, c, SV.Over{j, s, w}, k2) == True{} : Bool}, h1)
-    case SV.Conflict{+s}:
-      absurd({GR(sk, c, SV.Conflict{s}, k2) == True{} : Bool}, h1)
+    case SV.Conflict{+s, +cns}:
+      absurd({GR(sk, c, SV.Conflict{s, cns}, k2) == True{} : Bool}, h1)
 
 def fpk($FP, b: Bool, +k1: SV.Class, +k2: SV.Class, +hK1: {SV.class_at(cls1, c) == k1 : SV.Class}, +hK2: {SV.class_at(cls2, c) == k2 : SV.Class},
   h1: SV.Fate.pick(sk, $R1, $D1, c, b, k1), h2: SV.Fate.pick(sk, $R2, $D2, c, b, k2)) -> {GR(sk, c, k1, k2) == True{} : Bool}:

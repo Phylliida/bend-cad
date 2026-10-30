@@ -168,8 +168,8 @@ def fv_k(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +cls2: List<&2, SV.Class>, +
       absurd({GR(sk, c, SV.Kept{dc1}, SV.Amber{dc2, rs2}) == True{} : Bool}, f_ka(sk, cls1, cls2, c, hkb, hps, hf1, hf2, SV.drops(dc1), SV.drops(dc2), h1, h2))
     case SV.Over{+j, +s, +w}:
       absurd({GR(sk, c, SV.Kept{dc1}, SV.Over{j, s, w}) == True{} : Bool}, ovk(sk, cls2, SV.reds(cls1), SV.dropped(cls1), c, j, s, w, SV.drops(dc1), Equal.sym(List<&2, E.QExpr>, SV.presolved(sk, SV.reds(cls1), SV.dropped(cls1), c), SV.presolved(sk, SV.reds(cls2), SV.dropped(cls2), c), hps), hf2, kd_over(cls2, c, j, s, w, hK2), h2, h1))
-    case SV.Conflict{+s}:
-      absurd({GR(sk, c, SV.Kept{dc1}, SV.Conflict{s}) == True{} : Bool}, NC.conf_nr(sk, SV.reds(cls2), SV.reds(cls1), c, s, Equal.sym(List<&2, Nat>, SV.kept_before(sk, SV.reds(cls1), c), SV.kept_before(sk, SV.reds(cls2), c), hkb), h2, nr_k(sk, SV.reds(cls1), SV.dropped(cls1), c, SV.drops(dc1), h1)))
+    case SV.Conflict{+s, +cns}:
+      absurd({GR(sk, c, SV.Kept{dc1}, SV.Conflict{s, cns}) == True{} : Bool}, NC.conf_nr(sk, SV.reds(cls2), SV.reds(cls1), c, s, Equal.sym(List<&2, Nat>, SV.kept_before(sk, SV.reds(cls1), c), SV.kept_before(sk, SV.reds(cls2), c), hkb), h2, nr_k(sk, SV.reds(cls1), SV.dropped(cls1), c, SV.drops(dc1), h1)))
 
 def fv_a(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +cls2: List<&2, SV.Class>, +c: Nat, +hkb: {SV.kept_before(sk, SV.reds(cls1), c) == SV.kept_before(sk, SV.reds(cls2), c) : List<&2, Nat>}, +hps: {SV.presolved(sk, SV.reds(cls1), SV.dropped(cls1), c) == SV.presolved(sk, SV.reds(cls2), SV.dropped(cls2), c) : List<&2, E.QExpr>}, +hf1: {HR.hfacts(sk, cls1) == True{} : Bool}, +hf2: {HR.hfacts(sk, cls2) == True{} : Bool}, +dc1: List<&2, SV.Drop>, +rs1: List<&2, SV.Ref>, k2: SV.Class, +hK2: {SV.class_at(cls2, c) == k2 : SV.Class}, h1: SV.AmberOk(sk, SV.reds(cls1), SV.dropped(cls1), c, SV.drops(dc1)), h2: SV.Fate.driving(sk, SV.reds(cls2), SV.dropped(cls2), c, k2)) -> {GR(sk, c, SV.Amber{dc1, rs1}, k2) == True{} : Bool}:
   match k2:
@@ -179,8 +179,8 @@ def fv_a(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +cls2: List<&2, SV.Class>, +
       f_aa(sk, cls1, cls2, c, hkb, hps, hf1, hf2, dc1, dc2, rs1, rs2, h1, h2)
     case SV.Over{+j, +s, +w}:
       absurd({GR(sk, c, SV.Amber{dc1, rs1}, SV.Over{j, s, w}) == True{} : Bool}, ova(sk, SV.reds(cls2), SV.dropped(cls2), SV.reds(cls1), SV.dropped(cls1), c, j, s, w, SV.drops(dc1), Equal.sym(List<&2, E.QExpr>, SV.presolved(sk, SV.reds(cls1), SV.dropped(cls1), c), SV.presolved(sk, SV.reds(cls2), SV.dropped(cls2), c), hps), h2, h1))
-    case SV.Conflict{+s}:
-      absurd({GR(sk, c, SV.Amber{dc1, rs1}, SV.Conflict{s}) == True{} : Bool}, NC.conf_nr(sk, SV.reds(cls2), SV.reds(cls1), c, s, Equal.sym(List<&2, Nat>, SV.kept_before(sk, SV.reds(cls1), c), SV.kept_before(sk, SV.reds(cls2), c), hkb), h2, nr_a(sk, SV.reds(cls1), SV.dropped(cls1), c, SV.drops(dc1), h1)))
+    case SV.Conflict{+s, +cns}:
+      absurd({GR(sk, c, SV.Amber{dc1, rs1}, SV.Conflict{s, cns}) == True{} : Bool}, NC.conf_nr(sk, SV.reds(cls2), SV.reds(cls1), c, s, Equal.sym(List<&2, Nat>, SV.kept_before(sk, SV.reds(cls1), c), SV.kept_before(sk, SV.reds(cls2), c), hkb), h2, nr_a(sk, SV.reds(cls1), SV.dropped(cls1), c, SV.drops(dc1), h1)))
 
 def fv_o(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +cls2: List<&2, SV.Class>, +c: Nat, +hkb: {SV.kept_before(sk, SV.reds(cls1), c) == SV.kept_before(sk, SV.reds(cls2), c) : List<&2, Nat>}, +hps: {SV.presolved(sk, SV.reds(cls1), SV.dropped(cls1), c) == SV.presolved(sk, SV.reds(cls2), SV.dropped(cls2), c) : List<&2, E.QExpr>}, +hf1: {HR.hfacts(sk, cls1) == True{} : Bool}, +hf2: {HR.hfacts(sk, cls2) == True{} : Bool}, +j: Nat, +s: List<&2, Nat>, +w: List<&2, Nat>, +hK1: {SV.class_at(cls1, c) == SV.Over{j, s, w} : SV.Class}, k2: SV.Class, h1: SV.OverOk(sk, SV.reds(cls1), SV.dropped(cls1), c, j, s, w), h2: SV.Fate.driving(sk, SV.reds(cls2), SV.dropped(cls2), c, k2)) -> {GR(sk, c, SV.Over{j, s, w}, k2) == True{} : Bool}:
   match k2:
@@ -190,18 +190,18 @@ def fv_o(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +cls2: List<&2, SV.Class>, +
       absurd({GR(sk, c, SV.Over{j, s, w}, SV.Amber{dc2, rs2}) == True{} : Bool}, ova(sk, SV.reds(cls1), SV.dropped(cls1), SV.reds(cls2), SV.dropped(cls2), c, j, s, w, SV.drops(dc2), hps, h1, h2))
     case SV.Over{+j2, +s2, +w2}:
       L.band_i(True{}, SP.agree(SV.owners(sk), Nil{}, Nil{}, c, 0n), {==}, ag_nil(SV.owners(sk), c, 0n))
-    case SV.Conflict{+s2}:
-      absurd({GR(sk, c, SV.Over{j, s, w}, SV.Conflict{s2}) == True{} : Bool}, NC.conf_nr(sk, SV.reds(cls2), SV.reds(cls1), c, s2, Equal.sym(List<&2, Nat>, SV.kept_before(sk, SV.reds(cls1), c), SV.kept_before(sk, SV.reds(cls2), c), hkb), h2, nr_o(sk, SV.reds(cls1), SV.dropped(cls1), c, j, s, w, h1)))
+    case SV.Conflict{+s2, +cns2}:
+      absurd({GR(sk, c, SV.Over{j, s, w}, SV.Conflict{s2, cns2}) == True{} : Bool}, NC.conf_nr(sk, SV.reds(cls2), SV.reds(cls1), c, s2, Equal.sym(List<&2, Nat>, SV.kept_before(sk, SV.reds(cls1), c), SV.kept_before(sk, SV.reds(cls2), c), hkb), h2, nr_o(sk, SV.reds(cls1), SV.dropped(cls1), c, j, s, w, h1)))
 
-def fv_f(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +cls2: List<&2, SV.Class>, +c: Nat, +hkb: {SV.kept_before(sk, SV.reds(cls1), c) == SV.kept_before(sk, SV.reds(cls2), c) : List<&2, Nat>}, +hps: {SV.presolved(sk, SV.reds(cls1), SV.dropped(cls1), c) == SV.presolved(sk, SV.reds(cls2), SV.dropped(cls2), c) : List<&2, E.QExpr>}, +hf1: {HR.hfacts(sk, cls1) == True{} : Bool}, +hf2: {HR.hfacts(sk, cls2) == True{} : Bool}, +s: List<&2, Nat>, k2: SV.Class, h1: SV.ConflictOk(sk, SV.reds(cls1), c, s), h2: SV.Fate.driving(sk, SV.reds(cls2), SV.dropped(cls2), c, k2)) -> {GR(sk, c, SV.Conflict{s}, k2) == True{} : Bool}:
+def fv_f(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +cls2: List<&2, SV.Class>, +c: Nat, +hkb: {SV.kept_before(sk, SV.reds(cls1), c) == SV.kept_before(sk, SV.reds(cls2), c) : List<&2, Nat>}, +hps: {SV.presolved(sk, SV.reds(cls1), SV.dropped(cls1), c) == SV.presolved(sk, SV.reds(cls2), SV.dropped(cls2), c) : List<&2, E.QExpr>}, +hf1: {HR.hfacts(sk, cls1) == True{} : Bool}, +hf2: {HR.hfacts(sk, cls2) == True{} : Bool}, +s: List<&2, Nat>, +cns: List<&2, Nat>, k2: SV.Class, h1: SV.ConflictOk(sk, SV.reds(cls1), c, s), h2: SV.Fate.driving(sk, SV.reds(cls2), SV.dropped(cls2), c, k2)) -> {GR(sk, c, SV.Conflict{s, cns}, k2) == True{} : Bool}:
   match k2:
     case SV.Kept{+dc2}:
-      absurd({GR(sk, c, SV.Conflict{s}, SV.Kept{dc2}) == True{} : Bool}, NC.conf_nr(sk, SV.reds(cls1), SV.reds(cls2), c, s, hkb, h1, nr_k(sk, SV.reds(cls2), SV.dropped(cls2), c, SV.drops(dc2), h2)))
+      absurd({GR(sk, c, SV.Conflict{s, cns}, SV.Kept{dc2}) == True{} : Bool}, NC.conf_nr(sk, SV.reds(cls1), SV.reds(cls2), c, s, hkb, h1, nr_k(sk, SV.reds(cls2), SV.dropped(cls2), c, SV.drops(dc2), h2)))
     case SV.Amber{+dc2, +rs2}:
-      absurd({GR(sk, c, SV.Conflict{s}, SV.Amber{dc2, rs2}) == True{} : Bool}, NC.conf_nr(sk, SV.reds(cls1), SV.reds(cls2), c, s, hkb, h1, nr_a(sk, SV.reds(cls2), SV.dropped(cls2), c, SV.drops(dc2), h2)))
+      absurd({GR(sk, c, SV.Conflict{s, cns}, SV.Amber{dc2, rs2}) == True{} : Bool}, NC.conf_nr(sk, SV.reds(cls1), SV.reds(cls2), c, s, hkb, h1, nr_a(sk, SV.reds(cls2), SV.dropped(cls2), c, SV.drops(dc2), h2)))
     case SV.Over{+j2, +s2, +w2}:
-      absurd({GR(sk, c, SV.Conflict{s}, SV.Over{j2, s2, w2}) == True{} : Bool}, NC.conf_nr(sk, SV.reds(cls1), SV.reds(cls2), c, s, hkb, h1, nr_o(sk, SV.reds(cls2), SV.dropped(cls2), c, j2, s2, w2, h2)))
-    case SV.Conflict{+s2}:
+      absurd({GR(sk, c, SV.Conflict{s, cns}, SV.Over{j2, s2, w2}) == True{} : Bool}, NC.conf_nr(sk, SV.reds(cls1), SV.reds(cls2), c, s, hkb, h1, nr_o(sk, SV.reds(cls2), SV.dropped(cls2), c, j2, s2, w2, h2)))
+    case SV.Conflict{+s2, +cns2}:
       L.band_i(True{}, SP.agree(SV.owners(sk), Nil{}, Nil{}, c, 0n), {==}, ag_nil(SV.owners(sk), c, 0n))
 
 def fdv(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +cls2: List<&2, SV.Class>, +c: Nat, +hkb: {SV.kept_before(sk, SV.reds(cls1), c) == SV.kept_before(sk, SV.reds(cls2), c) : List<&2, Nat>}, +hps: {SV.presolved(sk, SV.reds(cls1), SV.dropped(cls1), c) == SV.presolved(sk, SV.reds(cls2), SV.dropped(cls2), c) : List<&2, E.QExpr>}, +hf1: {HR.hfacts(sk, cls1) == True{} : Bool}, +hf2: {HR.hfacts(sk, cls2) == True{} : Bool}, k1: SV.Class, k2: SV.Class, +hK1: {SV.class_at(cls1, c) == k1 : SV.Class}, +hK2: {SV.class_at(cls2, c) == k2 : SV.Class}, h1: SV.Fate.driving(sk, SV.reds(cls1), SV.dropped(cls1), c, k1), h2: SV.Fate.driving(sk, SV.reds(cls2), SV.dropped(cls2), c, k2)) -> {GR(sk, c, k1, k2) == True{} : Bool}:
@@ -212,8 +212,8 @@ def fdv(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +cls2: List<&2, SV.Class>, +c
       fv_a(sk, cls1, cls2, c, hkb, hps, hf1, hf2, dc1, rs1, k2, hK2, h1, h2)
     case SV.Over{+j, +s, +w}:
       fv_o(sk, cls1, cls2, c, hkb, hps, hf1, hf2, j, s, w, hK1, k2, h1, h2)
-    case SV.Conflict{+s}:
-      fv_f(sk, cls1, cls2, c, hkb, hps, hf1, hf2, s, k2, h1, h2)
+    case SV.Conflict{+s, +cns}:
+      fv_f(sk, cls1, cls2, c, hkb, hps, hf1, hf2, s, cns, k2, h1, h2)
 
 # The classes at c, driven: both kept, dropping nothing
 # -----------------------------------------------------
@@ -228,8 +228,8 @@ def fd_k(+sk: SK.Sketch, +c: Nat, +dc1: List<&2, SV.Drop>, k2: SV.Class, h1: {SV
       absurd({GR(sk, c, SV.Kept{dc1}, SV.Amber{dc2, rs2}) == True{} : Bool}, h2)
     case SV.Over{+j2, +s2, +w2}:
       absurd({GR(sk, c, SV.Kept{dc1}, SV.Over{j2, s2, w2}) == True{} : Bool}, h2)
-    case SV.Conflict{+s2}:
-      absurd({GR(sk, c, SV.Kept{dc1}, SV.Conflict{s2}) == True{} : Bool}, h2)
+    case SV.Conflict{+s2, +cns2}:
+      absurd({GR(sk, c, SV.Kept{dc1}, SV.Conflict{s2, cns2}) == True{} : Bool}, h2)
 
 def fdr(+sk: SK.Sketch, +c: Nat, k1: SV.Class, +k2: SV.Class, h1: SV.Fate.driven(k1), h2: SV.Fate.driven(k2)) -> {GR(sk, c, k1, k2) == True{} : Bool}:
   match k1:
@@ -239,8 +239,8 @@ def fdr(+sk: SK.Sketch, +c: Nat, k1: SV.Class, +k2: SV.Class, h1: SV.Fate.driven
       absurd({GR(sk, c, SV.Amber{dc1, rs1}, k2) == True{} : Bool}, h1)
     case SV.Over{+j, +s, +w}:
       absurd({GR(sk, c, SV.Over{j, s, w}, k2) == True{} : Bool}, h1)
-    case SV.Conflict{+s}:
-      absurd({GR(sk, c, SV.Conflict{s}, k2) == True{} : Bool}, h1)
+    case SV.Conflict{+s, +cns}:
+      absurd({GR(sk, c, SV.Conflict{s, cns}, k2) == True{} : Bool}, h1)
 
 def fpk(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +cls2: List<&2, SV.Class>, +c: Nat, +hkb: {SV.kept_before(sk, SV.reds(cls1), c) == SV.kept_before(sk, SV.reds(cls2), c) : List<&2, Nat>}, +hps: {SV.presolved(sk, SV.reds(cls1), SV.dropped(cls1), c) == SV.presolved(sk, SV.reds(cls2), SV.dropped(cls2), c) : List<&2, E.QExpr>}, +hf1: {HR.hfacts(sk, cls1) == True{} : Bool}, +hf2: {HR.hfacts(sk, cls2) == True{} : Bool}, b: Bool, +k1: SV.Class, +k2: SV.Class, +hK1: {SV.class_at(cls1, c) == k1 : SV.Class}, +hK2: {SV.class_at(cls2, c) == k2 : SV.Class},
   h1: SV.Fate.pick(sk, SV.reds(cls1), SV.dropped(cls1), c, b, k1), h2: SV.Fate.pick(sk, SV.reds(cls2), SV.dropped(cls2), c, b, k2)) -> {GR(sk, c, k1, k2) == True{} : Bool}:

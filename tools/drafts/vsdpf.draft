@@ -324,7 +324,7 @@ def am.c(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +R: $NL, +c: Nat, kc: SV.C
       rs_go(~F, x, sk, R, c, SV.csides(sk, [c]), rs, 0n, {==}, hk, hz, hs)
     case SV.Over{j, s, w}:
       absurd(SK.Sides(~F, x, SV.csides(sk, [c])), KA.ft(hia))
-    case SV.Conflict{s}:
+    case SV.Conflict{s, cns}:
       absurd(SK.Sides(~F, x, SV.csides(sk, [c])), KA.ft(hia))
 
 # Ambers and the amber check, by position

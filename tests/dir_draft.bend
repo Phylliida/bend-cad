@@ -1,6 +1,7 @@
-# sk-13b B0 (PLAN-sk13b.md v2): the draft spec (spec/dir.bend,
-# spec/_draft13b.bend) kept checking until it replaces spec/solve.bend at
-# the switch (B4), when this file is retired.
+# sk-13b (PLAN-sk13b.md v2): the direction layer's spec (spec/dir.bend,
+# its facts in spec/solve.bend, the extended Honest in spec/_draft13b.bend)
+# and its proofs, kept checking until the switch, when this file is
+# retired.
 # - Its functions run on sketch 8's shape (seg 10 = P0 -> P1, seg 11 =
 #   P1 -> P2; #0 Parallel, #1 Perpendicular), each checked by {==}.
 # - lib/dirpf.bend (B1), imported so the gate checks it: the calculus is
@@ -62,7 +63,7 @@ import ../spec/field.bend as O
 import ../spec/mat.bend as M
 import ../spec/sketch.bend as SK
 import ../spec/box.bend as BX
-import ../spec/_draft13b.bend as SV
+import ../spec/_draft13b.bend as DH
 import ../spec/dir.bend as DR
 import ../lib/dirpf.bend as DP
 import ../lib/kspace.bend as KS
@@ -118,7 +119,7 @@ def sk() -> SK.Sketch:
 
 # the refutation's facts: #1 with support #0
 def fs() -> List<&2, DR.Fact>:
-  SV.rfacts(sk(), [1n, 0n])
+  SS.rfacts(sk(), [1n, 0n])
 
 def dre() -> DR.Der:
   DR.DLine{DR.DPPrem{0n}, DR.DPPrem{1n}, True{}}
@@ -147,7 +148,7 @@ def t_refnd() -> {DR.ref.nd(es(), fs(), DR.RColl{dre(), dim(), 11n}) == [11n, 10
   {==}
 
 # the context of #1: both equations
-def t_ctx() -> {SV.ctx(sk(), Nil{}, 1n) == [SK.VE.cross(DR.zseg(es(), 10n), DR.zseg(es(), 11n)), SK.VE.dot(DR.zseg(es(), 10n), DR.zseg(es(), 11n))] : List<&2, E.QExpr>}:
+def t_ctx() -> {SS.ctx(sk(), Nil{}, 1n) == [SK.VE.cross(DR.zseg(es(), 10n), DR.zseg(es(), 11n)), SK.VE.dot(DR.zseg(es(), 10n), DR.zseg(es(), 11n))] : List<&2, E.QExpr>}:
   {==}
 
 # an Angle with constant rotation is a statement; one with a variable is
@@ -159,22 +160,22 @@ def t_onl() -> {DR.dstat(es(), SK.OnLine{2n, 10n}) == Some{DR.DStat{10n, SK.VE.s
   {==}
 
 # the nd lists the laws read
-def cmb() -> SV.Comb:
-  SV.Comb{E.QCst{DR.qo()}, Nil{}}
+def cmb() -> SS.Comb:
+  SS.Comb{E.QCst{DR.qo()}, Nil{}}
 
-def cls() -> List<&2, SV.Class>:
-  [SV.Kept{[SV.Drop{3n, [10n, 11n], cmb()}]}, SV.Conflict{[0n], [10n, 11n]}, SV.Amber{[SV.Drop{5n, [12n], cmb()}], Nil{}}]
+def cls() -> List<&2, SS.Class>:
+  [SS.Kept{[SS.Drop{3n, [10n, 11n], cmb()}]}, SS.Conflict{[0n], [10n, 11n]}, SS.Amber{[SS.Drop{5n, [12n], cmb()}], Nil{}}]
 
-def t_live() -> {SV.live_nd(cls()) == [10n, 11n, 12n] : List<&2, Nat>}:
+def t_live() -> {SS.live_nd(cls()) == [10n, 11n, 12n] : List<&2, Nat>}:
   {==}
 
-def t_amber() -> {SV.amber_nd(cls()) == [12n] : List<&2, Nat>}:
+def t_amber() -> {SS.amber_nd(cls()) == [12n] : List<&2, Nat>}:
   {==}
 
-def t_cnd() -> {SV.conflict_nd(cls(), 1n) == [10n, 11n] : List<&2, Nat>}:
+def t_cnd() -> {SS.conflict_nd(cls(), 1n) == [10n, 11n] : List<&2, Nat>}:
   {==}
 
-def t_dnd() -> {SV.dnd_at(cls(), 5n) == [12n] : List<&2, Nat>}:
+def t_dnd() -> {SS.dnd_at(cls(), 5n) == [12n] : List<&2, Nat>}:
   {==}
 
 def t_ndh() -> {DR.ndh(es(), [10n]) == E.QMul{DR.norm2(es(), 10n), E.QCst{DR.qo()}} : E.QExpr}:
@@ -196,27 +197,27 @@ def stmt_absurd(P: Type, e: {False{} == True{} : Bool}) -> P:
 
 # solve_drop: wherever the solved equations hold and drop j's nd segments
 # have nonzero length, equation j holds
-def stmt_drop(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +n: Nat, cov: {BX.Sketch.within(sk, n) == True{} : Bool}, +cls: List<&2, SV.Class>, h: SV.Honest(sk, cls), +x: M.Vec(~F), hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(cls), SV.dropped(cls))), +j: Nat, hj: {SV.mem(j, SV.dropped(cls)) == True{} : Bool}, hl: DR.Longs(~F, x, SV.ents(sk), SV.dnd_at(cls, j)), bot: {False{} == True{} : Bool}) -> SK.Zeros(~F, x, [SV.eqat(SK.Sketch.eqs(sk), j)]):
-  stmt_absurd(SK.Zeros(~F, x, [SV.eqat(SK.Sketch.eqs(sk), j)]), bot)
+def stmt_drop(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +n: Nat, cov: {BX.Sketch.within(sk, n) == True{} : Bool}, +cls: List<&2, SS.Class>, h: DH.Honest(sk, cls), +x: M.Vec(~F), hz: SK.Zeros(~F, x, SS.solved(sk, SS.reds(cls), SS.dropped(cls))), +j: Nat, hj: {SS.mem(j, SS.dropped(cls)) == True{} : Bool}, hl: DR.Longs(~F, x, SS.ents(sk), SS.dnd_at(cls, j)), bot: {False{} == True{} : Bool}) -> SK.Zeros(~F, x, [SS.eqat(SK.Sketch.eqs(sk), j)]):
+  stmt_absurd(SK.Zeros(~F, x, [SS.eqat(SK.Sketch.eqs(sk), j)]), bot)
 
 # solve_amber: deleting every amber constraint changes no solution at
 # which the amber drops' nd segments have nonzero length
-def stmt_amber(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +n: Nat, cov: {BX.Sketch.within(sk, n) == True{} : Bool}, +cls: List<&2, SV.Class>, h: SV.Honest(sk, cls), +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SV.mark(SV.cat(SV.reds(cls), SV.ambers(cls)), sk)), hl: DR.Longs(~F, x, SV.ents(sk), SV.amber_nd(cls)), bot: {False{} == True{} : Bool}) -> SK.Sketch.means(~F, x, SV.mark(SV.reds(cls), sk)):
-  stmt_absurd(SK.Sketch.means(~F, x, SV.mark(SV.reds(cls), sk)), bot)
+def stmt_amber(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +n: Nat, cov: {BX.Sketch.within(sk, n) == True{} : Bool}, +cls: List<&2, SS.Class>, h: DH.Honest(sk, cls), +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SS.mark(SS.cat(SS.reds(cls), SS.ambers(cls)), sk)), hl: DR.Longs(~F, x, SS.ents(sk), SS.amber_nd(cls)), bot: {False{} == True{} : Bool}) -> SK.Sketch.means(~F, x, SS.mark(SS.reds(cls), sk)):
+  stmt_absurd(SK.Sketch.means(~F, x, SS.mark(SS.reds(cls), sk)), bot)
 
 # solve_conflict: a conflicting constraint and its support cannot all hold
 # where its nd segments have nonzero length
-def stmt_conflict(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +n: Nat, cov: {BX.Sketch.within(sk, n) == True{} : Bool}, +cls: List<&2, SV.Class>, h: SV.Honest(sk, cls), +c: Nat, hc: {SV.is_conflict(SV.class_at(cls, c)) == True{} : Bool}, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SV.only(Con{c, SV.support(cls, c)}, sk)), hl: DR.Longs(~F, x, SV.ents(sk), SV.conflict_nd(cls, c)), bot: {False{} == True{} : Bool}) -> Empty:
+def stmt_conflict(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +n: Nat, cov: {BX.Sketch.within(sk, n) == True{} : Bool}, +cls: List<&2, SS.Class>, h: DH.Honest(sk, cls), +c: Nat, hc: {SS.is_conflict(SS.class_at(cls, c)) == True{} : Bool}, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SS.only(Con{c, SS.support(cls, c)}, sk)), hl: DR.Longs(~F, x, SS.ents(sk), SS.conflict_nd(cls, c)), bot: {False{} == True{} : Bool}) -> Empty:
   stmt_absurd(Empty, bot)
 
 # honest_unique, unchanged in statement, over the extended Honest
-def stmt_honest_unique(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +c1: List<&2, SV.Class>, h1: SV.Honest(sk, c1), +c2: List<&2, SV.Class>, h2: SV.Honest(sk, c2), +c: Nat, +j: Nat, bot: {False{} == True{} : Bool}) -> M.Both({SV.kind(SV.class_at(c1, c)) == SV.kind(SV.class_at(c2, c)) : Nat}, {SV.mem(j, SV.dropped(c1)) == SV.mem(j, SV.dropped(c2)) : Bool}):
-  stmt_absurd(M.Both({SV.kind(SV.class_at(c1, c)) == SV.kind(SV.class_at(c2, c)) : Nat}, {SV.mem(j, SV.dropped(c1)) == SV.mem(j, SV.dropped(c2)) : Bool}), bot)
+def stmt_honest_unique(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +c1: List<&2, SS.Class>, h1: DH.Honest(sk, c1), +c2: List<&2, SS.Class>, h2: DH.Honest(sk, c2), +c: Nat, +j: Nat, bot: {False{} == True{} : Bool}) -> M.Both({SS.kind(SS.class_at(c1, c)) == SS.kind(SS.class_at(c2, c)) : Nat}, {SS.mem(j, SS.dropped(c1)) == SS.mem(j, SS.dropped(c2)) : Bool}):
+  stmt_absurd(M.Both({SS.kind(SS.class_at(c1, c)) == SS.kind(SS.class_at(c2, c)) : Nat}, {SS.mem(j, SS.dropped(c1)) == SS.mem(j, SS.dropped(c2)) : Bool}), bot)
 
 # solve_complete's and solve_refused's new hypothesis: at x, every
 # segment in the nd of a drop of a Kept or Amber constraint has positive
 # squared length (a Strict side, as the verdict checks it over the box)
-def stmt_strict_nd(~F: O.OField, +sk: SK.Sketch, +cls: List<&2, SV.Class>, +x: M.Vec(~F), +pins: List<&2, Nat>, hn: SV.Strict(~F, x, DR.ndsides(SV.ents(sk), SV.live_nd(cls)), pins), bot: {False{} == True{} : Bool}) -> Unit:
+def stmt_strict_nd(~F: O.OField, +sk: SK.Sketch, +cls: List<&2, SS.Class>, +x: M.Vec(~F), +pins: List<&2, Nat>, hn: SS.Strict(~F, x, DR.ndsides(SS.ents(sk), SS.live_nd(cls)), pins), bot: {False{} == True{} : Bool}) -> Unit:
   Unit{}
 
 # B1's two results, as their types (the gate checks lib/dirpf.bend through
@@ -344,20 +345,20 @@ def b3_closed(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QE
   +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}, d: DR.Der, hv: DR.Valid(es, fs, ctx, d)) -> RRF.Repr(es, fs, t, s, DR.concl(es, fs, d)):
   CCF.dclose_closed(es, fs, ctx, t, fuel, s, eo, hz, hb, d, hv)
 
-def b3_not_dir(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +c: Nat, +dd: List<&2, Nat>, +i: Nat, +t: Nat, fuel: Nat, +s: DC.Sk,
-  +eo: {DC.dclose(SV.ents(sk), SV.dfacts(sk, cls, red, c, dd, i), SV.ctx(sk, red, c), t, fuel) == DC.OFix{s} : DC.Out}, +hz: {DC.zb(SV.ents(sk), t) == True{} : Bool},
-  +hb: {DC.fb(SV.dfacts(sk, cls, red, c, dd, i), t) == True{} : Bool},
-  +hh: {DC.holds(SV.ents(sk), SV.dfacts(sk, cls, red, c, dd, i), t, s, SV.eqat(SK.Sketch.eqs(sk), i), SV.dstat_of(SV.ents(sk), SV.kind_at(sk, c))) == False{} : Bool})
-  -> SV.NotDirDerivable(sk, cls, red, c, dd, i):
+def b3_not_dir(+sk: SK.Sketch, +cls: List<&2, SS.Class>, +red: List<&2, Nat>, +c: Nat, +dd: List<&2, Nat>, +i: Nat, +t: Nat, fuel: Nat, +s: DC.Sk,
+  +eo: {DC.dclose(SS.ents(sk), SS.dfacts(sk, cls, red, c, dd, i), SS.ctx(sk, red, c), t, fuel) == DC.OFix{s} : DC.Out}, +hz: {DC.zb(SS.ents(sk), t) == True{} : Bool},
+  +hb: {DC.fb(SS.dfacts(sk, cls, red, c, dd, i), t) == True{} : Bool},
+  +hh: {DC.holds(SS.ents(sk), SS.dfacts(sk, cls, red, c, dd, i), t, s, SS.eqat(SK.Sketch.eqs(sk), i), SS.dstat_of(SS.ents(sk), SS.kind_at(sk, c))) == False{} : Bool})
+  -> SS.NotDirDerivable(sk, cls, red, c, dd, i):
   DEC.not_dir(sk, cls, red, c, dd, i, t, fuel, s, eo, hz, hb, hh)
 
 def b3_hold(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RRF.Hyp(es, fs, ctx, t, s), +e: E.QExpr, +m: Maybe<&2, DR.DStat>,
   hh: {DC.holds(es, fs, t, s, e, m) == True{} : Bool}, hb: {DC.fb.ds(m, t) == True{} : Bool})
-  -> DR.Valid(es, fs, ctx, DC.hold.der(es, fs, t, s, e, m)) & SV.Proves(es, m, e, DR.concl(es, fs, DC.hold.der(es, fs, t, s, e, m))):
+  -> DR.Valid(es, fs, ctx, DC.hold.der(es, fs, t, s, e, m)) & SS.Proves(es, m, e, DR.concl(es, fs, DC.hold.der(es, fs, t, s, e, m))):
   HLD.hold_ok(es, fs, ctx, t, s, H, e, m, hh, hb)
 
 def b3_expl(o: DC.Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +m: Maybe<&2, DR.DStat>, +e: E.QExpr, ho: DRP.OutInv(es, fs, ctx, t, o),
-  hx: {DC.is_expl(o) == True{} : Bool}) -> DR.Valid(es, fs, ctx, DC.expl.der(o, es, e)) & SV.Proves(es, m, e, DR.concl(es, fs, DC.expl.der(o, es, e))):
+  hx: {DC.is_expl(o) == True{} : Bool}) -> DR.Valid(es, fs, ctx, DC.expl.der(o, es, e)) & SS.Proves(es, m, e, DR.concl(es, fs, DC.expl.der(o, es, e))):
   EXP.expl_ok(o, es, fs, ctx, t, m, e, ho, hx)
 
 def b3_term(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, eo: {DC.dclose(es, fs, ctx, t, DC.dfuel(es, fs)) == DC.OStep{s} : DC.Out},

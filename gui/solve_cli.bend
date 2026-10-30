@@ -559,7 +559,7 @@ def cshow(k: SV.Class) -> String:
       "A" ++ dl(SV.drops(ds))
     case SV.Over{j, s, w}:
       "O/" ++ Nat.show(j) ++ "/" ++ csl(s) ++ "/" ++ csl(w)
-    case SV.Conflict{s}:
+    case SV.Conflict{s, cns}:
       "C/" ++ csl(s)
 
 def clsshow(cls: List<&2, SV.Class>) -> String:

@@ -557,8 +557,8 @@ def onek_red(a: Bool, +sk: SK.Sketch, +kb: List<&2, Nat>, +c: Nat, +dd: List<&2,
       {==}
 
 def step.conf(+sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +hi: PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}), +hr: {CO.refutable(sk, i, kb) == True{} : Bool},
-  +hK: {SV.class_at(PA.classes(sk), i) == SV.Conflict{CO.support(sk, i, kb)} : SV.Class}) -> StepRes(sk, i, PA.PO{SV.Conflict{CO.support(sk, i, kb)}, PA.PS{kb, rows, B, bp, vm}}):
-  +hred = red_of(sk, i, SV.Conflict{CO.support(sk, i, kb)}, hK)
+  +hK: {SV.class_at(PA.classes(sk), i) == SV.Conflict{CO.support(sk, i, kb), Nil{}} : SV.Class}) -> StepRes(sk, i, PA.PO{SV.Conflict{CO.support(sk, i, kb), Nil{}}, PA.PS{kb, rows, B, bp, vm}}):
+  +hred = red_of(sk, i, SV.Conflict{CO.support(sk, i, kb), Nil{}}, hK)
   (PR.conflict(sk, SV.reds(PA.classes(sk)), i, kb, pinv_kbp(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}, hi), hr), step_same(sk, i, PA.PS{kb, rows, B, bp, vm}, hi, SP.zc_red(SV.owners(sk), i, SV.reds(PA.classes(sk)), hred), dcond_f(sk, SV.reds(PA.classes(sk)), i, hred)))
 
 def bpus_dist(+sk: SK.Sketch, +i: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +us: List<&2, Nat>, +hb: {pib(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, rows, B, bp, vm) == True{} : Bool},

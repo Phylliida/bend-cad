@@ -3,6 +3,13 @@
 # solve_* laws in ROADMAP.bend. sk-09's syntactic red witnesses (Why,
 # explained) are no longer part of it: they moved to lib/why.bend.
 #
+# Staged for sk-13b (PLAN-sk13b B4.0): drops and conflicts carry the
+# segments their direction-layer judgments need nonzero (nd), and the
+# direction layer's facts, derivations and refutations are defined here
+# (spec/dir.bend's calculus). Honest below does not read them yet: the
+# extended Honest is spec/_draft13b.bend's, and replaces this one at the
+# switch.
+#
 # The solver classifies each constraint (by its position in the sketch's
 # list of constraints, counting driven ones too, so that a repeated id
 # cannot drop a second constraint):
@@ -36,6 +43,7 @@ import ./knum.bend as N
 import ./sketch.bend as SK
 import ./box.bend as BX
 import ./deriv.bend as DV
+import ./dir.bend as DR
 
 # Lists of numbers
 # ----------------
@@ -287,16 +295,18 @@ type Mul is Data:
 type Comb is Data:
   Comb{h: E.QExpr, qs: List<&2, Mul>}
 
-# a dropped equation, by its position in Sketch.eqs, and its certificate
+# a dropped equation, by its position in Sketch.eqs, the segments whose
+# nonzero length its derivation needs (none at degree 0), and its
+# certificate, whose h is their squared lengths' product (DR.ndh)
 type Drop is Data:
-  Drop{j: Nat, c: Comb}
+  Drop{j: Nat, nd: List<&2, Nat>, c: Comb}
 
 # the dropped equations' positions
 def drops(ds: List<&2, Drop>) -> List<&2, Nat>:
   match ds:
     case Nil{}:
       Nil{}
-    case Con{Drop{j, c}, t}:
+    case Con{Drop{j, nd, c}, t}:
       Con{j, drops(t)}
 
 # Classes
@@ -321,8 +331,8 @@ type Class is Data:
   # w), made of its own equations and earlier solved ones
   Over{j: Nat, s: List<&2, Nat>, w: List<&2, Nat>}
   # red: it cannot hold together with its support s, kept constraints
-  # before it, irreducibly
-  Conflict{s: List<&2, Nat>}
+  # before it, irreducibly, where the segments nd have nonzero length
+  Conflict{s: List<&2, Nat>, nd: List<&2, Nat>}
 
 # the class of the constraint at position c (kept, nothing dropped, past
 # the end)
@@ -351,7 +361,7 @@ def kind(k: Class) -> Nat:
       1n
     case Over{j, s, w}:
       2n
-    case Conflict{s}:
+    case Conflict{s, nd}:
       3n
 
 def is_red(k: Class) -> Bool:
@@ -362,7 +372,7 @@ def is_red(k: Class) -> Bool:
       False{}
     case Over{j, s, w}:
       True{}
-    case Conflict{s}:
+    case Conflict{s, nd}:
       True{}
 
 def is_amber(k: Class) -> Bool:
@@ -373,7 +383,7 @@ def is_amber(k: Class) -> Bool:
       True{}
     case Over{j, s, w}:
       False{}
-    case Conflict{s}:
+    case Conflict{s, nd}:
       False{}
 
 def is_conflict(k: Class) -> Bool:
@@ -384,7 +394,7 @@ def is_conflict(k: Class) -> Bool:
       False{}
     case Over{j, s, w}:
       False{}
-    case Conflict{s}:
+    case Conflict{s, nd}:
       True{}
 
 def pos.pick(b: Bool, i: Nat, rest: List<&2, Nat>) -> List<&2, Nat>:
@@ -435,7 +445,7 @@ def kdrops(k: Class) -> List<&2, Nat>:
       drops(ds)
     case Over{j, s, w}:
       Nil{}
-    case Conflict{s}:
+    case Conflict{s, nd}:
       Nil{}
 
 # the dropped equations' positions (in Sketch.eqs)
@@ -530,7 +540,7 @@ def support.of(k: Class) -> List<&2, Nat>:
       Nil{}
     case Over{j, s, w}:
       Nil{}
-    case Conflict{s}:
+    case Conflict{s, nd}:
       s
 
 # the support of the constraint at position c, if it conflicts
@@ -874,6 +884,215 @@ def Derivable(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, 
 def NotDerivable(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +i: Nat) -> Type:
   @ls: List<&2, S.Q> -> Ident(eqat(SK.Sketch.eqs(sk), i), lin(ls, basis(sk, red, ds, c, d, i))) -> Empty
 
+# The direction layer's facts (sk-13b, spec/dir.bend)
+# --------------------------------------------------
+# A derivation reads facts: equations with the segments their own truth
+# needs nonzero and their direction statements. For a drop, the facts are
+# every equation of the kept constraints before c (dropped ones too, with
+# their drops' nd) and c's own earlier equations not dropped; for a
+# refutation, the equations of the constraints refuted, which hold where
+# those constraints do (nd none). The context, the span of every equation
+# of the premises and of c, decides which segments are collapsed.
+
+def ents(sk: SK.Sketch) -> List<&2, SK.Ent>:
+  match sk:
+    case SK.Sketch{vs, es, rs}:
+      es
+
+def rec.k(r: SK.Rec) -> SK.Constraint:
+  match r:
+    case SK.Rec{id, dr, k}:
+      k
+
+def rec_at(rs: List<&2, SK.Rec>, c: Nat) -> Maybe<&2, SK.Constraint>:
+  match rs c:
+    case Nil{} c:
+      None{}
+    case Con{r, t} 0n:
+      Some{rec.k(r)}
+    case Con{r, t} 1n+m:
+      rec_at(t, m)
+
+# the constraint at position c
+def kind_at(sk: SK.Sketch, +c: Nat) -> Maybe<&2, SK.Constraint>:
+  match sk:
+    case SK.Sketch{vs, es, rs}:
+      rec_at(rs, c)
+
+def dstat_of(+es: List<&2, SK.Ent>, m: Maybe<&2, SK.Constraint>) -> Maybe<&2, DR.DStat>:
+  match m:
+    case Some{k}:
+      DR.dstat(es, k)
+    case None{}:
+      None{}
+
+def dnd.pick(b: Bool, nd: List<&2, Nat>, rest: List<&2, Nat>) -> List<&2, Nat>:
+  match b:
+    case True{}:
+      nd
+    case False{}:
+      rest
+
+def dnd.go(dd: List<&2, Drop>, +j: Nat) -> List<&2, Nat>:
+  match dd:
+    case Nil{}:
+      Nil{}
+    case Con{Drop{i, nd, c}, t}:
+      dnd.pick(eq(i, j), nd, dnd.go(t, j))
+
+def dcat(xs: List<&2, Drop>, ys: List<&2, Drop>) -> List<&2, Drop>:
+  match xs:
+    case Nil{}:
+      ys
+    case Con{h, t}:
+      Con{h, dcat(t, ys)}
+
+def kdd(k: Class) -> List<&2, Drop>:
+  match k:
+    case Kept{ds}:
+      ds
+    case Amber{ds, rs}:
+      ds
+    case Over{j, s, w}:
+      Nil{}
+    case Conflict{s, nd}:
+      Nil{}
+
+def cdrops(cls: List<&2, Class>) -> List<&2, Drop>:
+  match cls:
+    case Nil{}:
+      Nil{}
+    case Con{h, t}:
+      dcat(kdd(h), cdrops(t))
+
+# the nd of equation j's drop (none if it is not dropped)
+def dnd_at(+cls: List<&2, Class>, +j: Nat) -> List<&2, Nat>:
+  dnd.go(cdrops(cls), j)
+
+def fcat(xs: List<&2, DR.Fact>, ys: List<&2, DR.Fact>) -> List<&2, DR.Fact>:
+  match xs:
+    case Nil{}:
+      ys
+    case Con{h, t}:
+      Con{h, fcat(t, ys)}
+
+def facts.pick(b: Bool, f: DR.Fact, rest: List<&2, DR.Fact>) -> List<&2, DR.Fact>:
+  match b:
+    case True{}:
+      Con{f, rest}
+    case False{}:
+      rest
+
+def fnd.pick(b: Bool, +cls: List<&2, Class>, +k: Nat) -> List<&2, Nat>:
+  match b:
+    case True{}:
+      dnd_at(cls, k)
+    case False{}:
+      Nil{}
+
+# the equations es from position k whose constraint is in cs, as facts,
+# each with its drop's nd when withnd
+def facts.go(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +cs: List<&2, Nat>, +sk: SK.Sketch, +cls: List<&2, Class>, +withnd: Bool, +k: Nat) -> List<&2, DR.Fact>:
+  match es:
+    case Nil{}:
+      Nil{}
+    case Con{e, t}:
+      facts.pick(mem(nth(own, k), cs), DR.Fact{e, fnd.pick(withnd, cls, k), dstat_of(ents(sk), kind_at(sk, nth(own, k)))}, facts.go(t, own, cs, sk, cls, withnd, 1n+k))
+
+# the facts of the constraints cs (nd none: where they hold, so do their
+# equations)
+def rfacts(+sk: SK.Sketch, +cs: List<&2, Nat>) -> List<&2, DR.Fact>:
+  facts.go(SK.Sketch.eqs(sk), owners(sk), cs, sk, Nil{}, False{}, 0n)
+
+def ofacts.go(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +c: Nat, +d: List<&2, Nat>, +i: Nat, +k: Nat) -> List<&2, DR.Fact>:
+  match es:
+    case Nil{}:
+      Nil{}
+    case Con{e, t}:
+      facts.pick(band(lt(k, i), band(eq(nth(own, k), c), bnot(mem(k, d)))), DR.Fact{e, Nil{}, dstat_of(ents(sk), kind_at(sk, c))}, ofacts.go(t, own, sk, c, d, i, 1n+k))
+
+# what c's i-th equation may be derived from: every equation of the kept
+# constraints before c (with their drops' nd), then c's own earlier ones
+# not in d
+def dfacts(+sk: SK.Sketch, +cls: List<&2, Class>, +red: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +i: Nat) -> List<&2, DR.Fact>:
+  fcat(facts.go(SK.Sketch.eqs(sk), owners(sk), kept_before(sk, red, c), sk, cls, True{}, 0n), ofacts.go(SK.Sketch.eqs(sk), owners(sk), sk, c, d, i, 0n))
+
+# c's context: every equation of c and of the kept constraints before it
+def ctx(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat) -> List<&2, E.QExpr>:
+  eqs_of(sk, Con{c, kept_before(sk, red, c)})
+
+# a derivation's conclusion gives equation e of a constraint with
+# direction statement m: K(e') with e' the same polynomial as e, or
+# par(a, x) with c's statement l cross(z_a, x') and x the same as x'
+def Proves.p(+es: List<&2, SK.Ent>, m: Maybe<&2, DR.DStat>, +a: DR.Node, +x: SK.VE) -> Type:
+  match m:
+    case Some{DR.DStat{+b, +y, l}}:
+      {a == DR.NSeg{b} : DR.Node} & DR.SameV(x, y)
+    case None{}:
+      Empty
+
+def Proves(+es: List<&2, SK.Ent>, +m: Maybe<&2, DR.DStat>, +e: E.QExpr, j: DR.Jd) -> Type:
+  match j:
+    case DR.JK{+f}:
+      DR.Same(f, e)
+    case DR.JP{+a, +x}:
+      Proves.p(es, m, a, x)
+
+# c's i-th equation has a direction-layer derivation needing at most nd
+def DirDerivable(+sk: SK.Sketch, +cls: List<&2, Class>, +red: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +i: Nat, +nd: List<&2, Nat>) -> Type:
+  &dv: DR.Der -> (DR.Valid(ents(sk), dfacts(sk, cls, red, c, d, i), ctx(sk, red, c), dv) & (Proves(ents(sk), dstat_of(ents(sk), kind_at(sk, c)), eqat(SK.Sketch.eqs(sk), i), DR.concl(ents(sk), dfacts(sk, cls, red, c, d, i), dv)) & {sub(DR.nd(ents(sk), dfacts(sk, cls, red, c, d, i), dv), nd) == True{} : Bool}))
+
+def NotDirDerivable(+sk: SK.Sketch, +cls: List<&2, Class>, +red: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +i: Nat) -> Type:
+  @dv: DR.Der -> DR.Valid(ents(sk), dfacts(sk, cls, red, c, d, i), ctx(sk, red, c), dv) -> Proves(ents(sk), dstat_of(ents(sk), kind_at(sk, c)), eqat(SK.Sketch.eqs(sk), i), DR.concl(ents(sk), dfacts(sk, cls, red, c, d, i), dv)) -> Empty
+
+# the segments of the Angles among the constraints cs (their meanings
+# already make them nonzero, so a conflict's nd may leave them out)
+def angle_args.of(m: Maybe<&2, SK.Constraint>) -> List<&2, Nat>:
+  match m:
+    case Some{SK.Angle{a, ra, b, rb, c, s}}:
+      [a, b]
+    case _:
+      Nil{}
+
+def angle_args(+sk: SK.Sketch, cs: List<&2, Nat>) -> List<&2, Nat>:
+  match cs:
+    case Nil{}:
+      Nil{}
+    case Con{+c, t}:
+      cat(angle_args.of(kind_at(sk, c)), angle_args(sk, t))
+
+def RefAngle.at(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, +dr: DR.Der, +di: DR.Der, m: Maybe<&2, SK.Constraint>, +fst: Bool) -> Type:
+  match m:
+    case Some{+k}:
+      DR.RefAngle(ents(sk), rfacts(sk, Con{c, cs}), cx, dr, di, k, fst)
+    case None{}:
+      Empty
+
+# r refutes c with the constraints cs, in the context cx
+def RefOk(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, r: DR.DRef) -> Type:
+  match r:
+    case DR.RMotz{+ds, +ls, +ms, +k}:
+      DR.AllValidK(ents(sk), rfacts(sk, Con{c, cs}), cx, ds) & Refutes0(DR.dconcls(ents(sk), rfacts(sk, Con{c, cs}), ds), SK.cats(csides(sk, Con{c, cs}), esides(sk)), ls, ms, k)
+    case DR.RColl{+dr, +di, +s}:
+      DR.RefColl(ents(sk), rfacts(sk, Con{c, cs}), cx, dr, di, s)
+    case DR.RAngle{+dr, +di, +p, +fst}:
+      {mem(p, Con{c, cs}) == True{} : Bool} & RefAngle.at(sk, c, cs, cx, dr, di, kind_at(sk, p), fst)
+
+# c with the constraints cs has a direction refutation needing at most nd
+# (and the segments of Angles among them)
+def DirRefutes(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, +nd: List<&2, Nat>) -> Type:
+  &r: DR.DRef -> (RefOk(sk, c, cs, cx, r) & {sub(DR.ref.nd(ents(sk), rfacts(sk, Con{c, cs}), r), cat(nd, angle_args(sk, Con{c, cs}))) == True{} : Bool})
+
+def NoDirRef(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>) -> Type:
+  @r: DR.DRef -> RefOk(sk, c, cs, cx, r) -> Empty
+
+# c with the premises before it has no refutation, of either kind
+def NoRefute2(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat) -> Type:
+  NoRefute(sk, red, c) & NoDirRef(sk, c, kept_before(sk, red, c), ctx(sk, red, c))
+
+# Drops
+# -----
+
 def drops_ok.mem(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, m: Bool, +k: Nat) -> Type:
   match m:
     case True{}:
@@ -930,6 +1149,13 @@ def AmberOk(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d
 def OverOk(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +j: Nat, +s: List<&2, Nat>, +w: List<&2, Nat>) -> Type:
   NoRefute(sk, red, c) & (&d: List<&2, Nat> -> (DropsOk(sk, red, ds, c, d) & {band(eq(nth(owners(sk), j), c), band(mem(j, s), clean(owners(sk), red, ds, d, c, s))) == True{} : Bool} & Overdet(SK.Sketch.eqs(sk), s, w)))
 
+# a degree-0 refutation of c with the constraints cs, and none
+def Ref0(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>) -> Type:
+  &ls: List<&2, S.Q> -> &ms: List<&2, S.Q> -> &k: S.Q -> Refutes0(eqs_of(sk, Con{c, cs}), SK.cats(csides(sk, Con{c, cs}), esides(sk)), ls, ms, k)
+
+def NoRef0(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>) -> Type:
+  @ls: List<&2, S.Q> -> @ms: List<&2, S.Q> -> @k: S.Q -> Refutes0(eqs_of(sk, Con{c, cs}), SK.cats(csides(sk, Con{c, cs}), esides(sk)), ls, ms, k) -> Empty
+
 # Conflict with support s: kept, driving constraints before c; c and s
 # have a degree-0 refutation; without any one member of s they have none
 def ConflictOk(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>) -> Type:
@@ -943,7 +1169,7 @@ def Fate.driving(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Na
       AmberOk(sk, red, ds, c, drops(dc))
     case Over{+j, +s, +w}:
       OverOk(sk, red, ds, c, j, s, w)
-    case Conflict{+s}:
+    case Conflict{+s, +nd}:
       ConflictOk(sk, red, c, s)
 
 # a driven constraint means nothing: kept, nothing dropped
@@ -955,7 +1181,7 @@ def Fate.driven(k: Class) -> Type:
       Empty
     case Over{j, s, w}:
       Empty
-    case Conflict{s}:
+    case Conflict{s, nd}:
       Empty
 
 def Fate.pick(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, b: Bool, +k: Class) -> Type:
@@ -980,6 +1206,70 @@ def Honest.go(+sk: SK.Sketch, +cls: List<&2, Class>, n: Nat, +c: Nat) -> Type:
 # the honest one given the classes before it
 def Honest(+sk: SK.Sketch, +cls: List<&2, Class>) -> Type:
   {clsn(cls) == ncons(sk) : Nat} & Honest.go(sk, cls, ncons(sk), 0n)
+
+# For the laws: the nd that judgments need
+# ----------------------------------------
+
+def dds_nd(dd: List<&2, Drop>) -> List<&2, Nat>:
+  match dd:
+    case Nil{}:
+      Nil{}
+    case Con{Drop{j, nd, q}, t}:
+      cat(nd, dds_nd(t))
+
+def live_nd.of(k: Class) -> List<&2, Nat>:
+  match k:
+    case Kept{ds}:
+      dds_nd(ds)
+    case Amber{ds, rs}:
+      dds_nd(ds)
+    case Over{j, s, w}:
+      Nil{}
+    case Conflict{s, nd}:
+      Nil{}
+
+# the nd of every drop of a constraint that is not red (Kept or Amber):
+# the verdict checks these over the box
+def live_nd(cls: List<&2, Class>) -> List<&2, Nat>:
+  match cls:
+    case Nil{}:
+      Nil{}
+    case Con{h, t}:
+      cat(live_nd.of(h), live_nd(t))
+
+def amber_nd.of(k: Class) -> List<&2, Nat>:
+  match k:
+    case Kept{ds}:
+      Nil{}
+    case Amber{ds, rs}:
+      dds_nd(ds)
+    case Over{j, s, w}:
+      Nil{}
+    case Conflict{s, nd}:
+      Nil{}
+
+# the nd of the amber constraints' drops
+def amber_nd(cls: List<&2, Class>) -> List<&2, Nat>:
+  match cls:
+    case Nil{}:
+      Nil{}
+    case Con{h, t}:
+      cat(amber_nd.of(h), amber_nd(t))
+
+def conflict_nd.of(k: Class) -> List<&2, Nat>:
+  match k:
+    case Kept{ds}:
+      Nil{}
+    case Amber{ds, rs}:
+      Nil{}
+    case Over{j, s, w}:
+      Nil{}
+    case Conflict{s, nd}:
+      nd
+
+# the nd of the constraint at position c, if it conflicts
+def conflict_nd(+cls: List<&2, Class>, +c: Nat) -> List<&2, Nat>:
+  conflict_nd.of(class_at(cls, c))
 
 # Pins
 # ----

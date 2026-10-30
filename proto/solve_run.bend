@@ -23,7 +23,7 @@ def showc(+sk: SK.Sketch, cs: List<&2, SV.Class>) -> String:
       ""
     case Con{SV.Over{+j, s, w}, t}:
       " [its equation " ++ Nat.show(SO.eqlabel(sk, j)) ++ " (eq " ++ Nat.show(j) ++ ") in S {" ++ shown(s) ++ "} over W {" ++ shown(w) ++ "}]" ++ showc(sk, t)
-    case Con{SV.Conflict{s}, t}:
+    case Con{SV.Conflict{s, cns}, t}:
       " [conflicts with {" ++ shown(s) ++ "}]" ++ showc(sk, t)
     case Con{SV.Kept{ds}, t}:
       showc(sk, t)

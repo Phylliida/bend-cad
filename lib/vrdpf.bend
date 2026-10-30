@@ -96,7 +96,7 @@ def comb_zero(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&2
       O.add_zero(F)(O.zero(F))
 
 # a dropped equation whose combination passes
-def drop_zero(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +R: List<&2, Nat>, +D: List<&2, Nat>, +hz: SK.Zeros(~F, x, SV.solved.go(es, own, R, D, 0n)), +j: Nat, +hh: E.QExpr, +qs: List<&2, SV.Mul>, +h: {VD.drop.ok(es, own, R, D, SV.Drop{j, SV.Comb{hh, qs}}) == True{} : Bool}) -> {O.eval(~F, x, SV.eqat(es, j)) == O.zero(F) : O.C(F)}:
+def drop_zero(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +R: List<&2, Nat>, +D: List<&2, Nat>, +hz: SK.Zeros(~F, x, SV.solved.go(es, own, R, D, 0n)), +j: Nat, +nd: List<&2, Nat>, +hh: E.QExpr, +qs: List<&2, SV.Mul>, +h: {VD.drop.ok(es, own, R, D, SV.Drop{j, nd, SV.Comb{hh, qs}}) == True{} : Bool}) -> {O.eval(~F, x, SV.eqat(es, j)) == O.zero(F) : O.C(F)}:
   +b1 = QN.qzero(E.QSub{hh, E.QCst{VD.qone()}})
   +b2 = VD.comb.solved(own, R, D, qs)
   +b3 = QN.qzero(E.QSub{SV.eqat(es, j), VD.comb.rhs(es, qs)})
@@ -105,12 +105,12 @@ def drop_zero(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&2
     FO.eq_of_sub(~F, O.eval(~F, x, SV.eqat(es, j)), O.eval(~F, x, VD.comb.rhs(es, qs)), QN.qzero_ok(~F, x, E.QSub{SV.eqat(es, j), VD.comb.rhs(es, qs)}, L.band_r(b2, b3, h23))),
     comb_zero(~F, x, es, own, R, D, hz, qs, L.band_l(b2, b3, h23)))
 
-def drops_zero.c(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +R: List<&2, Nat>, +D: List<&2, Nat>, +hz: SK.Zeros(~F, x, SV.solved.go(es, own, R, D, 0n)), +k: Nat, +j: Nat, +hh: E.QExpr, +qs: List<&2, SV.Mul>, +t: List<&2, SV.Drop>, b: Bool, eb: {SV.eq(k, j) == b : Bool}, hm: {SV.bor(b, SV.mem(k, SV.drops(t))) == True{} : Bool},
-  +h1: {VD.drop.ok(es, own, R, D, SV.Drop{j, SV.Comb{hh, qs}}) == True{} : Bool}, ih: {SV.mem(k, SV.drops(t)) == True{} : Bool} -> {O.eval(~F, x, SV.eqat(es, k)) == O.zero(F) : O.C(F)}) -> {O.eval(~F, x, SV.eqat(es, k)) == O.zero(F) : O.C(F)}:
+def drops_zero.c(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +R: List<&2, Nat>, +D: List<&2, Nat>, +hz: SK.Zeros(~F, x, SV.solved.go(es, own, R, D, 0n)), +k: Nat, +j: Nat, +nd: List<&2, Nat>, +hh: E.QExpr, +qs: List<&2, SV.Mul>, +t: List<&2, SV.Drop>, b: Bool, eb: {SV.eq(k, j) == b : Bool}, hm: {SV.bor(b, SV.mem(k, SV.drops(t))) == True{} : Bool},
+  +h1: {VD.drop.ok(es, own, R, D, SV.Drop{j, nd, SV.Comb{hh, qs}}) == True{} : Bool}, ih: {SV.mem(k, SV.drops(t)) == True{} : Bool} -> {O.eval(~F, x, SV.eqat(es, k)) == O.zero(F) : O.C(F)}) -> {O.eval(~F, x, SV.eqat(es, k)) == O.zero(F) : O.C(F)}:
   match b:
     case True{}:
       %Equal.sym(Nat, k, j, L.eq_ok(k, j, eb)) : {O.eval(~F, x, SV.eqat(es, _)) == O.zero(F) : O.C(F)}
-      drop_zero(~F, x, es, own, R, D, hz, j, hh, qs, h1)
+      drop_zero(~F, x, es, own, R, D, hz, j, nd, hh, qs, h1)
     case False{}:
       ih(hm)
 
@@ -118,10 +118,10 @@ def drops_zero(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&
   match dd:
     case Nil{}:
       absurd({O.eval(~F, x, SV.eqat(es, k)) == O.zero(F) : O.C(F)}, KA.ft(hm))
-    case Con{SV.Drop{+j, SV.Comb{+hh, +qs}}, +t}:
-      +h1 = L.band_l(VD.drop.ok(es, own, R, D, SV.Drop{j, SV.Comb{hh, qs}}), VD.drops.ok(es, own, R, D, t), h)
-      +h2 = L.band_r(VD.drop.ok(es, own, R, D, SV.Drop{j, SV.Comb{hh, qs}}), VD.drops.ok(es, own, R, D, t), h)
-      drops_zero.c(~F, x, es, own, R, D, hz, k, j, hh, qs, t, SV.eq(k, j), {==}, hm, h1, hm2 => drops_zero(~F, x, es, own, R, D, hz, t, k, hm2, h2))
+    case Con{SV.Drop{+j, +nd, SV.Comb{+hh, +qs}}, +t}:
+      +h1 = L.band_l(VD.drop.ok(es, own, R, D, SV.Drop{j, nd, SV.Comb{hh, qs}}), VD.drops.ok(es, own, R, D, t), h)
+      +h2 = L.band_r(VD.drop.ok(es, own, R, D, SV.Drop{j, nd, SV.Comb{hh, qs}}), VD.drops.ok(es, own, R, D, t), h)
+      drops_zero.c(~F, x, es, own, R, D, hz, k, j, nd, hh, qs, t, SV.eq(k, j), {==}, hm, h1, hm2 => drops_zero(~F, x, es, own, R, D, hz, t, k, hm2, h2))
 
 def kdrops_zero(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +R: List<&2, Nat>, +D: List<&2, Nat>, +hz: SK.Zeros(~F, x, SV.solved.go(es, own, R, D, 0n)), kc: SV.Class, +p: Nat, hm: {SV.mem(p, SV.kdrops(kc)) == True{} : Bool}, +h: {VD.kdrops.ok(es, own, R, D, kc) == True{} : Bool}) -> {O.eval(~F, x, SV.eqat(es, p)) == O.zero(F) : O.C(F)}:
   match kc:
@@ -131,7 +131,7 @@ def kdrops_zero(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<
       drops_zero(~F, x, es, own, R, D, hz, dd, p, hm, h)
     case SV.Over{j, s, w}:
       absurd({O.eval(~F, x, SV.eqat(es, p)) == O.zero(F) : O.C(F)}, KA.ft(hm))
-    case SV.Conflict{s}:
+    case SV.Conflict{s, cns}:
       absurd({O.eval(~F, x, SV.eqat(es, p)) == O.zero(F) : O.C(F)}, KA.ft(hm))
 
 def dropped_zero.c(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +R: List<&2, Nat>, +D: List<&2, Nat>, +hz: SK.Zeros(~F, x, SV.solved.go(es, own, R, D, 0n)), +kc: SV.Class, +t: List<&2, SV.Class>, +p: Nat, a: Bool, ea: {SV.mem(p, SV.kdrops(kc)) == a : Bool}, hm: {SV.bor(a, SV.mem(p, SV.dropped(t))) == True{} : Bool},

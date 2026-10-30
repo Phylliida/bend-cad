@@ -47,7 +47,7 @@ def comb.solved(+own: List<&2, Nat>, +red: List<&2, Nat>, +ds: List<&2, Nat>, qs
 
 def drop.ok(+es: List<&2, E.QExpr>, +own: List<&2, Nat>, +red: List<&2, Nat>, +ds: List<&2, Nat>, d: SV.Drop) -> Bool:
   match d:
-    case SV.Drop{+j, SV.Comb{+h, +qs}}:
+    case SV.Drop{+j, +nd, SV.Comb{+h, +qs}}:
       SV.band(QN.qzero(E.QSub{h, E.QCst{qone()}}), SV.band(comb.solved(own, red, ds, qs), QN.qzero(E.QSub{SV.eqat(es, j), comb.rhs(es, qs)})))
 
 def drops.ok(+es: List<&2, E.QExpr>, +own: List<&2, Nat>, +red: List<&2, Nat>, +ds: List<&2, Nat>, dd: List<&2, SV.Drop>) -> Bool:
@@ -65,7 +65,7 @@ def kdrops.ok(+es: List<&2, E.QExpr>, +own: List<&2, Nat>, +red: List<&2, Nat>, 
       drops.ok(es, own, red, ds, dd)
     case SV.Over{j, s, w}:
       True{}
-    case SV.Conflict{s}:
+    case SV.Conflict{s, cns}:
       True{}
 
 # every class's dropped equations are certified (red: the red
@@ -105,7 +105,7 @@ def kamber.ok(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, k: SV.Class) -> Bool
       refs.ok(sk, red, c, SV.slen(SV.csides(sk, [c])), rs, 0n)
     case SV.Over{j, s, w}:
       True{}
-    case SV.Conflict{s}:
+    case SV.Conflict{s, cns}:
       True{}
 
 # every amber constraint's side conditions are certified (cls from

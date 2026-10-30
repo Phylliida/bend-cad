@@ -55,7 +55,6 @@ import ./dcderpf.bend as DP
 import ./hspacepf.bend as HP
 import ./dcbelowpf.bend as BL
 import ./seppf.bend as SP
-import ../spec/_draft13b.bend as SD
 
 
 def absurd(-A: Type, x: Empty) -> A:
@@ -165,44 +164,44 @@ def par_pok(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExp
 # The positive answer
 # -------------------
 
-def isk_pr(j: DR.Jd, +es: List<&2, SK.Ent>, +m: Maybe<&2, DR.DStat>, +e: E.QExpr, hk: VD.Isk(j), hs: VD.SameD(DR.Jd.e(j), e)) -> SD.Proves(es, m, e, j):
+def isk_pr(j: DR.Jd, +es: List<&2, SK.Ent>, +m: Maybe<&2, DR.DStat>, +e: E.QExpr, hk: VD.Isk(j), hs: VD.SameD(DR.Jd.e(j), e)) -> SV.Proves(es, m, e, j):
   match j:
     case DR.JK{+f}:
       ID.ident_ok(f, e, hs)
     case DR.JP{+a, +x}:
-      absurd(SD.Proves(es, m, e, DR.JP{a, x}), LP.tf(Equal.sym(Bool, False{}, True{}, hk)))
+      absurd(SV.Proves(es, m, e, DR.JP{a, x}), LP.tf(Equal.sym(Bool, False{}, True{}, hk)))
 
 def isp_pr(j: DR.Jd, +es: List<&2, SK.Ent>, +b: Nat, +y: SK.VE, +l: S.Q, +e: E.QExpr, hp: VD.Isp(j), ha: {DR.Jd.a(j) == DR.NSeg{b} : DR.Node}, hs: VD.SameVD(DR.Jd.x(j), y))
-  -> SD.Proves(es, Some{DR.DStat{b, y, l}}, e, j):
+  -> SV.Proves(es, Some{DR.DStat{b, y, l}}, e, j):
   match j:
     case DR.JK{+f}:
-      absurd(SD.Proves(es, Some{DR.DStat{b, y, l}}, e, DR.JK{f}), LP.tf(Equal.sym(Bool, False{}, True{}, hp)))
+      absurd(SV.Proves(es, Some{DR.DStat{b, y, l}}, e, DR.JK{f}), LP.tf(Equal.sym(Bool, False{}, True{}, hp)))
     case DR.JP{+a, +x}:
       (ha, VD.samev_of(x, y, hs))
 
 def st.fin(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +b: Nat, +y: SK.VE, +l: S.Q, +e: E.QExpr, h: POk(es, fs, ctx, DR.NSeg{b}, DC.par.der(es, fs, t, s, DR.NSeg{b}, y), y))
-  -> DR.Valid(es, fs, ctx, DC.par.der(es, fs, t, s, DR.NSeg{b}, y)) & SD.Proves(es, Some{DR.DStat{b, y, l}}, e, DR.concl(es, fs, DC.par.der(es, fs, t, s, DR.NSeg{b}, y))):
+  -> DR.Valid(es, fs, ctx, DC.par.der(es, fs, t, s, DR.NSeg{b}, y)) & SV.Proves(es, Some{DR.DStat{b, y, l}}, e, DR.concl(es, fs, DC.par.der(es, fs, t, s, DR.NSeg{b}, y))):
   (v, r1) = h
   (p, r2) = r1
   (ea, sv) = r2
   (VD.valid_of(es, fs, ctx, DC.par.der(es, fs, t, s, DR.NSeg{b}, y), v), isp_pr(DR.concl(es, fs, DC.par.der(es, fs, t, s, DR.NSeg{b}, y)), es, b, y, l, e, p, ea, sv))
 
 def st.m(m: Maybe<&2, DR.DStat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +e: E.QExpr, hs: {DC.stat.inb(m, es, fs, t, s) == True{} : Bool}, +hb: {DC.fb.ds(m, t) == True{} : Bool})
-  -> DR.Valid(es, fs, ctx, DC.stat.der(m, es, fs, t, s)) & SD.Proves(es, m, e, DR.concl(es, fs, DC.stat.der(m, es, fs, t, s))):
+  -> DR.Valid(es, fs, ctx, DC.stat.der(m, es, fs, t, s)) & SV.Proves(es, m, e, DR.concl(es, fs, DC.stat.der(m, es, fs, t, s))):
   match m:
     case Some{DR.DStat{+b, +y, +l}}:
       st.fin(es, fs, ctx, t, s, H, b, y, l, e, par_pok(es, fs, ctx, t, s, H, DR.NSeg{b}, y, (LP2.band_l(SP.vbelow(SK.VE.x(y), t), SP.vbelow(SK.VE.y(y), t), hb), LP2.band_r(SP.vbelow(SK.VE.x(y), t), SP.vbelow(SK.VE.y(y), t), hb)), hs))
     case None{}:
-      absurd(DR.Valid(es, fs, ctx, DR.DZero{}) & SD.Proves(es, None{}, e, DR.concl(es, fs, DR.DZero{})), LP.tf(Equal.sym(Bool, False{}, True{}, hs)))
+      absurd(DR.Valid(es, fs, ctx, DR.DZero{}) & SV.Proves(es, None{}, e, DR.concl(es, fs, DR.DZero{})), LP.tf(Equal.sym(Bool, False{}, True{}, hs)))
 
 def kh.fin(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +e: E.QExpr, +m: Maybe<&2, DR.DStat>, kk: SK.Both(VD.VD(es, fs, ctx, KS.ks.der(es, fs, DC.Sk.k(s), e)), SK.Both(VD.Isk(DR.concl(es, fs, KS.ks.der(es, fs, DC.Sk.k(s), e))), VD.SameD(DR.Jd.e(DR.concl(es, fs, KS.ks.der(es, fs, DC.Sk.k(s), e))), e))))
-  -> DR.Valid(es, fs, ctx, KS.ks.der(es, fs, DC.Sk.k(s), e)) & SD.Proves(es, m, e, DR.concl(es, fs, KS.ks.der(es, fs, DC.Sk.k(s), e))):
+  -> DR.Valid(es, fs, ctx, KS.ks.der(es, fs, DC.Sk.k(s), e)) & SV.Proves(es, m, e, DR.concl(es, fs, KS.ks.der(es, fs, DC.Sk.k(s), e))):
   (v, r1) = kk
   (ik, sd) = r1
   (VD.valid_of(es, fs, ctx, KS.ks.der(es, fs, DC.Sk.k(s), e), v), isk_pr(DR.concl(es, fs, KS.ks.der(es, fs, DC.Sk.k(s), e)), es, m, e, ik, sd))
 
 def hold.q(q: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +e: E.QExpr, +m: Maybe<&2, DR.DStat>, eq: {q == KS.ks.inb(DC.Sk.k(s), e) : Bool}, hh: {SV.bor(q, DC.stat.inb(m, es, fs, t, s)) == True{} : Bool}, hb: {DC.fb.ds(m, t) == True{} : Bool})
-  -> DR.Valid(es, fs, ctx, DC.hold.pick(q, es, fs, t, s, e, m)) & SD.Proves(es, m, e, DR.concl(es, fs, DC.hold.pick(q, es, fs, t, s, e, m))):
+  -> DR.Valid(es, fs, ctx, DC.hold.pick(q, es, fs, t, s, e, m)) & SV.Proves(es, m, e, DR.concl(es, fs, DC.hold.pick(q, es, fs, t, s, e, m))):
   match q:
     case True{}:
       kh.fin(es, fs, ctx, t, s, H, e, m, DP.ks_der_okd(es, fs, ctx, t, DC.Sk.k(s), e, RR.h.k(es, fs, ctx, t, s, H), Equal.sym(Bool, True{}, KS.ks.inb(DC.Sk.k(s), e), eq)))
@@ -211,5 +210,5 @@ def hold.q(q: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2
 
 # a state holding e, or its statement m (below t), has a valid derivation proving e
 def hold_ok(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +e: E.QExpr, +m: Maybe<&2, DR.DStat>, hh: {DC.holds(es, fs, t, s, e, m) == True{} : Bool}, hb: {DC.fb.ds(m, t) == True{} : Bool})
-  -> DR.Valid(es, fs, ctx, DC.hold.der(es, fs, t, s, e, m)) & SD.Proves(es, m, e, DR.concl(es, fs, DC.hold.der(es, fs, t, s, e, m))):
+  -> DR.Valid(es, fs, ctx, DC.hold.der(es, fs, t, s, e, m)) & SV.Proves(es, m, e, DR.concl(es, fs, DC.hold.der(es, fs, t, s, e, m))):
   hold.q(KS.ks.inb(DC.Sk.k(s), e), es, fs, ctx, t, s, H, e, m, {==}, hh, hb)

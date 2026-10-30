@@ -88,7 +88,7 @@ def red_kind(k: SV.Class) -> {SV.is_red(k) == rk(SV.kind(k)) : Bool}:
       {==}
     case SV.Over{j, s, w}:
       {==}
-    case SV.Conflict{s}:
+    case SV.Conflict{s, cns}:
       {==}
 
 # the same kind at c: c is red in both or in neither

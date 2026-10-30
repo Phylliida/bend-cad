@@ -122,7 +122,7 @@ def nin_ok(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, h: S
     case (h1, h2):
       L.band_r(SV.all_driving(sk, s), SV.none_in(s, red), L.band_r(SV.below(s, c), SV.band(SV.all_driving(sk, s), SV.none_in(s, red)), L.band_r(SV.distinct(s), SV.band(SV.below(s, c), SV.band(SV.all_driving(sk, s), SV.none_in(s, red))), h1)))
 
-def nin_c(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, b: Bool, h: SV.Fate.pick(sk, red, ds, c, b, SV.Conflict{s})) -> {SV.none_in(s, red) == True{} : Bool}:
+def nin_c(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, +cns: List<&2, Nat>, b: Bool, h: SV.Fate.pick(sk, red, ds, c, b, SV.Conflict{s, cns})) -> {SV.none_in(s, red) == True{} : Bool}:
   match b:
     case True{}:
       absurd({SV.none_in(s, red) == True{} : Bool}, h)
@@ -139,8 +139,8 @@ def nin_fate(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, k
       {==}
     case SV.Over{j, s, w}:
       {==}
-    case SV.Conflict{+s}:
-      nin_c(sk, red, ds, c, s, b, h)
+    case SV.Conflict{+s, +cns}:
+      nin_c(sk, red, ds, c, s, cns, b, h)
 
 # past the last constraint the class is Kept, with no support
 def nin_past(cls: List<&2, SV.Class>, c: Nat, +red: List<&2, Nat>, h: {SV.lt(c, SV.clsn(cls)) == False{} : Bool}) -> {SV.none_in(SV.support(cls, c), red) == True{} : Bool}:

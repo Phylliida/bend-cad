@@ -66,7 +66,7 @@ def dgood(+es: List<&2, E.QExpr>, +bp: List<&2, Nat>, ds: List<&2, SV.Drop>) -> 
   match ds:
     case Nil{}:
       True{}
-    case Con{SV.Drop{+j, SV.Comb{+h, +qs}}, t}:
+    case Con{SV.Drop{+j, +nd, SV.Comb{+h, +qs}}, t}:
       SV.band(QN.qzero(E.QSub{h, E.QCst{VD.qone()}}), SV.band(L.subl(mulpos(qs), bp), SV.band(QN.qzero(E.QSub{SV.eqat(es, j), VD.comb.rhs(es, qs)}), dgood(es, bp, t))))
 
 def subl_snoc(xs: List<&2, Nat>, +bp: List<&2, Nat>, +k: Nat, +h: {L.subl(xs, bp) == True{} : Bool}) -> {L.subl(xs, CO.lsnoc(bp, k)) == True{} : Bool}:
@@ -82,7 +82,7 @@ def dgood_up(+es: List<&2, E.QExpr>, +bp: List<&2, Nat>, ds: List<&2, SV.Drop>, 
   match ds:
     case Nil{}:
       {==}
-    case Con{SV.Drop{+j, SV.Comb{+hh, +qs}}, +t}:
+    case Con{SV.Drop{+j, +nd, SV.Comb{+hh, +qs}}, +t}:
       +b1 = QN.qzero(E.QSub{hh, E.QCst{VD.qone()}})
       +b2 = L.subl(mulpos(qs), bp)
       +b3 = QN.qzero(E.QSub{SV.eqat(es, j), VD.comb.rhs(es, qs)})
@@ -215,14 +215,14 @@ def dok_of(+es: List<&2, E.QExpr>, +own: List<&2, Nat>, +R: List<&2, Nat>, +D: L
   match ds:
     case Nil{}:
       {==}
-    case Con{SV.Drop{+j, SV.Comb{+hh, +qs}}, +t}:
+    case Con{SV.Drop{+j, +nd, SV.Comb{+hh, +qs}}, +t}:
       +b1 = QN.qzero(E.QSub{hh, E.QCst{VD.qone()}})
       +b2 = L.subl(mulpos(qs), bp)
       +b3 = QN.qzero(E.QSub{SV.eqat(es, j), VD.comb.rhs(es, qs)})
       +b4 = dgood(es, bp, t)
       +h234 = L.band_r(b1, SV.band(b2, SV.band(b3, b4)), hg)
       +h34 = L.band_r(b2, SV.band(b3, b4), h234)
-      L.band_i(VD.drop.ok(es, own, R, D, SV.Drop{j, SV.Comb{hh, qs}}), VD.drops.ok(es, own, R, D, t),
+      L.band_i(VD.drop.ok(es, own, R, D, SV.Drop{j, nd, SV.Comb{hh, qs}}), VD.drops.ok(es, own, R, D, t),
         L.band_i(b1, SV.band(VD.comb.solved(own, R, D, qs), b3), L.band_l(b1, SV.band(b2, SV.band(b3, b4)), hg),
           L.band_i(VD.comb.solved(own, R, D, qs), b3, cs_of(own, R, D, qs, bp, L.band_l(b2, SV.band(b3, b4), h234), ha), L.band_l(b3, b4, h34))),
         dok_of(es, own, R, D, bp, t, L.band_r(b3, b4, h34), ha))

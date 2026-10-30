@@ -83,7 +83,7 @@ def qone() -> S.Q:
   S.Q{S.Zpos{S.XH{}}, S.XH{}}
 
 def drop_of(+j: Nat, +r: EL.Res, +e: E.QExpr, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>) -> SV.Drop:
-  SV.Drop{j, SV.Comb{E.QCst{qone()}, muls(bp, DR.dropls(DR.rescb(r), DR.resbt(r), e, B))}}
+  SV.Drop{j, Nil{}, SV.Comb{E.QCst{qone()}, muls(bp, DR.dropls(DR.rescb(r), DR.resbt(r), e, B))}}
 
 # A constraint's equations
 # ------------------------
@@ -215,7 +215,7 @@ def one.w(+w: CW, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +c: Na
 def one.c(b: Bool, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +c: Nat, +kb: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>) -> PO:
   match b:
     case True{}:
-      PO{SV.Conflict{CO.support(sk, c, kb)}, PS{kb, rows, B, bp, vm}}
+      PO{SV.Conflict{CO.support(sk, c, kb), Nil{}}, PS{kb, rows, B, bp, vm}}
     case False{}:
       one.w(cwalk(es, own, c, 0n, CW{rows, B, bp, Nil{}, Nil{}}), sk, adj, f, c, kb, rows, B, bp, vm)
 

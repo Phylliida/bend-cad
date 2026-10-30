@@ -50,7 +50,6 @@ import ./dclopf.bend as LO
 import ./dcftiepf.bend as FT
 
 import ./dcclosepf.bend as CC
-import ../spec/_draft13b.bend as SD
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -114,7 +113,7 @@ def rp_inb(mm: Maybe<&2, DC.Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>,
 # The negative answer
 # -------------------
 
-def dec.p(m: Maybe<&2, DR.DStat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +a: DR.Node, +x: SK.VE, hs: {DC.stat.inb(m, es, fs, t, s) == False{} : Bool}, rep: RR.Repr(es, fs, t, s, DR.JP{a, x}), hp: SD.Proves.p(es, m, a, x)) -> Empty:
+def dec.p(m: Maybe<&2, DR.DStat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +a: DR.Node, +x: SK.VE, hs: {DC.stat.inb(m, es, fs, t, s) == False{} : Bool}, rep: RR.Repr(es, fs, t, s, DR.JP{a, x}), hp: SV.Proves.p(es, m, a, x)) -> Empty:
   match m:
     case Some{DR.DStat{+b, +y, +l}}:
       (ea, sv) = hp
@@ -125,7 +124,7 @@ def dec.p(m: Maybe<&2, DR.DStat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>,
       hp
 
 def dec.j(j: DR.Jd, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +e: E.QExpr, +m: Maybe<&2, DR.DStat>, hk: {KS.ks.inb(DC.Sk.k(s), e) == False{} : Bool}, hs: {DC.stat.inb(m, es, fs, t, s) == False{} : Bool}, rep: RR.Repr(es, fs, t, s, j),
-  hp: SD.Proves(es, m, e, j)) -> Empty:
+  hp: SV.Proves(es, m, e, j)) -> Empty:
   match j:
     case DR.JK{+f}:
       LP.tf(Equal.trans(Bool, True{}, KS.ks.inb(DC.Sk.k(s), e), False{}, Equal.sym(Bool, KS.ks.inb(DC.Sk.k(s), e), True{}, ST.ri.tr(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), KS.ks.rows(DC.Sk.k(s)), f, e, ST.kri(es, fs, ctx, t, DC.Sk.k(s), RR.h.k(es, fs, ctx, t, s, H)), rep, VD.samed_of(f, e, hp))), hk))
@@ -133,11 +132,11 @@ def dec.j(j: DR.Jd, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2
       dec.p(m, es, fs, ctx, t, s, H, a, x, hs, rep, hp)
 
 # at a fixpoint holding neither e nor the statement m, no valid derivation proves e
-def dec_none(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +e: E.QExpr, +m: Maybe<&2, DR.DStat>, +hh: {DC.holds(es, fs, t, s, e, m) == False{} : Bool}, +d: DR.Der, hv: DR.Valid(es, fs, ctx, d), hp: SD.Proves(es, m, e, DR.concl(es, fs, d))) -> Empty:
+def dec_none(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +e: E.QExpr, +m: Maybe<&2, DR.DStat>, +hh: {DC.holds(es, fs, t, s, e, m) == False{} : Bool}, +d: DR.Der, hv: DR.Valid(es, fs, ctx, d), hp: SV.Proves(es, m, e, DR.concl(es, fs, d))) -> Empty:
   dec.j(DR.concl(es, fs, d), es, fs, ctx, t, s, H, e, m, bor_ff.l(KS.ks.inb(DC.Sk.k(s), e), DC.stat.inb(m, es, fs, t, s), hh), bor_ff.r(KS.ks.inb(DC.Sk.k(s), e), DC.stat.inb(m, es, fs, t, s), hh), CC.closed(d, es, fs, ctx, t, s, H, hv), hp)
 
 # the closure's run decides NotDirDerivable when its fixpoint holds neither
-def not_dir(+sk: SK.Sketch, +cls: List<&2, SD.Class>, +red: List<&2, Nat>, +c: Nat, +dd: List<&2, Nat>, +i: Nat, +t: Nat, fuel: Nat, +s: DC.Sk,
-  +eo: {DC.dclose(SD.ents(sk), SD.dfacts(sk, cls, red, c, dd, i), SD.ctx(sk, red, c), t, fuel) == DC.OFix{s} : DC.Out}, +hz: {DC.zb(SD.ents(sk), t) == True{} : Bool}, +hb: {DC.fb(SD.dfacts(sk, cls, red, c, dd, i), t) == True{} : Bool},
-  +hh: {DC.holds(SD.ents(sk), SD.dfacts(sk, cls, red, c, dd, i), t, s, SD.eqat(SK.Sketch.eqs(sk), i), SD.dstat_of(SD.ents(sk), SD.kind_at(sk, c))) == False{} : Bool}) -> SD.NotDirDerivable(sk, cls, red, c, dd, i):
-  dv => hv => hp => dec_none(SD.ents(sk), SD.dfacts(sk, cls, red, c, dd, i), SD.ctx(sk, red, c), t, s, (FX.fix_at(SD.ents(sk), SD.dfacts(sk, cls, red, c, dd, i), SD.ctx(sk, red, c), t, fuel, s, eo, hz, hb), (hz, hb)), SD.eqat(SK.Sketch.eqs(sk), i), SD.dstat_of(SD.ents(sk), SD.kind_at(sk, c)), hh, dv, hv, hp)
+def not_dir(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +c: Nat, +dd: List<&2, Nat>, +i: Nat, +t: Nat, fuel: Nat, +s: DC.Sk,
+  +eo: {DC.dclose(SV.ents(sk), SV.dfacts(sk, cls, red, c, dd, i), SV.ctx(sk, red, c), t, fuel) == DC.OFix{s} : DC.Out}, +hz: {DC.zb(SV.ents(sk), t) == True{} : Bool}, +hb: {DC.fb(SV.dfacts(sk, cls, red, c, dd, i), t) == True{} : Bool},
+  +hh: {DC.holds(SV.ents(sk), SV.dfacts(sk, cls, red, c, dd, i), t, s, SV.eqat(SK.Sketch.eqs(sk), i), SV.dstat_of(SV.ents(sk), SV.kind_at(sk, c))) == False{} : Bool}) -> SV.NotDirDerivable(sk, cls, red, c, dd, i):
+  dv => hv => hp => dec_none(SV.ents(sk), SV.dfacts(sk, cls, red, c, dd, i), SV.ctx(sk, red, c), t, s, (FX.fix_at(SV.ents(sk), SV.dfacts(sk, cls, red, c, dd, i), SV.ctx(sk, red, c), t, fuel, s, eo, hz, hb), (hz, hb)), SV.eqat(SK.Sketch.eqs(sk), i), SV.dstat_of(SV.ents(sk), SV.kind_at(sk, c)), hh, dv, hv, hp)

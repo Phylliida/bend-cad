@@ -179,7 +179,7 @@ def fdr_rb(+sk: SK.Sketch, +c: Nat, k: SV.Class, h: SV.Fate.driven(k)) -> ({pk_d
       absurd(({pk_d(sk, c, SV.drops(dc)) == True{} : Bool} & Empty), h)
     case SV.Over{j, s, w}:
       absurd(({pk_d(sk, c, Nil{}) == True{} : Bool} & Empty), h)
-    case SV.Conflict{s}:
+    case SV.Conflict{s, cns}:
       absurd(({pk_d(sk, c, Nil{}) == True{} : Bool} & Empty), h)
 
 def fdv_rb(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, k: SV.Class, h: SV.Fate.driving(sk, R, D, c, k)) -> ({pk_d(sk, c, SV.kdrops(k)) == True{} : Bool} & SV.Fate.driving(sk, R, D, c, k)):
@@ -190,7 +190,7 @@ def fdv_rb(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, k: SV.
       aok_rb(sk, R, D, c, SV.drops(dc), h)
     case SV.Over{+j, +s, +w}:
       ({==}, h)
-    case SV.Conflict{+s}:
+    case SV.Conflict{+s, +cns}:
       ({==}, h)
 
 def fpk_rb(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, b: Bool, +k: SV.Class, h: SV.Fate.pick(sk, R, D, c, b, k)) -> ({pk_d(sk, c, SV.kdrops(k)) == True{} : Bool} & SV.Fate.pick(sk, R, D, c, b, k)):

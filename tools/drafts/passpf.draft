@@ -554,8 +554,8 @@ def onek_red(a: Bool, +sk: SK.Sketch, +kb: $NL, +c: Nat, +dd: List<&2, SV.Drop>)
       {==}
 
 def step.conf(+sk: SK.Sketch, +i: Nat, +kb: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +vm: List<&2, Maybe<&2, Nat>>, +hi: PInv(sk, $RF, $DF, i, $STK), +hr: {CO.refutable(sk, i, kb) == True{} : Bool},
-  +hK: {SV.class_at($CLS, i) == SV.Conflict{CO.support(sk, i, kb)} : SV.Class}) -> StepRes(sk, i, PA.PO{SV.Conflict{CO.support(sk, i, kb)}, $STK}):
-  +hred = red_of(sk, i, SV.Conflict{CO.support(sk, i, kb)}, hK)
+  +hK: {SV.class_at($CLS, i) == SV.Conflict{CO.support(sk, i, kb), Nil{}} : SV.Class}) -> StepRes(sk, i, PA.PO{SV.Conflict{CO.support(sk, i, kb), Nil{}}, $STK}):
+  +hred = red_of(sk, i, SV.Conflict{CO.support(sk, i, kb), Nil{}}, hK)
   (PR.conflict(sk, $RF, i, kb, pinv_kbp(sk, $RF, $DF, i, $STK, hi), hr), step_same(sk, i, $STK, hi, SP.zc_red($OWN, i, $RF, hred), dcond_f(sk, $RF, i, hred)))
 
 def bpus_dist(+sk: SK.Sketch, +i: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +vm: List<&2, Maybe<&2, Nat>>, +us: $NL, +hb: {pib(sk, $RF, $DF, i, rows, B, bp, vm) == True{} : Bool},
