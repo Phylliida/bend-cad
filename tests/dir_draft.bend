@@ -42,6 +42,11 @@
 #   Its positive answers are derivations (lib/dcholdpf.bend, HLD.hold_ok:
 #   DC.hold.der is valid and proves the equation), and an explosion
 #   derives every equation (lib/dcexplpf.bend, EXP.expl_ok).
+# - The closure stops (lib/dctermpf.bend, TRM.dclose_term): with
+#   DC.dfuel's fuel it ends at a fixpoint or an explosion, since every
+#   other round takes a measure down: K's pivots among the bases'
+#   monomials (lib/dcbasepf.bend, lib/dckslpf.bend, lib/dcgspanpf.bend,
+#   lib/dcclprogpf.bend), the roots and the link slots (lib/dcslotpf.bend).
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -95,6 +100,7 @@ import ../lib/dcclosepf.bend as CCF
 import ../lib/dcdecpf.bend as DEC
 import ../lib/dcholdpf.bend as HLD
 import ../lib/dcexplpf.bend as EXP
+import ../lib/dctermpf.bend as TRM
 
 # The functions on an example
 # ---------------------------
@@ -348,3 +354,7 @@ def b3_hold(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExp
 def b3_expl(o: DC.Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +m: Maybe<&2, DR.DStat>, +e: E.QExpr, ho: DRP.OutInv(es, fs, ctx, t, o),
   hx: {DC.is_expl(o) == True{} : Bool}) -> DR.Valid(es, fs, ctx, DC.expl.der(o, es, e)) & SV.Proves(es, m, e, DR.concl(es, fs, DC.expl.der(o, es, e))):
   EXP.expl_ok(o, es, fs, ctx, t, m, e, ho, hx)
+
+def b3_term(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, eo: {DC.dclose(es, fs, ctx, t, DC.dfuel(es, fs)) == DC.OStep{s} : DC.Out},
+  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}) -> Empty:
+  TRM.dclose_nostep(es, fs, ctx, t, s, eo, hz, hb)
