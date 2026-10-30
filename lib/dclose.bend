@@ -34,6 +34,7 @@ import ./pair.bend as PT
 import ./lab.bend as LB
 import ./indset.bend as IS
 import ./seppf.bend as SP
+import ./zring.bend as R
 
 # Nodes
 # -----
@@ -1021,6 +1022,108 @@ def run(fuel: Nat, o: Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Na
 def dclose(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat) -> Out:
   +cs = sp.of(ctx, SP{Nil{}, Nil{}})
   run(fuel, OStep{sk0(es, fs, cs)}, es, fs, t, cs, segids(es))
+
+# The fuel
+# --------
+# The closure stops within dfuel(es, fs) rounds (lib/dctermpf.bend): a
+# round that does not stop adds a K row, merges two roots or adds a link.
+# - K's rows have distinct pivots, each a monomial of the base forms below,
+#   since every K fact the closure derives is a constant combination of
+#   them.
+# - Each open node gives at most one root, and a merge takes one away.
+# - A link is added only when its pair has fewer than two.
+
+def bstat(ds: Maybe<&2, DR.DStat>, rest: List<&2, E.QExpr>) -> List<&2, E.QExpr>:
+  match ds:
+    case None{}:
+      rest
+    case Some{DR.DStat{a, +x, l}}:
+      Con{SK.VE.x(x), Con{SK.VE.y(x), rest}}
+
+# the facts' equations and their statements' forms' parts
+def fbases(fs: List<&2, DR.Fact>) -> List<&2, E.QExpr>:
+  match fs:
+    case Nil{}:
+      Nil{}
+    case Con{DR.Fact{e, nd, ds}, t}:
+      Con{e, bstat(ds, fbases(t))}
+
+# the nodes' directions' parts
+def dbases(+es: List<&2, SK.Ent>, ns: List<&2, DR.Node>) -> List<&2, E.QExpr>:
+  match ns:
+    case Nil{}:
+      Nil{}
+    case Con{+n, t}:
+      Con{SK.VE.x(DR.zdir(es, n)), Con{SK.VE.y(DR.zdir(es, n)), dbases(es, t)}}
+
+def qcat(xs: List<&2, E.QExpr>, ys: List<&2, E.QExpr>) -> List<&2, E.QExpr>:
+  match xs:
+    case Nil{}:
+      ys
+    case Con{x, t}:
+      Con{x, qcat(t, ys)}
+
+# the base forms
+def bases(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>) -> List<&2, E.QExpr>:
+  qcat(fbases(fs), dbases(es, Con{DR.NFrame{}, snodes(segids(es))}))
+
+def tmons(p: List<&2, R.ZTerm>, rest: List<&2, List<&2, Nat>>) -> List<&2, List<&2, Nat>>:
+  match p:
+    case Nil{}:
+      rest
+    case Con{R.ZTerm{c, m}, t}:
+      Con{m, tmons(t, rest)}
+
+# the monomials of the base forms' normal forms
+def kmons(bs: List<&2, E.QExpr>) -> List<&2, List<&2, Nat>>:
+  match bs:
+    case Nil{}:
+      Nil{}
+    case Con{b, t}:
+      tmons(EP.NE(b), kmons(t))
+
+def mlen(ms: List<&2, List<&2, Nat>>) -> Nat:
+  match ms:
+    case Nil{}:
+      0n
+    case Con{m, t}:
+      1n+mlen(t)
+
+def nlen(ns: List<&2, DR.Node>) -> Nat:
+  match ns:
+    case Nil{}:
+      0n
+    case Con{n, t}:
+      1n+nlen(t)
+
+# the links still possible for one pair
+def slots(ws: List<&2, DR.Lab>) -> Nat:
+  match ws:
+    case Nil{}:
+      2n
+    case Con{w0, Nil{}}:
+      1n
+    case Con{w0, Con{w1, t}}:
+      0n
+
+def lslack.c(+ls: List<&2, Link>, +c: Nat, bs: List<&2, DR.Node>) -> Nat:
+  match bs:
+    case Nil{}:
+      0n
+    case Con{b, t}:
+      Nat.add(slots(lstored(ls, c, b)), lslack.c(ls, c, t))
+
+# the links still possible from the segments ids to the nodes bs
+def lslack(ids: List<&2, Nat>, +bs: List<&2, DR.Node>, +ls: List<&2, Link>) -> Nat:
+  match ids:
+    case Nil{}:
+      0n
+    case Con{c, t}:
+      Nat.add(lslack.c(ls, c, bs), lslack(t, bs, ls))
+
+# enough fuel for the closure to stop
+def dfuel(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>) -> Nat:
+  1n+Nat.add(mlen(kmons(bases(es, fs))), Nat.add(nlen(Con{DR.NFrame{}, snodes(segids(es))}), lslack(segids(es), Con{DR.NFrame{}, snodes(segids(es))}, Nil{})))
 
 # The closure's hypotheses
 # ------------------------
