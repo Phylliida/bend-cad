@@ -987,6 +987,9 @@ give both component identities that Valid's SameV asks for.
   esides), angl(c:cs)) is RefOk(sk, c, cs, cx) both ways. The closure
   runs with t = 1 + nvars (zb needs t > 0); zb and fb follow from
   `within`.
+  - *Done 2026-10-30* (lib/dbridgepf.bend `lref_of`, `lref_to`,
+    `nodir_of`, `zb_tv`, `fb_rf`; gated as b4_lref_of, b4_nodir_of,
+    b4_fb). The exec of B4.3 is lib/dconflict.bend.
 - **B4.3, refutability and the filter generalized** (lib/dconflict.bend).
   refutable2(c, cs) is sk-13a's degree-0 test, else the closure of
   rfacts(c:cs) in c's context with dref. Chinneck's filter runs it over

@@ -54,6 +54,10 @@
 # - Moving a derivation to more facts (lib/dmappf.bend, B4.1): with more
 #   constraints, c has every direction refutation it has with fewer
 #   (DMP.nodir_mono), so no refutation with more means none with fewer.
+# - The refutation decision at the sketch's level (lib/dbridgepf.bend,
+#   B4.2): LRefOk over c with cs's facts, sides and kinds is RefOk, both
+#   ways (BRG.lref_of, BRG.nodir_of), and the closure's bound tv holds for
+#   a covered, well-formed sketch (BRG.zb_tv, BRG.fb_rf).
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -111,6 +115,10 @@ import ../lib/dctermpf.bend as TRM
 import ../lib/dref.bend as DFX
 import ../lib/drefpf.bend as DRF
 import ../lib/dmappf.bend as DMP
+import ../lib/dconflict.bend as DCF
+import ../lib/dbridgepf.bend as BRG
+import ../lib/wfdec.bend as WFD
+import ../lib/pass.bend as PAS
 
 # The functions on an example
 # ---------------------------
@@ -381,3 +389,16 @@ def b3_dref_complete(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&
 # B4.1's monotonicity, as its type
 def b4_nodir_mono(+sk: SK.Sketch, +c: Nat, +cs1: List<&2, Nat>, +cs2: List<&2, Nat>, +cx: List<&2, E.QExpr>, +hsub: {SS.sub(cs1, cs2) == True{} : Bool}, h: SS.NoDirRef(sk, c, cs2, cx)) -> SS.NoDirRef(sk, c, cs1, cx):
   DMP.nodir_mono(sk, c, cs1, cs2, cx, hsub, h)
+
+# B4.2's bridge and coverage, as their types
+def b4_lref_of(r: DR.DRef, +sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>,
+  h: DRF.LRefOk(SS.ents(sk), SS.rfacts(sk, Con{c, cs}), cx, SK.cats(SS.csides(sk, Con{c, cs}), SS.esides(sk)), DCF.angl(sk, Con{c, cs}), r)) -> SS.RefOk(sk, c, cs, cx, r):
+  BRG.lref_of(r, sk, c, cs, cx, h)
+
+def b4_nodir_of(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>,
+  h: DRF.NoLRef(SS.ents(sk), SS.rfacts(sk, Con{c, cs}), cx, SK.cats(SS.csides(sk, Con{c, cs}), SS.esides(sk)), DCF.angl(sk, Con{c, cs}))) -> SS.NoDirRef(sk, c, cs, cx):
+  BRG.nodir_of(sk, c, cs, cx, h)
+
+def b4_fb(+sk: SK.Sketch, +cs: List<&2, Nat>, +hcov: {BX.Sketch.within(sk, PAS.nvars(sk)) == True{} : Bool}, +hwf: {WFD.wf_dec(sk) == True{} : Bool})
+  -> M.Both({DC.zb(SS.ents(sk), DCF.tv(sk)) == True{} : Bool}, {DC.fb(SS.rfacts(sk, cs), DCF.tv(sk)) == True{} : Bool}):
+  (BRG.zb_tv(sk, hcov), BRG.fb_rf(sk, cs, hcov, hwf))
