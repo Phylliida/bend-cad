@@ -62,7 +62,7 @@ def showo(o: DC.Out) -> String:
       "explodes: open segment " ++ Nat.show(sg) ++ " has its direction in K squared"
 
 def run(+cs: List<&2, SK.Rec>, +own: List<&2, Nat>, +c: Nat) -> String:
-  showo(DC.dclose(SV.ents(skc(cs)), SV.rfacts(skc(cs), own), SV.ctx(skc(cs), Nil{}, c), 8n, 200n))
+  showo(DC.dclose(SV.ents(skc(cs)), SV.rfacts(skc(cs), own), SV.ctx(skc(cs), Nil{}, c), 8n, DC.dfuel(SV.ents(skc(cs)), SV.rfacts(skc(cs), own)))) ++ " (fuel " ++ Nat.show(DC.dfuel(SV.ents(skc(cs)), SV.rfacts(skc(cs), own))) ++ ")"
 
 def fes(fs: List<&2, DR.Fact>) -> List<&2, E.QExpr>:
   match fs:
@@ -73,7 +73,7 @@ def fes(fs: List<&2, DR.Fact>) -> List<&2, E.QExpr>:
 
 # facts from the constraints own, the context from those in cx
 def run2(+cs: List<&2, SK.Rec>, +own: List<&2, Nat>, +cx: List<&2, Nat>) -> String:
-  showo(DC.dclose(SV.ents(skc(cs)), SV.rfacts(skc(cs), own), fes(SV.rfacts(skc(cs), cx)), 8n, 200n))
+  showo(DC.dclose(SV.ents(skc(cs)), SV.rfacts(skc(cs), own), fes(SV.rfacts(skc(cs), cx)), 8n, DC.dfuel(SV.ents(skc(cs)), SV.rfacts(skc(cs), own)))) ++ " (fuel " ++ Nat.show(DC.dfuel(SV.ents(skc(cs)), SV.rfacts(skc(cs), own))) ++ ")"
 
 def main() -> String:
   "parallel and perpendicular on one pair (sketch 8's shape): " ++ run([SK.Rec{0n, False{}, SK.Parallel{10n, 11n}}, SK.Rec{1n, False{}, SK.Perpendicular{10n, 11n}}], [1n, 0n], 1n) ++ "\n" ++
