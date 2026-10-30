@@ -878,8 +878,13 @@ give both component identities that Valid's SameV asks for.
     and a listed node.
   - proto/dclose_run.bend now runs with DC.dfuel: the same eleven
     answers, fuel 42 to 76, about 74 ms.
-- Still owed for B4: the refutation decision, and sub(nd, nd).
-- *The refutation decision, as designed 2026-10-30.* Exec, at the
+- Still owed for B4: sub(nd, nd) (the draft spec's own sub).
+- *The refutation decision, done 2026-10-30 (gate PASS @45a6378):*
+  lib/dref.bend `DF.dref`, lib/drefpf.bend `dref_sound` (any o with its
+  OutInv) and `dref_complete` (at OFix), gated as b3_dref_sound and
+  b3_dref_complete over LRefOk, the spec's RefOk with the sides and the
+  Angles given as lists (the sk-level bridge is B4's). **B3 is complete.**
+  As designed: Exec, at the
   closure's result o, for the facts fs = rfacts(sk, c:cs), the sides
   ss = csides(sk, c:cs) ++ esides(sk), and the Angles among c:cs:
   - OOne{d}: RMotz{[d], [−1], zeros(|ss|), −1}.
