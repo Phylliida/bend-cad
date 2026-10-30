@@ -844,17 +844,41 @@ give both component identities that Valid's SameV asks for.
     a fixpoint gives the spec's NotDirDerivable). Positive answers too
     (lib/dcholdpf.bend `hold_ok`: DC.hold.der valid and proving e when
     DC.holds is true; lib/dcexplpf.bend `expl_ok`: an explosion's
-    DC.expl.der proves any e by K). Still owed for B4: the refutation
+    DC.expl.der proves any e by K). Then owed for B4: the refutation
     decision (a refutation is found iff one exists: Motzkin over K's
     generators, a derived collapse, an Angle on a K-collapsed segment),
-    and termination (the fuel suffices). B4 also needs sub(nd, nd) for
-    the reported nd (the draft spec's own sub, not spec/solve's).
-- Then: the fuel suffices. The measure is K's rank, the merges and the
-  links (≤ 2 per pair). K's rank is bounded by pivots in M =
-  monomials(facts) ∪ {1, x_0..x_{t−1}}, since every K fact the closure
-  adds is affine-linear below t: F's and the free roots' non-K
-  generators are rotations of degree-1 forms (MsAff, an invariant like
-  MsNz).
+    and termination (done 2026-10-30, below). B4 also needs sub(nd, nd)
+    for the reported nd (the draft spec's own sub, not spec/solve's).
+- *Done 2026-10-30 (gate PASS @eb5b6ad): termination.* `DC.dfuel(es,
+  fs)` (lib/dclose.bend) is enough fuel: lib/dctermpf.bend
+  `dclose_term` / `dclose_nostep`, gated as b3_term. The measure adds
+  three counts, and every round that does not stop takes one down while
+  the others stay:
+  - *K's pivots* (lib/dckslpf.bend): `DC.bases` lists every fact's
+    equation and statement parts and every node's direction parts, and
+    `DC.kmons` their normal forms' monomials. A new K row's pivot is a
+    base monomial (else its coefficient there would be 0: dcbasepf
+    `span_cz`, through the elimination's Rel) and no earlier pivot.
+    The plan's affine-below-t bound was not needed: the bases' span is
+    the invariant (lib/dcgspanpf.bend: every generator form the closure
+    reads is a rotation, sum or chain of directions, statements and K
+    facts; a segment outside the sketch has direction 0).
+  - *The new K fact is new* (lib/dcclprogpf.bend). Frame-back checks it.
+    For a complex line x = g_d − (earlier kept ones), cl.k gives K the
+    real part when K lacks it, else the imaginary part, which K lacks too:
+    with both in K, x's encoding is in K squared's hull span (khull spans
+    each K generator k as (k, 0) and (0, k)), so g_d's encoding would lie
+    in the span of K squared's and the earlier kept generators', and the
+    fold kept g_d because it did not (`hk_ind`: the kept generators pass
+    indset after khull's rows; the walk carries those rows as ghosts).
+  - *Roots and links* (lib/dcslotpf.bend): a merge reroots a root under
+    another root, which takes its own record off the roots and puts none
+    on; a link is added only while its pair holds fewer than two labels
+    (qspan says yes from two), and only for a collapsed sketch segment
+    and a listed node.
+  - proto/dclose_run.bend now runs with DC.dfuel: the same eleven
+    answers, fuel 42 to 76, about 74 ms.
+- Still owed for B4: the refutation decision, and sub(nd, nd).
 - Then the decision interface, and B4.
   - Speed lesson: a four-atom degree-2 normalizer identity with squares
     took over 120 s. One square at a time, plus degree-1
