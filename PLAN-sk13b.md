@@ -1026,6 +1026,32 @@ give both component identities that Valid's SameV asks for.
   equations, with h = ndh(nd).
 - **B4.7, a run**: sketches 4, 8 and 9 and proto/dclose_run's eleven,
   with the cost measured.
+  - *First run, 2026-10-30* (lib/dpass.bend's exec, before its proofs;
+    proto/probe_dpass.bend against proto/probe_pass.bend on
+    proto/sketches; 8 and 9 are not on disk):
+    - **Decisions right.** The 17 sketches without direction
+      constraints get the same classes. vertical-twice (sketch 4) and
+      its raw input change at exactly the two planned places: one
+      constraint amber (its equation dropped by directions), and the old
+      Over kept.
+    - **Too slow.** base 59 ms -> 8.1 s; oncircle-pairs 0.37 s -> 123 s;
+      vertical-twice 0.46 s -> 234 s; angle-lines 58 ms -> over 300 s.
+      The target was a few percent of the solve.
+    - **nd bloated.** The amber drop's nd has 530 entries over 5
+      distinct segments: hold.der's membership chains carry every
+      generator's derivation, coefficient 0 or not, and nest.
+    - **Where the time goes** (callgrind, base and angle-opposite): no
+      single hot spot. The closure runs about twice per constraint, and
+      each run rebuilds every hull from the skeleton each round, with
+      K squared inside every hull, and reruns every check; directions
+      are recomputed by entity lookup (SK.find, about a tenth of base's
+      instructions), conclusions of nested derivations are recomputed,
+      and angle rotations make the rationals large (bit-serial Pos
+      addition dominates angle-opposite).
+    - So B3's closure needs a performance redesign before the switch.
+      B4.4 and B4.5's proofs use only the closure's proven interface
+      (dclose_ok, dclose_nostep, hold_ok, not_dir/dec_none, expl_ok,
+      dref_sound/complete), so they survive a redesign that keeps it.
 - The global theorem is not needed by Honest; it is taken up where a law
   needs it (B6).
 
