@@ -51,6 +51,9 @@
 # - The refutation decision (lib/dref.bend, lib/drefpf.bend): whatever
 #   it returns is a refutation (DRF.dref_sound), and at a fixpoint it
 #   returns none only when there is none (DRF.dref_complete).
+# - Moving a derivation to more facts (lib/dmappf.bend, B4.1): with more
+#   constraints, c has every direction refutation it has with fewer
+#   (DMP.nodir_mono), so no refutation with more means none with fewer.
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -107,6 +110,7 @@ import ../lib/dcexplpf.bend as EXP
 import ../lib/dctermpf.bend as TRM
 import ../lib/dref.bend as DFX
 import ../lib/drefpf.bend as DRF
+import ../lib/dmappf.bend as DMP
 
 # The functions on an example
 # ---------------------------
@@ -373,3 +377,7 @@ def b3_dref_complete(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&
   +eo: {DC.dclose(es, fs, ctx, t, fuel) == DC.OFix{s} : DC.Out}, +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool},
   hn: {DFX.dref(DC.OFix{s}, es, fs, ss, as) == None{} : Maybe<&2, DR.DRef>}) -> DRF.NoLRef(es, fs, ctx, ss, as):
   DRF.dref_complete(es, fs, ctx, t, fuel, s, ss, as, eo, hz, hb, hn)
+
+# B4.1's monotonicity, as its type
+def b4_nodir_mono(+sk: SK.Sketch, +c: Nat, +cs1: List<&2, Nat>, +cs2: List<&2, Nat>, +cx: List<&2, E.QExpr>, +hsub: {SS.sub(cs1, cs2) == True{} : Bool}, h: SS.NoDirRef(sk, c, cs2, cx)) -> SS.NoDirRef(sk, c, cs1, cx):
+  DMP.nodir_mono(sk, c, cs1, cs2, cx, hsub, h)

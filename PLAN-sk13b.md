@@ -968,6 +968,7 @@ give both component identities that Valid's SameV asks for.
   - sk-13a's pass emits nd = Nil. Patterns change through the drafts
     (tools/drafts regenerate lib exactly, checked 2026-10-30).
   - The owed sub(nd, nd) is then prepf's `sub_refl`.
+  - *Done 2026-10-30 (gate PASS @af059dd).*
 - **B4.1, reindexing derivations.** Premises are by index (DPrem{i}), so
   a derivation over the facts of fewer constraints is moved to more by
   mapping indices. rfacts(sk, c:cs) is a sublist of rfacts(sk, c:cs') for
@@ -978,6 +979,8 @@ give both component identities that Valid's SameV asks for.
   of the sides (conflictpf's supp_mono_s). Result: NoDirRef(sk, c, cs',
   cx) gives NoDirRef(sk, c, cs, cx). This is the deletion filter's
   monotonicity.
+  - *Done 2026-10-30* (lib/dmappf.bend `nodir_mono`, gated as
+    b4_nodir_mono).
 - **B4.2, the bridge and coverage.** angl(sk, cs) lists Ang{p, k} for
   every p in cs with a kind (non-Angles are harmless: angle_seg is None
   there). LRefOk over (ents, rfacts(c:cs), cx, cats(csides(c:cs),
