@@ -1234,6 +1234,31 @@ give both component identities that Valid's SameV asks for.
       PASS. angle-lines' closure pass 20.5 s -> 11.4 s (its large label
       4264 -> 80 bits); the others unchanged, every output the same.
       sd's product case could divide by the same gcd later.
+  - *Profiled, 2026-10-31* (callgrind and instruction counts, closure
+    pass): the native runtime evaluates arguments strictly, and matching
+    a shared constructor costs a refcount bump per field (span_fade).
+    - fe4bbeb: pins took its recursive insertion as an argument, built
+      and dropped whenever the term went in early; now a thunk (the same
+      for mcmp and minsert was neutral, monomials being short).
+      f5b2ef1: a lean row carries its pivot coefficient (lstep looked it
+      up by a scan per step). cd7484b: cleared form and denominator in one
+      pass. No proof statement changed; outputs identical.
+    - Instructions, closure pass then the whole solve for comparison:
+      base 3.49 G -> 2.39 G (solve 0.62 G); oncircle-pairs 36.2 G ->
+      23.6 G (2.9 G); vertical-twice 59.9 G -> 38.7 G (34.2 G);
+      angle-lines 84.0 G -> 83.0 G (14.3 G).
+    - What is left: on base, the runtime's freeing and refcounts are
+      about 60%, coefficient scans of residuals (EL.cz, a monomial
+      compare per term) about 25%, entity lookups for directions
+      (SK.find) about 5%. On angle-lines, bit-serial multiplication in
+      the elimination's scalings (pscale; Pos.add called 2 M times from
+      Pos.mul) is most of it: the fraction-free residuals grow.
+    - Candidates: cz stopping early on sorted residuals (needs reducedness
+      threaded through lrespf); directions per node cached; content
+      removal in the lean residuals, proven up to positive scaling (zero
+      tests unchanged), for angle-lines. None of these closes the gap to
+      a few percent of the solve on its own; the pass runs the closure
+      once per constraint, each run from scratch.
     - The other sketches' time is elsewhere (base's profile: the runtime
       freeing terms, Pos arithmetic, monomial compares; a simplex in the
       refutation decision runs about 213k steps on base).
