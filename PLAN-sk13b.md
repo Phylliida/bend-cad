@@ -1014,6 +1014,10 @@ give both component identities that Valid's SameV asks for.
     equal SV.dfacts with the final classes, since a class drops only its
     own equations (downs), and ofacts reads d only before k.
   - Proven: DropsOk and DropsNd (lib/dcwpf.bend).
+  - *Done 2026-10-30* (lib/dcwpf.bend `cw2_final`, gated as b4_walk;
+    planted errors rejected: an empty recorded nd, and a swapped
+    decision). DropsNd rides along the walk as "the drops so far
+    suffice, then so do the final ones".
 - **B4.5, the pass** (lib/dpass.bend): one constraint is the degree-0
   test, else the direction refutation, then the conflict (B4.3), else the
   walk, then Over, Kept and Amber as now. The state is sk-13a's plus the

@@ -61,6 +61,10 @@
 # - Refutations of both kinds and the generalized deletion filter
 #   (lib/dconflict.bend, lib/dconflictpf.bend, B4.3): the filter's support
 #   with its nd is the extended ConflictOk (DCP.conflict2_ok).
+# - The walk with direction drops (lib/dpass.bend cwalk2, lib/dcwpf.bend,
+#   B4.4): its drops are the extended DropsOk, each with an nd that
+#   suffices (DropsNd), and sk-13a's walk invariant holds at its end
+#   (DCW.cw2_final).
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -121,6 +125,9 @@ import ../lib/dmappf.bend as DMP
 import ../lib/dconflict.bend as DCF
 import ../lib/dbridgepf.bend as BRG
 import ../lib/dconflictpf.bend as DCP
+import ../lib/dpass.bend as DPS
+import ../lib/cwpf.bend as CWP
+import ../lib/dcwpf.bend as DCW
 import ../lib/wfdec.bend as WFD
 import ../lib/pass.bend as PAS
 
@@ -413,3 +420,12 @@ def b4_conflict(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +cand: List<&2, Na
   hr: {DCF.refutable2(sk, c, cand, SS.ctx(sk, red, c)) == True{} : Bool}, +hcov: {BX.Sketch.within(sk, PAS.nvars(sk)) == True{} : Bool}, +hwf: {WFD.wf_dec(sk) == True{} : Bool})
   -> DH.ConflictOk(sk, red, c, DCF.support2(sk, c, SS.ctx(sk, red, c), cand), DCF.cnd(sk, c, DCF.support2(sk, c, SS.ctx(sk, red, c), cand), SS.ctx(sk, red, c))):
   DCP.conflict2_ok(sk, red, c, cand, hc, hr, hcov, hwf)
+
+# B4.4's walk, as its type
+def b4_walk(+sk: SK.Sketch, +cls: List<&2, SS.Class>, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +F0: List<&2, DR.Fact>, +cx: List<&2, E.QExpr>,
+  +hF0: {F0 == SS.facts.go(SK.Sketch.eqs(sk), SS.owners(sk), SS.kept_before(sk, R, c), sk, cls, True{}, 0n) : List<&2, DR.Fact>}, +hcx: {cx == SS.ctx(sk, R, c) : List<&2, E.QExpr>},
+  +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, hl: {EL.rlen(rows) == SS.neqs(B) : Nat},
+  hB: {B == SS.presolved(sk, R, D, c) : List<&2, E.QExpr>}, hp: {B == SS.picked(SK.Sketch.eqs(sk), bp) : List<&2, E.QExpr>},
+  +hcov: {BX.Sketch.within(sk, PAS.nvars(sk)) == True{} : Bool}, +hwf: {WFD.wf_dec(sk) == True{} : Bool})
+  -> DH.DropsOk(sk, cls, R, D, c, SS.drops(CWP.cw.ds(DPS.cwalk2(SK.Sketch.eqs(sk), SS.owners(sk), c, 0n, PAS.CW{rows, B, bp, Nil{}, Nil{}}, sk, F0, cx)))) & (DH.DropsNd(sk, cls, R, D, c, CWP.cw.ds(DPS.cwalk2(SK.Sketch.eqs(sk), SS.owners(sk), c, 0n, PAS.CW{rows, B, bp, Nil{}, Nil{}}, sk, F0, cx))) & CWP.CWInv(sk, R, D, c, bp, SS.neqs(SK.Sketch.eqs(sk)), DPS.cwalk2(SK.Sketch.eqs(sk), SS.owners(sk), c, 0n, PAS.CW{rows, B, bp, Nil{}, Nil{}}, sk, F0, cx))):
+  DCW.cw2_final(sk, cls, R, D, c, F0, cx, hF0, hcx, rows, B, bp, hr, hl, hB, hp, hcov, hwf)
