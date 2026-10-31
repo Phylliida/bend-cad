@@ -88,7 +88,7 @@ def cz_pcoef(+m: List<&2, Nat>, s: S.Z, +n: List<&2, Nat>, +rest: List<&2, R.ZTe
 def cz_pins.dec(o: Cmp, +m: List<&2, Nat>, +c: S.Z, +n: List<&2, Nat>, +d: S.Z, +k: List<&2, Nat>, +rest: List<&2, R.ZTerm>,
   eo: {o == NR.mcmp(n, k) : Cmp},
   rec: {S.Z.add(EL.ifz(EL.iseq(NR.mcmp(m, n)), c), EL.cz(m, rest)) == EL.cz(m, R.pins(c, n, rest)) : S.Z})
-  -> {S.Z.add(EL.ifz(EL.iseq(NR.mcmp(m, n)), c), S.Z.add(EL.ifz(EL.iseq(NR.mcmp(m, k)), d), EL.cz(m, rest))) == EL.cz(m, R.pins.dec(o, c, n, d, k, rest, R.pins(c, n, rest))) : S.Z}:
+  -> {S.Z.add(EL.ifz(EL.iseq(NR.mcmp(m, n)), c), S.Z.add(EL.ifz(EL.iseq(NR.mcmp(m, k)), d), EL.cz(m, rest))) == EL.cz(m, R.pins.dec(o, c, n, d, k, rest, ut => R.pins(c, n, rest))) : S.Z}:
   match o:
     case LT{}:
       {==}

@@ -346,7 +346,7 @@ def pcoef_red(s: S.Z, +n: List<&2, Nat>, +rest: List<&2, R.ZTerm>, hn: {msort(n)
 def pins_lts.dec(o: Cmp, +k: List<&2, Nat>, +c: S.Z, +m: List<&2, Nat>, +d: S.Z, +n: List<&2, Nat>, +rest: List<&2, R.ZTerm>,
   hk: {LT{} == NR.mcmp(k, m) : Cmp}, hn: {islt(NR.mcmp(k, n)) == True{} : Bool}, hr: {mlts(k, rest) == True{} : Bool},
   rec: {mlts(k, R.pins(c, m, rest)) == True{} : Bool})
-  -> {mlts(k, R.pins.dec(o, c, m, d, n, rest, R.pins(c, m, rest))) == True{} : Bool}:
+  -> {mlts(k, R.pins.dec(o, c, m, d, n, rest, ut => R.pins(c, m, rest))) == True{} : Bool}:
   match o:
     case LT{}:
       KA.band_i(islt(NR.mcmp(k, m)), mlts(k, Con{R.ZTerm{d, n}, rest}), lt_of(NR.mcmp(k, m), hk), KA.band_i(islt(NR.mcmp(k, n)), mlts(k, rest), hn, hr))
@@ -366,7 +366,7 @@ def pins_lts(+k: List<&2, Nat>, +c: S.Z, +m: List<&2, Nat>, p: List<&2, R.ZTerm>
 def pins_red.dec(o: Cmp, +c: S.Z, +m: List<&2, Nat>, +d: S.Z, +n: List<&2, Nat>, +rest: List<&2, R.ZTerm>,
   +eo: {o == NR.mcmp(m, n) : Cmp}, hc: {nz(c) == True{} : Bool}, hm: {msort(m) == True{} : Bool},
   +hp: {red(Con{R.ZTerm{d, n}, rest}) == True{} : Bool}, rec: {red(R.pins(c, m, rest)) == True{} : Bool})
-  -> {red(R.pins.dec(o, c, m, d, n, rest, R.pins(c, m, rest))) == True{} : Bool}:
+  -> {red(R.pins.dec(o, c, m, d, n, rest, ut => R.pins(c, m, rest))) == True{} : Bool}:
   match o:
     case LT{}:
       red_mk(c, m, Con{R.ZTerm{d, n}, rest}, hc, hm,

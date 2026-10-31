@@ -44,21 +44,21 @@ def pcoef(s: S.Z, n: List<&2, Nat>, rest: List<&2, ZTerm>) -> List<&2, ZTerm>:
     case S.Zneg{p}:
       Con{ZTerm{S.Zneg{p}, n}, rest}
 
-def pins.dec(o: Cmp, c: S.Z, m: List<&2, Nat>, d: S.Z, n: List<&2, Nat>, rest: List<&2, ZTerm>, r: List<&2, ZTerm>) -> List<&2, ZTerm>:
+def pins.dec(o: Cmp, c: S.Z, m: List<&2, Nat>, d: S.Z, n: List<&2, Nat>, rest: List<&2, ZTerm>, r: Unit -> List<&2, ZTerm>) -> List<&2, ZTerm>:
   match o:
     case LT{}:
       Con{ZTerm{c, m}, Con{ZTerm{d, n}, rest}}
     case EQ{}:
       pcoef(S.Z.add(c, d), n, rest)
     case GT{}:
-      Con{ZTerm{d, n}, r}
+      Con{ZTerm{d, n}, r(Unit{})}
 
 def pins(+c: S.Z, +m: List<&2, Nat>, p: List<&2, ZTerm>) -> List<&2, ZTerm>:
   match p:
     case Nil{}:
       Con{ZTerm{c, m}, Nil{}}
     case Con{ZTerm{+d, +n}, +rest}:
-      pins.dec(NR.mcmp(m, n), c, m, d, n, rest, pins(c, m, rest))
+      pins.dec(NR.mcmp(m, n), c, m, d, n, rest, ut => pins(c, m, rest))
 
 # adds the term c*m to p, dropping it when c is zero
 def pinsert(c: S.Z, m: List<&2, Nat>, p: List<&2, ZTerm>) -> List<&2, ZTerm>:
@@ -165,7 +165,7 @@ def pcoef_ok(-env: List<&2, S.Z>, s: S.Z, -n: List<&2, Nat>, -rest: List<&2, ZTe
 def pins_ok.dec(+env: List<&2, S.Z>, o: Cmp, +c: S.Z, +m: List<&2, Nat>, +d: S.Z, +n: List<&2, Nat>, +rest: List<&2, ZTerm>,
   e: {o == NR.mcmp(m, n) : Cmp},
   rec: {S.Z.add(S.Z.mul(c, emono(env, m)), epoly(env, rest)) == epoly(env, pins(c, m, rest)) : S.Z})
-  -> {S.Z.add(S.Z.mul(c, emono(env, m)), S.Z.add(S.Z.mul(d, emono(env, n)), epoly(env, rest))) == epoly(env, pins.dec(o, c, m, d, n, rest, pins(c, m, rest))) : S.Z}:
+  -> {S.Z.add(S.Z.mul(c, emono(env, m)), S.Z.add(S.Z.mul(d, emono(env, n)), epoly(env, rest))) == epoly(env, pins.dec(o, c, m, d, n, rest, ut => pins(c, m, rest))) : S.Z}:
   match o:
     case LT{}:
       {==}

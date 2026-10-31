@@ -203,7 +203,7 @@ def pcoef_ok(~F: O.OField, +env: List<&2, O.C(F)>, s: S.Z, +n: List<&2, Nat>, +r
 def pins_ok.dec(~F: O.OField, +env: List<&2, O.C(F)>, o: Cmp, +c: S.Z, +m: List<&2, Nat>, +d: S.Z, +n: List<&2, Nat>, +rest: List<&2, R.ZTerm>,
   e: {o == NR.mcmp(m, n) : Cmp},
   rec: {O.add(F, O.mul(F, O.ofz(~F, c), femono(~F, env, m)), fepoly(~F, env, rest)) == fepoly(~F, env, R.pins(c, m, rest)) : O.C(F)})
-  -> {O.add(F, O.mul(F, O.ofz(~F, c), femono(~F, env, m)), O.add(F, O.mul(F, O.ofz(~F, d), femono(~F, env, n)), fepoly(~F, env, rest))) == fepoly(~F, env, R.pins.dec(o, c, m, d, n, rest, R.pins(c, m, rest))) : O.C(F)}:
+  -> {O.add(F, O.mul(F, O.ofz(~F, c), femono(~F, env, m)), O.add(F, O.mul(F, O.ofz(~F, d), femono(~F, env, n)), fepoly(~F, env, rest))) == fepoly(~F, env, R.pins.dec(o, c, m, d, n, rest, ut => R.pins(c, m, rest))) : O.C(F)}:
   match o:
     case LT{}:
       {==}

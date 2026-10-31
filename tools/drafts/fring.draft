@@ -203,7 +203,7 @@ def pcoef_ok(~F: O.OField, +env: List<&2, @T>, s: S.Z, +n: List<&2, Nat>, +rest:
 def pins_ok.dec(~F: O.OField, +env: List<&2, @T>, o: Cmp, +c: S.Z, +m: List<&2, Nat>, +d: S.Z, +n: List<&2, Nat>, +rest: List<&2, R.ZTerm>,
   e: {o == NR.mcmp(m, n) : Cmp},
   rec: {@A(@M(@OZ(c), @EM(m)), @EP(rest)) == @EP(R.pins(c, m, rest)) : @T})
-  -> {@A(@M(@OZ(c), @EM(m)), @A(@M(@OZ(d), @EM(n)), @EP(rest))) == @EP(R.pins.dec(o, c, m, d, n, rest, R.pins(c, m, rest))) : @T}:
+  -> {@A(@M(@OZ(c), @EM(m)), @A(@M(@OZ(d), @EM(n)), @EP(rest))) == @EP(R.pins.dec(o, c, m, d, n, rest, ut => R.pins(c, m, rest))) : @T}:
   match o:
     case LT{}:
       {==}
