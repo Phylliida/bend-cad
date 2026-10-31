@@ -349,14 +349,16 @@ def enc_in(+a: E.QExpr, +b: E.QExpr, +A: List<&2, E.QExpr>, +B: List<&2, E.QExpr
 def lsym.at(+p: List<&2, S.Q>, +e1: E.QExpr, +e2: E.QExpr, h: SV.Ident(e1, e2)) -> S.Q.eq(E.qeval(p, e2), E.qeval(p, e1)):
   LQ.q_sym(E.qeval(p, e1), E.qeval(p, e2), h(p))
 
-def pch_in.go(+es: List<&2, SK.Ent>, +r: DR.Node, +t: Nat, +ls: List<&2, S.Q>, +xs: List<&2, SK.VE>) -> SN.InSpan(HS.enc(HS.clin(es, r, ls, xs), t), HS.encs(xs, t)):
-  (ls, ID.qzero_ident(HS.enc(HS.clin(es, r, ls, xs), t), SV.lin(ls, HS.encs(xs, t)), p => lsym.at(p, SV.lin(ls, HS.encs(xs, t)), HS.enc(HS.clin(es, r, ls, xs), t), HP.enc_lin(es, r, t, ls, xs))))
+def pch_in.at(+p: List<&2, S.Q>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +r: DR.Node, +t: Nat, +ls: List<&2, S.Q>, +prev: List<&2, DR.Der>)
+  -> S.Q.eq(E.qeval(p, HS.enc(DR.Jd.x(DR.concl(es, fs, HS.pchain(r, ls, prev))), t)), E.qeval(p, SV.lin(ls, HS.encs(HS.hxs(es, fs, prev), t)))):
+  LQ.q_trans(E.qeval(p, HS.enc(DR.Jd.x(DR.concl(es, fs, HS.pchain(r, ls, prev))), t)), E.qeval(p, HS.enc(HS.clin(es, r, ls, HS.hxs(es, fs, prev)), t)), E.qeval(p, SV.lin(ls, HS.encs(HS.hxs(es, fs, prev), t))),
+    HP.enc_cong.at(p, DR.Jd.x(DR.concl(es, fs, HS.pchain(r, ls, prev))), HS.clin(es, r, ls, HS.hxs(es, fs, prev)), t, HP.pchain_x(es, fs, r, ls, prev)),
+    lsym.at(p, SV.lin(ls, HS.encs(HS.hxs(es, fs, prev), t)), HS.enc(HS.clin(es, r, ls, HS.hxs(es, fs, prev)), t), HP.enc_lin(es, r, t, ls, HS.hxs(es, fs, prev))))
 
 # a chain over the earlier generators is in their span
 def pch_in(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +r: DR.Node, +t: Nat, +ls: List<&2, S.Q>, +prev: List<&2, DR.Der>)
   -> SN.InSpan(HS.enc(DR.Jd.x(DR.concl(es, fs, HS.pchain(r, ls, prev))), t), HS.encs(HS.hxs(es, fs, prev), t)):
-  %Equal.sym(SK.VE, DR.Jd.x(DR.concl(es, fs, HS.pchain(r, ls, prev))), HS.clin(es, r, ls, HS.hxs(es, fs, prev)), HP.pchain_x(es, fs, r, ls, prev)) : SN.InSpan(HS.enc(_, t), HS.encs(HS.hxs(es, fs, prev), t))
-  pch_in.go(es, r, t, ls, HS.hxs(es, fs, prev))
+  (ls, ID.qzero_ident(HS.enc(DR.Jd.x(DR.concl(es, fs, HS.pchain(r, ls, prev))), t), SV.lin(ls, HS.encs(HS.hxs(es, fs, prev), t)), p => pch_in.at(p, es, fs, r, t, ls, prev)))
 
 # g = (g - c) + c
 def split.id(+p: List<&2, S.Q>, +fd: SK.VE, +fp: SK.VE, +t: Nat)

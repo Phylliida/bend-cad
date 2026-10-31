@@ -248,12 +248,20 @@ def rhull_vs(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QEx
   hfold_vs(DC.rgens(fs, r, DC.Sk.ms(s), DC.Sk.ls(s)), DC.khull(es, fs, t, DC.Sk.k(s), r), t, es, fs, allvs_rgens(es, fs, ctx, t, r, DC.Sk.ms(s), DC.Sk.ls(s), hm),
     hfold_vs(DC.kgens(r, KS.ks.ds(DC.Sk.k(s))), HS.hs0(), t, es, fs, allvs_kgens(r, KS.ks.ds(DC.Sk.k(s)), es, fs, hk), Unit{}))
 
+def pchain_vs.pick(b: Bool, +r: DR.Node, +l: S.Q, +d: DR.Der, +rest: DR.Der, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, hd: BS.VS(DR.Jd.x(DR.concl(es, fs, d)), DC.bases(es, fs)), ih: BS.VS(DR.Jd.x(DR.concl(es, fs, rest)), DC.bases(es, fs)))
+  -> BS.VS(DR.Jd.x(DR.concl(es, fs, HS.pc.pick(b, l, d, rest))), DC.bases(es, fs)):
+  match b:
+    case True{}:
+      BS.vs_vlin(l, DR.Jd.x(DR.concl(es, fs, d)), DR.qo(), DR.Jd.x(DR.concl(es, fs, rest)), DC.bases(es, fs), hd, ih)
+    case False{}:
+      ih
+
 def pchain_vs(+r: DR.Node, ls: List<&2, S.Q>, ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, h: AllVS(ds, es, fs))
   -> BS.VS(DR.Jd.x(DR.concl(es, fs, HS.pchain(r, ls, ds))), DC.bases(es, fs)):
   match ls ds:
     case Con{+l, +lt} Con{+d, +dt}:
       (hd, ht) = h
-      BS.vs_vlin(l, DR.Jd.x(DR.concl(es, fs, d)), DR.qo(), DR.Jd.x(DR.concl(es, fs, HS.pchain(r, lt, dt))), DC.bases(es, fs), hd, pchain_vs(r, lt, dt, es, fs, ht))
+      pchain_vs.pick(DR.qnz(l), r, l, d, HS.pchain(r, lt, dt), es, fs, hd, pchain_vs(r, lt, dt, es, fs, ht))
     case Nil{} ds:
       BS.vs_vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r), DC.bases(es, fs), vs_zdir(es, fs, r), vs_zdir(es, fs, r))
     case Con{l, lt} Nil{}:

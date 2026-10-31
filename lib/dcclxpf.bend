@@ -228,9 +228,16 @@ def cl.rel.at(+p: List<&2, S.Q>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, 
 def cl.rel.px(+p: List<&2, S.Q>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +r: DR.Node, +d: DR.Der, +prev: List<&2, DR.Der>, +B: List<&2, E.QExpr>, +ls2: List<&2, S.Q>,
   hid: SV.Ident(HS.enc(DR.imul(DR.Jd.x(DR.concl(es, fs, d))), t), SV.lin(ls2, ecat(B, imx(es, fs, t, prev)))))
   -> S.Q.eq(E.qeval(p, HS.enc(DR.imul(DR.Jd.x(DR.concl(es, fs, DR.DPLin{DR.qo(), d, S.Q.neg(DR.qo()), HS.pchain(r, PT.qdrop(SV.neqs(B), ls2), prev)}))), t)), E.qeval(p, SV.lin(SN.ltrunc(ls2, B), B))):
-  %Equal.sym(SK.VE, DR.Jd.x(DR.concl(es, fs, HS.pchain(r, PT.qdrop(SV.neqs(B), ls2), prev))), HS.clin(es, r, PT.qdrop(SV.neqs(B), ls2), HS.hxs(es, fs, prev)), HP.pchain_x(es, fs, r, PT.qdrop(SV.neqs(B), ls2), prev))
-    : S.Q.eq(E.qeval(p, HS.enc(DR.imul(DR.vlin(DR.qo(), DR.Jd.x(DR.concl(es, fs, d)), S.Q.neg(DR.qo()), _)), t)), E.qeval(p, SV.lin(SN.ltrunc(ls2, B), B)))
-  cl.rel.at(p, es, fs, t, r, d, prev, B, ls2, hid)
+  QA.ch4(E.qeval(p, HS.enc(DR.imul(DR.vlin(DR.qo(), DR.Jd.x(DR.concl(es, fs, d)), S.Q.neg(DR.qo()), DR.Jd.x(DR.concl(es, fs, HS.pchain(r, PT.qdrop(SV.neqs(B), ls2), prev))))), t)),
+    S.Q.add(S.Q.mul(DR.qo(), E.qeval(p, HS.enc(DR.imul(DR.Jd.x(DR.concl(es, fs, d))), t))), S.Q.mul(S.Q.neg(DR.qo()), E.qeval(p, HS.enc(DR.imul(DR.Jd.x(DR.concl(es, fs, HS.pchain(r, PT.qdrop(SV.neqs(B), ls2), prev)))), t)))),
+    S.Q.add(S.Q.mul(DR.qo(), E.qeval(p, HS.enc(DR.imul(DR.Jd.x(DR.concl(es, fs, d))), t))), S.Q.mul(S.Q.neg(DR.qo()), E.qeval(p, HS.enc(DR.imul(HS.clin(es, r, PT.qdrop(SV.neqs(B), ls2), HS.hxs(es, fs, prev))), t)))),
+    E.qeval(p, HS.enc(DR.imul(DR.vlin(DR.qo(), DR.Jd.x(DR.concl(es, fs, d)), S.Q.neg(DR.qo()), HS.clin(es, r, PT.qdrop(SV.neqs(B), ls2), HS.hxs(es, fs, prev)))), t)),
+    E.qeval(p, SV.lin(SN.ltrunc(ls2, B), B)),
+    encim_vlin.at(p, DR.qo(), DR.Jd.x(DR.concl(es, fs, d)), S.Q.neg(DR.qo()), DR.Jd.x(DR.concl(es, fs, HS.pchain(r, PT.qdrop(SV.neqs(B), ls2), prev))), t),
+    LQ.q_add_cong_r(S.Q.mul(DR.qo(), E.qeval(p, HS.enc(DR.imul(DR.Jd.x(DR.concl(es, fs, d))), t))), S.Q.mul(S.Q.neg(DR.qo()), E.qeval(p, HS.enc(DR.imul(DR.Jd.x(DR.concl(es, fs, HS.pchain(r, PT.qdrop(SV.neqs(B), ls2), prev)))), t))), S.Q.mul(S.Q.neg(DR.qo()), E.qeval(p, HS.enc(DR.imul(HS.clin(es, r, PT.qdrop(SV.neqs(B), ls2), HS.hxs(es, fs, prev))), t))),
+      LQ.q_mul_cong_r(S.Q.neg(DR.qo()), E.qeval(p, HS.enc(DR.imul(DR.Jd.x(DR.concl(es, fs, HS.pchain(r, PT.qdrop(SV.neqs(B), ls2), prev)))), t)), E.qeval(p, HS.enc(DR.imul(HS.clin(es, r, PT.qdrop(SV.neqs(B), ls2), HS.hxs(es, fs, prev))), t)), HP.enc_cong.at(p, DR.imul(DR.Jd.x(DR.concl(es, fs, HS.pchain(r, PT.qdrop(SV.neqs(B), ls2), prev)))), DR.imul(HS.clin(es, r, PT.qdrop(SV.neqs(B), ls2), HS.hxs(es, fs, prev))), t, HP.imul_cong(DR.Jd.x(DR.concl(es, fs, HS.pchain(r, PT.qdrop(SV.neqs(B), ls2), prev))), HS.clin(es, r, PT.qdrop(SV.neqs(B), ls2), HS.hxs(es, fs, prev)), HP.pchain_x(es, fs, r, PT.qdrop(SV.neqs(B), ls2), prev))))),
+    LQ.q_sym(E.qeval(p, HS.enc(DR.imul(DR.vlin(DR.qo(), DR.Jd.x(DR.concl(es, fs, d)), S.Q.neg(DR.qo()), HS.clin(es, r, PT.qdrop(SV.neqs(B), ls2), HS.hxs(es, fs, prev)))), t)), S.Q.add(S.Q.mul(DR.qo(), E.qeval(p, HS.enc(DR.imul(DR.Jd.x(DR.concl(es, fs, d))), t))), S.Q.mul(S.Q.neg(DR.qo()), E.qeval(p, HS.enc(DR.imul(HS.clin(es, r, PT.qdrop(SV.neqs(B), ls2), HS.hxs(es, fs, prev))), t)))), encim_vlin.at(p, DR.qo(), DR.Jd.x(DR.concl(es, fs, d)), S.Q.neg(DR.qo()), HS.clin(es, r, PT.qdrop(SV.neqs(B), ls2), HS.hxs(es, fs, prev)), t)),
+    cl.rel.at(p, es, fs, t, r, d, prev, B, ls2, hid))
 
 def open_move(+es: List<&2, SK.Ent>, +ctx: List<&2, E.QExpr>, +a: DR.Node, +r: DR.Node, e: {a == r : DR.Node}, h: VD.OpenD(es, ctx, r)) -> VD.OpenD(es, ctx, a):
   %Equal.sym(DR.Node, a, r, e) : VD.OpenD(es, ctx, _)
@@ -265,7 +272,7 @@ def cl.px(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>
   (ppc, apc) = s1
   (((vd, (vpc, (pd, (ppc, Equal.trans(DR.Node, DR.Jd.a(DR.concl(es, fs, d)), r, DR.Jd.a(DR.concl(es, fs, HS.pchain(r, lsI, prev))), ad, Equal.sym(DR.Node, DR.Jd.a(DR.concl(es, fs, HS.pchain(r, lsI, prev))), r, apc)))))), ({==}, ad)),
    HP.vlin_below(DR.qo(), DR.Jd.x(DR.concl(es, fs, d)), S.Q.neg(DR.qo()), DR.Jd.x(DR.concl(es, fs, HS.pchain(r, lsI, prev))), t, bd,
-     DD.hs_der.below(es, fs, r, t, lsI, prev, HP.clin_below(es, r, t, lsI, HS.hxs(es, fs, prev), DD.allpd_below(prev, es, fs, ctx, r, t, hp), BL.zdir_below(es, t, r, hz)))))
+     HP.pchain_below(es, fs, r, t, lsI, prev, DD.allpd_below(prev, es, fs, ctx, r, t, hp), BL.zdir_below(es, t, r, hz))))
 
 def cl.fin(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +r: DR.Node, +px: DR.Der, +d2: DR.Der, +orr: VD.OpenD(es, ctx, r),
   pxk: SK.Both(SK.Both(VD.VD(es, fs, ctx, px), SK.Both(VD.Isp(DR.concl(es, fs, px)), {DR.Jd.a(DR.concl(es, fs, px)) == r : DR.Node})), HP.VBelow(DR.Jd.x(DR.concl(es, fs, px)), t)),

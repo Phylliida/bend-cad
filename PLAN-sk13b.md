@@ -1062,6 +1062,70 @@ give both component identities that Valid's SameV asks for.
       dref_sound/complete), so they survive a redesign that keeps it.
 - The global theorem is not needed by Honest; it is taken up where a law
   needs it (B6).
+- **B4.8, the closure made fast** (designed 2026-10-30, after B4.7).
+  Danielle: optimize as much as needed, as long as every proven
+  statement stays the same. The closure's interface (dclose_ok,
+  dclose_nostep, hold_ok, dec_none/not_dir, expl_ok, dref_sound/complete,
+  hyp_of) keeps its statements. Underneath it there are two changes, of
+  different kinds:
+  - *Measured shape* (proto/probe_dstats.bend, every earlier constraint
+    kept): a run is 1 to 22 rounds; nearly every round is a merge or a
+    K addition, and there were no links. K is about as large as the
+    facts (17 on base, 41 on vertical-twice), and roots go from one per
+    segment down to a few. Each round rebuilds about two full hulls per
+    root (clxs, then mgs), each with K squared's 2|K| generators first,
+    and every insertion carries sk-13a's combination vector (O(rows) Z
+    products per step). The checks evaluate every alternative eagerly:
+    mgs builds every root's hull and the merge derivation of every later
+    success, even after F's check found one. The label tests encode
+    every generator before knowing they need any. About 60% of base's
+    instructions are the runtime freeing those terms.
+  - **A. Minimal derivations (nd).** HS.pchain and KS.kchain skip
+    multipliers that are 0. hs.der and ks.der keep their lemmas
+    (hs_der_okd, ks_der_okd: VD, proving the form asked); pchain_x and
+    kchain_e become SameV/Same statements, or HS.clin skips 0 alongside.
+    Tried unproven on vertical-twice: the amber drop's nd goes from 530
+    entries to 20, with the same decisions. This changes derivations, so
+    it is re-proven where the chains are unfolded (lib/hspacepf.bend,
+    lib/kspacepf.bend, lib/dcderpf.bend, and the pchain_x users in
+    lib/dcclprogpf.bend, lib/dcclxpf.bend, lib/dctiedpf.bend,
+    lib/dcgspanpf.bend). *Done 2026-10-30:* pchain_x is SameV to clin and
+    kchain_e Same to lin; pchain_below replaces the rewrite through
+    clin_below; the pointwise users go through enc, i and cross
+    congruences. Gate PASS.
+  - **B. The same closure, computed fast.** The new run returns exactly
+    the Out the current one does (an equation, dclose == dclose_ref), so
+    B3's proofs stand unchanged, renamed to dclose_ref; each interface
+    lemma is its old proof after one rewrite. What changes is only how
+    much is computed:
+    - B.1 Lean residuals. A residual's polynomial does not depend on the
+      combination vectors (EL.step's p part reads only p, pv). resid_p
+      and a lean fold over rows without cb, with the projection lemmas
+      resp(resid(rows, e)) == resid_p(proj(rows), e) and proj(hfold(gs,
+      h)) == lfold(gs, proj(h)). Every Bool a check decides on is then a
+      lean one.
+    - B.2 Short-circuit and lazy. Each check returns its first item
+      without computing the alternatives after it; a label test's
+      generator encodings, and an item's derivation, are computed only
+      once the lean test has found it, by the current full functions (so
+      the item is the same data).
+    - B.3 Lean K squared, cached. The run carries, per open node, the
+      lean rows of khull(K, node), which depend only on K: updated by two
+      lean insertions when K keeps a new generator (khull of K's list
+      with one appended is the fold of its two forms on the old one).
+      Each round, a free root's lean set is its own generators folded on
+      that, once, shared by clxs, mgs and lks.
+    - B.4 The fast round equals round under the cache invariant (cache
+      == proj(khull(Sk.k(s), node))); the fast run equals run; dclose is
+      the fast run, and the old definition is dclose_ref.
+    - B.5 Re-measure on proto/sketches.
+  - *Later, if still too slow*: the found item's full hull from a cached
+    full khull per root (filled lazily); smaller numbers (content
+    removal in the lean residuals, proven up to positive scaling);
+    warm-starting a constraint's run from the previous fixpoint when the
+    context collapses nothing new (a start state for dclose, so the
+    interface gains a parameter and B4's uses change: only with
+    Danielle's agreement).
 
 ### B5. The verdict and soundness
 - `VD.exact` with h from nd. The nd sides are checked over the box by

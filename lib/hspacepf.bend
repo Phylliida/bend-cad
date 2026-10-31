@@ -2,10 +2,11 @@
 # sk-13a's echelon form of the encoded generators, and every generator's
 # derivation is valid, proves a parallel judgment at the root, and proves
 # a form whose parts are below t. Adding keeps it. A zero residual gives a
-# valid par-lin chain proving par(r, y): its conclusion is clin of the
-# generators (pchain_x), lin over the encoded generators is clin's
-# encoding (enc_lin), and the tag separates (lib/seppf.bend). A nonzero
-# residual means no combination. Proofs only.
+# valid par-lin chain proving par(r, y): its conclusion is the same as
+# clin of the generators, up to the 0 terms the chain skips (pchain_x),
+# lin over the encoded generators is clin's encoding (enc_lin), and the
+# tag separates (lib/seppf.bend). A nonzero residual means no
+# combination. Proofs only.
 
 import Base
 import ../spec/num.bend as S
@@ -121,15 +122,71 @@ def AllBelow(xs: List<&2, SK.VE>, +t: Nat) -> Data:
     case Con{+x, tl}:
       SK.Both(VBelow(x, t), AllBelow(tl, t))
 
-def pchain_x(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +r: DR.Node, ls: List<&2, S.Q>, ds: List<&2, DR.Der>) -> {DR.Jd.x(DR.concl(es, fs, HS.pchain(r, ls, ds))) == HS.clin(es, r, ls, HS.hxs(es, fs, ds)) : SK.VE}:
+# SameV, moved along
+def samev_refl(+v: SK.VE) -> DR.SameV(v, v):
+  (p => LQ.q_refl(E.qeval(p, SK.VE.x(v))), p => LQ.q_refl(E.qeval(p, SK.VE.y(v))))
+
+def samev_tr(+a: SK.VE, +b: SK.VE, +c: SK.VE, h1: DR.SameV(a, b), h2: DR.SameV(b, c)) -> DR.SameV(a, c):
+  (h1x, h1y) = h1
+  (h2x, h2y) = h2
+  (KP.same_trans(SK.VE.x(a), SK.VE.x(b), SK.VE.x(c), h1x, h2x), KP.same_trans(SK.VE.y(a), SK.VE.y(b), SK.VE.y(c), h1y, h2y))
+
+# m1 x1 + m2 A and m1 x1 + m2 B, one part, A and B the same there
+def vl_cong.at(+p: List<&2, S.Q>, +m1: S.Q, +X1: E.QExpr, +m2: S.Q, +A: E.QExpr, +B: E.QExpr, h: DR.Same(A, B))
+  -> S.Q.eq(S.Q.add(S.Q.mul(m1, E.qeval(p, X1)), S.Q.mul(m2, E.qeval(p, A))), S.Q.add(S.Q.mul(m1, E.qeval(p, X1)), S.Q.mul(m2, E.qeval(p, B)))):
+  LQ.q_add_cong_r(S.Q.mul(m1, E.qeval(p, X1)), S.Q.mul(m2, E.qeval(p, A)), S.Q.mul(m2, E.qeval(p, B)), LQ.q_mul_cong_r(m2, E.qeval(p, A), E.qeval(p, B), h(p)))
+
+def vl_cong(+m1: S.Q, +x1: SK.VE, +m2: S.Q, +A: SK.VE, +B: SK.VE, h: DR.SameV(A, B)) -> DR.SameV(DR.vlin(m1, x1, m2, A), DR.vlin(m1, x1, m2, B)):
+  (hx, hy) = h
+  (p => vl_cong.at(p, m1, SK.VE.x(x1), m2, SK.VE.x(A), SK.VE.x(B), hx), p => vl_cong.at(p, m1, SK.VE.y(x1), m2, SK.VE.y(A), SK.VE.y(B), hy))
+
+# l X + 1 C = C when l is 0
+def vl_zero.q(+l: S.Q, +X: S.Q, +C: S.Q, h: {DR.qnz(l) == False{} : Bool}) -> S.Q.eq(S.Q.add(S.Q.mul(l, X), S.Q.mul(DR.qo(), C)), C):
+  LQ.q_trans(S.Q.add(S.Q.mul(l, X), S.Q.mul(DR.qo(), C)), S.Q.add(S.Q.mul(DR.qz(), X), S.Q.mul(DR.qo(), C)), C,
+    LQ.q_add_cong_l(S.Q.mul(l, X), S.Q.mul(DR.qz(), X), S.Q.mul(DR.qo(), C), LQ.q_mul_cong_l(l, DR.qz(), X, KP.qnz_z(l, h))),
+    QR.qring_eq([X, C], E.QAdd{E.QMul{E.QCst{DR.qz()}, E.QVar{0n}}, E.QMul{E.QCst{DR.qo()}, E.QVar{1n}}}, E.QVar{1n}, {==}))
+
+def vl_zero.at(+p: List<&2, S.Q>, +l: S.Q, +X: E.QExpr, +P: E.QExpr, +C: E.QExpr, +hl: {DR.qnz(l) == False{} : Bool}, h: DR.Same(P, C))
+  -> S.Q.eq(E.qeval(p, P), S.Q.add(S.Q.mul(l, E.qeval(p, X)), S.Q.mul(DR.qo(), E.qeval(p, C)))):
+  LQ.q_trans(E.qeval(p, P), E.qeval(p, C), S.Q.add(S.Q.mul(l, E.qeval(p, X)), S.Q.mul(DR.qo(), E.qeval(p, C))), h(p),
+    LQ.q_sym(S.Q.add(S.Q.mul(l, E.qeval(p, X)), S.Q.mul(DR.qo(), E.qeval(p, C))), E.qeval(p, C), vl_zero.q(l, E.qeval(p, X), E.qeval(p, C), hl)))
+
+# P the same as C, and l 0: P the same as l x + 1 C
+def vl_zero(+l: S.Q, +x: SK.VE, +P: SK.VE, +C: SK.VE, +hl: {DR.qnz(l) == False{} : Bool}, h: DR.SameV(P, C)) -> DR.SameV(P, DR.vlin(l, x, DR.qo(), C)):
+  (hx, hy) = h
+  (p => vl_zero.at(p, l, SK.VE.x(x), SK.VE.x(P), SK.VE.x(C), hl, hx), p => vl_zero.at(p, l, SK.VE.y(x), SK.VE.y(P), SK.VE.y(C), hl, hy))
+
+def pchain_x.pick(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +l: S.Q, +d: DR.Der, +rest: DR.Der, +C: SK.VE, eb: {b == DR.qnz(l) : Bool}, ih: DR.SameV(DR.Jd.x(DR.concl(es, fs, rest)), C))
+  -> DR.SameV(DR.Jd.x(DR.concl(es, fs, HS.pc.pick(b, l, d, rest))), DR.vlin(l, DR.Jd.x(DR.concl(es, fs, d)), DR.qo(), C)):
+  match b:
+    case True{}:
+      vl_cong(l, DR.Jd.x(DR.concl(es, fs, d)), DR.qo(), DR.Jd.x(DR.concl(es, fs, rest)), C, ih)
+    case False{}:
+      vl_zero(l, DR.Jd.x(DR.concl(es, fs, d)), DR.Jd.x(DR.concl(es, fs, rest)), C, Equal.sym(Bool, False{}, DR.qnz(l), eb), ih)
+
+# the chain proves clin of the generators (up to the 0 terms it skips)
+def pchain_x(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +r: DR.Node, ls: List<&2, S.Q>, ds: List<&2, DR.Der>) -> DR.SameV(DR.Jd.x(DR.concl(es, fs, HS.pchain(r, ls, ds))), HS.clin(es, r, ls, HS.hxs(es, fs, ds))):
   match ls ds:
     case Con{+l, +lt} Con{+d, +dt}:
-      %Equal.sym(SK.VE, DR.Jd.x(DR.concl(es, fs, HS.pchain(r, lt, dt))), HS.clin(es, r, lt, HS.hxs(es, fs, dt)), pchain_x(es, fs, r, lt, dt)) : {DR.vlin(l, DR.Jd.x(DR.concl(es, fs, d)), DR.qo(), _) == HS.clin(es, r, Con{l, lt}, HS.hxs(es, fs, Con{d, dt})) : SK.VE}
-      {==}
+      pchain_x.pick(DR.qnz(l), es, fs, l, d, HS.pchain(r, lt, dt), HS.clin(es, r, lt, HS.hxs(es, fs, dt)), {==}, pchain_x(es, fs, r, lt, dt))
     case Nil{} ds:
-      {==}
+      samev_refl(DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r)))
     case Con{l, lt} Nil{}:
-      {==}
+      samev_refl(DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r)))
+
+def neg_cong.at(+p: List<&2, S.Q>, +a: E.QExpr, +b: E.QExpr, h: DR.Same(a, b)) -> S.Q.eq(E.qeval(p, E.QNeg{a}), E.qeval(p, E.QNeg{b})):
+  LQ.q_neg_cong(E.qeval(p, a), E.qeval(p, b), h(p))
+
+# i times, moved along SameV
+def imul_cong(+u: SK.VE, +v: SK.VE, h: DR.SameV(u, v)) -> DR.SameV(DR.imul(u), DR.imul(v)):
+  (hx, hy) = h
+  (p => neg_cong.at(p, SK.VE.y(u), SK.VE.y(v), hy), hx)
+
+# a form's encoding, moved along SameV
+def enc_cong.at(+p: List<&2, S.Q>, +u: SK.VE, +v: SK.VE, +t: Nat, h: DR.SameV(u, v)) -> S.Q.eq(E.qeval(p, HS.enc(u, t)), E.qeval(p, HS.enc(v, t))):
+  (hx, hy) = h
+  QA.add_cong(E.qeval(p, SK.VE.x(u)), E.qeval(p, SK.VE.x(v)), S.Q.mul(E.qlookup(p, t), E.qeval(p, SK.VE.y(u))), S.Q.mul(E.qlookup(p, t), E.qeval(p, SK.VE.y(v))), hx(p),
+    LQ.q_mul_cong_r(E.qlookup(p, t), E.qeval(p, SK.VE.y(u)), E.qeval(p, SK.VE.y(v)), hy(p)))
 
 def pchain_ok.go(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +r: DR.Node, +t: Nat, +l: S.Q, +d: DR.Der, +rest: DR.Der, +dt: List<&2, DR.Der>,
   v: DR.Valid(es, fs, ctx, d), p: DR.IsP(DR.concl(es, fs, d)), +n: {DR.Jd.a(DR.concl(es, fs, d)) == r : DR.Node}, b: VBelow(DR.Jd.x(DR.concl(es, fs, d)), t),
@@ -155,6 +212,17 @@ def pchain_ok.base(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2,
   -> ((DR.Valid(es, fs, ctx, HS.pchain(r, Nil{}, ds)) & DR.IsP(DR.concl(es, fs, HS.pchain(r, Nil{}, ds)))) & {DR.Jd.a(DR.concl(es, fs, HS.pchain(r, Nil{}, ds))) == r : DR.Node}) & AllBelow(HS.hxs(es, fs, ds), t):
   ((((Unit{}, (Unit{}, (Unit{}, (Unit{}, {==})))), Unit{}), {==}), allp_below(es, fs, ctx, r, t, ds, h))
 
+def pchain_ok.pick(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +r: DR.Node, +t: Nat, +l: S.Q, +d: DR.Der, +rest: DR.Der, +dt: List<&2, DR.Der>,
+  v: DR.Valid(es, fs, ctx, d), p: DR.IsP(DR.concl(es, fs, d)), +n: {DR.Jd.a(DR.concl(es, fs, d)) == r : DR.Node}, bb: VBelow(DR.Jd.x(DR.concl(es, fs, d)), t),
+  ih: ((DR.Valid(es, fs, ctx, rest) & DR.IsP(DR.concl(es, fs, rest))) & {DR.Jd.a(DR.concl(es, fs, rest)) == r : DR.Node}) & AllBelow(HS.hxs(es, fs, dt), t))
+  -> ((DR.Valid(es, fs, ctx, HS.pc.pick(b, l, d, rest)) & DR.IsP(DR.concl(es, fs, HS.pc.pick(b, l, d, rest)))) & {DR.Jd.a(DR.concl(es, fs, HS.pc.pick(b, l, d, rest))) == r : DR.Node}) & AllBelow(HS.hxs(es, fs, Con{d, dt}), t):
+  match b:
+    case True{}:
+      pchain_ok.go(es, fs, ctx, r, t, l, d, rest, dt, v, p, n, bb, ih)
+    case False{}:
+      (vn, ab) = ih
+      (vn, (bb, ab))
+
 # the chain over the generators is valid, parallel at r, and the
 # generators' forms are below t
 def pchain_ok(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +r: DR.Node, +t: Nat, ls: List<&2, S.Q>, ds: List<&2, DR.Der>, h: AllP(es, fs, ctx, r, t, ds))
@@ -165,7 +233,7 @@ def pchain_ok(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QE
       (p, r2) = r1
       (n, r3) = r2
       (b, rt) = r3
-      pchain_ok.go(es, fs, ctx, r, t, l, d, HS.pchain(r, lt, dt), dt, v, p, n, b, pchain_ok(es, fs, ctx, r, t, lt, dt, rt))
+      pchain_ok.pick(DR.qnz(l), es, fs, ctx, r, t, l, d, HS.pchain(r, lt, dt), dt, v, p, n, b, pchain_ok(es, fs, ctx, r, t, lt, dt, rt))
     case Nil{} ds:
       pchain_ok.base(es, fs, ctx, r, t, ds, h)
     case Con{l, lt} Nil{}:
@@ -245,6 +313,26 @@ def clin_below(+es: List<&2, SK.Ent>, +r: DR.Node, +t: Nat, ls: List<&2, S.Q>, x
     case Con{l, lt} Nil{}:
       vlin_below(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r), t, hr, hr)
 
+def pchain_below.pick(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +l: S.Q, +d: DR.Der, +rest: DR.Der, hd: VBelow(DR.Jd.x(DR.concl(es, fs, d)), t), ih: VBelow(DR.Jd.x(DR.concl(es, fs, rest)), t))
+  -> VBelow(DR.Jd.x(DR.concl(es, fs, HS.pc.pick(b, l, d, rest))), t):
+  match b:
+    case True{}:
+      vlin_below(l, DR.Jd.x(DR.concl(es, fs, d)), DR.qo(), DR.Jd.x(DR.concl(es, fs, rest)), t, hd, ih)
+    case False{}:
+      ih
+
+# the chain's form is below t
+def pchain_below(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +r: DR.Node, +t: Nat, ls: List<&2, S.Q>, ds: List<&2, DR.Der>, h: AllBelow(HS.hxs(es, fs, ds), t), +hr: VBelow(DR.zdir(es, r), t))
+  -> VBelow(DR.Jd.x(DR.concl(es, fs, HS.pchain(r, ls, ds))), t):
+  match ls ds:
+    case Con{+l, +lt} Con{+d, +dt}:
+      (hx, ht) = h
+      pchain_below.pick(DR.qnz(l), es, fs, t, l, d, HS.pchain(r, lt, dt), hx, pchain_below(es, fs, r, t, lt, dt, ht, hr))
+    case Nil{} ds:
+      vlin_below(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r), t, hr, hr)
+    case Con{+l, +lt} Nil{}:
+      vlin_below(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r), t, hr, hr)
+
 # Membership
 # ----------
 
@@ -272,9 +360,9 @@ def hs_der.sep0(+es: List<&2, SK.Ent>, +r: DR.Node, +t: Nat, +y: SK.VE, +z: SK.V
 def hs_der.same(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +r: DR.Node, +t: Nat, +ds: List<&2, DR.Der>, +y: SK.VE, +ls: List<&2, S.Q>,
   hid: SV.Ident(HS.enc(y, t), SV.lin(ls, HS.encs(HS.hxs(es, fs, ds), t))), hy: VBelow(y, t), hc: VBelow(HS.clin(es, r, ls, HS.hxs(es, fs, ds)), t))
   -> DR.SameV(DR.Jd.x(DR.concl(es, fs, HS.pchain(r, ls, ds))), y):
-  %Equal.sym(SK.VE, DR.Jd.x(DR.concl(es, fs, HS.pchain(r, ls, ds))), HS.clin(es, r, ls, HS.hxs(es, fs, ds)), pchain_x(es, fs, r, ls, ds)) : DR.SameV(_, y)
-  hs_der.sep0(es, r, t, y, HS.clin(es, r, ls, HS.hxs(es, fs, ds)), hy, hc,
-    ident_trans(HS.enc(y, t), SV.lin(ls, HS.encs(HS.hxs(es, fs, ds), t)), HS.enc(HS.clin(es, r, ls, HS.hxs(es, fs, ds)), t), hid, enc_lin(es, r, t, ls, HS.hxs(es, fs, ds))))
+  samev_tr(DR.Jd.x(DR.concl(es, fs, HS.pchain(r, ls, ds))), HS.clin(es, r, ls, HS.hxs(es, fs, ds)), y, pchain_x(es, fs, r, ls, ds),
+    hs_der.sep0(es, r, t, y, HS.clin(es, r, ls, HS.hxs(es, fs, ds)), hy, hc,
+      ident_trans(HS.enc(y, t), SV.lin(ls, HS.encs(HS.hxs(es, fs, ds), t)), HS.enc(HS.clin(es, r, ls, HS.hxs(es, fs, ds)), t), hid, enc_lin(es, r, t, ls, HS.hxs(es, fs, ds)))))
 
 def hs_der.go(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +r: DR.Node, +t: Nat, +rows: List<&2, EL.Row>, +ds: List<&2, DR.Der>, +y: SK.VE, +ls: List<&2, S.Q>,
   hid: SV.Ident(HS.enc(y, t), SV.lin(ls, HS.encs(HS.hxs(es, fs, ds), t))), +hy: VBelow(y, t), +hr: VBelow(DR.zdir(es, r), t),

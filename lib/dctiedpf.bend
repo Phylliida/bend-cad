@@ -252,11 +252,15 @@ def crs_move(+p: List<&2, S.Q>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +
   %Equal.sym(List<&2, E.QExpr>, DC.crosses(es, fs, u, ds), crs(DC.lform(u), HS.hxs(es, fs, ds)), crosses_crs(es, fs, u, ds)) : S.Q.eq(E.qeval(p, SV.lin(lam, _)), E.qeval(p, SV.lin(lam, crs(DC.lform(u), HS.hxs(es, fs, ds)))))
   LQ.q_refl(E.qeval(p, SV.lin(lam, crs(DC.lform(u), HS.hxs(es, fs, ds)))))
 
+def xch_move.go(+p: List<&2, S.Q>, +a: SK.VE, +P: SK.VE, +C: SK.VE, h: DR.SameV(P, C)) -> S.Q.eq(E.qeval(p, SK.VE.cross(a, C)), E.qeval(p, SK.VE.cross(a, P))):
+  (hx, hy) = h
+  QA.sub_cong(S.Q.mul(E.qeval(p, SK.VE.x(a)), E.qeval(p, SK.VE.y(C))), S.Q.mul(E.qeval(p, SK.VE.x(a)), E.qeval(p, SK.VE.y(P))), S.Q.mul(E.qeval(p, SK.VE.y(a)), E.qeval(p, SK.VE.x(C))), S.Q.mul(E.qeval(p, SK.VE.y(a)), E.qeval(p, SK.VE.x(P))),
+    LQ.q_mul_cong_r(E.qeval(p, SK.VE.x(a)), E.qeval(p, SK.VE.y(C)), E.qeval(p, SK.VE.y(P)), LQ.q_sym(E.qeval(p, SK.VE.y(P)), E.qeval(p, SK.VE.y(C)), hy(p))),
+    LQ.q_mul_cong_r(E.qeval(p, SK.VE.y(a)), E.qeval(p, SK.VE.x(C)), E.qeval(p, SK.VE.x(P)), LQ.q_sym(E.qeval(p, SK.VE.x(P)), E.qeval(p, SK.VE.x(C)), hx(p))))
+
 def xch_move(+p: List<&2, S.Q>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +c: Nat, +u: DR.Lab, +lam: List<&2, S.Q>, +ds: List<&2, DR.Der>)
   -> S.Q.eq(E.qeval(p, SK.VE.cross(DC.lform(u), HS.clin(es, DR.NSeg{c}, lam, HS.hxs(es, fs, ds)))), E.qeval(p, SK.VE.cross(DC.lform(u), DR.Jd.x(DR.concl(es, fs, HS.pchain(DR.NSeg{c}, lam, ds)))))):
-  %Equal.sym(SK.VE, DR.Jd.x(DR.concl(es, fs, HS.pchain(DR.NSeg{c}, lam, ds))), HS.clin(es, DR.NSeg{c}, lam, HS.hxs(es, fs, ds)), HP.pchain_x(es, fs, DR.NSeg{c}, lam, ds))
-    : S.Q.eq(E.qeval(p, SK.VE.cross(DC.lform(u), HS.clin(es, DR.NSeg{c}, lam, HS.hxs(es, fs, ds)))), E.qeval(p, SK.VE.cross(DC.lform(u), _)))
-  LQ.q_refl(E.qeval(p, SK.VE.cross(DC.lform(u), HS.clin(es, DR.NSeg{c}, lam, HS.hxs(es, fs, ds)))))
+  xch_move.go(p, DC.lform(u), DR.Jd.x(DR.concl(es, fs, HS.pchain(DR.NSeg{c}, lam, ds))), HS.clin(es, DR.NSeg{c}, lam, HS.hxs(es, fs, ds)), HP.pchain_x(es, fs, DR.NSeg{c}, lam, ds))
 
 # at each point, cross(u, y) = cross(u, the combination's form)
 def tied_h0(+p: List<&2, S.Q>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +c: Nat, +u: DR.Lab, +rows: List<&2, EL.Row>, +ds: List<&2, DR.Der>, +y: SK.VE,
@@ -355,8 +359,7 @@ def tied.vd0(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QEx
 
 def tied.bch(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +c: Nat, +u: DR.Lab, +rows: List<&2, EL.Row>, +ds: List<&2, DR.Der>, +y: SK.VE,
   +ha: IV.AllPD(es, fs, ctx, DR.NSeg{c}, t, ds), +hz: {DC.zb(es, t) == True{} : Bool}) -> HP.VBelow(DR.Jd.x(DR.concl(es, fs, HS.pchain(DR.NSeg{c}, tdlam(es, fs, u, rows, ds, y), ds))), t):
-  DD.hs_der.below(es, fs, DR.NSeg{c}, t, tdlam(es, fs, u, rows, ds, y), ds,
-    HP.clin_below(es, DR.NSeg{c}, t, tdlam(es, fs, u, rows, ds, y), HS.hxs(es, fs, ds), DD.allpd_below(ds, es, fs, ctx, DR.NSeg{c}, t, ha), BL.zdir_below(es, t, DR.NSeg{c}, hz)))
+  HP.pchain_below(es, fs, DR.NSeg{c}, t, tdlam(es, fs, u, rows, ds, y), ds, DD.allpd_below(ds, es, fs, ctx, DR.NSeg{c}, t, ha), BL.zdir_below(es, t, DR.NSeg{c}, hz))
 
 def tied_ok.go(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +c: Nat, +cu: S.Q, +su: S.Q, +du: DR.Der, +rows: List<&2, EL.Row>, +ds: List<&2, DR.Der>, +y: SK.VE,
   +hr: {EP.rinv(DC.crosses(es, fs, DR.Lab{cu, su}, ds), rows, 0n) == True{} : Bool}, +ha: IV.AllPD(es, fs, ctx, DR.NSeg{c}, t, ds), +htie: RP.TieOk(es, fs, ctx, t, c, DR.Lab{cu, su}, du),

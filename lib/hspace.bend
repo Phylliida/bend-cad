@@ -87,11 +87,20 @@ def clin(+es: List<&2, SK.Ent>, +r: DR.Node, ls: List<&2, S.Q>, xs: List<&2, SK.
     case Con{l, lt} Nil{}:
       DR.vlin(DR.qz(), DR.zdir(es, r), DR.qz(), DR.zdir(es, r))
 
-# the par-lin chain l_1 d_1 + 1 (l_2 d_2 + ...), ending in 0 self + 0 self
+# the par-lin chain l_1 d_1 + 1 (l_2 d_2 + ...), ending in 0 self + 0 self,
+# without the generators whose multiplier is 0 (they would add nothing but
+# their own nd)
+def pc.pick(b: Bool, +l: S.Q, +d: DR.Der, rest: DR.Der) -> DR.Der:
+  match b:
+    case True{}:
+      DR.DPLin{l, d, DR.qo(), rest}
+    case False{}:
+      rest
+
 def pchain(+r: DR.Node, ls: List<&2, S.Q>, ds: List<&2, DR.Der>) -> DR.Der:
   match ls ds:
-    case Con{l, lt} Con{d, dt}:
-      DR.DPLin{l, d, DR.qo(), pchain(r, lt, dt)}
+    case Con{+l, lt} Con{+d, dt}:
+      pc.pick(DR.qnz(l), l, d, pchain(r, lt, dt))
     case Nil{} ds:
       DR.DPLin{DR.qz(), DR.DSelf{r}, DR.qz(), DR.DSelf{r}}
     case Con{l, lt} Nil{}:

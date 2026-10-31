@@ -31,6 +31,15 @@ def kchain_okd.go(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, 
   (vr, kr) = ih
   ((v, (vr, (k, kr))), {==})
 
+def kchain_okd.pick(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +l: S.Q, +d: DR.Der, +rest: DR.Der,
+  +v: VD.VD(es, fs, ctx, d), +k: VD.Isk(DR.concl(es, fs, d)), ih: SK.Both(VD.VD(es, fs, ctx, rest), VD.Isk(DR.concl(es, fs, rest))))
+  -> SK.Both(VD.VD(es, fs, ctx, KS.kc.pick(b, l, d, rest)), VD.Isk(DR.concl(es, fs, KS.kc.pick(b, l, d, rest)))):
+  match b:
+    case True{}:
+      kchain_okd.go(es, fs, ctx, l, d, rest, v, k, ih)
+    case False{}:
+      ih
+
 def kchain_okd(ls: List<&2, S.Q>, ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, h: IV.AllKD(es, fs, ctx, t, ds))
   -> SK.Both(VD.VD(es, fs, ctx, KS.kchain(ls, ds)), VD.Isk(DR.concl(es, fs, KS.kchain(ls, ds)))):
   match ls ds:
@@ -38,22 +47,20 @@ def kchain_okd(ls: List<&2, S.Q>, ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +
       (g, rt) = h
       (v, r1) = g
       (k, b) = r1
-      kchain_okd.go(es, fs, ctx, l, d, KS.kchain(lt, dt), v, k, kchain_okd(lt, dt, es, fs, ctx, t, rt))
+      kchain_okd.pick(DR.qnz(l), es, fs, ctx, l, d, KS.kchain(lt, dt), v, k, kchain_okd(lt, dt, es, fs, ctx, t, rt))
     case Nil{} ds:
       (Unit{}, {==})
     case Con{+l, +lt} Nil{}:
       (Unit{}, {==})
 
-def samed_flip.at(+p: List<&2, S.Q>, +e1: E.QExpr, +e2: E.QExpr, h: SV.Ident(e2, e1)) -> S.Q.eq(E.qeval(p, e1), E.qeval(p, e2)):
-  LQ.q_sym(E.qeval(p, e2), E.qeval(p, e1), h(p))
-
-def samed_flip(+e1: E.QExpr, +e2: E.QExpr, h: SV.Ident(e2, e1)) -> VD.SameD(e1, e2):
-  ID.qzero_ident(e1, e2, p => samed_flip.at(p, e1, e2, h))
+def ks_der.same.at(+p: List<&2, S.Q>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ls: List<&2, S.Q>, +ds: List<&2, DR.Der>, +e: E.QExpr, h: SV.Ident(e, SV.lin(ls, KS.kexprs(es, fs, ds))))
+  -> S.Q.eq(E.qeval(p, DR.Jd.e(DR.concl(es, fs, KS.kchain(ls, ds)))), E.qeval(p, e)):
+  LQ.q_trans(E.qeval(p, DR.Jd.e(DR.concl(es, fs, KS.kchain(ls, ds)))), E.qeval(p, SV.lin(ls, KS.kexprs(es, fs, ds))), E.qeval(p, e), KP.kchain_e(es, fs, ls, ds)(p),
+    LQ.q_sym(E.qeval(p, e), E.qeval(p, SV.lin(ls, KS.kexprs(es, fs, ds))), h(p)))
 
 def ks_der.same(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ls: List<&2, S.Q>, +ds: List<&2, DR.Der>, +e: E.QExpr, h: SV.Ident(e, SV.lin(ls, KS.kexprs(es, fs, ds))))
   -> VD.SameD(DR.Jd.e(DR.concl(es, fs, KS.kchain(ls, ds))), e):
-  %Equal.sym(E.QExpr, DR.Jd.e(DR.concl(es, fs, KS.kchain(ls, ds))), SV.lin(ls, KS.kexprs(es, fs, ds)), KP.kchain_e(es, fs, ls, ds)) : VD.SameD(_, e)
-  samed_flip(SV.lin(ls, KS.kexprs(es, fs, ds)), e, h)
+  ID.qzero_ident(DR.Jd.e(DR.concl(es, fs, KS.kchain(ls, ds))), e, p => ks_der.same.at(p, es, fs, ls, ds, e, h))
 
 def ks_der.go(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +ls: List<&2, S.Q>, +ds: List<&2, DR.Der>, +e: E.QExpr,
   hc: SK.Both(VD.VD(es, fs, ctx, KS.kchain(ls, ds)), VD.Isk(DR.concl(es, fs, KS.kchain(ls, ds)))), h: SV.Ident(e, SV.lin(ls, KS.kexprs(es, fs, ds))))
@@ -83,6 +90,16 @@ def pchain_okd.go(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, 
   (pr, nr) = r1
   ((v, (vr, (p, (pr, Equal.trans(DR.Node, DR.Jd.a(DR.concl(es, fs, d)), r, DR.Jd.a(DR.concl(es, fs, rest)), n, Equal.sym(DR.Node, DR.Jd.a(DR.concl(es, fs, rest)), r, nr)))))), ({==}, n))
 
+def pchain_okd.pick(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +r: DR.Node, +l: S.Q, +d: DR.Der, +rest: DR.Der,
+  +v: VD.VD(es, fs, ctx, d), +p: VD.Isp(DR.concl(es, fs, d)), +n: {DR.Jd.a(DR.concl(es, fs, d)) == r : DR.Node},
+  ih: SK.Both(VD.VD(es, fs, ctx, rest), SK.Both(VD.Isp(DR.concl(es, fs, rest)), {DR.Jd.a(DR.concl(es, fs, rest)) == r : DR.Node})))
+  -> SK.Both(VD.VD(es, fs, ctx, HS.pc.pick(b, l, d, rest)), SK.Both(VD.Isp(DR.concl(es, fs, HS.pc.pick(b, l, d, rest))), {DR.Jd.a(DR.concl(es, fs, HS.pc.pick(b, l, d, rest))) == r : DR.Node})):
+  match b:
+    case True{}:
+      pchain_okd.go(es, fs, ctx, r, l, d, rest, v, p, n, ih)
+    case False{}:
+      ih
+
 # the chain over the generators is VD and parallel at r
 def pchain_okd(ls: List<&2, S.Q>, ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +r: DR.Node, +t: Nat, h: IV.AllPD(es, fs, ctx, r, t, ds))
   -> SK.Both(VD.VD(es, fs, ctx, HS.pchain(r, ls, ds)), SK.Both(VD.Isp(DR.concl(es, fs, HS.pchain(r, ls, ds))), {DR.Jd.a(DR.concl(es, fs, HS.pchain(r, ls, ds))) == r : DR.Node})):
@@ -92,7 +109,7 @@ def pchain_okd(ls: List<&2, S.Q>, ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +
       (v, r1) = g
       (p, r2) = r1
       (n, b) = r2
-      pchain_okd.go(es, fs, ctx, r, l, d, HS.pchain(r, lt, dt), v, p, n, pchain_okd(lt, dt, es, fs, ctx, r, t, rt))
+      pchain_okd.pick(DR.qnz(l), es, fs, ctx, r, l, d, HS.pchain(r, lt, dt), v, p, n, pchain_okd(lt, dt, es, fs, ctx, r, t, rt))
     case Nil{} ds:
       ((Unit{}, (Unit{}, ({==}, ({==}, {==})))), ({==}, {==}))
     case Con{+l, +lt} Nil{}:
@@ -115,15 +132,10 @@ def hs_der.sv(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QE
   (a, sv) = x
   VD.samevd_of(DR.Jd.x(DR.concl(es, fs, HS.hs.der(es, fs, t, r, h, y))), y, sv)
 
-def hs_der.below(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +r: DR.Node, +t: Nat, +ls: List<&2, S.Q>, +ds: List<&2, DR.Der>, h: HP.VBelow(HS.clin(es, r, ls, HS.hxs(es, fs, ds)), t))
-  -> HP.VBelow(DR.Jd.x(DR.concl(es, fs, HS.pchain(r, ls, ds))), t):
-  %Equal.sym(SK.VE, DR.Jd.x(DR.concl(es, fs, HS.pchain(r, ls, ds))), HS.clin(es, r, ls, HS.hxs(es, fs, ds)), HP.pchain_x(es, fs, r, ls, ds)) : HP.VBelow(_, t)
-  h
-
 def hs_der.vd2(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +r: DR.Node, +t: Nat, +ds: List<&2, DR.Der>, +ls: List<&2, S.Q>, +ha: IV.AllPD(es, fs, ctx, r, t, ds), +hr: HP.VBelow(DR.zdir(es, r), t))
   -> SK.Both(SK.Both(VD.VD(es, fs, ctx, HS.pchain(r, ls, ds)), SK.Both(VD.Isp(DR.concl(es, fs, HS.pchain(r, ls, ds))), {DR.Jd.a(DR.concl(es, fs, HS.pchain(r, ls, ds))) == r : DR.Node})),
        HP.VBelow(DR.Jd.x(DR.concl(es, fs, HS.pchain(r, ls, ds))), t)):
-  (pchain_okd(ls, ds, es, fs, ctx, r, t, ha), hs_der.below(es, fs, r, t, ls, ds, HP.clin_below(es, r, t, ls, HS.hxs(es, fs, ds), allpd_below(ds, es, fs, ctx, r, t, ha), hr)))
+  (pchain_okd(ls, ds, es, fs, ctx, r, t, ha), HP.pchain_below(es, fs, r, t, ls, ds, allpd_below(ds, es, fs, ctx, r, t, ha), hr))
 
 def hs_der.vd(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +r: DR.Node, +t: Nat, h: HS.HS, +y: SK.VE, hi: IV.HInvD(es, fs, ctx, r, t, h), +hr: HP.VBelow(DR.zdir(es, r), t))
   -> SK.Both(SK.Both(VD.VD(es, fs, ctx, HS.hs.der(es, fs, t, r, h, y)), SK.Both(VD.Isp(DR.concl(es, fs, HS.hs.der(es, fs, t, r, h, y))), {DR.Jd.a(DR.concl(es, fs, HS.hs.der(es, fs, t, r, h, y))) == r : DR.Node})),

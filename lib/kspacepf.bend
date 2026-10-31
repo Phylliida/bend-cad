@@ -2,10 +2,10 @@
 # echelon form of the generators (EP.rinv, one row per generator), and
 # every generator's derivation is valid and proves a K judgment. Adding a
 # generator keeps it (sk-13a's new_rinv). A zero residual gives a valid
-# derivation proving e (the K-add chain concludes exactly lin of the
-# generators, which sk-13a's derivable shows is e); a nonzero one shows no
-# constant combination of the generators is e (sk-13a's indep). Proofs
-# only.
+# derivation proving e (the K-add chain concludes lin of the generators,
+# up to the 0 terms it skips, which sk-13a's derivable shows is e); a
+# nonzero one shows no constant combination of the generators is e
+# (sk-13a's indep). Proofs only.
 
 import Base
 import ../spec/num.bend as S
@@ -19,6 +19,7 @@ import ./drvpf.bend as DV
 import ./indpf.bend as IN
 import ./cwpf.bend as CW
 import ./q.bend as LQ
+import ./qring.bend as QR
 import ./kspace.bend as KS
 
 # every generator's derivation is valid and proves a K judgment
@@ -101,26 +102,93 @@ def ks_add_inv(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.Q
 # The K-add chain
 # ---------------
 
-def kchain_e(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, ls: List<&2, S.Q>, ds: List<&2, DR.Der>) -> {DR.Jd.e(DR.concl(es, fs, KS.kchain(ls, ds))) == SV.lin(ls, KS.kexprs(es, fs, ds)) : E.QExpr}:
+# A multiplier that is 0 adds nothing (the chain skips it, KS.kc.pick)
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+def bt(b: Bool) -> Type:
+  match b:
+    case True{}:
+      Unit
+    case False{}:
+      Empty
+
+def tf(h: {True{} == False{} : Bool}) -> Empty:
+  %h : bt(_)
+  Unit{}
+
+def qnz_z.n(n: S.Z, +d: S.Pos, h: {DR.znz(n) == False{} : Bool}) -> S.Q.eq(S.Q{n, d}, DR.qz()):
+  match n:
+    case S.Z0{}:
+      {==}
+    case S.Zpos{p}:
+      absurd(S.Q.eq(S.Q{S.Zpos{p}, d}, DR.qz()), tf(h))
+    case S.Zneg{p}:
+      absurd(S.Q.eq(S.Q{S.Zneg{p}, d}, DR.qz()), tf(h))
+
+def qnz_z(q: S.Q, h: {DR.qnz(q) == False{} : Bool}) -> S.Q.eq(q, DR.qz()):
+  match q:
+    case S.Q{n, d}:
+      qnz_z.n(n, d, h)
+
+# l X + Y = Y when l is 0
+def zl(+l: S.Q, +X: S.Q, +Y: S.Q, h: {DR.qnz(l) == False{} : Bool}) -> S.Q.eq(S.Q.add(S.Q.mul(l, X), Y), Y):
+  LQ.q_trans(S.Q.add(S.Q.mul(l, X), Y), S.Q.add(S.Q.mul(DR.qz(), X), Y), Y,
+    LQ.q_add_cong_l(S.Q.mul(l, X), S.Q.mul(DR.qz(), X), Y, LQ.q_mul_cong_l(l, DR.qz(), X, qnz_z(l, h))),
+    QR.qring_eq([X, Y], E.QAdd{E.QMul{E.QCst{DR.qz()}, E.QVar{0n}}, E.QVar{1n}}, E.QVar{1n}, {==}))
+
+def same_trans.at(+x: List<&2, S.Q>, +a: E.QExpr, +b: E.QExpr, +c: E.QExpr, h1: DR.Same(a, b), h2: DR.Same(b, c)) -> S.Q.eq(E.qeval(x, a), E.qeval(x, c)):
+  LQ.q_trans(E.qeval(x, a), E.qeval(x, b), E.qeval(x, c), h1(x), h2(x))
+
+def same_trans(+a: E.QExpr, +b: E.QExpr, +c: E.QExpr, h1: DR.Same(a, b), h2: DR.Same(b, c)) -> DR.Same(a, c):
+  x => same_trans.at(x, a, b, c, h1, h2)
+
+def kchain_e.t(+x: List<&2, S.Q>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +l: S.Q, +d: DR.Der, +rest: DR.Der, +L: E.QExpr, ih: DR.Same(DR.Jd.e(DR.concl(es, fs, rest)), L))
+  -> S.Q.eq(S.Q.add(S.Q.mul(l, E.qeval(x, DR.Jd.e(DR.concl(es, fs, d)))), E.qeval(x, DR.Jd.e(DR.concl(es, fs, rest)))), S.Q.add(S.Q.mul(l, E.qeval(x, DR.Jd.e(DR.concl(es, fs, d)))), E.qeval(x, L))):
+  LQ.q_add_cong_r(S.Q.mul(l, E.qeval(x, DR.Jd.e(DR.concl(es, fs, d)))), E.qeval(x, DR.Jd.e(DR.concl(es, fs, rest))), E.qeval(x, L), ih(x))
+
+def kchain_e.f(+x: List<&2, S.Q>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +l: S.Q, +d: DR.Der, +rest: DR.Der, +L: E.QExpr, +hl: {DR.qnz(l) == False{} : Bool}, ih: DR.Same(DR.Jd.e(DR.concl(es, fs, rest)), L))
+  -> S.Q.eq(E.qeval(x, DR.Jd.e(DR.concl(es, fs, rest))), S.Q.add(S.Q.mul(l, E.qeval(x, DR.Jd.e(DR.concl(es, fs, d)))), E.qeval(x, L))):
+  LQ.q_trans(E.qeval(x, DR.Jd.e(DR.concl(es, fs, rest))), E.qeval(x, L), S.Q.add(S.Q.mul(l, E.qeval(x, DR.Jd.e(DR.concl(es, fs, d)))), E.qeval(x, L)), ih(x),
+    LQ.q_sym(S.Q.add(S.Q.mul(l, E.qeval(x, DR.Jd.e(DR.concl(es, fs, d)))), E.qeval(x, L)), E.qeval(x, L), zl(l, E.qeval(x, DR.Jd.e(DR.concl(es, fs, d))), E.qeval(x, L), hl)))
+
+def kchain_e.pick(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +l: S.Q, +d: DR.Der, +rest: DR.Der, +L: E.QExpr, eb: {b == DR.qnz(l) : Bool}, ih: DR.Same(DR.Jd.e(DR.concl(es, fs, rest)), L))
+  -> DR.Same(DR.Jd.e(DR.concl(es, fs, KS.kc.pick(b, l, d, rest))), E.QAdd{E.QMul{E.QCst{l}, DR.Jd.e(DR.concl(es, fs, d))}, L}):
+  match b:
+    case True{}:
+      x => kchain_e.t(x, es, fs, l, d, rest, L, ih)
+    case False{}:
+      +hl = Equal.sym(Bool, False{}, DR.qnz(l), eb)
+      x => kchain_e.f(x, es, fs, l, d, rest, L, hl, ih)
+
+# the chain proves lin of the generators (up to its 0 terms)
+def kchain_e(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, ls: List<&2, S.Q>, ds: List<&2, DR.Der>) -> DR.Same(DR.Jd.e(DR.concl(es, fs, KS.kchain(ls, ds))), SV.lin(ls, KS.kexprs(es, fs, ds))):
   match ls ds:
     case Con{+l, +lt} Con{+d, +dt}:
-      %Equal.sym(E.QExpr, DR.Jd.e(DR.concl(es, fs, KS.kchain(lt, dt))), SV.lin(lt, KS.kexprs(es, fs, dt)), kchain_e(es, fs, lt, dt)) : {E.QAdd{E.QMul{E.QCst{l}, DR.Jd.e(DR.concl(es, fs, d))}, _} == SV.lin(Con{l, lt}, KS.kexprs(es, fs, Con{d, dt})) : E.QExpr}
-      {==}
+      kchain_e.pick(DR.qnz(l), es, fs, l, d, KS.kchain(lt, dt), SV.lin(lt, KS.kexprs(es, fs, dt)), {==}, kchain_e(es, fs, lt, dt))
     case Nil{} ds:
-      {==}
+      x => LQ.q_refl(DR.qz())
     case Con{l, lt} Nil{}:
-      {==}
+      x => LQ.q_refl(DR.qz())
 
 def kchain_ok.go(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +l: S.Q, +d: DR.Der, +rest: DR.Der, v: DR.Valid(es, fs, ctx, d), k: DR.IsK(DR.concl(es, fs, d)), ih: DR.Valid(es, fs, ctx, rest) & DR.IsK(DR.concl(es, fs, rest))) -> DR.Valid(es, fs, ctx, DR.DKAdd{l, d, rest}) & DR.IsK(DR.concl(es, fs, DR.DKAdd{l, d, rest})):
   (v2, k2) = ih
   ((v, (v2, (k, k2))), Unit{})
+
+def kchain_ok.pick(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +l: S.Q, +d: DR.Der, +rest: DR.Der, v: DR.Valid(es, fs, ctx, d), k: DR.IsK(DR.concl(es, fs, d)), ih: DR.Valid(es, fs, ctx, rest) & DR.IsK(DR.concl(es, fs, rest)))
+  -> DR.Valid(es, fs, ctx, KS.kc.pick(b, l, d, rest)) & DR.IsK(DR.concl(es, fs, KS.kc.pick(b, l, d, rest))):
+  match b:
+    case True{}:
+      kchain_ok.go(es, fs, ctx, l, d, rest, v, k, ih)
+    case False{}:
+      ih
 
 def kchain_ok(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, ls: List<&2, S.Q>, ds: List<&2, DR.Der>, h: AllK(es, fs, ctx, ds)) -> DR.Valid(es, fs, ctx, KS.kchain(ls, ds)) & DR.IsK(DR.concl(es, fs, KS.kchain(ls, ds))):
   match ls ds:
     case Con{+l, +lt} Con{+d, +dt}:
       (v, r) = h
       (k, rt) = r
-      kchain_ok.go(es, fs, ctx, l, d, KS.kchain(lt, dt), v, k, kchain_ok(es, fs, ctx, lt, dt, rt))
+      kchain_ok.pick(DR.qnz(l), es, fs, ctx, l, d, KS.kchain(lt, dt), v, k, kchain_ok(es, fs, ctx, lt, dt, rt))
     case Nil{} ds:
       (Unit{}, Unit{})
     case Con{l, lt} Nil{}:
@@ -135,10 +203,6 @@ def ident_same.at(+x: List<&2, S.Q>, +e1: E.QExpr, +e2: E.QExpr, h: SV.Ident(e1,
 def ident_same(+e1: E.QExpr, +e2: E.QExpr, h: SV.Ident(e1, e2)) -> DR.Same(e2, e1):
   x => ident_same.at(x, e1, e2, h)
 
-def same_tr(+a: E.QExpr, +b: E.QExpr, +c: E.QExpr, e: {a == b : E.QExpr}, h: DR.Same(b, c)) -> DR.Same(a, c):
-  %Equal.sym(E.QExpr, a, b, e) : DR.Same(_, c)
-  h
-
 # e in K: K's chain for e is valid, proves a K judgment, and proves e
 def ks_der_ok(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, k: KS.KS, +e: E.QExpr, h: KInv(es, fs, ctx, k), hz: {KS.ks.inb(k, e) == True{} : Bool})
   -> (DR.Valid(es, fs, ctx, KS.ks.der(es, fs, k, e)) & DR.IsK(DR.concl(es, fs, KS.ks.der(es, fs, k, e)))) & DR.Same(DR.Jd.e(DR.concl(es, fs, KS.ks.der(es, fs, k, e))), e):
@@ -147,7 +211,7 @@ def ks_der_ok(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QE
       (hr, r) = h
       (hl, ha) = r
       (kchain_ok(es, fs, ctx, DV.dropls(DV.rescb(EL.resid(rows, e)), DV.resbt(EL.resid(rows, e)), e, KS.kexprs(es, fs, ds)), ds, ha),
-       same_tr(DR.Jd.e(DR.concl(es, fs, KS.kchain(DV.dropls(DV.rescb(EL.resid(rows, e)), DV.resbt(EL.resid(rows, e)), e, KS.kexprs(es, fs, ds)), ds))),
+       same_trans(DR.Jd.e(DR.concl(es, fs, KS.kchain(DV.dropls(DV.rescb(EL.resid(rows, e)), DV.resbt(EL.resid(rows, e)), e, KS.kexprs(es, fs, ds)), ds))),
          SV.lin(DV.dropls(DV.rescb(EL.resid(rows, e)), DV.resbt(EL.resid(rows, e)), e, KS.kexprs(es, fs, ds)), KS.kexprs(es, fs, ds)), e,
          kchain_e(es, fs, DV.dropls(DV.rescb(EL.resid(rows, e)), DV.resbt(EL.resid(rows, e)), e, KS.kexprs(es, fs, ds)), ds),
          ident_same(e, SV.lin(DV.dropls(DV.rescb(EL.resid(rows, e)), DV.resbt(EL.resid(rows, e)), e, KS.kexprs(es, fs, ds)), KS.kexprs(es, fs, ds)),

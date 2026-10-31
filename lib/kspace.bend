@@ -69,11 +69,19 @@ def ks.ds(k: KS) -> List<&2, DR.Der>:
 def ks.inb(+k: KS, +e: E.QExpr) -> Bool:
   EP.isnil(EP.resp(EL.resid(ks.rows(k), e)))
 
-# the K-add chain l_1 d_1 + (l_2 d_2 + ... (0))
+# the K-add chain l_1 d_1 + (l_2 d_2 + ... (0)), without the generators
+# whose multiplier is 0
+def kc.pick(b: Bool, +l: S.Q, +d: DR.Der, rest: DR.Der) -> DR.Der:
+  match b:
+    case True{}:
+      DR.DKAdd{l, d, rest}
+    case False{}:
+      rest
+
 def kchain(ls: List<&2, S.Q>, ds: List<&2, DR.Der>) -> DR.Der:
   match ls ds:
-    case Con{l, lt} Con{d, dt}:
-      DR.DKAdd{l, d, kchain(lt, dt)}
+    case Con{+l, lt} Con{+d, dt}:
+      kc.pick(DR.qnz(l), l, d, kchain(lt, dt))
     case Nil{} ds:
       DR.DZero{}
     case Con{l, lt} Nil{}:
