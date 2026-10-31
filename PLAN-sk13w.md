@@ -333,6 +333,8 @@ remain, none dominant.
 
 ### W7. Audit and sign-off
 
+**Signed off by Danielle (2026-10-31).**
+
 No law's statement changes. The audit checks:
 - that the restatements still say what ROADMAP.bend says (lawsync does
   this mechanically);
