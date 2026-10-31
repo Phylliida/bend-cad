@@ -1025,6 +1025,10 @@ give both component identities that Valid's SameV asks for.
   "the tentative closure becomes the premises'" is an optimization to
   measure, not needed. Proven: the draft's Honest for it
   (lib/dpasspf.bend), with sk-13a's PInv and its generic lemmas.
+  - *Done 2026-10-30 (gate PASS)*: lib/dpasspf.bend `pass2_honest`,
+    gated as b4_honest. The classes so far agree with the final ones on
+    every equation of an earlier constraint (pcf, through downs: a later
+    class drops only its own equations).
 - **B4.6, the certificates** (exec; their proof is B7's): a derivation's
   identity, composed with the dropped facts' certificates, over solved
   equations, with h = ndh(nd).

@@ -65,6 +65,9 @@
 #   B4.4): its drops are the extended DropsOk, each with an nd that
 #   suffices (DropsNd), and sk-13a's walk invariant holds at its end
 #   (DCW.cw2_final).
+# - The pass with the direction layer is honest (lib/dpass.bend classes2,
+#   lib/dpasspf.bend, B4.5): the extended Honest of spec/_draft13b.bend
+#   holds of its classes (DPP.pass2_honest).
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -128,6 +131,8 @@ import ../lib/dconflictpf.bend as DCP
 import ../lib/dpass.bend as DPS
 import ../lib/cwpf.bend as CWP
 import ../lib/dcwpf.bend as DCW
+import ../lib/dpasspf.bend as DPP
+import ../lib/solve.bend as SOL
 import ../lib/wfdec.bend as WFD
 import ../lib/pass.bend as PAS
 
@@ -429,3 +434,7 @@ def b4_walk(+sk: SK.Sketch, +cls: List<&2, SS.Class>, +R: List<&2, Nat>, +D: Lis
   +hcov: {BX.Sketch.within(sk, PAS.nvars(sk)) == True{} : Bool}, +hwf: {WFD.wf_dec(sk) == True{} : Bool})
   -> DH.DropsOk(sk, cls, R, D, c, SS.drops(CWP.cw.ds(DPS.cwalk2(SK.Sketch.eqs(sk), SS.owners(sk), c, 0n, PAS.CW{rows, B, bp, Nil{}, Nil{}}, sk, F0, cx)))) & (DH.DropsNd(sk, cls, R, D, c, CWP.cw.ds(DPS.cwalk2(SK.Sketch.eqs(sk), SS.owners(sk), c, 0n, PAS.CW{rows, B, bp, Nil{}, Nil{}}, sk, F0, cx))) & CWP.CWInv(sk, R, D, c, bp, SS.neqs(SK.Sketch.eqs(sk)), DPS.cwalk2(SK.Sketch.eqs(sk), SS.owners(sk), c, 0n, PAS.CW{rows, B, bp, Nil{}, Nil{}}, sk, F0, cx))):
   DCW.cw2_final(sk, cls, R, D, c, F0, cx, hF0, hcx, rows, B, bp, hr, hl, hB, hp, hcov, hwf)
+
+# B4.5: the pass with the direction layer is honest
+def b4_honest(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SOL.nvars(sk)) == True{} : Bool}) -> DH.Honest(sk, DPS.classes2(sk)):
+  DPP.pass2_honest(sk, w, cov)
