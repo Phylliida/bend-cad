@@ -26,14 +26,18 @@ import ./hspace.bend as HS
 # Rows
 # ----
 
-# a row's polynomial and pivot
+# a row's polynomial, pivot, and the polynomial's coefficient at the
+# pivot (computed once, where each step would look it up)
 type LRow is Data:
-  LRow{p: List<&2, R.ZTerm>, pv: List<&2, Nat>}
+  LRow{p: List<&2, R.ZTerm>, pv: List<&2, Nat>, pc: S.Z}
+
+def lrow.mk(+p: List<&2, R.ZTerm>, +pv: List<&2, Nat>) -> LRow:
+  LRow{p, pv, EL.cz(pv, p)}
 
 def lrow(r: EL.Row) -> LRow:
   match r:
     case EL.Row{p, cb, bt, pv}:
-      LRow{p, pv}
+      lrow.mk(p, pv)
 
 def lproj(rows: List<&2, EL.Row>) -> List<&2, LRow>:
   match rows:
@@ -51,7 +55,7 @@ def lsnoc(rows: List<&2, LRow>, +x: LRow) -> List<&2, LRow>:
 
 # the residual as a new row
 def lrow_of(+p: List<&2, R.ZTerm>) -> LRow:
-  LRow{p, EL.pivot(p)}
+  lrow.mk(p, EL.pivot(p))
 
 # Reduction
 # ---------
@@ -68,8 +72,8 @@ def lstep.go(a: S.Z, +b: S.Z, +rp: List<&2, R.ZTerm>, +p: List<&2, R.ZTerm>) -> 
 
 def lstep(row: LRow, +rp: List<&2, R.ZTerm>) -> List<&2, R.ZTerm>:
   match row:
-    case LRow{+p, +pv}:
-      lstep.go(EL.cz(pv, rp), EL.cz(pv, p), rp, p)
+    case LRow{+p, +pv, pc}:
+      lstep.go(EL.cz(pv, rp), pc, rp, p)
 
 # rp reduced against the rows, oldest first
 def lreduce(rows: List<&2, LRow>, rp: List<&2, R.ZTerm>) -> List<&2, R.ZTerm>:
