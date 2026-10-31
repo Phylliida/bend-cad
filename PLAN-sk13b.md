@@ -1192,6 +1192,17 @@ give both component identities that Valid's SameV asks for.
         of den and clr treats them as opaque.
       - Later, sd's product case can divide by a witnessed gcd without
         changing its interface.
+      - *Done 2026-10-31* (2b54294): gate PASS, regression PASS (every
+        answer as before). The closure pass (native, one thread, other
+        jobs running): base 1.19 s -> 0.41 s, oncircle-pairs 12.9 s ->
+        4.1 s, vertical-twice 21 s -> 6.8 s, zeros 0.96 s -> 0.51 s.
+        angle-lines still runs over 600 s. Its Angle's K rows are now 40,
+        40, 318 bits (were 160, 320, 2558), but merges give labels whose
+        cosine is 0 over a 792-bit, then a 7900-bit denominator, and
+        member forms with 7900-bit constants: label products (LB.lmul)
+        multiply all four denominators and never reduce, and their
+        denominators are mostly odd (the elimination's pivots). So labels
+        are next: zero as 0/1, then common factors out.
     - The other sketches' time is elsewhere (base's profile: the runtime
       freeing terms, Pos arithmetic, monomial compares; a simplex in the
       refutation decision runs about 213k steps on base).
