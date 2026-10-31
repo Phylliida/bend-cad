@@ -28,6 +28,8 @@ import ./kspacepf.bend as KP
 import ./hspace.bend as HS
 import ./hspacepf.bend as HP
 import ./lab.bend as LB
+import ./gcdw.bend as GD
+import ./gcdwpf.bend as GP
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -150,29 +152,24 @@ def gmul_comp(g: DR.Lab, h: DR.Lab, +x: SK.VE) -> DR.SameV(DR.gmul(g, DR.gmul(h,
 # Trimming
 # --------
 
-# x/b is 2x/2b
-def half_eq(+x: S.Z, +b: S.Pos) -> S.Q.eq(S.Q{x, b}, S.Q{S.Z.mul(S.Zpos{S.XO{S.XH{}}}, x), S.XO{b}}):
-  R.ring_eq([x, S.Zpos{b}], E.ZMul{E.ZVar{0n}, E.ZMul{E.ZCst{S.Zpos{S.XO{S.XH{}}}}, E.ZVar{1n}}}, E.ZMul{E.ZMul{E.ZCst{S.Zpos{S.XO{S.XH{}}}}, E.ZVar{0n}}, E.ZVar{1n}}, {==})
-
-def qtrim.mk2(sg: Bool, +a: S.Pos, +b: S.Pos) -> S.Q.eq(LB.qtrim.mk(sg, a, b), LB.qtrim.mk(sg, S.XO{a}, S.XO{b})):
+# p/d is (p/g)/(d/g)
+def qeq_div(sg: Bool, +p: S.Pos, +d: S.Pos, +g: S.Pos, +qa: S.Pos, +qb: S.Pos, hp: GP.Div(g, qa, p), hd: GP.Div(g, qb, d)) -> S.Q.eq(LB.qtrim.mk(sg, qa, qb), LB.qtrim.mk(sg, p, d)):
   match sg:
     case True{}:
-      half_eq(S.Zpos{a}, b)
+      %hd : {S.Z.mul(S.Zpos{qa}, _) == S.Z.mul(S.Zpos{p}, S.Zpos{qb}) : S.Z}
+      %hp : {S.Z.mul(S.Zpos{qa}, S.Z.mul(S.Zpos{g}, S.Zpos{qb})) == S.Z.mul(_, S.Zpos{qb}) : S.Z}
+      R.ring_eq([S.Zpos{g}, S.Zpos{qa}, S.Zpos{qb}], E.ZMul{E.ZVar{1n}, E.ZMul{E.ZVar{0n}, E.ZVar{2n}}}, E.ZMul{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}, E.ZVar{2n}}, {==})
     case False{}:
-      half_eq(S.Zneg{a}, b)
+      %hd : {S.Z.mul(S.Zneg{qa}, _) == S.Z.mul(S.Zneg{p}, S.Zpos{qb}) : S.Z}
+      %hp : {S.Z.mul(S.Zneg{qa}, S.Z.mul(S.Zpos{g}, S.Zpos{qb})) == S.Z.mul(S.Z.neg(_), S.Zpos{qb}) : S.Z}
+      R.ring_eq([S.Zpos{g}, S.Zpos{qa}, S.Zpos{qb}], E.ZMul{E.ZNeg{E.ZVar{1n}}, E.ZMul{E.ZVar{0n}, E.ZVar{2n}}}, E.ZMul{E.ZNeg{E.ZMul{E.ZVar{0n}, E.ZVar{1n}}}, E.ZVar{2n}}, {==})
 
-def qtrim.p_ok(p: S.Pos, d: S.Pos, +sg: Bool) -> S.Q.eq(LB.qtrim.p(p, d, sg), LB.qtrim.mk(sg, p, d)):
-  match p d:
-    case S.XO{+a} S.XO{+b}:
-      LQ.q_trans(LB.qtrim.p(a, b, sg), LB.qtrim.mk(sg, a, b), LB.qtrim.mk(sg, S.XO{a}, S.XO{b}), qtrim.p_ok(a, b, sg), qtrim.mk2(sg, a, b))
-    case S.XO{+a} S.XH{}:
-      LQ.q_refl(LB.qtrim.mk(sg, S.XO{a}, S.XH{}))
-    case S.XO{+a} S.XI{+b}:
-      LQ.q_refl(LB.qtrim.mk(sg, S.XO{a}, S.XI{b}))
-    case S.XH{} +d:
-      LQ.q_refl(LB.qtrim.mk(sg, S.XH{}, d))
-    case S.XI{+a} +d:
-      LQ.q_refl(LB.qtrim.mk(sg, S.XI{a}, d))
+def qtrim.g_ok(sg: Bool, +p: S.Pos, +d: S.Pos, +r: GD.GW, h: GP.GOk(p, d, r)) -> S.Q.eq(LB.qtrim.g(sg, r), LB.qtrim.mk(sg, p, d)):
+  (hp, hd) = h
+  qeq_div(sg, p, d, GD.GW.g(r), GD.GW.qa(r), GD.GW.qb(r), hp, hd)
+
+def qtrim.p_ok(+p: S.Pos, +d: S.Pos, sg: Bool) -> S.Q.eq(LB.qtrim.p(p, d, sg), LB.qtrim.mk(sg, p, d)):
+  qtrim.g_ok(sg, p, d, GD.gcd(p, d), GP.gcd_ok(p, d))
 
 def qtrim_ok.z(n: S.Z, +d: S.Pos) -> S.Q.eq(LB.qtrim.z(n, d), S.Q{n, d}):
   match n:
@@ -196,18 +193,8 @@ def qtrim.mk_nz(sg: Bool, +p: S.Pos, +d: S.Pos) -> {DR.qnz(LB.qtrim.mk(sg, p, d)
     case False{}:
       {==}
 
-def qtrim.p_nz(p: S.Pos, d: S.Pos, +sg: Bool) -> {DR.qnz(LB.qtrim.p(p, d, sg)) == True{} : Bool}:
-  match p d:
-    case S.XO{+a} S.XO{+b}:
-      qtrim.p_nz(a, b, sg)
-    case S.XO{+a} S.XH{}:
-      qtrim.mk_nz(sg, S.XO{a}, S.XH{})
-    case S.XO{+a} S.XI{+b}:
-      qtrim.mk_nz(sg, S.XO{a}, S.XI{b})
-    case S.XH{} +d:
-      qtrim.mk_nz(sg, S.XH{}, d)
-    case S.XI{+a} +d:
-      qtrim.mk_nz(sg, S.XI{a}, d)
+def qtrim.p_nz(+p: S.Pos, +d: S.Pos, sg: Bool) -> {DR.qnz(LB.qtrim.p(p, d, sg)) == True{} : Bool}:
+  qtrim.mk_nz(sg, GD.GW.qa(GD.gcd(p, d)), GD.GW.qb(GD.gcd(p, d)))
 
 def qtrim_nz.z(n: S.Z, +d: S.Pos) -> {DR.qnz(LB.qtrim.z(n, d)) == DR.qnz(S.Q{n, d}) : Bool}:
   match n:

@@ -17,6 +17,7 @@ import ../spec/dir.bend as DR
 import ./pair.bend as PT
 import ./kspace.bend as KS
 import ./hspace.bend as HS
+import ./gcdw.bend as GD
 
 def lmul.go(+c1: S.Q, +s1: S.Q, h: DR.Lab) -> DR.Lab:
   match h:
@@ -33,8 +34,8 @@ def lmul(g: DR.Lab, +h: DR.Lab) -> DR.Lab:
 # --------
 # The closure stores labels (members', ties', the label tests'), and a
 # product of labels multiplies all four denominators, so a stored label is
-# trimmed: a zero part becomes 0/1, and the factors of 2 its numerator and
-# denominator share are taken out (lib/labpf.bend: qtrim_ok, the same
+# trimmed: a zero part becomes 0/1, and its numerator and denominator are
+# divided by their gcd (lib/gcdw.bend; lib/labpf.bend: qtrim_ok, the same
 # rational).
 
 def qtrim.mk(sg: Bool, +p: S.Pos, +d: S.Pos) -> S.Q:
@@ -44,19 +45,12 @@ def qtrim.mk(sg: Bool, +p: S.Pos, +d: S.Pos) -> S.Q:
     case False{}:
       S.Q{S.Zneg{p}, d}
 
-# +-p/d, common twos out
-def qtrim.p(p: S.Pos, d: S.Pos, sg: Bool) -> S.Q:
-  match p d:
-    case S.XO{a} S.XO{b}:
-      qtrim.p(a, b, sg)
-    case S.XO{a} S.XH{}:
-      qtrim.mk(sg, S.XO{a}, S.XH{})
-    case S.XO{a} S.XI{b}:
-      qtrim.mk(sg, S.XO{a}, S.XI{b})
-    case S.XH{} d:
-      qtrim.mk(sg, S.XH{}, d)
-    case S.XI{a} d:
-      qtrim.mk(sg, S.XI{a}, d)
+def qtrim.g(sg: Bool, +r: GD.GW) -> S.Q:
+  qtrim.mk(sg, GD.GW.qa(r), GD.GW.qb(r))
+
+# +-p/d over the gcd
+def qtrim.p(+p: S.Pos, +d: S.Pos, sg: Bool) -> S.Q:
+  qtrim.g(sg, GD.gcd(p, d))
 
 def qtrim.z(n: S.Z, +d: S.Pos) -> S.Q:
   match n:

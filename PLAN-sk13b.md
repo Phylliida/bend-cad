@@ -1224,6 +1224,16 @@ give both component identities that Valid's SameV asks for.
       zeros 0.51 s, oncircle-thrice 0.38 s, with the same outputs as
       before trimming. One label of angle-lines' Angle is still 2132 over
       2132 bits, both odd: the gcd for the odd part, next.
+    - *The odd part, 2026-10-31:* lib/gcdw.bend, a binary gcd with its
+      quotients: gcdw(fuel, a, b, k) with k = gkind(a, b) the step (both
+      even, one even, both odd with a - b zero, positive or negative),
+      passed in since Bend has no mutual recursion; out of fuel g = 1.
+      lib/gcdwpf.bend: gw_ok/gcd_ok, g qa = a and g qb = b, by the steps
+      (KindOk). qtrim now divides by the gcd (a zero part still 0/1);
+      only qtrim_ok and qtrim_nz were re-proven. Gate PASS, regression
+      PASS. angle-lines' closure pass 20.5 s -> 11.4 s (its large label
+      4264 -> 80 bits); the others unchanged, every output the same.
+      sd's product case could divide by the same gcd later.
     - The other sketches' time is elsewhere (base's profile: the runtime
       freeing terms, Pos arithmetic, monomial compares; a simplex in the
       refutation decision runs about 213k steps on base).
