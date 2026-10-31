@@ -1139,6 +1139,37 @@ give both component identities that Valid's SameV asks for.
       structure: S.Q is never reduced (a label product doubles its
       size), QN.clr multiplies every constant's denominator (2^40 each
       here), and the fraction-free elimination never removes content.
+  - *Number growth, measured 2026-10-31* (proto/probe_dtime.bend's sizes,
+    angle-lines' Angle run): K's rows reach 160, 320, 2558 bits in five
+    rows, almost all of it factors of 2; a merge then gives a label that
+    is 0 over a 6392-bit denominator (5602 bits of twos), and member
+    forms with 6392-bit constants. The inputs are dyadic (the GUI sends
+    floats over 2^40); QN.clr multiplies every constant's denominator, so
+    a form with n such constants is cleared by 2^(40n).
+    - *Experiment (unproven, reverted):* clearing a sum by the larger of
+      two power-of-two denominators instead of their product, plus labels
+      without common twos (0 over 1): K's rows become 40, 40, 318 bits;
+      angle-lines' whole pass finishes in 32 s (classes K K K K, as
+      sk-13a), where it never finished; the other sketches do not move.
+      Halving residuals added nothing once clearing was fixed. One label
+      stayed 2132/2132 bits, both odd: a small ratio with a large common
+      odd factor, which only a gcd removes.
+    - *Why it is not a small change:* QN.clr is the cleared normal form
+      under all of sk-13a's elimination and refutation (EL.start, EP.NE,
+      lib/coefpf.bend's coef = cz(m, norm(clr e)) / den e). coef_add,
+      coef_lin and their kin are data equalities that hold because a sum
+      is cleared by the product, and refpf, satpf, drvpf and indpf rewrite
+      with coef about 130 times. Two ways, both large: (a) change clr
+      everywhere and make coef's lemmas Q.eq-based (the main solver gets
+      smaller numbers too); (b) closure only: hand elimination each form
+      simplified to one denominator, proving Same, which changes every
+      K/hull row relation in B3's proofs. A gcd for the odd part needs no
+      check-and-fallback: Stein's binary gcd can carry quotient witnesses
+      (g q_a = a, g q_b = b), and fuel running out may return 1, which
+      divides everything.
+    - The other sketches' time is elsewhere (base's profile: the runtime
+      freeing terms, Pos arithmetic, monomial compares; a simplex in the
+      refutation decision runs about 213k steps on base).
   - *Later, if still too slow*: the found item's full hull from a cached
     full khull per root (filled lazily); smaller numbers (content
     removal in the lean residuals, proven up to positive scaling);
