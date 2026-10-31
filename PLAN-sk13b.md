@@ -1167,6 +1167,11 @@ give both component identities that Valid's SameV asks for.
       check-and-fallback: Stein's binary gcd can carry quotient witnesses
       (g q_a = a, g q_b = b), and fuel running out may return 1, which
       divides everything.
+    - *Danielle, 2026-10-31: (a).* Next: QN.clr clears a sum by the larger
+      of two power-of-two denominators (clr_ok's statement kept), and
+      lib/coefpf.bend's lemmas become Q.eq statements, their users in
+      refpf, satpf, drvpf and indpf following; then labels without common
+      twos and a witnessed gcd for the odd part.
     - The other sketches' time is elsewhere (base's profile: the runtime
       freeing terms, Pos arithmetic, monomial compares; a simplex in the
       refutation decision runs about 213k steps on base).
