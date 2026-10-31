@@ -37,6 +37,8 @@ import ./redpoly.bend as RP
 import ./identpf.bend as ID
 import ./elim.bend as EL
 import ./coefpf.bend as CF
+import ./q.bend as LQ
+import ./qalg.bend as QA
 import ./elimpf.bend as EP
 import ./drvpf.bend as DR
 import ./simplex.bend as SX
@@ -80,17 +82,17 @@ def qslin(ms: List<&2, S.Q>, ss: List<&2, SK.Side>, +m: List<&2, Nat>) -> S.Q:
     case Con{l, lt} Con{s, st}:
       S.Q.add(S.Q.mul(l, CF.coef(SV.sexpr(s), m)), qslin(lt, st, m))
 
-def coef_slin(ms: List<&2, S.Q>, ss: List<&2, SK.Side>, +m: List<&2, Nat>) -> {qslin(ms, ss, m) == CF.coef(SV.slin(ms, ss), m) : S.Q}:
+def coef_slin(ms: List<&2, S.Q>, ss: List<&2, SK.Side>, +m: List<&2, Nat>) -> S.Q.eq(qslin(ms, ss, m), CF.coef(SV.slin(ms, ss), m)):
   match ms ss:
     case Nil{} ss:
       {==}
     case Con{l, lt} Nil{}:
       {==}
     case Con{+l, +lt} Con{+s, +st}:
-      %CF.coef_add(E.QMul{E.QCst{l}, SV.sexpr(s)}, SV.slin(lt, st), m) : {qslin(Con{l, lt}, Con{s, st}, m) == _ : S.Q}
-      %CF.coef_cmul(l, SV.sexpr(s), m) : {qslin(Con{l, lt}, Con{s, st}, m) == S.Q.add(_, CF.coef(SV.slin(lt, st), m)) : S.Q}
-      %coef_slin(lt, st, m) : {qslin(Con{l, lt}, Con{s, st}, m) == S.Q.add(S.Q.mul(l, CF.coef(SV.sexpr(s), m)), _) : S.Q}
-      {==}
+      LQ.q_trans(S.Q.add(S.Q.mul(l, CF.coef(SV.sexpr(s), m)), qslin(lt, st, m)), S.Q.add(CF.coef(E.QMul{E.QCst{l}, SV.sexpr(s)}, m), CF.coef(SV.slin(lt, st), m)), CF.coef(SV.slin(Con{l, lt}, Con{s, st}), m),
+        (%CF.coef_cmul(l, SV.sexpr(s), m) : S.Q.eq(S.Q.add(S.Q.mul(l, CF.coef(SV.sexpr(s), m)), qslin(lt, st, m)), S.Q.add(_, CF.coef(SV.slin(lt, st), m)))
+         LQ.q_add_cong_r(S.Q.mul(l, CF.coef(SV.sexpr(s), m)), qslin(lt, st, m), CF.coef(SV.slin(lt, st), m), coef_slin(lt, st, m))),
+        CF.coef_add(E.QMul{E.QCst{l}, SV.sexpr(s)}, SV.slin(lt, st), m))
 
 # qslin read in F
 def fqs(~F: O.OField, ms: List<&2, S.Q>, ss: List<&2, SK.Side>, +m: List<&2, Nat>) -> O.C(F):
@@ -122,10 +124,12 @@ def ofq_qslin(~F: O.OField, ms: List<&2, S.Q>, ss: List<&2, SK.Side>, +m: List<&
 
 def ident_m(~F: O.OField, +ls: List<&2, S.Q>, +es: List<&2, E.QExpr>, +ms: List<&2, S.Q>, +ss: List<&2, SK.Side>, +k: S.Q, +m: List<&2, Nat>,
   h: {O.add(F, DR.fql(~F, ls, es, m), fqs(~F, ms, ss, m)) == O.ofq(~F, CF.coef(E.QCst{k}, m)) : O.C(F)}) -> {EL.cz(m, R.norm(QN.clr(E.QSub{E.QAdd{SV.lin(ls, es), SV.slin(ms, ss)}, E.QCst{k}}))) == S.Z0{} : S.Z}:
-  %CF.coef_sub(E.QAdd{SV.lin(ls, es), SV.slin(ms, ss)}, E.QCst{k}, m) : {S.Q.num(_) == S.Z0{} : S.Z}
-  %CF.coef_add(SV.lin(ls, es), SV.slin(ms, ss), m) : {S.Q.num(S.Q.sub(_, CF.coef(E.QCst{k}, m))) == S.Z0{} : S.Z}
-  %CF.coef_lin(ls, es, m) : {S.Q.num(S.Q.sub(S.Q.add(_, CF.coef(SV.slin(ms, ss), m)), CF.coef(E.QCst{k}, m))) == S.Z0{} : S.Z}
-  %coef_slin(ms, ss, m) : {S.Q.num(S.Q.sub(S.Q.add(CF.qlin(ls, es, m), _), CF.coef(E.QCst{k}, m))) == S.Z0{} : S.Z}
+  CF.num0(S.Q.sub(S.Q.add(CF.qlin(ls, es, m), qslin(ms, ss, m)), CF.coef(E.QCst{k}, m)), CF.coef(E.QSub{E.QAdd{SV.lin(ls, es), SV.slin(ms, ss)}, E.QCst{k}}, m),
+    LQ.q_trans(S.Q.sub(S.Q.add(CF.qlin(ls, es, m), qslin(ms, ss, m)), CF.coef(E.QCst{k}, m)), S.Q.sub(CF.coef(E.QAdd{SV.lin(ls, es), SV.slin(ms, ss)}, m), CF.coef(E.QCst{k}, m)), CF.coef(E.QSub{E.QAdd{SV.lin(ls, es), SV.slin(ms, ss)}, E.QCst{k}}, m),
+      QA.sub_cong(S.Q.add(CF.qlin(ls, es, m), qslin(ms, ss, m)), CF.coef(E.QAdd{SV.lin(ls, es), SV.slin(ms, ss)}, m), CF.coef(E.QCst{k}, m), CF.coef(E.QCst{k}, m),
+        LQ.q_trans(S.Q.add(CF.qlin(ls, es, m), qslin(ms, ss, m)), S.Q.add(CF.coef(SV.lin(ls, es), m), CF.coef(SV.slin(ms, ss), m)), CF.coef(E.QAdd{SV.lin(ls, es), SV.slin(ms, ss)}, m), QA.add_cong(CF.qlin(ls, es, m), CF.coef(SV.lin(ls, es), m), qslin(ms, ss, m), CF.coef(SV.slin(ms, ss), m), CF.coef_lin(ls, es, m), coef_slin(ms, ss, m)), CF.coef_add(SV.lin(ls, es), SV.slin(ms, ss), m)),
+        LQ.q_refl(CF.coef(E.QCst{k}, m))),
+      CF.coef_sub(E.QAdd{SV.lin(ls, es), SV.slin(ms, ss)}, E.QCst{k}, m)),
   DR.num_zero(~F, S.Q.sub(S.Q.add(CF.qlin(ls, es, m), qslin(ms, ss, m)), CF.coef(E.QCst{k}, m)),
     (%Equal.sym(O.C(F), O.ofq(~F, S.Q.add(S.Q.add(CF.qlin(ls, es, m), qslin(ms, ss, m)), S.Q.neg(CF.coef(E.QCst{k}, m)))), O.add(F, O.ofq(~F, S.Q.add(CF.qlin(ls, es, m), qslin(ms, ss, m))), O.ofq(~F, S.Q.neg(CF.coef(E.QCst{k}, m)))), QE.ofq_add(~F, S.Q.add(CF.qlin(ls, es, m), qslin(ms, ss, m)), S.Q.neg(CF.coef(E.QCst{k}, m))))
        : {_ == O.zero(F) : O.C(F)}
@@ -136,7 +140,7 @@ def ident_m(~F: O.OField, +ls: List<&2, S.Q>, +es: List<&2, E.QExpr>, +ms: List<
      %DR.ofq_qlin(~F, ls, es, m) : {O.add(F, O.add(F, _, O.ofq(~F, qslin(ms, ss, m))), O.neg(F, O.ofq(~F, CF.coef(E.QCst{k}, m)))) == O.zero(F) : O.C(F)}
      %ofq_qslin(~F, ms, ss, m) : {O.add(F, O.add(F, DR.fql(~F, ls, es, m), _), O.neg(F, O.ofq(~F, CF.coef(E.QCst{k}, m)))) == O.zero(F) : O.C(F)}
      %Equal.sym(O.C(F), O.add(F, DR.fql(~F, ls, es, m), fqs(~F, ms, ss, m)), O.ofq(~F, CF.coef(E.QCst{k}, m)), h) : {O.add(F, _, O.neg(F, O.ofq(~F, CF.coef(E.QCst{k}, m)))) == O.zero(F) : O.C(F)}
-     FR.fring_eq(~F, [O.ofq(~F, CF.coef(E.QCst{k}, m))], E.ZAdd{E.ZVar{0n}, E.ZNeg{E.ZVar{0n}}}, E.ZCst{S.Z0{}}, {==})))
+     FR.fring_eq(~F, [O.ofq(~F, CF.coef(E.QCst{k}, m))], E.ZAdd{E.ZVar{0n}, E.ZNeg{E.ZVar{0n}}}, E.ZCst{S.Z0{}}, {==}))))
 
 def ident_fn(~F: O.OField, +ls: List<&2, S.Q>, +es: List<&2, E.QExpr>, +ms: List<&2, S.Q>, +ss: List<&2, SK.Side>, +k: S.Q,
   hz: @m: List<&2, Nat> -> {O.add(F, DR.fql(~F, ls, es, m), fqs(~F, ms, ss, m)) == O.ofq(~F, CF.coef(E.QCst{k}, m)) : O.C(F)}, +m: List<&2, Nat>)

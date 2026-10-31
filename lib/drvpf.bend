@@ -17,6 +17,8 @@ import ./flaws.bend as FL
 import ./fring.bend as FR
 import ./ford.bend as FO
 import ./qemb.bend as QE
+import ./q.bend as LQ
+import ./qalg.bend as QA
 import ./qfield.bend as QF
 import ./qnorm.bend as QN
 import ./zring.bend as R
@@ -170,10 +172,12 @@ def zneg(+x: S.Z, +y: S.Z, h: {S.Z0{} == S.Z.add(x, y) : S.Z}) -> {y == S.Z.neg(
 def drop_at(+cb: List<&2, S.Z>, +bt: S.Pos, +e: E.QExpr, +B: List<&2, E.QExpr>, +m: List<&2, Nat>,
   hrel: {S.Z0{} == S.Z.add(S.Z.mul(S.Zpos{bt}, EL.cz(m, EP.NE(e))), EP.zdot(cb, EP.zv(m, B))) : S.Z})
   -> {EL.cz(m, R.norm(QN.clr(E.QSub{e, SV.lin(dropls(cb, bt, e, B), B)}))) == S.Z0{} : S.Z}:
-  %CF.coef_sub(e, SV.lin(dropls(cb, bt, e, B), B), m) : {S.Q.num(_) == S.Z0{} : S.Z}
-  %CF.coef_lin(dropls(cb, bt, e, B), B, m) : {S.Q.num(S.Q.sub(CF.coef(e, m), _)) == S.Z0{} : S.Z}
-  num_zero(~QF.qfield(), S.Q.sub(CF.coef(e, m), CF.qlin(dropls(cb, bt, e, B), B, m)),
-    drop_m(~QF.qfield(), cb, bt, e, B, m, zneg(S.Z.mul(S.Zpos{bt}, EL.cz(m, EP.NE(e))), EP.zdot(cb, EP.zv(m, B)), hrel)))
+  CF.num0(S.Q.sub(CF.coef(e, m), CF.qlin(dropls(cb, bt, e, B), B, m)), CF.coef(E.QSub{e, SV.lin(dropls(cb, bt, e, B), B)}, m),
+    LQ.q_trans(S.Q.sub(CF.coef(e, m), CF.qlin(dropls(cb, bt, e, B), B, m)), S.Q.sub(CF.coef(e, m), CF.coef(SV.lin(dropls(cb, bt, e, B), B), m)), CF.coef(E.QSub{e, SV.lin(dropls(cb, bt, e, B), B)}, m),
+      QA.sub_cong(CF.coef(e, m), CF.coef(e, m), CF.qlin(dropls(cb, bt, e, B), B, m), CF.coef(SV.lin(dropls(cb, bt, e, B), B), m), LQ.q_refl(CF.coef(e, m)), CF.coef_lin(dropls(cb, bt, e, B), B, m)),
+      CF.coef_sub(e, SV.lin(dropls(cb, bt, e, B), B), m)),
+    num_zero(~QF.qfield(), S.Q.sub(CF.coef(e, m), CF.qlin(dropls(cb, bt, e, B), B, m)),
+      drop_m(~QF.qfield(), cb, bt, e, B, m, zneg(S.Z.mul(S.Zpos{bt}, EL.cz(m, EP.NE(e))), EP.zdot(cb, EP.zv(m, B)), hrel))))
 
 def qn_isnil(p: List<&2, R.ZTerm>, h: {EP.isnil(p) == True{} : Bool}) -> {QN.isnil(p) == True{} : Bool}:
   match p:

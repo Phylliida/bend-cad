@@ -3,7 +3,10 @@
 # code, proven. A rational expression's denominators are cleared: clr(e) is
 # an integer expression and den(e) a positive with
 #   eval(e) · den(e) = zeval(clr(e))
-# in every ordered field (clr_ok). The integer normalizer R.norm, proven
+# in every ordered field (clr_ok). A sum is cleared by a shared
+# denominator of its two sides (sd), which takes their common factors of 2
+# once: the inputs are dyadic, and a product of denominators would double
+# the twos at every sum. The integer normalizer R.norm, proven
 # sound in every ordered field (lib/fring.bend: norm_ok), then decides
 # whether e is identically 0: qzero_ok.
 #
@@ -19,6 +22,86 @@ import ./ford.bend as FO
 import ./qemb.bend as QE
 import ./zring.bend as R
 import ./karith.bend as KA
+import ./nat.bend as N
+import ./pos.bend as P
+
+# Shared denominators
+# -------------------
+
+# a shared denominator of x and y: d = x fa = y fb
+type SD is Data:
+  SD{d: S.Pos, fa: S.Pos, fb: S.Pos}
+
+def SD.d(r: SD) -> S.Pos:
+  match r:
+    case SD{d, fa, fb}:
+      d
+
+def SD.fa(r: SD) -> S.Pos:
+  match r:
+    case SD{d, fa, fb}:
+      fa
+
+def SD.fb(r: SD) -> S.Pos:
+  match r:
+    case SD{d, fa, fb}:
+      fb
+
+# twice r's denominator, by the same factors
+def sd.o(+r: SD) -> SD:
+  SD{S.XO{SD.d(r)}, SD.fa(r), SD.fb(r)}
+
+# the product
+def sd.p(+x: S.Pos, +y: S.Pos) -> SD:
+  SD{S.Pos.mul(x, y), y, x}
+
+# x = 2^k x' and y = 2^k y', x' or y' odd, share 2^k x' y'
+def sd(x: S.Pos, y: S.Pos) -> SD:
+  match x y:
+    case S.XH{} y:
+      sd.p(S.XH{}, y)
+    case S.XO{a} S.XH{}:
+      sd.p(S.XO{a}, S.XH{})
+    case S.XO{a} S.XO{b}:
+      sd.o(sd(a, b))
+    case S.XO{a} S.XI{b}:
+      sd.p(S.XO{a}, S.XI{b})
+    case S.XI{a} y:
+      sd.p(S.XI{a}, y)
+
+def pcomm(+x: S.Pos, +y: S.Pos) -> {S.Pos.mul(x, y) == S.Pos.mul(y, x) : S.Pos}:
+  P.nat_inj(S.Pos.mul(x, y), S.Pos.mul(y, x),
+    Equal.trans(Nat, S.Pos.nat(S.Pos.mul(x, y)), Nat.mul(S.Pos.nat(y), S.Pos.nat(x)), S.Pos.nat(S.Pos.mul(y, x)),
+      Equal.trans(Nat, S.Pos.nat(S.Pos.mul(x, y)), Nat.mul(S.Pos.nat(x), S.Pos.nat(y)), Nat.mul(S.Pos.nat(y), S.Pos.nat(x)),
+        Equal.sym(Nat, Nat.mul(S.Pos.nat(x), S.Pos.nat(y)), S.Pos.nat(S.Pos.mul(x, y)), P.mul_nat(x, y)),
+        N.mul_comm(S.Pos.nat(x), S.Pos.nat(y))),
+      P.mul_nat(y, x)))
+
+def sd_a(x: S.Pos, y: S.Pos) -> {S.Pos.mul(x, SD.fa(sd(x, y))) == SD.d(sd(x, y)) : S.Pos}:
+  match x y:
+    case S.XH{} +y:
+      {==}
+    case S.XO{+a} S.XH{}:
+      {==}
+    case S.XO{+a} S.XO{+b}:
+      Equal.cong(S.Pos, S.Pos, p => S.XO{p}, S.Pos.mul(a, SD.fa(sd(a, b))), SD.d(sd(a, b)), sd_a(a, b))
+    case S.XO{+a} S.XI{+b}:
+      {==}
+    case S.XI{+a} +y:
+      {==}
+
+def sd_b(x: S.Pos, y: S.Pos) -> {S.Pos.mul(y, SD.fb(sd(x, y))) == SD.d(sd(x, y)) : S.Pos}:
+  match x y:
+    case S.XH{} +y:
+      pcomm(y, S.XH{})
+    case S.XO{+a} S.XH{}:
+      pcomm(S.XH{}, S.XO{a})
+    case S.XO{+a} S.XO{+b}:
+      Equal.cong(S.Pos, S.Pos, p => S.XO{p}, S.Pos.mul(b, SD.fb(sd(a, b))), SD.d(sd(a, b)), sd_b(a, b))
+    case S.XO{+a} S.XI{+b}:
+      pcomm(S.XI{b}, S.XO{a})
+    case S.XI{+a} +y:
+      pcomm(y, S.XI{a})
 
 # Clearing denominators
 # ---------------------
@@ -31,13 +114,20 @@ def den(e: E.QExpr) -> S.Pos:
     case E.QCst{S.Q{n, d}}:
       d
     case E.QAdd{a, b}:
-      S.Pos.mul(den(a), den(b))
+      SD.d(sd(den(a), den(b)))
     case E.QSub{a, b}:
-      S.Pos.mul(den(a), den(b))
+      SD.d(sd(den(a), den(b)))
     case E.QMul{a, b}:
       S.Pos.mul(den(a), den(b))
     case E.QNeg{a}:
       den(a)
+
+# x fa + y fb and x fa - y fb, r's factors computed once
+def clr.add(+x: E.ZExpr, +y: E.ZExpr, +r: SD) -> E.ZExpr:
+  E.ZAdd{E.ZMul{x, E.ZCst{S.Zpos{SD.fa(r)}}}, E.ZMul{y, E.ZCst{S.Zpos{SD.fb(r)}}}}
+
+def clr.sub(+x: E.ZExpr, +y: E.ZExpr, +r: SD) -> E.ZExpr:
+  E.ZSub{E.ZMul{x, E.ZCst{S.Zpos{SD.fa(r)}}}, E.ZMul{y, E.ZCst{S.Zpos{SD.fb(r)}}}}
 
 # e times den(e), as an integer expression
 def clr(e: E.QExpr) -> E.ZExpr:
@@ -47,9 +137,9 @@ def clr(e: E.QExpr) -> E.ZExpr:
     case E.QCst{S.Q{n, d}}:
       E.ZCst{n}
     case E.QAdd{+a, +b}:
-      E.ZAdd{E.ZMul{clr(a), E.ZCst{S.Zpos{den(b)}}}, E.ZMul{clr(b), E.ZCst{S.Zpos{den(a)}}}}
+      clr.add(clr(a), clr(b), sd(den(a), den(b)))
     case E.QSub{+a, +b}:
-      E.ZSub{E.ZMul{clr(a), E.ZCst{S.Zpos{den(b)}}}, E.ZMul{clr(b), E.ZCst{S.Zpos{den(a)}}}}
+      clr.sub(clr(a), clr(b), sd(den(a), den(b)))
     case E.QMul{a, b}:
       E.ZMul{clr(a), clr(b)}
     case E.QNeg{a}:
@@ -62,6 +152,23 @@ def cst_ok(~F: O.OField, +n: S.Z, +d: S.Pos) -> {@M(@M(O.ofz(~F, n), O.inv(F, O.
   %Equal.sym(O.C(F), @M(O.ofp(~F, d), O.inv(F, O.ofp(~F, d))), @1, O.mul_inv(F)(O.ofp(~F, d), QE.ofp_ne(~F, d))) : {@M(O.ofz(~F, n), _) == O.ofz(~F, n) : O.C(F)}
   O.mul_one(F)(O.ofz(~F, n))
 
+# x d = (x p) f when p f = d
+def fac_ok(~F: O.OField, +x: O.C(F), +p: S.Pos, +f: S.Pos, +d: S.Pos, h: {S.Pos.mul(p, f) == d : S.Pos}) -> {@M(@M(x, O.ofp(~F, p)), O.ofp(~F, f)) == @M(x, O.ofp(~F, d)) : O.C(F)}:
+  %h : {@M(@M(x, O.ofp(~F, p)), O.ofp(~F, f)) == @M(x, O.ofp(~F, _)) : O.C(F)}
+  %FR.ofz_mul(~F, S.Zpos{p}, S.Zpos{f}) : {@M(@M(x, O.ofp(~F, p)), O.ofp(~F, f)) == @M(x, _) : O.C(F)}
+  @ZEQ[u=x,, v=O.ofp(~F, p),, w=O.ofp(~F, f) | (u*v)*w | u*(v*w)]
+
+@MACRO QEA O.eval(~F, env, a)
+@MACRO QEB O.eval(~F, env, b)
+@MACRO QR sd(den(a), den(b))
+@MACRO QD O.ofp(~F, SD.d($QR))
+@MACRO QFA O.ofp(~F, SD.fa($QR))
+@MACRO QFB O.ofp(~F, SD.fb($QR))
+@MACRO QDA O.ofp(~F, den(a))
+@MACRO QDB O.ofp(~F, den(b))
+@MACRO QCA FR.zeval(~F, env, clr(a))
+@MACRO QCB FR.zeval(~F, env, clr(b))
+
 # eval(e) · den(e) = zeval(clr(e)), in every ordered field
 def clr_ok(~F: O.OField, +env: List<&2, O.C(F)>, e: E.QExpr) -> {@M(O.eval(~F, env, e), O.ofp(~F, den(e))) == FR.zeval(~F, env, clr(e)) : O.C(F)}:
   match e:
@@ -70,15 +177,19 @@ def clr_ok(~F: O.OField, +env: List<&2, O.C(F)>, e: E.QExpr) -> {@M(O.eval(~F, e
     case E.QCst{S.Q{+n, +d}}:
       cst_ok(~F, n, d)
     case E.QAdd{+a, +b}:
-      %FR.ofz_mul(~F, S.Zpos{den(a)}, S.Zpos{den(b)}) : {@M(@A(O.eval(~F, env, a), O.eval(~F, env, b)), _) == @A(@M(FR.zeval(~F, env, clr(a)), O.ofp(~F, den(b))), @M(FR.zeval(~F, env, clr(b)), O.ofp(~F, den(a)))) : O.C(F)}
-      %clr_ok(~F, env, a) : {@M(@A(O.eval(~F, env, a), O.eval(~F, env, b)), @M(O.ofp(~F, den(a)), O.ofp(~F, den(b)))) == @A(@M(_, O.ofp(~F, den(b))), @M(FR.zeval(~F, env, clr(b)), O.ofp(~F, den(a)))) : O.C(F)}
-      %clr_ok(~F, env, b) : {@M(@A(O.eval(~F, env, a), O.eval(~F, env, b)), @M(O.ofp(~F, den(a)), O.ofp(~F, den(b)))) == @A(@M(@M(O.eval(~F, env, a), O.ofp(~F, den(a))), O.ofp(~F, den(b))), @M(_, O.ofp(~F, den(a)))) : O.C(F)}
-      @ZEQ[x=O.eval(~F, env, a),, y=O.eval(~F, env, b),, p=O.ofp(~F, den(a)),, q=O.ofp(~F, den(b)) | (x + y)*(p*q) | (x*p)*q + (y*q)*p]
+      %@ZEQ[x=$QEA,, y=$QEB,, p=$QD | x*p + y*p | (x + y)*p] : {_ == @A(@M($QCA, $QFA), @M($QCB, $QFB)) : @T}
+      %fac_ok(~F, $QEA, den(a), SD.fa($QR), SD.d($QR), sd_a(den(a), den(b))) : {@A(_, @M($QEB, $QD)) == @A(@M($QCA, $QFA), @M($QCB, $QFB)) : @T}
+      %fac_ok(~F, $QEB, den(b), SD.fb($QR), SD.d($QR), sd_b(den(a), den(b))) : {@A(@M(@M($QEA, $QDA), $QFA), _) == @A(@M($QCA, $QFA), @M($QCB, $QFB)) : @T}
+      %clr_ok(~F, env, a) : {@A(@M(@M($QEA, $QDA), $QFA), @M(@M($QEB, $QDB), $QFB)) == @A(@M(_, $QFA), @M($QCB, $QFB)) : @T}
+      %clr_ok(~F, env, b) : {@A(@M(@M($QEA, $QDA), $QFA), @M(@M($QEB, $QDB), $QFB)) == @A(@M(@M($QEA, $QDA), $QFA), @M(_, $QFB)) : @T}
+      {==}
     case E.QSub{+a, +b}:
-      %FR.ofz_mul(~F, S.Zpos{den(a)}, S.Zpos{den(b)}) : {@M(@S(O.eval(~F, env, a), O.eval(~F, env, b)), _) == @S(@M(FR.zeval(~F, env, clr(a)), O.ofp(~F, den(b))), @M(FR.zeval(~F, env, clr(b)), O.ofp(~F, den(a)))) : O.C(F)}
-      %clr_ok(~F, env, a) : {@M(@S(O.eval(~F, env, a), O.eval(~F, env, b)), @M(O.ofp(~F, den(a)), O.ofp(~F, den(b)))) == @S(@M(_, O.ofp(~F, den(b))), @M(FR.zeval(~F, env, clr(b)), O.ofp(~F, den(a)))) : O.C(F)}
-      %clr_ok(~F, env, b) : {@M(@S(O.eval(~F, env, a), O.eval(~F, env, b)), @M(O.ofp(~F, den(a)), O.ofp(~F, den(b)))) == @S(@M(@M(O.eval(~F, env, a), O.ofp(~F, den(a))), O.ofp(~F, den(b))), @M(_, O.ofp(~F, den(a)))) : O.C(F)}
-      @ZEQ[x=O.eval(~F, env, a),, y=O.eval(~F, env, b),, p=O.ofp(~F, den(a)),, q=O.ofp(~F, den(b)) | (x - y)*(p*q) | (x*p)*q - (y*q)*p]
+      %@ZEQ[x=$QEA,, y=$QEB,, p=$QD | x*p - y*p | (x - y)*p] : {_ == @S(@M($QCA, $QFA), @M($QCB, $QFB)) : @T}
+      %fac_ok(~F, $QEA, den(a), SD.fa($QR), SD.d($QR), sd_a(den(a), den(b))) : {@S(_, @M($QEB, $QD)) == @S(@M($QCA, $QFA), @M($QCB, $QFB)) : @T}
+      %fac_ok(~F, $QEB, den(b), SD.fb($QR), SD.d($QR), sd_b(den(a), den(b))) : {@S(@M(@M($QEA, $QDA), $QFA), _) == @S(@M($QCA, $QFA), @M($QCB, $QFB)) : @T}
+      %clr_ok(~F, env, a) : {@S(@M(@M($QEA, $QDA), $QFA), @M(@M($QEB, $QDB), $QFB)) == @S(@M(_, $QFA), @M($QCB, $QFB)) : @T}
+      %clr_ok(~F, env, b) : {@S(@M(@M($QEA, $QDA), $QFA), @M(@M($QEB, $QDB), $QFB)) == @S(@M(@M($QEA, $QDA), $QFA), @M(_, $QFB)) : @T}
+      {==}
     case E.QMul{+a, +b}:
       %FR.ofz_mul(~F, S.Zpos{den(a)}, S.Zpos{den(b)}) : {@M(@M(O.eval(~F, env, a), O.eval(~F, env, b)), _) == @M(FR.zeval(~F, env, clr(a)), FR.zeval(~F, env, clr(b))) : O.C(F)}
       %clr_ok(~F, env, a) : {@M(@M(O.eval(~F, env, a), O.eval(~F, env, b)), @M(O.ofp(~F, den(a)), O.ofp(~F, den(b)))) == @M(_, FR.zeval(~F, env, clr(b))) : O.C(F)}

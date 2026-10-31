@@ -284,9 +284,7 @@ def qlin_z(ls: List<&2, S.Q>, B: List<&2, E.QExpr>, +m: List<&2, Nat>, h: {czs0(
 
 # a combination of the bases has coefficient 0 at m
 def lin_cz(+ls: List<&2, S.Q>, +B: List<&2, E.QExpr>, +m: List<&2, Nat>, h: {czs0(B, m) == True{} : Bool}) -> {EL.cz(m, EP.NE(SV.lin(ls, B))) == S.Z0{} : S.Z}:
-  Equal.trans(S.Z, EL.cz(m, EP.NE(SV.lin(ls, B))), S.Q.num(CF.qlin(ls, B, m)), S.Z0{},
-    Equal.cong(S.Q, S.Z, q => S.Q.num(q), CF.coef(SV.lin(ls, B), m), CF.qlin(ls, B, m), Equal.sym(S.Q, CF.qlin(ls, B, m), CF.coef(SV.lin(ls, B), m), CF.coef_lin(ls, B, m))),
-    qlin_z(ls, B, m, h))
+  CF.num0(CF.qlin(ls, B, m), CF.coef(SV.lin(ls, B), m), CF.coef_lin(ls, B, m), qlin_z(ls, B, m, h))
 
 def mulpos_zero(z: S.Z, +p: S.Pos, h: {S.Z.mul(z, S.Zpos{p}) == S.Z0{} : S.Z}) -> {z == S.Z0{} : S.Z}:
   match z:

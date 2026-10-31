@@ -382,7 +382,7 @@ def psi_eq(~F: O.OField, ms: List<&2, List<&2, Nat>>, cs: List<&2, O.C(F)>, +e: 
     case Con{+m, +mt} Con{+c, +ct}:
       %Equal.sym(O.C(F), O.ofq(~F, CF.coef(e, m)), O.ofq(~F, CF.coef(SV.lin(ls, B), m)), QE.ofq_eq(~F, CF.coef(e, m), CF.coef(SV.lin(ls, B), m), coefeq(e, SV.lin(ls, B), hz, m)))
         : {O.add(F, O.mul(F, c, _), psi(~F, mt, ct, e)) == psum(~F, Con{m, mt}, Con{c, ct}, ls, B) : O.C(F)}
-      %CF.coef_lin(ls, B, m) : {O.add(F, O.mul(F, c, O.ofq(~F, _)), psi(~F, mt, ct, e)) == psum(~F, Con{m, mt}, Con{c, ct}, ls, B) : O.C(F)}
+      %QE.ofq_eq(~F, CF.qlin(ls, B, m), CF.coef(SV.lin(ls, B), m), CF.coef_lin(ls, B, m)) : {O.add(F, O.mul(F, c, _), psi(~F, mt, ct, e)) == psum(~F, Con{m, mt}, Con{c, ct}, ls, B) : O.C(F)}
       %Equal.sym(O.C(F), psi(~F, mt, ct, e), psum(~F, mt, ct, ls, B), psi_eq(~F, mt, ct, e, ls, B, hz))
         : {O.add(F, O.mul(F, c, O.ofq(~F, CF.qlin(ls, B, m))), _) == psum(~F, Con{m, mt}, Con{c, ct}, ls, B) : O.C(F)}
       {==}

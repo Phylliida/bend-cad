@@ -3,7 +3,9 @@
 # coefficient of m in e's cleared normal form, over e's denominator.
 # - It is linear: coef of a sum, a difference, a negation, a constant
 #   multiple (coef_add, coef_sub, coef_neg, coef_cmul), and of a constant
-#   (coef_cst_one, coef_cst_other).
+#   (coef_cst_one, coef_cst_other). A sum's denominator is a shared one
+#   (lib/qnorm.bend: sd), not the product, so sums and differences (and
+#   coef_lin) are equal as rationals (Q.eq) rather than as terms.
 # - An identity has equal coefficients (ident_coef), by the completeness
 #   of the normal forms (lib/identpf.bend: qzero_ident).
 # So a degree-0 identity among expressions is a system of linear equations
@@ -13,6 +15,9 @@
 # Coefficients are summed over all terms with the monomial (cz), so the
 # normalizer's steps act on them linearly whatever the list; only the
 # constant on the right of a product needs sorted monomials (cz_mulc).
+#
+# Generated from tools/drafts/coefpf.draft by tools/expand.py; edit the
+# draft.
 
 import Base
 import ../spec/num.bend as S
@@ -27,6 +32,8 @@ import ./qnorm.bend as QN
 import ./redpoly.bend as RP
 import ./identpf.bend as ID
 import ./elim.bend as EL
+import ./q.bend as LQ
+import ./qalg.bend as QA
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -226,6 +233,56 @@ def cz_mulc(+m: List<&2, Nat>, +p: List<&2, R.ZTerm>, k: S.Z, hr: {RP.red(p) == 
     case S.Zneg{q}:
       cz_mulc1(m, p, S.Zneg{q}, hr)
 
+# Shared denominators
+# -------------------
+
+def zz(z: S.Z) -> Bool:
+  match z:
+    case S.Z0{}:
+      True{}
+    case S.Zpos{p}:
+      False{}
+    case S.Zneg{p}:
+      False{}
+
+# z p = 0 with p positive gives z = 0
+def mulpos_zero(z: S.Z, +p: S.Pos, h: {S.Z.mul(z, S.Zpos{p}) == S.Z0{} : S.Z}) -> {z == S.Z0{} : S.Z}:
+  match z:
+    case S.Z0{}:
+      {==}
+    case S.Zpos{q}:
+      absurd({S.Zpos{q} == S.Z0{} : S.Z}, KA.ft(Equal.cong(S.Z, Bool, x => zz(x), S.Z.mul(S.Zpos{q}, S.Zpos{p}), S.Z0{}, h)))
+    case S.Zneg{q}:
+      absurd({S.Zneg{q} == S.Z0{} : S.Z}, KA.ft(Equal.cong(S.Z, Bool, x => zz(x), S.Z.mul(S.Zneg{q}, S.Zpos{p}), S.Z0{}, h)))
+
+
+# (c1 db + c2 da) d = (c1 fa + c2 fb) da db, when da fa = d = db fb
+def dshare(+c1: S.Z, +c2: S.Z, +da: S.Pos, +db: S.Pos, +fa: S.Pos, +fb: S.Pos, +d: S.Pos, ha: {S.Pos.mul(da, fa) == d : S.Pos}, hb: {S.Pos.mul(db, fb) == d : S.Pos})
+  -> {S.Z.mul(S.Z.add(S.Z.mul(c1, S.Zpos{db}), S.Z.mul(c2, S.Zpos{da})), S.Zpos{d}) == S.Z.mul(S.Z.add(S.Z.mul(c1, S.Zpos{fa}), S.Z.mul(c2, S.Zpos{fb})), S.Zpos{S.Pos.mul(da, db)}) : S.Z}:
+  %R.ring_eq([c1, c2, S.Zpos{da}, S.Zpos{db}, S.Zpos{d}], E.ZAdd{E.ZMul{E.ZMul{E.ZVar{0n}, E.ZVar{3n}}, E.ZVar{4n}}, E.ZMul{E.ZMul{E.ZVar{1n}, E.ZVar{2n}}, E.ZVar{4n}}}, E.ZMul{E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{3n}}, E.ZMul{E.ZVar{1n}, E.ZVar{2n}}}, E.ZVar{4n}}, {==}) : {_ == S.Z.mul(S.Z.add(S.Z.mul(c1, S.Zpos{fa}), S.Z.mul(c2, S.Zpos{fb})), S.Zpos{S.Pos.mul(da, db)}) : S.Z}
+  %ha : {S.Z.add(S.Z.mul(S.Z.mul(c1, S.Zpos{db}), S.Zpos{_}), S.Z.mul(S.Z.mul(c2, S.Zpos{da}), S.Zpos{d})) == S.Z.mul(S.Z.add(S.Z.mul(c1, S.Zpos{fa}), S.Z.mul(c2, S.Zpos{fb})), S.Zpos{S.Pos.mul(da, db)}) : S.Z}
+  %hb : {S.Z.add(S.Z.mul(S.Z.mul(c1, S.Zpos{db}), S.Zpos{S.Pos.mul(da, fa)}), S.Z.mul(S.Z.mul(c2, S.Zpos{da}), S.Zpos{_})) == S.Z.mul(S.Z.add(S.Z.mul(c1, S.Zpos{fa}), S.Z.mul(c2, S.Zpos{fb})), S.Zpos{S.Pos.mul(da, db)}) : S.Z}
+  R.ring_eq([c1, c2, S.Zpos{da}, S.Zpos{db}, S.Zpos{fa}, S.Zpos{fb}], E.ZAdd{E.ZMul{E.ZMul{E.ZVar{0n}, E.ZVar{3n}}, E.ZMul{E.ZVar{2n}, E.ZVar{4n}}}, E.ZMul{E.ZMul{E.ZVar{1n}, E.ZVar{2n}}, E.ZMul{E.ZVar{3n}, E.ZVar{5n}}}}, E.ZMul{E.ZAdd{E.ZMul{E.ZVar{0n}, E.ZVar{4n}}, E.ZMul{E.ZVar{1n}, E.ZVar{5n}}}, E.ZMul{E.ZVar{2n}, E.ZVar{3n}}}, {==})
+
+# c1 d2 - c2 d1 = 0 from c1 fa - c2 fb = 0, when d1 fa = d = d2 fb
+def cross(+c1: S.Z, +c2: S.Z, +d1: S.Pos, +d2: S.Pos, +fa: S.Pos, +fb: S.Pos, +d: S.Pos, ha: {S.Pos.mul(d1, fa) == d : S.Pos}, hb: {S.Pos.mul(d2, fb) == d : S.Pos},
+  h: {S.Z.sub(S.Z.mul(c1, S.Zpos{fa}), S.Z.mul(c2, S.Zpos{fb})) == S.Z0{} : S.Z}) -> {S.Z.sub(S.Z.mul(c1, S.Zpos{d2}), S.Z.mul(c2, S.Zpos{d1})) == S.Z0{} : S.Z}:
+  mulpos_zero(S.Z.sub(S.Z.mul(c1, S.Zpos{d2}), S.Z.mul(c2, S.Zpos{d1})), d,
+    (%R.ring_eq([c1, c2, S.Zpos{d1}, S.Zpos{d2}, S.Zpos{d}], E.ZSub{E.ZMul{E.ZMul{E.ZVar{0n}, E.ZVar{3n}}, E.ZVar{4n}}, E.ZMul{E.ZMul{E.ZVar{1n}, E.ZVar{2n}}, E.ZVar{4n}}}, E.ZMul{E.ZSub{E.ZMul{E.ZVar{0n}, E.ZVar{3n}}, E.ZMul{E.ZVar{1n}, E.ZVar{2n}}}, E.ZVar{4n}}, {==}) : {_ == S.Z0{} : S.Z}
+     %ha : {S.Z.sub(S.Z.mul(S.Z.mul(c1, S.Zpos{d2}), S.Zpos{_}), S.Z.mul(S.Z.mul(c2, S.Zpos{d1}), S.Zpos{d})) == S.Z0{} : S.Z}
+     %hb : {S.Z.sub(S.Z.mul(S.Z.mul(c1, S.Zpos{d2}), S.Zpos{S.Pos.mul(d1, fa)}), S.Z.mul(S.Z.mul(c2, S.Zpos{d1}), S.Zpos{_})) == S.Z0{} : S.Z}
+     %R.ring_eq([c1, c2, S.Zpos{d1}, S.Zpos{d2}, S.Zpos{fa}, S.Zpos{fb}], E.ZMul{E.ZSub{E.ZMul{E.ZVar{0n}, E.ZVar{4n}}, E.ZMul{E.ZVar{1n}, E.ZVar{5n}}}, E.ZMul{E.ZVar{2n}, E.ZVar{3n}}}, E.ZSub{E.ZMul{E.ZMul{E.ZVar{0n}, E.ZVar{3n}}, E.ZMul{E.ZVar{2n}, E.ZVar{4n}}}, E.ZMul{E.ZMul{E.ZVar{1n}, E.ZVar{2n}}, E.ZMul{E.ZVar{3n}, E.ZVar{5n}}}}, {==}) : {_ == S.Z0{} : S.Z}
+     %Equal.sym(S.Z, S.Z.sub(S.Z.mul(c1, S.Zpos{fa}), S.Z.mul(c2, S.Zpos{fb})), S.Z0{}, h) : {S.Z.mul(_, S.Z.mul(S.Zpos{d1}, S.Zpos{d2})) == S.Z0{} : S.Z}
+     {==}))
+
+# a rational equal to one with numerator 0 has numerator 0
+def num0(+x: S.Q, +y: S.Q, e: S.Q.eq(x, y), h: {S.Q.num(x) == S.Z0{} : S.Z}) -> {S.Q.num(y) == S.Z0{} : S.Z}:
+  mulpos_zero(S.Q.num(y), S.Q.den(x),
+    Equal.trans(S.Z, S.Z.mul(S.Q.num(y), S.Zpos{S.Q.den(x)}), S.Z.mul(S.Q.num(x), S.Zpos{S.Q.den(y)}), S.Z0{},
+      Equal.sym(S.Z, S.Z.mul(S.Q.num(x), S.Zpos{S.Q.den(y)}), S.Z.mul(S.Q.num(y), S.Zpos{S.Q.den(x)}), e),
+      (%Equal.sym(S.Z, S.Q.num(x), S.Z0{}, h) : {S.Z.mul(_, S.Zpos{S.Q.den(y)}) == S.Z0{} : S.Z}
+       {==})))
+
 # Rational coefficients
 # ---------------------
 
@@ -233,31 +290,24 @@ def cz_mulc(+m: List<&2, Nat>, +p: List<&2, R.ZTerm>, k: S.Z, hr: {RP.red(p) == 
 def coef(+e: E.QExpr, +m: List<&2, Nat>) -> S.Q:
   S.Q{EL.cz(m, R.norm(QN.clr(e))), QN.den(e)}
 
-def coef_add(+a: E.QExpr, +b: E.QExpr, +m: List<&2, Nat>) -> {S.Q.add(coef(a, m), coef(b, m)) == coef(E.QAdd{a, b}, m) : S.Q}:
-  %cz_padd(m, R.pmul(R.norm(QN.clr(a)), R.pconst(S.Zpos{QN.den(b)})), R.pmul(R.norm(QN.clr(b)), R.pconst(S.Zpos{QN.den(a)})))
-    : {S.Q.add(coef(a, m), coef(b, m)) == S.Q{_, S.Pos.mul(QN.den(a), QN.den(b))} : S.Q}
-  %cz_mulc(m, R.norm(QN.clr(a)), S.Zpos{QN.den(b)}, RP.norm_red(QN.clr(a)))
-    : {S.Q.add(coef(a, m), coef(b, m)) == S.Q{S.Z.add(_, EL.cz(m, R.pmul(R.norm(QN.clr(b)), R.pconst(S.Zpos{QN.den(a)})))), S.Pos.mul(QN.den(a), QN.den(b))} : S.Q}
-  %cz_mulc(m, R.norm(QN.clr(b)), S.Zpos{QN.den(a)}, RP.norm_red(QN.clr(b)))
-    : {S.Q.add(coef(a, m), coef(b, m)) == S.Q{S.Z.add(S.Z.mul(EL.cz(m, R.norm(QN.clr(a))), S.Zpos{QN.den(b)}), _), S.Pos.mul(QN.den(a), QN.den(b))} : S.Q}
-  {==}
+
+def coef_add(+a: E.QExpr, +b: E.QExpr, +m: List<&2, Nat>) -> S.Q.eq(S.Q.add(coef(a, m), coef(b, m)), coef(E.QAdd{a, b}, m)):
+  %cz_padd(m, R.pmul(R.norm(QN.clr(a)), R.pconst(S.Zpos{QN.SD.fa(QN.sd(QN.den(a), QN.den(b)))})), R.pmul(R.norm(QN.clr(b)), R.pconst(S.Zpos{QN.SD.fb(QN.sd(QN.den(a), QN.den(b)))}))) : {S.Z.mul(S.Z.add(S.Z.mul(EL.cz(m, R.norm(QN.clr(a))), S.Zpos{QN.den(b)}), S.Z.mul(EL.cz(m, R.norm(QN.clr(b))), S.Zpos{QN.den(a)})), S.Zpos{QN.SD.d(QN.sd(QN.den(a), QN.den(b)))}) == S.Z.mul(_, S.Zpos{S.Pos.mul(QN.den(a), QN.den(b))}) : S.Z}
+  %cz_mulc(m, R.norm(QN.clr(a)), S.Zpos{QN.SD.fa(QN.sd(QN.den(a), QN.den(b)))}, RP.norm_red(QN.clr(a))) : {S.Z.mul(S.Z.add(S.Z.mul(EL.cz(m, R.norm(QN.clr(a))), S.Zpos{QN.den(b)}), S.Z.mul(EL.cz(m, R.norm(QN.clr(b))), S.Zpos{QN.den(a)})), S.Zpos{QN.SD.d(QN.sd(QN.den(a), QN.den(b)))}) == S.Z.mul(S.Z.add(_, EL.cz(m, R.pmul(R.norm(QN.clr(b)), R.pconst(S.Zpos{QN.SD.fb(QN.sd(QN.den(a), QN.den(b)))})))), S.Zpos{S.Pos.mul(QN.den(a), QN.den(b))}) : S.Z}
+  %cz_mulc(m, R.norm(QN.clr(b)), S.Zpos{QN.SD.fb(QN.sd(QN.den(a), QN.den(b)))}, RP.norm_red(QN.clr(b))) : {S.Z.mul(S.Z.add(S.Z.mul(EL.cz(m, R.norm(QN.clr(a))), S.Zpos{QN.den(b)}), S.Z.mul(EL.cz(m, R.norm(QN.clr(b))), S.Zpos{QN.den(a)})), S.Zpos{QN.SD.d(QN.sd(QN.den(a), QN.den(b)))}) == S.Z.mul(S.Z.add(S.Z.mul(EL.cz(m, R.norm(QN.clr(a))), S.Zpos{QN.SD.fa(QN.sd(QN.den(a), QN.den(b)))}), _), S.Zpos{S.Pos.mul(QN.den(a), QN.den(b))}) : S.Z}
+  dshare(EL.cz(m, R.norm(QN.clr(a))), EL.cz(m, R.norm(QN.clr(b))), QN.den(a), QN.den(b), QN.SD.fa(QN.sd(QN.den(a), QN.den(b))), QN.SD.fb(QN.sd(QN.den(a), QN.den(b))), QN.SD.d(QN.sd(QN.den(a), QN.den(b))), QN.sd_a(QN.den(a), QN.den(b)), QN.sd_b(QN.den(a), QN.den(b)))
 
 def coef_neg(+a: E.QExpr, +m: List<&2, Nat>) -> {S.Q.neg(coef(a, m)) == coef(E.QNeg{a}, m) : S.Q}:
   %cz_pneg(m, R.norm(QN.clr(a))) : {S.Q.neg(coef(a, m)) == S.Q{_, QN.den(a)} : S.Q}
   {==}
 
-def coef_sub(+a: E.QExpr, +b: E.QExpr, +m: List<&2, Nat>) -> {S.Q.sub(coef(a, m), coef(b, m)) == coef(E.QSub{a, b}, m) : S.Q}:
-  %cz_padd(m, R.pmul(R.norm(QN.clr(a)), R.pconst(S.Zpos{QN.den(b)})), R.pneg(R.pmul(R.norm(QN.clr(b)), R.pconst(S.Zpos{QN.den(a)}))))
-    : {S.Q.sub(coef(a, m), coef(b, m)) == S.Q{_, S.Pos.mul(QN.den(a), QN.den(b))} : S.Q}
-  %cz_pneg(m, R.pmul(R.norm(QN.clr(b)), R.pconst(S.Zpos{QN.den(a)})))
-    : {S.Q.sub(coef(a, m), coef(b, m)) == S.Q{S.Z.add(EL.cz(m, R.pmul(R.norm(QN.clr(a)), R.pconst(S.Zpos{QN.den(b)}))), _), S.Pos.mul(QN.den(a), QN.den(b))} : S.Q}
-  %cz_mulc(m, R.norm(QN.clr(a)), S.Zpos{QN.den(b)}, RP.norm_red(QN.clr(a)))
-    : {S.Q.sub(coef(a, m), coef(b, m)) == S.Q{S.Z.add(_, S.Z.neg(EL.cz(m, R.pmul(R.norm(QN.clr(b)), R.pconst(S.Zpos{QN.den(a)}))))), S.Pos.mul(QN.den(a), QN.den(b))} : S.Q}
-  %cz_mulc(m, R.norm(QN.clr(b)), S.Zpos{QN.den(a)}, RP.norm_red(QN.clr(b)))
-    : {S.Q.sub(coef(a, m), coef(b, m)) == S.Q{S.Z.add(S.Z.mul(EL.cz(m, R.norm(QN.clr(a))), S.Zpos{QN.den(b)}), S.Z.neg(_)), S.Pos.mul(QN.den(a), QN.den(b))} : S.Q}
-  %ZL.neg_mul(EL.cz(m, R.norm(QN.clr(b))), S.Zpos{QN.den(a)})
-    : {S.Q.sub(coef(a, m), coef(b, m)) == S.Q{S.Z.add(S.Z.mul(EL.cz(m, R.norm(QN.clr(a))), S.Zpos{QN.den(b)}), _), S.Pos.mul(QN.den(a), QN.den(b))} : S.Q}
-  {==}
+def coef_sub(+a: E.QExpr, +b: E.QExpr, +m: List<&2, Nat>) -> S.Q.eq(S.Q.sub(coef(a, m), coef(b, m)), coef(E.QSub{a, b}, m)):
+  %cz_padd(m, R.pmul(R.norm(QN.clr(a)), R.pconst(S.Zpos{QN.SD.fa(QN.sd(QN.den(a), QN.den(b)))})), R.pneg(R.pmul(R.norm(QN.clr(b)), R.pconst(S.Zpos{QN.SD.fb(QN.sd(QN.den(a), QN.den(b)))})))) : {S.Z.mul(S.Z.add(S.Z.mul(EL.cz(m, R.norm(QN.clr(a))), S.Zpos{QN.den(b)}), S.Z.mul(S.Z.neg(EL.cz(m, R.norm(QN.clr(b)))), S.Zpos{QN.den(a)})), S.Zpos{QN.SD.d(QN.sd(QN.den(a), QN.den(b)))}) == S.Z.mul(_, S.Zpos{S.Pos.mul(QN.den(a), QN.den(b))}) : S.Z}
+  %cz_pneg(m, R.pmul(R.norm(QN.clr(b)), R.pconst(S.Zpos{QN.SD.fb(QN.sd(QN.den(a), QN.den(b)))}))) : {S.Z.mul(S.Z.add(S.Z.mul(EL.cz(m, R.norm(QN.clr(a))), S.Zpos{QN.den(b)}), S.Z.mul(S.Z.neg(EL.cz(m, R.norm(QN.clr(b)))), S.Zpos{QN.den(a)})), S.Zpos{QN.SD.d(QN.sd(QN.den(a), QN.den(b)))}) == S.Z.mul(S.Z.add(EL.cz(m, R.pmul(R.norm(QN.clr(a)), R.pconst(S.Zpos{QN.SD.fa(QN.sd(QN.den(a), QN.den(b)))}))), _), S.Zpos{S.Pos.mul(QN.den(a), QN.den(b))}) : S.Z}
+  %cz_mulc(m, R.norm(QN.clr(a)), S.Zpos{QN.SD.fa(QN.sd(QN.den(a), QN.den(b)))}, RP.norm_red(QN.clr(a))) : {S.Z.mul(S.Z.add(S.Z.mul(EL.cz(m, R.norm(QN.clr(a))), S.Zpos{QN.den(b)}), S.Z.mul(S.Z.neg(EL.cz(m, R.norm(QN.clr(b)))), S.Zpos{QN.den(a)})), S.Zpos{QN.SD.d(QN.sd(QN.den(a), QN.den(b)))}) == S.Z.mul(S.Z.add(_, S.Z.neg(EL.cz(m, R.pmul(R.norm(QN.clr(b)), R.pconst(S.Zpos{QN.SD.fb(QN.sd(QN.den(a), QN.den(b)))}))))), S.Zpos{S.Pos.mul(QN.den(a), QN.den(b))}) : S.Z}
+  %cz_mulc(m, R.norm(QN.clr(b)), S.Zpos{QN.SD.fb(QN.sd(QN.den(a), QN.den(b)))}, RP.norm_red(QN.clr(b))) : {S.Z.mul(S.Z.add(S.Z.mul(EL.cz(m, R.norm(QN.clr(a))), S.Zpos{QN.den(b)}), S.Z.mul(S.Z.neg(EL.cz(m, R.norm(QN.clr(b)))), S.Zpos{QN.den(a)})), S.Zpos{QN.SD.d(QN.sd(QN.den(a), QN.den(b)))}) == S.Z.mul(S.Z.add(S.Z.mul(EL.cz(m, R.norm(QN.clr(a))), S.Zpos{QN.SD.fa(QN.sd(QN.den(a), QN.den(b)))}), S.Z.neg(_)), S.Zpos{S.Pos.mul(QN.den(a), QN.den(b))}) : S.Z}
+  %ZL.neg_mul(EL.cz(m, R.norm(QN.clr(b))), S.Zpos{QN.SD.fb(QN.sd(QN.den(a), QN.den(b)))}) : {S.Z.mul(S.Z.add(S.Z.mul(EL.cz(m, R.norm(QN.clr(a))), S.Zpos{QN.den(b)}), S.Z.mul(S.Z.neg(EL.cz(m, R.norm(QN.clr(b)))), S.Zpos{QN.den(a)})), S.Zpos{QN.SD.d(QN.sd(QN.den(a), QN.den(b)))}) == S.Z.mul(S.Z.add(S.Z.mul(EL.cz(m, R.norm(QN.clr(a))), S.Zpos{QN.SD.fa(QN.sd(QN.den(a), QN.den(b)))}), _), S.Zpos{S.Pos.mul(QN.den(a), QN.den(b))}) : S.Z}
+  dshare(EL.cz(m, R.norm(QN.clr(a))), S.Z.neg(EL.cz(m, R.norm(QN.clr(b)))), QN.den(a), QN.den(b), QN.SD.fa(QN.sd(QN.den(a), QN.den(b))), QN.SD.fb(QN.sd(QN.den(a), QN.den(b))), QN.SD.d(QN.sd(QN.den(a), QN.den(b))), QN.sd_a(QN.den(a), QN.den(b)), QN.sd_b(QN.den(a), QN.den(b)))
 
 # a constant multiple
 def coef_cmul(l: S.Q, +a: E.QExpr, +m: List<&2, Nat>) -> {S.Q.mul(l, coef(a, m)) == coef(E.QMul{E.QCst{l}, a}, m) : S.Q}:
@@ -309,7 +359,7 @@ def qlin(ls: List<&2, S.Q>, es: List<&2, E.QExpr>, +m: List<&2, Nat>) -> S.Q:
       S.Q.add(S.Q.mul(l, coef(e, m)), qlin(lt, et, m))
 
 # the coefficients of a combination are the combination of coefficients
-def coef_lin(ls: List<&2, S.Q>, es: List<&2, E.QExpr>, +m: List<&2, Nat>) -> {qlin(ls, es, m) == coef(SV.lin(ls, es), m) : S.Q}:
+def coef_lin(ls: List<&2, S.Q>, es: List<&2, E.QExpr>, +m: List<&2, Nat>) -> S.Q.eq(qlin(ls, es, m), coef(SV.lin(ls, es), m)):
   match ls es:
     case Nil{} Nil{}:
       {==}
@@ -318,31 +368,37 @@ def coef_lin(ls: List<&2, S.Q>, es: List<&2, E.QExpr>, +m: List<&2, Nat>) -> {ql
     case Con{l, lt} Nil{}:
       {==}
     case Con{+l, +lt} Con{+e, +et}:
-      %coef_add(E.QMul{E.QCst{l}, e}, SV.lin(lt, et), m) : {qlin(Con{l, lt}, Con{e, et}, m) == _ : S.Q}
-      %coef_cmul(l, e, m) : {qlin(Con{l, lt}, Con{e, et}, m) == S.Q.add(_, coef(SV.lin(lt, et), m)) : S.Q}
-      %coef_lin(lt, et, m) : {qlin(Con{l, lt}, Con{e, et}, m) == S.Q.add(S.Q.mul(l, coef(e, m)), _) : S.Q}
-      {==}
+      LQ.q_trans(S.Q.add(S.Q.mul(l, coef(e, m)), qlin(lt, et, m)), S.Q.add(coef(E.QMul{E.QCst{l}, e}, m), coef(SV.lin(lt, et), m)), coef(SV.lin(Con{l, lt}, Con{e, et}), m),
+        (%coef_cmul(l, e, m) : S.Q.eq(S.Q.add(S.Q.mul(l, coef(e, m)), qlin(lt, et, m)), S.Q.add(_, coef(SV.lin(lt, et), m)))
+         LQ.q_add_cong_r(S.Q.mul(l, coef(e, m)), qlin(lt, et, m), coef(SV.lin(lt, et), m), coef_lin(lt, et, m))),
+        coef_add(E.QMul{E.QCst{l}, e}, SV.lin(lt, et), m))
 
 # Identities have equal coefficients
 # ----------------------------------
 
-def coef_zero(+e1: E.QExpr, +e2: E.QExpr, +m: List<&2, Nat>, nil: {Nil{} == R.norm(QN.clr(E.QSub{e1, e2})) : List<&2, R.ZTerm>})
-  -> {S.Z.sub(S.Z.mul(EL.cz(m, R.norm(QN.clr(e1))), S.Zpos{QN.den(e2)}), S.Z.mul(EL.cz(m, R.norm(QN.clr(e2))), S.Zpos{QN.den(e1)})) == S.Z0{} : S.Z}:
-  %Equal.sym(S.Z, S.Z.mul(EL.cz(m, R.norm(QN.clr(e1))), S.Zpos{QN.den(e2)}), EL.cz(m, R.pmul(R.norm(QN.clr(e1)), R.pconst(S.Zpos{QN.den(e2)}))),
-      cz_mulc(m, R.norm(QN.clr(e1)), S.Zpos{QN.den(e2)}, RP.norm_red(QN.clr(e1))))
-    : {S.Z.add(_, S.Z.neg(S.Z.mul(EL.cz(m, R.norm(QN.clr(e2))), S.Zpos{QN.den(e1)}))) == S.Z0{} : S.Z}
-  %Equal.sym(S.Z, S.Z.mul(EL.cz(m, R.norm(QN.clr(e2))), S.Zpos{QN.den(e1)}), EL.cz(m, R.pmul(R.norm(QN.clr(e2)), R.pconst(S.Zpos{QN.den(e1)}))),
-      cz_mulc(m, R.norm(QN.clr(e2)), S.Zpos{QN.den(e1)}, RP.norm_red(QN.clr(e2))))
-    : {S.Z.add(EL.cz(m, R.pmul(R.norm(QN.clr(e1)), R.pconst(S.Zpos{QN.den(e2)}))), S.Z.neg(_)) == S.Z0{} : S.Z}
-  %Equal.sym(S.Z, S.Z.neg(EL.cz(m, R.pmul(R.norm(QN.clr(e2)), R.pconst(S.Zpos{QN.den(e1)})))), EL.cz(m, R.pneg(R.pmul(R.norm(QN.clr(e2)), R.pconst(S.Zpos{QN.den(e1)})))),
-      cz_pneg(m, R.pmul(R.norm(QN.clr(e2)), R.pconst(S.Zpos{QN.den(e1)}))))
-    : {S.Z.add(EL.cz(m, R.pmul(R.norm(QN.clr(e1)), R.pconst(S.Zpos{QN.den(e2)}))), _) == S.Z0{} : S.Z}
-  %Equal.sym(S.Z, S.Z.add(EL.cz(m, R.pmul(R.norm(QN.clr(e1)), R.pconst(S.Zpos{QN.den(e2)}))), EL.cz(m, R.pneg(R.pmul(R.norm(QN.clr(e2)), R.pconst(S.Zpos{QN.den(e1)}))))),
-      EL.cz(m, R.padd(R.pmul(R.norm(QN.clr(e1)), R.pconst(S.Zpos{QN.den(e2)})), R.pneg(R.pmul(R.norm(QN.clr(e2)), R.pconst(S.Zpos{QN.den(e1)}))))),
-      cz_padd(m, R.pmul(R.norm(QN.clr(e1)), R.pconst(S.Zpos{QN.den(e2)})), R.pneg(R.pmul(R.norm(QN.clr(e2)), R.pconst(S.Zpos{QN.den(e1)})))))
+
+# the cleared difference's coefficient, by the shared denominator's factors
+def coef_zero.f(+e1: E.QExpr, +e2: E.QExpr, +m: List<&2, Nat>, nil: {Nil{} == R.norm(QN.clr(E.QSub{e1, e2})) : List<&2, R.ZTerm>})
+  -> {S.Z.sub(S.Z.mul(EL.cz(m, R.norm(QN.clr(e1))), S.Zpos{QN.SD.fa(QN.sd(QN.den(e1), QN.den(e2)))}), S.Z.mul(EL.cz(m, R.norm(QN.clr(e2))), S.Zpos{QN.SD.fb(QN.sd(QN.den(e1), QN.den(e2)))})) == S.Z0{} : S.Z}:
+  %Equal.sym(S.Z, S.Z.mul(EL.cz(m, R.norm(QN.clr(e1))), S.Zpos{QN.SD.fa(QN.sd(QN.den(e1), QN.den(e2)))}), EL.cz(m, R.pmul(R.norm(QN.clr(e1)), R.pconst(S.Zpos{QN.SD.fa(QN.sd(QN.den(e1), QN.den(e2)))}))),
+      cz_mulc(m, R.norm(QN.clr(e1)), S.Zpos{QN.SD.fa(QN.sd(QN.den(e1), QN.den(e2)))}, RP.norm_red(QN.clr(e1))))
+    : {S.Z.add(_, S.Z.neg(S.Z.mul(EL.cz(m, R.norm(QN.clr(e2))), S.Zpos{QN.SD.fb(QN.sd(QN.den(e1), QN.den(e2)))}))) == S.Z0{} : S.Z}
+  %Equal.sym(S.Z, S.Z.mul(EL.cz(m, R.norm(QN.clr(e2))), S.Zpos{QN.SD.fb(QN.sd(QN.den(e1), QN.den(e2)))}), EL.cz(m, R.pmul(R.norm(QN.clr(e2)), R.pconst(S.Zpos{QN.SD.fb(QN.sd(QN.den(e1), QN.den(e2)))}))),
+      cz_mulc(m, R.norm(QN.clr(e2)), S.Zpos{QN.SD.fb(QN.sd(QN.den(e1), QN.den(e2)))}, RP.norm_red(QN.clr(e2))))
+    : {S.Z.add(EL.cz(m, R.pmul(R.norm(QN.clr(e1)), R.pconst(S.Zpos{QN.SD.fa(QN.sd(QN.den(e1), QN.den(e2)))}))), S.Z.neg(_)) == S.Z0{} : S.Z}
+  %Equal.sym(S.Z, S.Z.neg(EL.cz(m, R.pmul(R.norm(QN.clr(e2)), R.pconst(S.Zpos{QN.SD.fb(QN.sd(QN.den(e1), QN.den(e2)))})))), EL.cz(m, R.pneg(R.pmul(R.norm(QN.clr(e2)), R.pconst(S.Zpos{QN.SD.fb(QN.sd(QN.den(e1), QN.den(e2)))})))),
+      cz_pneg(m, R.pmul(R.norm(QN.clr(e2)), R.pconst(S.Zpos{QN.SD.fb(QN.sd(QN.den(e1), QN.den(e2)))}))))
+    : {S.Z.add(EL.cz(m, R.pmul(R.norm(QN.clr(e1)), R.pconst(S.Zpos{QN.SD.fa(QN.sd(QN.den(e1), QN.den(e2)))}))), _) == S.Z0{} : S.Z}
+  %Equal.sym(S.Z, S.Z.add(EL.cz(m, R.pmul(R.norm(QN.clr(e1)), R.pconst(S.Zpos{QN.SD.fa(QN.sd(QN.den(e1), QN.den(e2)))}))), EL.cz(m, R.pneg(R.pmul(R.norm(QN.clr(e2)), R.pconst(S.Zpos{QN.SD.fb(QN.sd(QN.den(e1), QN.den(e2)))}))))),
+      EL.cz(m, R.padd(R.pmul(R.norm(QN.clr(e1)), R.pconst(S.Zpos{QN.SD.fa(QN.sd(QN.den(e1), QN.den(e2)))})), R.pneg(R.pmul(R.norm(QN.clr(e2)), R.pconst(S.Zpos{QN.SD.fb(QN.sd(QN.den(e1), QN.den(e2)))}))))),
+      cz_padd(m, R.pmul(R.norm(QN.clr(e1)), R.pconst(S.Zpos{QN.SD.fa(QN.sd(QN.den(e1), QN.den(e2)))})), R.pneg(R.pmul(R.norm(QN.clr(e2)), R.pconst(S.Zpos{QN.SD.fb(QN.sd(QN.den(e1), QN.den(e2)))})))))
     : {_ == S.Z0{} : S.Z}
   %nil : {EL.cz(m, _) == S.Z0{} : S.Z}
   {==}
+
+def coef_zero(+e1: E.QExpr, +e2: E.QExpr, +m: List<&2, Nat>, nil: {Nil{} == R.norm(QN.clr(E.QSub{e1, e2})) : List<&2, R.ZTerm>})
+  -> {S.Z.sub(S.Z.mul(EL.cz(m, R.norm(QN.clr(e1))), S.Zpos{QN.den(e2)}), S.Z.mul(EL.cz(m, R.norm(QN.clr(e2))), S.Zpos{QN.den(e1)})) == S.Z0{} : S.Z}:
+  cross(EL.cz(m, R.norm(QN.clr(e1))), EL.cz(m, R.norm(QN.clr(e2))), QN.den(e1), QN.den(e2), QN.SD.fa(QN.sd(QN.den(e1), QN.den(e2))), QN.SD.fb(QN.sd(QN.den(e1), QN.den(e2))), QN.SD.d(QN.sd(QN.den(e1), QN.den(e2))), QN.sd_a(QN.den(e1), QN.den(e2)), QN.sd_b(QN.den(e1), QN.den(e2)), coef_zero.f(e1, e2, m, nil))
 
 # an identity has equal coefficients at every monomial
 def ident_coef(+e1: E.QExpr, +e2: E.QExpr, hi: SV.Ident(e1, e2), +m: List<&2, Nat>) -> S.Q.eq(coef(e1, m), coef(e2, m)):

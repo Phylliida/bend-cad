@@ -67,7 +67,7 @@ def depends_complete(+e: E.QExpr, +v: Nat, hd: SV.Depends(e, v)) -> {ID.dep(e, v
 def ident_coefs(+e1: E.QExpr, +e2: E.QExpr, hi: SV.Ident(e1, e2), +m: List<&2, Nat>) -> S.Q.eq(CF.coef(e1, m), CF.coef(e2, m)):
   CF.ident_coef(e1, e2, hi, m)
 
-def coef_lin(ls: List<&2, S.Q>, es: List<&2, E.QExpr>, +m: List<&2, Nat>) -> {CF.qlin(ls, es, m) == CF.coef(SV.lin(ls, es), m) : S.Q}:
+def coef_lin(ls: List<&2, S.Q>, es: List<&2, E.QExpr>, +m: List<&2, Nat>) -> S.Q.eq(CF.qlin(ls, es, m), CF.coef(SV.lin(ls, es), m)):
   CF.coef_lin(ls, es, m)
 
 def coef_const_one(k: S.Q) -> {k == CF.coef(E.QCst{k}, Nil{}) : S.Q}:

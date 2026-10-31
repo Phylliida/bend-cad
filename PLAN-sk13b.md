@@ -1172,6 +1172,26 @@ give both component identities that Valid's SameV asks for.
       lib/coefpf.bend's lemmas become Q.eq statements, their users in
       refpf, satpf, drvpf and indpf following; then labels without common
       twos and a witnessed gcd for the odd part.
+    - *The design of (a), 2026-10-31:*
+      - lib/qnorm (its draft): sd(x, y) is a shared denominator SD{d, fa,
+        fb} with x fa = d = y fb (sd_a, sd_b). Both even: twice sd(x/2,
+        y/2); otherwise the product. So common factors of 2 are taken
+        once, and for powers of two d is the larger. den and clr of a sum
+        or a difference use it; constants, products and negations are as
+        before. clr_ok's statement is unchanged.
+      - lib/coefpf (made a draft, for @RING): coef_add, coef_sub and
+        coef_lin become Q.eq statements; coef_neg, coef_cmul and the
+        constants stay data equalities; coef_zero and ident_coef keep
+        their statements (a cancellation of d). num0: a rational Q.eq to
+        one with numerator 0 has numerator 0.
+      - The users, about fifteen sites: under ofq the rewrite goes
+        through QE.ofq_eq (satpf's psi_add, psi_lin, psi_slin; indpf's
+        psi_eq); under num through num0 (drvpf's drop_at, refpf's
+        ident_m, dcbasepf's lin_cz). refpf's coef_slin becomes Q.eq, and
+        tests/ident_laws' re-export of coef_lin follows. Every other use
+        of den and clr treats them as opaque.
+      - Later, sd's product case can divide by a witnessed gcd without
+        changing its interface.
     - The other sketches' time is elsewhere (base's profile: the runtime
       freeing terms, Pos arithmetic, monomial compares; a simplex in the
       refutation decision runs about 213k steps on base).
