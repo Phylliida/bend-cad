@@ -106,22 +106,6 @@ def sd_b(x: S.Pos, y: S.Pos) -> {S.Pos.mul(y, SD.fb(sd(x, y))) == SD.d(sd(x, y))
 # Clearing denominators
 # ---------------------
 
-# a common denominator of e's constants
-def den(e: E.QExpr) -> S.Pos:
-  match e:
-    case E.QVar{i}:
-      S.XH{}
-    case E.QCst{S.Q{n, d}}:
-      d
-    case E.QAdd{a, b}:
-      SD.d(sd(den(a), den(b)))
-    case E.QSub{a, b}:
-      SD.d(sd(den(a), den(b)))
-    case E.QMul{a, b}:
-      S.Pos.mul(den(a), den(b))
-    case E.QNeg{a}:
-      den(a)
-
 # x fa + y fb and x fa - y fb, r's factors computed once
 def clr.add(+x: E.ZExpr, +y: E.ZExpr, +r: SD) -> E.ZExpr:
   E.ZAdd{E.ZMul{x, E.ZCst{S.Zpos{SD.fa(r)}}}, E.ZMul{y, E.ZCst{S.Zpos{SD.fb(r)}}}}
@@ -129,21 +113,62 @@ def clr.add(+x: E.ZExpr, +y: E.ZExpr, +r: SD) -> E.ZExpr:
 def clr.sub(+x: E.ZExpr, +y: E.ZExpr, +r: SD) -> E.ZExpr:
   E.ZSub{E.ZMul{x, E.ZCst{S.Zpos{SD.fa(r)}}}, E.ZMul{y, E.ZCst{S.Zpos{SD.fb(r)}}}}
 
-# e times den(e), as an integer expression
-def clr(e: E.QExpr) -> E.ZExpr:
+# e's cleared form and its denominator, computed together in one pass
+# (clearing a sum needs both sides' denominators, which a separate den
+# would recompute at every sum)
+type CD is Data:
+  CD{z: E.ZExpr, d: S.Pos}
+
+def CD.z(c: CD) -> E.ZExpr:
+  match c:
+    case CD{z, d}:
+      z
+
+def CD.d(c: CD) -> S.Pos:
+  match c:
+    case CD{z, d}:
+      d
+
+def cd.add(+x: CD, +y: CD, +r: SD) -> CD:
+  CD{clr.add(CD.z(x), CD.z(y), r), SD.d(r)}
+
+def cd.sub(+x: CD, +y: CD, +r: SD) -> CD:
+  CD{clr.sub(CD.z(x), CD.z(y), r), SD.d(r)}
+
+def cd.sum(+x: CD, +y: CD) -> CD:
+  cd.add(x, y, sd(CD.d(x), CD.d(y)))
+
+def cd.dif(+x: CD, +y: CD) -> CD:
+  cd.sub(x, y, sd(CD.d(x), CD.d(y)))
+
+def cd.mul(+x: CD, +y: CD) -> CD:
+  CD{E.ZMul{CD.z(x), CD.z(y)}, S.Pos.mul(CD.d(x), CD.d(y))}
+
+def cd.neg(+x: CD) -> CD:
+  CD{E.ZNeg{CD.z(x)}, CD.d(x)}
+
+def clrd(e: E.QExpr) -> CD:
   match e:
     case E.QVar{i}:
-      E.ZVar{i}
+      CD{E.ZVar{i}, S.XH{}}
     case E.QCst{S.Q{n, d}}:
-      E.ZCst{n}
-    case E.QAdd{+a, +b}:
-      clr.add(clr(a), clr(b), sd(den(a), den(b)))
-    case E.QSub{+a, +b}:
-      clr.sub(clr(a), clr(b), sd(den(a), den(b)))
+      CD{E.ZCst{n}, d}
+    case E.QAdd{a, b}:
+      cd.sum(clrd(a), clrd(b))
+    case E.QSub{a, b}:
+      cd.dif(clrd(a), clrd(b))
     case E.QMul{a, b}:
-      E.ZMul{clr(a), clr(b)}
+      cd.mul(clrd(a), clrd(b))
     case E.QNeg{a}:
-      E.ZNeg{clr(a)}
+      cd.neg(clrd(a))
+
+# a common denominator of e's constants
+def den(+e: E.QExpr) -> S.Pos:
+  CD.d(clrd(e))
+
+# e times den(e), as an integer expression
+def clr(+e: E.QExpr) -> E.ZExpr:
+  CD.z(clrd(e))
 
 # n/d times d is n
 def cst_ok(~F: O.OField, +n: S.Z, +d: S.Pos) -> {@M(@M(O.ofz(~F, n), O.inv(F, O.ofp(~F, d))), O.ofp(~F, d)) == O.ofz(~F, n) : O.C(F)}:
