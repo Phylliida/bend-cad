@@ -1259,6 +1259,16 @@ give both component identities that Valid's SameV asks for.
       tests unchanged), for angle-lines. None of these closes the gap to
       a few percent of the solve on its own; the pass runs the closure
       once per constraint, each run from scratch.
+    - *Content removal, tried unproven 2026-10-31 (reverted):* zero tests
+      on residuals divided by their coefficients' gcd after each step,
+      stored rows kept exact (so dfastpf's equalities would stand).
+      Every step: angle-lines 83.0 G -> 65.1 G, but base 2.39 G -> 8.68 G,
+      vertical-twice 38.7 G -> 101 G. Only above 256 bits: angle-lines
+      -> 63.1 G, base +60%, vertical-twice and oncircle-pairs +47%: each
+      added row is reduced twice (content-reduced for the test, exact to
+      store). Reducing stored rows too would turn dfastpf's cache
+      invariant from equalities into positive-multiple relations, a large
+      rework for about a quarter of one sketch. Not pursued.
     - The other sketches' time is elsewhere (base's profile: the runtime
       freeing terms, Pos arithmetic, monomial compares; a simplex in the
       refutation decision runs about 213k steps on base).
