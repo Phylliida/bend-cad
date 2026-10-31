@@ -19,6 +19,7 @@ import ./dcinvpf.bend as IV
 import ./dcroundpf.bend as RD
 import ./dcsetpf.bend as ST
 import ./dcshapepf.bend as SH
+import ./dfastpf.bend as FP
 
 # the checks a fixpoint passed
 def Fx(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: DC.SP, +ids: List<&2, Nat>, +s: DC.Sk) -> Data:
@@ -164,8 +165,9 @@ def run_fix(fuel: Nat, o: DC.Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>,
 
 # whatever the closure returns keeps the invariant and the shape, and a
 # fixpoint comes with its last round's checks
-def dclose_fix(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat, +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool})
+def dclose_fix(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +fuel: Nat, +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool})
   -> FixOut(es, fs, ctx, t, DC.segids(es), DC.dclose(es, fs, ctx, t, fuel)):
+  %Equal.sym(DC.Out, DC.dclose(es, fs, ctx, t, fuel), DC.dclose_ref(es, fs, ctx, t, fuel), FP.dclose_eq(es, fs, ctx, t, fuel)) : FixOut(es, fs, ctx, t, DC.segids(es), _)
   run_fix(fuel, DC.OStep{DC.sk0(es, fs, OP.cspan(ctx))}, es, fs, ctx, t, DC.segids(es), (RD.sk0_ok(es, fs, ctx, t, hz, hb), SH.sk0_sh(es, fs, OP.cspan(ctx))), hz, hb)
 
 # a fixpoint the closure returned

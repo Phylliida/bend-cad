@@ -31,6 +31,7 @@ import ./dcmergepf.bend as MG
 import ./dcclxpf.bend as CX
 import ./dcreppf.bend as RP
 import ./dclinkpf.bend as LK
+import ./dfastpf.bend as FP
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -388,6 +389,7 @@ def run_ok(fuel: Nat, o: DC.Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, 
 
 # whatever the closure returns keeps the invariant: a state, or an
 # explosion with its witnesses
-def dclose_ok(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat, +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool})
+def dclose_ok(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +fuel: Nat, +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool})
   -> OutInv(es, fs, ctx, t, DC.dclose(es, fs, ctx, t, fuel)):
+  %Equal.sym(DC.Out, DC.dclose(es, fs, ctx, t, fuel), DC.dclose_ref(es, fs, ctx, t, fuel), FP.dclose_eq(es, fs, ctx, t, fuel)) : OutInv(es, fs, ctx, t, _)
   run_ok(fuel, DC.OStep{DC.sk0(es, fs, OP.cspan(ctx))}, es, fs, ctx, t, DC.segids(es), sk0_ok(es, fs, ctx, t, hz, hb), hz, hb)

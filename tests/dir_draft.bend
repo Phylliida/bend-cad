@@ -68,6 +68,11 @@
 # - The pass with the direction layer is honest (lib/dpass.bend classes2,
 #   lib/dpasspf.bend, B4.5): the extended Honest of spec/_draft13b.bend
 #   holds of its classes (DPP.pass2_honest).
+# - The closure made fast (B4.8 B): lib/dclose.bend's dclose decides on
+#   lean residuals (lib/lres.bend, the full ones' polynomials by
+#   lib/lrespf.bend), stops each check at its first item and keeps K
+#   squared's lean rows across rounds, and returns exactly what the run as
+#   designed (DC.dclose_ref) returns (lib/dfastpf.bend, DFP.dclose_eq).
 # - The restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about the laws is proven here. Their
@@ -135,6 +140,7 @@ import ../lib/dpasspf.bend as DPP
 import ../lib/solve.bend as SOL
 import ../lib/wfdec.bend as WFD
 import ../lib/pass.bend as PAS
+import ../lib/dfastpf.bend as DFP
 
 # The functions on an example
 # ---------------------------
@@ -438,3 +444,7 @@ def b4_walk(+sk: SK.Sketch, +cls: List<&2, SS.Class>, +R: List<&2, Nat>, +D: Lis
 # B4.5: the pass with the direction layer is honest
 def b4_honest(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SOL.nvars(sk)) == True{} : Bool}) -> DH.Honest(sk, DPS.classes2(sk)):
   DPP.pass2_honest(sk, w, cov)
+
+# B4.8: the fast closure is the closure as designed
+def b4_fast(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat) -> {DC.dclose(es, fs, ctx, t, fuel) == DC.dclose_ref(es, fs, ctx, t, fuel) : DC.Out}:
+  DFP.dclose_eq(es, fs, ctx, t, fuel)

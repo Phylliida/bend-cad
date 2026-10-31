@@ -1119,6 +1119,26 @@ give both component identities that Valid's SameV asks for.
       == proj(khull(Sk.k(s), node))); the fast run equals run; dclose is
       the fast run, and the old definition is dclose_ref.
     - B.5 Re-measure on proto/sketches.
+    - *Done 2026-10-30:* lib/lres.bend and lib/lrespf.bend (lean residuals
+      and their projection lemmas), the fast run at the end of
+      lib/dclose.bend (dclose; the old one is dclose_ref), and
+      lib/dfastpf.bend (dclose_eq: dclose == dclose_ref). Only
+      dclose_ok, dclose_term and dclose_fix unfold dclose; each rewrites
+      by dclose_eq first, and every statement is unchanged. The cache is
+      a list of (node, lean rows of K squared at that node), looked up by
+      node, with a computed default.
+    - *Measured* (native, one thread, the whole pass): base 8.1 s ->
+      1.2 s; oncircle-pairs 123 s -> 12.9 s; vertical-twice 234 s ->
+      21 s; zeros 1.0 s; the S8 sketches about 10 ms. Every sketch gets
+      the same classes as before (nd aside, which A shrank). Base's
+      instructions went from 69.5G to 8.6G; about 64% of what is left is
+      the runtime freeing terms (bit-list integers and polynomials).
+    - *angle-lines still does not finish* (over 600 s): in the run for
+      its Angle, each round takes longer than the last (0.1 s, 4 s,
+      11 s, then over a minute) with K at 5. That is number growth, not
+      structure: S.Q is never reduced (a label product doubles its
+      size), QN.clr multiplies every constant's denominator (2^40 each
+      here), and the fraction-free elimination never removes content.
   - *Later, if still too slow*: the found item's full hull from a cached
     full khull per root (filled lazily); smaller numbers (content
     removal in the lean residuals, proven up to positive scaling);

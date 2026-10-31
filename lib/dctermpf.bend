@@ -37,6 +37,7 @@ import ./dckslpf.bend as KL
 import ./dcslotpf.bend as SL
 import ./dcgspanpf.bend as GS
 import ./dcclprogpf.bend as CP
+import ./dfastpf.bend as FP
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -295,6 +296,7 @@ def mu0(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +cs: DC.SP) -> {KA.natle(
 # step
 def dclose_term(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool})
   -> {isstep(DC.dclose(es, fs, ctx, t, DC.dfuel(es, fs))) == False{} : Bool}:
+  %Equal.sym(DC.Out, DC.dclose(es, fs, ctx, t, DC.dfuel(es, fs)), DC.dclose_ref(es, fs, ctx, t, DC.dfuel(es, fs)), FP.dclose_eq(es, fs, ctx, t, DC.dfuel(es, fs))) : {isstep(_) == False{} : Bool}
   run_t(DC.dfuel(es, fs), DC.OStep{DC.sk0(es, fs, OP.cspan(ctx))}, es, fs, ctx, t, DC.segids(es),
     (((RD.sk0_ok(es, fs, ctx, t, hz, hb), SH.sk0_sh(es, fs, OP.cspan(ctx))), GS.kinit_span(fs, es, fs, 0n, KS.ks0(), Unit{})), mu0(es, fs, OP.cspan(ctx))), hz, hb)
 

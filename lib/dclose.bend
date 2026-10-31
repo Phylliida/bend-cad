@@ -35,6 +35,7 @@ import ./lab.bend as LB
 import ./indset.bend as IS
 import ./seppf.bend as SP
 import ./zring.bend as R
+import ./lres.bend as LR
 
 # Nodes
 # -----
@@ -1018,8 +1019,9 @@ def run(fuel: Nat, o: Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Na
     case 1n+f OVoid{sg, dr, di}:
       OVoid{sg, dr, di}
 
-# the closure of the facts fs in the context ctx, t past every variable
-def dclose(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat) -> Out:
+# the closure of the facts fs in the context ctx, t past every variable,
+# as designed (dclose below computes the same, faster)
+def dclose_ref(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat) -> Out:
   +cs = sp.of(ctx, SP{Nil{}, Nil{}})
   run(fuel, OStep{sk0(es, fs, cs)}, es, fs, t, cs, segids(es))
 
@@ -1283,3 +1285,308 @@ def is_expl(o: Out) -> Bool:
       True{}
     case OVoid{g, dr, di}:
       True{}
+
+# The fast run
+# ------------
+# (PLAN-sk13b B4.8 B) The same run as dclose_ref, computing less, so that
+# it returns the same Out (lib/dfastpf.bend):
+# - every Bool a check decides on is a lean test (lib/lres.bend), which is
+#   the full test's (lib/lrespf.bend);
+# - each check stops at its first item, and only that item is built, by
+#   the functions above (a loop carries the decision at its current
+#   element, so it goes on only when that is no);
+# - the open segments are found once per run, and the lean rows of K
+#   squared's part of each open node's hull are kept across rounds (two
+#   lean insertions when K takes a new generator); each round folds a
+#   free root's own generators on them once, for the complex-line and
+#   merge checks both.
+
+# the open sketch segments
+def oids.p(b: Bool, +i: Nat, rest: List<&2, Nat>) -> List<&2, Nat>:
+  match b:
+    case True{}:
+      rest
+    case False{}:
+      Con{i, rest}
+
+def oids(ids: List<&2, Nat>, +es: List<&2, SK.Ent>, +cs: SP) -> List<&2, Nat>:
+  match ids:
+    case Nil{}:
+      Nil{}
+    case Con{+i, t}:
+      oids.p(coll(es, cs, i), i, oids(t, es, cs))
+
+# K squared's lean rows, per node
+type KC is Data:
+  KC{n: DR.Node, h: LR.LH}
+
+def lkhull(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +k: KS.KS, +r: DR.Node) -> LR.LH:
+  LR.lfold(kgens(r, KS.ks.ds(k)), es, fs, t, LR.LH{Nil{}, Nil{}})
+
+def kc.of(ns: List<&2, DR.Node>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +k: KS.KS) -> List<&2, KC>:
+  match ns:
+    case Nil{}:
+      Nil{}
+    case Con{+n, tl}:
+      Con{KC{n, lkhull(es, fs, t, k, n)}, kc.of(tl, es, fs, t, k)}
+
+# the entries C after h, which is r's when b
+def kc.g(C: List<&2, KC>, b: Bool, +h: LR.LH, +r: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +k: KS.KS) -> LR.LH:
+  match C b:
+    case Nil{} True{}:
+      h
+    case Nil{} False{}:
+      lkhull(es, fs, t, k, r)
+    case Con{KC{n, h2}, tl} True{}:
+      h
+    case Con{KC{+n, +h2}, tl} False{}:
+      kc.g(tl, node_eq(n, r), h2, r, es, fs, t, k)
+
+# node r's entry (computed, for a node without one)
+def kc.get(C: List<&2, KC>, +r: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +k: KS.KS) -> LR.LH:
+  match C:
+    case Nil{}:
+      lkhull(es, fs, t, k, r)
+    case Con{KC{+n, +h}, tl}:
+      kc.g(tl, node_eq(n, r), h, r, es, fs, t, k)
+
+# K took the generator d
+def kc.upd(C: List<&2, KC>, +d: DR.Der, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat) -> List<&2, KC>:
+  match C:
+    case Nil{}:
+      Nil{}
+    case Con{KC{+n, +h}, tl}:
+      Con{KC{n, LR.lfold(Con{HS.kre(n, d), Con{HS.kim(n, d), Nil{}}}, es, fs, t, h)}, kc.upd(tl, d, es, fs, t)}
+
+def kc.upd.k(b: Bool, C: List<&2, KC>, +d: DR.Der, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat) -> List<&2, KC>:
+  match b:
+    case True{}:
+      C
+    case False{}:
+      kc.upd(C, d, es, fs, t)
+
+# after K was given d (it keeps d when d is not already in it)
+def kc.add(C: List<&2, KC>, +d: DR.Der, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +k: KS.KS) -> List<&2, KC>:
+  kc.upd.k(LR.ks.linb(k, DR.Jd.e(DR.concl(es, fs, d))), C, d, es, fs, t)
+
+# Lean checks
+# -----------
+
+def fullc.l(+es: List<&2, SK.Ent>, +k: KS.KS, +c: Nat) -> Bool:
+  SV.band(LR.ks.linb(k, SK.VE.x(DR.zseg(es, c))), LR.ks.linb(k, SK.VE.y(DR.zseg(es, c))))
+
+# voidseg, over the open segments: t after i, which is void when b
+def fvoid.g(t: List<&2, Nat>, b: Bool, +i: Nat, +es: List<&2, SK.Ent>, +k: KS.KS) -> Maybe<&2, Nat>:
+  match t b:
+    case Nil{} True{}:
+      Some{i}
+    case Nil{} False{}:
+      None{}
+    case Con{j, t2} True{}:
+      Some{i}
+    case Con{+j, t2} False{}:
+      fvoid.g(t2, fullc.l(es, k, j), j, es, k)
+
+def fvoid(oo: List<&2, Nat>, +es: List<&2, SK.Ent>, +k: KS.KS) -> Maybe<&2, Nat>:
+  match oo:
+    case Nil{}:
+      None{}
+    case Con{+i, t}:
+      fvoid.g(t, fullc.l(es, k, i), i, es, k)
+
+# fback: t after g, whose imaginary part is in K when b
+def ffback.g(t: List<&2, DR.Der>, b: Bool, +g: DR.Der, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS) -> Maybe<&2, DR.Der>:
+  match t b:
+    case Nil{} False{}:
+      Some{DR.DBack{g}}
+    case Nil{} True{}:
+      None{}
+    case Con{g2, t2} False{}:
+      Some{DR.DBack{g}}
+    case Con{+g2, t2} True{}:
+      ffback.g(t2, LR.ks.linb(k, SK.VE.y(DR.Jd.x(DR.concl(es, fs, g2)))), g2, es, fs, k)
+
+def ffback(gs: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS) -> Maybe<&2, DR.Der>:
+  match gs:
+    case Nil{}:
+      None{}
+    case Con{+g, t}:
+      ffback.g(t, LR.ks.linb(k, SK.VE.y(DR.Jd.x(DR.concl(es, fs, g)))), g, es, fs, k)
+
+# cl.go finds a line: ds after the generator whose residual against rows2
+# is rp
+def lcl.g(ds: List<&2, DR.Der>, rp: List<&2, R.ZTerm>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +rows2: List<&2, LR.LRow>) -> Bool:
+  match ds rp:
+    case Nil{} Nil{}:
+      True{}
+    case Nil{} Con{x, xt}:
+      False{}
+    case Con{d, tl} Nil{}:
+      True{}
+    case Con{+d, tl} Con{+x, +xt}:
+      lcl.g(tl, LR.lresid(LR.lsnoc(rows2, LR.lrow_of(Con{x, xt})), HS.enc(DR.imul(DR.Jd.x(DR.concl(es, fs, d))), t)), es, fs, t, LR.lsnoc(rows2, LR.lrow_of(Con{x, xt})))
+
+def lcl.go(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +rows2: List<&2, LR.LRow>) -> Bool:
+  match ds:
+    case Nil{}:
+      False{}
+    case Con{+d, tl}:
+      lcl.g(tl, LR.lresid(rows2, HS.enc(DR.imul(DR.Jd.x(DR.concl(es, fs, d))), t)), es, fs, t, rows2)
+
+# clx finds a line, read from the lean K squared part lk and the root's
+# lean set lh
+def lclx(+lk: LR.LH, +lh: LR.LH, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat) -> Bool:
+  lcl.go(ddrop(dlen(LR.lh.ds(lk)), LR.lh.ds(lh)), es, fs, t, LR.lh.rows(lh))
+
+# each root's lean sets, F's none
+type RL is Data:
+  RLF{}
+  RLR{r: DR.Node, lk: LR.LH, lh: LR.LH}
+
+def rl.of(b: Bool, +r: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk, +C: List<&2, KC>) -> RL:
+  match b:
+    case True{}:
+      RLF{}
+    case False{}:
+      RLR{r, kc.get(C, r, es, fs, t, Sk.k(s)), LR.lfold(rgens(fs, r, Sk.ms(s), Sk.ls(s)), es, fs, t, kc.get(C, r, es, fs, t, Sk.k(s)))}
+
+def rls(rs: List<&2, DR.Node>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk, +C: List<&2, KC>) -> List<&2, RL>:
+  match rs:
+    case Nil{}:
+      Nil{}
+    case Con{+r, tl}:
+      Con{rl.of(node_eq(r, DR.NFrame{}), r, es, fs, t, s, C), rls(tl, es, fs, t, s, C)}
+
+# clxs: tl after r, which has a line when b
+def fclxs.g(tl: List<&2, RL>, b: Bool, +r: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk) -> Maybe<&2, DR.Der>:
+  match tl b:
+    case Nil{} True{}:
+      clx(es, fs, t, s, r)
+    case Nil{} False{}:
+      None{}
+    case Con{x, tl2} True{}:
+      clx(es, fs, t, s, r)
+    case Con{RLF{}, tl2} False{}:
+      fclxs.g(tl2, False{}, DR.NFrame{}, es, fs, t, s)
+    case Con{RLR{+r2, +lk, +lh}, tl2} False{}:
+      fclxs.g(tl2, lclx(lk, lh, es, fs, t), r2, es, fs, t, s)
+
+def fclxs(rl: List<&2, RL>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk) -> Maybe<&2, DR.Der>:
+  fclxs.g(rl, False{}, DR.NFrame{}, es, fs, t, s)
+
+# mgF: t after the record mb at b, which merges when f
+def fmgF.g(t: List<&2, Mem>, f: Bool, +mb: Mem, +b: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +ms: List<&2, Mem>) -> Maybe<&2, List<&2, Mem>>:
+  match t f:
+    case Nil{} True{}:
+      mgF.pick(LB.ks.lab(es, fs, k, DR.zdir(es, b)), es, fs, k, ms, mb, b, None{})
+    case Nil{} False{}:
+      None{}
+    case Con{x, t2} True{}:
+      mgF.pick(LB.ks.lab(es, fs, k, DR.zdir(es, b)), es, fs, k, ms, mb, b, None{})
+    case Con{Mem{+b2, +rb, +wb, +db}, t2} False{}:
+      fmgF.g(t2, SV.band(SV.bnot(node_eq(rb, DR.NFrame{})), LR.ks.llab(k, DR.zdir(es, b2))), Mem{b2, rb, wb, db}, b2, es, fs, k, ms)
+
+def fmgF(sc: List<&2, Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +k: KS.KS, +ms: List<&2, Mem>) -> Maybe<&2, List<&2, Mem>>:
+  match sc:
+    case Nil{}:
+      None{}
+    case Con{Mem{+b, +rb, +wb, +db}, t}:
+      fmgF.g(t, SV.band(SV.bnot(node_eq(rb, DR.NFrame{})), LR.ks.llab(k, DR.zdir(es, b))), Mem{b, rb, wb, db}, b, es, fs, k, ms)
+
+# mgR, r's lean set lh: tl after the record mb at b, which merges when f
+def fmgR.g(tl: List<&2, Mem>, f: Bool, +mb: Mem, +b: DR.Node, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +lh: LR.LH, +s: Sk, +r: DR.Node, +ms: List<&2, Mem>) -> Maybe<&2, List<&2, Mem>>:
+  match tl f:
+    case Nil{} True{}:
+      mgR.pick(LB.hs.lab(es, fs, t, rhull(es, fs, t, s, r), DR.zdir(es, b)), es, fs, t, rhull(es, fs, t, s, r), r, ms, mb, b, None{})
+    case Nil{} False{}:
+      None{}
+    case Con{x, t2} True{}:
+      mgR.pick(LB.hs.lab(es, fs, t, rhull(es, fs, t, s, r), DR.zdir(es, b)), es, fs, t, rhull(es, fs, t, s, r), r, ms, mb, b, None{})
+    case Con{Mem{+b2, +rb, +wb, +db}, t2} False{}:
+      fmgR.g(t2, SV.band(SV.bnot(node_eq(rb, r)), LR.lh.lab(lh, DR.zdir(es, b2), t)), Mem{b2, rb, wb, db}, b2, es, fs, t, lh, s, r, ms)
+
+def fmgR(sc: List<&2, Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +lh: LR.LH, +s: Sk, +r: DR.Node, +ms: List<&2, Mem>) -> Maybe<&2, List<&2, Mem>>:
+  match sc:
+    case Nil{}:
+      None{}
+    case Con{Mem{+b, +rb, +wb, +db}, tl}:
+      fmgR.g(tl, SV.band(SV.bnot(node_eq(rb, r)), LR.lh.lab(lh, DR.zdir(es, b), t)), Mem{b, rb, wb, db}, b, es, fs, t, lh, s, r, ms)
+
+# mgs: tl after the merge found so far, m
+def fmgs.g(tl: List<&2, RL>, m: Maybe<&2, List<&2, Mem>>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk) -> Maybe<&2, List<&2, Mem>>:
+  match tl m:
+    case Nil{} Some{+x}:
+      Some{x}
+    case Nil{} None{}:
+      None{}
+    case Con{y, tl2} Some{+x}:
+      Some{x}
+    case Con{RLF{}, tl2} None{}:
+      fmgs.g(tl2, fmgF(Sk.ms(s), es, fs, Sk.k(s), Sk.ms(s)), es, fs, t, s)
+    case Con{RLR{+r, +lk, +lh}, tl2} None{}:
+      fmgs.g(tl2, fmgR(Sk.ms(s), es, fs, t, lh, s, r, Sk.ms(s)), es, fs, t, s)
+
+def fmgs(rl: List<&2, RL>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: Sk) -> Maybe<&2, List<&2, Mem>>:
+  fmgs.g(rl, None{}, es, fs, t, s)
+
+# The fast round
+# --------------
+# Its Out, and the cache after it
+
+type FO is Data:
+  FO{o: Out, C: List<&2, KC>}
+
+def fr.c2(m: Maybe<&2, DR.Der>, +rl: List<&2, RL>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, +ids: List<&2, Nat>, +s: Sk, +C: List<&2, KC>) -> FO:
+  match m:
+    case None{}:
+      FO{r.c3(fmgs(rl, es, fs, t, s), es, fs, t, cs, ids, s), C}
+    case Some{+d}:
+      FO{r.c2(Some{d}, es, fs, t, cs, ids, s), kc.add(C, d, es, fs, t, Sk.k(s))}
+
+def fr.c2.go(+rl: List<&2, RL>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, +ids: List<&2, Nat>, +s: Sk, +C: List<&2, KC>) -> FO:
+  fr.c2(fclxs(rl, es, fs, t, s), rl, es, fs, t, cs, ids, s, C)
+
+def fr.c1(m: Maybe<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, +ids: List<&2, Nat>, +s: Sk, +C: List<&2, KC>) -> FO:
+  match m:
+    case None{}:
+      fr.c2.go(rls(roots(Sk.ms(s)), es, fs, t, s, C), es, fs, t, cs, ids, s, C)
+    case Some{+d}:
+      FO{r.c1(Some{d}, es, fs, t, cs, ids, s), kc.add(C, d, es, fs, t, Sk.k(s))}
+
+def fr.e2(m: Maybe<&2, Nat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, +ids: List<&2, Nat>, +s: Sk, +C: List<&2, KC>) -> FO:
+  match m:
+    case None{}:
+      fr.c1(ffback(rgens(fs, DR.NFrame{}, Sk.ms(s), Sk.ls(s)), es, fs, Sk.k(s)), es, fs, t, cs, ids, s, C)
+    case Some{+g}:
+      FO{r.e2(Some{g}, es, fs, t, cs, ids, s), C}
+
+def fr.e1(f: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, +oo: List<&2, Nat>, +ids: List<&2, Nat>, +s: Sk, +C: List<&2, KC>) -> FO:
+  match f:
+    case True{}:
+      FO{r.e1(True{}, es, fs, t, cs, ids, s), C}
+    case False{}:
+      fr.e2(fvoid(oo, es, Sk.k(s)), es, fs, t, cs, ids, s, C)
+
+# round, with the open segments oo and the cache C
+def fround(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, +oo: List<&2, Nat>, +ids: List<&2, Nat>, +s: Sk, +C: List<&2, KC>) -> FO:
+  fr.e1(LR.ks.linb(Sk.k(s), DR.cst(DR.qo())), es, fs, t, cs, oo, ids, s, C)
+
+# run
+def frun(fuel: Nat, fo: FO, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, +oo: List<&2, Nat>, +ids: List<&2, Nat>) -> Out:
+  match fuel fo:
+    case 0n FO{o, C}:
+      o
+    case 1n+f FO{OStep{+s}, +C}:
+      frun(f, fround(es, fs, t, cs, oo, ids, s, C), es, fs, t, cs, oo, ids)
+    case 1n+f FO{OFix{s}, C}:
+      OFix{s}
+    case 1n+f FO{OOne{d}, C}:
+      OOne{d}
+    case 1n+f FO{OVoid{sg, dr, di}, C}:
+      OVoid{sg, dr, di}
+
+# the closure of the facts fs in the context ctx, t past every variable
+def dclose(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat) -> Out:
+  +cs = sp.of(ctx, SP{Nil{}, Nil{}})
+  +oo = oids(segids(es), es, cs)
+  frun(fuel, FO{OStep{sk0(es, fs, cs)}, kc.of(snodes(oo), es, fs, t, Sk.k(sk0(es, fs, cs)))}, es, fs, t, cs, oo, segids(es))
