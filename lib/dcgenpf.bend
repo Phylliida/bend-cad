@@ -22,6 +22,7 @@ import ./seppf.bend as SP
 import ./kspace.bend as KS
 import ./hspace.bend as HS
 import ./hspacepf.bend as HP
+import ./lab.bend as LB
 import ./labpf.bend as LP
 import ./pairpf.bend as PP
 import ./dclose.bend as DC
@@ -84,6 +85,45 @@ def one.ay(+p: List<&2, S.Q>, +z: SK.VE) -> S.Q.eq(E.qeval(p, SK.VE.y(z)), E.qev
 def one(+z: SK.VE) -> VD.SameVD(z, DR.gmul(DC.lone(), z)):
   VD.samevd_of(z, DR.gmul(DC.lone(), z), (p => one.ax(p, z), p => one.ay(p, z)))
 
+# Trimmed labels
+# --------------
+
+def gtrim.ax(+p: List<&2, S.Q>, +c: S.Q, +s: S.Q, +x: SK.VE)
+  -> S.Q.eq(E.qeval(p, SK.VE.x(DR.gmul(DR.Lab{c, s}, x))), E.qeval(p, SK.VE.x(DR.gmul(DR.Lab{LB.qtrim(c), LB.qtrim(s)}, x)))):
+  QA.sub_cong(S.Q.mul(c, E.qeval(p, SK.VE.x(x))), S.Q.mul(LB.qtrim(c), E.qeval(p, SK.VE.x(x))), S.Q.mul(s, E.qeval(p, SK.VE.y(x))), S.Q.mul(LB.qtrim(s), E.qeval(p, SK.VE.y(x))),
+    LQ.q_mul_cong_l(c, LB.qtrim(c), E.qeval(p, SK.VE.x(x)), LQ.q_sym(LB.qtrim(c), c, LP.qtrim_ok(c))),
+    LQ.q_mul_cong_l(s, LB.qtrim(s), E.qeval(p, SK.VE.y(x)), LQ.q_sym(LB.qtrim(s), s, LP.qtrim_ok(s))))
+
+def gtrim.ay(+p: List<&2, S.Q>, +c: S.Q, +s: S.Q, +x: SK.VE)
+  -> S.Q.eq(E.qeval(p, SK.VE.y(DR.gmul(DR.Lab{c, s}, x))), E.qeval(p, SK.VE.y(DR.gmul(DR.Lab{LB.qtrim(c), LB.qtrim(s)}, x)))):
+  QA.add_cong(S.Q.mul(s, E.qeval(p, SK.VE.x(x))), S.Q.mul(LB.qtrim(s), E.qeval(p, SK.VE.x(x))), S.Q.mul(c, E.qeval(p, SK.VE.y(x))), S.Q.mul(LB.qtrim(c), E.qeval(p, SK.VE.y(x))),
+    LQ.q_mul_cong_l(s, LB.qtrim(s), E.qeval(p, SK.VE.x(x)), LQ.q_sym(LB.qtrim(s), s, LP.qtrim_ok(s))),
+    LQ.q_mul_cong_l(c, LB.qtrim(c), E.qeval(p, SK.VE.y(x)), LQ.q_sym(LB.qtrim(c), c, LP.qtrim_ok(c))))
+
+# a trimmed label acts as the label
+def gtrim(g: DR.Lab, +x: SK.VE) -> VD.SameVD(DR.gmul(g, x), DR.gmul(LB.ltrim(g), x)):
+  match g:
+    case DR.Lab{+c, +s}:
+      VD.samevd_of(DR.gmul(DR.Lab{c, s}, x), DR.gmul(DR.Lab{LB.qtrim(c), LB.qtrim(s)}, x), (p => gtrim.ax(p, c, s, x), p => gtrim.ay(p, c, s, x)))
+
+def gtrim_c.ax(+p: List<&2, S.Q>, +c: S.Q, +s: S.Q, +x: SK.VE)
+  -> S.Q.eq(E.qeval(p, SK.VE.x(DR.gmul(DR.Lab{c, S.Q.neg(s)}, x))), E.qeval(p, SK.VE.x(DR.gmul(DR.Lab{LB.qtrim(c), S.Q.neg(LB.qtrim(s))}, x)))):
+  QA.sub_cong(S.Q.mul(c, E.qeval(p, SK.VE.x(x))), S.Q.mul(LB.qtrim(c), E.qeval(p, SK.VE.x(x))), S.Q.mul(S.Q.neg(s), E.qeval(p, SK.VE.y(x))), S.Q.mul(S.Q.neg(LB.qtrim(s)), E.qeval(p, SK.VE.y(x))),
+    LQ.q_mul_cong_l(c, LB.qtrim(c), E.qeval(p, SK.VE.x(x)), LQ.q_sym(LB.qtrim(c), c, LP.qtrim_ok(c))),
+    LQ.q_mul_cong_l(S.Q.neg(s), S.Q.neg(LB.qtrim(s)), E.qeval(p, SK.VE.y(x)), LQ.q_neg_cong(s, LB.qtrim(s), LQ.q_sym(LB.qtrim(s), s, LP.qtrim_ok(s)))))
+
+def gtrim_c.ay(+p: List<&2, S.Q>, +c: S.Q, +s: S.Q, +x: SK.VE)
+  -> S.Q.eq(E.qeval(p, SK.VE.y(DR.gmul(DR.Lab{c, S.Q.neg(s)}, x))), E.qeval(p, SK.VE.y(DR.gmul(DR.Lab{LB.qtrim(c), S.Q.neg(LB.qtrim(s))}, x)))):
+  QA.add_cong(S.Q.mul(S.Q.neg(s), E.qeval(p, SK.VE.x(x))), S.Q.mul(S.Q.neg(LB.qtrim(s)), E.qeval(p, SK.VE.x(x))), S.Q.mul(c, E.qeval(p, SK.VE.y(x))), S.Q.mul(LB.qtrim(c), E.qeval(p, SK.VE.y(x))),
+    LQ.q_mul_cong_l(S.Q.neg(s), S.Q.neg(LB.qtrim(s)), E.qeval(p, SK.VE.x(x)), LQ.q_neg_cong(s, LB.qtrim(s), LQ.q_sym(LB.qtrim(s), s, LP.qtrim_ok(s)))),
+    LQ.q_mul_cong_l(c, LB.qtrim(c), E.qeval(p, SK.VE.y(x)), LQ.q_sym(LB.qtrim(c), c, LP.qtrim_ok(c))))
+
+# and its conjugate acts as the label's
+def gtrim_c(g: DR.Lab, +x: SK.VE) -> VD.SameVD(DR.gmul(DR.Lab.conj(g), x), DR.gmul(DR.Lab.conj(LB.ltrim(g)), x)):
+  match g:
+    case DR.Lab{+c, +s}:
+      VD.samevd_of(DR.gmul(DR.Lab{c, S.Q.neg(s)}, x), DR.gmul(DR.Lab{LB.qtrim(c), S.Q.neg(LB.qtrim(s))}, x), (p => gtrim_c.ax(p, c, s, x), p => gtrim_c.ay(p, c, s, x)))
+
 # Nodes
 # -----
 
@@ -108,6 +148,15 @@ def MOkD(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>,
     case DC.Mem{+a, +r, +w, +d}:
       SK.Both(VD.VD(es, fs, ctx, d), SK.Both(VD.Isp(DR.concl(es, fs, d)), SK.Both({DR.Jd.a(DR.concl(es, fs, d)) == r : DR.Node},
         SK.Both(VD.SameVD(DR.Jd.x(DR.concl(es, fs, d)), DR.gmul(w, DR.zdir(es, a))), SK.Both(VD.OpenD(es, ctx, a), SK.Both(VD.OpenD(es, ctx, r), HP.VBelow(DR.Jd.x(DR.concl(es, fs, d)), t)))))))
+
+# a member's label may be trimmed
+def mok_trim(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +a: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, h: MOkD(es, fs, ctx, t, DC.Mem{a, r, w, d}))
+  -> MOkD(es, fs, ctx, t, DC.Mem{a, r, LB.ltrim(w), d}):
+  (v, r1) = h
+  (p, r2) = r1
+  (ea, r3) = r2
+  (sv, r4) = r3
+  (v, (p, (ea, (samevd_tr(DR.Jd.x(DR.concl(es, fs, d)), DR.gmul(w, DR.zdir(es, a)), DR.gmul(LB.ltrim(w), DR.zdir(es, a)), sv, gtrim(w, DR.zdir(es, a))), r4))))
 
 def MsOk(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, ms: List<&2, DC.Mem>) -> Data:
   match ms:

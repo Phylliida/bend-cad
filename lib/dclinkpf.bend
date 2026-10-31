@@ -88,15 +88,27 @@ def cross_gmul.at(+p: List<&2, S.Q>, +uu: SK.VE, +a: S.Q, +b: S.Q, +z: SK.VE)
 def cross_gmul(+uu: SK.VE, +a: S.Q, +b: S.Q, +z: SK.VE) -> SV.Ident(SK.VE.cross(uu, DR.gmul(DR.Lab{a, b}, z)), PT.pcomb(PT.Pr{a, b}, SK.VE.cross(uu, z), SK.VE.cross(uu, DR.imul(z)))):
   p => cross_gmul.at(p, uu, a, b, z)
 
+def cross_gmul_q.at(+p: List<&2, S.Q>, +uu: SK.VE, +a2: S.Q, +b2: S.Q, +a: S.Q, +b: S.Q, +z: SK.VE, ha: S.Q.eq(a2, a), hb: S.Q.eq(b2, b))
+  -> S.Q.eq(E.qeval(p, SK.VE.cross(uu, DR.gmul(DR.Lab{a2, b2}, z))), E.qeval(p, PT.pcomb(PT.Pr{a, b}, SK.VE.cross(uu, z), SK.VE.cross(uu, DR.imul(z))))):
+  LQ.q_trans(E.qeval(p, SK.VE.cross(uu, DR.gmul(DR.Lab{a2, b2}, z))), E.qeval(p, PT.pcomb(PT.Pr{a2, b2}, SK.VE.cross(uu, z), SK.VE.cross(uu, DR.imul(z)))), E.qeval(p, PT.pcomb(PT.Pr{a, b}, SK.VE.cross(uu, z), SK.VE.cross(uu, DR.imul(z)))),
+    cross_gmul.at(p, uu, a2, b2, z),
+    QA.add_cong(S.Q.mul(a2, E.qeval(p, SK.VE.cross(uu, z))), S.Q.mul(a, E.qeval(p, SK.VE.cross(uu, z))), S.Q.mul(b2, E.qeval(p, SK.VE.cross(uu, DR.imul(z)))), S.Q.mul(b, E.qeval(p, SK.VE.cross(uu, DR.imul(z)))),
+      LQ.q_mul_cong_l(a2, a, E.qeval(p, SK.VE.cross(uu, z)), ha), LQ.q_mul_cong_l(b2, b, E.qeval(p, SK.VE.cross(uu, DR.imul(z))), hb)))
+
+# cross_gmul with parts equal as rationals
+def cross_gmul_q(+uu: SK.VE, +a2: S.Q, +b2: S.Q, +a: S.Q, +b: S.Q, +z: SK.VE, ha: S.Q.eq(a2, a), hb: S.Q.eq(b2, b))
+  -> SV.Ident(SK.VE.cross(uu, DR.gmul(DR.Lab{a2, b2}, z)), PT.pcomb(PT.Pr{a, b}, SK.VE.cross(uu, z), SK.VE.cross(uu, DR.imul(z)))):
+  p => cross_gmul_q.at(p, uu, a2, b2, a, b, z, ha, hb)
+
 def tlab_ok.some(p: PT.Pr, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +uu: SK.VE, +z: SK.VE, +w: DR.Lab,
   +hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, +hl: {EL.rlen(rows) == SV.neqs(B) : Nat},
   hm: {PT.ptest(rows, B, SK.VE.cross(uu, z), SK.VE.cross(uu, DR.imul(z))) == Some{p} : Maybe<&2, PT.Pr>}, hw: {Some{LB.lab_of(p)} == Some{w} : Maybe<&2, DR.Lab>})
   -> SN.InSpan(SK.VE.cross(uu, DR.gmul(w, z)), B):
   match p:
     case PT.Pr{+a, +bb}:
-      %LP.lsome_inj(DR.Lab{a, bb}, w, hw) : SN.InSpan(SK.VE.cross(uu, DR.gmul(_, z)), B)
-      PP.in_tr(PT.pcomb(PT.Pr{a, bb}, SK.VE.cross(uu, z), SK.VE.cross(uu, DR.imul(z))), SK.VE.cross(uu, DR.gmul(DR.Lab{a, bb}, z)), B,
-        PP.ptest_ok(rows, B, SK.VE.cross(uu, z), SK.VE.cross(uu, DR.imul(z)), hr, hl, PT.Pr{a, bb}, hm), cross_gmul(uu, a, bb, z))
+      %LP.lsome_inj(DR.Lab{LB.qtrim(a), LB.qtrim(bb)}, w, hw) : SN.InSpan(SK.VE.cross(uu, DR.gmul(_, z)), B)
+      PP.in_tr(PT.pcomb(PT.Pr{a, bb}, SK.VE.cross(uu, z), SK.VE.cross(uu, DR.imul(z))), SK.VE.cross(uu, DR.gmul(DR.Lab{LB.qtrim(a), LB.qtrim(bb)}, z)), B,
+        PP.ptest_ok(rows, B, SK.VE.cross(uu, z), SK.VE.cross(uu, DR.imul(z)), hr, hl, PT.Pr{a, bb}, hm), cross_gmul_q(uu, LB.qtrim(a), LB.qtrim(bb), a, bb, z, LP.qtrim_ok(a), LP.qtrim_ok(bb)))
 
 def tlab_ok.go(m: Maybe<&2, PT.Pr>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +uu: SK.VE, +z: SK.VE, +w: DR.Lab,
   +hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, +hl: {EL.rlen(rows) == SV.neqs(B) : Nat},

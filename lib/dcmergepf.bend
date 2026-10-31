@@ -78,7 +78,7 @@ def ccomp(+g: DR.Lab, +h: DR.Lab, +x: SK.VE) -> VD.SameVD(DR.gmul(DR.Lab.conj(DR
 
 def reroot.yes(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +a: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der,
   +old: DR.Node, +new: DR.Node, +ww: DR.Lab, +dR: DR.Der, er: {r == old : DR.Node}, hm: GN.MOkD(es, fs, ctx, t, DC.Mem{a, r, w, d}), +hR: GN.MOkD(es, fs, ctx, t, DC.Mem{old, new, ww, dR}))
-  -> GN.MOkD(es, fs, ctx, t, DC.Mem{a, new, LB.lmul(ww, w), DR.DThrough{dR, d, DR.Lab.conj(ww), old}}):
+  -> GN.MOkD(es, fs, ctx, t, DC.Mem{a, new, LB.ltrim(LB.lmul(ww, w)), DR.DThrough{dR, d, DR.Lab.conj(ww), old}}):
   (v, r1) = hm
   (p, r2) = r1
   (ea, r3) = r2
@@ -93,8 +93,10 @@ def reroot.yes(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.Q
   (onew, bR) = s5
   ((vR, (v, (pR, (p, (GN.samevd_tr(DR.Jd.x(DR.concl(es, fs, dR)), DR.gmul(ww, DR.zdir(es, old)), DR.gmul(DR.Lab.conj(DR.Lab.conj(ww)), DR.zdir(es, old)), svR, GN.cc(ww, DR.zdir(es, old))),
      (Equal.trans(DR.Node, DR.Jd.a(DR.concl(es, fs, d)), r, old, ea, er), oold)))))),
-   ({==}, (eR, (GN.samevd_tr(DR.gmul(DR.Lab.conj(DR.Lab.conj(ww)), DR.Jd.x(DR.concl(es, fs, d))), DR.gmul(DR.Lab.conj(DR.Lab.conj(ww)), DR.gmul(w, DR.zdir(es, a))), DR.gmul(LB.lmul(ww, w), DR.zdir(es, a)),
-       gmul_cong(DR.Lab.conj(DR.Lab.conj(ww)), DR.Jd.x(DR.concl(es, fs, d)), DR.gmul(w, DR.zdir(es, a)), sv), ccomp(ww, w, DR.zdir(es, a))),
+   ({==}, (eR, (GN.samevd_tr(DR.gmul(DR.Lab.conj(DR.Lab.conj(ww)), DR.Jd.x(DR.concl(es, fs, d))), DR.gmul(LB.lmul(ww, w), DR.zdir(es, a)), DR.gmul(LB.ltrim(LB.lmul(ww, w)), DR.zdir(es, a)),
+       GN.samevd_tr(DR.gmul(DR.Lab.conj(DR.Lab.conj(ww)), DR.Jd.x(DR.concl(es, fs, d))), DR.gmul(DR.Lab.conj(DR.Lab.conj(ww)), DR.gmul(w, DR.zdir(es, a))), DR.gmul(LB.lmul(ww, w), DR.zdir(es, a)),
+         gmul_cong(DR.Lab.conj(DR.Lab.conj(ww)), DR.Jd.x(DR.concl(es, fs, d)), DR.gmul(w, DR.zdir(es, a)), sv), ccomp(ww, w, DR.zdir(es, a))),
+       GN.gtrim(LB.lmul(ww, w), DR.zdir(es, a))),
      (oa, (onew, BL.vb_gmul(DR.Lab.conj(DR.Lab.conj(ww)), DR.Jd.x(DR.concl(es, fs, d)), t, b)))))))
 
 def reroot.ok1(f: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +a: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der,
@@ -177,12 +179,14 @@ def merge_ok.go(f: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: Li
   h1: GN.MOkD(es, fs, ctx, t, DC.Mem{b, rr, w, d1}), hb: GN.MOkD(es, fs, ctx, t, DC.Mem{b, rb, wb, db})) -> GN.MsOk(es, fs, ctx, t, DC.merge.go(f, ms, rr, d1, w, b, rb, wb, db)):
   match f:
     case True{}:
-      reroot_ok(ms, es, fs, ctx, t, rr, DR.NFrame{}, DR.DThrough{db, DR.DTurn{d1, DR.Lab.conj(w), b}, DR.Lab.conj(wb), b}, LB.lmul(wb, DR.Lab.conj(w)), hms,
-        merge_ok.frame(es, fs, ctx, t, rr, d1, w, b, rb, wb, db, hz,
-          GN.node_eq_ok(rb, DR.NFrame{}, LP2.band_l(DC.node_eq(rb, DR.NFrame{}), SV.bnot(DC.node_eq(rr, DR.NFrame{})), Equal.sym(Bool, True{}, SV.band(DC.node_eq(rb, DR.NFrame{}), SV.bnot(DC.node_eq(rr, DR.NFrame{}))), ef))), h1, hb))
+      reroot_ok(ms, es, fs, ctx, t, rr, DR.NFrame{}, DR.DThrough{db, DR.DTurn{d1, DR.Lab.conj(w), b}, DR.Lab.conj(wb), b}, LB.ltrim(LB.lmul(wb, DR.Lab.conj(w))), hms,
+        GN.mok_trim(es, fs, ctx, t, rr, DR.NFrame{}, LB.lmul(wb, DR.Lab.conj(w)), DR.DThrough{db, DR.DTurn{d1, DR.Lab.conj(w), b}, DR.Lab.conj(wb), b},
+          merge_ok.frame(es, fs, ctx, t, rr, d1, w, b, rb, wb, db, hz,
+            GN.node_eq_ok(rb, DR.NFrame{}, LP2.band_l(DC.node_eq(rb, DR.NFrame{}), SV.bnot(DC.node_eq(rr, DR.NFrame{})), Equal.sym(Bool, True{}, SV.band(DC.node_eq(rb, DR.NFrame{}), SV.bnot(DC.node_eq(rr, DR.NFrame{}))), ef))), h1, hb)))
     case False{}:
-      reroot_ok(ms, es, fs, ctx, t, rb, rr, DR.DThrough{d1, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(w), b}, LB.lmul(w, DR.Lab.conj(wb)), hms,
-        merge_ok.into(es, fs, ctx, t, rr, d1, w, b, rb, wb, db, hz, h1, hb))
+      reroot_ok(ms, es, fs, ctx, t, rb, rr, DR.DThrough{d1, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(w), b}, LB.ltrim(LB.lmul(w, DR.Lab.conj(wb))), hms,
+        GN.mok_trim(es, fs, ctx, t, rb, rr, LB.lmul(w, DR.Lab.conj(wb)), DR.DThrough{d1, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(w), b},
+          merge_ok.into(es, fs, ctx, t, rr, d1, w, b, rb, wb, db, hz, h1, hb)))
 
 # a merge keeps the invariant, given d1 proves par(rr, w z_b) as a member
 # record of b would

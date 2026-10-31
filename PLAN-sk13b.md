@@ -1203,6 +1203,27 @@ give both component identities that Valid's SameV asks for.
         multiply all four denominators and never reduce, and their
         denominators are mostly odd (the elimination's pivots). So labels
         are next: zero as 0/1, then common factors out.
+    - *Labels trimmed, 2026-10-31:* lib/lab.bend's qtrim (a zero part as
+      0/1, the factors of 2 shared by numerator and denominator out) and
+      ltrim (both parts). The closure trims a label where it stores one:
+      a rerooted member's (reroot.one), the merge's link label (merge.go),
+      a tie's (ctie.mem), and the label tests' (lab_of). bpair's i w is
+      left as it is: its membership test is on the untrimmed form, and it
+      only doubles one denominator before a trimmed product. Proofs:
+      qtrim_ok (Q.eq) and qtrim_nz (same zero test) in lib/labpf.bend;
+      gtrim and gtrim_c (a trimmed label, and its conjugate, act as the
+      label: SameVD) and mok_trim in lib/dcgenpf.bend; nz_trim in
+      lib/labnzpf.bend; tie_trim in lib/dcreppf.bend; the label tests
+      through enc_gmul_q, im_gmul_q and cross_gmul_q; dcftiepf's tie
+      relation is u == ltrim(lmul(..)), and crossU carries K membership
+      along gtrim_c with ST.ri.tr. Every interface statement is unchanged
+      (dfastpf and lrespf did not move). Gate PASS, regression PASS.
+      *Measured* (the closure pass, native, one thread): angle-lines
+      20.5 s (over 600 s before), each constraint at a fixpoint (K 1, 2,
+      5, 6); base 0.41 s, oncircle-pairs 4.4 s, vertical-twice 6.8 s,
+      zeros 0.51 s, oncircle-thrice 0.38 s, with the same outputs as
+      before trimming. One label of angle-lines' Angle is still 2132 over
+      2132 bits, both odd: the gcd for the odd part, next.
     - The other sketches' time is elsewhere (base's profile: the runtime
       freeing terms, Pos arithmetic, monomial compares; a simplex in the
       refutation decision runs about 213k steps on base).

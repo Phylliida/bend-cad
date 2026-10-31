@@ -341,13 +341,21 @@ def tie_ok(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr
   (eb, r3) = r2
   (tie_gen(es, fs, ctx, t, c, b, wl, dl, a, rb, wb, db, hz, ea, hm, hl), (tie_same(es, fs, wl, wb, db, rb, eb, ef), NZ.nz_mul(wl, DR.Lab.conj(wb), hwl, NZ.nz_conj(wb, hwb))))
 
+# a tie's label may be trimmed
+def tie_trim(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +c: Nat, +u: DR.Lab, +du: DR.Der, h: TieOk(es, fs, ctx, t, c, u, du))
+  -> TieOk(es, fs, ctx, t, c, LB.ltrim(u), du):
+  (g, r1) = h
+  (sv, nz) = r1
+  (g, (GN.samevd_tr(DR.Jd.x(DR.concl(es, fs, du)), DC.lform(u), DC.lform(LB.ltrim(u)), sv, GN.gtrim(u, SK.VE{DR.cst(DR.qo()), DR.cst(DR.qz())})), NZ.nz_trim(u, nz)))
+
 def ctie.pick_ok(f: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +c: Nat, +b: DR.Node, +wl: DR.Lab, +dl: DR.Der, +a: DR.Node, +rb: DR.Node, +wb: DR.Lab, +db: DR.Der,
   ef: {f == DC.node_eq(rb, DR.NFrame{}) : Bool}, +hz: {DC.zb(es, t) == True{} : Bool}, +ea: {a == b : DR.Node}, +hm: GN.MOkD(es, fs, ctx, t, DC.Mem{a, rb, wb, db}), +hl: GN.LOkD(es, fs, ctx, t, DC.Link{c, b, wl, dl}),
   hwl: NZ.Nz(wl), hwb: NZ.Nz(wb), +rest: Maybe<&2, DC.LD>, hr: OptTie(es, fs, ctx, t, c, rest))
-  -> OptTie(es, fs, ctx, t, c, DC.ctie.pick(f, DC.LD{LB.lmul(wl, DR.Lab.conj(wb)), DR.DThrough{dl, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(wl), b}}, rest)):
+  -> OptTie(es, fs, ctx, t, c, DC.ctie.pick(f, DC.LD{LB.ltrim(LB.lmul(wl, DR.Lab.conj(wb))), DR.DThrough{dl, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(wl), b}}, rest)):
   match f:
     case True{}:
-      tie_ok(es, fs, ctx, t, c, b, wl, dl, a, rb, wb, db, hz, ea, hm, hl, GN.node_eq_ok(rb, DR.NFrame{}, Equal.sym(Bool, True{}, DC.node_eq(rb, DR.NFrame{}), ef)), hwl, hwb)
+      tie_trim(es, fs, ctx, t, c, LB.lmul(wl, DR.Lab.conj(wb)), DR.DThrough{dl, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(wl), b},
+        tie_ok(es, fs, ctx, t, c, b, wl, dl, a, rb, wb, db, hz, ea, hm, hl, GN.node_eq_ok(rb, DR.NFrame{}, Equal.sym(Bool, True{}, DC.node_eq(rb, DR.NFrame{}), ef)), hwl, hwb))
     case False{}:
       hr
 

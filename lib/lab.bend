@@ -29,10 +29,58 @@ def lmul(g: DR.Lab, +h: DR.Lab) -> DR.Lab:
     case DR.Lab{+c1, +s1}:
       lmul.go(c1, s1, h)
 
+# Trimming
+# --------
+# The closure stores labels (members', ties', the label tests'), and a
+# product of labels multiplies all four denominators, so a stored label is
+# trimmed: a zero part becomes 0/1, and the factors of 2 its numerator and
+# denominator share are taken out (lib/labpf.bend: qtrim_ok, the same
+# rational).
+
+def qtrim.mk(sg: Bool, +p: S.Pos, +d: S.Pos) -> S.Q:
+  match sg:
+    case True{}:
+      S.Q{S.Zpos{p}, d}
+    case False{}:
+      S.Q{S.Zneg{p}, d}
+
+# +-p/d, common twos out
+def qtrim.p(p: S.Pos, d: S.Pos, sg: Bool) -> S.Q:
+  match p d:
+    case S.XO{a} S.XO{b}:
+      qtrim.p(a, b, sg)
+    case S.XO{a} S.XH{}:
+      qtrim.mk(sg, S.XO{a}, S.XH{})
+    case S.XO{a} S.XI{b}:
+      qtrim.mk(sg, S.XO{a}, S.XI{b})
+    case S.XH{} d:
+      qtrim.mk(sg, S.XH{}, d)
+    case S.XI{a} d:
+      qtrim.mk(sg, S.XI{a}, d)
+
+def qtrim.z(n: S.Z, +d: S.Pos) -> S.Q:
+  match n:
+    case S.Z0{}:
+      S.Q{S.Z0{}, S.XH{}}
+    case S.Zpos{p}:
+      qtrim.p(p, d, True{})
+    case S.Zneg{p}:
+      qtrim.p(p, d, False{})
+
+def qtrim(q: S.Q) -> S.Q:
+  match q:
+    case S.Q{n, d}:
+      qtrim.z(n, d)
+
+def ltrim(w: DR.Lab) -> DR.Lab:
+  match w:
+    case DR.Lab{c, s}:
+      DR.Lab{qtrim(c), qtrim(s)}
+
 def lab_of(p: PT.Pr) -> DR.Lab:
   match p:
     case PT.Pr{a, b}:
-      DR.Lab{a, b}
+      DR.Lab{qtrim(a), qtrim(b)}
 
 def lab_map(m: Maybe<&2, PT.Pr>) -> Maybe<&2, DR.Lab>:
   match m:

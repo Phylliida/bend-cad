@@ -393,12 +393,12 @@ def rr_one.no(+ms: List<&2, DC.Mem>, +a0: DR.Node, +r0: DR.Node, +w0: DR.Lab, +d
 def rr_one.t(g: Bool, +ms: List<&2, DC.Mem>, +a0: DR.Node, +r0: DR.Node, +w0: DR.Lab, +d0: DR.Der, +old: DR.Node, +new: DR.Node, +dR: DR.Der, +ww: DR.Lab,
   eg: {g == DC.node_eq(a0, new) : Bool}, ef: {True{} == DC.node_eq(r0, old) : Bool}, f0: {DC.mem_of(ms, a0) == Some{DC.Mem{a0, r0, w0, d0}} : Maybe<&2, DC.Mem>},
   hn: {isroot(ms, new) == True{} : Bool}, hon: {DC.node_eq(old, new) == False{} : Bool})
-  -> rrok.go(g, a0, new, LB.lmul(ww, w0), DR.DThrough{dR, d0, DR.Lab.conj(ww), old}):
+  -> rrok.go(g, a0, new, LB.ltrim(LB.lmul(ww, w0)), DR.DThrough{dR, d0, DR.Lab.conj(ww), old}):
   match g:
     case False{}:
       Unit{}
     case True{}:
-      absurd(rrok.go(True{}, a0, new, LB.lmul(ww, w0), DR.DThrough{dR, d0, DR.Lab.conj(ww), old}),
+      absurd(rrok.go(True{}, a0, new, LB.ltrim(LB.lmul(ww, w0)), DR.DThrough{dR, d0, DR.Lab.conj(ww), old}),
         rr_one.no(ms, a0, r0, w0, d0, old, new, GN.node_eq_ok(a0, new, Equal.sym(Bool, True{}, DC.node_eq(a0, new), eg)), ef, f0, hn, hon))
 
 def rr_one(f: Bool, +ms: List<&2, DC.Mem>, +a0: DR.Node, +r0: DR.Node, +w0: DR.Lab, +d0: DR.Der, +old: DR.Node, +new: DR.Node, +dR: DR.Der, +ww: DR.Lab,
@@ -566,11 +566,11 @@ def merge_sh.go(f: Bool, +es: List<&2, SK.Ent>, +cs: DC.SP, +ids: List<&2, Nat>,
   +hne: {DC.node_eq(rb, rr) == False{} : Bool}) -> ShM(es, cs, ids, DC.merge.go(f, ms, rr, d1, w, b, rb, wb, db)):
   match f:
     case True{}:
-      reroot_sh(es, cs, ids, ms, rr, DR.NFrame{}, DR.DThrough{db, DR.DTurn{d1, DR.Lab.conj(w), b}, DR.Lab.conj(wb), b}, LB.lmul(wb, DR.Lab.conj(w)), h, sh.fr(es, cs, ids, ms, h),
+      reroot_sh(es, cs, ids, ms, rr, DR.NFrame{}, DR.DThrough{db, DR.DTurn{d1, DR.Lab.conj(w), b}, DR.Lab.conj(wb), b}, LB.ltrim(LB.lmul(wb, DR.Lab.conj(w))), h, sh.fr(es, cs, ids, ms, h),
         IP.bnot_t(DC.node_eq(rr, DR.NFrame{}), LP2.band_r(DC.node_eq(rb, DR.NFrame{}), SV.bnot(DC.node_eq(rr, DR.NFrame{})), Equal.sym(Bool, True{}, SV.band(DC.node_eq(rb, DR.NFrame{}), SV.bnot(DC.node_eq(rr, DR.NFrame{}))), ef))),
         IP.bnot_t(DC.node_eq(rr, DR.NFrame{}), LP2.band_r(DC.node_eq(rb, DR.NFrame{}), SV.bnot(DC.node_eq(rr, DR.NFrame{})), Equal.sym(Bool, True{}, SV.band(DC.node_eq(rb, DR.NFrame{}), SV.bnot(DC.node_eq(rr, DR.NFrame{}))), ef))))
     case False{}:
-      reroot_sh(es, cs, ids, ms, rb, rr, DR.DThrough{d1, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(w), b}, LB.lmul(w, DR.Lab.conj(wb)), h, hrr, hne,
+      reroot_sh(es, cs, ids, ms, rb, rr, DR.DThrough{d1, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(w), b}, LB.ltrim(LB.lmul(w, DR.Lab.conj(wb))), h, hrr, hne,
         hof.go(DC.node_eq(rb, DR.NFrame{}), rb, rr, {==}, ef, hne))
 
 # a merge of b's component into the root rr keeps the shape

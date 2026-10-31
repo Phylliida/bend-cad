@@ -511,7 +511,7 @@ def ctie.mem(m: Maybe<&2, Mem>, +b: DR.Node, +wl: DR.Lab, +dl: DR.Der, rest: May
     case None{}:
       rest
     case Some{Mem{a, rb, +wb, +db}}:
-      ctie.pick(node_eq(rb, DR.NFrame{}), LD{LB.lmul(wl, DR.Lab.conj(wb)), DR.DThrough{dl, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(wl), b}}, rest)
+      ctie.pick(node_eq(rb, DR.NFrame{}), LD{LB.ltrim(LB.lmul(wl, DR.Lab.conj(wb))), DR.DThrough{dl, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(wl), b}}, rest)
 
 def ctie.if(f: Bool, m: Maybe<&2, Mem>, +b: DR.Node, +wl: DR.Lab, +dl: DR.Der, rest: Maybe<&2, LD>) -> Maybe<&2, LD>:
   match f:
@@ -631,7 +631,7 @@ def rep.der(r: Rep, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +k: 
 def reroot.one(b: Bool, +a: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, +new: DR.Node, +dR: DR.Der, +ww: DR.Lab, +old: DR.Node) -> Mem:
   match b:
     case True{}:
-      Mem{a, new, LB.lmul(ww, w), DR.DThrough{dR, d, DR.Lab.conj(ww), old}}
+      Mem{a, new, LB.ltrim(LB.lmul(ww, w)), DR.DThrough{dR, d, DR.Lab.conj(ww), old}}
     case False{}:
       Mem{a, r, w, d}
 
@@ -646,9 +646,9 @@ def reroot(ms: List<&2, Mem>, +old: DR.Node, +new: DR.Node, +dR: DR.Der, +ww: DR
 def merge.go(f: Bool, +ms: List<&2, Mem>, +rr: DR.Node, +d1: DR.Der, +w: DR.Lab, +b: DR.Node, +rb: DR.Node, +wb: DR.Lab, +db: DR.Der) -> List<&2, Mem>:
   match f:
     case True{}:
-      reroot(ms, rr, DR.NFrame{}, DR.DThrough{db, DR.DTurn{d1, DR.Lab.conj(w), b}, DR.Lab.conj(wb), b}, LB.lmul(wb, DR.Lab.conj(w)))
+      reroot(ms, rr, DR.NFrame{}, DR.DThrough{db, DR.DTurn{d1, DR.Lab.conj(w), b}, DR.Lab.conj(wb), b}, LB.ltrim(LB.lmul(wb, DR.Lab.conj(w))))
     case False{}:
-      reroot(ms, rb, rr, DR.DThrough{d1, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(w), b}, LB.lmul(w, DR.Lab.conj(wb)))
+      reroot(ms, rb, rr, DR.DThrough{d1, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(w), b}, LB.ltrim(LB.lmul(w, DR.Lab.conj(wb))))
 
 # d1 proves par(rr, x), x the same as w z_b, b outside rr's component:
 # the two components become one, F staying a root

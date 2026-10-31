@@ -50,7 +50,7 @@ def reroot.nz2(f: Bool, +a: DR.Node, +r: DR.Node, +w: DR.Lab, +d: DR.Der, +new: 
   +rest: List<&2, DC.Mem>, hr: RP.MsNz(rest)) -> RP.MsNz(Con{DC.reroot.one(f, a, r, w, d, new, dR, ww, old), rest}):
   match f:
     case True{}:
-      (NZ.nz_mul(ww, w, hw, nw), hr)
+      (NZ.nz_trim(LB.lmul(ww, w), NZ.nz_mul(ww, w, hw, nw)), hr)
     case False{}:
       (nw, hr)
 
@@ -66,9 +66,9 @@ def merge.go_nz(f: Bool, +ms: List<&2, DC.Mem>, +rr: DR.Node, +d1: DR.Der, +w: D
   -> RP.MsNz(DC.merge.go(f, ms, rr, d1, w, b, rb, wb, db)):
   match f:
     case True{}:
-      reroot_nz(ms, rr, DR.NFrame{}, DR.DThrough{db, DR.DTurn{d1, DR.Lab.conj(w), b}, DR.Lab.conj(wb), b}, LB.lmul(wb, DR.Lab.conj(w)), hn, NZ.nz_mul(wb, DR.Lab.conj(w), hwb, NZ.nz_conj(w, hw)))
+      reroot_nz(ms, rr, DR.NFrame{}, DR.DThrough{db, DR.DTurn{d1, DR.Lab.conj(w), b}, DR.Lab.conj(wb), b}, LB.ltrim(LB.lmul(wb, DR.Lab.conj(w))), hn, NZ.nz_trim(LB.lmul(wb, DR.Lab.conj(w)), NZ.nz_mul(wb, DR.Lab.conj(w), hwb, NZ.nz_conj(w, hw))))
     case False{}:
-      reroot_nz(ms, rb, rr, DR.DThrough{d1, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(w), b}, LB.lmul(w, DR.Lab.conj(wb)), hn, NZ.nz_mul(w, DR.Lab.conj(wb), hw, NZ.nz_conj(wb, hwb)))
+      reroot_nz(ms, rb, rr, DR.DThrough{d1, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(w), b}, LB.ltrim(LB.lmul(w, DR.Lab.conj(wb))), hn, NZ.nz_trim(LB.lmul(w, DR.Lab.conj(wb)), NZ.nz_mul(w, DR.Lab.conj(wb), hw, NZ.nz_conj(wb, hwb))))
 
 def merge_nz(+ms: List<&2, DC.Mem>, +rr: DR.Node, +d1: DR.Der, +w: DR.Lab, +b: DR.Node, +rb: DR.Node, +wb: DR.Lab, +db: DR.Der, +hn: RP.MsNz(ms), +hw: NZ.Nz(w), +hwb: NZ.Nz(wb))
   -> RP.MsNz(DC.merge(ms, rr, d1, w, DC.Mem{b, rb, wb, db})):

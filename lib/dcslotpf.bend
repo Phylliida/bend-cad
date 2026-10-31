@@ -171,10 +171,10 @@ def mg_dec.go(f: Bool, +ms: List<&2, DC.Mem>, +rr: DR.Node, +d1: DR.Der, +w: DR.
   -> {KA.natle(1n+rcount(DC.merge.go(f, ms, rr, d1, w, b, rb, wb, db)), rcount(ms)) == True{} : Bool}:
   match f:
     case True{}:
-      rc_lt(ms, rr, DR.NFrame{}, DR.DThrough{db, DR.DTurn{d1, DR.Lab.conj(w), b}, DR.Lab.conj(wb), b}, LB.lmul(wb, DR.Lab.conj(w)), hf, hF,
+      rc_lt(ms, rr, DR.NFrame{}, DR.DThrough{db, DR.DTurn{d1, DR.Lab.conj(w), b}, DR.Lab.conj(wb), b}, LB.ltrim(LB.lmul(wb, DR.Lab.conj(w))), hf, hF,
         band_tl(DC.node_eq(rb, DR.NFrame{}), DC.node_eq(rr, DR.NFrame{}), Equal.sym(Bool, True{}, SV.band(DC.node_eq(rb, DR.NFrame{}), SV.bnot(DC.node_eq(rr, DR.NFrame{}))), ef)), hrr)
     case False{}:
-      rc_lt(ms, rb, rr, DR.DThrough{d1, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(w), b}, LB.lmul(w, DR.Lab.conj(wb)), hf, hrr, hne, hb)
+      rc_lt(ms, rb, rr, DR.DThrough{d1, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(w), b}, LB.ltrim(LB.lmul(w, DR.Lab.conj(wb))), hf, hrr, hne, hb)
 
 # merging b's component into the root rr's takes one root away
 def mg_dec(+ms: List<&2, DC.Mem>, +rr: DR.Node, +d1: DR.Der, +w: DR.Lab, mb: DC.Mem, hf: SH.AllFirst(ms, ms), +hrr: {SH.isroot(ms, rr) == True{} : Bool},

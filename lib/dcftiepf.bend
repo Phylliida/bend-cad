@@ -93,7 +93,7 @@ def mem_rest(m: Maybe<&2, DC.Mem>, +b: DR.Node, +wl: DR.Lab, +dl: DR.Der, +rest:
     case None{}:
       e
     case Some{DC.Mem{a, +rb, +wb, +db}}:
-      pick_rest(DC.node_eq(rb, DR.NFrame{}), DC.LD{LB.lmul(wl, DR.Lab.conj(wb)), DR.DThrough{dl, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(wl), b}}, rest, e)
+      pick_rest(DC.node_eq(rb, DR.NFrame{}), DC.LD{LB.ltrim(LB.lmul(wl, DR.Lab.conj(wb))), DR.DThrough{dl, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(wl), b}}, rest, e)
 
 def if_rest(f: Bool, +m: Maybe<&2, DC.Mem>, +b: DR.Node, +wl: DR.Lab, +dl: DR.Der, +rest: Maybe<&2, DC.LD>, e: {DC.ctie.if(f, m, b, wl, dl, rest) == None{} : Maybe<&2, DC.LD>}) -> {rest == None{} : Maybe<&2, DC.LD>}:
   match f:
@@ -109,7 +109,7 @@ def ctl_rest(l: DC.Link, +t: List<&2, DC.Link>, +c: Nat, +ms: List<&2, DC.Mem>, 
 
 def cti_none(+m: Maybe<&2, DC.Mem>, +b: DR.Node, +wl: DR.Lab, +dl: DR.Der, +rest: Maybe<&2, DC.LD>, +a: DR.Node, +wb: DR.Lab, +db: DR.Der, em: {m == Some{DC.Mem{a, DR.NFrame{}, wb, db}} : Maybe<&2, DC.Mem>},
   e: {DC.ctie.if(True{}, m, b, wl, dl, rest) == None{} : Maybe<&2, DC.LD>}) -> Empty:
-  ld_some_none(DC.LD{LB.lmul(wl, DR.Lab.conj(wb)), DR.DThrough{dl, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(wl), b}}, Equal.trans(Maybe<&2, DC.LD>, DC.ctie.if(True{}, Some{DC.Mem{a, DR.NFrame{}, wb, db}}, b, wl, dl, rest), DC.ctie.if(True{}, m, b, wl, dl, rest), None{},
+  ld_some_none(DC.LD{LB.ltrim(LB.lmul(wl, DR.Lab.conj(wb))), DR.DThrough{dl, DR.DTurn{db, DR.Lab.conj(wb), b}, DR.Lab.conj(wl), b}}, Equal.trans(Maybe<&2, DC.LD>, DC.ctie.if(True{}, Some{DC.Mem{a, DR.NFrame{}, wb, db}}, b, wl, dl, rest), DC.ctie.if(True{}, m, b, wl, dl, rest), None{},
     Equal.sym(Maybe<&2, DC.LD>, DC.ctie.if(True{}, m, b, wl, dl, rest), DC.ctie.if(True{}, Some{DC.Mem{a, DR.NFrame{}, wb, db}}, b, wl, dl, rest), Equal.cong(Maybe<&2, DC.Mem>, Maybe<&2, DC.LD>, q => DC.ctie.if(True{}, q, b, wl, dl, rest), m, Some{DC.Mem{a, DR.NFrame{}, wb, db}}, em)), e))
 
 def ctn.hd(+c3: Nat, +b3: DR.Node, +w3: DR.Lab, +d3: DR.Der, +t: List<&2, DC.Link>, +c: Nat, +ms: List<&2, DC.Mem>, +c2: Nat, +bl: DR.Node, +wl: DR.Lab, +dl: DR.Der, en: {Some{DC.Link{c3, b3, w3, d3}} == Some{DC.Link{c2, bl, wl, dl}} : Maybe<&2, DC.Link>},
@@ -134,7 +134,7 @@ def ct_none(ls: List<&2, DC.Link>, n: Nat, +c: Nat, +ms: List<&2, DC.Mem>, +c2: 
 def ct.okm(mm: Maybe<&2, DC.Mem>, +wl: DR.Lab, +u: DR.Lab) -> Data:
   match mm:
     case Some{DC.Mem{a, +rb, +wb, d}}:
-      SK.Both({DC.node_eq(rb, DR.NFrame{}) == True{} : Bool}, {u == LB.lmul(wl, DR.Lab.conj(wb)) : DR.Lab})
+      SK.Both({DC.node_eq(rb, DR.NFrame{}) == True{} : Bool}, {u == LB.ltrim(LB.lmul(wl, DR.Lab.conj(wb))) : DR.Lab})
     case None{}:
       {True{} == False{} : Bool}
 
@@ -158,16 +158,16 @@ def ct_tl(+x: DC.Link, +t: List<&2, DC.Link>, +ms: List<&2, DC.Mem>, +c: Nat, +u
 
 def ct_hd.p(+c3: Nat, +b3: DR.Node, +w3: DR.Lab, +d3: DR.Der, +ms: List<&2, DC.Mem>, +c: Nat, +u: DR.Lab, +a: DR.Node, +rb: DR.Node, +wb: DR.Lab, +db: DR.Der,
   ef: {True{} == SV.eq(c3, c) : Bool}, emm: {Some{DC.Mem{a, rb, wb, db}} == DC.mem_of(ms, b3) : Maybe<&2, DC.Mem>}, er: {True{} == DC.node_eq(rb, DR.NFrame{}) : Bool},
-  eu: {u == LB.lmul(w3, DR.Lab.conj(wb)) : DR.Lab}) -> ct.ok(Some{DC.Link{c3, b3, w3, d3}}, ms, c, u):
+  eu: {u == LB.ltrim(LB.lmul(w3, DR.Lab.conj(wb))) : DR.Lab}) -> ct.ok(Some{DC.Link{c3, b3, w3, d3}}, ms, c, u):
   %emm : SK.Both({SV.eq(c3, c) == True{} : Bool}, ct.okm(_, w3, u))
   (Equal.sym(Bool, True{}, SV.eq(c3, c), ef), (Equal.sym(Bool, True{}, DC.node_eq(rb, DR.NFrame{}), er), eu))
 
 def ctf.p(pb: Bool, +c3: Nat, +b3: DR.Node, +w3: DR.Lab, +d3: DR.Der, +t: List<&2, DC.Link>, +ms: List<&2, DC.Mem>, +c: Nat, +u: DR.Lab, +du: DR.Der, +a: DR.Node, +rb: DR.Node, +wb: DR.Lab, +db: DR.Der,
   ef: {True{} == SV.eq(c3, c) : Bool}, emm: {Some{DC.Mem{a, rb, wb, db}} == DC.mem_of(ms, b3) : Maybe<&2, DC.Mem>}, epb: {pb == DC.node_eq(rb, DR.NFrame{}) : Bool},
-  e: {DC.ctie.pick(pb, DC.LD{LB.lmul(w3, DR.Lab.conj(wb)), DR.DThrough{d3, DR.DTurn{db, DR.Lab.conj(wb), b3}, DR.Lab.conj(w3), b3}}, DC.cties(t, c, ms)) == Some{DC.LD{u, du}} : Maybe<&2, DC.LD>}, ih: {DC.cties(t, c, ms) == Some{DC.LD{u, du}} : Maybe<&2, DC.LD>} -> CT(t, ms, c, u)) -> CT(Con{DC.Link{c3, b3, w3, d3}, t}, ms, c, u):
+  e: {DC.ctie.pick(pb, DC.LD{LB.ltrim(LB.lmul(w3, DR.Lab.conj(wb))), DR.DThrough{d3, DR.DTurn{db, DR.Lab.conj(wb), b3}, DR.Lab.conj(w3), b3}}, DC.cties(t, c, ms)) == Some{DC.LD{u, du}} : Maybe<&2, DC.LD>}, ih: {DC.cties(t, c, ms) == Some{DC.LD{u, du}} : Maybe<&2, DC.LD>} -> CT(t, ms, c, u)) -> CT(Con{DC.Link{c3, b3, w3, d3}, t}, ms, c, u):
   match pb:
     case True{}:
-      (0n, ct_hd.p(c3, b3, w3, d3, ms, c, u, a, rb, wb, db, ef, emm, epb, ld_u(LB.lmul(w3, DR.Lab.conj(wb)), DR.DThrough{d3, DR.DTurn{db, DR.Lab.conj(wb), b3}, DR.Lab.conj(w3), b3}, u, du, e)))
+      (0n, ct_hd.p(c3, b3, w3, d3, ms, c, u, a, rb, wb, db, ef, emm, epb, ld_u(LB.ltrim(LB.lmul(w3, DR.Lab.conj(wb))), DR.DThrough{d3, DR.DTurn{db, DR.Lab.conj(wb), b3}, DR.Lab.conj(w3), b3}, u, du, e)))
     case False{}:
       ct_tl(DC.Link{c3, b3, w3, d3}, t, ms, c, u, ih(e))
 
@@ -318,32 +318,34 @@ def tie_act(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExp
 # ------------------------------------------------
 
 def crossU(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +u: DR.Lab, +du: DR.Der, +n1: Nat, +c3: Nat, +b3: DR.Node, +w3: DR.Lab, +d3: DR.Der, +em1: {SH.lat(DC.Sk.ls(s), n1) == Some{DC.Link{c3, b3, w3, d3}} : Maybe<&2, DC.Link>}, +ec3: {SV.eq(c3, c) == True{} : Bool}, +a3: DR.Node, +wb3: DR.Lab, +db3: DR.Der, +nb3: Nat, +enb3: {SH.mat(DC.Sk.ms(s), nb3) == Some{DC.Mem{a3, DR.NFrame{}, wb3, db3}} : Maybe<&2, DC.Mem>}, +e3: {a3 == b3 : DR.Node},
-  eu: {u == LB.lmul(w3, DR.Lab.conj(wb3)) : DR.Lab}) -> {KS.ks.inb(DC.Sk.k(s), SK.VE.y(DR.gmul(DR.Lab.conj(u), DR.zdir(es, DR.NSeg{c})))) == True{} : Bool}:
-  %Equal.sym(DR.Lab, u, LB.lmul(w3, DR.Lab.conj(wb3)), eu) : {KS.ks.inb(DC.Sk.k(s), SK.VE.y(DR.gmul(DR.Lab.conj(_), DR.zdir(es, DR.NSeg{c})))) == True{} : Bool}
-  crossT(es, fs, ctx, t, s, H, c, n1, c3, b3, w3, d3, em1, ec3, b3, SH.node_refl(b3), a3, wb3, db3, nb3, enb3, e3)
+  eu: {u == LB.ltrim(LB.lmul(w3, DR.Lab.conj(wb3))) : DR.Lab}) -> {KS.ks.inb(DC.Sk.k(s), SK.VE.y(DR.gmul(DR.Lab.conj(u), DR.zdir(es, DR.NSeg{c})))) == True{} : Bool}:
+  %Equal.sym(DR.Lab, u, LB.ltrim(LB.lmul(w3, DR.Lab.conj(wb3))), eu) : {KS.ks.inb(DC.Sk.k(s), SK.VE.y(DR.gmul(DR.Lab.conj(_), DR.zdir(es, DR.NSeg{c})))) == True{} : Bool}
+  ST.ri.tr(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), KS.ks.rows(DC.Sk.k(s)), SK.VE.y(DR.gmul(DR.Lab.conj(LB.lmul(w3, DR.Lab.conj(wb3))), DR.zdir(es, DR.NSeg{c}))), SK.VE.y(DR.gmul(DR.Lab.conj(LB.ltrim(LB.lmul(w3, DR.Lab.conj(wb3)))), DR.zdir(es, DR.NSeg{c}))), ST.kri(es, fs, ctx, t, DC.Sk.k(s), RR.h.k(es, fs, ctx, t, s, H)),
+    crossT(es, fs, ctx, t, s, H, c, n1, c3, b3, w3, d3, em1, ec3, b3, SH.node_refl(b3), a3, wb3, db3, nb3, enb3, e3),
+    RR.svy(DR.gmul(DR.Lab.conj(LB.lmul(w3, DR.Lab.conj(wb3))), DR.zdir(es, DR.NSeg{c})), DR.gmul(DR.Lab.conj(LB.ltrim(LB.lmul(w3, DR.Lab.conj(wb3)))), DR.zdir(es, DR.NSeg{c})), GN.gtrim_c(LB.lmul(w3, DR.Lab.conj(wb3)), DR.zdir(es, DR.NSeg{c}))))
 
 def tie.g(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +n: Nat, +c2: Nat, +bl: DR.Node, +wl: DR.Lab, +dl: DR.Der, +en: {SH.lat(DC.Sk.ls(s), n) == Some{DC.Link{c2, bl, wl, dl}} : Maybe<&2, DC.Link>}, +ec: {SV.eq(c2, c) == True{} : Bool}, +b: DR.Node, +eb: {DC.node_eq(bl, b) == True{} : Bool}, +b2: DR.Node, +wb: DR.Lab, +db: DR.Der, +nb: Nat, +enb: {SH.mat(DC.Sk.ms(s), nb) == Some{DC.Mem{b2, DR.NFrame{}, wb, db}} : Maybe<&2, DC.Mem>}, +eab: {b2 == b : DR.Node}, +hf: {DC.fullc(es, DC.Sk.k(s), c) == False{} : Bool}, +y: SK.VE, +hy: {KS.ks.inb(DC.Sk.k(s), SK.VE.y(DR.gmul(wb, y))) == True{} : Bool}, +u: DR.Lab, +du: DR.Der, +n1: Nat, +c3: Nat, +b3: DR.Node, +w3: DR.Lab, +d3: DR.Der, +em1: {SH.lat(DC.Sk.ls(s), n1) == Some{DC.Link{c3, b3, w3, d3}} : Maybe<&2, DC.Link>}, +ec3: {SV.eq(c3, c) == True{} : Bool}, +a3: DR.Node, +r3: DR.Node, +wb3: DR.Lab, +db3: DR.Der, +nb3: Nat, +enb3: {SH.mat(DC.Sk.ms(s), nb3) == Some{DC.Mem{a3, r3, wb3, db3}} : Maybe<&2, DC.Mem>}, +e3: {a3 == b3 : DR.Node},
-  +er: {DC.node_eq(r3, DR.NFrame{}) == True{} : Bool}, +eu: {u == LB.lmul(w3, DR.Lab.conj(wb3)) : DR.Lab}) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep.t(Some{DC.LD{u, du}}, es, fs, t, DC.dcat(DC.kgens(DR.NSeg{c}, KS.ks.ds(DC.Sk.k(s))), DC.cgens(fs, s, c))), c), DR.gmul(wl, y)):
+  +er: {DC.node_eq(r3, DR.NFrame{}) == True{} : Bool}, +eu: {u == LB.ltrim(LB.lmul(w3, DR.Lab.conj(wb3))) : DR.Lab}) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep.t(Some{DC.LD{u, du}}, es, fs, t, DC.dcat(DC.kgens(DR.NSeg{c}, KS.ks.ds(DC.Sk.k(s))), DC.cgens(fs, s, c))), c), DR.gmul(wl, y)):
   tie_act(es, fs, ctx, t, s, H, c, u, du, wl, wb, y,
     LS.qs1.go(u, LB.lmul(wl, DR.Lab.conj(wb)), par_of(es, fs, ctx, t, s, H, c, u, LB.lmul(wl, DR.Lab.conj(wb)),
       crossU(es, fs, ctx, t, s, H, c, u, du, n1, c3, b3, w3, d3, em1, ec3, a3, wb3, db3, nb3, Equal.trans(Maybe<&2, DC.Mem>, SH.mat(DC.Sk.ms(s), nb3), Some{DC.Mem{a3, r3, wb3, db3}}, Some{DC.Mem{a3, DR.NFrame{}, wb3, db3}}, enb3,
         Equal.cong(DR.Node, Maybe<&2, DC.Mem>, r => Some{DC.Mem{a3, r, wb3, db3}}, r3, DR.NFrame{}, GN.node_eq_ok(r3, DR.NFrame{}, er))), e3, eu),
       crossT(es, fs, ctx, t, s, H, c, n, c2, bl, wl, dl, en, ec, b, eb, b2, wb, db, nb, enb, eab), hf),
-      NZ.wnz_at(LB.lmul(w3, DR.Lab.conj(wb3)), u, Equal.sym(DR.Lab, u, LB.lmul(w3, DR.Lab.conj(wb3)), eu), NZ.nz_mul(w3, DR.Lab.conj(wb3), lsn_at(DC.Sk.ls(s), n1, c3, b3, w3, d3, em1, RR.h.lsn(es, fs, ctx, t, s, H)), NZ.nz_conj(wb3, RR.mnz_at(DC.Sk.ms(s), nb3, DC.Mem{a3, r3, wb3, db3}, enb3, RR.h.msn(es, fs, ctx, t, s, H)))))),
+      NZ.wnz_at(LB.ltrim(LB.lmul(w3, DR.Lab.conj(wb3))), u, Equal.sym(DR.Lab, u, LB.ltrim(LB.lmul(w3, DR.Lab.conj(wb3))), eu), NZ.nz_trim(LB.lmul(w3, DR.Lab.conj(wb3)), NZ.nz_mul(w3, DR.Lab.conj(wb3), lsn_at(DC.Sk.ls(s), n1, c3, b3, w3, d3, em1, RR.h.lsn(es, fs, ctx, t, s, H)), NZ.nz_conj(wb3, RR.mnz_at(DC.Sk.ms(s), nb3, DC.Mem{a3, r3, wb3, db3}, enb3, RR.h.msn(es, fs, ctx, t, s, H))))))),
     hy, RR.mnz_at(DC.Sk.ms(s), nb, DC.Mem{b2, DR.NFrame{}, wb, db}, enb, RR.h.msn(es, fs, ctx, t, s, H)))
 
 def tie.n(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +n: Nat, +c2: Nat, +bl: DR.Node, +wl: DR.Lab, +dl: DR.Der, +en: {SH.lat(DC.Sk.ls(s), n) == Some{DC.Link{c2, bl, wl, dl}} : Maybe<&2, DC.Link>}, +ec: {SV.eq(c2, c) == True{} : Bool}, +b: DR.Node, +eb: {DC.node_eq(bl, b) == True{} : Bool}, +b2: DR.Node, +wb: DR.Lab, +db: DR.Der, +nb: Nat, +enb: {SH.mat(DC.Sk.ms(s), nb) == Some{DC.Mem{b2, DR.NFrame{}, wb, db}} : Maybe<&2, DC.Mem>}, +eab: {b2 == b : DR.Node}, +hf: {DC.fullc(es, DC.Sk.k(s), c) == False{} : Bool}, +y: SK.VE, +hy: {KS.ks.inb(DC.Sk.k(s), SK.VE.y(DR.gmul(wb, y))) == True{} : Bool}, +u: DR.Lab, +du: DR.Der, +n1: Nat, +c3: Nat, +b3: DR.Node, +w3: DR.Lab, +d3: DR.Der, +em1: {SH.lat(DC.Sk.ls(s), n1) == Some{DC.Link{c3, b3, w3, d3}} : Maybe<&2, DC.Link>}, +ec3: {SV.eq(c3, c) == True{} : Bool}, +a3: DR.Node, +r3: DR.Node, +wb3: DR.Lab, +db3: DR.Der, hin: SH.Inm(DC.Mem{a3, r3, wb3, db3}, DC.Sk.ms(s)), hn: {DC.node_eq(a3, b3) == True{} : Bool},
-  +er: {DC.node_eq(r3, DR.NFrame{}) == True{} : Bool}, +eu: {u == LB.lmul(w3, DR.Lab.conj(wb3)) : DR.Lab}) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep.t(Some{DC.LD{u, du}}, es, fs, t, DC.dcat(DC.kgens(DR.NSeg{c}, KS.ks.ds(DC.Sk.k(s))), DC.cgens(fs, s, c))), c), DR.gmul(wl, y)):
+  +er: {DC.node_eq(r3, DR.NFrame{}) == True{} : Bool}, +eu: {u == LB.ltrim(LB.lmul(w3, DR.Lab.conj(wb3))) : DR.Lab}) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep.t(Some{DC.LD{u, du}}, es, fs, t, DC.dcat(DC.kgens(DR.NSeg{c}, KS.ks.ds(DC.Sk.k(s))), DC.cgens(fs, s, c))), c), DR.gmul(wl, y)):
   (+nb3, +enb3) = hin
   tie.g(es, fs, ctx, t, s, H, c, n, c2, bl, wl, dl, en, ec, b, eb, b2, wb, db, nb, enb, eab, hf, y, hy, u, du, n1, c3, b3, w3, d3, em1, ec3, a3, r3, wb3, db3, nb3, enb3, GN.node_eq_ok(a3, b3, hn), er, eu)
 
 def tie.mi(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +n: Nat, +c2: Nat, +bl: DR.Node, +wl: DR.Lab, +dl: DR.Der, +en: {SH.lat(DC.Sk.ls(s), n) == Some{DC.Link{c2, bl, wl, dl}} : Maybe<&2, DC.Link>}, +ec: {SV.eq(c2, c) == True{} : Bool}, +b: DR.Node, +eb: {DC.node_eq(bl, b) == True{} : Bool}, +b2: DR.Node, +wb: DR.Lab, +db: DR.Der, +nb: Nat, +enb: {SH.mat(DC.Sk.ms(s), nb) == Some{DC.Mem{b2, DR.NFrame{}, wb, db}} : Maybe<&2, DC.Mem>}, +eab: {b2 == b : DR.Node}, +hf: {DC.fullc(es, DC.Sk.k(s), c) == False{} : Bool}, +y: SK.VE, +hy: {KS.ks.inb(DC.Sk.k(s), SK.VE.y(DR.gmul(wb, y))) == True{} : Bool}, +u: DR.Lab, +du: DR.Der, +n1: Nat, +c3: Nat, +b3: DR.Node, +w3: DR.Lab, +d3: DR.Der, +em1: {SH.lat(DC.Sk.ls(s), n1) == Some{DC.Link{c3, b3, w3, d3}} : Maybe<&2, DC.Link>}, +ec3: {SV.eq(c3, c) == True{} : Bool}, +a3: DR.Node, +r3: DR.Node, +wb3: DR.Lab, +db3: DR.Der, mi: SH.MemIn(DC.Sk.ms(s), b3, DC.Mem{a3, r3, wb3, db3}),
-  +er: {DC.node_eq(r3, DR.NFrame{}) == True{} : Bool}, +eu: {u == LB.lmul(w3, DR.Lab.conj(wb3)) : DR.Lab}) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep.t(Some{DC.LD{u, du}}, es, fs, t, DC.dcat(DC.kgens(DR.NSeg{c}, KS.ks.ds(DC.Sk.k(s))), DC.cgens(fs, s, c))), c), DR.gmul(wl, y)):
+  +er: {DC.node_eq(r3, DR.NFrame{}) == True{} : Bool}, +eu: {u == LB.ltrim(LB.lmul(w3, DR.Lab.conj(wb3))) : DR.Lab}) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep.t(Some{DC.LD{u, du}}, es, fs, t, DC.dcat(DC.kgens(DR.NSeg{c}, KS.ks.ds(DC.Sk.k(s))), DC.cgens(fs, s, c))), c), DR.gmul(wl, y)):
   (hin, hn) = mi
   tie.n(es, fs, ctx, t, s, H, c, n, c2, bl, wl, dl, en, ec, b, eb, b2, wb, db, nb, enb, eab, hf, y, hy, u, du, n1, c3, b3, w3, d3, em1, ec3, a3, r3, wb3, db3, hin, hn, er, eu)
 
 def tie.mk(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +c: Nat, +n: Nat, +c2: Nat, +bl: DR.Node, +wl: DR.Lab, +dl: DR.Der, +en: {SH.lat(DC.Sk.ls(s), n) == Some{DC.Link{c2, bl, wl, dl}} : Maybe<&2, DC.Link>}, +ec: {SV.eq(c2, c) == True{} : Bool}, +b: DR.Node, +eb: {DC.node_eq(bl, b) == True{} : Bool}, +b2: DR.Node, +wb: DR.Lab, +db: DR.Der, +nb: Nat, +enb: {SH.mat(DC.Sk.ms(s), nb) == Some{DC.Mem{b2, DR.NFrame{}, wb, db}} : Maybe<&2, DC.Mem>}, +eab: {b2 == b : DR.Node}, +hf: {DC.fullc(es, DC.Sk.k(s), c) == False{} : Bool}, +y: SK.VE, +hy: {KS.ks.inb(DC.Sk.k(s), SK.VE.y(DR.gmul(wb, y))) == True{} : Bool}, +u: DR.Lab, +du: DR.Der, +n1: Nat, +c3: Nat, +b3: DR.Node, +w3: DR.Lab, +d3: DR.Der, +em1: {SH.lat(DC.Sk.ls(s), n1) == Some{DC.Link{c3, b3, w3, d3}} : Maybe<&2, DC.Link>}, +ec3: {SV.eq(c3, c) == True{} : Bool}, +a3: DR.Node, +r3: DR.Node, +wb3: DR.Lab, +db3: DR.Der, emm: {DC.mem_of(DC.Sk.ms(s), b3) == Some{DC.Mem{a3, r3, wb3, db3}} : Maybe<&2, DC.Mem>},
-  pm: SK.Both({DC.node_eq(r3, DR.NFrame{}) == True{} : Bool}, {u == LB.lmul(w3, DR.Lab.conj(wb3)) : DR.Lab})) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep.t(Some{DC.LD{u, du}}, es, fs, t, DC.dcat(DC.kgens(DR.NSeg{c}, KS.ks.ds(DC.Sk.k(s))), DC.cgens(fs, s, c))), c), DR.gmul(wl, y)):
+  pm: SK.Both({DC.node_eq(r3, DR.NFrame{}) == True{} : Bool}, {u == LB.ltrim(LB.lmul(w3, DR.Lab.conj(wb3))) : DR.Lab})) -> ST.InSt(es, fs, DC.Sk.k(s), ND.cset(DC.crep.t(Some{DC.LD{u, du}}, es, fs, t, DC.dcat(DC.kgens(DR.NSeg{c}, KS.ks.ds(DC.Sk.k(s))), DC.cgens(fs, s, c))), c), DR.gmul(wl, y)):
   (+er, +eu) = pm
   tie.mi(es, fs, ctx, t, s, H, c, n, c2, bl, wl, dl, en, ec, b, eb, b2, wb, db, nb, enb, eab, hf, y, hy, u, du, n1, c3, b3, w3, d3, em1, ec3, a3, r3, wb3, db3, SH.mem_of_in(DC.Sk.ms(s), b3, DC.Mem{a3, r3, wb3, db3}, emm), er, eu)
 

@@ -17,6 +17,7 @@ import ../spec/sketch.bend as SK
 import ../spec/dir.bend as DR
 import ./elim.bend as EL
 import ./elimpf.bend as EP
+import ./zring.bend as R
 import ./q.bend as LQ
 import ./qalg.bend as QA
 import ./spanpf.bend as SN
@@ -146,6 +147,95 @@ def gmul_comp(g: DR.Lab, h: DR.Lab, +x: SK.VE) -> DR.SameV(DR.gmul(g, DR.gmul(h,
     case DR.Lab{+c1, +s1} DR.Lab{+c2, +s2}:
       (p => gmul_comp.ax(p, c1, s1, c2, s2, x), p => gmul_comp.ay(p, c1, s1, c2, s2, x))
 
+# Trimming
+# --------
+
+# x/b is 2x/2b
+def half_eq(+x: S.Z, +b: S.Pos) -> S.Q.eq(S.Q{x, b}, S.Q{S.Z.mul(S.Zpos{S.XO{S.XH{}}}, x), S.XO{b}}):
+  R.ring_eq([x, S.Zpos{b}], E.ZMul{E.ZVar{0n}, E.ZMul{E.ZCst{S.Zpos{S.XO{S.XH{}}}}, E.ZVar{1n}}}, E.ZMul{E.ZMul{E.ZCst{S.Zpos{S.XO{S.XH{}}}}, E.ZVar{0n}}, E.ZVar{1n}}, {==})
+
+def qtrim.mk2(sg: Bool, +a: S.Pos, +b: S.Pos) -> S.Q.eq(LB.qtrim.mk(sg, a, b), LB.qtrim.mk(sg, S.XO{a}, S.XO{b})):
+  match sg:
+    case True{}:
+      half_eq(S.Zpos{a}, b)
+    case False{}:
+      half_eq(S.Zneg{a}, b)
+
+def qtrim.p_ok(p: S.Pos, d: S.Pos, +sg: Bool) -> S.Q.eq(LB.qtrim.p(p, d, sg), LB.qtrim.mk(sg, p, d)):
+  match p d:
+    case S.XO{+a} S.XO{+b}:
+      LQ.q_trans(LB.qtrim.p(a, b, sg), LB.qtrim.mk(sg, a, b), LB.qtrim.mk(sg, S.XO{a}, S.XO{b}), qtrim.p_ok(a, b, sg), qtrim.mk2(sg, a, b))
+    case S.XO{+a} S.XH{}:
+      LQ.q_refl(LB.qtrim.mk(sg, S.XO{a}, S.XH{}))
+    case S.XO{+a} S.XI{+b}:
+      LQ.q_refl(LB.qtrim.mk(sg, S.XO{a}, S.XI{b}))
+    case S.XH{} +d:
+      LQ.q_refl(LB.qtrim.mk(sg, S.XH{}, d))
+    case S.XI{+a} +d:
+      LQ.q_refl(LB.qtrim.mk(sg, S.XI{a}, d))
+
+def qtrim_ok.z(n: S.Z, +d: S.Pos) -> S.Q.eq(LB.qtrim.z(n, d), S.Q{n, d}):
+  match n:
+    case S.Z0{}:
+      {==}
+    case S.Zpos{+p}:
+      qtrim.p_ok(p, d, True{})
+    case S.Zneg{+p}:
+      qtrim.p_ok(p, d, False{})
+
+# a trimmed rational is the same rational
+def qtrim_ok(q: S.Q) -> S.Q.eq(LB.qtrim(q), q):
+  match q:
+    case S.Q{n, +d}:
+      qtrim_ok.z(n, d)
+
+def qtrim.mk_nz(sg: Bool, +p: S.Pos, +d: S.Pos) -> {DR.qnz(LB.qtrim.mk(sg, p, d)) == True{} : Bool}:
+  match sg:
+    case True{}:
+      {==}
+    case False{}:
+      {==}
+
+def qtrim.p_nz(p: S.Pos, d: S.Pos, +sg: Bool) -> {DR.qnz(LB.qtrim.p(p, d, sg)) == True{} : Bool}:
+  match p d:
+    case S.XO{+a} S.XO{+b}:
+      qtrim.p_nz(a, b, sg)
+    case S.XO{+a} S.XH{}:
+      qtrim.mk_nz(sg, S.XO{a}, S.XH{})
+    case S.XO{+a} S.XI{+b}:
+      qtrim.mk_nz(sg, S.XO{a}, S.XI{b})
+    case S.XH{} +d:
+      qtrim.mk_nz(sg, S.XH{}, d)
+    case S.XI{+a} +d:
+      qtrim.mk_nz(sg, S.XI{a}, d)
+
+def qtrim_nz.z(n: S.Z, +d: S.Pos) -> {DR.qnz(LB.qtrim.z(n, d)) == DR.qnz(S.Q{n, d}) : Bool}:
+  match n:
+    case S.Z0{}:
+      {==}
+    case S.Zpos{+p}:
+      qtrim.p_nz(p, d, True{})
+    case S.Zneg{+p}:
+      qtrim.p_nz(p, d, False{})
+
+# trimming keeps a rational's zero test
+def qtrim_nz(q: S.Q) -> {DR.qnz(LB.qtrim(q)) == DR.qnz(q) : Bool}:
+  match q:
+    case S.Q{n, +d}:
+      qtrim_nz.z(n, d)
+
+# enc_gmul and im_gmul with parts equal as rationals
+def enc_gmul_q.at(+p: List<&2, S.Q>, +a2: S.Q, +b2: S.Q, +a: S.Q, +b: S.Q, +z: SK.VE, +t: Nat, ha: S.Q.eq(a2, a), hb: S.Q.eq(b2, b))
+  -> S.Q.eq(E.qeval(p, HS.enc(DR.gmul(DR.Lab{a2, b2}, z), t)), E.qeval(p, PT.pcomb(PT.Pr{a, b}, HS.enc(z, t), HS.enc(DR.imul(z), t)))):
+  LQ.q_trans(E.qeval(p, HS.enc(DR.gmul(DR.Lab{a2, b2}, z), t)), E.qeval(p, PT.pcomb(PT.Pr{a2, b2}, HS.enc(z, t), HS.enc(DR.imul(z), t))), E.qeval(p, PT.pcomb(PT.Pr{a, b}, HS.enc(z, t), HS.enc(DR.imul(z), t))),
+    enc_gmul.at(p, a2, b2, z, t),
+    QA.add_cong(S.Q.mul(a2, E.qeval(p, HS.enc(z, t))), S.Q.mul(a, E.qeval(p, HS.enc(z, t))), S.Q.mul(b2, E.qeval(p, HS.enc(DR.imul(z), t))), S.Q.mul(b, E.qeval(p, HS.enc(DR.imul(z), t))),
+      LQ.q_mul_cong_l(a2, a, E.qeval(p, HS.enc(z, t)), ha), LQ.q_mul_cong_l(b2, b, E.qeval(p, HS.enc(DR.imul(z), t)), hb)))
+
+def enc_gmul_q(+a2: S.Q, +b2: S.Q, +a: S.Q, +b: S.Q, +z: SK.VE, +t: Nat, ha: S.Q.eq(a2, a), hb: S.Q.eq(b2, b))
+  -> SV.Ident(HS.enc(DR.gmul(DR.Lab{a2, b2}, z), t), PT.pcomb(PT.Pr{a, b}, HS.enc(z, t), HS.enc(DR.imul(z), t))):
+  p => enc_gmul_q.at(p, a2, b2, a, b, z, t, ha, hb)
+
 # The label test
 # --------------
 
@@ -176,9 +266,9 @@ def lab_ok.some(p: PT.Pr, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +z: SK
   -> SN.InSpan(HS.enc(DR.gmul(w, z), t), B):
   match p:
     case PT.Pr{+a, +bb}:
-      %lsome_inj(DR.Lab{a, bb}, w, hw) : SN.InSpan(HS.enc(DR.gmul(_, z), t), B)
-      PP.in_tr(PT.pcomb(PT.Pr{a, bb}, HS.enc(z, t), HS.enc(DR.imul(z), t)), HS.enc(DR.gmul(DR.Lab{a, bb}, z), t), B,
-        PP.ptest_ok(rows, B, HS.enc(z, t), HS.enc(DR.imul(z), t), hr, hl, PT.Pr{a, bb}, hm), enc_gmul(a, bb, z, t))
+      %lsome_inj(DR.Lab{LB.qtrim(a), LB.qtrim(bb)}, w, hw) : SN.InSpan(HS.enc(DR.gmul(_, z), t), B)
+      PP.in_tr(PT.pcomb(PT.Pr{a, bb}, HS.enc(z, t), HS.enc(DR.imul(z), t)), HS.enc(DR.gmul(DR.Lab{LB.qtrim(a), LB.qtrim(bb)}, z), t), B,
+        PP.ptest_ok(rows, B, HS.enc(z, t), HS.enc(DR.imul(z), t), hr, hl, PT.Pr{a, bb}, hm), enc_gmul_q(LB.qtrim(a), LB.qtrim(bb), a, bb, z, t, qtrim_ok(a), qtrim_ok(bb)))
 
 def lab_ok.go(m: Maybe<&2, PT.Pr>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +z: SK.VE, +t: Nat, +w: DR.Lab,
   +hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, +hl: {EL.rlen(rows) == SV.neqs(B) : Nat},
@@ -250,15 +340,26 @@ def im_gmul_r.at(+p: List<&2, S.Q>, +a: S.Q, +b: S.Q, +z: SK.VE)
 def im_gmul_r(+a: S.Q, +b: S.Q, +z: SK.VE) -> SV.Ident(PT.pcomb(PT.Pr{a, b}, SK.VE.y(z), SK.VE.x(z)), SK.VE.y(DR.gmul(DR.Lab{a, b}, z))):
   p => im_gmul_r.at(p, a, b, z)
 
+def im_gmul_q.at(+p: List<&2, S.Q>, +a2: S.Q, +b2: S.Q, +a: S.Q, +b: S.Q, +z: SK.VE, ha: S.Q.eq(a2, a), hb: S.Q.eq(b2, b))
+  -> S.Q.eq(E.qeval(p, SK.VE.y(DR.gmul(DR.Lab{a2, b2}, z))), E.qeval(p, PT.pcomb(PT.Pr{a, b}, SK.VE.y(z), SK.VE.x(z)))):
+  LQ.q_trans(E.qeval(p, SK.VE.y(DR.gmul(DR.Lab{a2, b2}, z))), E.qeval(p, PT.pcomb(PT.Pr{a2, b2}, SK.VE.y(z), SK.VE.x(z))), E.qeval(p, PT.pcomb(PT.Pr{a, b}, SK.VE.y(z), SK.VE.x(z))),
+    im_gmul.at(p, a2, b2, z),
+    QA.add_cong(S.Q.mul(a2, E.qeval(p, SK.VE.y(z))), S.Q.mul(a, E.qeval(p, SK.VE.y(z))), S.Q.mul(b2, E.qeval(p, SK.VE.x(z))), S.Q.mul(b, E.qeval(p, SK.VE.x(z))),
+      LQ.q_mul_cong_l(a2, a, E.qeval(p, SK.VE.y(z)), ha), LQ.q_mul_cong_l(b2, b, E.qeval(p, SK.VE.x(z)), hb)))
+
+def im_gmul_q(+a2: S.Q, +b2: S.Q, +a: S.Q, +b: S.Q, +z: SK.VE, ha: S.Q.eq(a2, a), hb: S.Q.eq(b2, b))
+  -> SV.Ident(SK.VE.y(DR.gmul(DR.Lab{a2, b2}, z)), PT.pcomb(PT.Pr{a, b}, SK.VE.y(z), SK.VE.x(z))):
+  p => im_gmul_q.at(p, a2, b2, a, b, z, ha, hb)
+
 def klab_ok.some(p: PT.Pr, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +z: SK.VE, +w: DR.Lab,
   +hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, +hl: {EL.rlen(rows) == SV.neqs(B) : Nat},
   hm: {PT.ptest(rows, B, SK.VE.y(z), SK.VE.x(z)) == Some{p} : Maybe<&2, PT.Pr>}, hw: {Some{LB.lab_of(p)} == Some{w} : Maybe<&2, DR.Lab>})
   -> SN.InSpan(SK.VE.y(DR.gmul(w, z)), B):
   match p:
     case PT.Pr{+a, +bb}:
-      %lsome_inj(DR.Lab{a, bb}, w, hw) : SN.InSpan(SK.VE.y(DR.gmul(_, z)), B)
-      PP.in_tr(PT.pcomb(PT.Pr{a, bb}, SK.VE.y(z), SK.VE.x(z)), SK.VE.y(DR.gmul(DR.Lab{a, bb}, z)), B,
-        PP.ptest_ok(rows, B, SK.VE.y(z), SK.VE.x(z), hr, hl, PT.Pr{a, bb}, hm), im_gmul(a, bb, z))
+      %lsome_inj(DR.Lab{LB.qtrim(a), LB.qtrim(bb)}, w, hw) : SN.InSpan(SK.VE.y(DR.gmul(_, z)), B)
+      PP.in_tr(PT.pcomb(PT.Pr{a, bb}, SK.VE.y(z), SK.VE.x(z)), SK.VE.y(DR.gmul(DR.Lab{LB.qtrim(a), LB.qtrim(bb)}, z)), B,
+        PP.ptest_ok(rows, B, SK.VE.y(z), SK.VE.x(z), hr, hl, PT.Pr{a, bb}, hm), im_gmul_q(LB.qtrim(a), LB.qtrim(bb), a, bb, z, qtrim_ok(a), qtrim_ok(bb)))
 
 def klab_ok.go(m: Maybe<&2, PT.Pr>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +z: SK.VE, +w: DR.Lab,
   +hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, +hl: {EL.rlen(rows) == SV.neqs(B) : Nat},

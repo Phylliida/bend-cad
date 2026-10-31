@@ -158,6 +158,20 @@ def nz_conj(g: DR.Lab, h: Nz(g)) -> Nz(DR.Lab.conj(g)):
 # The pair test's labels
 # ----------------------
 
+def sq_cong(+x: S.Q, +y: S.Q, h1: S.Q.eq(x, y), h2: S.Q.eq(x, y)) -> S.Q.eq(S.Q.mul(x, x), S.Q.mul(y, y)):
+  LQ.q_trans(S.Q.mul(x, x), S.Q.mul(y, x), S.Q.mul(y, y), LQ.q_mul_cong_l(x, y, x, h1), LQ.q_mul_cong_r(y, x, y, h2))
+
+def lnorm_trim.q(+c: S.Q, +s: S.Q) -> S.Q.eq(DC.lnorm(DR.Lab{LB.qtrim(c), LB.qtrim(s)}), DC.lnorm(DR.Lab{c, s})):
+  QA.add_cong(S.Q.mul(LB.qtrim(c), LB.qtrim(c)), S.Q.mul(c, c), S.Q.mul(LB.qtrim(s), LB.qtrim(s)), S.Q.mul(s, s),
+    sq_cong(LB.qtrim(c), c, LP.qtrim_ok(c), LP.qtrim_ok(c)), sq_cong(LB.qtrim(s), s, LP.qtrim_ok(s), LP.qtrim_ok(s)))
+
+# a trimmed label is nonzero when the label is
+def nz_trim(g: DR.Lab, h: Nz(g)) -> Nz(LB.ltrim(g)):
+  match g:
+    case DR.Lab{+c, +s}:
+      Equal.trans(Bool, DR.qnz(DC.lnorm(DR.Lab{LB.qtrim(c), LB.qtrim(s)})), DR.qnz(DC.lnorm(DR.Lab{c, s})), True{},
+        qnz_eq(DC.lnorm(DR.Lab{LB.qtrim(c), LB.qtrim(s)}), DC.lnorm(DR.Lab{c, s}), lnorm_trim.q(c, s)), h)
+
 def nz_c1.n(n: S.Z, +d: S.Pos) -> Nz(DR.Lab{S.Q.neg(S.Q{n, d}), DR.qo()}):
   match n:
     case S.Z0{}:
@@ -181,7 +195,8 @@ def ptnz.second(b: Bool, +rows2: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +u: E.
   match b:
     case True{}:
       nz_at(PT.Pr{S.Q.neg(PT.lastc(DV.dropls(DV.rescb(EL.resid(rows2, v)), DV.resbt(EL.resid(rows2, v)), v, EP.qsnoc(B, u)), B)), DR.qo()}, p, PP.some_inj(PT.Pr{S.Q.neg(PT.lastc(DV.dropls(DV.rescb(EL.resid(rows2, v)), DV.resbt(EL.resid(rows2, v)), v, EP.qsnoc(B, u)), B)), DR.qo()}, p, hm),
-        nz_c1(PT.lastc(DV.dropls(DV.rescb(EL.resid(rows2, v)), DV.resbt(EL.resid(rows2, v)), v, EP.qsnoc(B, u)), B)))
+        nz_trim(DR.Lab{S.Q.neg(PT.lastc(DV.dropls(DV.rescb(EL.resid(rows2, v)), DV.resbt(EL.resid(rows2, v)), v, EP.qsnoc(B, u)), B)), DR.qo()},
+          nz_c1(PT.lastc(DV.dropls(DV.rescb(EL.resid(rows2, v)), DV.resbt(EL.resid(rows2, v)), v, EP.qsnoc(B, u)), B))))
     case False{}:
       absurd(Nz(LB.lab_of(p)), PP.none_some(p, hm))
 
