@@ -1282,6 +1282,16 @@ give both component identities that Valid's SameV asks for.
       byte-identical) would hit, then decide between it and an
       incremental closure. An incremental closure is acceptable only with
       its correctness proven in the most general proper way.
+    - *The single-call items, looked at 2026-10-31:* cz stopping early, and
+      scaling by a constant as a coefficient map, are equal to today's
+      only on reduced polynomials, while dclose_eq is unconditional and
+      elimpf's step_zero/step_keep carry no reducedness; either needs a
+      reducedness invariant threaded through dfastpf's run or through
+      elimpf (a few hundred lines, perhaps 10-15%). Direction lookups
+      (SK.find) come from the spec's DR.concl recomputing nested
+      conclusions when generators are encoded (lh.add, kexprs), so the
+      cache would be of generators' conclusions inside K and the hulls,
+      a representation change (perhaps 5%).
     - The other sketches' time is elsewhere (base's profile: the runtime
       freeing terms, Pos arithmetic, monomial compares; a simplex in the
       refutation decision runs about 213k steps on base).
