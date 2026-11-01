@@ -55,6 +55,7 @@ import ./dconflict.bend as DCF
 import ./dconflictpf.bend as DCP
 import ./dcwpf.bend as DCW
 import ./dpass.bend as DPS
+import ./dpassmpf.bend as DPM
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -127,6 +128,7 @@ def pass2_down(rs: List<&2, SK.Rec>, +sk: SK.Sketch, +i: Nat, +st: PA.PS, +cls: 
 
 # the final classes drop only their own equations
 def classes2_down(+sk: SK.Sketch) -> {CL.downs(SV.owners(sk), DPS.classes2(sk), 0n) == True{} : Bool}:
+  %Equal.sym(List<&2, SV.Class>, DPS.classes2(sk), DPS.pass2(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)), Nil{}), DPM.classes2_eq(sk)) : {CL.downs(SV.owners(sk), _, 0n) == True{} : Bool}
   pass2_down(PA.recs(sk), sk, 0n, PA.start(PA.nvars(sk)), Nil{})
 
 def clsn_pass2(rs: List<&2, SK.Rec>, +sk: SK.Sketch, +i: Nat, +st: PA.PS, +cls: List<&2, SV.Class>) -> {SV.clsn(DPS.pass2(rs, SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st, cls)) == SV.clen(rs) : Nat}:
@@ -623,9 +625,14 @@ def adjb2_of(+sk: SK.Sketch, +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{}
   GM.adjb_dadjs(SK.Sketch.eqs(sk), PA.nvars(sk), (%Equal.sym(Nat, PA.nvars(sk), SO.nvars(sk), PP.nv_eq(sk)) : {D.adjb(ST.adj(SK.Sketch.eqs(sk)), _) == True{} : Bool}
     CV.cov(sk, SO.nvars(sk), cov, hwf)))
 
+# classes2 has a class per constraint
+def clsn_c2(+sk: SK.Sketch) -> {SV.clsn(DPS.classes2(sk)) == SV.clen(PA.recs(sk)) : Nat}:
+  %Equal.sym(List<&2, SV.Class>, DPS.classes2(sk), DPS.pass2(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)), Nil{}), DPM.classes2_eq(sk)) : {SV.clsn(_) == SV.clen(PA.recs(sk)) : Nat}
+  clsn_pass2(PA.recs(sk), sk, 0n, PA.start(PA.nvars(sk)), Nil{})
+
 # the pass with the direction layer is honest (the extended Honest)
 def pass2_honest(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}) -> DH.Honest(sk, DPS.classes2(sk)):
   +hwf = WC.wf_dec_ok(sk, w)
-  (Equal.trans(Nat, SV.clsn(DPS.classes2(sk)), SV.clen(PA.recs(sk)), SV.ncons(sk), clsn_pass2(PA.recs(sk), sk, 0n, PA.start(PA.nvars(sk)), Nil{}), Equal.sym(Nat, SV.ncons(sk), SV.clen(PA.recs(sk)), PP.ncons_recs(sk))),
+  (Equal.trans(Nat, SV.clsn(DPS.classes2(sk)), SV.clen(PA.recs(sk)), SV.ncons(sk), clsn_c2(sk), Equal.sym(Nat, SV.ncons(sk), SV.clen(PA.recs(sk)), PP.ncons_recs(sk))),
     (%Equal.sym(Nat, SV.ncons(sk), SV.clen(PA.recs(sk)), PP.ncons_recs(sk)) : DH.Honest.go(sk, DPS.classes2(sk), _, 0n)
-      hon(PA.recs(sk), sk, 0n, PA.start(PA.nvars(sk)), Nil{}, {==}, {==}, {==}, adjb2_of(sk, cov, hwf), classes2_down(sk), pinv0(sk), hcov_of(sk, cov), hwf)))
+      hon(PA.recs(sk), sk, 0n, PA.start(PA.nvars(sk)), Nil{}, {==}, DPM.classes2_eq(sk), {==}, adjb2_of(sk, cov, hwf), classes2_down(sk), pinv0(sk), hcov_of(sk, cov), hwf)))

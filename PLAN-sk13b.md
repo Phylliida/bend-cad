@@ -1310,6 +1310,47 @@ give both component identities that Valid's SameV asks for.
       agree); dclose with a given C0 under CacheOk equals dclose; the
       pass threading the memo, with a pass-level equality so B4.4/B4.5
       stand. Bound: the kc.of share, 30-40%.
+    - *The memo, as designed 2026-10-31.* The pass keeps M = MK{n, k, C}:
+      K from the facts R = rfacts(sk, kb) of the kept constraints so far
+      (n = their count, k = kinit over R), and C the cache of k's rows
+      for every segment node (not only the open ones, since contexts
+      differ between constraints).
+      - A call reads M through dclose.m, which is dclose with that k and
+        the open nodes' entries looked up in C (kc.get). dclose_m_eq:
+        it returns what dclose returns, given k = kinit(fs) and CInv for
+        fs (so frun_eq applies as in dclose_eq).
+      - Each call's facts extend R as far as derivations can see them:
+        c's refutation call reads rfacts(sk, c : kb) = R ++ rfacts(sk,
+        [c]) (owners sorted, kb below c); an equation's call reads F0 ++
+        (c's earlier equations not dropped), and F0 differs from R only
+        in nd, which no conclusion reads. So M is extended by mext (one
+        ks.add and one kc.add per new fact, the steps dfastpf proves:
+        kc_add_inv) and handed to dclose.m.
+      - The facts: Pre(R, fs), fs agreeing with R on e and ds at every
+        position of R; DB(d, n), every premise of d below n. concl_pre: a
+        derivation's conclusion depends only on the facts it cites. From
+        it, ks.add, kinit, lh.add, lfold, lkhull and CInv carry from R to
+        fs (k's derivations are premises below n: kinit_below), and
+        kinit over R ++ ys is kinit over ys after kinit over R.
+      - After c: if c is kept (its class not red), kb gains c and M
+        becomes the memo of its refutation call (rfacts(sk, kb ++ [c]) =
+        rfacts(sk, c : kb)); otherwise M stays.
+      - Proven statement: pass2m(..., M) = pass2(...) under the memo's
+        invariant, by one2m = one2 (refutable2.m = refutable2, cwalk2.m
+        = cwalk2); classes2 runs pass2m, and classes2_eq lets
+        lib/dpasspf.bend keep its proof (it unfolds classes2 in three
+        places). final2_st likewise. The conflict's support and nd calls
+        keep plain dclose (subsets of kb, and rare).
+      - *Built and proven 2026-10-31.* lib/dmemopf.bend (Pre, DB,
+        concl_pre, the carries, kinit_below/kinit_cat, mext_ok,
+        mext_reuse, dclose_m_eq) and lib/dpassmpf.bend (rfacts_split,
+        facts_pre/facts_len, mstart_ok, cwalk2_m_eq, one2m_eq, one2_kb,
+        pass2m_eq, classes2_eq, final2_st_eq); lib/dpasspf.bend reads
+        classes2 through classes2_eq (three places). Gate PASS, regress
+        PASS. The pass (proto/probe_dpass.bend, instructions): base 4.85 G
+        -> 3.09 G, oncircle-pairs 48.8 G -> 35.3 G, vertical-twice 79.1 G
+        -> 56.9 G, angle-lines 124.6 G -> 124.5 G (its time is in the
+        rounds); every output byte-identical.
     - The other half (the rounds replayed from scratch each call) is what
       an incremental closure would address (Danielle: only with a fully
       general correctness proof).

@@ -1590,3 +1590,47 @@ def dclose(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr
   +cs = sp.of(ctx, SP{Nil{}, Nil{}})
   +oo = oids(segids(es), es, cs)
   frun(fuel, FO{OStep{sk0(es, fs, cs)}, kc.of(snodes(oo), es, fs, t, Sk.k(sk0(es, fs, cs)))}, es, fs, t, cs, oo, segids(es))
+
+# The start, kept across calls
+# ----------------------------
+# A pass calls the closure on facts that extend each other (PLAN-sk13b
+# B4.8): it keeps K from the first n facts and the cache of K's rows for
+# some nodes, extends both by each new fact (as a run extends them by a
+# new generator), and starts a call from them (lib/dmemopf.bend:
+# dclose_m_eq, the call returns what dclose returns).
+
+type MK is Data:
+  MK{n: Nat, k: KS.KS, C: List<&2, KC>}
+
+# K and its cache for no facts, with an entry for every segment
+def mk0(+es: List<&2, SK.Ent>, +t: Nat) -> MK:
+  MK{0n, KS.ks0(), kc.of(snodes(segids(es)), es, Nil{}, t, KS.ks0())}
+
+# the facts ys, at positions n, n+1, ... of fs, given to K = k and its cache C
+def mext(ys: List<&2, DR.Fact>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +n: Nat, +k: KS.KS, +C: List<&2, KC>) -> MK:
+  match ys:
+    case Nil{}:
+      MK{n, k, C}
+    case Con{y, tl}:
+      mext(tl, es, fs, t, 1n+n, KS.ks.add(es, fs, k, DR.DPrem{n}), kc.add(C, DR.DPrem{n}, es, fs, t, k))
+
+def mext.m(+ys: List<&2, DR.Fact>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, m: MK) -> MK:
+  match m:
+    case MK{+n, +k, +C}:
+      mext(ys, es, fs, t, n, k, C)
+
+# the nodes ns, each with its entry from C
+def kc.sel(ns: List<&2, DR.Node>, +C: List<&2, KC>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +k: KS.KS) -> List<&2, KC>:
+  match ns:
+    case Nil{}:
+      Nil{}
+    case Con{+n, tl}:
+      Con{KC{n, kc.get(C, n, es, fs, t, k)}, kc.sel(tl, C, es, fs, t, k)}
+
+# dclose, from the start m (K and its cache for the facts fs)
+def dclose.m(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat, m: MK) -> Out:
+  match m:
+    case MK{n, +k, +C}:
+      +cs = sp.of(ctx, SP{Nil{}, Nil{}})
+      +oo = oids(segids(es), es, cs)
+      frun(fuel, FO{OStep{Sk{k, minit(Con{DR.NFrame{}, snodes(segids(es))}, es, cs), Nil{}}}, kc.sel(snodes(oo), C, es, fs, t, k)}, es, fs, t, cs, oo, segids(es))
