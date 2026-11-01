@@ -9,7 +9,8 @@
 # The proof follows lib/cwpf.bend (whose invariant CWInv it reuses):
 # - the closure's decision is exact (dd_ok): a derivation it returns is
 #   valid and proves the equation, and when it returns none there is none
-#   (lib/dcholdpf, lib/dcexplpf, lib/dcdecpf, termination);
+#   (lib/dcholdpf, lib/dcexplpf, lib/dcdecpf), from any outcome with
+#   Ex (lib/dcexpf.bend: the closure from sk0 has it, by termination);
 # - the facts the walk reads at k are the spec's dfacts with the final
 #   drops (fk_eq: the drops agree before k, and ofacts reads them only
 #   there), so the decision is DirDerivable or NotDirDerivable;
@@ -53,6 +54,7 @@ import ./dcreprpf.bend as RR
 import ./dcholdpf.bend as HLD
 import ./dcexplpf.bend as EXP
 import ./dcdecpf.bend as DEC
+import ./dcexpf.bend as CX
 import ./drefpf.bend as DRF
 import ./dconflict.bend as DCF
 import ./dbridgepf.bend as BRG
@@ -82,22 +84,18 @@ def dd.h(b: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, 
     case False{}:
       dv => hv => hp => DEC.dec_none(es, fs, ctx, t, s, H, e, m, eb, dv, hv, hp)
 
-# the decision of a run with enough fuel is exact
-def dd_ok(o: DC.Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +e: E.QExpr, +m: Maybe<&2, DR.DStat>, +eo: {DC.dclose(es, fs, ctx, t, DC.dfuel(es, fs)) == o : DC.Out},
-  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}, +hbm: {DC.fb.ds(m, t) == True{} : Bool}) -> DDec(es, fs, ctx, e, m, DPS.ddec.o(o, es, fs, t, e, m)):
+# the decision from any outcome with Ex (lib/dcexpf.bend) is exact
+def dd_ok(o: DC.Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +e: E.QExpr, +m: Maybe<&2, DR.DStat>, hx: CX.Ex(es, fs, ctx, t, o),
+  +hbm: {DC.fb.ds(m, t) == True{} : Bool}) -> DDec(es, fs, ctx, e, m, DPS.ddec.o(o, es, fs, t, e, m)):
   match o:
     case DC.OStep{+s}:
-      absurd(DDec(es, fs, ctx, e, m, None{}), TRM.dclose_nostep(es, fs, ctx, t, s, eo, hz, hb))
+      absurd(DDec(es, fs, ctx, e, m, None{}), hx)
     case DC.OFix{+s}:
-      dd.h(DC.holds(es, fs, t, s, e, m), es, fs, ctx, t, s, e, m, {==}, DRF.hyp_of(es, fs, ctx, t, DC.dfuel(es, fs), s, eo, hz, hb), hbm)
+      dd.h(DC.holds(es, fs, t, s, e, m), es, fs, ctx, t, s, e, m, {==}, hx, hbm)
     case DC.OOne{+d}:
-      EXP.expl_ok(DC.OOne{d}, es, fs, ctx, t, m, e,
-        (%eo : DRP.OutInv(es, fs, ctx, t, _)
-          DRP.dclose_ok(es, fs, ctx, t, DC.dfuel(es, fs), hz, hb)), {==})
+      EXP.expl_ok(DC.OOne{d}, es, fs, ctx, t, m, e, hx, {==})
     case DC.OVoid{+g, +dr, +di}:
-      EXP.expl_ok(DC.OVoid{g, dr, di}, es, fs, ctx, t, m, e,
-        (%eo : DRP.OutInv(es, fs, ctx, t, _)
-          DRP.dclose_ok(es, fs, ctx, t, DC.dfuel(es, fs), hz, hb)), {==})
+      EXP.expl_ok(DC.OVoid{g, dr, di}, es, fs, ctx, t, m, e, hx, {==})
 
 # The facts' bound
 # ----------------
@@ -159,7 +157,7 @@ def fk_eq(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: List<&2, Nat>, +c: Nat, 
 # ------------------------------------------------
 
 def ddk(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: List<&2, Nat>, +c: Nat, +dF: List<&2, Nat>, +k: Nat, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}) -> DDec(SV.ents(sk), SV.dfacts(sk, cls, R, c, dF, k), SV.ctx(sk, R, c), SV.eqat(SK.Sketch.eqs(sk), k), DPS.cstat(sk, c), DPS.ddec(sk, SV.dfacts(sk, cls, R, c, dF, k), SV.ctx(sk, R, c), SV.eqat(SK.Sketch.eqs(sk), k), DPS.cstat(sk, c))):
-  dd_ok(DCF.dcl(sk, SV.dfacts(sk, cls, R, c, dF, k), SV.ctx(sk, R, c)), SV.ents(sk), SV.dfacts(sk, cls, R, c, dF, k), SV.ctx(sk, R, c), DCF.tv(sk), SV.eqat(SK.Sketch.eqs(sk), k), DPS.cstat(sk, c), {==}, BRG.zb_tv(sk, hcov), fb_df(sk, cls, R, c, dF, k, hcov, hwf), BRG.fbds_of(SV.kind_at(sk, c), SV.ents(sk), DCF.tv(sk), BRG.zb_tv(sk, hcov)))
+  dd_ok(DCF.dcl(sk, SV.dfacts(sk, cls, R, c, dF, k), SV.ctx(sk, R, c)), SV.ents(sk), SV.dfacts(sk, cls, R, c, dF, k), SV.ctx(sk, R, c), DCF.tv(sk), SV.eqat(SK.Sketch.eqs(sk), k), DPS.cstat(sk, c), CX.dclose_ex(SV.ents(sk), SV.dfacts(sk, cls, R, c, dF, k), SV.ctx(sk, R, c), DCF.tv(sk), BRG.zb_tv(sk, hcov), fb_df(sk, cls, R, c, dF, k, hcov, hwf)), BRG.fbds_of(SV.kind_at(sk, c), SV.ents(sk), DCF.tv(sk), BRG.zb_tv(sk, hcov)))
 
 
 def ddtr(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: List<&2, Nat>, +c: Nat, +F0: List<&2, DR.Fact>, +cx: List<&2, E.QExpr>, +hF0: {F0 == SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, R, c), sk, cls, True{}, 0n) : List<&2, DR.Fact>}, +hcx: {cx == SV.ctx(sk, R, c) : List<&2, E.QExpr>}, +ds: List<&2, SV.Drop>, +k: Nat, +e: E.QExpr, +dF: List<&2, Nat>, +he: {SV.eqat(SK.Sketch.eqs(sk), k) == e : E.QExpr}, +xr: CW.XRel(dF, SV.drops(ds), k), +mm: Maybe<&2, DR.Der>, h: {DPS.ddec(sk, DPS.fk(sk, c, F0, ds, k), cx, e, DPS.cstat(sk, c)) == mm : Maybe<&2, DR.Der>}) -> {DPS.ddec(sk, SV.dfacts(sk, cls, R, c, dF, k), SV.ctx(sk, R, c), SV.eqat(SK.Sketch.eqs(sk), k), DPS.cstat(sk, c)) == mm : Maybe<&2, DR.Der>}:

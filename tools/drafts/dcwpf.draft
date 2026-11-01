@@ -9,7 +9,8 @@
 # The proof follows lib/cwpf.bend (whose invariant CWInv it reuses):
 # - the closure's decision is exact (dd_ok): a derivation it returns is
 #   valid and proves the equation, and when it returns none there is none
-#   (lib/dcholdpf, lib/dcexplpf, lib/dcdecpf, termination);
+#   (lib/dcholdpf, lib/dcexplpf, lib/dcdecpf), from any outcome with
+#   Ex (lib/dcexpf.bend: the closure from sk0 has it, by termination);
 # - the facts the walk reads at k are the spec's dfacts with the final
 #   drops (fk_eq: the drops agree before k, and ofacts reads them only
 #   there), so the decision is DirDerivable or NotDirDerivable;
@@ -53,6 +54,7 @@ import ./dcreprpf.bend as RR
 import ./dcholdpf.bend as HLD
 import ./dcexplpf.bend as EXP
 import ./dcdecpf.bend as DEC
+import ./dcexpf.bend as CX
 import ./drefpf.bend as DRF
 import ./dconflict.bend as DCF
 import ./dbridgepf.bend as BRG
@@ -109,22 +111,18 @@ def dd.h(b: Bool, +es: List<&2, SK.Ent>, +fs: $FL, +ctx: $QL, +t: Nat, +s: DC.Sk
     case False{}:
       dv => hv => hp => DEC.dec_none(es, fs, ctx, t, s, H, e, m, eb, dv, hv, hp)
 
-# the decision of a run with enough fuel is exact
-def dd_ok(o: DC.Out, +es: List<&2, SK.Ent>, +fs: $FL, +ctx: $QL, +t: Nat, +e: E.QExpr, +m: Maybe<&2, DR.DStat>, +eo: {DC.dclose(es, fs, ctx, t, DC.dfuel(es, fs)) == o : DC.Out},
-  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}, +hbm: {DC.fb.ds(m, t) == True{} : Bool}) -> DDec(es, fs, ctx, e, m, DPS.ddec.o(o, es, fs, t, e, m)):
+# the decision from any outcome with Ex (lib/dcexpf.bend) is exact
+def dd_ok(o: DC.Out, +es: List<&2, SK.Ent>, +fs: $FL, +ctx: $QL, +t: Nat, +e: E.QExpr, +m: Maybe<&2, DR.DStat>, hx: CX.Ex(es, fs, ctx, t, o),
+  +hbm: {DC.fb.ds(m, t) == True{} : Bool}) -> DDec(es, fs, ctx, e, m, DPS.ddec.o(o, es, fs, t, e, m)):
   match o:
     case DC.OStep{+s}:
-      absurd(DDec(es, fs, ctx, e, m, None{}), TRM.dclose_nostep(es, fs, ctx, t, s, eo, hz, hb))
+      absurd(DDec(es, fs, ctx, e, m, None{}), hx)
     case DC.OFix{+s}:
-      dd.h(DC.holds(es, fs, t, s, e, m), es, fs, ctx, t, s, e, m, {==}, DRF.hyp_of(es, fs, ctx, t, DC.dfuel(es, fs), s, eo, hz, hb), hbm)
+      dd.h(DC.holds(es, fs, t, s, e, m), es, fs, ctx, t, s, e, m, {==}, hx, hbm)
     case DC.OOne{+d}:
-      EXP.expl_ok(DC.OOne{d}, es, fs, ctx, t, m, e,
-        (%eo : DRP.OutInv(es, fs, ctx, t, _)
-          DRP.dclose_ok(es, fs, ctx, t, DC.dfuel(es, fs), hz, hb)), {==})
+      EXP.expl_ok(DC.OOne{d}, es, fs, ctx, t, m, e, hx, {==})
     case DC.OVoid{+g, +dr, +di}:
-      EXP.expl_ok(DC.OVoid{g, dr, di}, es, fs, ctx, t, m, e,
-        (%eo : DRP.OutInv(es, fs, ctx, t, _)
-          DRP.dclose_ok(es, fs, ctx, t, DC.dfuel(es, fs), hz, hb)), {==})
+      EXP.expl_ok(DC.OVoid{g, dr, di}, es, fs, ctx, t, m, e, hx, {==})
 
 # The facts' bound
 # ----------------
@@ -187,7 +185,7 @@ def fk_eq(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: $NL, +c: Nat, +F0: $FL, 
 # ------------------------------------------------
 
 def ddk(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: $NL, +c: Nat, +dF: $NL, +k: Nat, $HC) -> DDec($ENT, $DFK, $CTX, $EQK, $M, DPS.ddec(sk, $DFK, $CTX, $EQK, $M)):
-  dd_ok(DCF.dcl(sk, $DFK, $CTX), $ENT, $DFK, $CTX, $TV, $EQK, $M, {==}, BRG.zb_tv(sk, hcov), fb_df(sk, cls, R, c, dF, k, $HA), BRG.fbds_of(SV.kind_at(sk, c), $ENT, $TV, BRG.zb_tv(sk, hcov)))
+  dd_ok(DCF.dcl(sk, $DFK, $CTX), $ENT, $DFK, $CTX, $TV, $EQK, $M, CX.dclose_ex($ENT, $DFK, $CTX, $TV, BRG.zb_tv(sk, hcov), fb_df(sk, cls, R, c, dF, k, $HA)), BRG.fbds_of(SV.kind_at(sk, c), $ENT, $TV, BRG.zb_tv(sk, hcov)))
 
 @MACRO KP +sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: $NL, +c: Nat, $WP, +ds: List<&2, SV.Drop>, +k: Nat, +e: E.QExpr, +dF: $NL, +he: {$EQK == e : E.QExpr}, +xr: CW.XRel(dF, $DS, k)
 @MACRO KA sk, cls, R, c, $WAA, ds, k, e, dF, he, xr

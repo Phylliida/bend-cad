@@ -2,8 +2,9 @@
 # gives a conflict (PLAN-sk13b B4.3). Proofs only.
 # - The closure's direction refutation is exact (dsome, dnone): a found
 #   one is a RefOk (lib/drefpf.bend dref_sound, lib/dbridgepf.bend); none
-#   found means none exists, since with DC.dfuel the closure ends at a
-#   fixpoint (lib/dctermpf.bend) where dref_complete applies.
+#   found means none exists, from any outcome with Ex (lib/dcexpf.bend:
+#   a fixpoint with the closure's hypotheses, where dref_complete
+#   applies; the closure from sk0 with DC.dfuel has it).
 # - The filter (lib/dconflict.bend filt2) keeps a support that still
 #   refutes, and each member it keeps is needed: when it was tested, c with
 #   the kept and untested candidates but it had no refutation of either
@@ -36,6 +37,7 @@ import ./pass.bend as PA
 import ./dclose.bend as DC
 import ./dcroundpf.bend as DRP
 import ./dctermpf.bend as TRM
+import ./dcexpf.bend as CX
 import ./dref.bend as DF
 import ./drefpf.bend as DRF
 import ./dmappf.bend as DMP
@@ -49,20 +51,24 @@ def absurd(-A: Type, x: Empty) -> A:
 # The closure's refutation, exact
 # -------------------------------
 
-# a direction refutation the closure finds is one
-def dsome(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, +r: DR.DRef, e: {DCF.dirref(sk, c, cs, cx) == Some{r} : Maybe<&2, DR.DRef>}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}) -> SV.RefOk(sk, c, cs, cx, r):
+# a direction refutation found in an outcome that keeps the invariant is one
+def dsome_o(o: DC.Out, +sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, +r: DR.DRef, hi: DRP.OutInv(SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), o), e: {DF.dref(o, SV.ents(sk), SV.rfacts(sk, Con{c, cs}), CO.supp.ss(sk, c, cs), DCF.angl(sk, Con{c, cs})) == Some{r} : Maybe<&2, DR.DRef>}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}) -> SV.RefOk(sk, c, cs, cx, r):
   BRG.lref_of(r, sk, c, cs, cx,
     (%e : DRF.OptR(SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, CO.supp.ss(sk, c, cs), DCF.angl(sk, Con{c, cs}), _)
-      DRF.dref_sound(DCF.dcl(sk, SV.rfacts(sk, Con{c, cs}), cx), SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), CO.supp.ss(sk, c, cs), DCF.angl(sk, Con{c, cs}),
-        DRP.dclose_ok(SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), DC.dfuel(SV.ents(sk), SV.rfacts(sk, Con{c, cs})), BRG.zb_tv(sk, hcov), BRG.fb_rf(sk, Con{c, cs}, hcov, hwf)))))
+      DRF.dref_sound(o, SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), CO.supp.ss(sk, c, cs), DCF.angl(sk, Con{c, cs}), hi)))
 
-def dn.o(o: DC.Out, +sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, +eo: {DCF.dcl(sk, SV.rfacts(sk, Con{c, cs}), cx) == o : DC.Out},
+# a direction refutation the closure finds is one
+def dsome(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, +r: DR.DRef, e: {DCF.dirref(sk, c, cs, cx) == Some{r} : Maybe<&2, DR.DRef>}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}) -> SV.RefOk(sk, c, cs, cx, r):
+  dsome_o(DCF.dcl(sk, SV.rfacts(sk, Con{c, cs}), cx), sk, c, cs, cx, r, DRP.dclose_ok(SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), DC.dfuel(SV.ents(sk), SV.rfacts(sk, Con{c, cs})), BRG.zb_tv(sk, hcov), BRG.fb_rf(sk, Con{c, cs}, hcov, hwf)), e, hcov, hwf)
+
+# none found in an outcome with Ex (lib/dcexpf.bend) means none exists
+def dn.o(o: DC.Out, +sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, hx: CX.Ex(SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), o),
   e: {DF.dref(o, SV.ents(sk), SV.rfacts(sk, Con{c, cs}), CO.supp.ss(sk, c, cs), DCF.angl(sk, Con{c, cs})) == None{} : Maybe<&2, DR.DRef>}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}) -> SV.NoDirRef(sk, c, cs, cx):
   match o:
     case DC.OStep{+s}:
-      absurd(SV.NoDirRef(sk, c, cs, cx), TRM.dclose_nostep(SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), s, eo, BRG.zb_tv(sk, hcov), BRG.fb_rf(sk, Con{c, cs}, hcov, hwf)))
+      absurd(SV.NoDirRef(sk, c, cs, cx), hx)
     case DC.OFix{+s}:
-      BRG.nodir_of(sk, c, cs, cx, DRF.dref_complete(SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), DC.dfuel(SV.ents(sk), SV.rfacts(sk, Con{c, cs})), s, CO.supp.ss(sk, c, cs), DCF.angl(sk, Con{c, cs}), eo, BRG.zb_tv(sk, hcov), BRG.fb_rf(sk, Con{c, cs}, hcov, hwf), e))
+      BRG.nodir_of(sk, c, cs, cx, DRF.dref_complete(SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), s, CO.supp.ss(sk, c, cs), DCF.angl(sk, Con{c, cs}), hx, e))
     case DC.OOne{+d}:
       absurd(SV.NoDirRef(sk, c, cs, cx), DRF.dis_some(DR.RMotz{Con{d, Nil{}}, Con{DF.qm1(), Nil{}}, DF.zq(CO.supp.ss(sk, c, cs)), DF.qm1()}, e))
     case DC.OVoid{+g, +dr, +di}:
@@ -70,7 +76,7 @@ def dn.o(o: DC.Out, +sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E
 
 # none found means none exists
 def dnone(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, e: {DCF.dirref(sk, c, cs, cx) == None{} : Maybe<&2, DR.DRef>}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}) -> SV.NoDirRef(sk, c, cs, cx):
-  dn.o(DCF.dcl(sk, SV.rfacts(sk, Con{c, cs}), cx), sk, c, cs, cx, {==}, e, hcov, hwf)
+  dn.o(DCF.dcl(sk, SV.rfacts(sk, Con{c, cs}), cx), sk, c, cs, cx, CX.dclose_ex(SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), BRG.zb_tv(sk, hcov), BRG.fb_rf(sk, Con{c, cs}, hcov, hwf)), e, hcov, hwf)
 
 def none_of(m: Maybe<&2, DR.DRef>, h: {DCF.issome(m) == False{} : Bool}) -> {m == None{} : Maybe<&2, DR.DRef>}:
   match m:

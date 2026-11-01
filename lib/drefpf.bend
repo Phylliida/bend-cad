@@ -286,11 +286,10 @@ def kri_s(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>
   ST.kri(es, fs, ctx, t, DC.Sk.k(s), RR.h.k(es, fs, ctx, t, s, H))
 
 # a valid K derivation of something the same as x puts x in K, at a fixpoint
-def der_k(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat, +s: DC.Sk, eo: {DC.dclose(es, fs, ctx, t, fuel) == DC.OFix{s} : DC.Out},
-  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}, +H: RR.Hyp(es, fs, ctx, t, s), +d: DR.Der, hv: DR.Valid(es, fs, ctx, d), hk: DR.IsK(DR.concl(es, fs, d)), +x: E.QExpr,
+def der_k(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +d: DR.Der, hv: DR.Valid(es, fs, ctx, d), hk: DR.IsK(DR.concl(es, fs, d)), +x: E.QExpr,
   hs: DR.Same(DR.Jd.e(DR.concl(es, fs, d)), x)) -> {KS.ks.inb(DC.Sk.k(s), x) == True{} : Bool}:
   inb_tr(DC.Sk.k(s), es, fs, DR.Jd.e(DR.concl(es, fs, d)), x, kri_s(es, fs, ctx, t, s, H),
-    repr_k(DR.concl(es, fs, d), es, fs, t, s, hk, CCF.dclose_closed(es, fs, ctx, t, fuel, s, eo, hz, hb, d, hv)), hs)
+    repr_k(DR.concl(es, fs, d), es, fs, t, s, hk, CCF.closed(d, es, fs, ctx, t, s, H, hv)), hs)
 
 def iso_of.go(b: Bool, +es: List<&2, SK.Ent>, +ctx: List<&2, E.QExpr>, +sg: Nat, eb: {b == DC.coll(es, OP.cspan(ctx), sg) : Bool}, ho: DR.Open(es, ctx, DR.NSeg{sg}))
   -> {SV.bnot(b) == True{} : Bool}:
@@ -333,24 +332,22 @@ def nm_of.m(mm: Maybe<&2, DC.Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>
     case Some{+m}:
       nm_of.go(es, fs, ctx, t, s, H, sg, m, SH.mem_of_in(DC.Sk.ms(s), DR.NSeg{sg}, m, em))
 
-def rcoll_c.go(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +fuel: Nat, +s: DC.Sk, +eo: {DC.dclose(es, fs, ctx, t, fuel) == DC.OFix{s} : DC.Out},
-  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}, +H: RR.Hyp(es, fs, ctx, t, s), +dr: DR.Der, +di: DR.Der, +sg: Nat,
+def rcoll_c.go(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +dr: DR.Der, +di: DR.Der, +sg: Nat,
   vr: DR.Valid(es, fs, ctx, dr), vi: DR.Valid(es, fs, ctx, di), kr: DR.IsK(DR.concl(es, fs, dr)), ki: DR.IsK(DR.concl(es, fs, di)),
   sr: DR.Same(DR.Jd.e(DR.concl(es, fs, dr)), SK.VE.x(DR.zseg(es, sg))), si: DR.Same(DR.Jd.e(DR.concl(es, fs, di)), SK.VE.y(DR.zseg(es, sg))),
   +hop: {DC.isopen(es, OP.cspan(ctx), DR.NSeg{sg}) == True{} : Bool}) -> Empty:
-  RR.void.node(DR.NSeg{sg}, es, fs, ctx, t, s, H, der_k(es, fs, ctx, t, fuel, s, eo, hz, hb, H, dr, vr, kr, SK.VE.x(DR.zseg(es, sg)), sr),
-    der_k(es, fs, ctx, t, fuel, s, eo, hz, hb, H, di, vi, ki, SK.VE.y(DR.zseg(es, sg)), si), hop, nm_of.m(DC.mem_of(DC.Sk.ms(s), DR.NSeg{sg}), es, fs, ctx, t, s, H, sg, {==}, hop))
+  RR.void.node(DR.NSeg{sg}, es, fs, ctx, t, s, H, der_k(es, fs, ctx, t, s, H, dr, vr, kr, SK.VE.x(DR.zseg(es, sg)), sr),
+    der_k(es, fs, ctx, t, s, H, di, vi, ki, SK.VE.y(DR.zseg(es, sg)), si), hop, nm_of.m(DC.mem_of(DC.Sk.ms(s), DR.NSeg{sg}), es, fs, ctx, t, s, H, sg, {==}, hop))
 
 # no open segment has its direction in K at a fixpoint
-def rcoll_c(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +fuel: Nat, +s: DC.Sk, +eo: {DC.dclose(es, fs, ctx, t, fuel) == DC.OFix{s} : DC.Out},
-  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}, +dr: DR.Der, +di: DR.Der, +sg: Nat, h: DR.RefColl(es, fs, ctx, dr, di, sg)) -> Empty:
+def rcoll_c(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +dr: DR.Der, +di: DR.Der, +sg: Nat, h: DR.RefColl(es, fs, ctx, dr, di, sg)) -> Empty:
   (vr, r1) = h
   (vi, r2) = r1
   (kr, r3) = r2
   (ki, r4) = r3
   (sr, r5) = r4
   (si, ho) = r5
-  rcoll_c.go(es, fs, ctx, t, fuel, s, eo, hz, hb, (FX.fix_at(es, fs, ctx, t, fuel, s, eo, hz, hb), (hz, hb)), dr, di, sg, vr, vi, kr, ki, sr, si, iso_of(es, ctx, sg, ho))
+  rcoll_c.go(es, fs, ctx, t, s, H, dr, di, sg, vr, vi, kr, ki, sr, si, iso_of(es, ctx, sg, ho))
 
 # An Angle on a segment collapsed in K
 # ------------------------------------
@@ -429,8 +426,7 @@ def angs_found(as: List<&2, DF.Ang>, n: Nat, +p: Nat, +kc: SK.Constraint, fst: B
     case Con{DF.Ang{+p0, +k0}, +t} 1n+m:
       angs_found(t, m, p, kc, fst, s, es, fs, k, en, es0, hf, angs_tl(p0, k0, t, es, fs, k, h))
 
-def rangle.m(mm: Maybe<&2, Nat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +fuel: Nat, +s: DC.Sk, +eo: {DC.dclose(es, fs, ctx, t, fuel) == DC.OFix{s} : DC.Out},
-  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}, +as: List<&2, DF.Ang>, +n: Nat, +p: Nat, +kc: SK.Constraint, +fst: Bool, +dr: DR.Der, +di: DR.Der,
+def rangle.m(mm: Maybe<&2, Nat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +as: List<&2, DF.Ang>, +n: Nat, +p: Nat, +kc: SK.Constraint, +fst: Bool, +dr: DR.Der, +di: DR.Der,
   en: {aat(as, n) == Some{DF.Ang{p, kc}} : Maybe<&2, DF.Ang>}, em: {DR.angle_seg(kc, fst) == mm : Maybe<&2, Nat>},
   vr: DR.Valid(es, fs, ctx, dr), vi: DR.Valid(es, fs, ctx, di), kr: DR.IsK(DR.concl(es, fs, dr)), ki: DR.IsK(DR.concl(es, fs, di)), hc: DR.AngleColl(es, fs, dr, di, mm),
   hna: {DF.angs(as, es, fs, DC.Sk.k(s)) == None{} : Maybe<&2, DR.DRef>}) -> Empty:
@@ -439,14 +435,12 @@ def rangle.m(mm: Maybe<&2, Nat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, 
       hc
     case Some{+sg}:
       (sr, si) = hc
-      +H = hyp_of(es, fs, ctx, t, fuel, s, eo, hz, hb)
       angs_found(as, n, p, kc, fst, sg, es, fs, DC.Sk.k(s), en, em,
         LP2.band_i(KS.ks.inb(DC.Sk.k(s), SK.VE.x(DR.zseg(es, sg))), KS.ks.inb(DC.Sk.k(s), SK.VE.y(DR.zseg(es, sg))),
-          der_k(es, fs, ctx, t, fuel, s, eo, hz, hb, H, dr, vr, kr, SK.VE.x(DR.zseg(es, sg)), sr), der_k(es, fs, ctx, t, fuel, s, eo, hz, hb, H, di, vi, ki, SK.VE.y(DR.zseg(es, sg)), si)),
+          der_k(es, fs, ctx, t, s, H, dr, vr, kr, SK.VE.x(DR.zseg(es, sg)), sr), der_k(es, fs, ctx, t, s, H, di, vi, ki, SK.VE.y(DR.zseg(es, sg)), si)),
         hna)
 
-def rangle_c(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +fuel: Nat, +s: DC.Sk, +eo: {DC.dclose(es, fs, ctx, t, fuel) == DC.OFix{s} : DC.Out},
-  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}, +as: List<&2, DF.Ang>, +dr: DR.Der, +di: DR.Der, +p: Nat, +fst: Bool, h: AngOk(es, fs, ctx, as, dr, di, p, fst),
+def rangle_c(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +as: List<&2, DF.Ang>, +dr: DR.Der, +di: DR.Der, +p: Nat, +fst: Bool, h: AngOk(es, fs, ctx, as, dr, di, p, fst),
   hna: {DF.angs(as, es, fs, DC.Sk.k(s)) == None{} : Maybe<&2, DR.DRef>}) -> Empty:
   (+kc, r1) = h
   (hin, hra) = r1
@@ -455,7 +449,7 @@ def rangle_c(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QEx
   (vi, r3) = r2
   (kr, r4) = r3
   (ki, hc) = r4
-  rangle.m(DR.angle_seg(kc, fst), es, fs, ctx, t, fuel, s, eo, hz, hb, as, n, p, kc, fst, dr, di, en, {==}, vr, vi, kr, ki, hc, hna)
+  rangle.m(DR.angle_seg(kc, fst), es, fs, ctx, t, s, H, as, n, p, kc, fst, dr, di, en, {==}, vr, vi, kr, ki, hc, hna)
 
 # A Motzkin refutation over derivable K facts
 # -------------------------------------------
@@ -497,8 +491,7 @@ def ri_rv(+B: List<&2, E.QExpr>, +rows: List<&2, EL.Row>, h: ST.RI(B, rows)) -> 
   (a, b) = h
   a
 
-def motz_in(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +fuel: Nat, +s: DC.Sk, +eo: {DC.dclose(es, fs, ctx, t, fuel) == DC.OFix{s} : DC.Out},
-  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}, +hri: ST.RI(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), KS.ks.rows(DC.Sk.k(s))), hv: DR.AllValidK(es, fs, ctx, ds))
+def motz_in(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +hri: ST.RI(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), KS.ks.rows(DC.Sk.k(s))), hv: DR.AllValidK(es, fs, ctx, ds))
   -> KL.AllIn(DR.dconcls(es, fs, ds), KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s)))):
   match ds:
     case Nil{}:
@@ -507,8 +500,8 @@ def motz_in(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>,
       (vd, r1) = hv
       (kd, rt) = r1
       (SN.in_of_zero(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), KS.ks.rows(DC.Sk.k(s)), DR.Jd.e(DR.concl(es, fs, d)), ri_rv(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), KS.ks.rows(DC.Sk.k(s)), hri),
-         repr_k(DR.concl(es, fs, d), es, fs, t, s, kd, CCF.dclose_closed(es, fs, ctx, t, fuel, s, eo, hz, hb, d, vd))),
-       motz_in(tl, es, fs, ctx, t, fuel, s, eo, hz, hb, hri, rt))
+         repr_k(DR.concl(es, fs, d), es, fs, t, s, kd, CCF.closed(d, es, fs, ctx, t, s, H, vd))),
+       motz_in(tl, es, fs, ctx, t, s, H, hri, rt))
 
 def refok_tr(+ls: List<&2, S.Q>, +ls2: List<&2, S.Q>, +ms: List<&2, S.Q>, +k: S.Q, +D: List<&2, E.QExpr>, +B: List<&2, E.QExpr>, +ss: List<&2, SK.Side>,
   h: {SV.refok(ls, ms, k, D, ss) == True{} : Bool}, hl: {SV.eq(SV.qlen(ls2), SV.neqs(B)) == True{} : Bool}) -> {SV.refok(ls2, ms, k, B, ss) == True{} : Bool}:
@@ -531,12 +524,11 @@ def motz_c.go(+ls: List<&2, S.Q>, +ms: List<&2, S.Q>, +k: S.Q, +D: List<&2, E.QE
   hnr(qpad(B, ls2), ms, k, (refok_tr(ls, qpad(B, ls2), ms, k, D, B, ss, hok, qpad_len(B, ls2)), p => motz_id.at(p, ls, ls2, ms, k, D, B, ss, q, hi)))
 
 # a Motzkin refutation over derivable K facts is one over K's generators
-def motz_c(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +fuel: Nat, +s: DC.Sk, +eo: {DC.dclose(es, fs, ctx, t, fuel) == DC.OFix{s} : DC.Out},
-  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}, +ss: List<&2, SK.Side>, +ds: List<&2, DR.Der>, +ls: List<&2, S.Q>, +ms: List<&2, S.Q>, +k: S.Q,
+def motz_c(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +H: RR.Hyp(es, fs, ctx, t, s), +ss: List<&2, SK.Side>, +ds: List<&2, DR.Der>, +ls: List<&2, S.Q>, +ms: List<&2, S.Q>, +k: S.Q,
   hv: DR.AllValidK(es, fs, ctx, ds), hr: SV.Refutes0(DR.dconcls(es, fs, ds), ss, ls, ms, k), hnr: SAT.NoRef(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), ss)) -> Empty:
   (hok, hi) = hr
   +hin = CP.in_lin_sub(ls, DR.dconcls(es, fs, ds), KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))),
-    motz_in(ds, es, fs, ctx, t, fuel, s, eo, hz, hb, kri_s(es, fs, ctx, t, s, (FX.fix_at(es, fs, ctx, t, fuel, s, eo, hz, hb), (hz, hb))), hv))
+    motz_in(ds, es, fs, ctx, t, s, H, kri_s(es, fs, ctx, t, s, H), hv))
   motz_c.go(ls, ms, k, DR.dconcls(es, fs, ds), KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), ss,
     SN.in_ls(SV.lin(ls, DR.dconcls(es, fs, ds)), KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), hin), SN.in_qz(SV.lin(ls, DR.dconcls(es, fs, ds)), KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), hin), hok, hi, hnr)
 
@@ -546,32 +538,33 @@ def motz_c(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr
 def NoLRef(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +ss: List<&2, SK.Side>, +as: List<&2, DF.Ang>) -> Type:
   @r: DR.DRef -> LRefOk(es, fs, ctx, ss, as, r) -> Empty
 
-def dcomp.r(r: DR.DRef, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +fuel: Nat, +s: DC.Sk, +ss: List<&2, SK.Side>, +as: List<&2, DF.Ang>,
-  +eo: {DC.dclose(es, fs, ctx, t, fuel) == DC.OFix{s} : DC.Out}, +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool},
+def dcomp.r(r: DR.DRef, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +ss: List<&2, SK.Side>, +as: List<&2, DF.Ang>,
+  +H: RR.Hyp(es, fs, ctx, t, s),
   hnr: SAT.NoRef(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), ss), hna: {DF.angs(as, es, fs, DC.Sk.k(s)) == None{} : Maybe<&2, DR.DRef>}, hr: LRefOk(es, fs, ctx, ss, as, r)) -> Empty:
   match r:
     case DR.RMotz{+ds, +ls, +ms, +k}:
       (hv, hm) = hr
-      motz_c(es, fs, ctx, t, fuel, s, eo, hz, hb, ss, ds, ls, ms, k, hv, hm, hnr)
+      motz_c(es, fs, ctx, t, s, H, ss, ds, ls, ms, k, hv, hm, hnr)
     case DR.RColl{+dr, +di, +sg}:
-      rcoll_c(es, fs, ctx, t, fuel, s, eo, hz, hb, dr, di, sg, hr)
+      rcoll_c(es, fs, ctx, t, s, H, dr, di, sg, hr)
     case DR.RAngle{+dr, +di, +p, +fst}:
-      rangle_c(es, fs, ctx, t, fuel, s, eo, hz, hb, as, dr, di, p, fst, hr, hna)
+      rangle_c(es, fs, ctx, t, s, H, as, dr, di, p, fst, hr, hna)
 
-def dcomp.m(m: Maybe<&2, RF.Cert>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +fuel: Nat, +s: DC.Sk, +ss: List<&2, SK.Side>, +as: List<&2, DF.Ang>,
-  +eo: {DC.dclose(es, fs, ctx, t, fuel) == DC.OFix{s} : DC.Out}, +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool},
+def dcomp.m(m: Maybe<&2, RF.Cert>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +ss: List<&2, SK.Side>, +as: List<&2, DF.Ang>,
+  +H: RR.Hyp(es, fs, ctx, t, s),
   em: {RF.refute(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), ss) == m : Maybe<&2, RF.Cert>}, hn: {DF.dref.fix(m, es, fs, DC.Sk.k(s), as) == None{} : Maybe<&2, DR.DRef>},
   r: DR.DRef, hr: LRefOk(es, fs, ctx, ss, as, r)) -> Empty:
   match m:
     case Some{RF.Cert{+ls, +ms, +kk}}:
       dis_some(DR.RMotz{KS.ks.ds(DC.Sk.k(s)), ls, ms, kk}, hn)
     case None{}:
-      dcomp.r(r, es, fs, ctx, t, fuel, s, ss, as, eo, hz, hb,
+      dcomp.r(r, es, fs, ctx, t, s, ss, as, H,
         (%em : SAT.RefOk(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), ss, _)
           SAT.refute_ok(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), ss)), hn, hr)
 
-# at a fixpoint, when the decision finds no refutation there is none
-def dref_complete(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +fuel: Nat, +s: DC.Sk, +ss: List<&2, SK.Side>, +as: List<&2, DF.Ang>,
-  +eo: {DC.dclose(es, fs, ctx, t, fuel) == DC.OFix{s} : DC.Out}, +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool},
+# at a fixpoint with the closure's hypotheses (RR.Hyp), when the decision
+# finds no refutation there is none
+def dref_complete(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +ss: List<&2, SK.Side>, +as: List<&2, DF.Ang>,
+  +H: RR.Hyp(es, fs, ctx, t, s),
   hn: {DF.dref(DC.OFix{s}, es, fs, ss, as) == None{} : Maybe<&2, DR.DRef>}) -> NoLRef(es, fs, ctx, ss, as):
-  r => hr => dcomp.m(RF.refute(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), ss), es, fs, ctx, t, fuel, s, ss, as, eo, hz, hb, {==}, hn, r, hr)
+  r => hr => dcomp.m(RF.refute(KS.kexprs(es, fs, KS.ks.ds(DC.Sk.k(s))), ss), es, fs, ctx, t, s, ss, as, H, {==}, hn, r, hr)

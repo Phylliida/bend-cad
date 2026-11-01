@@ -1385,16 +1385,23 @@ give both component identities that Valid's SameV asks for.
         call and each equation's call start from S plus their own new
         facts; after c, S becomes the refutation call's fixpoint if c is
         kept.
-      - Open questions for Danielle (2026-11-01): (1) output: a warm "no"
-        is proven exact, but a warm derivation differs from the cold
-        one, so either the cold run builds the derivation on the rare
-        "yes" (classes byte-identical, B4 proofs untouched; one positive
-        in ~80 constraints across the four sketches) or warm derivations
-        are used (nd may differ, still honest; B4 re-proven over the warm
-        closure, which then needs soundness too); (2) contexts: start
-        cold when the open segments differ, or repair the state (drop
-        what passes through newly collapsed nodes, add records for newly
-        open ones).
+      - *Danielle, 2026-11-01:* behaviour may change as long as it is
+        provably correct, and more work for more cases is fine: so warm
+        derivations are used directly (a drop's nd may differ from
+        today's, still honest), and B4 is re-proven over the warm
+        closure. Context repair deferred (start cold when the open
+        segments differ).
+      - Steps: (A) B4 over an interface, no behaviour change: Ex(o) in
+        lib/dcexpf.bend (never a step; RR.Hyp at a fixpoint; OutInv at
+        an explosion), dclose_ex for the closure from sk0; dd_ok, dn.o
+        and dref_complete read Ex/Hyp instead of `dclose(...) == o`
+        (done 2026-11-01, gate PASS). (B) the warm start and run: the
+        invariants carry across fact extension and equal open segments,
+        the new facts join K by the round's K step, dfuel bounds μ of
+        every state with the invariants, the run's cache comes back at
+        its fixpoint; so a warm run gives Ex. (C) the pass threads the
+        carried state (it replaces the memo M: its K and cache are part
+        of it) and B4.4/B4.5 are re-proven over it.
     - The other sketches' time is elsewhere (base's profile: the runtime
       freeing terms, Pos arithmetic, monomial compares; a simplex in the
       refutation decision runs about 213k steps on base).

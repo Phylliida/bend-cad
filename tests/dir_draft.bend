@@ -406,7 +406,7 @@ def b3_dref_sound(o: DC.Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx
 def b3_dref_complete(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +fuel: Nat, +s: DC.Sk, +ss: List<&2, SK.Side>, +as: List<&2, DFX.Ang>,
   +eo: {DC.dclose(es, fs, ctx, t, fuel) == DC.OFix{s} : DC.Out}, +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool},
   hn: {DFX.dref(DC.OFix{s}, es, fs, ss, as) == None{} : Maybe<&2, DR.DRef>}) -> DRF.NoLRef(es, fs, ctx, ss, as):
-  DRF.dref_complete(es, fs, ctx, t, fuel, s, ss, as, eo, hz, hb, hn)
+  DRF.dref_complete(es, fs, ctx, t, s, ss, as, DRF.hyp_of(es, fs, ctx, t, fuel, s, eo, hz, hb), hn)
 
 # B4.1's monotonicity, as its type
 def b4_nodir_mono(+sk: SK.Sketch, +c: Nat, +cs1: List<&2, Nat>, +cs2: List<&2, Nat>, +cx: List<&2, E.QExpr>, +hsub: {SS.sub(cs1, cs2) == True{} : Bool}, h: SS.NoDirRef(sk, c, cs2, cx)) -> SS.NoDirRef(sk, c, cs1, cx):
