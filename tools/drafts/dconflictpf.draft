@@ -86,6 +86,36 @@ def dn.o(o: DC.Out, +sk: SK.Sketch, +c: Nat, +cs: $NL, +cx: $QL, hx: CX.Ex($ES, 
 def dnone(+sk: SK.Sketch, +c: Nat, +cs: $NL, +cx: $QL, e: {DCF.dirref(sk, c, cs, cx) == None{} : Maybe<&2, DR.DRef>}, $HC) -> SV.NoDirRef(sk, c, cs, cx):
   dn.o(DCF.dcl(sk, $FS, cx), sk, c, cs, cx, CX.dclose_ex($ES, $FS, cx, DCF.tv(sk), BRG.zb_tv(sk, hcov), BRG.fb_rf(sk, Con{c, cs}, $HA)), e, $HA)
 
+# The decision from a warm-started run's outcome is the same
+# ---------------------------------------------------------
+# (both exact: a refutation one finds is one, and none found means none)
+
+def rw.m(m: Maybe<&2, DR.DRef>, mc: Maybe<&2, DR.DRef>, +o: DC.Out, +sk: SK.Sketch, +c: Nat, +cs: $NL, +cx: $QL, +hx: CX.Ex($ES, $FS, cx, DCF.tv(sk), o),
+  em: {DCF.dirref.o(o, sk, c, cs) == m : Maybe<&2, DR.DRef>}, emc: {DCF.dirref(sk, c, cs, cx) == mc : Maybe<&2, DR.DRef>}, $HC) -> {DCF.issome(m) == DCF.issome(mc) : Bool}:
+  match m mc:
+    case None{} None{}:
+      {==}
+    case None{} Some{+r2}:
+      absurd({DCF.issome(None{}) == DCF.issome(Some{r2}) : Bool}, dn.o(o, sk, c, cs, cx, hx, em, $HA)(r2, dsome(sk, c, cs, cx, r2, emc, $HA)))
+    case Some{+r} None{}:
+      absurd({DCF.issome(Some{r}) == DCF.issome(None{}) : Bool}, dnone(sk, c, cs, cx, emc, $HA)(r, dsome_o(o, sk, c, cs, cx, r, CX.ex_inv(o, $ES, $FS, cx, DCF.tv(sk), hx), em, $HA)))
+    case Some{+r} Some{+r2}:
+      {==}
+
+def rw.b(b: Bool, +o: DC.Out, +sk: SK.Sketch, +c: Nat, +cs: $NL, +cx: $QL, +hx: CX.Ex($ES, $FS, cx, DCF.tv(sk), o), $HC)
+  -> {DCF.ref2.bo(b, sk, c, cs, o) == DCF.ref2.b(b, sk, c, cs, cx) : Bool}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      rw.m(DCF.dirref.o(o, sk, c, cs), DCF.dirref(sk, c, cs, cx), o, sk, c, cs, cx, hx, {==}, {==}, $HA)
+
+# c with cs refutes from the outcome o (Ex, on c's facts with cs's) exactly
+# when it refutes
+def ro_eq(+sk: SK.Sketch, +c: Nat, +cs: $NL, +cx: $QL, +o: DC.Out, +hx: CX.Ex($ES, $FS, cx, DCF.tv(sk), o), $HC)
+  -> {DCF.refutable2.o(sk, c, cs, o) == DCF.refutable2(sk, c, cs, cx) : Bool}:
+  rw.b(CO.refutable(sk, c, cs), o, sk, c, cs, cx, hx, $HA)
+
 def none_of(m: Maybe<&2, DR.DRef>, h: {DCF.issome(m) == False{} : Bool}) -> {m == None{} : Maybe<&2, DR.DRef>}:
   match m:
     case None{}:

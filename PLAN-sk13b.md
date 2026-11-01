@@ -1419,6 +1419,30 @@ give both component identities that Valid's SameV asks for.
         ro_eq), so the conflict branch's proof stands; dcwpf and dpasspf
         thread the state and its invariant (their macros $WP, $O2,
         $PARGS); then pass2.w becomes pass2 and the memo pass goes.
+      - *Found 2026-11-01: carrying the forest blows up angle-lines*
+        (2139 G against 124.5 G; outputs still identical). A round looks
+        for K facts before merges, so a cold run finds them at unmerged
+        single-node roots; a warm start brings the forest merged, so the
+        same K facts are first found at merged roots, as much bigger
+        polynomials (constraint 2: K rows 318 bits cold, 2531 warm; K's
+        row order is not the cause: facts-first K changes nothing).
+        Carrying K alone (forest reset) avoids it but gains little (base
+        2.88 G, vertical-twice 46.7 G, angle-lines 117 G).
+      - *The fix: two phases* (measured, unproven, then reverted): phase 1
+        runs from the carried K with the new facts and the forest unmerged,
+        taking only the rounds that add to K (it pauses where a round would
+        merge or link); phase 2 continues from phase 1's K with the carried
+        forest. K facts are found as a cold run finds them, the merges are
+        not redone. Instructions: base 1.85 G, oncircle-pairs 12.1 G,
+        vertical-twice 18.9 G, angle-lines 46.9 G (2.6x to 4.2x over the
+        original on every sketch), outputs byte-identical. Proof: any
+        state with the invariants is a start, so phase 2's start (phase
+        1's K, the carried records and links) needs only a mix lemma; phase
+        1's rounds are the round's own until the pause (the fast round's
+        equalities, dfastpf), and need no completeness or termination.
+        dwarmpf's lemmas carry over (wstart's K part, skinv_pre, kfw,
+        kspan_pre, tinv_ctx, warm_ex, frun_fo, run_inv); the walk's draft
+        changes are kept aside (scratchpad) until dpasspf is threaded.
     - The other sketches' time is elsewhere (base's profile: the runtime
       freeing terms, Pos arithmetic, monomial compares; a simplex in the
       refutation decision runs about 213k steps on base).

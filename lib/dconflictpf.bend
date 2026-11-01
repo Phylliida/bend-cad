@@ -78,6 +78,36 @@ def dn.o(o: DC.Out, +sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E
 def dnone(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, e: {DCF.dirref(sk, c, cs, cx) == None{} : Maybe<&2, DR.DRef>}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}) -> SV.NoDirRef(sk, c, cs, cx):
   dn.o(DCF.dcl(sk, SV.rfacts(sk, Con{c, cs}), cx), sk, c, cs, cx, CX.dclose_ex(SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), BRG.zb_tv(sk, hcov), BRG.fb_rf(sk, Con{c, cs}, hcov, hwf)), e, hcov, hwf)
 
+# The decision from a warm-started run's outcome is the same
+# ---------------------------------------------------------
+# (both exact: a refutation one finds is one, and none found means none)
+
+def rw.m(m: Maybe<&2, DR.DRef>, mc: Maybe<&2, DR.DRef>, +o: DC.Out, +sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, +hx: CX.Ex(SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), o),
+  em: {DCF.dirref.o(o, sk, c, cs) == m : Maybe<&2, DR.DRef>}, emc: {DCF.dirref(sk, c, cs, cx) == mc : Maybe<&2, DR.DRef>}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}) -> {DCF.issome(m) == DCF.issome(mc) : Bool}:
+  match m mc:
+    case None{} None{}:
+      {==}
+    case None{} Some{+r2}:
+      absurd({DCF.issome(None{}) == DCF.issome(Some{r2}) : Bool}, dn.o(o, sk, c, cs, cx, hx, em, hcov, hwf)(r2, dsome(sk, c, cs, cx, r2, emc, hcov, hwf)))
+    case Some{+r} None{}:
+      absurd({DCF.issome(Some{r}) == DCF.issome(None{}) : Bool}, dnone(sk, c, cs, cx, emc, hcov, hwf)(r, dsome_o(o, sk, c, cs, cx, r, CX.ex_inv(o, SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), hx), em, hcov, hwf)))
+    case Some{+r} Some{+r2}:
+      {==}
+
+def rw.b(b: Bool, +o: DC.Out, +sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, +hx: CX.Ex(SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), o), +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool})
+  -> {DCF.ref2.bo(b, sk, c, cs, o) == DCF.ref2.b(b, sk, c, cs, cx) : Bool}:
+  match b:
+    case True{}:
+      {==}
+    case False{}:
+      rw.m(DCF.dirref.o(o, sk, c, cs), DCF.dirref(sk, c, cs, cx), o, sk, c, cs, cx, hx, {==}, {==}, hcov, hwf)
+
+# c with cs refutes from the outcome o (Ex, on c's facts with cs's) exactly
+# when it refutes
+def ro_eq(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, +o: DC.Out, +hx: CX.Ex(SV.ents(sk), SV.rfacts(sk, Con{c, cs}), cx, DCF.tv(sk), o), +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool})
+  -> {DCF.refutable2.o(sk, c, cs, o) == DCF.refutable2(sk, c, cs, cx) : Bool}:
+  rw.b(CO.refutable(sk, c, cs), o, sk, c, cs, cx, hx, hcov, hwf)
+
 def none_of(m: Maybe<&2, DR.DRef>, h: {DCF.issome(m) == False{} : Bool}) -> {m == None{} : Maybe<&2, DR.DRef>}:
   match m:
     case None{}:

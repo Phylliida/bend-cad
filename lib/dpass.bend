@@ -276,6 +276,10 @@ def final2_st(+sk: SK.Sketch) -> PA.PS:
 # W is a run's state kept across calls (lib/dclose.bend WK): each call
 # starts from it, given the facts past its own.
 
+# the decision for e from the run warm-started at W on the facts fs
+def ddec.w(+sk: SK.Sketch, +fs: List<&2, DR.Fact>, +cx: List<&2, E.QExpr>, +e: E.QExpr, +m: Maybe<&2, DR.DStat>, +W: DC.WK) -> Maybe<&2, DR.Der>:
+  ddec.o(DC.FO.o(DC.wcall(SV.ents(sk), fs, DCF.tv(sk), W)), SV.ents(sk), fs, DCF.tv(sk), e, m)
+
 def cw2.pick.w(b: Bool, +k: Nat, +e: E.QExpr, +r: EL.Res, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +ds: List<&2, SV.Drop>, us: List<&2, Nat>,
   +sk: SK.Sketch, +c: Nat, +F0: List<&2, DR.Fact>, +cx: List<&2, E.QExpr>, +W: DC.WK) -> PA.CW:
   match b:
@@ -283,7 +287,7 @@ def cw2.pick.w(b: Bool, +k: Nat, +e: E.QExpr, +r: EL.Res, +rows: List<&2, EL.Row
       PA.CW{rows, B, bp, Con{PA.drop_of(k, r, e, B, bp), ds}, us}
     case False{}:
       +fs = fk(sk, c, F0, ds, k)
-      cw2.dir(ddec.o(DC.FO.o(DC.wcall(SV.ents(sk), fs, DCF.tv(sk), W)), SV.ents(sk), fs, DCF.tv(sk), e, cstat(sk, c)), k, e, r, rows, B, bp, ds, us, SV.ents(sk), fs)
+      cw2.dir(ddec.w(sk, fs, cx, e, cstat(sk, c), W), k, e, r, rows, B, bp, ds, us, SV.ents(sk), fs)
 
 def cw2.res.w(+k: Nat, +e: E.QExpr, st: PA.CW, +sk: SK.Sketch, +c: Nat, +F0: List<&2, DR.Fact>, +cx: List<&2, E.QExpr>, +W: DC.WK) -> PA.CW:
   match st:
