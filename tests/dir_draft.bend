@@ -141,6 +141,7 @@ import ../lib/solve.bend as SOL
 import ../lib/wfdec.bend as WFD
 import ../lib/pass.bend as PAS
 import ../lib/dfastpf.bend as DFP
+import ../lib/dwarmpf.bend as DWM
 
 # The functions on an example
 # ---------------------------

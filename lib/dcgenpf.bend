@@ -206,13 +206,7 @@ def lstats_ok(ps: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact
 # ----------
 
 def fdrop(i: Nat, fs: List<&2, DR.Fact>) -> List<&2, DR.Fact>:
-  match i fs:
-    case 0n fs:
-      fs
-    case 1n+j Nil{}:
-      Nil{}
-    case 1n+j Con{f, tl}:
-      fdrop(j, tl)
+  DC.fdrop(i, fs)
 
 def lis_con(l: List<&2, DR.Fact>) -> Bool:
   match l:

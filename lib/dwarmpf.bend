@@ -3,16 +3,26 @@
 # facts fs that agree with P at its positions (lib/dmemopf.bend: Pre):
 # - a valid derivation cites only facts it has (vd_db), so it stays valid
 #   over fs and concludes the same (vd_pre, by concl_pre); so the state's
-#   invariant carries (skinv_pre: K's generators, records, links).
+#   invariant carries (skinv_pre: K's generators, records, links);
+# - P's bases are in the span of fs's (allin_fb, in_trans), so K stays in
+#   the bases' span (kspan_pre);
+# - the warm start (wstart) gives K the facts from position |P| on, as
+#   sk0 gives it all: every fact is then in K (kfw), and the run's
+#   invariants hold (wstart_t);
+# - DC.wfuel bounds the measure of every state (mu_w), so the run from a
+#   warm start stops, and gives Ex (warm_ex); frun.fo returns the cache
+#   too, right for a fixpoint (frun_fo).
 # Proofs only.
 
 import Base
+import ../spec/num.bend as S
 import ../spec/ring.bend as E
 import ../spec/solve.bend as SV
 import ../spec/sketch.bend as SK
 import ../spec/dir.bend as DR
 import ./karith.bend as KA
 import ./seppf.bend as SP
+import ./qnorm.bend as QN
 import ./elim.bend as EL
 import ./elimpf.bend as EP
 import ./kspace.bend as KS
@@ -23,6 +33,22 @@ import ./dcinvpf.bend as IV
 import ./dcgenpf.bend as GN
 import ./dcroundpf.bend as RD
 import ./dmemopf.bend as MP
+import ./listpf.bend as LI
+import ./spanpf.bend as SN
+import ./dcbasepf.bend as BS
+import ./dckslpf.bend as KL
+import ./dcgspanpf.bend as GS
+import ./dcshapepf.bend as SH
+import ./ownpf.bend as OW
+import ./nat.bend as LN
+import ./dcsetpf.bend as ST
+import ./dctermpf.bend as TRM
+import ./dcopenpf.bend as OP
+import ./dcreprpf.bend as RR
+import ./dcslotpf.bend as SL
+import ./dcfixpf.bend as FX
+import ./dfastpf.bend as FP
+import ./dcexpf.bend as CX
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -354,3 +380,337 @@ def skinv_pre(+es: List<&2, SK.Ent>, +fs1: List<&2, DR.Fact>, +fs2: List<&2, DR.
   (hl, r3) = r2
   (hmn, hln) = r3
   (kinvd_pre(es, fs1, fs2, ctx, t, DC.Sk.k(s), h, hk), (msok_pre(DC.Sk.ms(s), es, fs1, fs2, ctx, t, h, hm), (lsok_pre(DC.Sk.ls(s), es, fs1, fs2, ctx, t, h, hl), (hmn, hln))))
+
+# The bases' span
+# ---------------
+
+# a combination of B, each of B in the span of B2, is in the span of B2
+def in_lin(ls: List<&2, S.Q>, B: List<&2, E.QExpr>, +B2: List<&2, E.QExpr>, hall: KL.AllIn(B, B2)) -> SN.InSpan(SV.lin(ls, B), B2):
+  match ls B:
+    case Con{+l, +lt} Con{+b, +bt}:
+      (hb, ht) = hall
+      SN.in_comb(l, b, SV.lin(lt, bt), B2, hb, in_lin(lt, bt, B2, ht))
+    case Con{+l, +lt} Nil{}:
+      SN.in_zero(B2)
+    case Nil{} Con{+b, +bt}:
+      SN.in_zero(B2)
+    case Nil{} Nil{}:
+      SN.in_zero(B2)
+
+def in_trans.c(+e: E.QExpr, +B: List<&2, E.QExpr>, +B2: List<&2, E.QExpr>, +ls: List<&2, S.Q>, +q: {QN.qzero(E.QSub{e, SV.lin(ls, B)}) == True{} : Bool}, +hall: KL.AllIn(B, B2)) -> SN.InSpan(e, B2):
+  BS.in_tr(SV.lin(ls, B), e, B2, in_lin(ls, B, B2, hall), q)
+
+def in_trans(+e: E.QExpr, +B: List<&2, E.QExpr>, +B2: List<&2, E.QExpr>, h: SN.InSpan(e, B), +hall: KL.AllIn(B, B2)) -> SN.InSpan(e, B2):
+  (ls, q) = h
+  in_trans.c(e, B, B2, ls, q, hall)
+
+def allin_trans(xs: List<&2, E.QExpr>, +B: List<&2, E.QExpr>, +B2: List<&2, E.QExpr>, +hall: KL.AllIn(B, B2), h: KL.AllIn(xs, B)) -> KL.AllIn(xs, B2):
+  match xs:
+    case Nil{}:
+      Unit{}
+    case Con{+x, +t}:
+      (hx, ht) = h
+      (in_trans(x, B, B2, hx, hall), allin_trans(t, B, B2, hall, ht))
+
+def allin_tl(xs: List<&2, E.QExpr>, +b: E.QExpr, +B: List<&2, E.QExpr>, h: KL.AllIn(xs, B)) -> KL.AllIn(xs, Con{b, B}):
+  match xs:
+    case Nil{}:
+      Unit{}
+    case Con{+x, +t}:
+      (hx, ht) = h
+      (BS.in_tl(x, b, B, hx), allin_tl(t, b, B, ht))
+
+def allin_cons(+b: E.QExpr, +xs: List<&2, E.QExpr>, +B: List<&2, E.QExpr>, h: KL.AllIn(xs, B)) -> KL.AllIn(Con{b, xs}, Con{b, B}):
+  (BS.in_hd(b, B), allin_tl(xs, b, B, h))
+
+def allin_refl(B: List<&2, E.QExpr>) -> KL.AllIn(B, B):
+  match B:
+    case Nil{}:
+      Unit{}
+    case Con{+b, +t}:
+      allin_cons(b, t, t, allin_refl(t))
+
+def allin_catr(+A: List<&2, E.QExpr>, xs: List<&2, E.QExpr>, +C: List<&2, E.QExpr>, h: KL.AllIn(xs, C)) -> KL.AllIn(xs, DC.qcat(A, C)):
+  match xs:
+    case Nil{}:
+      Unit{}
+    case Con{+x, +t}:
+      (hx, ht) = h
+      (BS.in_catr(A, C, x, hx), allin_catr(A, t, C, ht))
+
+def allin_bstat(ds: Maybe<&2, DR.DStat>, +X: List<&2, E.QExpr>, +Y: List<&2, E.QExpr>, +D: List<&2, E.QExpr>, h: KL.AllIn(DC.qcat(X, D), DC.qcat(Y, D)))
+  -> KL.AllIn(DC.qcat(DC.bstat(ds, X), D), DC.qcat(DC.bstat(ds, Y), D)):
+  match ds:
+    case None{}:
+      h
+    case Some{DR.DStat{+a, +x, +l}}:
+      allin_cons(SK.VE.x(x), Con{SK.VE.y(x), DC.qcat(X, D)}, Con{SK.VE.y(x), DC.qcat(Y, D)}, allin_cons(SK.VE.y(x), DC.qcat(X, D), DC.qcat(Y, D), h))
+
+def allin_fb.c(f: DR.Fact, g: DR.Fact, +pt: List<&2, DR.Fact>, +ft: List<&2, DR.Fact>, +D: List<&2, E.QExpr>, a: MP.FAg(f, g), ih: KL.AllIn(DC.qcat(DC.fbases(pt), D), DC.qcat(DC.fbases(ft), D)))
+  -> KL.AllIn(DC.qcat(DC.fbases(Con{f, pt}), D), DC.qcat(DC.fbases(Con{g, ft}), D)):
+  match f g:
+    case DR.Fact{+e1, +n1, +d1} DR.Fact{+e2, +n2, +d2}:
+      (he, hd) = a
+      %he : KL.AllIn(Con{e1, DC.qcat(DC.bstat(d1, DC.fbases(pt)), D)}, Con{_, DC.qcat(DC.bstat(d2, DC.fbases(ft)), D)})
+      %hd : KL.AllIn(Con{e1, DC.qcat(DC.bstat(d1, DC.fbases(pt)), D)}, Con{e1, DC.qcat(DC.bstat(_, DC.fbases(ft)), D)})
+      allin_cons(e1, DC.qcat(DC.bstat(d1, DC.fbases(pt)), D), DC.qcat(DC.bstat(d1, DC.fbases(ft)), D), allin_bstat(d1, DC.fbases(pt), DC.fbases(ft), D, ih))
+
+# P's bases lie in the span of fs's
+def allin_fb(P: List<&2, DR.Fact>, F: List<&2, DR.Fact>, +D: List<&2, E.QExpr>, h: MP.Pre(P, F)) -> KL.AllIn(DC.qcat(DC.fbases(P), D), DC.qcat(DC.fbases(F), D)):
+  match P F:
+    case Nil{} Nil{}:
+      allin_refl(D)
+    case Nil{} Con{+g, +ft}:
+      allin_catr(DC.fbases(Con{g, ft}), D, D, allin_refl(D))
+    case Con{+f, +pt} Nil{}:
+      absurd(KL.AllIn(DC.qcat(DC.fbases(Con{f, pt}), D), DC.qcat(DC.fbases(Nil{}), D)), h)
+    case Con{+f, +pt} Con{+g, +ft}:
+      (a, ht) = h
+      allin_fb.c(f, g, pt, ft, D, a, allin_fb(pt, ft, D, ht))
+
+# K stays in the bases' span
+def kspan_pre(+es: List<&2, SK.Ent>, +P: List<&2, DR.Fact>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +k: KS.KS, +h: MP.Pre(P, fs), +ha: IV.AllKD(es, P, ctx, t, KS.ks.ds(k)), hs: GS.KSpan(es, P, k))
+  -> GS.KSpan(es, fs, k):
+  %kexprs_pre(KS.ks.ds(k), es, P, fs, ctx, t, h, ha) : KL.AllIn(_, DC.bases(es, fs))
+  allin_trans(KS.kexprs(es, P, KS.ks.ds(k)), DC.bases(es, P), DC.bases(es, fs), allin_fb(P, fs, DC.dbases(es, Con{DR.NFrame{}, DC.snodes(DC.segids(es))}), h), hs)
+
+# Every fact in K
+# ---------------
+
+def fd_eq(+fs: List<&2, DR.Fact>, +i: Nat, +n: Nat, +ein: {i == n : Nat}) -> {DC.fdrop(n, fs) == DC.fdrop(i, fs) : List<&2, DR.Fact>}:
+  %ein : {DC.fdrop(_, fs) == DC.fdrop(i, fs) : List<&2, DR.Fact>}
+  {==}
+
+# no facts of P left: the rest of fs is what K was given
+def kfw.nil(+F: List<&2, DR.Fact>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +i: Nat, +n: Nat, +k: KS.KS, +hr: SH.KR(es, fs, k), +ed: {GN.fdrop(i, fs) == F : List<&2, DR.Fact>}, +en: {Nat.add(i, 0n) == n : Nat})
+  -> SH.KF(DC.kinit(es, fs, DC.fdrop(n, fs), n, k), F):
+  %Equal.trans(List<&2, DR.Fact>, DC.fdrop(n, fs), DC.fdrop(i, fs), F, fd_eq(fs, i, n, Equal.trans(Nat, i, Nat.add(i, 0n), n, LN.add_zero(i), en)), ed) : SH.KF(DC.kinit(es, fs, DC.fdrop(n, fs), n, k), _)
+  SH.kinit_kf(DC.fdrop(n, fs), es, fs, n, k, hr, {==})
+
+def kfw.c(g: DR.Fact, +e1: E.QExpr, +ft: List<&2, DR.Fact>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +n: Nat, +k: KS.KS, +hr: SH.KR(es, fs, k),
+  he: {e1 == DR.fact.e(Some{g}) : E.QExpr}, hin: {KS.ks.inb(k, e1) == True{} : Bool}, ih: SH.KF(DC.kinit(es, fs, DC.fdrop(n, fs), n, k), ft)) -> SH.KF(DC.kinit(es, fs, DC.fdrop(n, fs), n, k), Con{g, ft}):
+  match g:
+    case DR.Fact{+e2, +n2, +d2}:
+      (SH.kinit_mono(DC.fdrop(n, fs), es, fs, n, k, e2, hr, (%he : ST.Inb(KS.ks.rows(k), _)
+         hin)), ih)
+
+# the facts F (fs from position i), agreeing with P whose facts are in K,
+# are in K given the facts from position n = i + |P|
+def kfw(P: List<&2, DR.Fact>, F: List<&2, DR.Fact>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +i: Nat, +n: Nat, +k: KS.KS, +hr: SH.KR(es, fs, k), h: MP.Pre(P, F), kf: SH.KF(k, P),
+  +ed: {GN.fdrop(i, fs) == F : List<&2, DR.Fact>}, +en: {Nat.add(i, MP.flen(P)) == n : Nat}) -> SH.KF(DC.kinit(es, fs, DC.fdrop(n, fs), n, k), F):
+  match P F:
+    case Nil{} Nil{}:
+      Unit{}
+    case Nil{} Con{+g, +ft}:
+      kfw.nil(Con{g, ft}, es, fs, i, n, k, hr, ed, en)
+    case Con{DR.Fact{+e1, +n1, +d1}, +pt} Nil{}:
+      absurd(SH.KF(DC.kinit(es, fs, DC.fdrop(n, fs), n, k), Nil{}), h)
+    case Con{DR.Fact{+e1, +n1, +d1}, +pt} Con{+g, +ft}:
+      (a, ht) = h
+      (hin, kt) = kf
+      kfw.c(g, e1, ft, es, fs, n, k, hr, MP.fag_e(DR.Fact{e1, n1, d1}, g, a), hin,
+        kfw(pt, ft, es, fs, 1n+i, n, k, hr, ht, kt, GN.fdrop_tl(i, fs, g, ft, ed), LN.succ_add(i, MP.flen(pt), n, en)))
+
+# The start
+# ---------
+
+def fb_tl(f: DR.Fact, +tl: List<&2, DR.Fact>, +t: Nat, h: {DC.fb(Con{f, tl}, t) == True{} : Bool}) -> {DC.fb(tl, t) == True{} : Bool}:
+  match f:
+    case DR.Fact{+e, +nd, +ds}:
+      LI.band_r(DC.fb.ds(ds, t), DC.fb(tl, t), LI.band_r(SP.vbelow(e, t), SV.band(DC.fb.ds(ds, t), DC.fb(tl, t)), h))
+
+def fb_drop(i: Nat, fs: List<&2, DR.Fact>, +t: Nat, h: {DC.fb(fs, t) == True{} : Bool}) -> {DC.fb(DC.fdrop(i, fs), t) == True{} : Bool}:
+  match i fs:
+    case 0n Nil{}:
+      h
+    case 0n Con{+f, +tl}:
+      h
+    case 1n+j Nil{}:
+      {==}
+    case 1n+j Con{+f, +tl}:
+      fb_drop(j, tl, t, fb_tl(f, tl, t, h))
+
+def kinvd_allkd(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, k: KS.KS, h: IV.KInvD(es, fs, ctx, t, k)) -> IV.AllKD(es, fs, ctx, t, KS.ks.ds(k)):
+  match k:
+    case KS.KS{+rows, +ds}:
+      (hr, r1) = h
+      (hl, ha) = r1
+      ha
+
+def ws.sk(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +n: Nat, +k: KS.KS, +ms: List<&2, DC.Mem>, +ls: List<&2, DC.Link>, +hb: {DC.fb(fs, t) == True{} : Bool},
+  h: RD.SkInv(es, fs, ctx, t, DC.Sk{k, ms, ls})) -> RD.SkInv(es, fs, ctx, t, DC.Sk{DC.kinit(es, fs, DC.fdrop(n, fs), n, k), ms, ls}):
+  (hk, r1) = h
+  (RD.kinit_ok(DC.fdrop(n, fs), es, fs, ctx, t, n, k, {==}, fb_drop(n, fs, t, hb), hk), r1)
+
+def ws.sh(+es: List<&2, SK.Ent>, +P: List<&2, DR.Fact>, +fs: List<&2, DR.Fact>, +cs: DC.SP, +ids: List<&2, Nat>, +n: Nat, +k: KS.KS, +ms: List<&2, DC.Mem>, +ls: List<&2, DC.Link>,
+  +h: MP.Pre(P, fs), +en: {MP.flen(P) == n : Nat}, +hr: SH.KR(es, fs, k), hs: SH.ShInv(es, P, cs, ids, DC.Sk{k, ms, ls})) -> SH.ShInv(es, fs, cs, ids, DC.Sk{DC.kinit(es, fs, DC.fdrop(n, fs), n, k), ms, ls}):
+  (hm, r1) = hs
+  (kf, pl) = r1
+  (hm, (kfw(P, fs, es, fs, 0n, n, k, hr, h, kf, {==}, en), pl))
+
+def ws.c(+es: List<&2, SK.Ent>, +P: List<&2, DR.Fact>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, +n: Nat, +k: KS.KS, +ms: List<&2, DC.Mem>, +ls: List<&2, DC.Link>,
+  +h: MP.Pre(P, fs), +en: {MP.flen(P) == n : Nat}, +hb: {DC.fb(fs, t) == True{} : Bool}, +hsk: RD.SkInv(es, P, ctx, t, DC.Sk{k, ms, ls}), hsh: SH.ShInv(es, P, OP.cspan(ctx), ids, DC.Sk{k, ms, ls}), hk: GS.KSpan(es, P, k))
+  -> TRM.TInv(es, fs, ctx, t, ids, DC.Sk{DC.kinit(es, fs, DC.fdrop(n, fs), n, k), ms, ls}):
+  ((ws.sk(es, fs, ctx, t, n, k, ms, ls, hb, skinv_pre(es, P, fs, ctx, t, DC.Sk{k, ms, ls}, h, hsk)),
+    ws.sh(es, P, fs, OP.cspan(ctx), ids, n, k, ms, ls, h, en, ST.kri(es, fs, ctx, t, k, RR.sk.k(es, fs, ctx, t, DC.Sk{k, ms, ls}, skinv_pre(es, P, fs, ctx, t, DC.Sk{k, ms, ls}, h, hsk))), hsh)),
+   GS.kinit_span(DC.fdrop(n, fs), es, fs, n, k, kspan_pre(es, P, fs, ctx, t, k, h, kinvd_allkd(es, P, ctx, t, k, RR.sk.k(es, P, ctx, t, DC.Sk{k, ms, ls}, hsk)), hk)))
+
+# a state with the run's invariants for facts P, given the facts of fs past
+# P (fs agreeing with P), has them for fs
+def wstart_t(+es: List<&2, SK.Ent>, +P: List<&2, DR.Fact>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, +n: Nat, s: DC.Sk,
+  +h: MP.Pre(P, fs), +en: {MP.flen(P) == n : Nat}, +hb: {DC.fb(fs, t) == True{} : Bool}, hi: TRM.TInv(es, P, ctx, t, ids, s)) -> TRM.TInv(es, fs, ctx, t, ids, DC.wstart(es, fs, n, s)):
+  match s:
+    case DC.Sk{+k, +ms, +ls}:
+      (h1, hk) = hi
+      (hsk, hsh) = h1
+      ws.c(es, P, fs, ctx, t, ids, n, k, ms, ls, h, en, hb, hsk, hsh, hk)
+
+# The fuel
+# --------
+
+def rc1_le(m: DC.Mem) -> {KA.natle(SL.rc1(m), 1n) == True{} : Bool}:
+  match m:
+    case DC.Mem{+a, +r, +w, +d}:
+      TRM.rb_le(DC.node_eq(a, r))
+
+def rc_le(ms: List<&2, DC.Mem>) -> {KA.natle(SL.rcount(ms), DC.mcount(ms)) == True{} : Bool}:
+  match ms:
+    case Nil{}:
+      {==}
+    case Con{+m, +t}:
+      KA.natle_add2(SL.rc1(m), SL.rcount(t), 1n, DC.mcount(t), rc1_le(m), rc_le(t))
+
+def slots_le.t(+w0: DR.Lab, t: List<&2, DR.Lab>) -> {KA.natle(DC.slots(Con{w0, t}), 2n) == True{} : Bool}:
+  match t:
+    case Nil{}:
+      {==}
+    case Con{+w1, +t2}:
+      {==}
+
+def slots_le(ws: List<&2, DR.Lab>) -> {KA.natle(DC.slots(ws), 2n) == True{} : Bool}:
+  match ws:
+    case Nil{}:
+      {==}
+    case Con{+w0, +t}:
+      slots_le.t(w0, t)
+
+def lsc_le(+ls: List<&2, DC.Link>, +c: Nat, bs: List<&2, DR.Node>) -> {KA.natle(DC.lslack.c(ls, c, bs), DC.lslack.c(Nil{}, c, bs)) == True{} : Bool}:
+  match bs:
+    case Nil{}:
+      {==}
+    case Con{+b, +t}:
+      KA.natle_add2(DC.slots(DC.lstored(ls, c, b)), DC.lslack.c(ls, c, t), 2n, DC.lslack.c(Nil{}, c, t), slots_le(DC.lstored(ls, c, b)), lsc_le(ls, c, t))
+
+# links only take slots away
+def ls_le(ids: List<&2, Nat>, +bs: List<&2, DR.Node>, +ls: List<&2, DC.Link>) -> {KA.natle(DC.lslack(ids, bs, ls), DC.lslack(ids, bs, Nil{})) == True{} : Bool}:
+  match ids:
+    case Nil{}:
+      {==}
+    case Con{+c, +t}:
+      KA.natle_add2(DC.lslack.c(ls, c, bs), DC.lslack(t, bs, ls), DC.lslack.c(Nil{}, c, bs), DC.lslack(t, bs, Nil{}), lsc_le(ls, c, bs), ls_le(t, bs, ls))
+
+# wfuel is past the measure of every state
+def mu_w(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +s: DC.Sk) -> {KA.natle(1n+TRM.mu(DC.kmons(DC.bases(es, fs)), DC.segids(es), s), DC.wfuel(es, fs, s)) == True{} : Bool}:
+  KA.natle_add2(KL.kslack(DC.kmons(DC.bases(es, fs)), KL.pivs(KS.ks.rows(DC.Sk.k(s)))), Nat.add(SL.rcount(DC.Sk.ms(s)), DC.lslack(DC.segids(es), TRM.bs(DC.segids(es)), DC.Sk.ls(s))),
+    DC.mlen(DC.kmons(DC.bases(es, fs))), Nat.add(DC.mcount(DC.Sk.ms(s)), DC.lslack(DC.segids(es), TRM.bs(DC.segids(es)), Nil{})),
+    KL.kslack_bound(DC.kmons(DC.bases(es, fs)), KL.pivs(KS.ks.rows(DC.Sk.k(s)))),
+    KA.natle_add2(SL.rcount(DC.Sk.ms(s)), DC.lslack(DC.segids(es), TRM.bs(DC.segids(es)), DC.Sk.ls(s)), DC.mcount(DC.Sk.ms(s)), DC.lslack(DC.segids(es), TRM.bs(DC.segids(es)), Nil{}),
+      rc_le(DC.Sk.ms(s)), ls_le(DC.segids(es), TRM.bs(DC.segids(es)), DC.Sk.ls(s))))
+
+# The warm run
+# ------------
+
+# the fast run with its cache is the run, and the cache is right for it
+def frun_fo(fuel: Nat, fo: DC.FO, +o: DC.Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: DC.SP, +ids: List<&2, Nat>, h: FP.FRel(es, fs, t, fo, o))
+  -> FP.FRel(es, fs, t, DC.frun.fo(fuel, fo, es, fs, t, cs, DC.oids(ids, es, cs), ids), DC.run(fuel, o, es, fs, t, cs, ids)):
+  match fuel fo:
+    case 0n DC.FO{+o2, +C}:
+      h
+    case 1n+f DC.FO{DC.OStep{+s}, +C}:
+      (+eo, hc) = h
+      %eo : FP.FRel(es, fs, t, DC.frun.fo(f, DC.fround(es, fs, t, cs, DC.oids(ids, es, cs), ids, s, C), es, fs, t, cs, DC.oids(ids, es, cs), ids), DC.run(1n+f, _, es, fs, t, cs, ids))
+      frun_fo(f, DC.fround(es, fs, t, cs, DC.oids(ids, es, cs), ids, s, C), DC.round(es, fs, t, cs, ids, s), es, fs, t, cs, ids,
+        FP.fround_ok(es, fs, t, cs, ids, s, C, (%Equal.sym(DC.Out, DC.OStep{s}, o, eo) : FP.CacheOk(es, fs, t, C, _)
+          hc)))
+    case 1n+f DC.FO{DC.OFix{+s}, +C}:
+      (+eo, hc) = h
+      %eo : FP.FRel(es, fs, t, DC.FO{DC.OFix{s}, C}, DC.run(1n+f, _, es, fs, t, cs, ids))
+      ({==}, (%Equal.sym(DC.Out, DC.OFix{s}, o, eo) : FP.CacheOk(es, fs, t, C, _)
+        hc))
+    case 1n+f DC.FO{DC.OOne{+d}, +C}:
+      (eo, hc) = h
+      %eo : FP.FRel(es, fs, t, DC.FO{DC.OOne{d}, C}, DC.run(1n+f, _, es, fs, t, cs, ids))
+      ({==}, Unit{})
+    case 1n+f DC.FO{DC.OVoid{+sg, +dr, +di}, +C}:
+      (eo, hc) = h
+      %eo : FP.FRel(es, fs, t, DC.FO{DC.OVoid{sg, dr, di}, C}, DC.run(1n+f, _, es, fs, t, cs, ids))
+      ({==}, Unit{})
+
+def ti.sk(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, +s: DC.Sk, h: TRM.TInv(es, fs, ctx, t, ids, s)) -> RD.SkInv(es, fs, ctx, t, s):
+  (h1, hk) = h
+  (a, b) = h1
+  a
+
+def ti.sh(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, +s: DC.Sk, h: TRM.TInv(es, fs, ctx, t, ids, s)) -> SH.ShInv(es, fs, OP.cspan(ctx), ids, s):
+  (h1, hk) = h
+  (a, b) = h1
+  b
+
+def wex.c(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +hsk: RD.SkInv(es, fs, ctx, t, s), +hsh: SH.ShInv(es, fs, OP.cspan(ctx), DC.segids(es), s),
+  +hi: TRM.TInv(es, fs, ctx, t, DC.segids(es), s), +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool})
+  -> CX.Ex(es, fs, ctx, t, DC.run(DC.wfuel(es, fs, s), DC.OStep{s}, es, fs, t, OP.cspan(ctx), DC.segids(es))):
+  CX.ex_of(DC.run(DC.wfuel(es, fs, s), DC.OStep{s}, es, fs, t, OP.cspan(ctx), DC.segids(es)), es, fs, ctx, t,
+    RD.run_ok(DC.wfuel(es, fs, s), DC.OStep{s}, es, fs, ctx, t, DC.segids(es), hsk, hz, hb),
+    FX.run_fix(DC.wfuel(es, fs, s), DC.OStep{s}, es, fs, ctx, t, DC.segids(es), (hsk, hsh), hz, hb),
+    TRM.run_t(DC.wfuel(es, fs, s), DC.OStep{s}, es, fs, ctx, t, DC.segids(es), (hi, mu_w(es, fs, s)), hz, hb), hz, hb)
+
+# a run from any state with the run's invariants, with DC.wfuel, gives Ex
+def warm_ex(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +hi: TRM.TInv(es, fs, ctx, t, DC.segids(es), s),
+  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}) -> CX.Ex(es, fs, ctx, t, DC.run(DC.wfuel(es, fs, s), DC.OStep{s}, es, fs, t, OP.cspan(ctx), DC.segids(es))):
+  wex.c(es, fs, ctx, t, s, ti.sk(es, fs, ctx, t, DC.segids(es), s, hi), ti.sh(es, fs, ctx, t, DC.segids(es), s, hi), hi, hz, hb)
+
+# the run's invariants, at a step or a fixpoint (a fixpoint is carried on)
+def RunI(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, o: DC.Out) -> Data:
+  match o:
+    case DC.OStep{+s}:
+      TRM.TInv(es, fs, ctx, t, ids, s)
+    case DC.OFix{+s}:
+      TRM.TInv(es, fs, ctx, t, ids, s)
+    case DC.OOne{d}:
+      Unit
+    case DC.OVoid{g, dr, di}:
+      Unit
+
+def runi_of(o: DC.Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, +s: DC.Sk,
+  h1: FX.FixOut(es, fs, ctx, t, ids, o), h2: TRM.Step(DC.kmons(DC.bases(es, fs)), ids, es, fs, s, o)) -> RunI(es, fs, ctx, t, ids, o):
+  match o:
+    case DC.OStep{+s2}:
+      (a, b) = h1
+      (lt, hk) = h2
+      ((a, b), hk)
+    case DC.OFix{+s2}:
+      (a, r1) = h1
+      (b, fx) = r1
+      ((a, b), h2)
+    case DC.OOne{+d}:
+      Unit{}
+    case DC.OVoid{+g, +dr, +di}:
+      Unit{}
+
+def run_inv(fuel: Nat, o: DC.Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, +h: RunI(es, fs, ctx, t, ids, o),
+  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}) -> RunI(es, fs, ctx, t, ids, DC.run(fuel, o, es, fs, t, OP.cspan(ctx), ids)):
+  match fuel o:
+    case 0n o:
+      h
+    case 1n+f DC.OStep{+s}:
+      run_inv(f, DC.round(es, fs, t, OP.cspan(ctx), ids, s), es, fs, ctx, t, ids,
+        runi_of(DC.round(es, fs, t, OP.cspan(ctx), ids, s), es, fs, ctx, t, ids, s,
+          FX.fix_of(DC.round(es, fs, t, OP.cspan(ctx), ids, s), es, fs, ctx, t, ids, RD.round_ok(es, fs, ctx, t, ids, s, ti.sk(es, fs, ctx, t, ids, s, h), hz, hb),
+            FX.round_sh(es, fs, ctx, t, ids, s, FX.skinv_k(es, fs, ctx, t, s, ti.sk(es, fs, ctx, t, ids, s, h)), ti.sh(es, fs, ctx, t, ids, s, h))),
+          TRM.round_t(es, fs, ctx, t, ids, s, h)), hz, hb)
+    case 1n+f DC.OFix{+s}:
+      h
+    case 1n+f DC.OOne{+d}:
+      h
+    case 1n+f DC.OVoid{+sg, +dr, +di}:
+      h

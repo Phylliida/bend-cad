@@ -511,13 +511,13 @@ def kc_add_inv(k: KS.KS, +C: List<&2, DC.KC>, +d: DR.Der, +es: List<&2, SK.Ent>,
 # The round
 # ---------
 
-# the cache is right for the round's result, when that is a step
+# the cache is right for the round's result, when that is a state
 def CacheOk(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +C: List<&2, DC.KC>, o: DC.Out) -> Data:
   match o:
     case DC.OStep{+s}:
       CInv(es, fs, t, DC.Sk.k(s), C)
-    case DC.OFix{s}:
-      Unit
+    case DC.OFix{+s}:
+      CInv(es, fs, t, DC.Sk.k(s), C)
     case DC.OOne{d}:
       Unit
     case DC.OVoid{g, dr, di}:
@@ -531,7 +531,7 @@ def FRel(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, fo: DC.FO, +o: 
 def c4_cache(m: Maybe<&2, DC.Link>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +s: DC.Sk, +C: List<&2, DC.KC>, +inv: CInv(es, fs, t, DC.Sk.k(s), C)) -> CacheOk(es, fs, t, C, DC.r.c4(m, s)):
   match m:
     case None{}:
-      Unit{}
+      inv
     case Some{+l}:
       inv
 

@@ -66,13 +66,13 @@ def lt3_c(+a: Nat, +b: Nat, +c2: Nat, +c: Nat, h: {KA.natle(1n+c2, c) == True{} 
 # A round
 # -------
 
-# a round that does not stop takes the measure down and keeps K in the span
+# a round that does not stop takes the measure down; K stays in the span
 def Step(+M: List<&2, List<&2, Nat>>, +ids: List<&2, Nat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +s: DC.Sk, o: DC.Out) -> Data:
   match o:
     case DC.OStep{+s2}:
       SK.Both({KA.natle(1n+mu(M, ids, s2), mu(M, ids, s)) == True{} : Bool}, GS.KSpan(es, fs, DC.Sk.k(s2)))
-    case DC.OFix{s2}:
-      Unit
+    case DC.OFix{+s2}:
+      GS.KSpan(es, fs, DC.Sk.k(s2))
     case DC.OOne{d}:
       Unit
     case DC.OVoid{g, dr, di}:
@@ -90,7 +90,7 @@ def r.c4_t(m: Maybe<&2, DC.Link>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>,
   hk: GS.KSpan(es, fs, DC.Sk.k(s))) -> Step(DC.kmons(DC.bases(es, fs)), ids, es, fs, s, DC.r.c4(m, s)):
   match m:
     case None{}:
-      Unit{}
+      hk
     case Some{+l}:
       c4_link(l, es, fs, cs, ids, s, hf, hp, hk)
 

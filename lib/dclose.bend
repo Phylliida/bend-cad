@@ -293,6 +293,16 @@ def kinit(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, rest: List<&2, DR.Fact>
     case Con{f, t}:
       kinit(es, fs, t, 1n+i, KS.ks.add(es, fs, k, DR.DPrem{i}))
 
+# the facts from position i
+def fdrop(i: Nat, fs: List<&2, DR.Fact>) -> List<&2, DR.Fact>:
+  match i fs:
+    case 0n fs:
+      fs
+    case 1n+j Nil{}:
+      Nil{}
+    case 1n+j Con{f, tl}:
+      fdrop(j, tl)
+
 def mpick(b: Bool, +n: DR.Node, rest: List<&2, Mem>) -> List<&2, Mem>:
   match b:
     case True{}:
@@ -1127,6 +1137,19 @@ def lslack(ids: List<&2, Nat>, +bs: List<&2, DR.Node>, +ls: List<&2, Link>) -> N
 def dfuel(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>) -> Nat:
   1n+Nat.add(mlen(kmons(bases(es, fs))), Nat.add(nlen(Con{DR.NFrame{}, snodes(segids(es))}), lslack(segids(es), Con{DR.NFrame{}, snodes(segids(es))}, Nil{})))
 
+# the records
+def mcount(ms: List<&2, Mem>) -> Nat:
+  match ms:
+    case Nil{}:
+      0n
+    case Con{m, t}:
+      1n+mcount(t)
+
+# enough fuel for a run from the state s to stop (dfuel, with s's records
+# for the nodes)
+def wfuel(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +s: Sk) -> Nat:
+  1n+Nat.add(mlen(kmons(bases(es, fs))), Nat.add(mcount(Sk.ms(s)), lslack(segids(es), Con{DR.NFrame{}, snodes(segids(es))}, Nil{})))
+
 # The closure's hypotheses
 # ------------------------
 
@@ -1585,6 +1608,20 @@ def frun(fuel: Nat, fo: FO, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: N
     case 1n+f FO{OVoid{sg, dr, di}, C}:
       OVoid{sg, dr, di}
 
+# run, returning the cache too
+def frun.fo(fuel: Nat, fo: FO, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, +oo: List<&2, Nat>, +ids: List<&2, Nat>) -> FO:
+  match fuel fo:
+    case 0n FO{o, C}:
+      FO{o, C}
+    case 1n+f FO{OStep{+s}, +C}:
+      frun.fo(f, fround(es, fs, t, cs, oo, ids, s, C), es, fs, t, cs, oo, ids)
+    case 1n+f FO{OFix{s}, C}:
+      FO{OFix{s}, C}
+    case 1n+f FO{OOne{d}, C}:
+      FO{OOne{d}, C}
+    case 1n+f FO{OVoid{sg, dr, di}, C}:
+      FO{OVoid{sg, dr, di}, C}
+
 # the closure of the facts fs in the context ctx, t past every variable
 def dclose(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat) -> Out:
   +cs = sp.of(ctx, SP{Nil{}, Nil{}})
@@ -1634,3 +1671,10 @@ def dclose.m(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QEx
       +cs = sp.of(ctx, SP{Nil{}, Nil{}})
       +oo = oids(segids(es), es, cs)
       frun(fuel, FO{OStep{Sk{k, minit(Con{DR.NFrame{}, snodes(segids(es))}, es, cs), Nil{}}}, kc.sel(snodes(oo), C, es, fs, t, k)}, es, fs, t, cs, oo, segids(es))
+
+# a run's start from the state s, kept for the first n facts: K given the
+# facts from position n of fs, as sk0 gives K all of them (lib/dwarmpf.bend)
+def wstart(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +n: Nat, s: Sk) -> Sk:
+  match s:
+    case Sk{+k, +ms, +ls}:
+      Sk{kinit(es, fs, fdrop(n, fs), n, k), ms, ls}
