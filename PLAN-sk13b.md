@@ -1269,6 +1269,19 @@ give both component identities that Valid's SameV asks for.
       store). Reducing stored rows too would turn dfastpf's cache
       invariant from equalities into positive-multiple relations, a large
       rework for about a quarter of one sketch. Not pursued.
+    - *Within one solve the cost is quadratic* (measured 2026-10-31): the
+      pass calls the closure about twice per constraint over a growing
+      prefix, each call from scratch, and a call costs about in proportion
+      to its facts. vertical-twice: 33 calls, 4.3 s in all, the last 0.34
+      s; base 15 calls, 276 ms, the last 49 ms. Perfect reuse would bound
+      the gain near the last call's cost; context changes (a kept
+      equation collapsing a segment) limit it.
+    - *Danielle, 2026-10-31:* first the single-call optimizations (cz
+      stopping early on reduced residuals; directions cached), then
+      measure how often a memo across calls (pure values, outputs
+      byte-identical) would hit, then decide between it and an
+      incremental closure. An incremental closure is acceptable only with
+      its correctness proven in the most general proper way.
     - The other sketches' time is elsewhere (base's profile: the runtime
       freeing terms, Pos arithmetic, monomial compares; a simplex in the
       refutation decision runs about 213k steps on base).
