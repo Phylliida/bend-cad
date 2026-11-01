@@ -46,9 +46,14 @@ def flen(fs: List<&2, DR.Fact>) -> Nat:
     case Con{f, t}:
       1n+flen(t)
 
-# what a conclusion reads of a fact: its e, and its statement's judgment
+def fds(f: DR.Fact) -> Maybe<&2, DR.DStat>:
+  match f:
+    case DR.Fact{e, nd, ds}:
+      ds
+
+# what a derivation reads of a fact: its e and its statement (not its nd)
 def FAg(+f: DR.Fact, +g: DR.Fact) -> Data:
-  SK.Both({DR.fact.e(Some{f}) == DR.fact.e(Some{g}) : E.QExpr}, {DR.fact.pj(Some{f}) == DR.fact.pj(Some{g}) : DR.Jd})
+  SK.Both({DR.fact.e(Some{f}) == DR.fact.e(Some{g}) : E.QExpr}, {fds(f) == fds(g) : Maybe<&2, DR.DStat>})
 
 # fs2 agrees with fs1 at every position of fs1
 def Pre(fs1: List<&2, DR.Fact>, fs2: List<&2, DR.Fact>) -> Data:
@@ -109,9 +114,22 @@ def fag_e(+f: DR.Fact, +g: DR.Fact, h: FAg(f, g)) -> {DR.fact.e(Some{f}) == DR.f
   (a, b) = h
   a
 
-def fag_pj(+f: DR.Fact, +g: DR.Fact, h: FAg(f, g)) -> {DR.fact.pj(Some{f}) == DR.fact.pj(Some{g}) : DR.Jd}:
+def pj_ds(+e1: E.QExpr, +n1: List<&2, Nat>, +e2: E.QExpr, +n2: List<&2, Nat>, d: Maybe<&2, DR.DStat>) -> {DR.fact.pj(Some{DR.Fact{e1, n1, d}}) == DR.fact.pj(Some{DR.Fact{e2, n2, d}}) : DR.Jd}:
+  match d:
+    case None{}:
+      {==}
+    case Some{DR.DStat{+a, +x, +l}}:
+      {==}
+
+def fag.ds(+f: DR.Fact, +g: DR.Fact, h: FAg(f, g)) -> {fds(f) == fds(g) : Maybe<&2, DR.DStat>}:
   (a, b) = h
   b
+
+def fag_pj(f: DR.Fact, g: DR.Fact, h: FAg(f, g)) -> {DR.fact.pj(Some{f}) == DR.fact.pj(Some{g}) : DR.Jd}:
+  match f g:
+    case DR.Fact{+e1, +n1, +d1} DR.Fact{+e2, +n2, +d2}:
+      %fag.ds(DR.Fact{e1, n1, d1}, DR.Fact{e2, n2, d2}, h) : {DR.fact.pj(Some{DR.Fact{e1, n1, d1}}) == DR.fact.pj(Some{DR.Fact{e2, n2, _}}) : DR.Jd}
+      pj_ds(e1, n1, e2, n2, d1)
 
 def nolt(+i: Nat, h: {SV.lt(i, 0n) == True{} : Bool}) -> Empty:
   KA.tf(Equal.sym(Bool, False{}, True{}, KB.lt_zero(i, h)))

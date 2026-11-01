@@ -43,13 +43,6 @@ def absurd(-A: Type, x: Empty) -> A:
 # The facts
 # ---------
 
-def pj_nd(+e: E.QExpr, +n1: List<&2, Nat>, +n2: List<&2, Nat>, ds: Maybe<&2, DR.DStat>) -> {DR.fact.pj(Some{DR.Fact{e, n1, ds}}) == DR.fact.pj(Some{DR.Fact{e, n2, ds}}) : DR.Jd}:
-  match ds:
-    case None{}:
-      {==}
-    case Some{DR.DStat{+a, +x, +l}}:
-      {==}
-
 def fpick_pre(b: Bool, +f: DR.Fact, +g: DR.Fact, +r1: List<&2, DR.Fact>, +r2: List<&2, DR.Fact>, +hf: MP.FAg(f, g), +hr: MP.Pre(r1, r2)) -> MP.Pre(SV.facts.pick(b, f, r1), SV.facts.pick(b, g, r2)):
   match b:
     case True{}:
@@ -74,7 +67,7 @@ def facts_pre(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +cs: List<&2, Nat>, +s
     case Con{+e, +t}:
       fpick_pre(SV.mem(SV.nth(own, k), cs), DR.Fact{e, SV.fnd.pick(w1, cls1, k), SV.dstat_of(SV.ents(sk), SV.kind_at(sk, SV.nth(own, k)))}, DR.Fact{e, SV.fnd.pick(w2, cls2, k), SV.dstat_of(SV.ents(sk), SV.kind_at(sk, SV.nth(own, k)))},
         SV.facts.go(t, own, cs, sk, cls1, w1, 1n+k), SV.facts.go(t, own, cs, sk, cls2, w2, 1n+k),
-        ({==}, pj_nd(e, SV.fnd.pick(w1, cls1, k), SV.fnd.pick(w2, cls2, k), SV.dstat_of(SV.ents(sk), SV.kind_at(sk, SV.nth(own, k))))),
+        ({==}, {==}),
         facts_pre(t, own, cs, sk, cls1, w1, cls2, w2, 1n+k))
 
 def facts_len(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +cs: List<&2, Nat>, +sk: SK.Sketch, +cls1: List<&2, SV.Class>, +w1: Bool, +cls2: List<&2, SV.Class>, +w2: Bool, +k: Nat)
