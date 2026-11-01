@@ -270,3 +270,75 @@ def pass2_st.m(rs: List<&2, SK.Rec>, +es: List<&2, E.QExpr>, +own: List<&2, Nat>
 
 def final2_st(+sk: SK.Sketch) -> PA.PS:
   pass2_st.m(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)), Nil{}, m0(sk))
+
+# The pass with warm starts (PLAN-sk13b B4.8, the incremental closure)
+# -------------------------------------------------------------------
+# W is a run's state kept across calls (lib/dclose.bend WK): each call
+# starts from it, given the facts past its own.
+
+def cw2.pick.w(b: Bool, +k: Nat, +e: E.QExpr, +r: EL.Res, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +ds: List<&2, SV.Drop>, us: List<&2, Nat>,
+  +sk: SK.Sketch, +c: Nat, +F0: List<&2, DR.Fact>, +cx: List<&2, E.QExpr>, +W: DC.WK) -> PA.CW:
+  match b:
+    case True{}:
+      PA.CW{rows, B, bp, Con{PA.drop_of(k, r, e, B, bp), ds}, us}
+    case False{}:
+      +fs = fk(sk, c, F0, ds, k)
+      cw2.dir(ddec.o(DC.FO.o(DC.wcall(SV.ents(sk), fs, DCF.tv(sk), W)), SV.ents(sk), fs, DCF.tv(sk), e, cstat(sk, c)), k, e, r, rows, B, bp, ds, us, SV.ents(sk), fs)
+
+def cw2.res.w(+k: Nat, +e: E.QExpr, st: PA.CW, +sk: SK.Sketch, +c: Nat, +F0: List<&2, DR.Fact>, +cx: List<&2, E.QExpr>, +W: DC.WK) -> PA.CW:
+  match st:
+    case PA.CW{+rows, +B, +bp, +ds, us}:
+      +r = EL.resid(rows, e)
+      cw2.pick.w(EP.isnil(EP.resp(r)), k, e, r, rows, B, bp, ds, us, sk, c, F0, cx, W)
+
+def cw2.at.w(o: Bool, +k: Nat, +e: E.QExpr, st: PA.CW, +sk: SK.Sketch, +c: Nat, +F0: List<&2, DR.Fact>, +cx: List<&2, E.QExpr>, +W: DC.WK) -> PA.CW:
+  match o:
+    case True{}:
+      cw2.res.w(k, e, st, sk, c, F0, cx, W)
+    case False{}:
+      st
+
+def cwalk2.w(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +c: Nat, +k: Nat, st: PA.CW, +sk: SK.Sketch, +F0: List<&2, DR.Fact>, +cx: List<&2, E.QExpr>, +W: DC.WK) -> PA.CW:
+  match es:
+    case Nil{}:
+      st
+    case Con{e, t}:
+      cwalk2.w(t, own, c, 1n+k, cw2.at.w(SV.eq(SV.nth(own, k), c), k, e, st, sk, c, F0, cx, W), sk, F0, cx, W)
+
+def one2.c.w(b: Bool, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +c: Nat, +kb: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>,
+  +cls: List<&2, SV.Class>, +cx: List<&2, E.QExpr>, +W: DC.WK) -> PA.PO:
+  match b:
+    case True{}:
+      PA.PO{SV.Conflict{DCF.support2(sk, c, cx, kb), DCF.cnd(sk, c, DCF.support2(sk, c, cx, kb), cx)}, PA.PS{kb, rows, B, bp, vm}}
+    case False{}:
+      PA.one.w(cwalk2.w(es, own, c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}, sk, SV.facts.go(es, own, kb, sk, cls, True{}, 0n), cx, W), sk, adj, f, c, kb, rows, B, bp, vm)
+
+# one constraint from W (at its context) and foA, the call on c's facts
+# with the kept ones
+def one2.w(+es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +c: Nat, st: PA.PS, +cls: List<&2, SV.Class>, +W: DC.WK, foA: DC.FO) -> PA.PO:
+  match st:
+    case PA.PS{+kb, +rows, +B, +bp, +vm}:
+      +cx = SV.eqs_of(sk, Con{c, kb})
+      one2.c.w(DCF.refutable2.o(sk, c, kb, DC.FO.o(foA)), es, own, sk, adj, f, c, kb, rows, B, bp, vm, cls, cx, W)
+
+def wnext(b: Bool, +W: DC.WK, +W2: DC.WK) -> DC.WK:
+  match b:
+    case True{}:
+      W
+    case False{}:
+      W2
+
+def pass2.w(rs: List<&2, SK.Rec>, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +i: Nat, +st: PA.PS, +cls: List<&2, SV.Class>, +W: DC.WK) -> List<&2, SV.Class>:
+  match rs:
+    case Nil{}:
+      Nil{}
+    case Con{SK.Rec{id, True{}, k}, t}:
+      Con{SV.Kept{Nil{}}, pass2.w(t, es, own, sk, adj, f, 1n+i, st, csnoc(cls, SV.Kept{Nil{}}), W)}
+    case Con{SK.Rec{id, False{}, k}, t}:
+      +Wc = DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, pkb(st)}), DC.SP{Nil{}, Nil{}}), W)
+      +foA = DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, pkb(st)}), DCF.tv(sk), Wc)
+      +o = one2.w(es, own, sk, adj, f, i, st, cls, Wc, foA)
+      Con{PA.PO.k(o), pass2.w(t, es, own, sk, adj, f, 1n+i, PA.PO.st(o), csnoc(cls, PA.PO.k(o)), wnext(SV.is_red(PA.PO.k(o)), Wc, DC.wk.next(foA, SV.rfacts(sk, Con{i, pkb(st)}), Wc)))}
+
+def classes2.w(+sk: SK.Sketch) -> List<&2, SV.Class>:
+  pass2.w(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)), Nil{}, DC.wk0(SV.ents(sk), DCF.tv(sk), DC.SP{Nil{}, Nil{}}))

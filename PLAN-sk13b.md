@@ -1402,6 +1402,23 @@ give both component identities that Valid's SameV asks for.
         its fixpoint; so a warm run gives Ex. (C) the pass threads the
         carried state (it replaces the memo M: its K and cache are part
         of it) and B4.4/B4.5 are re-proven over it.
+      - (B) done 2026-11-01 (lib/dwarmpf.bend; gate PASS): skinv_pre,
+        kspan_pre, kfw, wstart_t, mu_w (DC.wfuel: dfuel with the state's
+        records, past μ of every state, no pigeonhole needed), warm_ex,
+        frun_fo (CacheOk now covers fixpoints), run_inv (Step reports K's
+        span at a fixpoint), and the context step: DC.sameopen, open_tr (a
+        non-segment's direction is 0, collapsed anywhere), tinv_ctx.
+      - Measured before (C), the warm pass as separate functions
+        (dpass.bend pass2.w, unproven, a throwaway probe): instructions
+        base 4.85 G (memo 3.09 G) -> 1.50 G, oncircle-pairs 48.8 G (35.3 G)
+        -> 10.3 G, vertical-twice 79.1 G (56.9 G) -> 16.2 G; outputs
+        byte-identical to today's, the amber drop's nd included.
+      - (C) plan: WOk/WInv (the state for some P agreeing with rfacts(kb),
+        in the context it carries), wk_at_ok, wcall_ex, wnext_ok; the warm
+        and the cold refutation decisions are the same Bool (both exact:
+        ro_eq), so the conflict branch's proof stands; dcwpf and dpasspf
+        thread the state and its invariant (their macros $WP, $O2,
+        $PARGS); then pass2.w becomes pass2 and the memo pass goes.
     - The other sketches' time is elsewhere (base's profile: the runtime
       freeing terms, Pos arithmetic, monomial compares; a simplex in the
       refutation decision runs about 213k steps on base).

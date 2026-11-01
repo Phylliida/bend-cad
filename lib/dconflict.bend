@@ -94,6 +94,22 @@ def ref2.bm(b: Bool, +sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, 
 def refutable2.m(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, ma: DC.MK) -> Bool:
   ref2.bm(CO.refutable(sk, c, cs), sk, c, cs, cx, ma)
 
+# The same, from a call's outcome o on the facts rfacts(sk, c : cs)
+# (lib/dclose.bend wcall: a run warm-started from a kept state)
+
+def dirref.o(o: DC.Out, +sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>) -> Maybe<&2, DR.DRef>:
+  DF.dref(o, SV.ents(sk), SV.rfacts(sk, Con{c, cs}), CO.supp.ss(sk, c, cs), angl(sk, Con{c, cs}))
+
+def ref2.bo(b: Bool, +sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, o: DC.Out) -> Bool:
+  match b:
+    case True{}:
+      True{}
+    case False{}:
+      issome(dirref.o(o, sk, c, cs))
+
+def refutable2.o(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, o: DC.Out) -> Bool:
+  ref2.bo(CO.refutable(sk, c, cs), sk, c, cs, o)
+
 # the candidates rest, tested in order, keep the ones already kept
 def filt2(rest: List<&2, Nat>, +sk: SK.Sketch, +c: Nat, +cx: List<&2, E.QExpr>, +keep: List<&2, Nat>) -> List<&2, Nat>:
   match rest:

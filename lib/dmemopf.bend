@@ -40,11 +40,7 @@ def absurd(-A: Type, x: Empty) -> A:
 # ----------------
 
 def flen(fs: List<&2, DR.Fact>) -> Nat:
-  match fs:
-    case Nil{}:
-      0n
-    case Con{f, t}:
-      1n+flen(t)
+  DC.flen(fs)
 
 def fds(f: DR.Fact) -> Maybe<&2, DR.DStat>:
   match f:

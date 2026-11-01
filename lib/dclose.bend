@@ -1697,3 +1697,70 @@ def wstart(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +n: Nat, s: Sk) -> Sk:
   match s:
     case Sk{+k, +ms, +ls}:
       Sk{kinit(es, fs, fdrop(n, fs), n, k), ms, ls}
+
+# The state kept across calls
+# ---------------------------
+# The pass keeps a run's state for the first n facts, K's cache for it
+# (every segment), and the span of the context it was built in; a call
+# whose facts extend those starts from it (lib/dwarmpf.bend).
+
+type WK is Data:
+  WK{n: Nat, s: Sk, C: List<&2, KC>, cs: SP}
+
+def flen(fs: List<&2, DR.Fact>) -> Nat:
+  match fs:
+    case Nil{}:
+      0n
+    case Con{f, t}:
+      1n+flen(t)
+
+def FO.o(fo: FO) -> Out:
+  match fo:
+    case FO{o, C}:
+      o
+
+# no facts, in the context's span cs
+def wk0(+es: List<&2, SK.Ent>, +t: Nat, +cs: SP) -> WK:
+  WK{0n, Sk{KS.ks0(), minit(Con{DR.NFrame{}, snodes(segids(es))}, es, cs), Nil{}}, kc.of(snodes(segids(es)), es, Nil{}, t, KS.ks0()), cs}
+
+def wk.pick(b: Bool, +es: List<&2, SK.Ent>, +t: Nat, +cs: SP, +n: Nat, +s: Sk, +C: List<&2, KC>) -> WK:
+  match b:
+    case True{}:
+      WK{n, s, C, cs}
+    case False{}:
+      wk0(es, t, cs)
+
+# w, for the context's span cs: kept if the segments collapse alike
+def wk.at(+es: List<&2, SK.Ent>, +t: Nat, +cs: SP, w: WK) -> WK:
+  match w:
+    case WK{+n, +s, +C, +cs0}:
+      wk.pick(sameopen(segids(es), es, cs0, cs), es, t, cs, n, s, C)
+
+def wcall.m(m: MK, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, s: Sk) -> FO:
+  match m s:
+    case MK{n2, +k2, +C2} Sk{k, +ms, +ls}:
+      +s2 = {Sk{k2, ms, ls} : Sk}
+      frun.fo(wfuel(es, fs, s2), FO{OStep{s2}, C2}, es, fs, t, cs, oids(segids(es), es, cs), segids(es))
+
+# the run on the facts fs from w (its context's span), with the cache
+def wcall(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, w: WK) -> FO:
+  match w:
+    case WK{+n, +s, +C, +cs}:
+      wcall.m(mext(fdrop(n, fs), es, fs, t, n, Sk.k(s), C), es, fs, t, cs, s)
+
+def wk.fo(fo: FO, +nfs: Nat, +cs: SP, +w: WK) -> WK:
+  match fo:
+    case FO{OStep{s}, C}:
+      w
+    case FO{OFix{+s}, +C}:
+      WK{nfs, s, C, cs}
+    case FO{OOne{d}, C}:
+      w
+    case FO{OVoid{g, dr, di}, C}:
+      w
+
+# after the call fo on facts fs from w: its fixpoint, if it ended at one
+def wk.next(fo: FO, +fs: List<&2, DR.Fact>, w: WK) -> WK:
+  match w:
+    case WK{+n, +s, +C, +cs}:
+      wk.fo(fo, flen(fs), cs, WK{n, s, C, cs})

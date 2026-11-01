@@ -933,3 +933,227 @@ def tinv_ctx(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx1: List<&2, E.QE
   (h1, hk) = hi
   (hsk, hsh) = h1
   ((skinv_ctx(es, fs, ctx1, ctx2, t, s, hso, hsk), shinv_ctx(es, fs, OP.cspan(ctx1), OP.cspan(ctx2), DC.segids(es), s, hso, hsh)), hk)
+
+# The state kept across calls
+# ---------------------------
+
+def fag_tr(+f: DR.Fact, +g: DR.Fact, +h: DR.Fact, a: MP.FAg(f, g), b: MP.FAg(g, h)) -> MP.FAg(f, h):
+  (ae, ad) = a
+  (be, bd) = b
+  (Equal.trans(E.QExpr, DR.fact.e(Some{f}), DR.fact.e(Some{g}), DR.fact.e(Some{h}), ae, be), Equal.trans(Maybe<&2, DR.DStat>, MP.fds(f), MP.fds(g), MP.fds(h), ad, bd))
+
+def pre_trans(P: List<&2, DR.Fact>, Q: List<&2, DR.Fact>, R: List<&2, DR.Fact>, h1: MP.Pre(P, Q), h2: MP.Pre(Q, R)) -> MP.Pre(P, R):
+  match P Q R:
+    case Nil{} Q R:
+      Unit{}
+    case Con{+f, +pt} Nil{} R:
+      absurd(MP.Pre(Con{f, pt}, R), h1)
+    case Con{+f, +pt} Con{+g, +qt} Nil{}:
+      absurd(MP.Pre(Con{f, pt}, Nil{}), h2)
+    case Con{+f, +pt} Con{+g, +qt} Con{+h, +rt}:
+      (a1, t1) = h1
+      (a2, t2) = h2
+      (fag_tr(f, g, h, a1, a2), pre_trans(pt, qt, rt, t1, t2))
+
+# w is a run's state for the facts P (n = |P|) in the context ctx, with
+# K's cache for it
+def WOk(+es: List<&2, SK.Ent>, +P: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, w: DC.WK) -> Data:
+  match w:
+    case DC.WK{+n, +s, +C, +cs}:
+      SK.Both({n == MP.flen(P) : Nat}, SK.Both({cs == OP.cspan(ctx) : DC.SP}, SK.Both(TRM.TInv(es, P, ctx, t, DC.segids(es), s), FP.CInv(es, P, t, DC.Sk.k(s), C))))
+
+# w is such a state for facts that the facts R agree with
+def WInv(+es: List<&2, SK.Ent>, +R: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +w: DC.WK) -> Data:
+  Sigma<&2, &2, List<&2, DR.Fact>, P => SK.Both(MP.Pre(P, R), WOk(es, P, ctx, t, w))>
+
+# no facts yet
+def wk0_ok(+es: List<&2, SK.Ent>, +ctx: List<&2, E.QExpr>, +t: Nat, +hz: {DC.zb(es, t) == True{} : Bool}) -> WOk(es, Nil{}, ctx, t, DC.wk0(es, t, OP.cspan(ctx))):
+  ({==}, ({==}, (((RD.sk0_ok(es, Nil{}, ctx, t, hz, {==}), SH.sk0_sh(es, Nil{}, OP.cspan(ctx))), Unit{}),
+    FP.kc_of_inv(DC.snodes(DC.segids(es)), es, Nil{}, t, KS.ks0()))))
+
+def wka.pick(b: Bool, +es: List<&2, SK.Ent>, +P: List<&2, DR.Fact>, +R: List<&2, DR.Fact>, +ctx1: List<&2, E.QExpr>, +ctx2: List<&2, E.QExpr>, +t: Nat, +n: Nat, +s: DC.Sk, +C: List<&2, DC.KC>,
+  +eb: {DC.sameopen(DC.segids(es), es, OP.cspan(ctx1), OP.cspan(ctx2)) == b : Bool}, +hp: MP.Pre(P, R), +hn: {n == MP.flen(P) : Nat}, +hti: TRM.TInv(es, P, ctx1, t, DC.segids(es), s), +hci: FP.CInv(es, P, t, DC.Sk.k(s), C),
+  +hz: {DC.zb(es, t) == True{} : Bool}) -> WInv(es, R, ctx2, t, DC.wk.pick(b, es, t, OP.cspan(ctx2), n, s, C)):
+  match b:
+    case True{}:
+      (P, (hp, (hn, ({==}, (tinv_ctx(es, P, ctx1, ctx2, t, s, eb, hti), hci)))))
+    case False{}:
+      (Nil{}, (Unit{}, wk0_ok(es, ctx2, t, hz)))
+
+def wka.c(+es: List<&2, SK.Ent>, +P: List<&2, DR.Fact>, +R: List<&2, DR.Fact>, +ctx1: List<&2, E.QExpr>, +ctx2: List<&2, E.QExpr>, +t: Nat, w: DC.WK, +hp: MP.Pre(P, R), ho: WOk(es, P, ctx1, t, w),
+  +hz: {DC.zb(es, t) == True{} : Bool}) -> WInv(es, R, ctx2, t, DC.wk.at(es, t, OP.cspan(ctx2), w)):
+  match w:
+    case DC.WK{+n, +s, +C, +cs}:
+      (hn, r1) = ho
+      (hcs, r2) = r1
+      (hti, hci) = r2
+      %Equal.sym(DC.SP, cs, OP.cspan(ctx1), hcs) : WInv(es, R, ctx2, t, DC.wk.pick(DC.sameopen(DC.segids(es), es, _, OP.cspan(ctx2)), es, t, OP.cspan(ctx2), n, s, C))
+      wka.pick(DC.sameopen(DC.segids(es), es, OP.cspan(ctx1), OP.cspan(ctx2)), es, P, R, ctx1, ctx2, t, n, s, C, {==}, hp, hn, hti, hci, hz)
+
+# the kept state, brought to another context
+def wk_at_ok(+es: List<&2, SK.Ent>, +R: List<&2, DR.Fact>, +ctx1: List<&2, E.QExpr>, +ctx2: List<&2, E.QExpr>, +t: Nat, +w: DC.WK, h: WInv(es, R, ctx1, t, w),
+  +hz: {DC.zb(es, t) == True{} : Bool}) -> WInv(es, R, ctx2, t, DC.wk.at(es, t, OP.cspan(ctx2), w)):
+  (P, hb) = h
+  (hp, ho) = hb
+  wka.c(es, P, R, ctx1, ctx2, t, w, hp, ho, hz)
+
+def kgen_db(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +d: DR.Der, kg: IV.KGen(es, fs, ctx, t, d)) -> MP.DB(d, MP.flen(fs)):
+  (v, r1) = kg
+  vd_db(es, fs, ctx, d, v)
+
+def allkd_dsb(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, ha: IV.AllKD(es, fs, ctx, t, ds)) -> MP.DsB(ds, MP.flen(fs)):
+  match ds:
+    case Nil{}:
+      Unit{}
+    case Con{+d, +tl}:
+      (kg, rt) = ha
+      (kgen_db(es, fs, ctx, t, d, kg), allkd_dsb(tl, es, fs, ctx, t, rt))
+
+# at a fixpoint: the run's invariants, and the cache for it
+def FixC.o(o: DC.Out, +C: List<&2, DC.KC>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat) -> Data:
+  match o:
+    case DC.OStep{s}:
+      Unit
+    case DC.OFix{+s}:
+      SK.Both(TRM.TInv(es, fs, ctx, t, DC.segids(es), s), FP.CInv(es, fs, t, DC.Sk.k(s), C))
+    case DC.OOne{d}:
+      Unit
+    case DC.OVoid{g, dr, di}:
+      Unit
+
+def FixC(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fo: DC.FO) -> Data:
+  match fo:
+    case DC.FO{o, +C}:
+      FixC.o(o, C, es, fs, ctx, t)
+
+# what a warm call gives: Ex of its outcome, and FixC
+def WC(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +fo: DC.FO) -> Data:
+  SK.Both(CX.Ex(es, fs, ctx, t, DC.FO.o(fo)), FixC(es, fs, ctx, t, fo))
+
+def wc.o(o: DC.Out, +C: List<&2, DC.KC>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, hc: FP.CacheOk(es, fs, t, C, o), hr: RunI(es, fs, ctx, t, DC.segids(es), o), hx: CX.Ex(es, fs, ctx, t, o))
+  -> WC(es, fs, ctx, t, DC.FO{o, C}):
+  match o:
+    case DC.OStep{+s}:
+      (hx, Unit{})
+    case DC.OFix{+s}:
+      (hx, (hr, hc))
+    case DC.OOne{+d}:
+      (hx, Unit{})
+    case DC.OVoid{+g, +dr, +di}:
+      (hx, Unit{})
+
+def wc_of(fo: DC.FO, +o: DC.Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, h: FP.FRel(es, fs, t, fo, o), +hr: RunI(es, fs, ctx, t, DC.segids(es), o), +hx: CX.Ex(es, fs, ctx, t, o))
+  -> WC(es, fs, ctx, t, fo):
+  match fo:
+    case DC.FO{+o2, +C}:
+      (eo, hc) = h
+      %Equal.sym(DC.Out, o2, o, eo) : WC(es, fs, ctx, t, DC.FO{_, C})
+      wc.o(o, C, es, fs, ctx, t, hc, hr, hx)
+
+def wcm.r(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +k2: KS.KS, +ms: List<&2, DC.Mem>, +ls: List<&2, DC.Link>, +C2: List<&2, DC.KC>,
+  +hc2: FP.CInv(es, fs, t, k2, C2), +ti: TRM.TInv(es, fs, ctx, t, DC.segids(es), DC.Sk{k2, ms, ls}), +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool})
+  -> WC(es, fs, ctx, t, DC.frun.fo(DC.wfuel(es, fs, DC.Sk{k2, ms, ls}), DC.FO{DC.OStep{DC.Sk{k2, ms, ls}}, C2}, es, fs, t, OP.cspan(ctx), DC.oids(DC.segids(es), es, OP.cspan(ctx)), DC.segids(es))):
+  wc_of(DC.frun.fo(DC.wfuel(es, fs, DC.Sk{k2, ms, ls}), DC.FO{DC.OStep{DC.Sk{k2, ms, ls}}, C2}, es, fs, t, OP.cspan(ctx), DC.oids(DC.segids(es), es, OP.cspan(ctx)), DC.segids(es)),
+    DC.run(DC.wfuel(es, fs, DC.Sk{k2, ms, ls}), DC.OStep{DC.Sk{k2, ms, ls}}, es, fs, t, OP.cspan(ctx), DC.segids(es)), es, fs, ctx, t,
+    frun_fo(DC.wfuel(es, fs, DC.Sk{k2, ms, ls}), DC.FO{DC.OStep{DC.Sk{k2, ms, ls}}, C2}, DC.OStep{DC.Sk{k2, ms, ls}}, es, fs, t, OP.cspan(ctx), DC.segids(es), ({==}, hc2)),
+    run_inv(DC.wfuel(es, fs, DC.Sk{k2, ms, ls}), DC.OStep{DC.Sk{k2, ms, ls}}, es, fs, ctx, t, DC.segids(es), ti, hz, hb),
+    warm_ex(es, fs, ctx, t, DC.Sk{k2, ms, ls}, ti, hz, hb))
+
+def wcm(m: DC.MK, s: DC.Sk, +es: List<&2, SK.Ent>, +P: List<&2, DR.Fact>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +n: Nat, +nn: Nat,
+  hm: MP.MOk(es, fs, t, nn, DC.kinit(es, fs, DC.fdrop(n, fs), n, DC.Sk.k(s)), m), hti: TRM.TInv(es, P, ctx, t, DC.segids(es), s), +hpf: MP.Pre(P, fs), +en: {MP.flen(P) == n : Nat},
+  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}) -> WC(es, fs, ctx, t, DC.wcall.m(m, es, fs, t, OP.cspan(ctx), s)):
+  match m s:
+    case DC.MK{+n2, +k2, +C2} DC.Sk{+k, +ms, +ls}:
+      (hn2, r1) = hm
+      (hk2, hc2) = r1
+      wcm.r(es, fs, ctx, t, k2, ms, ls, C2, hc2,
+        (%Equal.sym(KS.KS, k2, DC.kinit(es, fs, DC.fdrop(n, fs), n, k), hk2) : TRM.TInv(es, fs, ctx, t, DC.segids(es), DC.Sk{_, ms, ls})
+          wstart_t(es, P, fs, ctx, t, DC.segids(es), n, DC.Sk{k, ms, ls}, hpf, en, hb, hti)), hz, hb)
+
+def wcw.c(+es: List<&2, SK.Ent>, +P: List<&2, DR.Fact>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +n: Nat, +s: DC.Sk, +C: List<&2, DC.KC>,
+  +hpf: MP.Pre(P, fs), +hn: {n == MP.flen(P) : Nat}, +hti: TRM.TInv(es, P, ctx, t, DC.segids(es), s), +hci: FP.CInv(es, P, t, DC.Sk.k(s), C),
+  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}) -> WC(es, fs, ctx, t, DC.wcall(es, fs, t, DC.WK{n, s, C, OP.cspan(ctx)})):
+  wcm(DC.mext(DC.fdrop(n, fs), es, fs, t, n, DC.Sk.k(s), C), s, es, P, fs, ctx, t, n, Nat.add(n, MP.flen(DC.fdrop(n, fs))),
+    MP.mext_ok(DC.fdrop(n, fs), es, fs, t, n, DC.Sk.k(s), C, MP.cinv_pre(es, P, fs, t, DC.Sk.k(s), C, hpf,
+      allkd_dsb(KS.ks.ds(DC.Sk.k(s)), es, P, ctx, t, kinvd_allkd(es, P, ctx, t, DC.Sk.k(s), RR.sk.k(es, P, ctx, t, s, ti.sk(es, P, ctx, t, DC.segids(es), s, hti)))), hci)),
+    hti, hpf, Equal.sym(Nat, n, MP.flen(P), hn), hz, hb)
+
+def wcw(w: DC.WK, +es: List<&2, SK.Ent>, +P: List<&2, DR.Fact>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +hpf: MP.Pre(P, fs), ho: WOk(es, P, ctx, t, w),
+  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}) -> WC(es, fs, ctx, t, DC.wcall(es, fs, t, w)):
+  match w:
+    case DC.WK{+n, +s, +C, +cs}:
+      (hn, r1) = ho
+      (hcs, r2) = r1
+      (hti, hci) = r2
+      %Equal.sym(DC.SP, cs, OP.cspan(ctx), hcs) : WC(es, fs, ctx, t, DC.wcall(es, fs, t, DC.WK{n, s, C, _}))
+      wcw.c(es, P, fs, ctx, t, n, s, C, hpf, hn, hti, hci, hz, hb)
+
+def wcall_wc.c(+es: List<&2, SK.Ent>, +P: List<&2, DR.Fact>, +R: List<&2, DR.Fact>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +w: DC.WK, hb2: SK.Both(MP.Pre(P, R), WOk(es, P, ctx, t, w)), +hr: MP.Pre(R, fs),
+  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}) -> WC(es, fs, ctx, t, DC.wcall(es, fs, t, w)):
+  (hp, ho) = hb2
+  wcw(w, es, P, fs, ctx, t, pre_trans(P, R, fs, hp, hr), ho, hz, hb)
+
+# a call from the kept state on facts that agree with R
+def wcall_wc(+es: List<&2, SK.Ent>, +R: List<&2, DR.Fact>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +w: DC.WK, h: WInv(es, R, ctx, t, w), +hr: MP.Pre(R, fs),
+  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}) -> WC(es, fs, ctx, t, DC.wcall(es, fs, t, w)):
+  (P, hb2) = h
+  wcall_wc.c(es, P, R, fs, ctx, t, w, hb2, hr, hz, hb)
+
+def wc.ex(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +fo: DC.FO, h: WC(es, fs, ctx, t, fo)) -> CX.Ex(es, fs, ctx, t, DC.FO.o(fo)):
+  (a, b) = h
+  a
+
+def wc.fc(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +fo: DC.FO, h: WC(es, fs, ctx, t, fo)) -> FixC(es, fs, ctx, t, fo):
+  (a, b) = h
+  b
+
+# its outcome gives Ex
+def wcall_ex(+es: List<&2, SK.Ent>, +R: List<&2, DR.Fact>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +w: DC.WK, +h: WInv(es, R, ctx, t, w), +hr: MP.Pre(R, fs),
+  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}) -> CX.Ex(es, fs, ctx, t, DC.FO.o(DC.wcall(es, fs, t, w))):
+  wc.ex(es, fs, ctx, t, DC.wcall(es, fs, t, w), wcall_wc(es, R, fs, ctx, t, w, h, hr, hz, hb))
+
+def winv_pre.c(+es: List<&2, SK.Ent>, +P: List<&2, DR.Fact>, +R: List<&2, DR.Fact>, +R2: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +w: DC.WK, hb: SK.Both(MP.Pre(P, R), WOk(es, P, ctx, t, w)), +hr2: MP.Pre(R, R2)) -> WInv(es, R2, ctx, t, w):
+  (hp, ho) = hb
+  (P, (pre_trans(P, R, R2, hp, hr2), ho))
+
+def winv_pre(+es: List<&2, SK.Ent>, +R: List<&2, DR.Fact>, +R2: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +w: DC.WK, h: WInv(es, R, ctx, t, w), +hr2: MP.Pre(R, R2)) -> WInv(es, R2, ctx, t, w):
+  (P, hb) = h
+  winv_pre.c(es, P, R, R2, ctx, t, w, hb, hr2)
+
+def wn.o(o: DC.Out, +C2: List<&2, DC.KC>, +es: List<&2, SK.Ent>, +R2: List<&2, DR.Fact>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +n: Nat, +s: DC.Sk, +C: List<&2, DC.KC>, +cs: DC.SP,
+  fc: FixC.o(o, C2, es, fs, ctx, t), +hw: WInv(es, R2, ctx, t, DC.WK{n, s, C, cs}), +hcs: {cs == OP.cspan(ctx) : DC.SP}, +hf2: MP.Pre(fs, R2))
+  -> WInv(es, R2, ctx, t, DC.wk.fo(DC.FO{o, C2}, DC.flen(fs), cs, DC.WK{n, s, C, cs})):
+  match o:
+    case DC.OStep{+s2}:
+      hw
+    case DC.OFix{+s2}:
+      (ti, ci) = fc
+      (fs, (hf2, ({==}, (hcs, (ti, ci)))))
+    case DC.OOne{+d}:
+      hw
+    case DC.OVoid{+g, +dr, +di}:
+      hw
+
+def wn.c(fo: DC.FO, +es: List<&2, SK.Ent>, +R2: List<&2, DR.Fact>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +n: Nat, +s: DC.Sk, +C: List<&2, DC.KC>, +cs: DC.SP,
+  fc: FixC(es, fs, ctx, t, fo), +hw: WInv(es, R2, ctx, t, DC.WK{n, s, C, cs}), +hcs: {cs == OP.cspan(ctx) : DC.SP}, +hf2: MP.Pre(fs, R2))
+  -> WInv(es, R2, ctx, t, DC.wk.fo(fo, DC.flen(fs), cs, DC.WK{n, s, C, cs})):
+  match fo:
+    case DC.FO{+o, +C2}:
+      wn.o(o, C2, es, R2, fs, ctx, t, n, s, C, cs, fc, hw, hcs, hf2)
+
+def wn.cs(+es: List<&2, SK.Ent>, +R: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +n: Nat, +s: DC.Sk, +C: List<&2, DC.KC>, +cs: DC.SP, h: WInv(es, R, ctx, t, DC.WK{n, s, C, cs})) -> {cs == OP.cspan(ctx) : DC.SP}:
+  (P, hb) = h
+  (hp, ho) = hb
+  (hn, r1) = ho
+  (hcs, r2) = r1
+  hcs
+
+# after the call on facts fs (R agreeing with them), the state kept for
+# facts R2 that agree with both: the call's fixpoint, else the same
+def wnext_ok(+es: List<&2, SK.Ent>, +R: List<&2, DR.Fact>, +fs: List<&2, DR.Fact>, +R2: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, w: DC.WK, +h: WInv(es, R, ctx, t, w),
+  +hr: MP.Pre(R, fs), +hr2: MP.Pre(R, R2), +hf2: MP.Pre(fs, R2), +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool})
+  -> WInv(es, R2, ctx, t, DC.wk.next(DC.wcall(es, fs, t, w), fs, w)):
+  match w:
+    case DC.WK{+n, +s, +C, +cs}:
+      wn.c(DC.wcall(es, fs, t, DC.WK{n, s, C, cs}), es, R2, fs, ctx, t, n, s, C, cs, wc.fc(es, fs, ctx, t, DC.wcall(es, fs, t, DC.WK{n, s, C, cs}), wcall_wc(es, R, fs, ctx, t, DC.WK{n, s, C, cs}, h, hr, hz, hb)),
+        winv_pre(es, R, R2, ctx, t, DC.WK{n, s, C, cs}, h, hr2), wn.cs(es, R, ctx, t, n, s, C, cs, h), hf2)
