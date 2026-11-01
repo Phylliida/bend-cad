@@ -126,6 +126,25 @@ def isopen(+es: List<&2, SK.Ent>, +cs: SP, n: DR.Node) -> Bool:
     case DR.NSeg{s}:
       SV.bnot(coll(es, cs, s))
 
+def beq(a: Bool, b: Bool) -> Bool:
+  match a b:
+    case True{} True{}:
+      True{}
+    case True{} False{}:
+      False{}
+    case False{} True{}:
+      False{}
+    case False{} False{}:
+      True{}
+
+# the segments ids are collapsed alike in the contexts' spans cs1 and cs2
+def sameopen(ids: List<&2, Nat>, +es: List<&2, SK.Ent>, +cs1: SP, +cs2: SP) -> Bool:
+  match ids:
+    case Nil{}:
+      True{}
+    case Con{+s, t}:
+      SV.band(beq(coll(es, cs1, s), coll(es, cs2, s)), sameopen(t, es, cs1, cs2))
+
 # Lists
 # -----
 

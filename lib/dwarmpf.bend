@@ -11,7 +11,11 @@
 #   invariants hold (wstart_t);
 # - DC.wfuel bounds the measure of every state (mu_w), so the run from a
 #   warm start stops, and gives Ex (warm_ex); frun.fo returns the cache
-#   too, right for a fixpoint (frun_fo).
+#   too, right for a fixpoint (frun_fo);
+# - between contexts whose spans collapse the sketch's segments alike
+#   (DC.sameopen), every node open in one is open in the other (open_tr: a
+#   non-segment's direction is 0, collapsed in any context), so the run's
+#   invariants carry (tinv_ctx).
 # Proofs only.
 
 import Base
@@ -714,3 +718,218 @@ def run_inv(fuel: Nat, o: DC.Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>,
       h
     case 1n+f DC.OVoid{+sg, +dr, +di}:
       h
+
+# Another context
+# ---------------
+
+def beq_eq(a: Bool, b: Bool, h: {DC.beq(a, b) == True{} : Bool}) -> {a == b : Bool}:
+  match a b:
+    case True{} True{}:
+      {==}
+    case True{} False{}:
+      absurd({True{} == False{} : Bool}, ft(h))
+    case False{} True{}:
+      absurd({False{} == True{} : Bool}, ft(h))
+    case False{} False{}:
+      {==}
+
+def so.g(g: Bool, +c: Nat, +s0: Nat, +tl: List<&2, Nat>, +es: List<&2, SK.Ent>, +cs1: DC.SP, +cs2: DC.SP, eg: {g == SV.eq(c, s0) : Bool},
+  a: {DC.beq(DC.coll(es, cs1, s0), DC.coll(es, cs2, s0)) == True{} : Bool}, hn: {SV.bor(g, SH.nmem(DR.NSeg{c}, DC.snodes(tl))) == True{} : Bool},
+  ih: {SH.nmem(DR.NSeg{c}, DC.snodes(tl)) == True{} : Bool} -> {DC.coll(es, cs1, c) == DC.coll(es, cs2, c) : Bool}) -> {DC.coll(es, cs1, c) == DC.coll(es, cs2, c) : Bool}:
+  match g:
+    case True{}:
+      %Equal.sym(Nat, c, s0, LI.eq_ok(c, s0, Equal.sym(Bool, True{}, SV.eq(c, s0), eg))) : {DC.coll(es, cs1, _) == DC.coll(es, cs2, _) : Bool}
+      beq_eq(DC.coll(es, cs1, s0), DC.coll(es, cs2, s0), a)
+    case False{}:
+      ih(hn)
+
+# a segment among ids is collapsed alike
+def so_at(ids: List<&2, Nat>, +c: Nat, +es: List<&2, SK.Ent>, +cs1: DC.SP, +cs2: DC.SP, +hso: {DC.sameopen(ids, es, cs1, cs2) == True{} : Bool}, hn: {SH.nmem(DR.NSeg{c}, DC.snodes(ids)) == True{} : Bool})
+  -> {DC.coll(es, cs1, c) == DC.coll(es, cs2, c) : Bool}:
+  match ids:
+    case Nil{}:
+      absurd({DC.coll(es, cs1, c) == DC.coll(es, cs2, c) : Bool}, ft(hn))
+    case Con{+s0, +tl}:
+      so.g(SV.eq(c, s0), c, s0, tl, es, cs1, cs2, {==}, LI.band_l(DC.beq(DC.coll(es, cs1, s0), DC.coll(es, cs2, s0)), DC.sameopen(tl, es, cs1, cs2), hso), hn,
+        x => so_at(tl, c, es, cs1, cs2, LI.band_r(DC.beq(DC.coll(es, cs1, s0), DC.coll(es, cs2, s0)), DC.sameopen(tl, es, cs1, cs2), hso), x))
+
+def ZC(+es: List<&2, SK.Ent>, +ctx: List<&2, E.QExpr>, m: Maybe<&2, SK.Geo>) -> Type:
+  DR.InSpan(SK.VE.x(SK.Seg.dir(SK.seg.of(es, m))), ctx) & DR.InSpan(SK.VE.y(SK.Seg.dir(SK.seg.of(es, m))), ctx)
+
+def nc.of(+es: List<&2, SK.Ent>, +ctx: List<&2, E.QExpr>, +c: Nat, +m: Maybe<&2, SK.Geo>, +eg: {SK.find(c, es) == m : Maybe<&2, SK.Geo>}, h: ZC(es, ctx, m)) -> DR.Collapsed(es, ctx, c):
+  %Equal.sym(Maybe<&2, SK.Geo>, SK.find(c, es), m, eg) : ZC(es, ctx, _)
+  h
+
+def ot.g(g: SK.Geo, +es: List<&2, SK.Ent>, +ctx1: List<&2, E.QExpr>, +ctx2: List<&2, E.QExpr>, +c: Nat, +eg: {SK.find(c, es) == Some{g} : Maybe<&2, SK.Geo>},
+  +hso: {DC.sameopen(DC.segids(es), es, OP.cspan(ctx1), OP.cspan(ctx2)) == True{} : Bool}, h: {SV.bnot(DC.coll(es, OP.cspan(ctx1), c)) == True{} : Bool})
+  -> {SV.bnot(DC.coll(es, OP.cspan(ctx2), c)) == True{} : Bool}:
+  match g:
+    case SK.GPoint{+x, +y}:
+      absurd({SV.bnot(DC.coll(es, OP.cspan(ctx2), c)) == True{} : Bool}, OP.open_of(es, ctx1, DR.NSeg{c}, h)(nc.of(es, ctx1, c, Some{SK.GPoint{x, y}}, eg, RR.zc(es, ctx1))))
+    case SK.GSeg{+p, +q}:
+      %so_at(DC.segids(es), c, es, OP.cspan(ctx1), OP.cspan(ctx2), hso, RR.seg_in(es, c, p, q, eg)) : {SV.bnot(_) == True{} : Bool}
+      h
+    case SK.GCirc{+cc, +r}:
+      absurd({SV.bnot(DC.coll(es, OP.cspan(ctx2), c)) == True{} : Bool}, OP.open_of(es, ctx1, DR.NSeg{c}, h)(nc.of(es, ctx1, c, Some{SK.GCirc{cc, r}}, eg, RR.zc(es, ctx1))))
+    case SK.GArc{+a, +e, +b}:
+      absurd({SV.bnot(DC.coll(es, OP.cspan(ctx2), c)) == True{} : Bool}, OP.open_of(es, ctx1, DR.NSeg{c}, h)(nc.of(es, ctx1, c, Some{SK.GArc{a, e, b}}, eg, RR.zc(es, ctx1))))
+
+def ot.m(m: Maybe<&2, SK.Geo>, +es: List<&2, SK.Ent>, +ctx1: List<&2, E.QExpr>, +ctx2: List<&2, E.QExpr>, +c: Nat, +eg: {SK.find(c, es) == m : Maybe<&2, SK.Geo>},
+  +hso: {DC.sameopen(DC.segids(es), es, OP.cspan(ctx1), OP.cspan(ctx2)) == True{} : Bool}, h: {SV.bnot(DC.coll(es, OP.cspan(ctx1), c)) == True{} : Bool})
+  -> {SV.bnot(DC.coll(es, OP.cspan(ctx2), c)) == True{} : Bool}:
+  match m:
+    case None{}:
+      absurd({SV.bnot(DC.coll(es, OP.cspan(ctx2), c)) == True{} : Bool}, OP.open_of(es, ctx1, DR.NSeg{c}, h)(nc.of(es, ctx1, c, None{}, eg, RR.zc(es, ctx1))))
+    case Some{+g}:
+      ot.g(g, es, ctx1, ctx2, c, eg, hso, h)
+
+# a node open in ctx1 is open in ctx2
+def open_tr(+es: List<&2, SK.Ent>, +ctx1: List<&2, E.QExpr>, +ctx2: List<&2, E.QExpr>, n: DR.Node, +hso: {DC.sameopen(DC.segids(es), es, OP.cspan(ctx1), OP.cspan(ctx2)) == True{} : Bool},
+  h: VD.OpenD(es, ctx1, n)) -> VD.OpenD(es, ctx2, n):
+  match n:
+    case DR.NFrame{}:
+      {==}
+    case DR.NSeg{+c}:
+      ot.m(SK.find(c, es), es, ctx1, ctx2, c, {==}, hso, h)
+
+# a valid derivation in ctx1 is valid in ctx2
+def vd_ctx(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx1: List<&2, E.QExpr>, +ctx2: List<&2, E.QExpr>, d: DR.Der, +hso: {DC.sameopen(DC.segids(es), es, OP.cspan(ctx1), OP.cspan(ctx2)) == True{} : Bool},
+  v: VD.VD(es, fs, ctx1, d)) -> VD.VD(es, fs, ctx2, d):
+  match d:
+    case DR.DZero{}:
+      Unit{}
+    case DR.DPrem{+i}:
+      v
+    case DR.DKAdd{+l, +d1, +d2}:
+      (v1, r1) = v
+      (v2, r2) = r1
+      (vd_ctx(es, fs, ctx1, ctx2, d1, hso, v1), (vd_ctx(es, fs, ctx1, ctx2, d2, hso, v2), r2))
+    case DR.DBack{+d0}:
+      (v0, r1) = v
+      (vd_ctx(es, fs, ctx1, ctx2, d0, hso, v0), r1)
+    case DR.DLine{+d1, +d2, +re}:
+      (v1, r1) = v
+      (v2, r2) = r1
+      (p1, r3) = r2
+      (p2, r4) = r3
+      (ea, r5) = r4
+      (op, sv) = r5
+      (vd_ctx(es, fs, ctx1, ctx2, d1, hso, v1), (vd_ctx(es, fs, ctx1, ctx2, d2, hso, v2), (p1, (p2, (ea, (open_tr(es, ctx1, ctx2, DR.Jd.a(DR.concl(es, fs, d1)), hso, op), sv))))))
+    case DR.DPPrem{+i}:
+      v
+    case DR.DSelf{+a}:
+      Unit{}
+    case DR.DPLin{+m1, +d1, +m2, +d2}:
+      (v1, r1) = v
+      (v2, r2) = r1
+      (vd_ctx(es, fs, ctx1, ctx2, d1, hso, v1), (vd_ctx(es, fs, ctx1, ctx2, d2, hso, v2), r2))
+    case DR.DKnown{+d0, +dr, +di}:
+      (v0, r1) = v
+      (vr, r2) = r1
+      (vi, r3) = r2
+      (vd_ctx(es, fs, ctx1, ctx2, d0, hso, v0), (vd_ctx(es, fs, ctx1, ctx2, dr, hso, vr), (vd_ctx(es, fs, ctx1, ctx2, di, hso, vi), r3)))
+    case DR.DTurn{+d0, +g, +nb}:
+      (v0, r1) = v
+      (vd_ctx(es, fs, ctx1, ctx2, d0, hso, v0), r1)
+    case DR.DThrough{+d1, +d2, +g, +nb}:
+      (v1, r1) = v
+      (v2, r2) = r1
+      (p1, r3) = r2
+      (p2, r4) = r3
+      (sv, r5) = r4
+      (ea, op) = r5
+      (vd_ctx(es, fs, ctx1, ctx2, d1, hso, v1), (vd_ctx(es, fs, ctx1, ctx2, d2, hso, v2), (p1, (p2, (sv, (ea, open_tr(es, ctx1, ctx2, nb, hso, op)))))))
+    case DR.DFrame{+d0, +x}:
+      (v0, r1) = v
+      (vd_ctx(es, fs, ctx1, ctx2, d0, hso, v0), r1)
+    case DR.DVoid{+dr, +di, +a, +x}:
+      (vr, r1) = v
+      (vi, r2) = r1
+      (vd_ctx(es, fs, ctx1, ctx2, dr, hso, vr), (vd_ctx(es, fs, ctx1, ctx2, di, hso, vi), r2))
+
+def kgen_ctx(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx1: List<&2, E.QExpr>, +ctx2: List<&2, E.QExpr>, +t: Nat, +d: DR.Der, +hso: {DC.sameopen(DC.segids(es), es, OP.cspan(ctx1), OP.cspan(ctx2)) == True{} : Bool}, kg: IV.KGen(es, fs, ctx1, t, d)) -> IV.KGen(es, fs, ctx2, t, d):
+  (v, r1) = kg
+  (vd_ctx(es, fs, ctx1, ctx2, d, hso, v), r1)
+
+def allkd_ctx(ds: List<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx1: List<&2, E.QExpr>, +ctx2: List<&2, E.QExpr>, +t: Nat, +hso: {DC.sameopen(DC.segids(es), es, OP.cspan(ctx1), OP.cspan(ctx2)) == True{} : Bool}, ha: IV.AllKD(es, fs, ctx1, t, ds)) -> IV.AllKD(es, fs, ctx2, t, ds):
+  match ds:
+    case Nil{}:
+      Unit{}
+    case Con{+d, +tl}:
+      (kg, rt) = ha
+      (kgen_ctx(es, fs, ctx1, ctx2, t, d, hso, kg), allkd_ctx(tl, es, fs, ctx1, ctx2, t, hso, rt))
+
+def kinvd_ctx(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx1: List<&2, E.QExpr>, +ctx2: List<&2, E.QExpr>, +t: Nat, k: KS.KS, +hso: {DC.sameopen(DC.segids(es), es, OP.cspan(ctx1), OP.cspan(ctx2)) == True{} : Bool}, hk: IV.KInvD(es, fs, ctx1, t, k)) -> IV.KInvD(es, fs, ctx2, t, k):
+  match k:
+    case KS.KS{+rows, +ds}:
+      (hr, r1) = hk
+      (hl, ha) = r1
+      (hr, (hl, allkd_ctx(ds, es, fs, ctx1, ctx2, t, hso, ha)))
+
+def mokd_ctx(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx1: List<&2, E.QExpr>, +ctx2: List<&2, E.QExpr>, +t: Nat, m: DC.Mem, +hso: {DC.sameopen(DC.segids(es), es, OP.cspan(ctx1), OP.cspan(ctx2)) == True{} : Bool}, mk: GN.MOkD(es, fs, ctx1, t, m)) -> GN.MOkD(es, fs, ctx2, t, m):
+  match m:
+    case DC.Mem{+a, +r, +w, +d}:
+      (v, r1) = mk
+      (ip, r2) = r1
+      (ea, r3) = r2
+      (sv, r4) = r3
+      (oa, r5) = r4
+      (orr, vb) = r5
+      (vd_ctx(es, fs, ctx1, ctx2, d, hso, v), (ip, (ea, (sv, (open_tr(es, ctx1, ctx2, a, hso, oa), (open_tr(es, ctx1, ctx2, r, hso, orr), vb))))))
+
+def msok_ctx(ms: List<&2, DC.Mem>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx1: List<&2, E.QExpr>, +ctx2: List<&2, E.QExpr>, +t: Nat, +hso: {DC.sameopen(DC.segids(es), es, OP.cspan(ctx1), OP.cspan(ctx2)) == True{} : Bool}, hm: GN.MsOk(es, fs, ctx1, t, ms)) -> GN.MsOk(es, fs, ctx2, t, ms):
+  match ms:
+    case Nil{}:
+      Unit{}
+    case Con{+m, +tl}:
+      (h1, rt) = hm
+      (mokd_ctx(es, fs, ctx1, ctx2, t, m, hso, h1), msok_ctx(tl, es, fs, ctx1, ctx2, t, hso, rt))
+
+def lokd_ctx(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx1: List<&2, E.QExpr>, +ctx2: List<&2, E.QExpr>, +t: Nat, l: DC.Link, +hso: {DC.sameopen(DC.segids(es), es, OP.cspan(ctx1), OP.cspan(ctx2)) == True{} : Bool}, lk: GN.LOkD(es, fs, ctx1, t, l)) -> GN.LOkD(es, fs, ctx2, t, l):
+  match l:
+    case DC.Link{+c, +b, +w, +d}:
+      (v, r1) = lk
+      (vd_ctx(es, fs, ctx1, ctx2, d, hso, v), r1)
+
+def lsok_ctx(ls: List<&2, DC.Link>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx1: List<&2, E.QExpr>, +ctx2: List<&2, E.QExpr>, +t: Nat, +hso: {DC.sameopen(DC.segids(es), es, OP.cspan(ctx1), OP.cspan(ctx2)) == True{} : Bool}, hl: GN.LsOk(es, fs, ctx1, t, ls)) -> GN.LsOk(es, fs, ctx2, t, ls):
+  match ls:
+    case Nil{}:
+      Unit{}
+    case Con{+l, +tl}:
+      (h1, rt) = hl
+      (lokd_ctx(es, fs, ctx1, ctx2, t, l, hso, h1), lsok_ctx(tl, es, fs, ctx1, ctx2, t, hso, rt))
+
+def skinv_ctx(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx1: List<&2, E.QExpr>, +ctx2: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +hso: {DC.sameopen(DC.segids(es), es, OP.cspan(ctx1), OP.cspan(ctx2)) == True{} : Bool}, hs: RD.SkInv(es, fs, ctx1, t, s)) -> RD.SkInv(es, fs, ctx2, t, s):
+  (hk, r1) = hs
+  (hm, r2) = r1
+  (hl, r3) = r2
+  (kinvd_ctx(es, fs, ctx1, ctx2, t, DC.Sk.k(s), hso, hk), (msok_ctx(DC.Sk.ms(s), es, fs, ctx1, ctx2, t, hso, hm), (lsok_ctx(DC.Sk.ls(s), es, fs, ctx1, ctx2, t, hso, hl), r3)))
+
+def rs_ctx(ids: List<&2, Nat>, +es: List<&2, SK.Ent>, +cs1: DC.SP, +cs2: DC.SP, +ms: List<&2, DC.Mem>, +hso: {DC.sameopen(ids, es, cs1, cs2) == True{} : Bool}, h: SH.RecS(ids, es, cs1, ms)) -> SH.RecS(ids, es, cs2, ms):
+  match ids:
+    case Nil{}:
+      Unit{}
+    case Con{+s0, +tl}:
+      (a, rt) = h
+      ((%beq_eq(DC.coll(es, cs1, s0), DC.coll(es, cs2, s0), LI.band_l(DC.beq(DC.coll(es, cs1, s0), DC.coll(es, cs2, s0)), DC.sameopen(tl, es, cs1, cs2), hso)) : {SV.bor(_, SH.mis_some(DC.mem_of(ms, DR.NSeg{s0}))) == True{} : Bool}
+          a),
+        rs_ctx(tl, es, cs1, cs2, ms, LI.band_r(DC.beq(DC.coll(es, cs1, s0), DC.coll(es, cs2, s0)), DC.sameopen(tl, es, cs1, cs2), hso), rt))
+
+def shm_ctx(+es: List<&2, SK.Ent>, +cs1: DC.SP, +cs2: DC.SP, +ids: List<&2, Nat>, +ms: List<&2, DC.Mem>, +hso: {DC.sameopen(ids, es, cs1, cs2) == True{} : Bool}, h: SH.ShM(es, cs1, ids, ms)) -> SH.ShM(es, cs2, ids, ms):
+  (af, r1) = h
+  (rr, r2) = r1
+  (ro, r3) = r2
+  (fr, r4) = r3
+  (rn, rs) = r4
+  (af, (rr, (ro, (fr, (rn, rs_ctx(ids, es, cs1, cs2, ms, hso, rs))))))
+
+def shinv_ctx(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +cs1: DC.SP, +cs2: DC.SP, +ids: List<&2, Nat>, +s: DC.Sk, +hso: {DC.sameopen(ids, es, cs1, cs2) == True{} : Bool}, h: SH.ShInv(es, fs, cs1, ids, s)) -> SH.ShInv(es, fs, cs2, ids, s):
+  (hm, r1) = h
+  (shm_ctx(es, cs1, cs2, ids, DC.Sk.ms(s), hso, hm), r1)
+
+# the run's invariants carry to a context that collapses the segments alike
+def tinv_ctx(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx1: List<&2, E.QExpr>, +ctx2: List<&2, E.QExpr>, +t: Nat, +s: DC.Sk, +hso: {DC.sameopen(DC.segids(es), es, OP.cspan(ctx1), OP.cspan(ctx2)) == True{} : Bool}, hi: TRM.TInv(es, fs, ctx1, t, DC.segids(es), s))
+  -> TRM.TInv(es, fs, ctx2, t, DC.segids(es), s):
+  (h1, hk) = hi
+  (hsk, hsh) = h1
+  ((skinv_ctx(es, fs, ctx1, ctx2, t, s, hso, hsk), shinv_ctx(es, fs, OP.cspan(ctx1), OP.cspan(ctx2), DC.segids(es), s, hso, hsh)), hk)
