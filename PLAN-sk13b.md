@@ -1354,6 +1354,47 @@ give both component identities that Valid's SameV asks for.
     - The other half (the rounds replayed from scratch each call) is what
       an incremental closure would address (Danielle: only with a fully
       general correctness proof).
+    - *Incremental closure, design 2026-11-01* (Danielle: go ahead).
+      - What the B3 proofs already give: run_ok, run_fix and run_t hold
+        from ANY start state with the invariants (SkInv, ShInv, KSpan;
+        μ below the fuel for run_t), and the closure theorem, dec_none
+        and dref_complete read only RR.Hyp at an OFix state. So a run
+        started from any valid state ends, and its fixpoint decides
+        exactly.
+      - The start: the last fixpoint, with the new facts given to K
+        (ks.add DPrem{i}: the round's own K step, so the invariants
+        keep) and its cache extended (kc.add). Facts extend: SkInv
+        carries by validity (a valid derivation cites only facts it has,
+        so concl_pre applies), KF by the new facts in K, KSpan by the
+        bases growing. Contexts: validity reads the context only
+        through Open, and a larger context opens fewer nodes, so a state
+        carries to a context with the same open segments (SkInv and ShM
+        read ctx only through coll). Measured: along the pass the open
+        segments never change in base, oncircle-pairs, vertical-twice,
+        angle-lines.
+      - Fuel: dfuel bounds μ of every state with the invariants
+        (kslack <= |kmons|; lslack <= its value with no links; rcount <=
+        records <= nodes, records having distinct nodes by AllFirst and
+        all among the nodes by RecN: a pigeonhole).
+      - Fixpoints are mostly forest: vertical-twice's last call has ~7
+        derived K facts and ~14 merges, no links. So the state must
+        carry whole (K alone saves little).
+      - Scope per constraint c: carry S, a fixpoint for rfacts(kb) in
+        c's context (warm from the previous constraint's when the open
+        segments agree, else from sk0 with the memo); c's refutation
+        call and each equation's call start from S plus their own new
+        facts; after c, S becomes the refutation call's fixpoint if c is
+        kept.
+      - Open questions for Danielle (2026-11-01): (1) output: a warm "no"
+        is proven exact, but a warm derivation differs from the cold
+        one, so either the cold run builds the derivation on the rare
+        "yes" (classes byte-identical, B4 proofs untouched; one positive
+        in ~80 constraints across the four sketches) or warm derivations
+        are used (nd may differ, still honest; B4 re-proven over the warm
+        closure, which then needs soundness too); (2) contexts: start
+        cold when the open segments differ, or repair the state (drop
+        what passes through newly collapsed nodes, add records for newly
+        open ones).
     - The other sketches' time is elsewhere (base's profile: the runtime
       freeing terms, Pos arithmetic, monomial compares; a simplex in the
       refutation decision runs about 213k steps on base).
