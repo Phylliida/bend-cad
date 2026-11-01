@@ -1292,6 +1292,27 @@ give both component identities that Valid's SameV asks for.
       conclusions when generators are encoded (lh.add, kexprs), so the
       cache would be of generators' conclusions inside K and the hulls,
       a representation change (perhaps 5%).
+    - *Where a call's time goes* (measured by doing one part twice,
+      2026-10-31; base, vertical-twice): the initial K squared cache
+      (kc.of, every open node's lean khull of K0) is 40% and 30% of the
+      pass; root hulls (rls) 6-7%; cache updates within a call (kc.upd)
+      4-5%; the rest (checks, derivations, the rounds) about half.
+    - *A memo across calls for the initial cache* (byte-identical
+      outputs): K0 = kinit is ks.add folded over the facts in fs order
+      (DPrem{i}), and rfacts lists facts in the sketch's equation order,
+      so a constraint's second call (dirref: the kept constraints and c)
+      extends its first call's facts, and the next constraint's extend
+      whichever earlier list has its kept set. So the previous call's
+      cache C0 for K0(fs) gives K0(fs ++ new) by one kc.add per new fact,
+      the step dfastpf already proves (kc_upd_inv, lfold_cat); a context
+      change only drops or adds open nodes. Needs: concl unchanged when
+      fs is extended, for derivations below len fs (so K0 and its rows
+      agree); dclose with a given C0 under CacheOk equals dclose; the
+      pass threading the memo, with a pass-level equality so B4.4/B4.5
+      stand. Bound: the kc.of share, 30-40%.
+    - The other half (the rounds replayed from scratch each call) is what
+      an incremental closure would address (Danielle: only with a fully
+      general correctness proof).
     - The other sketches' time is elsewhere (base's profile: the runtime
       freeing terms, Pos arithmetic, monomial compares; a simplex in the
       refutation decision runs about 213k steps on base).
