@@ -15,7 +15,12 @@
 # - between contexts whose spans collapse the sketch's segments alike
 #   (DC.sameopen), every node open in one is open in the other (open_tr: a
 #   non-segment's direction is 0, collapsed in any context), so the run's
-#   invariants carry (tinv_ctx).
+#   invariants carry (tinv_ctx);
+# - the call runs in two phases (lib/dclose.bend wcall): phase 1's rounds
+#   are the round's own up to the pause, so they keep the invariants and
+#   the cache (krun); phase 2 starts from phase 1's K with the kept
+#   records and links (mix), so a call gives Ex (wcall_ex) and its
+#   fixpoint can be kept for the facts after it (wnext_ok).
 # Proofs only.
 
 import Base
@@ -53,6 +58,7 @@ import ./dcslotpf.bend as SL
 import ./dcfixpf.bend as FX
 import ./dfastpf.bend as FP
 import ./dcexpf.bend as CX
+import ./lres.bend as LR
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -1059,6 +1065,207 @@ def wcm.r(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>
     run_inv(DC.wfuel(es, fs, DC.Sk{k2, ms, ls}), DC.OStep{DC.Sk{k2, ms, ls}}, es, fs, ctx, t, DC.segids(es), ti, hz, hb),
     warm_ex(es, fs, ctx, t, DC.Sk{k2, ms, ls}, ti, hz, hb))
 
+# Phase 1
+# -------
+# Each of phase 1's rounds is the round's own up to its merges, where it
+# pauses with the state as it was: so it keeps the run's invariants and
+# the cache, and an explosion keeps its own (no termination or
+# completeness: phase 2 does that).
+
+def KI.o(o: DC.Out, +C: List<&2, DC.KC>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>) -> Data:
+  match o:
+    case DC.OStep{+s}:
+      SK.Both(TRM.TInv(es, fs, ctx, t, ids, s), FP.CInv(es, fs, t, DC.Sk.k(s), C))
+    case DC.OFix{+s}:
+      SK.Both(TRM.TInv(es, fs, ctx, t, ids, s), FP.CInv(es, fs, t, DC.Sk.k(s), C))
+    case DC.OOne{+d}:
+      RD.OutInv(es, fs, ctx, t, DC.OOne{d})
+    case DC.OVoid{+g, +dr, +di}:
+      RD.OutInv(es, fs, ctx, t, DC.OVoid{g, dr, di})
+
+def KI(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, fo: DC.FO) -> Data:
+  match fo:
+    case DC.FO{o, +C}:
+      KI.o(o, C, es, fs, ctx, t, ids)
+
+def ki.c(o: DC.Out, +C: List<&2, DC.KC>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>,
+  h1: RunI(es, fs, ctx, t, ids, o), h2: RD.OutInv(es, fs, ctx, t, o), hc: FP.CacheOk(es, fs, t, C, o)) -> KI.o(o, C, es, fs, ctx, t, ids):
+  match o:
+    case DC.OStep{+s}:
+      (h1, hc)
+    case DC.OFix{+s}:
+      (h1, hc)
+    case DC.OOne{+d}:
+      h2
+    case DC.OVoid{+g, +dr, +di}:
+      h2
+
+def ki_of(fo: DC.FO, +o: DC.Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, h: FP.FRel(es, fs, t, fo, o),
+  h1: RunI(es, fs, ctx, t, ids, o), h2: RD.OutInv(es, fs, ctx, t, o)) -> KI(es, fs, ctx, t, ids, fo):
+  match fo:
+    case DC.FO{+o2, +C}:
+      (eo, hc) = h
+      %Equal.sym(DC.Out, o2, o, eo) : KI(es, fs, ctx, t, ids, DC.FO{_, C})
+      ki.c(o, C, es, fs, ctx, t, ids, h1, h2, hc)
+
+# the fast round keeps them
+def fround_ki(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, +s: DC.Sk, +C: List<&2, DC.KC>,
+  +hi: TRM.TInv(es, fs, ctx, t, ids, s), +hc: FP.CInv(es, fs, t, DC.Sk.k(s), C), +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool})
+  -> KI(es, fs, ctx, t, ids, DC.fround(es, fs, t, OP.cspan(ctx), DC.oids(ids, es, OP.cspan(ctx)), ids, s, C)):
+  ki_of(DC.fround(es, fs, t, OP.cspan(ctx), DC.oids(ids, es, OP.cspan(ctx)), ids, s, C), DC.round(es, fs, t, OP.cspan(ctx), ids, s), es, fs, ctx, t, ids,
+    FP.fround_ok(es, fs, t, OP.cspan(ctx), ids, s, C, hc),
+    runi_of(DC.round(es, fs, t, OP.cspan(ctx), ids, s), es, fs, ctx, t, ids, s,
+      FX.fix_of(DC.round(es, fs, t, OP.cspan(ctx), ids, s), es, fs, ctx, t, ids, RD.round_ok(es, fs, ctx, t, ids, s, ti.sk(es, fs, ctx, t, ids, s, hi), hz, hb),
+        FX.round_sh(es, fs, ctx, t, ids, s, FX.skinv_k(es, fs, ctx, t, s, ti.sk(es, fs, ctx, t, ids, s, hi)), ti.sh(es, fs, ctx, t, ids, s, hi))),
+      TRM.round_t(es, fs, ctx, t, ids, s, hi)),
+    RD.round_ok(es, fs, ctx, t, ids, s, ti.sk(es, fs, ctx, t, ids, s, hi), hz, hb))
+
+# each stage of phase 1's round is the round's stage, or a pause
+def kr.c2(m: Maybe<&2, DR.Der>, +rl: List<&2, DC.RL>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, +s: DC.Sk, +C: List<&2, DC.KC>,
+  h: KI(es, fs, ctx, t, ids, DC.fr.c2(m, rl, es, fs, t, OP.cspan(ctx), ids, s, C)), +hi: TRM.TInv(es, fs, ctx, t, ids, s), +hc: FP.CInv(es, fs, t, DC.Sk.k(s), C))
+  -> KI(es, fs, ctx, t, ids, DC.fr.c2.k(m, es, fs, t, OP.cspan(ctx), ids, s, C)):
+  match m:
+    case None{}:
+      (hi, hc)
+    case Some{+d}:
+      h
+
+def kr.c1(m: Maybe<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, +s: DC.Sk, +C: List<&2, DC.KC>,
+  h: KI(es, fs, ctx, t, ids, DC.fr.c1(m, es, fs, t, OP.cspan(ctx), ids, s, C)), +hi: TRM.TInv(es, fs, ctx, t, ids, s), +hc: FP.CInv(es, fs, t, DC.Sk.k(s), C))
+  -> KI(es, fs, ctx, t, ids, DC.fr.c1.k(m, es, fs, t, OP.cspan(ctx), ids, s, C)):
+  match m:
+    case None{}:
+      kr.c2(DC.fclxs(DC.rls(DC.roots(DC.Sk.ms(s)), es, fs, t, s, C), es, fs, t, s), DC.rls(DC.roots(DC.Sk.ms(s)), es, fs, t, s, C), es, fs, ctx, t, ids, s, C, h, hi, hc)
+    case Some{+d}:
+      h
+
+def kr.e2(m: Maybe<&2, Nat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, +s: DC.Sk, +C: List<&2, DC.KC>,
+  h: KI(es, fs, ctx, t, ids, DC.fr.e2(m, es, fs, t, OP.cspan(ctx), ids, s, C)), +hi: TRM.TInv(es, fs, ctx, t, ids, s), +hc: FP.CInv(es, fs, t, DC.Sk.k(s), C))
+  -> KI(es, fs, ctx, t, ids, DC.fr.e2.k(m, es, fs, t, OP.cspan(ctx), ids, s, C)):
+  match m:
+    case None{}:
+      kr.c1(DC.ffback(DC.rgens(fs, DR.NFrame{}, DC.Sk.ms(s), DC.Sk.ls(s)), es, fs, DC.Sk.k(s)), es, fs, ctx, t, ids, s, C, h, hi, hc)
+    case Some{+g}:
+      h
+
+def kr.e1(f: Bool, +oo: List<&2, Nat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, +s: DC.Sk, +C: List<&2, DC.KC>,
+  h: KI(es, fs, ctx, t, ids, DC.fr.e1(f, es, fs, t, OP.cspan(ctx), oo, ids, s, C)), +hi: TRM.TInv(es, fs, ctx, t, ids, s), +hc: FP.CInv(es, fs, t, DC.Sk.k(s), C))
+  -> KI(es, fs, ctx, t, ids, DC.fr.e1.k(f, es, fs, t, OP.cspan(ctx), oo, ids, s, C)):
+  match f:
+    case True{}:
+      h
+    case False{}:
+      kr.e2(DC.fvoid(oo, es, DC.Sk.k(s)), es, fs, ctx, t, ids, s, C, h, hi, hc)
+
+def fround_k(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, +s: DC.Sk, +C: List<&2, DC.KC>,
+  +hi: TRM.TInv(es, fs, ctx, t, ids, s), +hc: FP.CInv(es, fs, t, DC.Sk.k(s), C), +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool})
+  -> KI(es, fs, ctx, t, ids, DC.fround.k(es, fs, t, OP.cspan(ctx), DC.oids(ids, es, OP.cspan(ctx)), ids, s, C)):
+  kr.e1(LR.ks.linb(DC.Sk.k(s), DR.cst(DR.qo())), DC.oids(ids, es, OP.cspan(ctx)), es, fs, ctx, t, ids, s, C, fround_ki(es, fs, ctx, t, ids, s, C, hi, hc, hz, hb), hi, hc)
+
+# phase 1's run keeps them
+def krun(fuel: Nat, fo: DC.FO, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, h: KI(es, fs, ctx, t, ids, fo),
+  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}) -> KI(es, fs, ctx, t, ids, DC.frun.k(fuel, fo, es, fs, t, OP.cspan(ctx), DC.oids(ids, es, OP.cspan(ctx)), ids)):
+  match fuel fo:
+    case 0n DC.FO{+o, +C}:
+      h
+    case 1n+f DC.FO{DC.OStep{+s}, +C}:
+      (hi, hc) = h
+      krun(f, DC.fround.k(es, fs, t, OP.cspan(ctx), DC.oids(ids, es, OP.cspan(ctx)), ids, s, C), es, fs, ctx, t, ids, fround_k(es, fs, ctx, t, ids, s, C, hi, hc, hz, hb), hz, hb)
+    case 1n+f DC.FO{DC.OFix{+s}, +C}:
+      h
+    case 1n+f DC.FO{DC.OOne{+d}, +C}:
+      h
+    case 1n+f DC.FO{DC.OVoid{+sg, +dr, +di}, +C}:
+      h
+
+# The join
+# --------
+
+def ti.kspan(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, +s: DC.Sk, h: TRM.TInv(es, fs, ctx, t, ids, s)) -> GS.KSpan(es, fs, DC.Sk.k(s)):
+  (h1, hk) = h
+  hk
+
+def mix.sk(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ka: KS.KS, +ma: List<&2, DC.Mem>, +la: List<&2, DC.Link>, +kb: KS.KS, +mb: List<&2, DC.Mem>, +lb: List<&2, DC.Link>,
+  ha: RD.SkInv(es, fs, ctx, t, DC.Sk{ka, ma, la}), hb: RD.SkInv(es, fs, ctx, t, DC.Sk{kb, mb, lb})) -> RD.SkInv(es, fs, ctx, t, DC.Sk{ka, mb, lb}):
+  (kia, ra) = ha
+  (kib, rb) = hb
+  (kia, rb)
+
+def mix.sh2(+ka: KS.KS, +kb: KS.KS, +fs: List<&2, DR.Fact>, +la: List<&2, DC.Link>, +lb: List<&2, DC.Link>, ha: SK.Both(SH.KF(ka, fs), SH.PairL(la, la)), hb: SK.Both(SH.KF(kb, fs), SH.PairL(lb, lb))) -> SK.Both(SH.KF(ka, fs), SH.PairL(lb, lb)):
+  (kfa, pla) = ha
+  (kfb, plb) = hb
+  (kfa, plb)
+
+def mix.sh(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +cs: DC.SP, +ids: List<&2, Nat>, +ka: KS.KS, +ma: List<&2, DC.Mem>, +la: List<&2, DC.Link>, +kb: KS.KS, +mb: List<&2, DC.Mem>, +lb: List<&2, DC.Link>,
+  ha: SH.ShInv(es, fs, cs, ids, DC.Sk{ka, ma, la}), hb: SH.ShInv(es, fs, cs, ids, DC.Sk{kb, mb, lb})) -> SH.ShInv(es, fs, cs, ids, DC.Sk{ka, mb, lb}):
+  (sma, ra) = ha
+  (smb, rb) = hb
+  (smb, mix.sh2(ka, kb, fs, la, lb, ra, rb))
+
+def mix.c(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, +ka: KS.KS, +ma: List<&2, DC.Mem>, +la: List<&2, DC.Link>, +kb: KS.KS, +mb: List<&2, DC.Mem>, +lb: List<&2, DC.Link>,
+  ska: RD.SkInv(es, fs, ctx, t, DC.Sk{ka, ma, la}), sha: SH.ShInv(es, fs, OP.cspan(ctx), ids, DC.Sk{ka, ma, la}), hka: GS.KSpan(es, fs, ka),
+  skb: RD.SkInv(es, fs, ctx, t, DC.Sk{kb, mb, lb}), shb: SH.ShInv(es, fs, OP.cspan(ctx), ids, DC.Sk{kb, mb, lb})) -> TRM.TInv(es, fs, ctx, t, ids, DC.Sk{ka, mb, lb}):
+  ((mix.sk(es, fs, ctx, t, ka, ma, la, kb, mb, lb, ska, skb), mix.sh(es, fs, OP.cspan(ctx), ids, ka, ma, la, kb, mb, lb, sha, shb)), hka)
+
+# the run's invariants of two states give them for one's K with the
+# other's records and links
+def mix(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +ids: List<&2, Nat>, +ka: KS.KS, +ma: List<&2, DC.Mem>, +la: List<&2, DC.Link>,
+  +kb: KS.KS, +mb: List<&2, DC.Mem>, +lb: List<&2, DC.Link>, +ha: TRM.TInv(es, fs, ctx, t, ids, DC.Sk{ka, ma, la}), +hb: TRM.TInv(es, fs, ctx, t, ids, DC.Sk{kb, mb, lb}))
+  -> TRM.TInv(es, fs, ctx, t, ids, DC.Sk{ka, mb, lb}):
+  mix.c(es, fs, ctx, t, ids, ka, ma, la, kb, mb, lb, ti.sk(es, fs, ctx, t, ids, DC.Sk{ka, ma, la}, ha), ti.sh(es, fs, ctx, t, ids, DC.Sk{ka, ma, la}, ha), ti.kspan(es, fs, ctx, t, ids, DC.Sk{ka, ma, la}, ha),
+    ti.sk(es, fs, ctx, t, ids, DC.Sk{kb, mb, lb}, hb), ti.sh(es, fs, ctx, t, ids, DC.Sk{kb, mb, lb}, hb))
+
+# phase 2 from phase 1's K, with the carried records and links
+def ph2.s_wc(s1: DC.Sk, +C: List<&2, DC.KC>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +kw: KS.KS, +ms: List<&2, DC.Mem>, +ls: List<&2, DC.Link>,
+  hi: TRM.TInv(es, fs, ctx, t, DC.segids(es), s1), +hc: FP.CInv(es, fs, t, DC.Sk.k(s1), C), hw: TRM.TInv(es, fs, ctx, t, DC.segids(es), DC.Sk{kw, ms, ls}),
+  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}) -> WC(es, fs, ctx, t, DC.ph2.s(s1, C, es, fs, t, OP.cspan(ctx), ms, ls)):
+  match s1:
+    case DC.Sk{+k1, +m1, +l1}:
+      wcm.r(es, fs, ctx, t, k1, ms, ls, C, hc, mix(es, fs, ctx, t, DC.segids(es), k1, m1, l1, kw, ms, ls, hi, hw), hz, hb)
+
+def ph2.o_wc(o: DC.Out, +C: List<&2, DC.KC>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +kw: KS.KS, +ms: List<&2, DC.Mem>, +ls: List<&2, DC.Link>,
+  h: KI.o(o, C, es, fs, ctx, t, DC.segids(es)), hw: TRM.TInv(es, fs, ctx, t, DC.segids(es), DC.Sk{kw, ms, ls}),
+  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}) -> WC(es, fs, ctx, t, DC.ph2(DC.FO{o, C}, es, fs, t, OP.cspan(ctx), ms, ls)):
+  match o:
+    case DC.OStep{+s1}:
+      (hi, hc) = h
+      ph2.s_wc(s1, C, es, fs, ctx, t, kw, ms, ls, hi, hc, hw, hz, hb)
+    case DC.OFix{+s1}:
+      (hi, hc) = h
+      ph2.s_wc(s1, C, es, fs, ctx, t, kw, ms, ls, hi, hc, hw, hz, hb)
+    case DC.OOne{+d}:
+      (h, Unit{})
+    case DC.OVoid{+g, +dr, +di}:
+      (h, Unit{})
+
+def ph2_wc(fo: DC.FO, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +kw: KS.KS, +ms: List<&2, DC.Mem>, +ls: List<&2, DC.Link>,
+  h: KI(es, fs, ctx, t, DC.segids(es), fo), hw: TRM.TInv(es, fs, ctx, t, DC.segids(es), DC.Sk{kw, ms, ls}),
+  +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}) -> WC(es, fs, ctx, t, DC.ph2(fo, es, fs, t, OP.cspan(ctx), ms, ls)):
+  match fo:
+    case DC.FO{+o, +C}:
+      ph2.o_wc(o, C, es, fs, ctx, t, kw, ms, ls, h, hw, hz, hb)
+
+# the initial state's invariants
+def sk0_t(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool})
+  -> TRM.TInv(es, fs, ctx, t, DC.segids(es), DC.sk0(es, fs, OP.cspan(ctx))):
+  ((RD.sk0_ok(es, fs, ctx, t, hz, hb), SH.sk0_sh(es, fs, OP.cspan(ctx))), GS.kinit_span(fs, es, fs, 0n, KS.ks0(), Unit{}))
+
+# both phases, from K k2 (with its cache C2) and the carried records and
+# links (whose state with k2 keeps the invariants)
+def wcm.2(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +k2: KS.KS, +ms: List<&2, DC.Mem>, +ls: List<&2, DC.Link>, +C2: List<&2, DC.KC>,
+  +hc2: FP.CInv(es, fs, t, k2, C2), +hw: TRM.TInv(es, fs, ctx, t, DC.segids(es), DC.Sk{k2, ms, ls}), +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool})
+  -> WC(es, fs, ctx, t, DC.ph2(DC.frun.k(DC.wfuel(es, fs, DC.Sk{k2, DC.minit(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, es, OP.cspan(ctx)), Nil{}}),
+    DC.FO{DC.OStep{DC.Sk{k2, DC.minit(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, es, OP.cspan(ctx)), Nil{}}}, C2}, es, fs, t, OP.cspan(ctx), DC.oids(DC.segids(es), es, OP.cspan(ctx)), DC.segids(es)),
+    es, fs, t, OP.cspan(ctx), ms, ls)):
+  ph2_wc(DC.frun.k(DC.wfuel(es, fs, DC.Sk{k2, DC.minit(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, es, OP.cspan(ctx)), Nil{}}),
+      DC.FO{DC.OStep{DC.Sk{k2, DC.minit(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, es, OP.cspan(ctx)), Nil{}}}, C2}, es, fs, t, OP.cspan(ctx), DC.oids(DC.segids(es), es, OP.cspan(ctx)), DC.segids(es)),
+    es, fs, ctx, t, k2, ms, ls,
+    krun(DC.wfuel(es, fs, DC.Sk{k2, DC.minit(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, es, OP.cspan(ctx)), Nil{}}),
+      DC.FO{DC.OStep{DC.Sk{k2, DC.minit(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, es, OP.cspan(ctx)), Nil{}}}, C2}, es, fs, ctx, t, DC.segids(es),
+      (mix(es, fs, ctx, t, DC.segids(es), k2, ms, ls, DC.kinit(es, fs, fs, 0n, KS.ks0()), DC.minit(Con{DR.NFrame{}, DC.snodes(DC.segids(es))}, es, OP.cspan(ctx)), Nil{}, hw, sk0_t(es, fs, ctx, t, hz, hb)), hc2),
+      hz, hb),
+    hw, hz, hb)
+
 def wcm(m: DC.MK, s: DC.Sk, +es: List<&2, SK.Ent>, +P: List<&2, DR.Fact>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +n: Nat, +nn: Nat,
   hm: MP.MOk(es, fs, t, nn, DC.kinit(es, fs, DC.fdrop(n, fs), n, DC.Sk.k(s)), m), hti: TRM.TInv(es, P, ctx, t, DC.segids(es), s), +hpf: MP.Pre(P, fs), +en: {MP.flen(P) == n : Nat},
   +hz: {DC.zb(es, t) == True{} : Bool}, +hb: {DC.fb(fs, t) == True{} : Bool}) -> WC(es, fs, ctx, t, DC.wcall.m(m, es, fs, t, OP.cspan(ctx), s)):
@@ -1066,7 +1273,7 @@ def wcm(m: DC.MK, s: DC.Sk, +es: List<&2, SK.Ent>, +P: List<&2, DR.Fact>, +fs: L
     case DC.MK{+n2, +k2, +C2} DC.Sk{+k, +ms, +ls}:
       (hn2, r1) = hm
       (hk2, hc2) = r1
-      wcm.r(es, fs, ctx, t, k2, ms, ls, C2, hc2,
+      wcm.2(es, fs, ctx, t, k2, ms, ls, C2, hc2,
         (%Equal.sym(KS.KS, k2, DC.kinit(es, fs, DC.fdrop(n, fs), n, k), hk2) : TRM.TInv(es, fs, ctx, t, DC.segids(es), DC.Sk{_, ms, ls})
           wstart_t(es, P, fs, ctx, t, DC.segids(es), n, DC.Sk{k, ms, ls}, hpf, en, hb, hti)), hz, hb)
 

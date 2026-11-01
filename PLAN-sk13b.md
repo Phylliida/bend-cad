@@ -1443,6 +1443,30 @@ give both component identities that Valid's SameV asks for.
         dwarmpf's lemmas carry over (wstart's K part, skinv_pre, kfw,
         kspan_pre, tinv_ctx, warm_ex, frun_fo, run_inv); the walk's draft
         changes are kept aside (scratchpad) until dpasspf is threaded.
+      - *(C) done 2026-11-01* (gate PASS, tools/regress.sh PASS). The
+        two-phase call is lib/dclose.bend's wcall (fround.k, frun.k, ph2;
+        phase 1 ends at its pause or its fuel's end, and either way phase
+        2 runs from its K). Proven in lib/dwarmpf.bend: phase 1 keeps the
+        run's invariants and the cache, an explosion its own (KI: each of
+        its stages is the round's stage or the pause, kr.*; krun); mix
+        (one state's K with another's records and links); phase 1 starts
+        from mix(the warm K, sk0); wcall_ex and wnext_ok keep their
+        statements. lib/dpass.bend is the warm pass (classes2 and
+        final2_st run it; the memo pass and the cold walk are gone, with
+        their equalities in lib/dpassmpf.bend, dmemopf's dclose_m_eq and
+        dconflict's .m forms). lib/dpasspf.bend proves DH.Honest(sk,
+        classes2(sk)) over it directly: hon carries W, a ghost context
+        and WInv for rfacts(kb); at a driving constraint W is taken to
+        c's context (wk_at_ok), c's call gives Ex (wcall_ex), so the warm
+        refutation decision is the cold one (ro_eq), the walk is
+        cw2_final with W, and the next W keeps WInv (wn_ok: c joins kb
+        exactly when not red, one2_kb; rfacts(kb ++ [c]) = rfacts(c :
+        kb), facts_snoc). tests/dir_draft.bend's walk statement now takes
+        W and its WInv; pass2_honest's statement is unchanged.
+        Instructions (native, one thread, the closure pass): base 4.85 G
+        -> 1.85 G, oncircle-pairs 48.8 G -> 12.1 G, vertical-twice 79.1 G
+        -> 18.9 G, angle-lines 124.6 G -> 46.9 G; outputs byte-identical
+        to the cold pass on all four.
     - The other sketches' time is elsewhere (base's profile: the runtime
       freeing terms, Pos arithmetic, monomial compares; a simplex in the
       refutation decision runs about 213k steps on base).

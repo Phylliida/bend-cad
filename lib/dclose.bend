@@ -1650,17 +1650,12 @@ def dclose(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr
 # The start, kept across calls
 # ----------------------------
 # A pass calls the closure on facts that extend each other (PLAN-sk13b
-# B4.8): it keeps K from the first n facts and the cache of K's rows for
-# some nodes, extends both by each new fact (as a run extends them by a
-# new generator), and starts a call from them (lib/dmemopf.bend:
-# dclose_m_eq, the call returns what dclose returns).
+# B4.8): a call from a state kept for the first n facts extends its K and
+# K's cache by each new fact (as a run extends them by a new generator;
+# lib/dmemopf.bend mext_ok).
 
 type MK is Data:
   MK{n: Nat, k: KS.KS, C: List<&2, KC>}
-
-# K and its cache for no facts, with an entry for every segment
-def mk0(+es: List<&2, SK.Ent>, +t: Nat) -> MK:
-  MK{0n, KS.ks0(), kc.of(snodes(segids(es)), es, Nil{}, t, KS.ks0())}
 
 # the facts ys, at positions n, n+1, ... of fs, given to K = k and its cache C
 def mext(ys: List<&2, DR.Fact>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +n: Nat, +k: KS.KS, +C: List<&2, KC>) -> MK:
@@ -1669,27 +1664,6 @@ def mext(ys: List<&2, DR.Fact>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +
       MK{n, k, C}
     case Con{y, tl}:
       mext(tl, es, fs, t, 1n+n, KS.ks.add(es, fs, k, DR.DPrem{n}), kc.add(C, DR.DPrem{n}, es, fs, t, k))
-
-def mext.m(+ys: List<&2, DR.Fact>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, m: MK) -> MK:
-  match m:
-    case MK{+n, +k, +C}:
-      mext(ys, es, fs, t, n, k, C)
-
-# the nodes ns, each with its entry from C
-def kc.sel(ns: List<&2, DR.Node>, +C: List<&2, KC>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +k: KS.KS) -> List<&2, KC>:
-  match ns:
-    case Nil{}:
-      Nil{}
-    case Con{+n, tl}:
-      Con{KC{n, kc.get(C, n, es, fs, t, k)}, kc.sel(tl, C, es, fs, t, k)}
-
-# dclose, from the start m (K and its cache for the facts fs)
-def dclose.m(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat, m: MK) -> Out:
-  match m:
-    case MK{n, +k, +C}:
-      +cs = sp.of(ctx, SP{Nil{}, Nil{}})
-      +oo = oids(segids(es), es, cs)
-      frun(fuel, FO{OStep{Sk{k, minit(Con{DR.NFrame{}, snodes(segids(es))}, es, cs), Nil{}}}, kc.sel(snodes(oo), C, es, fs, t, k)}, es, fs, t, cs, oo, segids(es))
 
 # a run's start from the state s, kept for the first n facts: K given the
 # facts from position n of fs, as sk0 gives K all of them (lib/dwarmpf.bend)
@@ -1736,11 +1710,82 @@ def wk.at(+es: List<&2, SK.Ent>, +t: Nat, +cs: SP, w: WK) -> WK:
     case WK{+n, +s, +C, +cs0}:
       wk.pick(sameopen(segids(es), es, cs0, cs), es, t, cs, n, s, C)
 
+# A warm call runs in two phases. Carried merges would make the K facts a
+# round finds big (each is found at a merged root, as one polynomial for
+# half the drawing), so phase 1 takes the new facts' K rounds alone, from
+# the initial forest: each round is the round's own up to its merges,
+# where it pauses (OFix, the state as it was). Phase 2 runs from phase 1's
+# K with the carried records and links (lib/dwarmpf.bend).
+
+# phase 1's round: the round, paused where it would merge
+def fr.c2.k(m: Maybe<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, +ids: List<&2, Nat>, +s: Sk, +C: List<&2, KC>) -> FO:
+  match m:
+    case None{}:
+      FO{OFix{s}, C}
+    case Some{+d}:
+      FO{r.c2(Some{d}, es, fs, t, cs, ids, s), kc.add(C, d, es, fs, t, Sk.k(s))}
+
+def fr.c1.k(m: Maybe<&2, DR.Der>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, +ids: List<&2, Nat>, +s: Sk, +C: List<&2, KC>) -> FO:
+  match m:
+    case None{}:
+      fr.c2.k(fclxs(rls(roots(Sk.ms(s)), es, fs, t, s, C), es, fs, t, s), es, fs, t, cs, ids, s, C)
+    case Some{+d}:
+      FO{r.c1(Some{d}, es, fs, t, cs, ids, s), kc.add(C, d, es, fs, t, Sk.k(s))}
+
+def fr.e2.k(m: Maybe<&2, Nat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, +ids: List<&2, Nat>, +s: Sk, +C: List<&2, KC>) -> FO:
+  match m:
+    case None{}:
+      fr.c1.k(ffback(rgens(fs, DR.NFrame{}, Sk.ms(s), Sk.ls(s)), es, fs, Sk.k(s)), es, fs, t, cs, ids, s, C)
+    case Some{+g}:
+      FO{r.e2(Some{g}, es, fs, t, cs, ids, s), C}
+
+def fr.e1.k(f: Bool, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, +oo: List<&2, Nat>, +ids: List<&2, Nat>, +s: Sk, +C: List<&2, KC>) -> FO:
+  match f:
+    case True{}:
+      FO{r.e1(True{}, es, fs, t, cs, ids, s), C}
+    case False{}:
+      fr.e2.k(fvoid(oo, es, Sk.k(s)), es, fs, t, cs, ids, s, C)
+
+def fround.k(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, +oo: List<&2, Nat>, +ids: List<&2, Nat>, +s: Sk, +C: List<&2, KC>) -> FO:
+  fr.e1.k(LR.ks.linb(Sk.k(s), DR.cst(DR.qo())), es, fs, t, cs, oo, ids, s, C)
+
+# phase 1's run, to a pause, an explosion, or the end of its fuel
+def frun.k(fuel: Nat, fo: FO, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, +oo: List<&2, Nat>, +ids: List<&2, Nat>) -> FO:
+  match fuel fo:
+    case 0n FO{o, C}:
+      FO{o, C}
+    case 1n+f FO{OStep{+s}, +C}:
+      frun.k(f, fround.k(es, fs, t, cs, oo, ids, s, C), es, fs, t, cs, oo, ids)
+    case 1n+f FO{OFix{s}, C}:
+      FO{OFix{s}, C}
+    case 1n+f FO{OOne{d}, C}:
+      FO{OOne{d}, C}
+    case 1n+f FO{OVoid{sg, dr, di}, C}:
+      FO{OVoid{sg, dr, di}, C}
+
+# phase 2: from the state s1's K, with the records ms and links ls
+def ph2.s(s1: Sk, +C1: List<&2, KC>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, +ms: List<&2, Mem>, +ls: List<&2, Link>) -> FO:
+  match s1:
+    case Sk{+k1, m1, l1}:
+      +s2 = {Sk{k1, ms, ls} : Sk}
+      frun.fo(wfuel(es, fs, s2), FO{OStep{s2}, C1}, es, fs, t, cs, oids(segids(es), es, cs), segids(es))
+
+def ph2(fo: FO, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, +ms: List<&2, Mem>, +ls: List<&2, Link>) -> FO:
+  match fo:
+    case FO{OStep{+s1}, +C}:
+      ph2.s(s1, C, es, fs, t, cs, ms, ls)
+    case FO{OFix{+s1}, +C}:
+      ph2.s(s1, C, es, fs, t, cs, ms, ls)
+    case FO{OOne{d}, C}:
+      FO{OOne{d}, C}
+    case FO{OVoid{g, dr, di}, C}:
+      FO{OVoid{g, dr, di}, C}
+
 def wcall.m(m: MK, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +cs: SP, s: Sk) -> FO:
   match m s:
     case MK{n2, +k2, +C2} Sk{k, +ms, +ls}:
-      +s2 = {Sk{k2, ms, ls} : Sk}
-      frun.fo(wfuel(es, fs, s2), FO{OStep{s2}, C2}, es, fs, t, cs, oids(segids(es), es, cs), segids(es))
+      +s1 = {Sk{k2, minit(Con{DR.NFrame{}, snodes(segids(es))}, es, cs), Nil{}} : Sk}
+      ph2(frun.k(wfuel(es, fs, s1), FO{OStep{s1}, C2}, es, fs, t, cs, oids(segids(es), es, cs), segids(es)), es, fs, t, cs, ms, ls)
 
 # the run on the facts fs from w (its context's span), with the cache
 def wcall(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, w: WK) -> FO:

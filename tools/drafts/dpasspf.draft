@@ -13,7 +13,12 @@
 #   by the generalized filter (lib/dconflictpf.bend), Kept or Amber or
 #   Over with no refutation of either kind (NoRefute2), DropsOk and
 #   DropsNd from the walk (lib/dcwpf.bend), the unit's matching and the
-#   side tests as before.
+#   side tests as before;
+# - the closure calls start from the state kept across calls (PLAN-sk13b
+#   B4.8): it is valid for facts that the kept constraints' facts extend
+#   (DW.WInv), at the context it was built in, and stays so after each
+#   constraint (wn_ok), so each call gives Ex and decides as the closure
+#   from the start does (ro_eq, the walk's dd_ok).
 #
 # Generated from tools/drafts/dpasspf.draft by tools/expand.py; edit the
 # draft.
@@ -56,6 +61,10 @@ import ./dconflictpf.bend as DCP
 import ./dcwpf.bend as DCW
 import ./dpass.bend as DPS
 import ./dpassmpf.bend as DPM
+import ./dclose.bend as DC
+import ./dmemopf.bend as MP
+import ./dbridgepf.bend as BRG
+import ./dwarmpf.bend as DW
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -74,6 +83,12 @@ def absurd(-A: Type, x: Empty) -> A:
 @MACRO N SV.neqs(SK.Sketch.eqs(sk))
 @MACRO HC +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}
 @MACRO HA hcov, hwf
+@MACRO ENT SV.ents(sk)
+@MACRO TV DCF.tv(sk)
+@MACRO W0 DC.wk0(SV.ents(sk), DCF.tv(sk), DC.SP{Nil{}, Nil{}})
+@MACRO CXS SV.eqs_of(sk, Con{i, DPS.pkb(st)})
+@MACRO WCS DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of($CXS, DC.SP{Nil{}, Nil{}}), W)
+@MACRO FOAS DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), $WCS)
 
 # Every class drops only its own equations
 # ----------------------------------------
@@ -86,75 +101,73 @@ def cwo2.dir(m: Maybe<&2, DR.Der>, +own: $NL, +c: Nat, +k: Nat, +e: E.QExpr, +r:
     case None{}:
       h
 
-def cwo2.pick(b: Bool, +own: $NL, +c: Nat, +k: Nat, +e: E.QExpr, +r: EL.Res, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL, +sk: SK.Sketch, +F0: List<&2, DR.Fact>, +cx: $QL,
-  +ho: {SV.eq(SV.nth(own, k), c) == True{} : Bool}, +h: {KB.allo(own, SV.drops(ds), c) == True{} : Bool}) -> {KB.allo(own, SV.drops(CW.cw.ds(DPS.cw2.pick(b, k, e, r, rows, B, bp, ds, us, sk, c, F0, cx))), c) == True{} : Bool}:
+def cwo2.pick(b: Bool, +own: $NL, +c: Nat, +k: Nat, +e: E.QExpr, +r: EL.Res, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL, +sk: SK.Sketch, +F0: List<&2, DR.Fact>, +cx: $QL, +W: DC.WK,
+  +ho: {SV.eq(SV.nth(own, k), c) == True{} : Bool}, +h: {KB.allo(own, SV.drops(ds), c) == True{} : Bool}) -> {KB.allo(own, SV.drops(CW.cw.ds(DPS.cw2.pick(b, k, e, r, rows, B, bp, ds, us, sk, c, F0, cx, W))), c) == True{} : Bool}:
   match b:
     case True{}:
       LI.band_i(SV.eq(SV.nth(own, k), c), KB.allo(own, SV.drops(ds), c), ho, h)
     case False{}:
-      cwo2.dir(DPS.ddec(sk, DPS.fk(sk, c, F0, ds, k), cx, e, DPS.cstat(sk, c)), own, c, k, e, r, rows, B, bp, ds, us, SV.ents(sk), DPS.fk(sk, c, F0, ds, k), ho, h)
+      cwo2.dir(DPS.ddec(sk, DPS.fk(sk, c, F0, ds, k), cx, e, DPS.cstat(sk, c), W), own, c, k, e, r, rows, B, bp, ds, us, SV.ents(sk), DPS.fk(sk, c, F0, ds, k), ho, h)
 
-def cwo2.at(b: Bool, +own: $NL, +c: Nat, +k: Nat, +e: E.QExpr, st: PA.CW, +sk: SK.Sketch, +F0: List<&2, DR.Fact>, +cx: $QL, +eb: {SV.eq(SV.nth(own, k), c) == b : Bool}, +h: {KB.allo(own, SV.drops(CW.cw.ds(st)), c) == True{} : Bool})
-  -> {KB.allo(own, SV.drops(CW.cw.ds(DPS.cw2.at(b, k, e, st, sk, c, F0, cx))), c) == True{} : Bool}:
+def cwo2.at(b: Bool, +own: $NL, +c: Nat, +k: Nat, +e: E.QExpr, st: PA.CW, +sk: SK.Sketch, +F0: List<&2, DR.Fact>, +cx: $QL, +W: DC.WK, +eb: {SV.eq(SV.nth(own, k), c) == b : Bool}, +h: {KB.allo(own, SV.drops(CW.cw.ds(st)), c) == True{} : Bool})
+  -> {KB.allo(own, SV.drops(CW.cw.ds(DPS.cw2.at(b, k, e, st, sk, c, F0, cx, W))), c) == True{} : Bool}:
   match b:
     case True{}:
       match st:
         case PA.CW{+rows, +B, +bp, +ds, +us}:
-          cwo2.pick(EP.isnil(EP.resp(EL.resid(rows, e))), own, c, k, e, EL.resid(rows, e), rows, B, bp, ds, us, sk, F0, cx, eb, h)
+          cwo2.pick(EP.isnil(EP.resp(EL.resid(rows, e))), own, c, k, e, EL.resid(rows, e), rows, B, bp, ds, us, sk, F0, cx, W, eb, h)
     case False{}:
       h
 
 # the walk drops only c's equations
-def cw2_own(es: $QL, +own: $NL, +c: Nat, +k: Nat, +st: PA.CW, +sk: SK.Sketch, +F0: List<&2, DR.Fact>, +cx: $QL, +h: {KB.allo(own, SV.drops(CW.cw.ds(st)), c) == True{} : Bool})
-  -> {KB.allo(own, SV.drops(CW.cw.ds(DPS.cwalk2(es, own, c, k, st, sk, F0, cx))), c) == True{} : Bool}:
+def cw2_own(es: $QL, +own: $NL, +c: Nat, +k: Nat, +st: PA.CW, +sk: SK.Sketch, +F0: List<&2, DR.Fact>, +cx: $QL, +W: DC.WK, +h: {KB.allo(own, SV.drops(CW.cw.ds(st)), c) == True{} : Bool})
+  -> {KB.allo(own, SV.drops(CW.cw.ds(DPS.cwalk2(es, own, c, k, st, sk, F0, cx, W))), c) == True{} : Bool}:
   match es:
     case Nil{}:
       h
     case Con{+e, +t}:
-      cw2_own(t, own, c, 1n+k, DPS.cw2.at(SV.eq(SV.nth(own, k), c), k, e, st, sk, c, F0, cx), sk, F0, cx, cwo2.at(SV.eq(SV.nth(own, k), c), own, c, k, e, st, sk, F0, cx, {==}, h))
+      cw2_own(t, own, c, 1n+k, DPS.cw2.at(SV.eq(SV.nth(own, k), c), k, e, st, sk, c, F0, cx, W), sk, F0, cx, W, cwo2.at(SV.eq(SV.nth(own, k), c), own, c, k, e, st, sk, F0, cx, W, {==}, h))
 
-def one2_down.c(b: Bool, +sk: SK.Sketch, +c: Nat, +kb: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +vm: List<&2, Maybe<&2, Nat>>, +cls: $CL2, +cx: $QL, +eb: {DCF.refutable2(sk, c, kb, cx) == b : Bool})
-  -> {KB.allo($OWN, SV.kdrops(PA.PO.k(DPS.one2.c(DCF.refutable2(sk, c, kb, cx), $PARGS, c, kb, rows, B, bp, vm, cls, cx))), c) == True{} : Bool}:
+def one2_down.c(b: Bool, +sk: SK.Sketch, +c: Nat, +kb: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +vm: List<&2, Maybe<&2, Nat>>, +cls: $CL2, +cx: $QL, +W: DC.WK)
+  -> {KB.allo($OWN, SV.kdrops(PA.PO.k(DPS.one2.c(b, $PARGS, c, kb, rows, B, bp, vm, cls, cx, W))), c) == True{} : Bool}:
   match b:
     case True{}:
-      %Equal.sym(Bool, DCF.refutable2(sk, c, kb, cx), True{}, eb) : {KB.allo($OWN, SV.kdrops(PA.PO.k(DPS.one2.c(_, $PARGS, c, kb, rows, B, bp, vm, cls, cx))), c) == True{} : Bool}
       {==}
     case False{}:
-      %Equal.sym(Bool, DCF.refutable2(sk, c, kb, cx), False{}, eb) : {KB.allo($OWN, SV.kdrops(PA.PO.k(DPS.one2.c(_, $PARGS, c, kb, rows, B, bp, vm, cls, cx))), c) == True{} : Bool}
-      PP.one_down.w(DPS.cwalk2($ES, $OWN, c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}, sk, SV.facts.go($ES, $OWN, kb, sk, cls, True{}, 0n), cx), sk, c, kb, rows, B, bp, vm,
-        cw2_own($ES, $OWN, c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}, sk, SV.facts.go($ES, $OWN, kb, sk, cls, True{}, 0n), cx, {==}))
+      PP.one_down.w(DPS.cwalk2($ES, $OWN, c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}, sk, SV.facts.go($ES, $OWN, kb, sk, cls, True{}, 0n), cx, W), sk, c, kb, rows, B, bp, vm,
+        cw2_own($ES, $OWN, c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}, sk, SV.facts.go($ES, $OWN, kb, sk, cls, True{}, 0n), cx, W, {==}))
 
-def one2_down(st: PA.PS, +sk: SK.Sketch, +c: Nat, +cls: $CL2) -> {KB.allo($OWN, SV.kdrops(PA.PO.k(DPS.one2($PARGS, c, st, cls))), c) == True{} : Bool}:
+def one2_down(st: PA.PS, +sk: SK.Sketch, +c: Nat, +cls: $CL2, +W: DC.WK, +foA: DC.FO) -> {KB.allo($OWN, SV.kdrops(PA.PO.k(DPS.one2($PARGS, c, st, cls, W, foA))), c) == True{} : Bool}:
   match st:
     case PA.PS{+kb, +rows, +B, +bp, +vm}:
-      one2_down.c(DCF.refutable2(sk, c, kb, SV.eqs_of(sk, Con{c, kb})), sk, c, kb, rows, B, bp, vm, cls, SV.eqs_of(sk, Con{c, kb}), {==})
+      one2_down.c(DCF.refutable2.o(sk, c, kb, DC.FO.o(foA)), sk, c, kb, rows, B, bp, vm, cls, SV.eqs_of(sk, Con{c, kb}), W)
 
-@MACRO O2 DPS.one2($PARGS, i, st, cls)
+@MACRO O2 DPS.one2($PARGS, i, st, cls, $WCS, $FOAS)
+@MACRO WN2 DPS.wnext(SV.is_red(PA.PO.k($O2)), $WCS, DC.wk.next($FOAS, SV.rfacts(sk, Con{i, DPS.pkb(st)}), $WCS))
 
-def pass2_down(rs: List<&2, SK.Rec>, +sk: SK.Sketch, +i: Nat, +st: PA.PS, +cls: $CL2) -> {CL.downs($OWN, DPS.pass2(rs, $PARGS, i, st, cls), i) == True{} : Bool}:
+def pass2_down(rs: List<&2, SK.Rec>, +sk: SK.Sketch, +i: Nat, +st: PA.PS, +cls: $CL2, +W: DC.WK) -> {CL.downs($OWN, DPS.pass2(rs, $PARGS, i, st, cls, W), i) == True{} : Bool}:
   match rs:
     case Nil{}:
       {==}
     case Con{SK.Rec{id, True{}, k}, +t}:
-      L.band_i(True{}, CL.downs($OWN, DPS.pass2(t, $PARGS, 1n+i, st, DPS.csnoc(cls, SV.Kept{Nil{}})), 1n+i), {==}, pass2_down(t, sk, 1n+i, st, DPS.csnoc(cls, SV.Kept{Nil{}})))
+      L.band_i(True{}, CL.downs($OWN, DPS.pass2(t, $PARGS, 1n+i, st, DPS.csnoc(cls, SV.Kept{Nil{}}), W), 1n+i), {==}, pass2_down(t, sk, 1n+i, st, DPS.csnoc(cls, SV.Kept{Nil{}}), W))
     case Con{SK.Rec{id, False{}, k}, +t}:
-      L.band_i(KB.allo($OWN, SV.kdrops(PA.PO.k($O2)), i), CL.downs($OWN, DPS.pass2(t, $PARGS, 1n+i, PA.PO.st($O2), DPS.csnoc(cls, PA.PO.k($O2))), 1n+i),
-        one2_down(st, sk, i, cls), pass2_down(t, sk, 1n+i, PA.PO.st($O2), DPS.csnoc(cls, PA.PO.k($O2))))
+      L.band_i(KB.allo($OWN, SV.kdrops(PA.PO.k($O2)), i), CL.downs($OWN, DPS.pass2(t, $PARGS, 1n+i, PA.PO.st($O2), DPS.csnoc(cls, PA.PO.k($O2)), $WN2), 1n+i),
+        one2_down(st, sk, i, cls, $WCS, $FOAS), pass2_down(t, sk, 1n+i, PA.PO.st($O2), DPS.csnoc(cls, PA.PO.k($O2)), $WN2))
 
 # the final classes drop only their own equations
 def classes2_down(+sk: SK.Sketch) -> {CL.downs($OWN, $CLS, 0n) == True{} : Bool}:
-  %Equal.sym($CL2, $CLS, DPS.pass2(PA.recs(sk), $PARGS, 0n, PA.start($NV), Nil{}), DPM.classes2_eq(sk)) : {CL.downs($OWN, _, 0n) == True{} : Bool}
-  pass2_down(PA.recs(sk), sk, 0n, PA.start($NV), Nil{})
+  pass2_down(PA.recs(sk), sk, 0n, PA.start($NV), Nil{}, $W0)
 
-def clsn_pass2(rs: List<&2, SK.Rec>, +sk: SK.Sketch, +i: Nat, +st: PA.PS, +cls: $CL2) -> {SV.clsn(DPS.pass2(rs, $PARGS, i, st, cls)) == SV.clen(rs) : Nat}:
+def clsn_pass2(rs: List<&2, SK.Rec>, +sk: SK.Sketch, +i: Nat, +st: PA.PS, +cls: $CL2, +W: DC.WK) -> {SV.clsn(DPS.pass2(rs, $PARGS, i, st, cls, W)) == SV.clen(rs) : Nat}:
   match rs:
     case Nil{}:
       {==}
     case Con{SK.Rec{id, True{}, k}, +t}:
-      %clsn_pass2(t, sk, 1n+i, st, DPS.csnoc(cls, SV.Kept{Nil{}})) : {1n+SV.clsn(DPS.pass2(t, $PARGS, 1n+i, st, DPS.csnoc(cls, SV.Kept{Nil{}}))) == 1n+_ : Nat}
+      %clsn_pass2(t, sk, 1n+i, st, DPS.csnoc(cls, SV.Kept{Nil{}}), W) : {1n+SV.clsn(DPS.pass2(t, $PARGS, 1n+i, st, DPS.csnoc(cls, SV.Kept{Nil{}}), W)) == 1n+_ : Nat}
       {==}
     case Con{SK.Rec{id, False{}, k}, +t}:
-      %clsn_pass2(t, sk, 1n+i, PA.PO.st($O2), DPS.csnoc(cls, PA.PO.k($O2))) : {1n+SV.clsn(DPS.pass2(t, $PARGS, 1n+i, PA.PO.st($O2), DPS.csnoc(cls, PA.PO.k($O2)))) == 1n+_ : Nat}
+      %clsn_pass2(t, sk, 1n+i, PA.PO.st($O2), DPS.csnoc(cls, PA.PO.k($O2)), $WN2) : {1n+SV.clsn(DPS.pass2(t, $PARGS, 1n+i, PA.PO.st($O2), DPS.csnoc(cls, PA.PO.k($O2)), $WN2)) == 1n+_ : Nat}
       {==}
 
 # The classes so far
@@ -571,37 +584,94 @@ def step.w(w: PA.CW, +sk: SK.Sketch, +i: Nat, +kb: $NL, +rows: List<&2, EL.Row>,
     case PA.CW{+rows2, +B2, +bp2, +dd, +us}:
       step.w3(sk, i, kb, rows, B, bp, vm, rows2, B2, bp2, dd, us, hi, hcw, hnr, hK, hA, hdrv, hD)
 
-@MACRO OC2 DPS.one2.c(DCF.refutable2(sk, i, kb, $CX), $PARGS, i, kb, rows, B, bp, vm, pc, $CX)
-@MACRO WALK2 DPS.cwalk2($ES, $OWN, i, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}, sk, $F0, $CX)
+@MACRO OC2 DPS.one2.c(DCF.refutable2(sk, i, kb, $CX), $PARGS, i, kb, rows, B, bp, vm, pc, $CX, W)
+@MACRO WALK2 DPS.cwalk2($ES, $OWN, i, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}, sk, $F0, $CX, W)
 @MACRO HPC +hpc: {ccat(pc, CL.cdrop(i, $CLS)) == $CLS : $CL2}
 
-def step.c(b: Bool, +sk: SK.Sketch, +i: Nat, +kb: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +vm: List<&2, Maybe<&2, Nat>>, +pc: $CL2, +eb: {DCF.refutable2(sk, i, kb, $CX) == b : Bool},
+def step.c(b: Bool, +sk: SK.Sketch, +i: Nat, +kb: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +vm: List<&2, Maybe<&2, Nat>>, +pc: $CL2, +W: DC.WK, +hw: DW.WInv($ENT, SV.rfacts(sk, kb), $CX, $TV, W),
+  +eb: {DCF.refutable2(sk, i, kb, $CX) == b : Bool},
   +hi: PP.PInv(sk, $RF, $DF, i, $STK), +hK: {SV.class_at($CLS, i) == PA.PO.k($OC2) : SV.Class}, +hA: {D.adjb($AD, $NV) == True{} : Bool}, +hdrv: {SV.driving(sk, i) == True{} : Bool},
   +hD: {CL.downs($OWN, $CLS, 0n) == True{} : Bool}, $HPC, $HC) -> StepRes2(sk, i, $OC2):
   match b:
     case True{}:
-      %Equal.sym(Bool, DCF.refutable2(sk, i, kb, $CX), True{}, eb) : StepRes2(sk, i, DPS.one2.c(_, $PARGS, i, kb, rows, B, bp, vm, pc, $CX))
+      %Equal.sym(Bool, DCF.refutable2(sk, i, kb, $CX), True{}, eb) : StepRes2(sk, i, DPS.one2.c(_, $PARGS, i, kb, rows, B, bp, vm, pc, $CX, W))
       step.conf2(sk, i, kb, rows, B, bp, vm, hi, eb,
-        (%eb : {SV.class_at($CLS, i) == PA.PO.k(DPS.one2.c(_, $PARGS, i, kb, rows, B, bp, vm, pc, $CX)) : SV.Class}
+        (%eb : {SV.class_at($CLS, i) == PA.PO.k(DPS.one2.c(_, $PARGS, i, kb, rows, B, bp, vm, pc, $CX, W)) : SV.Class}
           hK), $HA)
     case False{}:
-      %Equal.sym(Bool, DCF.refutable2(sk, i, kb, $CX), False{}, eb) : StepRes2(sk, i, DPS.one2.c(_, $PARGS, i, kb, rows, B, bp, vm, pc, $CX))
+      %Equal.sym(Bool, DCF.refutable2(sk, i, kb, $CX), False{}, eb) : StepRes2(sk, i, DPS.one2.c(_, $PARGS, i, kb, rows, B, bp, vm, pc, $CX, W))
       +hkb = PP.pinv_kb(sk, $RF, $DF, i, $STK, hi)
       step.w($WALK2, sk, i, kb, rows, B, bp, vm, hi,
-        DCW.cw2_final(sk, $CLS, $RF, $DF, i, $F0, $CX, hf0_of(sk, i, kb, pc, hkb, kb_below(sk, i, kb, PP.pinv_kbp(sk, $RF, $DF, i, $STK, hi)), hD, hpc), hcx_of(sk, i, kb, hkb), rows, B, bp,
+        DCW.cw2_final(sk, $CLS, $RF, $DF, i, $F0, $CX, hf0_of(sk, i, kb, pc, hkb, kb_below(sk, i, kb, PP.pinv_kbp(sk, $RF, $DF, i, $STK, hi)), hD, hpc), hcx_of(sk, i, kb, hkb), W, (%hkb : DW.WInv($ENT, SV.rfacts(sk, _), $CX, $TV, W)
+          hw), rows, B, bp,
           PP.pib_rinv(sk, $RF, $DF, i, rows, B, bp, vm, PP.pinv_b(sk, $RF, $DF, i, $STK, hi)), PP.pinv_rlen(sk, $RF, $DF, i, $STK, hi), PP.pinv_B(sk, $RF, $DF, i, $STK, hi), PP.pinv_p(sk, $RF, $DF, i, $STK, hi), $HA),
         nr2_of(sk, i, kb, hkb, eb, $HA),
-        (%eb : {SV.class_at($CLS, i) == PA.PO.k(DPS.one2.c(_, $PARGS, i, kb, rows, B, bp, vm, pc, $CX)) : SV.Class}
+        (%eb : {SV.class_at($CLS, i) == PA.PO.k(DPS.one2.c(_, $PARGS, i, kb, rows, B, bp, vm, pc, $CX, W)) : SV.Class}
           hK), hA, hdrv, hD)
 
-@MACRO O2P DPS.one2($PARGS, i, st, pc)
+@MACRO O2P DPS.one2($PARGS, i, st, pc, $WCS, $FOAS)
+@MACRO WNS DPS.wnext(SV.is_red(PA.PO.k($O2P)), $WCS, DC.wk.next($FOAS, SV.rfacts(sk, Con{i, DPS.pkb(st)}), $WCS))
+@MACRO FOAK DC.wcall($ENT, SV.rfacts(sk, Con{i, kb}), $TV, W)
+@MACRO OC2O DPS.one2.c(DCF.refutable2.o(sk, i, kb, DC.FO.o($FOAK)), $PARGS, i, kb, rows, B, bp, vm, pc, $CX, W)
+
+# c's facts extend the kept ones'
+def hr_of(+sk: SK.Sketch, +kb: $NL, +i: Nat, +hb: {SV.below(kb, i) == True{} : Bool}) -> MP.Pre(SV.rfacts(sk, kb), SV.rfacts(sk, Con{i, kb})):
+  %Equal.sym(List<&2, DR.Fact>, SV.rfacts(sk, Con{i, kb}), SV.fcat(SV.rfacts(sk, kb), SV.rfacts(sk, Con{i, Nil{}})), DPM.rfacts_split(sk, kb, i, hb)) : MP.Pre(SV.rfacts(sk, kb), _)
+  MP.pre_cat(SV.rfacts(sk, kb), SV.rfacts(sk, kb), SV.rfacts(sk, Con{i, Nil{}}), MP.pre_refl(SV.rfacts(sk, kb)))
+
+# a driving constraint, W at its context: the call on c's facts from W
+# decides the refutation as the closure from the start does
+def hon.dk(+sk: SK.Sketch, +i: Nat, +kb: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +vm: List<&2, Maybe<&2, Nat>>, +pc: $CL2, +W: DC.WK, +hw: DW.WInv($ENT, SV.rfacts(sk, kb), $CX, $TV, W),
+  +hi: PP.PInv(sk, $RF, $DF, i, $STK), +hK: {SV.class_at($CLS, i) == PA.PO.k($OC2O) : SV.Class},
+  +hA: {D.adjb($AD, $NV) == True{} : Bool}, +hdrv: {SV.driving(sk, i) == True{} : Bool}, +hD: {CL.downs($OWN, $CLS, 0n) == True{} : Bool}, $HPC, $HC) -> StepRes2(sk, i, $OC2O):
+  +ro = DCP.ro_eq(sk, i, kb, $CX, DC.FO.o($FOAK), DW.wcall_ex($ENT, SV.rfacts(sk, kb), SV.rfacts(sk, Con{i, kb}), $CX, $TV, W, hw,
+    hr_of(sk, kb, i, kb_below(sk, i, kb, PP.pinv_kbp(sk, $RF, $DF, i, $STK, hi))), BRG.zb_tv(sk, hcov), BRG.fb_rf(sk, Con{i, kb}, $HA)), $HA)
+  %Equal.sym(Bool, DCF.refutable2.o(sk, i, kb, DC.FO.o($FOAK)), DCF.refutable2(sk, i, kb, $CX), ro) : StepRes2(sk, i, DPS.one2.c(_, $PARGS, i, kb, rows, B, bp, vm, pc, $CX, W))
+  step.c(DCF.refutable2(sk, i, kb, $CX), sk, i, kb, rows, B, bp, vm, pc, W, hw, {==}, hi,
+    (%ro : {SV.class_at($CLS, i) == PA.PO.k(DPS.one2.c(_, $PARGS, i, kb, rows, B, bp, vm, pc, $CX, W)) : SV.Class}
+      hK), hA, hdrv, hD, hpc, $HA)
 
 # a driving constraint at i: its class and the next state
-def hon.d(st: PA.PS, +sk: SK.Sketch, +i: Nat, +pc: $CL2, +hi: PP.PInv(sk, $RF, $DF, i, st), +hK: {SV.class_at($CLS, i) == PA.PO.k($O2P) : SV.Class},
-  +hA: {D.adjb($AD, $NV) == True{} : Bool}, +hdrv: {SV.driving(sk, i) == True{} : Bool}, +hD: {CL.downs($OWN, $CLS, 0n) == True{} : Bool}, $HPC, $HC) -> StepRes2(sk, i, $O2P):
+def hon.d(st: PA.PS, +sk: SK.Sketch, +i: Nat, +pc: $CL2, +W: DC.WK, +cw: $QL, +hw: DW.WInv($ENT, SV.rfacts(sk, DPS.pkb(st)), cw, $TV, W), +hi: PP.PInv(sk, $RF, $DF, i, st),
+  +hK: {SV.class_at($CLS, i) == PA.PO.k($O2P) : SV.Class}, +hA: {D.adjb($AD, $NV) == True{} : Bool}, +hdrv: {SV.driving(sk, i) == True{} : Bool}, +hD: {CL.downs($OWN, $CLS, 0n) == True{} : Bool}, $HPC, $HC)
+  -> StepRes2(sk, i, $O2P):
   match st:
     case PA.PS{+kb, +rows, +B, +bp, +vm}:
-      step.c(DCF.refutable2(sk, i, kb, $CX), sk, i, kb, rows, B, bp, vm, pc, {==}, hi, hK, hA, hdrv, hD, hpc, $HA)
+      hon.dk(sk, i, kb, rows, B, bp, vm, pc, DC.wk.at($ENT, $TV, DC.sp.of($CX, DC.SP{Nil{}, Nil{}}), W), DW.wk_at_ok($ENT, SV.rfacts(sk, kb), cw, $CX, $TV, W, hw, BRG.zb_tv(sk, hcov)),
+        hi, hK, hA, hdrv, hD, hpc, $HA)
+
+# The state kept across calls
+# ---------------------------
+# After a driving constraint the pass keeps W at c's context when c is
+# red (kb is unchanged), else the fixpoint of c's call, if it ended at
+# one: valid for the facts of kb with c.
+
+@MACRO CXK SV.eqs_of(sk, Con{i, kb})
+
+def wn.b(b: Bool, +sk: SK.Sketch, +i: Nat, +kb: $NL, +W: DC.WK, +hw: DW.WInv($ENT, SV.rfacts(sk, kb), $CXK, $TV, W), +hbl: {SV.below(kb, i) == True{} : Bool}, $HC)
+  -> DW.WInv($ENT, SV.rfacts(sk, DPM.kbn(b, kb, i)), $CXK, $TV, DPS.wnext(b, W, DC.wk.next(DC.wcall($ENT, SV.rfacts(sk, Con{i, kb}), $TV, W), SV.rfacts(sk, Con{i, kb}), W))):
+  match b:
+    case True{}:
+      hw
+    case False{}:
+      %Equal.sym(List<&2, DR.Fact>, SV.rfacts(sk, CO.lsnoc(kb, i)), SV.rfacts(sk, Con{i, kb}), DPM.facts_snoc($ES, $OWN, kb, i, sk, Nil{}, False{}, 0n))
+        : DW.WInv($ENT, _, $CXK, $TV, DC.wk.next(DC.wcall($ENT, SV.rfacts(sk, Con{i, kb}), $TV, W), SV.rfacts(sk, Con{i, kb}), W))
+      DW.wnext_ok($ENT, SV.rfacts(sk, kb), SV.rfacts(sk, Con{i, kb}), SV.rfacts(sk, Con{i, kb}), $CXK, $TV, W, hw, hr_of(sk, kb, i, hbl), hr_of(sk, kb, i, hbl),
+        MP.pre_refl(SV.rfacts(sk, Con{i, kb})), BRG.zb_tv(sk, hcov), BRG.fb_rf(sk, Con{i, kb}, $HA))
+
+def wn_ok(+st: PA.PS, +sk: SK.Sketch, +i: Nat, +pc: $CL2, +W: DC.WK, +cw: $QL, +hw: DW.WInv($ENT, SV.rfacts(sk, DPS.pkb(st)), cw, $TV, W), +hbl: {SV.below(DPS.pkb(st), i) == True{} : Bool}, $HC)
+  -> DW.WInv($ENT, SV.rfacts(sk, DPS.pkb(PA.PO.st($O2P))), $CXS, $TV, $WNS):
+  %Equal.sym($NL, DPS.pkb(PA.PO.st($O2P)), DPM.kbn(SV.is_red(PA.PO.k($O2P)), DPS.pkb(st), i), DPM.one2_kb($ES, $OWN, sk, $AD, 1n+$NV, i, st, pc, $WCS, $FOAS)) : DW.WInv($ENT, SV.rfacts(sk, _), $CXS, $TV, $WNS)
+  wn.b(SV.is_red(PA.PO.k($O2P)), sk, i, DPS.pkb(st), $WCS, DW.wk_at_ok($ENT, SV.rfacts(sk, DPS.pkb(st)), cw, $CXS, $TV, W, hw, BRG.zb_tv(sk, hcov)), hbl, $HA)
+
+def bl_of(st: PA.PS, +sk: SK.Sketch, +i: Nat, +hi: PP.PInv(sk, $RF, $DF, i, st)) -> {SV.below(DPS.pkb(st), i) == True{} : Bool}:
+  match st:
+    case PA.PS{+kb, +rows, +B, +bp, +vm}:
+      kb_below(sk, i, kb, PP.pinv_kbp(sk, $RF, $DF, i, $STK, hi))
+
+# no facts yet
+def hw0(+sk: SK.Sketch, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}) -> DW.WInv($ENT, SV.rfacts(sk, DPS.pkb(PA.start($NV))), Nil{}, $TV, $W0):
+  (Nil{}, (Unit{}, DW.wk0_ok($ENT, Nil{}, $TV, BRG.zb_tv(sk, hcov))))
 
 # The pass is honest
 # ------------------
@@ -616,32 +686,33 @@ def fate_dr(+sk: SK.Sketch, +i: Nat, +hK: {SV.class_at($CLS, i) == SV.Kept{Nil{}
     (%Equal.sym(SV.Class, SV.class_at($CLS, i), SV.Kept{Nil{}}, hK) : DH.Fate.pick(sk, $CLS, $RF, $DF, i, True{}, _)
       {==}))
 
-def hon.con(+sk: SK.Sketch, +i: Nat, +st: PA.PS, +pc: $CL2, +t: List<&2, SK.Rec>, +hK: {SV.class_at($CLS, i) == PA.PO.k($O2P) : SV.Class}, +hdr: {SV.driven(sk, i) == False{} : Bool}, sr: StepRes2(sk, i, $O2P),
+def hon.con(+sk: SK.Sketch, +i: Nat, +st: PA.PS, +pc: $CL2, +W: DC.WK, +t: List<&2, SK.Rec>, +hK: {SV.class_at($CLS, i) == PA.PO.k($O2P) : SV.Class}, +hdr: {SV.driven(sk, i) == False{} : Bool}, sr: StepRes2(sk, i, $O2P),
   ih: PP.PInv(sk, $RF, $DF, 1n+i, PA.PO.st($O2P)) -> DH.Honest.go(sk, $CLS, SV.clen(t), 1n+i)) -> DH.Honest.go(sk, $CLS, 1n+SV.clen(t), i):
   (f1, inv1) = sr
   (fate_of(sk, i, PA.PO.k($O2P), hK, hdr, f1), ih(inv1))
 
 @MACRO KN SV.Kept{Nil{}}
-@MACRO PASSK DPS.pass2(t, $PARGS, 1n+i, st, DPS.csnoc(pc, $KN))
-@MACRO PASSO DPS.pass2(t, $PARGS, 1n+i, PA.PO.st($O2P), DPS.csnoc(pc, PA.PO.k($O2P)))
+@MACRO PASSK DPS.pass2(t, $PARGS, 1n+i, st, DPS.csnoc(pc, $KN), W)
+@MACRO PASSO DPS.pass2(t, $PARGS, 1n+i, PA.PO.st($O2P), DPS.csnoc(pc, PA.PO.k($O2P)), $WNS)
 
 # from position i on, given the classes from i are the pass's from there
 # and the classes so far followed by them are the final ones
-def hon(rs: List<&2, SK.Rec>, +sk: SK.Sketch, +i: Nat, +st: PA.PS, +pc: $CL2, +hd: {KB.rdrop(i, PA.recs(sk)) == rs : List<&2, SK.Rec>}, +hc: {CL.cdrop(i, $CLS) == DPS.pass2(rs, $PARGS, i, st, pc) : $CL2}, $HPC,
-  +hA: {D.adjb($AD, $NV) == True{} : Bool}, +hD: {CL.downs($OWN, $CLS, 0n) == True{} : Bool}, hi: PP.PInv(sk, $RF, $DF, i, st), $HC) -> DH.Honest.go(sk, $CLS, SV.clen(rs), i):
+def hon(rs: List<&2, SK.Rec>, +sk: SK.Sketch, +i: Nat, +st: PA.PS, +pc: $CL2, +W: DC.WK, +cw: $QL, +hw: DW.WInv($ENT, SV.rfacts(sk, DPS.pkb(st)), cw, $TV, W),
+  +hd: {KB.rdrop(i, PA.recs(sk)) == rs : List<&2, SK.Rec>}, +hc: {CL.cdrop(i, $CLS) == DPS.pass2(rs, $PARGS, i, st, pc, W) : $CL2}, $HPC,
+  +hA: {D.adjb($AD, $NV) == True{} : Bool}, +hD: {CL.downs($OWN, $CLS, 0n) == True{} : Bool}, +hi: PP.PInv(sk, $RF, $DF, i, st), $HC) -> DH.Honest.go(sk, $CLS, SV.clen(rs), i):
   match rs:
     case Nil{}:
       Unit{}
     case Con{SK.Rec{+id, True{}, +k}, +t}:
       +hdr = PP.drv_at(sk, i, SK.Rec{id, True{}, k}, t, hd)
       (fate_dr(sk, i, CL.ca_of($CLS, i, $KN, $PASSK, hc), hdr),
-        hon(t, sk, 1n+i, st, DPS.csnoc(pc, $KN), KB.rdrop_step(i, PA.recs(sk), SK.Rec{id, True{}, k}, t, hd), CL.cdrop_step($CLS, i, $KN, $PASSK, hc),
+        hon(t, sk, 1n+i, st, DPS.csnoc(pc, $KN), W, cw, hw, KB.rdrop_step(i, PA.recs(sk), SK.Rec{id, True{}, k}, t, hd), CL.cdrop_step($CLS, i, $KN, $PASSK, hc),
           hpc_step(pc, $KN, $PASSK, i, $CLS, hc, hpc), hA, hD,
           step_same(sk, i, st, hi, SP.zc_noc($OWN, i, $RF, PP.noc_owners(sk, i, hdr)), PP.dcond_dr(sk, $RF, i, hdr)), $HA))
     case Con{SK.Rec{+id, False{}, +k}, +t}:
       +hK = CL.ca_of($CLS, i, PA.PO.k($O2P), $PASSO, hc)
-      hon.con(sk, i, st, pc, t, hK, PP.drv_at(sk, i, SK.Rec{id, False{}, k}, t, hd), hon.d(st, sk, i, pc, hi, hK, hA, PP.driving_at(sk, i, id, k, t, hd), hD, hpc, $HA),
-        h2 => hon(t, sk, 1n+i, PA.PO.st($O2P), DPS.csnoc(pc, PA.PO.k($O2P)), KB.rdrop_step(i, PA.recs(sk), SK.Rec{id, False{}, k}, t, hd), CL.cdrop_step($CLS, i, PA.PO.k($O2P), $PASSO, hc),
+      hon.con(sk, i, st, pc, W, t, hK, PP.drv_at(sk, i, SK.Rec{id, False{}, k}, t, hd), hon.d(st, sk, i, pc, W, cw, hw, hi, hK, hA, PP.driving_at(sk, i, id, k, t, hd), hD, hpc, $HA),
+        h2 => hon(t, sk, 1n+i, PA.PO.st($O2P), DPS.csnoc(pc, PA.PO.k($O2P)), $WNS, $CXS, wn_ok(st, sk, i, pc, W, cw, hw, bl_of(st, sk, i, hi), $HA), KB.rdrop_step(i, PA.recs(sk), SK.Rec{id, False{}, k}, t, hd), CL.cdrop_step($CLS, i, PA.PO.k($O2P), $PASSO, hc),
           hpc_step(pc, PA.PO.k($O2P), $PASSO, i, $CLS, hc, hpc), hA, hD, h2, $HA))
 
 def pinv0(+sk: SK.Sketch) -> PP.PInv(sk, $RF, $DF, 0n, PA.start($NV)):
@@ -670,12 +741,11 @@ def adjb2_of(+sk: SK.Sketch, +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{}
 
 # classes2 has a class per constraint
 def clsn_c2(+sk: SK.Sketch) -> {SV.clsn($CLS) == SV.clen(PA.recs(sk)) : Nat}:
-  %Equal.sym($CL2, $CLS, DPS.pass2(PA.recs(sk), $PARGS, 0n, PA.start($NV), Nil{}), DPM.classes2_eq(sk)) : {SV.clsn(_) == SV.clen(PA.recs(sk)) : Nat}
-  clsn_pass2(PA.recs(sk), sk, 0n, PA.start($NV), Nil{})
+  clsn_pass2(PA.recs(sk), sk, 0n, PA.start($NV), Nil{}, $W0)
 
 # the pass with the direction layer is honest (the extended Honest)
 def pass2_honest(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}) -> DH.Honest(sk, $CLS):
   +hwf = WC.wf_dec_ok(sk, w)
   (Equal.trans(Nat, SV.clsn($CLS), SV.clen(PA.recs(sk)), SV.ncons(sk), clsn_c2(sk), Equal.sym(Nat, SV.ncons(sk), SV.clen(PA.recs(sk)), PP.ncons_recs(sk))),
     (%Equal.sym(Nat, SV.ncons(sk), SV.clen(PA.recs(sk)), PP.ncons_recs(sk)) : DH.Honest.go(sk, $CLS, _, 0n)
-      hon(PA.recs(sk), sk, 0n, PA.start($NV), Nil{}, {==}, DPM.classes2_eq(sk), {==}, adjb2_of(sk, cov, hwf), classes2_down(sk), pinv0(sk), hcov_of(sk, cov), hwf)))
+      hon(PA.recs(sk), sk, 0n, PA.start($NV), Nil{}, $W0, Nil{}, hw0(sk, hcov_of(sk, cov)), {==}, {==}, {==}, adjb2_of(sk, cov, hwf), classes2_down(sk), pinv0(sk), hcov_of(sk, cov), hwf)))

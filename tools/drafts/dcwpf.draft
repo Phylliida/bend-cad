@@ -10,7 +10,9 @@
 # - the closure's decision is exact (dd_ok): a derivation it returns is
 #   valid and proves the equation, and when it returns none there is none
 #   (lib/dcholdpf, lib/dcexplpf, lib/dcdecpf), from any outcome with
-#   Ex (lib/dcexpf.bend: the closure from sk0 has it, by termination);
+#   Ex (lib/dcexpf.bend); the walk's calls start from the state kept
+#   across calls, W, valid for facts that the kept constraints' facts
+#   extend (WInv), and a warm call gives Ex (lib/dwarmpf.bend wcall_ex);
 # - the facts the walk reads at k are the spec's dfacts with the final
 #   drops (fk_eq: the drops agree before k, and ofacts reads them only
 #   there), so the decision is DirDerivable or NotDirDerivable;
@@ -55,6 +57,9 @@ import ./dcholdpf.bend as HLD
 import ./dcexplpf.bend as EXP
 import ./dcdecpf.bend as DEC
 import ./dcexpf.bend as CX
+import ./dmemopf.bend as MP
+import ./dwarmpf.bend as DW
+import ./dpassmpf.bend as DPM
 import ./drefpf.bend as DRF
 import ./dconflict.bend as DCF
 import ./dbridgepf.bend as BRG
@@ -75,8 +80,8 @@ import ./dpass.bend as DPS
 @MACRO CP +sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: $NL, +D: $NL, +c: Nat, +bp0: $NL
 @MACRO CA sk, cls, R, D, c, bp0
 @MACRO WA0 sk, R, D, c, bp0
-@MACRO WP +F0: $FL, +cx: $QL, +hF0: {F0 == SV.facts.go($ES, $OWN, SV.kept_before(sk, R, c), sk, cls, True{}, 0n) : $FL}, +hcx: {cx == SV.ctx(sk, R, c) : $QL}
-@MACRO WAA F0, cx, hF0, hcx
+@MACRO WP +F0: $FL, +cx: $QL, +hF0: {F0 == SV.facts.go($ES, $OWN, SV.kept_before(sk, R, c), sk, cls, True{}, 0n) : $FL}, +hcx: {cx == SV.ctx(sk, R, c) : $QL}, +W: DC.WK, +hw: DW.WInv($ENT, SV.rfacts(sk, SV.kept_before(sk, R, c)), cx, $TV, W)
+@MACRO WAA F0, cx, hF0, hcx, W, hw
 @MACRO DS SV.drops(ds)
 @MACRO DF SV.drops(CW.cw.ds(fin))
 @MACRO RR EL.resid(rows, e)
@@ -85,6 +90,7 @@ import ./dpass.bend as DPS
 @MACRO FK DPS.fk(sk, c, F0, ds, k)
 @MACRO DFK SV.dfacts(sk, cls, R, c, dF, k)
 @MACRO CTX SV.ctx(sk, R, c)
+@MACRO KB SV.kept_before(sk, R, c)
 @MACRO EQK SV.eqat($ES, k)
 @MACRO CWBA sk, c, k, rows, B, ds, us
 
@@ -184,24 +190,27 @@ def fk_eq(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: $NL, +c: Nat, +F0: $FL, 
 # The decision at equation k, as the spec reads it
 # ------------------------------------------------
 
-def ddk(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: $NL, +c: Nat, +dF: $NL, +k: Nat, $HC) -> DDec($ENT, $DFK, $CTX, $EQK, $M, DPS.ddec(sk, $DFK, $CTX, $EQK, $M)):
-  dd_ok(DCF.dcl(sk, $DFK, $CTX), $ENT, $DFK, $CTX, $TV, $EQK, $M, CX.dclose_ex($ENT, $DFK, $CTX, $TV, BRG.zb_tv(sk, hcov), fb_df(sk, cls, R, c, dF, k, $HA)), BRG.fbds_of(SV.kind_at(sk, c), $ENT, $TV, BRG.zb_tv(sk, hcov)))
+def ddk(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: $NL, +c: Nat, +dF: $NL, +k: Nat, +W: DC.WK, +hw: DW.WInv($ENT, SV.rfacts(sk, $KB), $CTX, $TV, W), $HC) -> DDec($ENT, $DFK, $CTX, $EQK, $M, DPS.ddec(sk, $DFK, $CTX, $EQK, $M, W)):
+  dd_ok(DC.FO.o(DC.wcall($ENT, $DFK, $TV, W)), $ENT, $DFK, $CTX, $TV, $EQK, $M,
+    DW.wcall_ex($ENT, SV.rfacts(sk, $KB), $DFK, $CTX, $TV, W, hw, MP.pre_cat(SV.rfacts(sk, $KB), SV.facts.go($ES, $OWN, $KB, sk, cls, True{}, 0n), SV.ofacts.go($ES, $OWN, sk, c, dF, k, 0n), DPM.facts_pre($ES, $OWN, $KB, sk, Nil{}, False{}, cls, True{}, 0n)),
+      BRG.zb_tv(sk, hcov), fb_df(sk, cls, R, c, dF, k, $HA)), BRG.fbds_of(SV.kind_at(sk, c), $ENT, $TV, BRG.zb_tv(sk, hcov)))
 
 @MACRO KP +sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: $NL, +c: Nat, $WP, +ds: List<&2, SV.Drop>, +k: Nat, +e: E.QExpr, +dF: $NL, +he: {$EQK == e : E.QExpr}, +xr: CW.XRel(dF, $DS, k)
 @MACRO KA sk, cls, R, c, $WAA, ds, k, e, dF, he, xr
 
-def ddtr($KP, +mm: Maybe<&2, DR.Der>, h: {DPS.ddec(sk, $FK, cx, e, $M) == mm : Maybe<&2, DR.Der>}) -> {DPS.ddec(sk, $DFK, $CTX, $EQK, $M) == mm : Maybe<&2, DR.Der>}:
-  (%Equal.sym(E.QExpr, $EQK, e, he) : {DPS.ddec(sk, $DFK, $CTX, _, $M) == mm : Maybe<&2, DR.Der>}
-    (%hcx : {DPS.ddec(sk, $DFK, _, e, $M) == mm : Maybe<&2, DR.Der>}
-      (%fk_eq(sk, cls, R, c, F0, ds, k, dF, hF0, xr) : {DPS.ddec(sk, _, cx, e, $M) == mm : Maybe<&2, DR.Der>}
+def ddtr($KP, +mm: Maybe<&2, DR.Der>, h: {DPS.ddec(sk, $FK, cx, e, $M, W) == mm : Maybe<&2, DR.Der>}) -> {DPS.ddec(sk, $DFK, $CTX, $EQK, $M, W) == mm : Maybe<&2, DR.Der>}:
+  (%Equal.sym(E.QExpr, $EQK, e, he) : {DPS.ddec(sk, $DFK, $CTX, _, $M, W) == mm : Maybe<&2, DR.Der>}
+    (%hcx : {DPS.ddec(sk, $DFK, _, e, $M, W) == mm : Maybe<&2, DR.Der>}
+      (%fk_eq(sk, cls, R, c, F0, ds, k, dF, hF0, xr) : {DPS.ddec(sk, _, cx, e, $M, W) == mm : Maybe<&2, DR.Der>}
         h)))
 
 # the walk's decision at k means what the spec asks
-def ddat($KP, +mm: Maybe<&2, DR.Der>, h: {DPS.ddec(sk, $FK, cx, e, $M) == mm : Maybe<&2, DR.Der>}, $HC) -> DDec($ENT, $DFK, $CTX, $EQK, $M, mm):
+def ddat($KP, +mm: Maybe<&2, DR.Der>, h: {DPS.ddec(sk, $FK, cx, e, $M, W) == mm : Maybe<&2, DR.Der>}, $HC) -> DDec($ENT, $DFK, $CTX, $EQK, $M, mm):
   (%ddtr($KA, mm, h) : DDec($ENT, $DFK, $CTX, $EQK, $M, _)
-    ddk(sk, cls, R, c, dF, k, $HA))
+    ddk(sk, cls, R, c, dF, k, W, (%hcx : DW.WInv($ENT, SV.rfacts(sk, $KB), _, $TV, W)
+      hw), $HA))
 
-def dnone_k($KP, hdd: {DPS.ddec(sk, $FK, cx, e, $M) == None{} : Maybe<&2, DR.Der>}, $HC) -> SV.NotDirDerivable(sk, cls, R, c, dF, k):
+def dnone_k($KP, hdd: {DPS.ddec(sk, $FK, cx, e, $M, W) == None{} : Maybe<&2, DR.Der>}, $HC) -> SV.NotDirDerivable(sk, cls, R, c, dF, k):
   ddat($KA, None{}, hdd, $HA)
 
 def dsk.go($KP, +der: DR.Der, h: DR.Valid($ENT, $DFK, $CTX, der) & SV.Proves($ENT, $M, $EQK, DR.concl($ENT, $DFK, der))) -> SV.DirDerivable(sk, cls, R, c, dF, k, DR.nd($ENT, $FK, der)):
@@ -210,7 +219,7 @@ def dsk.go($KP, +der: DR.Der, h: DR.Valid($ENT, $DFK, $CTX, der) & SV.Proves($EN
     PR.sub_refl(DR.nd($ENT, $DFK, der))))))
 
 # a direction drop at k: DirDerivable with the nd it records
-def dsome_k($KP, +der: DR.Der, +hds: {DPS.ddec(sk, $FK, cx, e, $M) == Some{der} : Maybe<&2, DR.Der>}, $HC) -> SV.DirDerivable(sk, cls, R, c, dF, k, DR.nd($ENT, $FK, der)):
+def dsome_k($KP, +der: DR.Der, +hds: {DPS.ddec(sk, $FK, cx, e, $M, W) == Some{der} : Maybe<&2, DR.Der>}, $HC) -> SV.DirDerivable(sk, cls, R, c, dF, k, DR.nd($ENT, $FK, der)):
   dsk.go($KA, der, ddat($KA, Some{der}, hds, $HA))
 
 # Degree 0 at k, with the final drops
@@ -294,7 +303,7 @@ def res2_drop($CP, +k: Nat, +o: Nat, +ot: $NL, +rows: List<&2, EL.Row>, +B: $QL,
 @MACRO DDST PA.CW{rows, B, bp, Con{SV.Drop{k, $NDK, DPS.dcert($ENT, $FK, der, $NDK)}, ds}, us}
 
 def res2_keep($CP, $WP, +k: Nat, +o: Nat, +ot: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL, +e: E.QExpr, +fin: PA.CW, +heo: {SV.eq(o, c) == True{} : Bool},
-  +he: {$EQK == e : E.QExpr}, +hne: {EP.isnil(EP.resp($RR)) == False{} : Bool}, +hdd: {DPS.ddec(sk, $FK, cx, e, $M) == None{} : Maybe<&2, DR.Der>}, hi: CW.CWInv($WA0, k, $STQ), $HC,
+  +he: {$EQK == e : E.QExpr}, +hne: {EP.isnil(EP.resp($RR)) == False{} : Bool}, +hdd: {DPS.ddec(sk, $FK, cx, e, $M, W) == None{} : Maybe<&2, DR.Der>}, hi: CW.CWInv($WA0, k, $STQ), $HC,
   r: CWRes2($CA, 1n+k, ot, $KEEPST, fin)) -> CWRes2($CA, k, Con{o, ot}, $STQ, fin):
   (+hb, q1) = hi
   (+hl, q2) = q1
@@ -308,7 +317,7 @@ def res2_keep($CP, $WP, +k: Nat, +o: Nat, +ot: $NL, +rows: List<&2, EL.Row>, +B:
         (nder0(sk, R, D, c, k, rows, B, ds, us, e, $DF, he, hne, hb, hl, hB, xr1), dnone_k(sk, cls, R, c, $WAA, ds, k, e, $DF, he, xr1, hdd, $HA)))), dr), (fr, nt)))
 
 def res2_ddrop($CP, $WP, +k: Nat, +o: Nat, +ot: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL, +e: E.QExpr, +der: DR.Der, +fin: PA.CW, +heo: {SV.eq(o, c) == True{} : Bool},
-  +he: {$EQK == e : E.QExpr}, +hds: {DPS.ddec(sk, $FK, cx, e, $M) == Some{der} : Maybe<&2, DR.Der>}, $HC,
+  +he: {$EQK == e : E.QExpr}, +hds: {DPS.ddec(sk, $FK, cx, e, $M, W) == Some{der} : Maybe<&2, DR.Der>}, $HC,
   r: CWRes2($CA, 1n+k, ot, $DDST, fin)) -> CWRes2($CA, k, Con{o, ot}, $STQ, fin):
   (+xr, q) = r
   (dr, q4) = q
@@ -323,53 +332,53 @@ def res2_ddrop($CP, $WP, +k: Nat, +o: Nat, +ot: $NL, +rows: List<&2, EL.Row>, +B
 # --------
 
 @MACRO HEO Equal.trans(Bool, SV.eq(o, c), SV.eq(SV.nth($OWN, k), c), True{}, Equal.cong(Nat, Bool, x => SV.eq(x, c), o, SV.nth($OWN, k), Equal.sym(Nat, SV.nth($OWN, k), o, OW.nth_of($OWN, k, o, ot, ho))), heq)
-@MACRO IH2 ih: @st2: PA.CW -> CW.CWInv($WA0, 1n+k, st2) -> CWRes2($CA, 1n+k, ot, st2, DPS.cwalk2(t, $OWN, c, 1n+k, st2, sk, F0, cx))
+@MACRO IH2 ih: @st2: PA.CW -> CW.CWInv($WA0, 1n+k, st2) -> CWRes2($CA, 1n+k, ot, st2, DPS.cwalk2(t, $OWN, c, 1n+k, st2, sk, F0, cx, W))
 @MACRO DROPST PA.CW{rows, B, bp, Con{PA.drop_of(k, $RR, e, B, bp), ds}, us}
 @MACRO STEPS +heq: {SV.eq(SV.nth($OWN, k), c) == True{} : Bool}, +hq: {OW.qdrop(k, $ES) == Con{e, t} : $QL}, +ho: {OW.ndrop(k, $OWN) == Con{o, ot} : $NL}, +hlt: {SV.lt(k, $N) == True{} : Bool}
 
 def cw2_ok.d(mm: Maybe<&2, DR.Der>, $CP, $WP, +e: E.QExpr, +t: $QL, +o: Nat, +ot: $NL, +k: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL,
-  +em: {DPS.ddec(sk, $FK, cx, e, $M) == mm : Maybe<&2, DR.Der>}, +eb: {EP.isnil(EP.resp($RR)) == False{} : Bool}, $STEPS, +hi: CW.CWInv($WA0, k, $STQ), $HC, $IH2)
-  -> CWRes2($CA, k, Con{o, ot}, $STQ, DPS.cwalk2(t, $OWN, c, 1n+k, DPS.cw2.dir(mm, k, e, $RR, rows, B, bp, ds, us, $ENT, $FK), sk, F0, cx)):
+  +em: {DPS.ddec(sk, $FK, cx, e, $M, W) == mm : Maybe<&2, DR.Der>}, +eb: {EP.isnil(EP.resp($RR)) == False{} : Bool}, $STEPS, +hi: CW.CWInv($WA0, k, $STQ), $HC, $IH2)
+  -> CWRes2($CA, k, Con{o, ot}, $STQ, DPS.cwalk2(t, $OWN, c, 1n+k, DPS.cw2.dir(mm, k, e, $RR, rows, B, bp, ds, us, $ENT, $FK), sk, F0, cx, W)):
   match mm:
     case None{}:
-      res2_keep($CA, $WAA, k, o, ot, rows, B, bp, ds, us, e, DPS.cwalk2(t, $OWN, c, 1n+k, $KEEPST, sk, F0, cx), $HEO, OW.eqat_of($ES, k, e, t, hq), eb, em, hi, $HA,
+      res2_keep($CA, $WAA, k, o, ot, rows, B, bp, ds, us, e, DPS.cwalk2(t, $OWN, c, 1n+k, $KEEPST, sk, F0, cx, W), $HEO, OW.eqat_of($ES, k, e, t, hq), eb, em, hi, $HA,
         ih($KEEPST, CW.inv_keep($WA0, k, rows, B, bp, ds, us, e, hi, heq, hlt, eb, OW.eqat_of($ES, k, e, t, hq))))
     case Some{+der}:
-      res2_ddrop($CA, $WAA, k, o, ot, rows, B, bp, ds, us, e, der, DPS.cwalk2(t, $OWN, c, 1n+k, $DDST, sk, F0, cx), $HEO, OW.eqat_of($ES, k, e, t, hq), em, $HA,
+      res2_ddrop($CA, $WAA, k, o, ot, rows, B, bp, ds, us, e, der, DPS.cwalk2(t, $OWN, c, 1n+k, $DDST, sk, F0, cx, W), $HEO, OW.eqat_of($ES, k, e, t, hq), em, $HA,
         ih($DDST, inv_dropx($WA0, k, rows, B, bp, ds, us, $NDK, DPS.dcert($ENT, $FK, der, $NDK), hi, heq, hlt)))
 
 def cw2_ok.k(b: Bool, $CP, $WP, +e: E.QExpr, +t: $QL, +o: Nat, +ot: $NL, +k: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL,
   +eb: {EP.isnil(EP.resp($RR)) == b : Bool}, $STEPS, +hi: CW.CWInv($WA0, k, $STQ), $HC, $IH2)
-  -> CWRes2($CA, k, Con{o, ot}, $STQ, DPS.cwalk2(t, $OWN, c, 1n+k, DPS.cw2.pick(EP.isnil(EP.resp($RR)), k, e, $RR, rows, B, bp, ds, us, sk, c, F0, cx), sk, F0, cx)):
+  -> CWRes2($CA, k, Con{o, ot}, $STQ, DPS.cwalk2(t, $OWN, c, 1n+k, DPS.cw2.pick(EP.isnil(EP.resp($RR)), k, e, $RR, rows, B, bp, ds, us, sk, c, F0, cx, W), sk, F0, cx, W)):
   match b:
     case True{}:
-      %Equal.sym(Bool, EP.isnil(EP.resp($RR)), True{}, eb) : CWRes2($CA, k, Con{o, ot}, $STQ, DPS.cwalk2(t, $OWN, c, 1n+k, DPS.cw2.pick(_, k, e, $RR, rows, B, bp, ds, us, sk, c, F0, cx), sk, F0, cx))
-      res2_drop($CA, k, o, ot, rows, B, bp, ds, us, e, DPS.cwalk2(t, $OWN, c, 1n+k, $DROPST, sk, F0, cx), $HEO, OW.eqat_of($ES, k, e, t, hq), eb, hi,
+      %Equal.sym(Bool, EP.isnil(EP.resp($RR)), True{}, eb) : CWRes2($CA, k, Con{o, ot}, $STQ, DPS.cwalk2(t, $OWN, c, 1n+k, DPS.cw2.pick(_, k, e, $RR, rows, B, bp, ds, us, sk, c, F0, cx, W), sk, F0, cx, W))
+      res2_drop($CA, k, o, ot, rows, B, bp, ds, us, e, DPS.cwalk2(t, $OWN, c, 1n+k, $DROPST, sk, F0, cx, W), $HEO, OW.eqat_of($ES, k, e, t, hq), eb, hi,
         ih($DROPST, CW.inv_drop($WA0, k, rows, B, bp, ds, us, e, hi, heq, hlt)))
     case False{}:
-      %Equal.sym(Bool, EP.isnil(EP.resp($RR)), False{}, eb) : CWRes2($CA, k, Con{o, ot}, $STQ, DPS.cwalk2(t, $OWN, c, 1n+k, DPS.cw2.pick(_, k, e, $RR, rows, B, bp, ds, us, sk, c, F0, cx), sk, F0, cx))
-      cw2_ok.d(DPS.ddec(sk, $FK, cx, e, $M), $CA, $WAA, e, t, o, ot, k, rows, B, bp, ds, us, {==}, eb, heq, hq, ho, hlt, hi, $HA, ih)
+      %Equal.sym(Bool, EP.isnil(EP.resp($RR)), False{}, eb) : CWRes2($CA, k, Con{o, ot}, $STQ, DPS.cwalk2(t, $OWN, c, 1n+k, DPS.cw2.pick(_, k, e, $RR, rows, B, bp, ds, us, sk, c, F0, cx, W), sk, F0, cx, W))
+      cw2_ok.d(DPS.ddec(sk, $FK, cx, e, $M, W), $CA, $WAA, e, t, o, ot, k, rows, B, bp, ds, us, {==}, eb, heq, hq, ho, hlt, hi, $HA, ih)
 
 def cw2_ok.s(st: PA.CW, $CP, $WP, +e: E.QExpr, +t: $QL, +o: Nat, +ot: $NL, +k: Nat, $STEPS, hi: CW.CWInv($WA0, k, st), $HC, $IH2)
-  -> CWRes2($CA, k, Con{o, ot}, st, DPS.cwalk2(t, $OWN, c, 1n+k, DPS.cw2.res(k, e, st, sk, c, F0, cx), sk, F0, cx)):
+  -> CWRes2($CA, k, Con{o, ot}, st, DPS.cwalk2(t, $OWN, c, 1n+k, DPS.cw2.res(k, e, st, sk, c, F0, cx, W), sk, F0, cx, W)):
   match st:
     case PA.CW{+rows, +B, +bp, +ds, +us}:
       cw2_ok.k(EP.isnil(EP.resp($RR)), $CA, $WAA, e, t, o, ot, k, rows, B, bp, ds, us, {==}, heq, hq, ho, hlt, hi, $HA, ih)
 
 def cw2_ok.o(b: Bool, $CP, $WP, +e: E.QExpr, +t: $QL, +o: Nat, +ot: $NL, +k: Nat, +st: PA.CW, +eb: {SV.eq(SV.nth($OWN, k), c) == b : Bool}, +hq: {OW.qdrop(k, $ES) == Con{e, t} : $QL}, +ho: {OW.ndrop(k, $OWN) == Con{o, ot} : $NL},
-  +hlt: {SV.lt(k, $N) == True{} : Bool}, +hi: CW.CWInv($WA0, k, st), $HC, $IH2) -> CWRes2($CA, k, Con{o, ot}, st, DPS.cwalk2(Con{e, t}, $OWN, c, k, st, sk, F0, cx)):
+  +hlt: {SV.lt(k, $N) == True{} : Bool}, +hi: CW.CWInv($WA0, k, st), $HC, $IH2) -> CWRes2($CA, k, Con{o, ot}, st, DPS.cwalk2(Con{e, t}, $OWN, c, k, st, sk, F0, cx, W)):
   match b:
     case True{}:
-      %Equal.sym(Bool, SV.eq(SV.nth($OWN, k), c), True{}, eb) : CWRes2($CA, k, Con{o, ot}, st, DPS.cwalk2(t, $OWN, c, 1n+k, DPS.cw2.at(_, k, e, st, sk, c, F0, cx), sk, F0, cx))
+      %Equal.sym(Bool, SV.eq(SV.nth($OWN, k), c), True{}, eb) : CWRes2($CA, k, Con{o, ot}, st, DPS.cwalk2(t, $OWN, c, 1n+k, DPS.cw2.at(_, k, e, st, sk, c, F0, cx, W), sk, F0, cx, W))
       cw2_ok.s(st, $CA, $WAA, e, t, o, ot, k, eb, hq, ho, hlt, hi, $HA, ih)
     case False{}:
-      %Equal.sym(Bool, SV.eq(SV.nth($OWN, k), c), False{}, eb) : CWRes2($CA, k, Con{o, ot}, st, DPS.cwalk2(t, $OWN, c, 1n+k, DPS.cw2.at(_, k, e, st, sk, c, F0, cx), sk, F0, cx))
-      res2_skip($CA, k, o, ot, st, DPS.cwalk2(t, $OWN, c, 1n+k, st, sk, F0, cx), (%OW.nth_of($OWN, k, o, ot, ho) : {SV.eq(_, c) == False{} : Bool}
+      %Equal.sym(Bool, SV.eq(SV.nth($OWN, k), c), False{}, eb) : CWRes2($CA, k, Con{o, ot}, st, DPS.cwalk2(t, $OWN, c, 1n+k, DPS.cw2.at(_, k, e, st, sk, c, F0, cx, W), sk, F0, cx, W))
+      res2_skip($CA, k, o, ot, st, DPS.cwalk2(t, $OWN, c, 1n+k, st, sk, F0, cx, W), (%OW.nth_of($OWN, k, o, ot, ho) : {SV.eq(_, c) == False{} : Bool}
         eb), hi, ih(st, CW.inv_skip($WA0, k, st, hi, eb, hlt)))
 
 # the walk from position k
 def cw2_ok(es: $QL, own_k: $NL, $CP, $WP, +k: Nat, +st: PA.CW, +hq: {OW.qdrop(k, $ES) == es : $QL}, +ho: {OW.ndrop(k, $OWN) == own_k : $NL}, +hl: {SV.len(own_k) == SV.neqs(es) : Nat},
-  +hk: {Nat.add(k, SV.neqs(es)) == $N : Nat}, +hi: CW.CWInv($WA0, k, st), $HC) -> CWRes2($CA, k, own_k, st, DPS.cwalk2(es, $OWN, c, k, st, sk, F0, cx)):
+  +hk: {Nat.add(k, SV.neqs(es)) == $N : Nat}, +hi: CW.CWInv($WA0, k, st), $HC) -> CWRes2($CA, k, own_k, st, DPS.cwalk2(es, $OWN, c, k, st, sk, F0, cx, W)):
   match es own_k:
     case Nil{} Nil{}:
       ((Nil{}, ({==}, {==})), (Unit{}, ((%Equal.trans(Nat, k, Nat.add(k, 0n), $N, LN.add_zero(k), hk) : CW.CWInv($WA0, _, st)
@@ -377,7 +386,7 @@ def cw2_ok(es: $QL, own_k: $NL, $CP, $WP, +k: Nat, +st: PA.CW, +hq: {OW.qdrop(k,
     case Nil{} Con{+o, +ot}:
       absurd(CWRes2($CA, k, Con{o, ot}, st, st), CW.len_nc(o, ot, hl))
     case Con{+e, +t} Nil{}:
-      absurd(CWRes2($CA, k, Nil{}, st, DPS.cwalk2(Con{e, t}, $OWN, c, k, st, sk, F0, cx)), CW.len_cn(e, t, hl))
+      absurd(CWRes2($CA, k, Nil{}, st, DPS.cwalk2(Con{e, t}, $OWN, c, k, st, sk, F0, cx, W)), CW.len_cn(e, t, hl))
     case Con{+e, +t} Con{+o, +ot}:
       cw2_ok.o(SV.eq(SV.nth($OWN, k), c), $CA, $WAA, e, t, o, ot, k, st, {==}, hq, ho, SP.lt_qdrop($ES, k, e, t, hq), hi, $HA,
         st2 => h2 => cw2_ok(t, ot, $CA, $WAA, 1n+k, st2, OW.qdrop_step(k, $ES, e, t, hq), OW.ndrop_step(k, $OWN, o, ot, ho), LN.succ_inj(SV.len(ot), SV.neqs(t), hl),
@@ -386,7 +395,7 @@ def cw2_ok(es: $QL, own_k: $NL, $CP, $WP, +k: Nat, +st: PA.CW, +hq: {OW.qdrop(k,
 # The walk's end
 # --------------
 
-@MACRO FIN2 DPS.cwalk2($ES, $OWN, c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}, sk, F0, cx)
+@MACRO FIN2 DPS.cwalk2($ES, $OWN, c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}, sk, F0, cx, W)
 @MACRO DFIN SV.drops(CW.cw.ds($FIN2))
 @MACRO GP +sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: $NL, +D: $NL, +c: Nat, $WP, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL
 @MACRO GA sk, cls, R, D, c, $WAA, rows, B, bp

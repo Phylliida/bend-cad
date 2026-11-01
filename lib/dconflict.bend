@@ -68,32 +68,6 @@ def ref2.b(b: Bool, +sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E
 def refutable2(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>) -> Bool:
   ref2.b(CO.refutable(sk, c, cs), sk, c, cs, cx)
 
-# The same, from a start kept across calls (PLAN-sk13b B4.8)
-# ---------------------------------------------------------
-# m is K and its cache for the facts fs (lib/dpassmpf.bend: each returns
-# what its plain form returns)
-
-def dcl.m(+sk: SK.Sketch, +fs: List<&2, DR.Fact>, +cx: List<&2, E.QExpr>, m: DC.MK) -> DC.Out:
-  DC.dclose.m(SV.ents(sk), fs, cx, tv(sk), DC.dfuel(SV.ents(sk), fs), m)
-
-# the start for c with the constraints cs, from m, the start for cs
-def mstart(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, m: DC.MK) -> DC.MK:
-  DC.mext.m(SV.rfacts(sk, Con{c, Nil{}}), SV.ents(sk), SV.rfacts(sk, Con{c, cs}), tv(sk), m)
-
-# dirref, ma the start for c with cs
-def dirref.m(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, ma: DC.MK) -> Maybe<&2, DR.DRef>:
-  DF.dref(dcl.m(sk, SV.rfacts(sk, Con{c, cs}), cx, ma), SV.ents(sk), SV.rfacts(sk, Con{c, cs}), CO.supp.ss(sk, c, cs), angl(sk, Con{c, cs}))
-
-def ref2.bm(b: Bool, +sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, ma: DC.MK) -> Bool:
-  match b:
-    case True{}:
-      True{}
-    case False{}:
-      issome(dirref.m(sk, c, cs, cx, ma))
-
-def refutable2.m(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, ma: DC.MK) -> Bool:
-  ref2.bm(CO.refutable(sk, c, cs), sk, c, cs, cx, ma)
-
 # The same, from a call's outcome o on the facts rfacts(sk, c : cs)
 # (lib/dclose.bend wcall: a run warm-started from a kept state)
 

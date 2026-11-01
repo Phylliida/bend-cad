@@ -1,7 +1,7 @@
-# bend-cad: the start kept across closure calls (PLAN-sk13b B4.8). A pass
-# keeps K from the facts R of its kept constraints and the cache of K's
-# rows (lib/dclose.bend: MK); a call whose facts extend R starts from
-# them.
+# bend-cad: K and its cache carried across closure calls (PLAN-sk13b
+# B4.8). A pass keeps a state for the facts R of its kept constraints
+# (lib/dclose.bend: WK); a call whose facts extend R gives its K the new
+# facts (MK) and starts from it.
 # - A derivation's conclusion reads only the facts it cites (concl_pre):
 #   where fs agrees with R on each fact's e and statement (Pre), a
 #   derivation citing only positions of R (DB) concludes the same over
@@ -10,10 +10,7 @@
 #   (kinit_below).
 # - kinit over X ++ ys is kinit over ys after X (kinit_cat), and mext
 #   gives ys to K and its cache by ks.add and kc.add (mext_ok, by
-#   lib/dfastpf.bend's kc_add_inv).
-# - So R's start, extended by ys, is the start of X ++ ys for any X that
-#   agrees with R and has its length (mext_reuse); and dclose from a
-#   start of fs returns what dclose returns (dclose_m_eq).
+#   lib/dfastpf.bend's kc_add_inv): the warm call's K (lib/dwarmpf.bend).
 # Proofs only.
 
 import Base
@@ -396,10 +393,6 @@ def mk.C(m: DC.MK) -> List<&2, DC.KC>:
 def MOk(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +n: Nat, +k: KS.KS, +m: DC.MK) -> Data:
   SK.Both({mk.n(m) == n : Nat}, SK.Both({mk.k(m) == k : KS.KS}, FP.CInv(es, fs, t, mk.k(m), mk.C(m))))
 
-# m is the start of the facts fs
-def MemoOk(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +m: DC.MK) -> Data:
-  MOk(es, fs, t, flen(fs), DC.kinit(es, fs, fs, 0n, KS.ks0()), m)
-
 # mext gives K the facts ys and keeps the cache right
 def mext_ok(ys: List<&2, DR.Fact>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +n: Nat, +k: KS.KS, +C: List<&2, DC.KC>, inv: FP.CInv(es, fs, t, k, C))
   -> MOk(es, fs, t, Nat.add(n, flen(ys)), DC.kinit(es, fs, ys, n, k), DC.mext(ys, es, fs, t, n, k, C)):
@@ -409,82 +402,3 @@ def mext_ok(ys: List<&2, DR.Fact>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>
     case Con{+y, +tl}:
       %LN.add_succ(n, flen(tl)) : MOk(es, fs, t, _, DC.kinit(es, fs, tl, 1n+n, KS.ks.add(es, fs, k, DR.DPrem{n})), DC.mext(tl, es, fs, t, 1n+n, KS.ks.add(es, fs, k, DR.DPrem{n}), DC.kc.add(C, DR.DPrem{n}, es, fs, t, k)))
       mext_ok(tl, es, fs, t, 1n+n, KS.ks.add(es, fs, k, DR.DPrem{n}), DC.kc.add(C, DR.DPrem{n}, es, fs, t, k), FP.kc_add_inv(k, C, DR.DPrem{n}, es, fs, t, inv))
-
-def mok.k(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +m: DC.MK, +k: KS.KS, +k2: KS.KS, h: SK.Both({mk.k(m) == k : KS.KS}, FP.CInv(es, fs, t, mk.k(m), mk.C(m))), ek: {k == k2 : KS.KS})
-  -> SK.Both({mk.k(m) == k2 : KS.KS}, FP.CInv(es, fs, t, mk.k(m), mk.C(m))):
-  (hk, hc) = h
-  (Equal.trans(KS.KS, mk.k(m), k, k2, hk, ek), hc)
-
-# the same start, with n and k named otherwise
-def mok_eq(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +m: DC.MK, +n: Nat, +n2: Nat, +k: KS.KS, +k2: KS.KS, h: MOk(es, fs, t, n, k, m), en: {n == n2 : Nat}, ek: {k == k2 : KS.KS}) -> MOk(es, fs, t, n2, k2, m):
-  (hn, hk) = h
-  (Equal.trans(Nat, mk.n(m), n, n2, hn, en), mok.k(es, fs, t, m, k, k2, hk, ek))
-
-def kdsb(+es: List<&2, SK.Ent>, +R: List<&2, DR.Fact>, +k: KS.KS, +hk: {k == DC.kinit(es, R, R, 0n, KS.ks0()) : KS.KS}) -> DsB(KS.ks.ds(k), flen(R)):
-  %Equal.sym(KS.KS, k, DC.kinit(es, R, R, 0n, KS.ks0()), hk) : DsB(KS.ks.ds(_), flen(R))
-  kinit_below(es, R, R, 0n, KS.ks0(), flen(R), Unit{}, {==})
-
-def mr.n(+R: List<&2, DR.Fact>, +X: List<&2, DR.Fact>, +ys: List<&2, DR.Fact>, +n: Nat, +hn: {n == flen(R) : Nat}, +hl: {flen(X) == flen(R) : Nat}) -> {Nat.add(n, flen(ys)) == flen(SV.fcat(X, ys)) : Nat}:
-  %Equal.sym(Nat, n, flen(X), Equal.trans(Nat, n, flen(R), flen(X), hn, Equal.sym(Nat, flen(X), flen(R), hl))) : {Nat.add(_, flen(ys)) == flen(SV.fcat(X, ys)) : Nat}
-  Equal.sym(Nat, flen(SV.fcat(X, ys)), Nat.add(flen(X), flen(ys)), flen_cat(X, ys))
-
-def mr.k(+es: List<&2, SK.Ent>, +R: List<&2, DR.Fact>, +X: List<&2, DR.Fact>, +ys: List<&2, DR.Fact>, +n: Nat, +k: KS.KS, +hn: {n == flen(R) : Nat}, +hk: {k == DC.kinit(es, R, R, 0n, KS.ks0()) : KS.KS}, +hpf: Pre(R, SV.fcat(X, ys)), +hl: {flen(X) == flen(R) : Nat})
-  -> {DC.kinit(es, SV.fcat(X, ys), ys, n, k) == DC.kinit(es, SV.fcat(X, ys), SV.fcat(X, ys), 0n, KS.ks0()) : KS.KS}:
-  %Equal.sym(Nat, n, flen(X), Equal.trans(Nat, n, flen(R), flen(X), hn, Equal.sym(Nat, flen(X), flen(R), hl))) : {DC.kinit(es, SV.fcat(X, ys), ys, _, k) == DC.kinit(es, SV.fcat(X, ys), SV.fcat(X, ys), 0n, KS.ks0()) : KS.KS}
-  %Equal.sym(KS.KS, k, DC.kinit(es, SV.fcat(X, ys), X, 0n, KS.ks0()), Equal.trans(KS.KS, k, DC.kinit(es, R, R, 0n, KS.ks0()), DC.kinit(es, SV.fcat(X, ys), X, 0n, KS.ks0()), hk, kinit_pre(R, X, es, R, SV.fcat(X, ys), 0n, KS.ks0(), hpf, Equal.sym(Nat, flen(X), flen(R), hl), {==}))) : {DC.kinit(es, SV.fcat(X, ys), ys, flen(X), _) == DC.kinit(es, SV.fcat(X, ys), SV.fcat(X, ys), 0n, KS.ks0()) : KS.KS}
-  Equal.sym(KS.KS, DC.kinit(es, SV.fcat(X, ys), SV.fcat(X, ys), 0n, KS.ks0()), DC.kinit(es, SV.fcat(X, ys), ys, flen(X), DC.kinit(es, SV.fcat(X, ys), X, 0n, KS.ks0())), kinit_cat(X, ys, es, SV.fcat(X, ys), 0n, KS.ks0()))
-
-def reuse.c(+es: List<&2, SK.Ent>, +R: List<&2, DR.Fact>, +X: List<&2, DR.Fact>, +ys: List<&2, DR.Fact>, +t: Nat, +n: Nat, +k: KS.KS, +C: List<&2, DC.KC>, +hn: {n == flen(R) : Nat},
-  +hk: {k == DC.kinit(es, R, R, 0n, KS.ks0()) : KS.KS}, hc: FP.CInv(es, R, t, k, C), +hp: Pre(R, X), +hl: {flen(X) == flen(R) : Nat})
-  -> MemoOk(es, SV.fcat(X, ys), t, DC.mext(ys, es, SV.fcat(X, ys), t, n, k, C)):
-  mok_eq(es, SV.fcat(X, ys), t, DC.mext(ys, es, SV.fcat(X, ys), t, n, k, C), Nat.add(n, flen(ys)), flen(SV.fcat(X, ys)), DC.kinit(es, SV.fcat(X, ys), ys, n, k), DC.kinit(es, SV.fcat(X, ys), SV.fcat(X, ys), 0n, KS.ks0()),
-    mext_ok(ys, es, SV.fcat(X, ys), t, n, k, C, cinv_pre(es, R, SV.fcat(X, ys), t, k, C, pre_cat(R, X, ys, hp), kdsb(es, R, k, hk), hc)),
-    mr.n(R, X, ys, n, hn, hl), mr.k(es, R, X, ys, n, k, hn, hk, pre_cat(R, X, ys, hp), hl))
-
-def reuse.k(+es: List<&2, SK.Ent>, +R: List<&2, DR.Fact>, +X: List<&2, DR.Fact>, +ys: List<&2, DR.Fact>, +t: Nat, +n: Nat, +k: KS.KS, +C: List<&2, DC.KC>, +hn: {n == flen(R) : Nat},
-  hkc: SK.Both({k == DC.kinit(es, R, R, 0n, KS.ks0()) : KS.KS}, FP.CInv(es, R, t, k, C)), +hp: Pre(R, X), +hl: {flen(X) == flen(R) : Nat})
-  -> MemoOk(es, SV.fcat(X, ys), t, DC.mext(ys, es, SV.fcat(X, ys), t, n, k, C)):
-  (hk, hc) = hkc
-  reuse.c(es, R, X, ys, t, n, k, C, hn, hk, hc, hp, hl)
-
-# R's start, given the facts ys, is the start of X ++ ys, for X agreeing
-# with R at each of its positions and as long
-def mext_reuse(+es: List<&2, SK.Ent>, +R: List<&2, DR.Fact>, +X: List<&2, DR.Fact>, +ys: List<&2, DR.Fact>, +t: Nat, M: DC.MK, hm: MemoOk(es, R, t, M), +hp: Pre(R, X), +hl: {flen(X) == flen(R) : Nat})
-  -> MemoOk(es, SV.fcat(X, ys), t, DC.mext.m(ys, es, SV.fcat(X, ys), t, M)):
-  match M:
-    case DC.MK{+n, +k, +C}:
-      (hn, hkc) = hm
-      reuse.k(es, R, X, ys, t, n, k, C, hn, hkc, hp, hl)
-
-# Starting a call
-# ---------------
-
-def kc_sel_inv(ns: List<&2, DR.Node>, +C: List<&2, DC.KC>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +k: KS.KS, +inv: FP.CInv(es, fs, t, k, C)) -> FP.CInv(es, fs, t, k, DC.kc.sel(ns, C, es, fs, t, k)):
-  match ns:
-    case Nil{}:
-      Unit{}
-    case Con{+n, +tl}:
-      (FP.kc_get_eq(C, n, es, fs, t, k, inv), kc_sel_inv(tl, C, es, fs, t, k, inv))
-
-def dcm.c(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, +fuel: Nat, +n: Nat, +k: KS.KS, +C: List<&2, DC.KC>,
-  +hk: {k == DC.kinit(es, fs, fs, 0n, KS.ks0()) : KS.KS}, hc: FP.CInv(es, fs, t, k, C))
-  -> {DC.dclose.m(es, fs, ctx, t, fuel, DC.MK{n, k, C}) == DC.dclose(es, fs, ctx, t, fuel) : DC.Out}:
-  %Equal.sym(KS.KS, k, DC.kinit(es, fs, fs, 0n, KS.ks0()), hk) : {DC.dclose.m(es, fs, ctx, t, fuel, DC.MK{n, _, C}) == DC.dclose(es, fs, ctx, t, fuel) : DC.Out}
-  Equal.trans(DC.Out, DC.dclose.m(es, fs, ctx, t, fuel, DC.MK{n, DC.kinit(es, fs, fs, 0n, KS.ks0()), C}), DC.dclose_ref(es, fs, ctx, t, fuel), DC.dclose(es, fs, ctx, t, fuel),
-    FP.frun_eq(fuel, DC.FO{DC.OStep{DC.sk0(es, fs, DC.sp.of(ctx, DC.SP{Nil{}, Nil{}}))}, DC.kc.sel(DC.snodes(DC.oids(DC.segids(es), es, DC.sp.of(ctx, DC.SP{Nil{}, Nil{}}))), C, es, fs, t, DC.kinit(es, fs, fs, 0n, KS.ks0()))}, DC.OStep{DC.sk0(es, fs, DC.sp.of(ctx, DC.SP{Nil{}, Nil{}}))}, es, fs, t, DC.sp.of(ctx, DC.SP{Nil{}, Nil{}}), DC.segids(es),
-      ({==}, kc_sel_inv(DC.snodes(DC.oids(DC.segids(es), es, DC.sp.of(ctx, DC.SP{Nil{}, Nil{}}))), C, es, fs, t, DC.kinit(es, fs, fs, 0n, KS.ks0()), (%hk : FP.CInv(es, fs, t, _, C)
-        hc)))),
-    Equal.sym(DC.Out, DC.dclose(es, fs, ctx, t, fuel), DC.dclose_ref(es, fs, ctx, t, fuel), FP.dclose_eq(es, fs, ctx, t, fuel)))
-
-def dcm.h(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat, +n: Nat, +k: KS.KS, +C: List<&2, DC.KC>,
-  hkc: SK.Both({k == DC.kinit(es, fs, fs, 0n, KS.ks0()) : KS.KS}, FP.CInv(es, fs, t, k, C)))
-  -> {DC.dclose.m(es, fs, ctx, t, fuel, DC.MK{n, k, C}) == DC.dclose(es, fs, ctx, t, fuel) : DC.Out}:
-  (hk, hc) = hkc
-  dcm.c(es, fs, ctx, t, fuel, n, k, C, hk, hc)
-
-# dclose from a start of fs returns what dclose returns
-def dclose_m_eq(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +ctx: List<&2, E.QExpr>, +t: Nat, fuel: Nat, m: DC.MK, hm: MemoOk(es, fs, t, m)) -> {DC.dclose.m(es, fs, ctx, t, fuel, m) == DC.dclose(es, fs, ctx, t, fuel) : DC.Out}:
-  match m:
-    case DC.MK{+n, +k, +C}:
-      (hn, hkc) = hm
-      dcm.h(es, fs, ctx, t, fuel, n, k, C, hkc)
