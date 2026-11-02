@@ -21,6 +21,8 @@ import ../lib/kinst.bend as KI
 import ../lib/solve.bend as SO
 import ../lib/dsolve.bend as DSO
 import ../lib/dsolvepf.bend as DSP
+import ../lib/dtotalpf.bend as DTP
+import ../lib/wfdec.bend as WF
 
 def b5_exists(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(DSO.solve_l2(sk, g0, l)) == True{} : Bool}) -> (&x: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(DSO.solve_l2(sk, g0, l)), SO.Out.gr(DSO.solve_l2(sk, g0, l)), x) & SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(DSO.solve_l2(sk, g0, l))), sk)))):
   DSP.solve_exists2(~F, ~R, ~H, sk, g0, l, ok)
@@ -48,3 +50,6 @@ def b5_amber(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), cov: {BX.Sketch.
 
 def b5_conflict(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat, +c: Nat, hc: {SV.is_conflict(SV.class_at(SO.Out.cls(DSO.solve_l2(sk, g0, l)), c)) == True{} : Bool}, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SV.only(Con{c, SV.support(SO.Out.cls(DSO.solve_l2(sk, g0, l)), c)}, sk)), hl: DR.Longs(~F, x, SV.ents(sk), SV.conflict_nd(SO.Out.cls(DSO.solve_l2(sk, g0, l)), c))) -> Empty:
   DSP.solve_conflict2(~F, sk, w, cov, g0, l, c, hc, x, m, hl)
+
+def b5_total(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat) -> ({SO.Out.cls(DSO.solve_l2(sk, g0, l)) == DSO.cls_of2(sk) : List<&2, SV.Class>} & ({SO.Out.pins(DSO.solve_l2(sk, g0, l)) == DSO.pins_of2(sk) : List<&2, Nat>} & ({WF.wf_dec(SV.mark(SV.reds(DSO.cls_of2(sk)), sk)) == True{} : Bool} & ({SV.distinct(DSO.pins_of2(sk)) == True{} : Bool} & ({SV.below(DSO.pins_of2(sk), SO.nvars(sk)) == True{} : Bool} & (&m: List<&2, Nat> -> SV.Perfect(SV.solved(sk, SV.reds(DSO.cls_of2(sk)), SV.dropped(DSO.cls_of2(sk))), SV.free(SO.nvars(sk), 0n, DSO.pins_of2(sk)), m))))))):
+  DTP.solve_total2(sk, w, cov, g0, l)

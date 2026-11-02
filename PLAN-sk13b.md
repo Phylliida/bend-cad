@@ -1584,6 +1584,24 @@ lib/solve.bend, and these proofs replace the old ones.
 - Each restated over the draft solver in tests/dir_draft.bend. The
   solver-level texts in tools/drafts/roadmap13b.draft are unchanged.
 
+**As built 2026-11-01: B5 done.**
+- B5.1–B5.3 @9eb40bb: lib/dpass.bend's structure, lib/dsolve.bend, and
+  lib/dsolvepf.bend (`solve_exists2`, `solve_unique2`, `solve_pins2`,
+  `solve_regular2`, `solve_blame2`, and `solve_honest2`, `solve_drop2`,
+  `solve_amber2`, `solve_conflict2`), restated in tests/dsolve_laws.bend
+  (not dir_draft, which is already the slowest root). Existence went as
+  planned; `pass2_honest` is called twice, since the Honest is single-use.
+- B5.4: lib/dpasspf.bend's `final2_inv` (the honest walk again over
+  `pass2_st`, keeping the state invariant), and lib/dtotalpf.bend:
+  perfpf's last part over the new pass's end state (the rest of perfpf
+  reused), and `solve_total2`.
+- B5.5: lib/dwfast.bend (the fast solver over the new pass, `final2` in
+  K, the pass run once by `walk22`) and lib/dwfastpf.bend (`solve_l2_eq`,
+  fastpf's proof with the nd check through the map by `check_sides_h`),
+  checked at the CLI's base in tests/dwfast_laws.bend.
+- At the switch, dsolve/dwfast replace solve/fast, the d-proofs replace
+  the old ones, and the restatements become ROADMAP's.
+
 ### B6. Corollaries and uniqueness
 - `solve_drop`, `solve_amber` and `solve_conflict` with nd.
 - `honest_unique` re-proven with the extended cases.

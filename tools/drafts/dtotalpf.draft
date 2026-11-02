@@ -1,0 +1,151 @@
+# bend-cad: the draft solver's structure stage never fails (PLAN-sk13b B5.4,
+# solve_total over the new pass). Proofs only.
+#
+# The new pass ends in a state with lib/passpf.bend's invariant
+# (lib/dpasspf.bend: final2_inv), so lib/perfpf.bend's reading of it
+# applies: the pins are distinct variables and the system solved has a
+# perfect matching onto the free variables, by dependence. perfpf's last
+# part, over the new pass's end state, classes and pins (the rest of
+# perfpf is reused).
+#
+# Generated from tools/drafts/dtotalpf.draft by tools/expand.py; edit the
+# draft.
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/sketch.bend as SK
+import ../spec/solve.bend as SV
+import ../spec/box.bend as BX
+import ./karith.bend as KA
+import ./nat.bend as LN
+import ./listpf.bend as L
+import ./struct.bend as ST
+import ./dfspf.bend as D
+import ./maxpf.bend as MX
+import ./pass.bend as PA
+import ./solvedpf.bend as SP
+import ./gmpf.bend as GM
+import ./passpf.bend as PP
+import ./solve.bend as SO
+import ./wfdec.bend as WF
+import ./wfcpf.bend as WC
+import ./perfpf.bend as PF
+import ./dpass.bend as DPS
+import ./dpasspf.bend as DPP
+import ./dsolve.bend as DSO
+
+@MACRO NL List<&2, Nat>
+@MACRO VM List<&2, Maybe<&2, Nat>>
+@MACRO QL List<&2, E.QExpr>
+@MACRO ES SK.Sketch.eqs(sk)
+@MACRO NV PA.nvars(sk)
+@MACRO AD PA.dadjs(SK.Sketch.eqs(sk))
+@MACRO RF SV.reds(DPS.classes2(sk))
+@MACRO DF SV.dropped(DPS.classes2(sk))
+@MACRO FS DPS.final2_st(sk)
+@MACRO VMR PA.PS.vm(DPS.final2_st(sk))
+@MACRO BP PA.PS.bp(DPS.final2_st(sk))
+@MACRO GD DPS.solved_pos2(sk)
+@MACRO KV PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), DPS.solved_pos2(sk))
+@MACRO VV ST.KD.vm($KV)
+@MACRO PN DPS.pins2(sk)
+@MACRO KN SV.len(ST.somes($VMR))
+@MACRO PA0 sk, $RF, $DF, SV.ncons(sk), PP.ps.rows($FS), PP.ps.B($FS), PP.ps.bp($FS), PP.ps.vm($FS)
+@MACRO VSA $ES, $NV, $VMR, $GD, $KN, $VV, $PN
+
+# The system solved is matched onto the free variables
+# ----------------------------------------------------
+
+def perfect_of(+sk: SK.Sketch, +hvalid: {MX.valid($AD, $VMR) == True{} : Bool}, +hdist: {SV.distinct(ST.somes($VMR)) == True{} : Bool}, +hml: {L.mlen($VMR) == $NV : Nat},
+  +hs1: {L.subl(ST.somes($VMR), $BP) == True{} : Bool}, +hs2: {L.subl($BP, ST.somes($VMR)) == True{} : Bool}, +hbpd: {SV.distinct($BP) == True{} : Bool}, +hbpb: {SV.below($BP, SV.neqs($ES)) == True{} : Bool},
+  +hB: {PP.ps.B($FS) == SV.presolved(sk, $RF, $DF, SV.ncons(sk)) : $QL}, +hp: {PP.ps.B($FS) == SV.picked($ES, $BP) : $QL})
+  -> SK.Both({SV.distinct($PN) == True{} : Bool}, {SV.below($PN, $NV) == True{} : Bool}) & (&m: $NL -> SV.Perfect(SV.solved(sk, $RF, $DF), SV.free($NV, 0n, $PN), m)):
+  +vs = PF.pins_kvd($ES, $NV, $VMR, $GD, hs1, hs2, (%Equal.sym(Nat, ST.len.q($ES), SV.neqs($ES), PF.lenq_neqs($ES)) : {SV.below($BP, _) == True{} : Bool}
+    hbpb), $KN, hvalid, hdist, hml, {==})
+  +hcnt = L.eq_ok(Nat.add($KN, SV.len($PN)), $NV, PF.vsf_cnt($VSA, vs))
+  +hfk = PF.cancel_r(SV.len(SV.free($NV, 0n, $PN)), SV.len($PN), $KN, $NV, PF.free_len($NV, $PN, PF.vsf_fdist($VSA, vs), PF.vsf_fbelow($VSA, vs)), hcnt)
+  +hbk = KA.natle_antisym(SV.len($BP), $KN, L.pig($BP, ST.somes($VMR), hbpd, hs2), L.pig(ST.somes($VMR), $BP, hdist, hs1))
+  +nq = ST.len.q($ES)
+  +hkg = MX.keys_tr($VV, 0n, $NV, 0n, $GD, $AD, PF.vsf_valid($VSA, vs))
+  +hkl = PF.keys_kn($VV, $KN, PF.vsf_scnt($VSA, vs))
+  +hgk = GM.pigc(MX.keys($VV, 0n), $GD, MX.keys_dist($VV, 0n), hkg, (%Equal.sym(Nat, SV.len(MX.keys($VV, 0n)), $KN, hkl) : {KA.natle(SV.len($GD), _) == True{} : Bool}
+    L.pig($GD, ST.somes($VMR), hbpd, hs2)))
+  +hbg = L.subl_refl($BP)
+  +hall = PF.keys_allm($VV, $BP, L.subl_trans($BP, $GD, MX.keys($VV, 0n), hbg, hgk))
+  +m = ST.look($VV, $BP)
+  +hmus = PF.vsf_mus($VSA, vs)
+  ((PF.vsf_fdist($VSA, vs), PF.vsf_fbelow($VSA, vs)),
+    (m, (L.band_i(SV.eq(SV.len(SV.free($NV, 0n, $PN)), SV.len(m)), SV.band(SV.distinct(m), SV.sub(m, SV.free($NV, 0n, $PN))),
+        D.eq_of(SV.len(SV.free($NV, 0n, $PN)), SV.len(m), Equal.trans(Nat, SV.len(SV.free($NV, 0n, $PN)), $KN, SV.len(m), hfk, Equal.sym(Nat, SV.len(m), $KN, Equal.trans(Nat, SV.len(m), SV.len($BP), $KN, L.look_len($VV, $BP), hbk)))),
+        L.band_i(SV.distinct(m), SV.sub(m, SV.free($NV, 0n, $PN)), L.look_dist($VV, $BP, hbpd, hall, PF.vsf_vdist($VSA, vs)),
+          PF.sub_free(m, $VV, $NV, $PN, L.look_subl($VV, $BP, hall), hmus, PF.vsf_ffree($VSA, vs)))),
+      (%Equal.trans($QL, SV.picked($ES, $BP), PP.ps.B($FS), SV.solved(sk, $RF, $DF), Equal.sym($QL, PP.ps.B($FS), SV.picked($ES, $BP), hp),
+          Equal.trans($QL, PP.ps.B($FS), SV.presolved(sk, $RF, $DF, SV.ncons(sk)), SV.solved(sk, $RF, $DF), hB, Equal.sym($QL, SV.solved(sk, $RF, $DF), SV.presolved(sk, $RF, $DF, SV.ncons(sk)), SP.solved_end(sk, $RF, $DF)))) : SV.DepAll(_, m)
+        PF.depall_v($ES, $VV, $BP, $NV, $GD, PF.vsf_valid($VSA, vs), hall, hmus)))))
+
+@MACRO HBP +sk: SK.Sketch, +hb: {PP.pib($PA0) == True{} : Bool}
+
+def f_valid($HBP) -> {MX.valid($AD, $VMR) == True{} : Bool}:
+  (%Equal.sym($VM, PA.PS.vm($FS), PP.ps.vm($FS), PF.vm_eq($FS)) : {MX.valid($AD, _) == True{} : Bool}
+    PP.pib_valid($PA0, hb))
+
+def f_dist($HBP) -> {SV.distinct(ST.somes($VMR)) == True{} : Bool}:
+  (%Equal.sym($VM, PA.PS.vm($FS), PP.ps.vm($FS), PF.vm_eq($FS)) : {SV.distinct(ST.somes(_)) == True{} : Bool}
+    PP.pib_dist($PA0, hb))
+
+def f_mlen($HBP) -> {L.mlen($VMR) == $NV : Nat}:
+  L.eq_ok(L.mlen($VMR), $NV, (%Equal.sym($VM, PA.PS.vm($FS), PP.ps.vm($FS), PF.vm_eq($FS)) : {SV.eq(L.mlen(_), $NV) == True{} : Bool}
+    PP.pib_mlen($PA0, hb)))
+
+def f_s1($HBP) -> {L.subl(ST.somes($VMR), $BP) == True{} : Bool}:
+  (%Equal.sym($VM, PA.PS.vm($FS), PP.ps.vm($FS), PF.vm_eq($FS)) : {L.subl(ST.somes(_), $BP) == True{} : Bool}
+    (%Equal.sym($NL, PA.PS.bp($FS), PP.ps.bp($FS), PF.bp_eq($FS)) : {L.subl(ST.somes(PP.ps.vm($FS)), _) == True{} : Bool}
+      PP.pib_s1($PA0, hb)))
+
+def f_s2($HBP) -> {L.subl($BP, ST.somes($VMR)) == True{} : Bool}:
+  (%Equal.sym($VM, PA.PS.vm($FS), PP.ps.vm($FS), PF.vm_eq($FS)) : {L.subl($BP, ST.somes(_)) == True{} : Bool}
+    (%Equal.sym($NL, PA.PS.bp($FS), PP.ps.bp($FS), PF.bp_eq($FS)) : {L.subl(_, ST.somes(PP.ps.vm($FS))) == True{} : Bool}
+      PP.pib_s2($PA0, hb)))
+
+def f_bpd($HBP) -> {SV.distinct($BP) == True{} : Bool}:
+  (%Equal.sym($NL, PA.PS.bp($FS), PP.ps.bp($FS), PF.bp_eq($FS)) : {SV.distinct(_) == True{} : Bool}
+    PP.pib_bpd($PA0, hb))
+
+def f_bpb($HBP) -> {SV.below($BP, SV.neqs($ES)) == True{} : Bool}:
+  (%Equal.sym($NL, PA.PS.bp($FS), PP.ps.bp($FS), PF.bp_eq($FS)) : {SV.below(_, SV.neqs($ES)) == True{} : Bool}
+    PP.pib_bpb($PA0, hb))
+
+@MACRO FACTS f_valid(sk, hb), f_dist(sk, hb), f_mlen(sk, hb), f_s1(sk, hb), f_s2(sk, hb), f_bpd(sk, hb), f_bpb(sk, hb)
+
+
+def total_pass2(+sk: SK.Sketch, +hA: {D.adjb($AD, $NV) == True{} : Bool}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool})
+  -> SK.Both({SV.distinct($PN) == True{} : Bool}, {SV.below($PN, $NV) == True{} : Bool}) & (&m: $NL -> SV.Perfect(SV.solved(sk, $RF, $DF), SV.free($NV, 0n, $PN), m)):
+  +hi = DPP.final2_inv(sk, hA, hcov, hwf)
+  +hb = PP.pinv_b(sk, $RF, $DF, SV.ncons(sk), $FS, hi)
+  perfect_of(sk, $FACTS,
+    PP.pinv_B(sk, $RF, $DF, SV.ncons(sk), $FS, hi),
+    (%Equal.sym($NL, PA.PS.bp($FS), PP.ps.bp($FS), PF.bp_eq($FS)) : {PP.ps.B($FS) == SV.picked($ES, _) : $QL}
+      PP.pinv_p(sk, $RF, $DF, SV.ncons(sk), $FS, hi)))
+
+
+# The law, for the draft solver
+# -----------------------------
+
+@MACRO A2 DSO.solve_l2(sk, g0, l)
+@MACRO C2 DSO.cls_of2(sk)
+@MACRO P2 DSO.pins_of2(sk)
+@MACRO TOT ({SO.Out.cls($A2) == $C2 : List<&2, SV.Class>} & ({SO.Out.pins($A2) == $P2 : $NL} & ({WF.wf_dec(SV.mark(SV.reds($C2), sk)) == True{} : Bool} & ({SV.distinct($P2) == True{} : Bool} & ({SV.below($P2, SO.nvars(sk)) == True{} : Bool} & (&m: $NL -> SV.Perfect(SV.solved(sk, SV.reds($C2), SV.dropped($C2)), SV.free(SO.nvars(sk), 0n, $P2), m)))))))
+
+def tp2.go(+sk: SK.Sketch, +hwf: {WF.wf_dec(sk) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat,
+  t: SK.Both({SV.distinct($P2) == True{} : Bool}, {SV.below($P2, SO.nvars(sk)) == True{} : Bool}) & (&m: $NL -> SV.Perfect(SV.solved(sk, SV.reds($C2), SV.dropped($C2)), SV.free(SO.nvars(sk), 0n, $P2), m))) -> $TOT:
+  (hdb, pm) = t
+  (hd, hb) = hdb
+  ({==}, ({==}, (WC.wf_mark(SV.reds($C2), sk, hwf), (hd, (hb, pm)))))
+
+# the structure stage never fails: the classes and pins are the sketch's
+# alone, the sketch less its reds well formed, the pins distinct
+# variables, the system solved perfectly matched onto the free variables
+def solve_total2(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat) -> $TOT:
+  +hwf = WC.wf_dec_ok(sk, w)
+  tp2.go(sk, hwf, g0, l, total_pass2(sk, DPP.adjb2_of(sk, cov, hwf), DPP.hcov_of(sk, cov), hwf))

@@ -1,0 +1,140 @@
+# bend-cad: the draft word solver (lib/dwfast.bend) returns exactly what
+# the draft solver (lib/dsolve.bend) returns (PLAN-sk13b B5.5, fast_solve
+# over the new pass), for any computing numbers K with the proposer's
+# operations W and laws R relating them to KI.dnum(). As lib/fastpf.bend:
+# the proposer gives numer's plan through the map, the verdict on the
+# mapped answer is the draft's (sk-13w's final_c, and the nd sides checked
+# through the map like the other sides), the loop and the answer follow,
+# and the new pass run once (walk22) gives its classes and end state.
+#
+# Generated from tools/drafts/dwfastpf.draft by tools/expand.py; edit the
+# draft.
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/knum.bend as N
+import ../spec/sketch.bend as SK
+import ../spec/solve.bend as SV
+import ../spec/dir.bend as DR
+import ./karith.bend as KA
+import ./kinst.bend as KI
+import ./plan.bend as PL
+import ./struct.bend as ST
+import ./solve.bend as SO
+import ./numer.bend as NU
+import ./pops.bend as PO
+import ./gnumer.bend as GN
+import ./gmap.bend as GM
+import ./khom.bend as KH
+import ./planhpf.bend as PH
+import ./fast.bend as FS
+import ./fastpf.bend as FP
+import ./gplanpf.bend as GQ
+import ./pass.bend as PA
+import ./dclose.bend as DC
+import ./dconflict.bend as DCF
+import ./dpass.bend as DPS
+import ./dsolve.bend as DSO
+import ./dwfast.bend as DWF
+
+
+# The verdict
+# -----------
+
+
+# the verdict in K on the mapped answer is the draft's
+def final2_c(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, +sk: SK.Sketch, +g0: List<&2, S.D>, +ok: Bool, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +gc: List<&2, S.D>, +gr: List<&2, S.D>, +p: PL.Plan<KI.dnum()>) -> {DWF.final2(~K, ~W, sk, g0, FS.FOut{ok, cls, pins, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gc), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gr), KH.hplan(~KI.dnum(), ~K, ~PO.hom(K, W, R), p)}) == DSO.final2(sk, g0, SO.Out{ok, cls, pins, gc, gr, p}) : Bool}:
+  %FP.final_c(~K, ~W, ~R, sk, g0, ok, cls, pins, gc, gr, p) : {KA.band(PL.check_sides(~K, DR.ndsides(SV.ents(sk), SV.live_nd(cls)), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gc), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gr)), FS.final(~K, ~W, sk, g0, FS.FOut{ok, cls, pins, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gc), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gr), KH.hplan(~KI.dnum(), ~K, ~PO.hom(K, W, R), p)})) == KA.band(PL.check_sides(~KI.dnum(), DR.ndsides(SV.ents(sk), SV.live_nd(cls)), gc, gr), _) : Bool}
+  %PH.check_sides_h(~KI.dnum(), ~K, ~PO.hom(K, W, R), DR.ndsides(SV.ents(sk), SV.live_nd(cls)), gc, gr) : {KA.band(PL.check_sides(~K, DR.ndsides(SV.ents(sk), SV.live_nd(cls)), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gc), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gr)), FS.final(~K, ~W, sk, g0, FS.FOut{ok, cls, pins, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gc), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gr), KH.hplan(~KI.dnum(), ~K, ~PO.hom(K, W, R), p)})) == KA.band(_, FS.final(~K, ~W, sk, g0, FS.FOut{ok, cls, pins, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gc), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gr), KH.hplan(~KI.dnum(), ~K, ~PO.hom(K, W, R), p)})) : Bool}
+  {==}
+
+def accept2_t(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, m: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>) -> {DWF.accept2(~K, ~W, GM.hpr(~K, ~PO.hom(K, W, R), m), sk, g0, cls, pins) == DSO.accept2(m, sk, g0, cls, pins) : Bool}:
+  match m:
+    case NU.POk{NU.NP{+plan, +gc, +gr}}:
+      final2_c(~K, ~W, ~R, sk, g0, True{}, cls, pins, gc, gr, plan)
+    case NU.PRetry{}:
+      {==}
+    case NU.PStop{}:
+      {==}
+
+# The precision loop
+# ------------------
+
+
+def ploop2_t(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, ps: List<&2, Nat>, ok: Bool, cur: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {DWF.ploop2(~K, ~W, ps, ok, GM.hpr(~K, ~PO.hom(K, W, R), cur), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == FP.hrun(~K, ~PO.hom(K, W, R), DSO.ploop2(ps, ok, cur, sk, g0, cls, pins, es, nv, skel)) : FS.FRun<K>}:
+  match ps ok:
+    case Nil{} ok:
+      {==}
+    case Con{p, t} True{}:
+      {==}
+    case Con{+p, +t} False{}:
+      %ploop2_t(~K, ~W, ~R, t, DSO.accept2(NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins), NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins, es, nv, skel) : {DWF.ploop2(~K, ~W, t, DWF.accept2(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == _ : FS.FRun<K>}
+      %accept2_t(~K, ~W, ~R, NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins) : {DWF.ploop2(~K, ~W, t, DWF.accept2(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == DWF.ploop2(~K, ~W, t, _, GM.hpr(~K, ~PO.hom(K, W, R), NU.plan(es, nv, skel, g0, p)), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) : FS.FRun<K>}
+      %GQ.plan_t(~K, ~W, ~R, es, nv, skel, g0, p) : {DWF.ploop2(~K, ~W, t, DWF.accept2(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == DWF.ploop2(~K, ~W, t, DWF.accept2(~K, ~W, _, sk, g0, cls, pins), GM.hpr(~K, ~PO.hom(K, W, R), NU.plan(es, nv, skel, g0, p)), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) : FS.FRun<K>}
+      %GQ.plan_t(~K, ~W, ~R, es, nv, skel, g0, p) : {DWF.ploop2(~K, ~W, t, DWF.accept2(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == DWF.ploop2(~K, ~W, t, DWF.accept2(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), _, sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) : FS.FRun<K>}
+      {==}
+
+def start2_t(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, ps: List<&2, Nat>, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {DWF.ploop2.start(~K, ~W, ps, sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == FP.hrun(~K, ~PO.hom(K, W, R), DSO.ploop2.start(ps, sk, g0, cls, pins, es, nv, skel)) : FS.FRun<K>}:
+  match ps:
+    case Nil{}:
+      {==}
+    case Con{+p, +t}:
+      %ploop2_t(~K, ~W, ~R, t, DSO.accept2(NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins), NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins, es, nv, skel) : {DWF.ploop2(~K, ~W, t, DWF.accept2(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == _ : FS.FRun<K>}
+      %accept2_t(~K, ~W, ~R, NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins) : {DWF.ploop2(~K, ~W, t, DWF.accept2(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == DWF.ploop2(~K, ~W, t, _, GM.hpr(~K, ~PO.hom(K, W, R), NU.plan(es, nv, skel, g0, p)), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) : FS.FRun<K>}
+      %GQ.plan_t(~K, ~W, ~R, es, nv, skel, g0, p) : {DWF.ploop2(~K, ~W, t, DWF.accept2(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == DWF.ploop2(~K, ~W, t, DWF.accept2(~K, ~W, _, sk, g0, cls, pins), GM.hpr(~K, ~PO.hom(K, W, R), NU.plan(es, nv, skel, g0, p)), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) : FS.FRun<K>}
+      %GQ.plan_t(~K, ~W, ~R, es, nv, skel, g0, p) : {DWF.ploop2(~K, ~W, t, DWF.accept2(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == DWF.ploop2(~K, ~W, t, DWF.accept2(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), _, sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) : FS.FRun<K>}
+      {==}
+
+# The pass, once
+# --------------
+
+
+def walk22_cls(rs: List<&2, SK.Rec>, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +i: Nat, +st: PA.PS, +cls: List<&2, SV.Class>, +W: DC.WK) -> {FS.PW.cls(DWF.walk22(rs, es, own, sk, adj, f, i, st, cls, W)) == DPS.pass2(rs, es, own, sk, adj, f, i, st, cls, W) : List<&2, SV.Class>}:
+  match rs:
+    case Nil{}:
+      {==}
+    case Con{SK.Rec{id, True{}, k}, +t}:
+      %FP.cons_cls(SV.Kept{Nil{}}, DWF.walk22(t, es, own, sk, adj, f, 1n+i, st, DPS.csnoc(cls, SV.Kept{Nil{}}), W)) : {_ == Con{SV.Kept{Nil{}}, DPS.pass2(t, es, own, sk, adj, f, 1n+i, st, DPS.csnoc(cls, SV.Kept{Nil{}}), W)} : List<&2, SV.Class>}
+      %walk22_cls(t, es, own, sk, adj, f, 1n+i, st, DPS.csnoc(cls, SV.Kept{Nil{}}), W) : {Con{SV.Kept{Nil{}}, FS.PW.cls(DWF.walk22(t, es, own, sk, adj, f, 1n+i, st, DPS.csnoc(cls, SV.Kept{Nil{}}), W))} == Con{SV.Kept{Nil{}}, _} : List<&2, SV.Class>}
+      {==}
+    case Con{SK.Rec{id, False{}, k}, +t}:
+      %FP.cons_cls(PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)))), DWF.walk22(t, es, own, sk, adj, f, 1n+i, PA.PO.st(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)))), DPS.csnoc(cls, PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))), DPS.wnext(SV.is_red(PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wk.next(DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))) : {_ == Con{PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)))), DPS.pass2(t, es, own, sk, adj, f, 1n+i, PA.PO.st(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)))), DPS.csnoc(cls, PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))), DPS.wnext(SV.is_red(PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wk.next(DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))} : List<&2, SV.Class>}
+      %walk22_cls(t, es, own, sk, adj, f, 1n+i, PA.PO.st(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)))), DPS.csnoc(cls, PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))), DPS.wnext(SV.is_red(PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wk.next(DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)))) : {Con{PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)))), FS.PW.cls(DWF.walk22(t, es, own, sk, adj, f, 1n+i, PA.PO.st(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)))), DPS.csnoc(cls, PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))), DPS.wnext(SV.is_red(PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wk.next(DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)))))} == Con{PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)))), _} : List<&2, SV.Class>}
+      {==}
+
+def walk22_st(rs: List<&2, SK.Rec>, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +i: Nat, +st: PA.PS, +cls: List<&2, SV.Class>, +W: DC.WK) -> {FS.PW.st(DWF.walk22(rs, es, own, sk, adj, f, i, st, cls, W)) == DPS.pass2_st(rs, es, own, sk, adj, f, i, st, cls, W) : PA.PS}:
+  match rs:
+    case Nil{}:
+      {==}
+    case Con{SK.Rec{id, True{}, k}, +t}:
+      %FP.cons_st(SV.Kept{Nil{}}, DWF.walk22(t, es, own, sk, adj, f, 1n+i, st, DPS.csnoc(cls, SV.Kept{Nil{}}), W)) : {_ == DPS.pass2_st(t, es, own, sk, adj, f, 1n+i, st, DPS.csnoc(cls, SV.Kept{Nil{}}), W) : PA.PS}
+      walk22_st(t, es, own, sk, adj, f, 1n+i, st, DPS.csnoc(cls, SV.Kept{Nil{}}), W)
+    case Con{SK.Rec{id, False{}, k}, +t}:
+      %FP.cons_st(PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)))), DWF.walk22(t, es, own, sk, adj, f, 1n+i, PA.PO.st(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)))), DPS.csnoc(cls, PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))), DPS.wnext(SV.is_red(PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wk.next(DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))) : {_ == DPS.pass2_st(t, es, own, sk, adj, f, 1n+i, PA.PO.st(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)))), DPS.csnoc(cls, PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))), DPS.wnext(SV.is_red(PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wk.next(DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)))) : PA.PS}
+      walk22_st(t, es, own, sk, adj, f, 1n+i, PA.PO.st(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)))), DPS.csnoc(cls, PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))), DPS.wnext(SV.is_red(PA.PO.k(DPS.one2(es, own, sk, adj, f, i, st, cls, DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W), DC.wk.next(DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W))))
+
+# The solver
+# ----------
+
+
+# DWF.solve_lw2 is DSO.solve_lw2's form: the pass's results once, each
+# named once
+def solve_lw2_unf(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat) -> {DWF.solve_lw2(~K, ~W, sk, g0, l, w) == FS.answer(~K, ~W, DSO.cls_of2(sk), DSO.pins_of2(sk), DWF.ploop2.start(~K, ~W, SO.precisions(l, w), sk, g0, FS.ofdv(~K, ~W, g0), DSO.cls_of2(sk), DSO.pins_of2(sk), DSO.kept2(sk), SO.nvars(sk), DSO.skel_of2(sk))) : SO.Out}:
+  %walk22_cls(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)), Nil{}, DC.wk0(SV.ents(sk), DCF.tv(sk), DC.SP{Nil{}, Nil{}})) : {DWF.solve_lw2(~K, ~W, sk, g0, l, w) == FS.answer(~K, ~W, _, DPS.pins2(sk), DWF.ploop2.start(~K, ~W, SO.precisions(l, w), sk, g0, FS.ofdv(~K, ~W, g0), _, DPS.pins2(sk), SV.solved(sk, SV.reds(_), SV.dropped(_)), PA.nvars(sk), DPS.skel2(sk))) : SO.Out}
+  %walk22_st(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)), Nil{}, DC.wk0(SV.ents(sk), DCF.tv(sk), DC.SP{Nil{}, Nil{}})) : {DWF.solve_lw2(~K, ~W, sk, g0, l, w) == FS.answer(~K, ~W, FS.PW.cls(DWF.walk22(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)), Nil{}, DC.wk0(SV.ents(sk), DCF.tv(sk), DC.SP{Nil{}, Nil{}}))), ST.KD.red(PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.PS.bp(_))), DWF.ploop2.start(~K, ~W, SO.precisions(l, w), sk, g0, FS.ofdv(~K, ~W, g0), FS.PW.cls(DWF.walk22(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)), Nil{}, DC.wk0(SV.ents(sk), DCF.tv(sk), DC.SP{Nil{}, Nil{}}))), ST.KD.red(PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.PS.bp(_))), SV.solved(sk, SV.reds(FS.PW.cls(DWF.walk22(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)), Nil{}, DC.wk0(SV.ents(sk), DCF.tv(sk), DC.SP{Nil{}, Nil{}})))), SV.dropped(FS.PW.cls(DWF.walk22(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)), Nil{}, DC.wk0(SV.ents(sk), DCF.tv(sk), DC.SP{Nil{}, Nil{}}))))), PA.nvars(sk), ST.renum(ST.skel.kd(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.PS.bp(_), PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.PS.bp(_))), PA.PS.bp(_)))) : SO.Out}
+  {==}
+
+
+def solve_core2(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, +sk: SK.Sketch, +g0: List<&2, S.D>, +ps: List<&2, Nat>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {FS.answer(~K, ~W, cls, pins, DWF.ploop2.start(~K, ~W, ps, sk, g0, FS.ofdv(~K, ~W, g0), cls, pins, es, nv, skel)) == SO.answer(cls, pins, DSO.ploop2.start(ps, sk, g0, cls, pins, es, nv, skel)) : SO.Out}:
+  %FP.answer_t(~K, ~W, ~R, cls, pins, DSO.ploop2.start(ps, sk, g0, cls, pins, es, nv, skel)) : {FS.answer(~K, ~W, cls, pins, DWF.ploop2.start(~K, ~W, ps, sk, g0, FS.ofdv(~K, ~W, g0), cls, pins, es, nv, skel)) == _ : SO.Out}
+  %start2_t(~K, ~W, ~R, ps, sk, g0, cls, pins, es, nv, skel) : {FS.answer(~K, ~W, cls, pins, DWF.ploop2.start(~K, ~W, ps, sk, g0, FS.ofdv(~K, ~W, g0), cls, pins, es, nv, skel)) == FS.answer(~K, ~W, cls, pins, _) : SO.Out}
+  %FP.ofdv_t(~K, ~W, ~R, g0) : {FS.answer(~K, ~W, cls, pins, DWF.ploop2.start(~K, ~W, ps, sk, g0, FS.ofdv(~K, ~W, g0), cls, pins, es, nv, skel)) == FS.answer(~K, ~W, cls, pins, DWF.ploop2.start(~K, ~W, ps, sk, g0, _, cls, pins, es, nv, skel)) : SO.Out}
+  {==}
+
+def solve_lw2_eq(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat) -> {DWF.solve_lw2(~K, ~W, sk, g0, l, w) == DSO.solve_lw2(sk, g0, l, w) : SO.Out}:
+  Equal.trans(SO.Out, DWF.solve_lw2(~K, ~W, sk, g0, l, w), FS.answer(~K, ~W, DSO.cls_of2(sk), DSO.pins_of2(sk), DWF.ploop2.start(~K, ~W, SO.precisions(l, w), sk, g0, FS.ofdv(~K, ~W, g0), DSO.cls_of2(sk), DSO.pins_of2(sk), DSO.kept2(sk), SO.nvars(sk), DSO.skel_of2(sk))), DSO.solve_lw2(sk, g0, l, w), solve_lw2_unf(~K, ~W, ~R, sk, g0, l, w), solve_core2(~K, ~W, ~R, sk, g0, SO.precisions(l, w), DSO.cls_of2(sk), DSO.pins_of2(sk), DSO.kept2(sk), SO.nvars(sk), DSO.skel_of2(sk)))
+
+# the draft word solver's answer is the draft solver's
+def solve_l2_eq(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat) -> {DWF.solve_l2(~K, ~W, sk, g0, l) == DSO.solve_l2(sk, g0, l) : SO.Out}:
+  solve_lw2_eq(~K, ~W, ~R, sk, g0, l, 7n)
