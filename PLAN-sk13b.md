@@ -1586,6 +1586,25 @@ give both component identities that Valid's SameV asks for.
   csides by position, `sides_of`, the constraint driving). It doesn't use
   facts_hold: a conflict's facts are its own and its support's
   equations, which hold at x.
+- *honest_unique proven over the draft Honest 2026-11-01*
+  (tests/dir_draft.bend b6_honest_unique, replacing stmt_honest_unique,
+  without the unused wf hypothesis): lib/duniqpf.bend `honest_unique2`.
+  uniqpf's walk is reused wherever it reads only the classes; the Fates'
+  cases are redone:
+  - drops of both layers agree (lib/dagreepf.bend `drops_ag2`, agreepf's
+    walk along c's equations). A direction drop in one and none in the
+    other cannot meet: the facts it may read are the same in both once
+    nd is erased (`df_ag`: the kept constraints' facts differ only in
+    their drops' nd; c's own are its undropped equations with its
+    statement, `of_or`), and a derivation never reads a fact's nd
+    (lib/dstrippf.bend `ctr`, `vtr`, dmappf's cmap/vmap with the
+    identity renumbering). So two classifications that record different
+    reasons for a drop still agree on every later drop;
+  - a conflict's refutation against NoRefute2: degree 0 through
+    nrconfpf's cn.m, by directions through dmappf's nodir_mono (the
+    support is among the kept constraints before c);
+  - an amber's sides: `ai_at` reads one Implied out of DH.AllImplied.
+  With this, B6 is done: every B6 law is proven over the draft Honest.
 
 ### B7. `solve_complete` and `solve_refused`
 - No drop certificate to pass any more (B4.6: drops are correct by

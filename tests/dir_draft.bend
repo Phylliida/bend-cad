@@ -82,7 +82,10 @@
 #   b6_amber: the ambers' sides from their Implied refutations, one per
 #   side, DH.AllImplied), and solve_conflict's (lib/dcflawpf.bend,
 #   b6_conflict: each kind of direction refutation has no point where its
-#   nd segments are long, the Angles' segments long by their sides).
+#   nd segments are long, the Angles' segments long by their sides), and
+#   honest_unique (lib/duniqpf.bend, b6_honest_unique: the drops of both
+#   layers agree, lib/dagreepf.bend, a derivation reading no nd,
+#   lib/dstrippf.bend).
 # - The other restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about those laws is proven here. Their
@@ -151,6 +154,7 @@ import ../lib/passpf.bend as PPF
 import ../lib/dfactpf.bend as DFC
 import ../lib/dambpf.bend as DAM
 import ../lib/dcflawpf.bend as DCL
+import ../lib/duniqpf.bend as DUQ
 import ../lib/solve.bend as SOL
 import ../lib/wfdec.bend as WFD
 import ../lib/pass.bend as PAS
@@ -262,9 +266,12 @@ def b6_amber(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: List<&2, S
 def b6_conflict(~F: O.OField, +sk: SK.Sketch, +cls: List<&2, SS.Class>, h: DH.Honest(sk, cls), +c: Nat, hc: {SS.is_conflict(SS.class_at(cls, c)) == True{} : Bool}, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SS.only(Con{c, SS.support(cls, c)}, sk)), hl: DR.Longs(~F, x, SS.ents(sk), SS.conflict_nd(cls, c))) -> Empty:
   DCL.conflict_law(~F, sk, cls, h, c, hc, x, m, hl)
 
-# honest_unique, unchanged in statement, over the extended Honest
-def stmt_honest_unique(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +c1: List<&2, SS.Class>, h1: DH.Honest(sk, c1), +c2: List<&2, SS.Class>, h2: DH.Honest(sk, c2), +c: Nat, +j: Nat, bot: {False{} == True{} : Bool}) -> M.Both({SS.kind(SS.class_at(c1, c)) == SS.kind(SS.class_at(c2, c)) : Nat}, {SS.mem(j, SS.dropped(c1)) == SS.mem(j, SS.dropped(c2)) : Bool}):
-  stmt_absurd(M.Both({SS.kind(SS.class_at(c1, c)) == SS.kind(SS.class_at(c2, c)) : Nat}, {SS.mem(j, SS.dropped(c1)) == SS.mem(j, SS.dropped(c2)) : Bool}), bot)
+# honest_unique, proven (B6, lib/duniqpf.bend DUQ.honest_unique2): two
+# classifications honest by the extended Honest agree on every class's
+# kind and on every drop (the statement as before, without the unused wf
+# hypothesis)
+def b6_honest_unique(+sk: SK.Sketch, +c1: List<&2, SS.Class>, h1: DH.Honest(sk, c1), +c2: List<&2, SS.Class>, h2: DH.Honest(sk, c2), +c: Nat, +j: Nat) -> M.Both({SS.kind(SS.class_at(c1, c)) == SS.kind(SS.class_at(c2, c)) : Nat}, {SS.mem(j, SS.dropped(c1)) == SS.mem(j, SS.dropped(c2)) : Bool}):
+  DUQ.honest_unique2(sk, c1, h1, c2, h2, c, j)
 
 # solve_complete's and solve_refused's new hypothesis: at x, every
 # segment in the nd of a drop of a Kept or Amber constraint has positive

@@ -1,0 +1,313 @@
+# bend-cad: a derivation over facts that differ only in their nd (PLAN-sk13b
+# B6, for honest_unique). Proofs only.
+#
+# A derivation reads its premises' equations and direction statements,
+# never their nd. So over two lists of facts that are the same once every
+# nd is erased (fstrip), a derivation proves the same judgment (ctr) and is
+# valid in one exactly when in the other (vtr). Two honest classifications
+# may record different reasons for the same drop, which changes only the
+# nd of its fact; this is why the later drops still agree. Mirrors
+# lib/dmappf.bend's cmap and vmap, with the identity renumbering.
+#
+# Generated from tools/drafts/dstrippf.draft by tools/expand.py; edit the
+# draft.
+
+import Base
+import ../spec/ring.bend as E
+import ../spec/sketch.bend as SK
+import ../spec/solve.bend as SV
+import ../spec/dir.bend as DR
+
+@MACRO FL List<&2, DR.Fact>
+@MACRO EL List<&2, SK.Ent>
+@MACRO QL List<&2, E.QExpr>
+@MACRO MF Maybe<&2, DR.Fact>
+@MACRO W fs1, fs2, hw
+@MACRO PW +fs1: $FL, +fs2: $FL, +hw: {fstrip(fs1) == fstrip(fs2) : $FL}
+@MACRO S1 DR.concl(es, fs1, d1)
+@MACRO S2 DR.concl(es, fs1, d2)
+@MACRO SR DR.concl(es, fs1, dr)
+@MACRO SI DR.concl(es, fs1, di)
+@MACRO T1 DR.concl(es, fs2, d1)
+@MACRO T2 DR.concl(es, fs2, d2)
+@MACRO TR DR.concl(es, fs2, dr)
+@MACRO TI DR.concl(es, fs2, di)
+
+# Erasing nd
+# ----------
+
+def fsx(f: DR.Fact) -> DR.Fact:
+  match f:
+    case DR.Fact{e, nd, ds}:
+      DR.Fact{e, Nil{}, ds}
+
+def fstrip(fs: $FL) -> $FL:
+  match fs:
+    case Nil{}:
+      Nil{}
+    case Con{f, t}:
+      Con{fsx(f), fstrip(t)}
+
+def mstrip(m: $MF) -> $MF:
+  match m:
+    case Some{f}:
+      Some{fsx(f)}
+    case None{}:
+      None{}
+
+def fat_s(fs: $FL, i: Nat) -> {DR.fact_at(fstrip(fs), i) == mstrip(DR.fact_at(fs, i)) : $MF}:
+  match fs i:
+    case Nil{} i:
+      {==}
+    case Con{f, t} 0n:
+      {==}
+    case Con{f, t} 1n+j:
+      fat_s(t, j)
+
+def fe_f(f: DR.Fact) -> {DR.fact.e(Some{fsx(f)}) == DR.fact.e(Some{f}) : E.QExpr}:
+  match f:
+    case DR.Fact{e, nd, ds}:
+      {==}
+
+def fe_s(m: $MF) -> {DR.fact.e(mstrip(m)) == DR.fact.e(m) : E.QExpr}:
+  match m:
+    case Some{f}:
+      fe_f(f)
+    case None{}:
+      {==}
+
+def fp_d(+e: E.QExpr, +nd: List<&2, Nat>, ds: Maybe<&2, DR.DStat>) -> {DR.fact.pj(Some{DR.Fact{e, Nil{}, ds}}) == DR.fact.pj(Some{DR.Fact{e, nd, ds}}) : DR.Jd}:
+  match ds:
+    case Some{DR.DStat{a, x, l}}:
+      {==}
+    case None{}:
+      {==}
+
+def fp_f(f: DR.Fact) -> {DR.fact.pj(Some{fsx(f)}) == DR.fact.pj(Some{f}) : DR.Jd}:
+  match f:
+    case DR.Fact{+e, +nd, ds}:
+      fp_d(e, nd, ds)
+
+def fp_s(m: $MF) -> {DR.fact.pj(mstrip(m)) == DR.fact.pj(m) : DR.Jd}:
+  match m:
+    case Some{f}:
+      fp_f(f)
+    case None{}:
+      {==}
+
+def hf_s(m: $MF, h: DR.HasFact(m)) -> DR.HasFact(mstrip(m)):
+  match m:
+    case Some{f}:
+      Unit{}
+    case None{}:
+      h
+
+def hf_u(m: $MF, h: DR.HasFact(mstrip(m))) -> DR.HasFact(m):
+  match m:
+    case Some{f}:
+      Unit{}
+    case None{}:
+      h
+
+def hs_d(+e: E.QExpr, +nd: List<&2, Nat>, ds: Maybe<&2, DR.DStat>, h: DR.HasStat(Some{DR.Fact{e, nd, ds}})) -> DR.HasStat(Some{DR.Fact{e, Nil{}, ds}}):
+  match ds:
+    case Some{DR.DStat{a, x, l}}:
+      h
+    case None{}:
+      h
+
+def hs_f(f: DR.Fact, h: DR.HasStat(Some{f})) -> DR.HasStat(Some{fsx(f)}):
+  match f:
+    case DR.Fact{+e, +nd, ds}:
+      hs_d(e, nd, ds, h)
+
+def hs_s(m: $MF, h: DR.HasStat(m)) -> DR.HasStat(mstrip(m)):
+  match m:
+    case Some{f}:
+      hs_f(f, h)
+    case None{}:
+      h
+
+def hs_du(+e: E.QExpr, +nd: List<&2, Nat>, ds: Maybe<&2, DR.DStat>, h: DR.HasStat(Some{DR.Fact{e, Nil{}, ds}})) -> DR.HasStat(Some{DR.Fact{e, nd, ds}}):
+  match ds:
+    case Some{DR.DStat{a, x, l}}:
+      h
+    case None{}:
+      h
+
+def hs_fu(f: DR.Fact, h: DR.HasStat(Some{fsx(f)})) -> DR.HasStat(Some{f}):
+  match f:
+    case DR.Fact{+e, +nd, ds}:
+      hs_du(e, nd, ds, h)
+
+def hs_u(m: $MF, h: DR.HasStat(mstrip(m))) -> DR.HasStat(m):
+  match m:
+    case Some{f}:
+      hs_fu(f, h)
+    case None{}:
+      h
+
+# Reading two lists that differ only in nd
+# ----------------------------------------
+
+def ms_at($PW, +i: Nat) -> {mstrip(DR.fact_at(fs1, i)) == mstrip(DR.fact_at(fs2, i)) : $MF}:
+  Equal.trans($MF, mstrip(DR.fact_at(fs1, i)), DR.fact_at(fstrip(fs1), i), mstrip(DR.fact_at(fs2, i)), Equal.sym($MF, DR.fact_at(fstrip(fs1), i), mstrip(DR.fact_at(fs1, i)), fat_s(fs1, i)),
+    Equal.trans($MF, DR.fact_at(fstrip(fs1), i), DR.fact_at(fstrip(fs2), i), mstrip(DR.fact_at(fs2, i)), Equal.cong($FL, $MF, x => DR.fact_at(x, i), fstrip(fs1), fstrip(fs2), hw), fat_s(fs2, i)))
+
+def fe_at($PW, +i: Nat) -> {DR.fact.e(DR.fact_at(fs1, i)) == DR.fact.e(DR.fact_at(fs2, i)) : E.QExpr}:
+  Equal.trans(E.QExpr, DR.fact.e(DR.fact_at(fs1, i)), DR.fact.e(mstrip(DR.fact_at(fs1, i))), DR.fact.e(DR.fact_at(fs2, i)), Equal.sym(E.QExpr, DR.fact.e(mstrip(DR.fact_at(fs1, i))), DR.fact.e(DR.fact_at(fs1, i)), fe_s(DR.fact_at(fs1, i))),
+    Equal.trans(E.QExpr, DR.fact.e(mstrip(DR.fact_at(fs1, i))), DR.fact.e(mstrip(DR.fact_at(fs2, i))), DR.fact.e(DR.fact_at(fs2, i)), Equal.cong($MF, E.QExpr, x => DR.fact.e(x), mstrip(DR.fact_at(fs1, i)), mstrip(DR.fact_at(fs2, i)), ms_at($W, i)), fe_s(DR.fact_at(fs2, i))))
+
+def fp_at($PW, +i: Nat) -> {DR.fact.pj(DR.fact_at(fs1, i)) == DR.fact.pj(DR.fact_at(fs2, i)) : DR.Jd}:
+  Equal.trans(DR.Jd, DR.fact.pj(DR.fact_at(fs1, i)), DR.fact.pj(mstrip(DR.fact_at(fs1, i))), DR.fact.pj(DR.fact_at(fs2, i)), Equal.sym(DR.Jd, DR.fact.pj(mstrip(DR.fact_at(fs1, i))), DR.fact.pj(DR.fact_at(fs1, i)), fp_s(DR.fact_at(fs1, i))),
+    Equal.trans(DR.Jd, DR.fact.pj(mstrip(DR.fact_at(fs1, i))), DR.fact.pj(mstrip(DR.fact_at(fs2, i))), DR.fact.pj(DR.fact_at(fs2, i)), Equal.cong($MF, DR.Jd, x => DR.fact.pj(x), mstrip(DR.fact_at(fs1, i)), mstrip(DR.fact_at(fs2, i)), ms_at($W, i)), fp_s(DR.fact_at(fs2, i))))
+
+def hf_tr(+m1: $MF, +m2: $MF, +e: {mstrip(m1) == mstrip(m2) : $MF}, h: DR.HasFact(m1)) -> DR.HasFact(m2):
+  hf_u(m2, (%e : DR.HasFact(_)
+    hf_s(m1, h)))
+
+def hs_tr(+m1: $MF, +m2: $MF, +e: {mstrip(m1) == mstrip(m2) : $MF}, h: DR.HasStat(m1)) -> DR.HasStat(m2):
+  hs_u(m2, (%e : DR.HasStat(_)
+    hs_s(m1, h)))
+
+# Conclusions
+# -----------
+
+# the same judgment
+def ctr(d: DR.Der, +es: $EL, $PW) -> {DR.concl(es, fs1, d) == DR.concl(es, fs2, d) : DR.Jd}:
+  match d:
+    case DR.DZero{}:
+      {==}
+    case DR.DPrem{+i}:
+      %fe_at($W, i) : {DR.JK{DR.fact.e(DR.fact_at(fs1, i))} == DR.JK{_} : DR.Jd}
+      {==}
+    case DR.DKAdd{+l, +d1, +d2}:
+      %ctr(d1, es, $W) : {DR.JK{E.QAdd{E.QMul{E.QCst{l}, DR.Jd.e($S1)}, DR.Jd.e($S2)}} == DR.JK{E.QAdd{E.QMul{E.QCst{l}, DR.Jd.e(_)}, DR.Jd.e($T2)}} : DR.Jd}
+      %ctr(d2, es, $W) : {DR.JK{E.QAdd{E.QMul{E.QCst{l}, DR.Jd.e($S1)}, DR.Jd.e($S2)}} == DR.JK{E.QAdd{E.QMul{E.QCst{l}, DR.Jd.e($S1)}, DR.Jd.e(_)}} : DR.Jd}
+      {==}
+    case DR.DBack{+d1}:
+      %ctr(d1, es, $W) : {DR.JK{SK.VE.y(DR.Jd.x($S1))} == DR.JK{SK.VE.y(DR.Jd.x(_))} : DR.Jd}
+      {==}
+    case DR.DLine{+d1, +d2, +re}:
+      %ctr(d1, es, $W) : {DR.JK{DR.dline.e(re, DR.Jd.x($S1))} == DR.JK{DR.dline.e(re, DR.Jd.x(_))} : DR.Jd}
+      {==}
+    case DR.DPPrem{+i}:
+      fp_at($W, i)
+    case DR.DSelf{+a}:
+      {==}
+    case DR.DPLin{+m1, +d1, +m2, +d2}:
+      %ctr(d1, es, $W) : {DR.JP{DR.Jd.a($S1), DR.vlin(m1, DR.Jd.x($S1), m2, DR.Jd.x($S2))} == DR.JP{DR.Jd.a(_), DR.vlin(m1, DR.Jd.x(_), m2, DR.Jd.x($T2))} : DR.Jd}
+      %ctr(d2, es, $W) : {DR.JP{DR.Jd.a($S1), DR.vlin(m1, DR.Jd.x($S1), m2, DR.Jd.x($S2))} == DR.JP{DR.Jd.a($S1), DR.vlin(m1, DR.Jd.x($S1), m2, DR.Jd.x(_))} : DR.Jd}
+      {==}
+    case DR.DKnown{+d1, +dr, +di}:
+      %ctr(d1, es, $W) : {DR.JP{DR.Jd.a($S1), SK.VE.add(DR.Jd.x($S1), SK.VE{DR.Jd.e($SR), DR.Jd.e($SI)})} == DR.JP{DR.Jd.a(_), SK.VE.add(DR.Jd.x(_), SK.VE{DR.Jd.e($TR), DR.Jd.e($TI)})} : DR.Jd}
+      %ctr(dr, es, $W) : {DR.JP{DR.Jd.a($S1), SK.VE.add(DR.Jd.x($S1), SK.VE{DR.Jd.e($SR), DR.Jd.e($SI)})} == DR.JP{DR.Jd.a($S1), SK.VE.add(DR.Jd.x($S1), SK.VE{DR.Jd.e(_), DR.Jd.e($TI)})} : DR.Jd}
+      %ctr(di, es, $W) : {DR.JP{DR.Jd.a($S1), SK.VE.add(DR.Jd.x($S1), SK.VE{DR.Jd.e($SR), DR.Jd.e($SI)})} == DR.JP{DR.Jd.a($S1), SK.VE.add(DR.Jd.x($S1), SK.VE{DR.Jd.e($SR), DR.Jd.e(_)})} : DR.Jd}
+      {==}
+    case DR.DTurn{+d1, +g, +b}:
+      %ctr(d1, es, $W) : {DR.JP{b, DR.gmul(g, DR.zdir(es, DR.Jd.a($S1)))} == DR.JP{b, DR.gmul(g, DR.zdir(es, DR.Jd.a(_)))} : DR.Jd}
+      {==}
+    case DR.DThrough{+d1, +d2, +g, +b}:
+      %ctr(d1, es, $W) : {DR.JP{DR.Jd.a($S1), DR.gmul(DR.Lab.conj(g), DR.Jd.x($S2))} == DR.JP{DR.Jd.a(_), DR.gmul(DR.Lab.conj(g), DR.Jd.x($T2))} : DR.Jd}
+      %ctr(d2, es, $W) : {DR.JP{DR.Jd.a($S1), DR.gmul(DR.Lab.conj(g), DR.Jd.x($S2))} == DR.JP{DR.Jd.a($S1), DR.gmul(DR.Lab.conj(g), DR.Jd.x(_))} : DR.Jd}
+      {==}
+    case DR.DFrame{+d1, +x}:
+      {==}
+    case DR.DVoid{+dr, +di, +a, +x}:
+      {==}
+
+# Validity
+# --------
+
+def ik(+d: DR.Der, +es: $EL, $PW, h: DR.IsK(DR.concl(es, fs1, d))) -> DR.IsK(DR.concl(es, fs2, d)):
+  (%ctr(d, es, $W) : DR.IsK(_) h)
+
+def ip(+d: DR.Der, +es: $EL, $PW, h: DR.IsP(DR.concl(es, fs1, d))) -> DR.IsP(DR.concl(es, fs2, d)):
+  (%ctr(d, es, $W) : DR.IsP(_) h)
+
+def aeq(+d1: DR.Der, +d2: DR.Der, +es: $EL, $PW, h: {DR.Jd.a($S1) == DR.Jd.a($S2) : DR.Node}) -> {DR.Jd.a($T1) == DR.Jd.a($T2) : DR.Node}:
+  %ctr(d1, es, $W) : {DR.Jd.a(_) == DR.Jd.a($T2) : DR.Node}
+  %ctr(d2, es, $W) : {DR.Jd.a($S1) == DR.Jd.a(_) : DR.Node}
+  h
+
+def svline(+d1: DR.Der, +d2: DR.Der, +es: $EL, $PW, h: DR.SameV(DR.Jd.x($S2), DR.imul(DR.Jd.x($S1)))) -> DR.SameV(DR.Jd.x($T2), DR.imul(DR.Jd.x($T1))):
+  %ctr(d1, es, $W) : DR.SameV(DR.Jd.x($T2), DR.imul(DR.Jd.x(_)))
+  %ctr(d2, es, $W) : DR.SameV(DR.Jd.x(_), DR.imul(DR.Jd.x($S1)))
+  h
+
+# a valid derivation stays valid over facts that differ only in nd
+def vtr(d: DR.Der, +es: $EL, +ctx: $QL, $PW, hv: DR.Valid(es, fs1, ctx, d)) -> DR.Valid(es, fs2, ctx, d):
+  match d:
+    case DR.DZero{}:
+      hv
+    case DR.DPrem{+i}:
+      hf_tr(DR.fact_at(fs1, i), DR.fact_at(fs2, i), ms_at($W, i), hv)
+    case DR.DKAdd{+l, +d1, +d2}:
+      (v1, r1) = hv
+      (v2, r2) = r1
+      (k1, k2) = r2
+      (vtr(d1, es, ctx, $W, v1), (vtr(d2, es, ctx, $W, v2), (ik(d1, es, $W, k1), ik(d2, es, $W, k2))))
+    case DR.DBack{+d1}:
+      (v1, r1) = hv
+      (p1, e1) = r1
+      (vtr(d1, es, ctx, $W, v1), (ip(d1, es, $W, p1), (%ctr(d1, es, $W) : {DR.Jd.a(_) == DR.NFrame{} : DR.Node} e1)))
+    case DR.DLine{+d1, +d2, +re}:
+      (v1, r1) = hv
+      (v2, r2) = r1
+      (p1, r3) = r2
+      (p2, r4) = r3
+      (ea, r5) = r4
+      (op, sv) = r5
+      (vtr(d1, es, ctx, $W, v1), (vtr(d2, es, ctx, $W, v2), (ip(d1, es, $W, p1), (ip(d2, es, $W, p2),
+        (aeq(d1, d2, es, $W, ea),
+         ((%ctr(d1, es, $W) : DR.Open(es, ctx, DR.Jd.a(_)) op),
+          svline(d1, d2, es, $W, sv)))))))
+    case DR.DPPrem{+i}:
+      hs_tr(DR.fact_at(fs1, i), DR.fact_at(fs2, i), ms_at($W, i), hv)
+    case DR.DSelf{+a}:
+      hv
+    case DR.DPLin{+m1, +d1, +m2, +d2}:
+      (v1, r1) = hv
+      (v2, r2) = r1
+      (p1, r3) = r2
+      (p2, ea) = r3
+      (vtr(d1, es, ctx, $W, v1), (vtr(d2, es, ctx, $W, v2), (ip(d1, es, $W, p1), (ip(d2, es, $W, p2),
+        aeq(d1, d2, es, $W, ea)))))
+    case DR.DKnown{+d1, +dr, +di}:
+      (v1, r1) = hv
+      (vr, r2) = r1
+      (vi, r3) = r2
+      (p1, r4) = r3
+      (kr, ki) = r4
+      (vtr(d1, es, ctx, $W, v1), (vtr(dr, es, ctx, $W, vr), (vtr(di, es, ctx, $W, vi), (ip(d1, es, $W, p1), (ik(dr, es, $W, kr), ik(di, es, $W, ki))))))
+    case DR.DTurn{+d1, +g, +b}:
+      (v1, r1) = hv
+      (p1, sv) = r1
+      (vtr(d1, es, ctx, $W, v1), (ip(d1, es, $W, p1), (%ctr(d1, es, $W) : DR.SameV(DR.Jd.x(_), DR.gmul(DR.Lab.conj(g), DR.zdir(es, b))) sv)))
+    case DR.DThrough{+d1, +d2, +g, +b}:
+      (v1, r1) = hv
+      (v2, r2) = r1
+      (p1, r3) = r2
+      (p2, r4) = r3
+      (sv, r5) = r4
+      (eb, op) = r5
+      (vtr(d1, es, ctx, $W, v1), (vtr(d2, es, ctx, $W, v2), (ip(d1, es, $W, p1), (ip(d2, es, $W, p2),
+        ((%ctr(d1, es, $W) : DR.SameV(DR.Jd.x(_), DR.gmul(DR.Lab.conj(g), DR.zdir(es, b))) sv),
+         ((%ctr(d2, es, $W) : {DR.Jd.a(_) == b : DR.Node} eb), op))))))
+    case DR.DFrame{+d1, +x}:
+      (v1, r1) = hv
+      (k1, sm) = r1
+      (vtr(d1, es, ctx, $W, v1), (ik(d1, es, $W, k1), (%ctr(d1, es, $W) : DR.Same(DR.Jd.e(_), SK.VE.y(x)) sm)))
+    case DR.DVoid{+dr, +di, +a, +x}:
+      (vr, r1) = hv
+      (vi, r2) = r1
+      (kr, r3) = r2
+      (ki, r4) = r3
+      (sr, si) = r4
+      (vtr(dr, es, ctx, $W, vr), (vtr(di, es, ctx, $W, vi), (ik(dr, es, $W, kr), (ik(di, es, $W, ki),
+        ((%ctr(dr, es, $W) : DR.Same(DR.Jd.e(_), SK.VE.x(DR.zdir(es, a))) sr), (%ctr(di, es, $W) : DR.Same(DR.Jd.e(_), SK.VE.y(DR.zdir(es, a))) si))))))
+
+# what a derivation proves, over the other list
+def pr_tr(+d: DR.Der, +es: $EL, $PW, +m: Maybe<&2, DR.DStat>, +e: E.QExpr, hp: SV.Proves(es, m, e, DR.concl(es, fs1, d))) -> SV.Proves(es, m, e, DR.concl(es, fs2, d)):
+  (%ctr(d, es, $W) : SV.Proves(es, m, e, _)
+    hp)

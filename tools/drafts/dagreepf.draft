@@ -1,0 +1,211 @@
+# bend-cad: two classifications side by side, with the direction layer
+# (PLAN-sk13b B6, for honest_unique). Proofs only.
+#
+# Two DropsOk of the draft Honest at c, over the same kept constraints and
+# the same solved equations before c, drop the same of c's equations
+# (drops_ag2). As lib/agreepf.bend's drops_ag: walk c's equations in
+# order, c's own equations not dropped agreeing so far. An equation
+# dropped in one and kept in the other is derivable in one way in the
+# first and in neither in the second:
+# - by degree 0, over equal bases (agreepf's dnd);
+# - by directions (ddn): the facts it may read are the same in both once
+#   their nd is erased (the kept constraints' facts differ only in their
+#   drops' nd; c's own are its undropped equations with its statement,
+#   of_or), and a derivation reads no nd (lib/dstrippf.bend), so a
+#   derivation for the first is one for the second.
+#
+# Generated from tools/drafts/dagreepf.draft by tools/expand.py; edit the
+# draft.
+
+import Base
+import ../spec/ring.bend as E
+import ../spec/sketch.bend as SK
+import ../spec/solve.bend as SV
+import ../spec/_draft13b.bend as DH
+import ../spec/dir.bend as DR
+import ./karith.bend as KA
+import ./listpf.bend as L
+import ./ownpf.bend as OW
+import ./solvedpf.bend as SP
+import ./agreepf.bend as AG
+import ./dstrippf.bend as ST
+
+@MACRO NL List<&2, Nat>
+@MACRO QL List<&2, E.QExpr>
+@MACRO FL List<&2, DR.Fact>
+@MACRO CLS List<&2, SV.Class>
+@MACRO MS Maybe<&2, DR.DStat>
+@MACRO ES SK.Sketch.eqs(sk)
+@MACRO OWN SV.owners(sk)
+@MACRO ENT SV.ents(sk)
+@MACRO KC SV.dstat_of($ENT, SV.kind_at(sk, c))
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+# The facts a direction drop may read, without their nd
+# -----------------------------------------------------
+
+def fs_pick(b: Bool, +e: E.QExpr, +nd: $NL, +ds: $MS, +r1: $FL, +r2: $FL, +ih: {ST.fstrip(r1) == r2 : $FL}) -> {ST.fstrip(SV.facts.pick(b, DR.Fact{e, nd, ds}, r1)) == SV.facts.pick(b, DR.Fact{e, Nil{}, ds}, r2) : $FL}:
+  match b:
+    case True{}:
+      %ih : {Con{DR.Fact{e, Nil{}, ds}, ST.fstrip(r1)} == Con{DR.Fact{e, Nil{}, ds}, _} : $FL}
+      {==}
+    case False{}:
+      ih
+
+# the facts of some constraints, nd erased: the same with no nd
+def fs_go(es: $QL, +own: $NL, +cs: $NL, +sk: SK.Sketch, +cls: $CLS, +w: Bool, +k: Nat) -> {ST.fstrip(SV.facts.go(es, own, cs, sk, cls, w, k)) == SV.facts.go(es, own, cs, sk, Nil{}, False{}, k) : $FL}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{+e, +t}:
+      fs_pick(SV.mem(SV.nth(own, k), cs), e, SV.fnd.pick(w, cls, k), SV.dstat_of(SV.ents(sk), SV.kind_at(sk, SV.nth(own, k))), SV.facts.go(t, own, cs, sk, cls, w, 1n+k), SV.facts.go(t, own, cs, sk, Nil{}, False{}, 1n+k), fs_go(t, own, cs, sk, cls, w, 1n+k))
+
+# equations as facts with no nd and the statement ds
+def fmk(+ds: $MS, xs: $QL) -> $FL:
+  match xs:
+    case Nil{}:
+      Nil{}
+    case Con{e, t}:
+      Con{DR.Fact{e, Nil{}, ds}, fmk(ds, t)}
+
+def of_pick(b: Bool, +e: E.QExpr, +ds: $MS, +r: $FL, +xs: $QL, +ih: {r == fmk(ds, xs) : $FL}) -> {SV.facts.pick(b, DR.Fact{e, Nil{}, ds}, r) == fmk(ds, SV.solved.pick(b, e, xs)) : $FL}:
+  match b:
+    case True{}:
+      %ih : {Con{DR.Fact{e, Nil{}, ds}, r} == Con{DR.Fact{e, Nil{}, ds}, _} : $FL}
+      {==}
+    case False{}:
+      ih
+
+# c's own facts a drop may read are its own equations it may read, with
+# its statement
+def of_or(es: $QL, +own: $NL, +sk: SK.Sketch, +c: Nat, +d: $NL, +i: Nat, +k: Nat) -> {SV.ofacts.go(es, own, sk, c, d, i, k) == fmk($KC, SV.own_rest.go(es, own, c, d, i, k)) : $FL}:
+  match es:
+    case Nil{}:
+      {==}
+    case Con{+e, +t}:
+      of_pick(SV.band(SV.lt(k, i), SV.band(SV.eq(SV.nth(own, k), c), SV.bnot(SV.mem(k, d)))), e, $KC, SV.ofacts.go(t, own, sk, c, d, i, 1n+k), SV.own_rest.go(t, own, c, d, i, 1n+k), of_or(t, own, sk, c, d, i, 1n+k))
+
+def fs_cat(xs: $FL, +ys: $FL) -> {ST.fstrip(SV.fcat(xs, ys)) == SV.fcat(ST.fstrip(xs), ST.fstrip(ys)) : $FL}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+f, +t}:
+      %fs_cat(t, ys) : {Con{ST.fsx(f), ST.fstrip(SV.fcat(t, ys))} == Con{ST.fsx(f), _} : $FL}
+      {==}
+
+@MACRO KBF SV.facts.go($ES, $OWN, SV.kept_before(sk, R, c), sk, Nil{}, False{}, 0n)
+@MACRO OF ST.fstrip(fmk($KC, SV.own_rest(sk, c, d, j)))
+
+# the facts drop j of c may read, nd erased
+def df_n(+sk: SK.Sketch, +cls: $CLS, +R: $NL, +c: Nat, +d: $NL, +j: Nat) -> {ST.fstrip(SV.dfacts(sk, cls, R, c, d, j)) == SV.fcat($KBF, $OF) : $FL}:
+  %Equal.sym($FL, ST.fstrip(SV.fcat(SV.facts.go($ES, $OWN, SV.kept_before(sk, R, c), sk, cls, True{}, 0n), SV.ofacts.go($ES, $OWN, sk, c, d, j, 0n))), SV.fcat(ST.fstrip(SV.facts.go($ES, $OWN, SV.kept_before(sk, R, c), sk, cls, True{}, 0n)), ST.fstrip(SV.ofacts.go($ES, $OWN, sk, c, d, j, 0n))), fs_cat(SV.facts.go($ES, $OWN, SV.kept_before(sk, R, c), sk, cls, True{}, 0n), SV.ofacts.go($ES, $OWN, sk, c, d, j, 0n))) : {_ == SV.fcat($KBF, $OF) : $FL}
+  %Equal.sym($FL, ST.fstrip(SV.facts.go($ES, $OWN, SV.kept_before(sk, R, c), sk, cls, True{}, 0n)), $KBF, fs_go($ES, $OWN, SV.kept_before(sk, R, c), sk, cls, True{}, 0n)) : {SV.fcat(_, ST.fstrip(SV.ofacts.go($ES, $OWN, sk, c, d, j, 0n))) == SV.fcat($KBF, $OF) : $FL}
+  %Equal.sym($FL, SV.ofacts.go($ES, $OWN, sk, c, d, j, 0n), fmk($KC, SV.own_rest(sk, c, d, j)), of_or($ES, $OWN, sk, c, d, j, 0n)) : {SV.fcat($KBF, ST.fstrip(_)) == SV.fcat($KBF, $OF) : $FL}
+  {==}
+
+@MACRO DF1 SV.dfacts(sk, cls1, R1, c, d1, j)
+@MACRO DF2 SV.dfacts(sk, cls2, R2, c, d2, j)
+@MACRO KB1 SV.kept_before(sk, R1, c)
+@MACRO KB2 SV.kept_before(sk, R2, c)
+@MACRO OR1 SV.own_rest(sk, c, d1, j)
+@MACRO OR2 SV.own_rest(sk, c, d2, j)
+@MACRO DJ +sk: SK.Sketch, +cls1: $CLS, +R1: $NL, +cls2: $CLS, +R2: $NL, +c: Nat, +d1: $NL, +d2: $NL, +j: Nat, +hkb: {$KB1 == $KB2 : $NL}, +hor: {$OR1 == $OR2 : $QL}
+@MACRO DJA sk, cls1, R1, cls2, R2, c, d1, d2, j, hkb, hor
+
+# over the same kept constraints, with c's own readable equations the
+# same, the facts are the same once nd is erased
+def df_ag($DJ) -> {ST.fstrip($DF1) == ST.fstrip($DF2) : $FL}:
+  %Equal.sym($FL, ST.fstrip($DF1), SV.fcat(SV.facts.go($ES, $OWN, $KB1, sk, Nil{}, False{}, 0n), ST.fstrip(fmk($KC, $OR1))), df_n(sk, cls1, R1, c, d1, j)) : {_ == ST.fstrip($DF2) : $FL}
+  %Equal.sym($FL, ST.fstrip($DF2), SV.fcat(SV.facts.go($ES, $OWN, $KB2, sk, Nil{}, False{}, 0n), ST.fstrip(fmk($KC, $OR2))), df_n(sk, cls2, R2, c, d2, j)) : {SV.fcat(SV.facts.go($ES, $OWN, $KB1, sk, Nil{}, False{}, 0n), ST.fstrip(fmk($KC, $OR1))) == _ : $FL}
+  %hkb : {SV.fcat(SV.facts.go($ES, $OWN, $KB1, sk, Nil{}, False{}, 0n), ST.fstrip(fmk($KC, $OR1))) == SV.fcat(SV.facts.go($ES, $OWN, _, sk, Nil{}, False{}, 0n), ST.fstrip(fmk($KC, $OR2))) : $FL}
+  %hor : {SV.fcat(SV.facts.go($ES, $OWN, $KB1, sk, Nil{}, False{}, 0n), ST.fstrip(fmk($KC, $OR1))) == SV.fcat(SV.facts.go($ES, $OWN, $KB1, sk, Nil{}, False{}, 0n), ST.fstrip(fmk($KC, _))) : $FL}
+  {==}
+
+def cx_ag(+sk: SK.Sketch, +R1: $NL, +R2: $NL, +c: Nat, +hkb: {$KB1 == $KB2 : $NL}) -> {SV.ctx(sk, R1, c) == SV.ctx(sk, R2, c) : $QL}:
+  Equal.cong($NL, $QL, kb => SV.eqs_of(sk, Con{c, kb}), $KB1, $KB2, hkb)
+
+def ddn.v($DJ, +nd: $NL, +dv: DR.Der, r: DR.Valid($ENT, $DF1, SV.ctx(sk, R1, c), dv) & (SV.Proves($ENT, $KC, SV.eqat($ES, j), DR.concl($ENT, $DF1, dv)) & {SV.sub(DR.nd($ENT, $DF1, dv), nd) == True{} : Bool}),
+  hn: SV.NotDirDerivable(sk, cls2, R2, c, d2, j)) -> Empty:
+  (v, q) = r
+  (p, s) = q
+  hn(dv, (%cx_ag(sk, R1, R2, c, hkb) : DR.Valid($ENT, $DF2, _, dv)
+    ST.vtr(dv, $ENT, SV.ctx(sk, R1, c), $DF1, $DF2, df_ag($DJA), v)), ST.pr_tr(dv, $ENT, $DF1, $DF2, df_ag($DJA), $KC, SV.eqat($ES, j), p))
+
+def ddn.q($DJ, +nd: $NL, q: SV.DirDerivable(sk, cls1, R1, c, d1, j, nd), hn: SV.NotDirDerivable(sk, cls2, R2, c, d2, j)) -> Empty:
+  match q:
+    case (+dv, r):
+      ddn.v($DJA, nd, dv, r, hn)
+
+# a direction derivation in the first, none in the second
+def ddn($DJ, hd: &nd: $NL -> SV.DirDerivable(sk, cls1, R1, c, d1, j, nd), hn: SV.NotDirDerivable(sk, cls2, R2, c, d2, j)) -> Empty:
+  match hd:
+    case (+nd, q):
+      ddn.q($DJA, nd, q, hn)
+
+# The drops at c
+# --------------
+
+@MACRO DA +sk: SK.Sketch, +cls1: $CLS, +R1: $NL, +D1: $NL, +cls2: $CLS, +R2: $NL, +D2: $NL, +c: Nat, +d1: $NL, +d2: $NL, +hkb: {$KB1 == $KB2 : $NL}
+@MACRO DAA sk, cls1, R1, D1, cls2, R2, D2, c, d1, d2, hkb
+@MACRO DAS sk, cls2, R2, D2, cls1, R1, D1, c, d2, d1, Equal.sym($NL, $KB1, $KB2, hkb)
+@MACRO BA SV.basis(sk, R1, D1, c, d1, k) == SV.basis(sk, R2, D2, c, d2, k)
+@MACRO ORK SV.own_rest(sk, c, d1, k) == SV.own_rest(sk, c, d2, k)
+@MACRO PS SV.presolved(sk, R1, D1, c) == SV.presolved(sk, R2, D2, c)
+
+# derivable in the first, in neither way in the second
+def mm_tf($DA, +k: Nat, x1: Or(SV.Derivable(sk, R1, D1, c, d1, k), &nd: $NL -> SV.DirDerivable(sk, cls1, R1, c, d1, k, nd)), x2: SV.NotDerivable(sk, R2, D2, c, d2, k) & SV.NotDirDerivable(sk, cls2, R2, c, d2, k),
+  +hb: {$BA : $QL}, +hor: {$ORK : $QL}) -> Empty:
+  match x1:
+    case Inl{h0}:
+      (n0, nd) = x2
+      AG.dnd(sk, R1, D1, R2, D2, c, d1, d2, k, hb, h0, n0)
+    case Inr{hd}:
+      (n0, nd) = x2
+      ddn(sk, cls1, R1, cls2, R2, c, d1, d2, k, hkb, hor, hd, nd)
+
+# dropped in one exactly when in the other
+def mm_ag2($DA, m1: Bool, m2: Bool, +k: Nat, x1: DH.drops_ok.mem(sk, cls1, R1, D1, c, d1, m1, k), x2: DH.drops_ok.mem(sk, cls2, R2, D2, c, d2, m2, k), +hb: {$BA : $QL}, +hor: {$ORK : $QL}) -> {m1 == m2 : Bool}:
+  match m1 m2:
+    case True{} True{}:
+      {==}
+    case False{} False{}:
+      {==}
+    case True{} False{}:
+      absurd({True{} == False{} : Bool}, mm_tf($DAA, k, x1, x2, hb, hor))
+    case False{} True{}:
+      absurd({False{} == True{} : Bool}, mm_tf($DAS, k, x2, x1, Equal.sym($QL, SV.basis(sk, R1, D1, c, d1, k), SV.basis(sk, R2, D2, c, d2, k), hb), Equal.sym($QL, SV.own_rest(sk, c, d1, k), SV.own_rest(sk, c, d2, k), hor)))
+
+def at_ag2($DA, b: Bool, +k: Nat, a1: DH.drops_ok.at(sk, cls1, R1, D1, c, d1, b, k), a2: DH.drops_ok.at(sk, cls2, R2, D2, c, d2, b, k), +hb: {$BA : $QL}, +hor: {$ORK : $QL}) -> {SV.mem(k, d1) == SV.mem(k, d2) : Bool}:
+  match b:
+    case True{}:
+      mm_ag2($DAA, SV.mem(k, d1), SV.mem(k, d2), k, a1, a2, hb, hor)
+    case False{}:
+      Equal.trans(Bool, SV.mem(k, d1), False{}, SV.mem(k, d2), a1, Equal.sym(Bool, SV.mem(k, d2), False{}, a2))
+
+def da.c($DA, +o: Nat, +t: $NL, +k: Nat, +ho: {OW.ndrop(k, $OWN) == Con{o, t} : $NL}, +hps: {$PS : $QL}, +hor: {$ORK : $QL},
+  g1: DH.drops_ok.at(sk, cls1, R1, D1, c, d1, SV.eq(o, c), k) & DH.drops_ok.go(sk, cls1, R1, D1, c, d1, t, 1n+k), g2: DH.drops_ok.at(sk, cls2, R2, D2, c, d2, SV.eq(o, c), k) & DH.drops_ok.go(sk, cls2, R2, D2, c, d2, t, 1n+k),
+  ih: {SV.own_rest(sk, c, d1, 1n+k) == SV.own_rest(sk, c, d2, 1n+k) : $QL} -> DH.drops_ok.go(sk, cls1, R1, D1, c, d1, t, 1n+k) -> DH.drops_ok.go(sk, cls2, R2, D2, c, d2, t, 1n+k) -> {SP.agree(t, d1, d2, c, 1n+k) == True{} : Bool})
+  -> {SP.agree(Con{o, t}, d1, d2, c, k) == True{} : Bool}:
+  (a1, r1) = g1
+  (a2, r2) = g2
+  +ek = at_ag2($DAA, SV.eq(o, c), k, a1, a2, AG.basis_ag(sk, R1, D1, R2, D2, c, d1, d2, k, hps, hor), hor)
+  L.band_i(SV.bor(SV.bnot(SV.eq(o, c)), SP.beq(SV.mem(k, d1), SV.mem(k, d2))), SP.agree(t, d1, d2, c, 1n+k), L.bor_r(SV.bnot(SV.eq(o, c)), SP.beq(SV.mem(k, d1), SV.mem(k, d2)), AG.beq_of(SV.mem(k, d1), SV.mem(k, d2), ek)),
+    ih(AG.or_next(sk, c, d1, d2, k, (%OW.len_owners(sk) : {SV.lt(k, _) == True{} : Bool}
+      AG.lt_ndrop($OWN, k, o, t, ho)), ek, hor), r1, r2))
+
+def da.go2($DA, own_s: $NL, +k: Nat, +ho: {OW.ndrop(k, $OWN) == own_s : $NL}, +hps: {$PS : $QL}, +hor: {$ORK : $QL},
+  g1: DH.drops_ok.go(sk, cls1, R1, D1, c, d1, own_s, k), g2: DH.drops_ok.go(sk, cls2, R2, D2, c, d2, own_s, k)) -> {SP.agree(own_s, d1, d2, c, k) == True{} : Bool}:
+  match own_s:
+    case Nil{}:
+      {==}
+    case Con{+o, +t}:
+      da.c($DAA, o, t, k, ho, hps, hor, g1, g2, h => r1 => r2 => da.go2($DAA, t, 1n+k, OW.ndrop_step(k, $OWN, o, t, ho), hps, h, r1, r2))
+
+# two DropsOk of the draft Honest at c, over the same kept constraints and
+# solved equations before c, drop the same of c's equations
+def drops_ag2($DA, +hps: {$PS : $QL}, h1: DH.DropsOk(sk, cls1, R1, D1, c, d1), h2: DH.DropsOk(sk, cls2, R2, D2, c, d2)) -> {SP.agree($OWN, d1, d2, c, 0n) == True{} : Bool}:
+  (hb1, g1) = h1
+  (hb2, g2) = h2
+  da.go2($DAA, $OWN, 0n, {==}, hps, Equal.trans($QL, SV.own_rest(sk, c, d1, 0n), Nil{}, SV.own_rest(sk, c, d2, 0n), SP.or_nil($ES, $OWN, c, d1, 0n, 0n, {==}), Equal.sym($QL, SV.own_rest(sk, c, d2, 0n), Nil{}, SP.or_nil($ES, $OWN, c, d2, 0n, 0n, {==}))), g1, g2)
