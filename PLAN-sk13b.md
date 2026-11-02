@@ -1859,6 +1859,22 @@ def NoDirRefIn(+sk, +c, +cs, +cx, +A) -> Type:
   comment (nd may differ) stays true. ROADMAP's and the page's wording of
   nd can say "each one needed".
 
+**Over sets too (added 2026-11-02, Danielle).** Overdet accepts any set
+of equations with more of them than variables, so "over-determined with
+#a, #b, #c" may name constraints the set does not need. The pass's set
+is the failed augmenting-path search's witness (lib/pass.bend: ST.Red):
+the equations it reached from c's unmatched one and their variables.
+That set is already inclusion-minimal (for any member, flipping the
+matching along the search's path from the unmatched equation matches all
+the others), but neither the spec nor a proof says so.
+- OverOk gains: for each position e of s, the equations of s less e are
+  Matchable (each its own variable it depends on).
+- The solver: a deletion loop with the proven matching search (each
+  success is the Matchable witness; a failure is a smaller Over set,
+  which replaces s and w). If today's sets are minimal, as argued, no
+  answer changes and the loop only confirms.
+- Cheap next to nd: matchings, no closure.
+
 #### How the solver gets there: a deletion loop
 For a drop with derivation dv and N = nd(dv): for each m of N in turn,
 look for a derivation whose nd lies in N less m; if there is one, it
@@ -1881,7 +1897,7 @@ through it; a forbidden one is not (its set is full, as a collapsed
 one's).
 
 #### Order of work
-- **C0. Spec draft.** The clauses above in spec/_draft13c.bend, with a
+- **C0. Spec draft.** The clauses above (nd and Over) in spec/_draft13c.bend, with a
   test that type-checks them against today's answers' shapes. Danielle
   reads it before anything is proven against it.
 - **C1. The restricted calculus in lib.** ValidA (Open replaced by open
@@ -1908,7 +1924,8 @@ one's).
   cost asks for it.
 - **C4. Proofs.** dcwpf: the drop's NdIrred from each run's "not held"
   by the restricted closure theorem and the bridging. dconflictpf: the
-  same for conflicts. The rest of the pass's proofs see a Drop with a
+  same for conflicts. The Over loop's Matchable witnesses (first or last:
+  it needs only the matching search's soundness). The rest of the pass's proofs see a Drop with a
   shorter nd and an extra clause.
 - **C5. Switch,** as sk-13b's: the draft becomes Honest, the proofs move,
   the gate and the regression. `expected` changes where nd shrinks

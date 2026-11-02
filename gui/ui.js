@@ -246,12 +246,31 @@ function whereLong(st) {
   return ` where ${segList(st.nd, "and")} ${st.nd.length > 1 ? "have" : "has"} nonzero length`;
 }
 
-// a conflict that involves an Angle sent with a rounded rotation (not a
-// multiple of 90 degrees): angles that close a cycle in degrees need not
-// close as sent
-function roundedAngle(con, st) {
+// what a conflict's constraints had rounded when sent: an Angle's
+// rotation (not a multiple of 90 degrees), and with "Dimensions as
+// dyadics" a value or fixed coordinate that is not a multiple of 2^-40
+// (each is rounded on its own, so values that agree in decimals, like
+// 0.1 + 0.1 = 0.2, need not agree as sent)
+function rounded(con, st) {
   const cs = [con, ...st.with.map(id => S.sk.cons.find(c => c.id === id))].filter(Boolean);
-  return cs.some(c => c.kind === "angle" && Math.abs(c.value % 90) > 1e-12);
+  const off = x => x !== undefined && !Number.isInteger(x * 2 ** 40);
+  return {
+    angle: cs.some(c => c.kind === "angle" && Math.abs(c.value % 90) > 1e-12),
+    dim: S.opts.dyadic && cs.some(c => c.kind !== "angle" && (off(c.value) || (c.kind === "fix" && (off(c.fx) || off(c.fy))))),
+  };
+}
+
+function roundedText(r) {
+  if (r.angle && r.dim) return " (values were rounded)";
+  if (r.angle) return " (an angle's rotation was rounded)";
+  if (r.dim) return " (a dimension was rounded)";
+  return "";
+}
+
+function roundedTitle(r) {
+  return (r.angle ? ". An Angle is sent as its rotation rounded to a dyadic (or a nearby rational unit vector), so angles that close a cycle exactly in degrees, like a triangle's three, need not close as sent" : "") +
+    (r.dim ? ". With 'Dimensions as dyadics' each value is sent rounded to a multiple of 2^-40 on its own, so values that agree exactly in decimals, like 0.1 + 0.1 = 0.2, need not agree as sent (sent exactly, they cannot certify: Q19)" : "") +
+    (r.angle || r.dim ? "; the conflict is real for what was sent" : "");
 }
 
 // what the solver said about a constraint, in words ("" for kept)
@@ -262,9 +281,9 @@ function statusText(con, num) {
   switch (st.k) {
     case "conflict": {
       const unless = st.nd && st.nd.length ? ` unless ${segList(st.nd, "or")} has length 0` : "";
-      const rounded = roundedAngle(con, st) ? " (an angle's rotation was rounded)" : "";
-      if (!st.with.length) return "cannot hold" + unless + rounded;
-      return (S.cert.ok ? "conflicts with " : "cannot all hold with ") + refs + (unless ? "," + unless : "") + rounded;
+      const r = roundedText(rounded(con, st));
+      if (!st.with.length) return "cannot hold" + unless + r;
+      return (S.cert.ok ? "conflicts with " : "cannot all hold with ") + refs + (unless ? "," + unless : "") + r;
     }
     case "over": return "over-determined" + (refs ? " with " + refs : "");
     case "amber": return "redundant" + whereLong(st) + (S.cert.ok ? ", holds anyway" : "");
@@ -283,10 +302,10 @@ function statusTitle(con, num) {
   const assumes = nd.length ? `. This assumes ${segList(nd, "and")} ${have} nonzero length (where a segment is a point, every direction holds)` + (S.cert.ok ? ", and in the certified drawing " + (nd.length > 1 ? "they do" : "it does") : "") : "";
   switch (st.k) {
     case "conflict":
-      return "Red: it cannot hold together with the constraints listed (its support: drop any one of them and the rest can)" +
+      return "Red: it cannot hold together with the constraints listed" +
         (nd.length ? `, wherever ${segList(nd, "and")} ${have} nonzero length (where a segment is a point, every direction holds)` : "") +
-        ", and the solver leaves it out" +
-        (roundedAngle(con, st) ? ". An Angle is sent as its rotation rounded to a dyadic (or a nearby rational unit vector), so angles that close a cycle exactly in degrees, like a triangle's three, need not close as sent; the conflict is real for what was sent" : "");
+        ", and the solver leaves it out. Without any one of them the solver finds no conflict (a constant combination, or one by directions); the rest may still be impossible for a reason it does not look for" +
+        roundedTitle(rounded(con, st));
     case "over": return "Red: with earlier constraints it fixes more than the variables it uses can carry, so the solver leaves it out";
     case "amber": return "Redundant: every equation follows from earlier constraints" + from + " and every side condition is implied; the solver drops it" + (S.cert.ok ? ", and it holds in the certified drawing" : "") + assumes;
     case "partly": return "Kept: some of its equations follow from earlier constraints" + from + " and are dropped from the system solved" + assumes;

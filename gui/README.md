@@ -45,8 +45,9 @@ Each constraint is numbered, and after a solve it says what the solver
 made of it:
 
 - **conflicts with #a, #b** (red): it cannot hold together with those,
-  its support, and dropping any one of them would remove the conflict.
-  On a refusal it reads **cannot all hold with #a, #b**; with no support
+  its support. Without any one of them the solver finds no conflict
+  (degree 0 or by directions; the rest may still be impossible for a
+  reason it does not look for, lengths for example). On a refusal it reads **cannot all hold with #a, #b**; with no support
   at all, **cannot hold** (a negative length, for example). The solver
   leaves it out and certifies the rest. A conflict among directions adds
   **unless L3 or L5 has length 0**: a segment that is a point is parallel
@@ -86,6 +87,10 @@ Both are in solve_complete's hypotheses and stated in DESIGN.md.
   *Dimensions as dyadics* on (the default), the page sends the nearest
   multiple of 2^-40. An angle's rotation (c, s) need not be a unit vector:
   the constraint fixes the direction, so the angle certified is atan2(s, c).
+  Each value is rounded on its own, so values that agree exactly in
+  decimals need not agree as sent: horizontal distances 0.1, 0.1 and 0.2
+  along a line come back as a conflict, and the page says a dimension was
+  rounded.
 - **The pins are chosen structurally.** v1 holds the free variables at
   their drawn values, choosing which ones by structure and variable order,
   not by conditioning. A horizontal segment with a length is singular if x
