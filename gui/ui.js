@@ -228,30 +228,68 @@ function countStatus(k) {
   return n;
 }
 
+// constraint numbers, "#2, #5"
+function refList(ids, num) {
+  return ids.map(id => "#" + num.get(id)).filter(r => r !== "#undefined").join(", ");
+}
+
+// segment names joined by a word: "L3", "L3 or L5", "L3, L5 or L7"
+function segList(ids, word) {
+  const ns = ids.map(entName);
+  return ns.length < 2 ? ns.join("") : ns.slice(0, -1).join(", ") + " " + word + " " + ns[ns.length - 1];
+}
+
+// the segments a judgment assumes have nonzero length, "where L3 has
+// nonzero length" ("" for none)
+function whereLong(st) {
+  if (!st.nd || !st.nd.length) return "";
+  return ` where ${segList(st.nd, "and")} ${st.nd.length > 1 ? "have" : "has"} nonzero length`;
+}
+
+// a conflict that involves an Angle sent with a rounded rotation (not a
+// multiple of 90 degrees): angles that close a cycle in degrees need not
+// close as sent
+function roundedAngle(con, st) {
+  const cs = [con, ...st.with.map(id => S.sk.cons.find(c => c.id === id))].filter(Boolean);
+  return cs.some(c => c.kind === "angle" && Math.abs(c.value % 90) > 1e-12);
+}
+
 // what the solver said about a constraint, in words ("" for kept)
 function statusText(con, num) {
   const st = S.cert.status.get(con.id);
   if (!st || S.cert.ok === null) return "";
-  const refs = st.with.map(id => "#" + num.get(id)).filter(r => r !== "#undefined").join(", ");
+  const refs = refList(st.with, num);
   switch (st.k) {
-    case "conflict":
-      if (!st.with.length) return "cannot hold";
-      return (S.cert.ok ? "conflicts with " : "cannot all hold with ") + refs;
+    case "conflict": {
+      const unless = st.nd && st.nd.length ? ` unless ${segList(st.nd, "or")} has length 0` : "";
+      const rounded = roundedAngle(con, st) ? " (an angle's rotation was rounded)" : "";
+      if (!st.with.length) return "cannot hold" + unless + rounded;
+      return (S.cert.ok ? "conflicts with " : "cannot all hold with ") + refs + (unless ? "," + unless : "") + rounded;
+    }
     case "over": return "over-determined" + (refs ? " with " + refs : "");
-    case "amber": return "redundant" + (S.cert.ok ? ", holds anyway" : "");
-    case "partly": return "partly implied by earlier ones";
+    case "amber": return "redundant" + whereLong(st) + (S.cert.ok ? ", holds anyway" : "");
+    case "partly": return "partly implied by earlier ones" + whereLong(st);
     default: return "";
   }
 }
 
-function statusTitle(con) {
+function statusTitle(con, num) {
   const st = S.cert.status.get(con.id);
   if (!st || S.cert.ok === null) return "";
+  const nd = st.nd && st.nd.length ? st.nd : [];
+  const have = nd.length > 1 ? "have" : "has";
+  // what its dropped equations follow from, and what that assumes
+  const from = st.from && st.from.length ? ` (${refList(st.from, num)}${st.dir ? ", by directions" : ""})` : st.dir ? " (by directions)" : "";
+  const assumes = nd.length ? `. This assumes ${segList(nd, "and")} ${have} nonzero length (where a segment is a point, every direction holds)` + (S.cert.ok ? ", and in the certified drawing " + (nd.length > 1 ? "they do" : "it does") : "") : "";
   switch (st.k) {
-    case "conflict": return "Red: it cannot hold together with the constraints listed (its support: drop any one of them and the rest can), and the solver leaves it out";
+    case "conflict":
+      return "Red: it cannot hold together with the constraints listed (its support: drop any one of them and the rest can)" +
+        (nd.length ? `, wherever ${segList(nd, "and")} ${have} nonzero length (where a segment is a point, every direction holds)` : "") +
+        ", and the solver leaves it out" +
+        (roundedAngle(con, st) ? ". An Angle is sent as its rotation rounded to a dyadic (or a nearby rational unit vector), so angles that close a cycle exactly in degrees, like a triangle's three, need not close as sent; the conflict is real for what was sent" : "");
     case "over": return "Red: with earlier constraints it fixes more than the variables it uses can carry, so the solver leaves it out";
-    case "amber": return "Redundant: every equation follows from earlier constraints and every side condition is implied; the solver drops it" + (S.cert.ok ? ", and it holds in the certified drawing" : "");
-    case "partly": return "Kept: some of its equations follow from earlier constraints and are dropped from the system solved";
+    case "amber": return "Redundant: every equation follows from earlier constraints" + from + " and every side condition is implied; the solver drops it" + (S.cert.ok ? ", and it holds in the certified drawing" : "") + assumes;
+    case "partly": return "Kept: some of its equations follow from earlier constraints" + from + " and are dropped from the system solved" + assumes;
     default: return "";
   }
 }
@@ -923,7 +961,7 @@ function renderPanels() {
     const v = k.value ? `<input data-val="${con.id}" value="${con.value}">` : "";
     const fx = con.kind === "fix" ? ` (${nice(con.fx)}, ${nice(con.fy)})` : "";
     const say = statusText(con, num);
-    return `<li data-con="${con.id}" class="${cl} ${S.selCon === con.id ? "sel" : ""}" title="${escapeHtml(statusTitle(con))}">
+    return `<li data-con="${con.id}" class="${cl} ${S.selCon === con.id ? "sel" : ""}" title="${escapeHtml(statusTitle(con, num))}">
       <span class="no">#${i + 1}</span><span class="nm">${k.label} ${con.ents.map(entName).join(" ")}${fx}${say ? `<em class="st">${escapeHtml(say)}</em>` : ""}</span>${v}<button class="x" data-del="${con.id}" title="Delete">×</button></li>`;
   }).join("");
   for (const li of ul.querySelectorAll("[data-con]")) {

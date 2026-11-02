@@ -1771,6 +1771,39 @@ above and a rename (the sk-13a verdict `final` is now `checks`, so that
     decision 4); an Angle cycle (kept, its equation dropped).
   - `expected` is updated where answers change, and only there.
 
+**As built 2026-11-02: B8, without slowsketches 8 and 9.**
+- gui/solve_cli.bend prints each drop as its equation and its nd
+  (`A/30:31:24:23:4`), a conflict's nd after its support (`C/0/5,2`),
+  each segment once (nd lists one per use; the meaning is the same), and
+  a `why` line: each drop's reason, L and the equations of its constant
+  combination (nonzero multipliers only), or D and the equations its
+  derivation's premises are (the facts' positions mapped back as
+  SV.dfacts picks them). serve.py parses both.
+- The page: "conflicts with #1, unless L2 or L5 has length 0";
+  "redundant where L4 and L5 have nonzero length, holds anyway" (and
+  "partly implied ... where"); the hover names the constraints a dropped
+  equation follows from, "by directions" for a derivation, and that the
+  certified drawing has the nd segments nonzero; a conflict involving an
+  Angle that is not a multiple of 90 degrees says its rotation was
+  rounded.
+- Regression: proto/sketches/b8.mjs makes the small sketches and the
+  audit's A, B and V; every answer is as planned (A amber with nd
+  {h, s1}, B amber with nd {h, s1}, V red, unless h has length 0). `expected` changed
+  only at vertical-twice and its raw input, by their nd. REGRESS: PASS.
+- Found:
+  - nd is sound but not minimal: the closure's derivations pass through
+    each component's root, so A's nd is {h, s1} where {s1} suffices, and
+    four right angles name all four sides where two suffice. Shortening
+    them changes proven derivations; not done here.
+  - h-par-v and audit-v are red and not certified: the page relaxes the
+    drawing toward the red constraints too, and a red merge (h-par-v's
+    Vertical) holds in the drawing itself. Relaxing again without the red
+    constraints certifies audit-v; h-par-v needs the merge classes to
+    leave the red one out, a change to the page's model.
+- Not done: slowsketches 6 to 9 are not on disk any more (the directory
+  is gone), so 8 and 9 are not in the regression and the pass's cost on
+  6 and 7 is not measured; they need exporting again.
+
 ### B9. Audit and sign-off
 - An independent audit of the proven statements against this file. Gate
   and regression green. Danielle signs off.

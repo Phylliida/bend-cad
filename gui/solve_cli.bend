@@ -15,16 +15,23 @@
 #      per variable
 # Output lines: ok, red (constraint positions), pins (variables), cls (each
 # constraint's class, by position: K kept, A amber, each with "/" and its
-# dropped equations' positions if any; O/j/s/w over, with its equation j,
-# set s of equation positions and variables w; C/s conflict, with its
-# support s of constraint positions), own (each equation's constraint), gc
-# and gr (the certified box's centers and radii as dyadics).
+# dropped equations if any, each its position followed by ":s" for each
+# segment s (entity id, each once) its reason needs to have nonzero length;
+# O/j/s/w over, with its equation j, set s of equation positions and
+# variables w; C/s conflict, with its support s of constraint positions,
+# and "/nd" when it conflicts only where the segments nd have nonzero
+# length), own (each equation's constraint), why (by position: "-" when
+# nothing is dropped, else each drop's reason, comma separated: L and the
+# equations of its constant combination, or D and the equations its
+# derivation's premises are, each once, dot separated), gc and gr (the
+# certified box's centers and radii as dyadics).
 
 import Base
 import ../spec/num.bend as S
 import ../spec/ring.bend as E
 import ../spec/sketch.bend as SK
 import ../spec/solve.bend as SV
+import ../spec/dir.bend as DR
 import ../lib/solve.bend as SO
 import ../lib/fast.bend as FS
 import ../proto/block.bend as B
@@ -543,9 +550,57 @@ def csl(xs: List<&2, Nat>) -> String:
     case Con{h, t}:
       Nat.show(h) ++ csl.t(t)
 
-# the dropped equations, if any
-def dl(xs: List<&2, Nat>) -> String:
+def nub.pick(b: Bool, h: Nat, rest: List<&2, Nat>) -> List<&2, Nat>:
+  match b:
+    case True{}:
+      rest
+    case False{}:
+      Con{h, rest}
+
+def nub.go(xs: List<&2, Nat>, +seen: List<&2, Nat>) -> List<&2, Nat>:
   match xs:
+    case Nil{}:
+      []
+    case Con{+h, t}:
+      nub.pick(SV.mem(h, seen), h, nub.go(t, Con{h, seen}))
+
+# xs with each number once, at its first place (an nd lists a segment once
+# for each use; it means the same)
+def nub(xs: List<&2, Nat>) -> List<&2, Nat>:
+  nub.go(xs, [])
+
+# segments, each after ":"
+def ndl(xs: List<&2, Nat>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case Con{h, t}:
+      ":" ++ Nat.show(h) ++ ndl(t)
+
+# a dropped equation and its nd
+def drop1(d: SV.Drop) -> String:
+  match d:
+    case SV.Drop{j, nd, w}:
+      Nat.show(j) ++ ndl(nub(nd))
+
+def dl.t(ds: List<&2, SV.Drop>) -> String:
+  match ds:
+    case Nil{}:
+      ""
+    case Con{h, t}:
+      "," ++ drop1(h) ++ dl.t(t)
+
+# the dropped equations, if any
+def dl(ds: List<&2, SV.Drop>) -> String:
+  match ds:
+    case Nil{}:
+      ""
+    case Con{h, t}:
+      "/" ++ drop1(h) ++ dl.t(t)
+
+# a conflict's nd, if any
+def cnd(nd: List<&2, Nat>) -> String:
+  match nd:
     case Nil{}:
       ""
     case Con{h, t}:
@@ -554,13 +609,13 @@ def dl(xs: List<&2, Nat>) -> String:
 def cshow(k: SV.Class) -> String:
   match k:
     case SV.Kept{ds}:
-      "K" ++ dl(SV.drops(ds))
+      "K" ++ dl(ds)
     case SV.Amber{ds, rs}:
-      "A" ++ dl(SV.drops(ds))
+      "A" ++ dl(ds)
     case SV.Over{j, s, w}:
       "O/" ++ Nat.show(j) ++ "/" ++ csl(s) ++ "/" ++ csl(w)
-    case SV.Conflict{s, cns}:
-      "C/" ++ csl(s)
+    case SV.Conflict{s, nd}:
+      "C/" ++ csl(s) ++ cnd(nub(nd))
 
 def clsshow(cls: List<&2, SV.Class>) -> String:
   match cls:
@@ -569,10 +624,156 @@ def clsshow(cls: List<&2, SV.Class>) -> String:
     case Con{h, t}:
       " " ++ cshow(h) ++ clsshow(t)
 
+# Reasons
+# -------
+
+# a list of numbers, dot separated
+def dsl.t(xs: List<&2, Nat>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case Con{h, t}:
+      "." ++ Nat.show(h) ++ dsl.t(t)
+
+def dsl(xs: List<&2, Nat>) -> String:
+  match xs:
+    case Nil{}:
+      ""
+    case Con{h, t}:
+      Nat.show(h) ++ dsl.t(t)
+
+def mpos.pick(q: S.Q, i: Nat, rest: List<&2, Nat>) -> List<&2, Nat>:
+  match q:
+    case S.Q{S.Z0{}, d}:
+      rest
+    case S.Q{n, d}:
+      Con{i, rest}
+
+# the equations of a constant combination (those with a nonzero
+# multiplier)
+def mpos(ms: List<&2, SV.Mul>) -> List<&2, Nat>:
+  match ms:
+    case Nil{}:
+      []
+    case Con{SV.Mul{i, q}, t}:
+      mpos.pick(q, i, mpos(t))
+
+# the fact positions a derivation reads, its premises
+def prems(d: DR.Der) -> List<&2, Nat>:
+  match d:
+    case DR.DZero{}:
+      []
+    case DR.DPrem{i}:
+      [i]
+    case DR.DKAdd{l, d1, d2}:
+      SV.cat(prems(d1), prems(d2))
+    case DR.DBack{d1}:
+      prems(d1)
+    case DR.DLine{d1, d2, re}:
+      SV.cat(prems(d1), prems(d2))
+    case DR.DPPrem{i}:
+      [i]
+    case DR.DSelf{a}:
+      []
+    case DR.DPLin{m1, d1, m2, d2}:
+      SV.cat(prems(d1), prems(d2))
+    case DR.DKnown{d1, dr, di}:
+      SV.cat(prems(d1), SV.cat(prems(dr), prems(di)))
+    case DR.DTurn{d1, g, b}:
+      prems(d1)
+    case DR.DThrough{d1, d2, g, b}:
+      SV.cat(prems(d1), prems(d2))
+    case DR.DFrame{d1, x}:
+      prems(d1)
+    case DR.DVoid{dr, di, a, x}:
+      SV.cat(prems(dr), prems(di))
+
+def fpos.pick(b: Bool, k: Nat, rest: List<&2, Nat>) -> List<&2, Nat>:
+  match b:
+    case True{}:
+      Con{k, rest}
+    case False{}:
+      rest
+
+# the equations from position k whose constraint is in cs (SV.facts.go's
+# choice)
+def fpos.go(own: List<&2, Nat>, +cs: List<&2, Nat>, +k: Nat) -> List<&2, Nat>:
+  match own:
+    case Nil{}:
+      []
+    case Con{o, t}:
+      fpos.pick(SV.mem(o, cs), k, fpos.go(t, cs, 1n+k))
+
+# c's own equations from position k before j and not in d (SV.ofacts.go's)
+def opos.go(own: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +j: Nat, +k: Nat) -> List<&2, Nat>:
+  match own:
+    case Nil{}:
+      []
+    case Con{o, t}:
+      fpos.pick(SV.band(SV.lt(k, j), SV.band(SV.eq(o, c), SV.bnot(SV.mem(k, d)))), k, opos.go(t, c, d, j, 1n+k))
+
+# the equations at fact positions ps of a facts list made from pos
+def srcs(ps: List<&2, Nat>, +pos: List<&2, Nat>) -> List<&2, Nat>:
+  match ps:
+    case Nil{}:
+      []
+    case Con{i, t}:
+      Con{SV.nth(pos, i), srcs(t, pos)}
+
+# the reason of c's drop of equation j, d its dropped equations: the
+# equations it reads (SV.dfacts's order for a derivation)
+def why1.of(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +j: Nat, w: SV.Why) -> String:
+  match w:
+    case SV.WLin{ms}:
+      "L" ++ dsl(mpos(ms))
+    case SV.WDer{dv}:
+      "D" ++ dsl(nub(srcs(prems(dv), SV.cat(fpos.go(SV.owners(sk), SV.kept_before(sk, red, c), 0n), opos.go(SV.owners(sk), c, d, j, 0n)))))
+
+def why1(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, dr: SV.Drop) -> String:
+  match dr:
+    case SV.Drop{j, nd, w}:
+      why1.of(sk, red, c, d, j, w)
+
+def whys.t(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, ds: List<&2, SV.Drop>) -> String:
+  match ds:
+    case Nil{}:
+      ""
+    case Con{h, t}:
+      "," ++ why1(sk, red, c, d, h) ++ whys.t(sk, red, c, d, t)
+
+def whys.go(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, ds: List<&2, SV.Drop>) -> String:
+  match ds:
+    case Nil{}:
+      "-"
+    case Con{h, t}:
+      why1(sk, red, c, d, h) ++ whys.t(sk, red, c, d, t)
+
+def whys(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +ds: List<&2, SV.Drop>) -> String:
+  whys.go(sk, red, c, SV.drops(ds), ds)
+
+def wshow(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, k: SV.Class) -> String:
+  match k:
+    case SV.Kept{+ds}:
+      whys(sk, red, c, ds)
+    case SV.Amber{+ds, rs}:
+      whys(sk, red, c, ds)
+    case SV.Over{j, s, w}:
+      "-"
+    case SV.Conflict{s, nd}:
+      "-"
+
+def wsshow(+sk: SK.Sketch, +red: List<&2, Nat>, cls: List<&2, SV.Class>, +c: Nat) -> String:
+  match cls:
+    case Nil{}:
+      ""
+    case Con{h, t}:
+      " " ++ wshow(sk, red, c, h) ++ wsshow(sk, red, t, 1n+c)
+
 def show(+sk: SK.Sketch, o: SO.Out) -> String:
   match o:
     case SO.Out{ok, +cls, pins, gc, gr, plan}:
-      "ok " ++ Bool.show(ok) ++ "\nred" ++ nshow(SV.reds(cls)) ++ "\npins" ++ nshow(pins) ++ "\ncls" ++ clsshow(cls) ++ "\nown" ++ nshow(SV.owners(sk)) ++ "\ngc" ++ dsshow(gc) ++ "\ngr" ++ dsshow(gr)
+      +red = SV.reds(cls)
+      "ok " ++ Bool.show(ok) ++ "\nred" ++ nshow(red) ++ "\npins" ++ nshow(pins) ++ "\ncls" ++ clsshow(cls) ++ "\nown" ++ nshow(SV.owners(sk)) ++ "\nwhy" ++ wsshow(sk, red, cls, 0n) ++ "\ngc" ++ dsshow(gc) ++ "\ngr" ++ dsshow(gr)
 
 # The run
 # -------

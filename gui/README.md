@@ -48,7 +48,10 @@ made of it:
   its support, and dropping any one of them would remove the conflict.
   On a refusal it reads **cannot all hold with #a, #b**; with no support
   at all, **cannot hold** (a negative length, for example). The solver
-  leaves it out and certifies the rest.
+  leaves it out and certifies the rest. A conflict among directions adds
+  **unless L3 or L5 has length 0**: a segment that is a point is parallel
+  to everything, so the conflict holds only where those segments are not
+  points.
 - **over-determined** (red): with the earlier constraints named it fixes
   more than the variables it uses can carry.
 - **redundant** (amber): every equation follows from earlier constraints
@@ -56,10 +59,22 @@ made of it:
   the sketch certifies it **holds anyway**. An exact repeat is redundant.
 - **partly implied by earlier ones**: kept, with some of its equations
   dropped because earlier constraints give them.
+- Either adds **where L3 has nonzero length** when an equation follows by
+  directions only where those segments are not points. When the sketch
+  certifies, the certified drawing has them nonzero (the verdict checks
+  it).
 
-Hover a constraint for the longer reading. Red constraints are drawn red,
-redundant ones amber; points drawn hollow have a coordinate the solver held
-at its drawn value.
+Hover a constraint for the longer reading: for a dropped equation, the
+constraints it follows from, and whether it follows by directions.
+
+An Angle is sent as its rotation rounded to a dyadic, so angles that close
+a cycle exactly in degrees (a triangle's three angles, or 60, 60 and 240)
+need not close as sent. The last one is then honestly red, and the page
+says the angle's rotation was rounded. Multiples of 90 degrees are sent
+exactly.
+
+Red constraints are drawn red, redundant ones amber; points drawn hollow
+have a coordinate the solver held at its drawn value.
 
 ## Two limits of the v1 solver this makes visible
 
@@ -80,10 +95,15 @@ Both are in solve_complete's hypotheses and stated in DESIGN.md.
   behavior.
 
 Redundancy and conflicts are found exactly for consequences that are
-constant combinations of the equations (degree 0). A dependency that needs
-more, like a direction made vertical twice through a chain of
-perpendiculars and parallels (proto/sketches: vertical-twice), is still
-refused; that is sk-13b.
+constant combinations of the equations (degree 0), and since sk-13b for
+those among directions (Parallel, Perpendicular, an Angle with a constant
+rotation, OnLine, and the horizontals and verticals they reach), each with
+the segments it needs to have nonzero length. A direction made vertical
+twice through a chain of perpendiculars and parallels (proto/sketches:
+vertical-twice) is now amber. One order is still refused: a Parallel on a
+segment that a later Coincident collapses (the Parallel then holds
+everywhere, and the system is singular; drawn the other way round, the
+Parallel is amber).
 
 ## Files
 

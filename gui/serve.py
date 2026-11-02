@@ -11,9 +11,13 @@ The page sends the sketch as JSON:
   g0:   [float]               the drawn value of each variable
 and gets back {ok, red, pins, cls, own, gc, gr, ms}: red as constraint
 positions; cls one class per constraint position, {k: "kept" | "amber" |
-"over" | "conflict", drops: equation positions, j, s, w for over (its
-equation, its set of equations, its variables), s for conflict (its
-support, constraint positions)}; own each equation's constraint position.
+"over" | "conflict", drops: equation positions, nd: for each drop the
+segments (solver entity ids) its reason needs to have nonzero length, why:
+for each drop its reason, {by: "L" (a constant combination) | "D" (a
+derivation by directions), eqs: the equations it reads}, j, s, w for over
+(its equation, its set of equations, its variables), s and nd for conflict
+(its support, constraint positions, and the segments it needs to have
+nonzero length)}; own each equation's constraint position.
 """
 import json, os, subprocess, sys, tempfile, time
 from fractions import Fraction
@@ -76,17 +80,29 @@ def nums(t):
 
 
 def parse_cls(tok):
-    """one class token of solve_cli's cls line: K, K/d, A, A/d, O/j/s/w, C/s"""
+    """one class token of solve_cli's cls line: K, K/d, A, A/d (d drops,
+    comma separated, each j:s:s.. with its nd), O/j/s/w, C/s, C/s/nd"""
     f = tok.split("/")
     if f[0] in ("K", "A"):
-        return {"k": "kept" if f[0] == "K" else "amber", "drops": nums(f[1]) if len(f) > 1 else []}
+        ds = [d.split(":") for d in f[1].split(",")] if len(f) > 1 else []
+        return {"k": "kept" if f[0] == "K" else "amber", "drops": [int(d[0]) for d in ds],
+                "nd": [[int(x) for x in d[1:]] for d in ds], "why": []}
     if f[0] == "O":
         return {"k": "over", "drops": [], "j": int(f[1]), "s": nums(f[2]), "w": nums(f[3])}
-    return {"k": "conflict", "drops": [], "s": nums(f[1])}
+    return {"k": "conflict", "drops": [], "s": nums(f[1]), "nd": nums(f[2]) if len(f) > 2 else []}
+
+
+def parse_why(tok):
+    """one token of solve_cli's why line: -, or each drop's reason, comma
+    separated, L or D and its equations, dot separated"""
+    if tok == "-":
+        return []
+    return [{"by": w[0], "eqs": [int(x) for x in w[1:].split(".") if x != ""]} for w in tok.split(",")]
 
 
 def parse_out(text):
     res = {"ok": False, "red": [], "pins": [], "cls": [], "own": [], "gc": [], "gr": []}
+    whys = []
     for line in text.splitlines():
         parts = line.split()
         if not parts:
@@ -98,8 +114,13 @@ def parse_out(text):
             res[tag] = [int(t) for t in rest]
         elif tag == "cls":
             res["cls"] = [parse_cls(t) for t in rest]
+        elif tag == "why":
+            whys = [parse_why(t) for t in rest]
         elif tag in ("gc", "gr"):
             res[tag] = [undyadic(t) for t in rest]
+    for k, w in zip(res["cls"], whys):
+        if "why" in k:
+            k["why"] = w
     return res
 
 

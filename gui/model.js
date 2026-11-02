@@ -271,7 +271,7 @@ export function toSolver(sk, opts = { dyadic: true }) {
         cons.push([dr, k.code, ...E, ...(k.value ? [qval(v, dy)] : [])]); owner.push(c.id);
     }
   }
-  return { req: { vars, ents, cons, g0 }, vix, owner };
+  return { req: { vars, ents, cons, g0 }, vix, owner, eids: sk.ents.map(e => e.id) };
 }
 
 // write a certified answer back: every variable gets its box center (the
@@ -304,10 +304,15 @@ export function applyAnswer(sk, map, ans) {
 //             every side condition is implied
 //   partly:   kept, some of its equations follow from earlier ones
 //   kept:     kept
+// and, for conflict, amber and partly, nd: the segments (entity ids) it
+// assumes have nonzero length; for amber and partly, from: the other
+// constraints its dropped equations follow from, and dir: whether one of
+// them follows by directions
 export function status(map, ans) {
   const out = new Map();
   const cls = ans.cls || [], own = ans.own || [];
   const ids = r => map.owner[r];
+  const ent = i => (map.eids || [])[i];
   const per = new Map();
   cls.forEach((k, r) => {
     const id = ids(r);
@@ -317,12 +322,15 @@ export function status(map, ans) {
   });
   for (const [id, ks] of per) {
     const others = rs => [...new Set(rs.map(ids).filter(x => x !== undefined && x !== id))];
+    const segs = ns => [...new Set(ns.map(ent).filter(x => x !== undefined))].sort((a, b) => a - b);
     const conf = ks.filter(k => k.k === "conflict");
     const over = ks.filter(k => k.k === "over");
-    if (conf.length) out.set(id, { k: "conflict", with: others(conf.flatMap(k => k.s)) });
+    const whys = ks.flatMap(k => k.why || []);
+    const dropped = { nd: segs(ks.flatMap(k => (k.nd || []).flat())), from: others(whys.flatMap(w => w.eqs.map(e => own[e]))).sort((a, b) => a - b), dir: whys.some(w => w.by === "D") };
+    if (conf.length) out.set(id, { k: "conflict", with: others(conf.flatMap(k => k.s)), nd: segs(conf.flatMap(k => k.nd || [])) });
     else if (over.length) out.set(id, { k: "over", with: others(over.flatMap(k => k.s.map(e => own[e]))) });
-    else if (ks.every(k => k.k === "amber")) out.set(id, { k: "amber", with: [] });
-    else if (ks.some(k => k.k === "amber" || k.drops.length)) out.set(id, { k: "partly", with: [] });
+    else if (ks.every(k => k.k === "amber")) out.set(id, { k: "amber", with: [], ...dropped });
+    else if (ks.some(k => k.k === "amber" || k.drops.length)) out.set(id, { k: "partly", with: [], ...dropped });
     else out.set(id, { k: "kept", with: [] });
   }
   return out;

@@ -1,23 +1,30 @@
 # What gui/solve_cli answers on each sketch here (tools/regress.sh): the
 # name, a time limit in seconds, then the answer's ok, red, pins and cls
-# lines joined by "; " (the box is not compared). A .raw name is the sketch
-# with the repeats left out of its plain input (the page sent that before
-# S8; it sends every constraint now). Since sk-13a's switch (PLAN-sk13a S5)
-# the repeats are amber and the raw sketches certify like the others.
-# Since sk-13b's switch so does vertical-twice: the repeated vertical's
-# equation is dropped by directions, so it is amber (two positions on in
-# the raw sketch), where sk-13a refused it as Over. The rest, from hchain
-# on, are PLAN-sk13a S8's small sketches (s8.mjs); angle-lines is
-# Danielle's slowsketches sketch(5), refused (honestly: as drawn, its
-# angle's side condition fails) after every precision.
+# lines joined by "; " (the box and the reasons are not compared; a drop's
+# and a conflict's nd are, in cls). A .raw name is the sketch with the
+# repeats left out of its plain input (the page sent that before S8; it
+# sends every constraint now). Since sk-13a's switch (PLAN-sk13a S5) the
+# repeats are amber and the raw sketches certify like the others. Since
+# sk-13b's switch so does vertical-twice: the repeated vertical's equation
+# is dropped by directions, where segments 31, 24, 23 and 4 have nonzero
+# length, so it is amber (two positions on in the raw sketch), where sk-13a
+# refused it as Over. From hchain to cancel are PLAN-sk13a S8's small
+# sketches (s8.mjs); angle-lines is Danielle's slowsketches sketch(5),
+# refused (honestly: as drawn, its angle's side condition fails) after
+# every precision. From right-angles on are PLAN-sk13b B8's (b8.mjs; the
+# audit's sketches A, B and V last). Two of them are red and not
+# certified: in h-par-v the page's drawing keeps the red Vertical (a merge,
+# so the drawing has it), and the Parallel cannot be solved for with the
+# pins chosen; in audit-v the relaxation pulls toward the red VDistance.
+# par-collapse stays refused (PLAN-sk13b decision 4).
 zeros                  20  ok True; red; pins 0 1 2 3 4 5 6 7 8 9 10; cls K K K K K K K K K K K K K K K K K
 base                   20  ok True; red; pins 0 1 2; cls K K K K K K K K K K K K K K K
 oncircle-thrice        20  ok True; red; pins 0 1 2; cls K K K K K K K K K K K K K K K
 oncircle-thrice.raw    30  ok True; red; pins 0 1 2; cls K K K K K K K K K K K K A/13 K K K A/17
 oncircle-pairs         20  ok True; red; pins 0 1 2 3; cls K K K K K K K K K K K K K K K K K K K K K K K K K K K K
 oncircle-pairs.raw     30  ok True; red; pins 0 1 2 3; cls K K K K K K K K K K K K K K K K K K K K K K K A/24 K A/26 K K K K
-vertical-twice         90  ok True; red; pins; cls K K K K K K K K K K K K K K K K K K K K K K K K K K K K K A/30 K K K
-vertical-twice.raw     90  ok True; red; pins; cls K K K K K K K K K K K K K K K K K K K K K K K A/24 K A/26 K K K K K A/32 K K K
+vertical-twice         90  ok True; red; pins; cls K K K K K K K K K K K K K K K K K K K K K K K K K K K K K A/30:31:24:23:4 K K K
+vertical-twice.raw     90  ok True; red; pins; cls K K K K K K K K K K K K K K K K K K K K K K K A/24 K A/26 K K K K K A/32:31:24:23:4 K K K
 hchain                 20  ok True; red; pins 0 1; cls K K K K A/4
 hchain-bad             20  ok True; red 4; pins 0 1; cls K K K K C/2,3
 midpoint-part          20  ok True; red; pins 0 1 2; cls K K K/3
@@ -31,3 +38,15 @@ coincident-twice.raw   20  ok True; red; pins 0 1; cls K A/3,2
 vch-support            20  ok True; red 2; pins 0 1; cls K K/1 C/1
 cancel                 20  ok True; red 0; pins 0 1 2 3 4; cls C/
 angle-lines            60  ok False; red; pins 0 1 2 3 4 5 6 7 8 9 10; cls K K K K
+right-angles           20  ok True; red; pins 0 1 2 3 4; cls K K K A/3:4:7:5:6
+parallels-closed       20  ok True; red; pins 0 1 2 3 4 5 6 7 8 9; cls K K A/2:2:8:5
+par-perp               20  ok True; red 1; pins 0 1 2 3 4 5 6; cls K C/0/5,2
+h-par-v                20  ok False; red 2; pins 0 1 2 3 4 6; cls K K C/0,1/5,4
+online-par             20  ok True; red; pins 0 1 2 3 4 6; cls K K A/2
+collapse-par           20  ok True; red; pins 0 1 2 3 4 5; cls K A/2
+par-collapse           20  ok False; red; pins 0 1 2 3 4; cls K K
+angle-cycle            30  ok True; red; pins 0 1 2 3 4 5 6 7 8 9; cls K K K/2:2:8:5
+angle-rounded          30  ok True; red 2; pins 0 1 2 3 4 5 6 7 8 9; cls K K C/0,1
+audit-a                20  ok True; red; pins 0 1 2 3 4 5 6 7; cls K K A/2:5:6
+audit-b                20  ok True; red; pins 0 1 2 3 4 5 6; cls K K K A/3:5:6
+audit-v                20  ok False; red 2; pins 0 1 2 3 4 6; cls K K C/0,1/4
