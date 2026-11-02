@@ -75,9 +75,13 @@
 #   lib/lrespf.bend), stops each check at its first item and keeps K
 #   squared's lean rows across rounds, and returns exactly what the run as
 #   designed (DC.dclose_ref) returns (lib/dfastpf.bend, DFP.dclose_eq).
-# - The restated laws' content, over any honest classification, as
+# - The facts of an honest classification hold (lib/dfactpf.bend, B6):
+#   wherever the system solved holds, every fact of a kept constraint does
+#   (DFC.facts_hold), so solve_drop's content holds over any honest
+#   classification (b6_drop).
+# - The other restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
-#   hypothesis, so nothing about the laws is proven here. Their
+#   hypothesis, so nothing about those laws is proven here. Their
 #   solver-level texts are tools/drafts/roadmap13b.draft.
 
 import Base
@@ -140,6 +144,7 @@ import ../lib/cwpf.bend as CWP
 import ../lib/dcwpf.bend as DCW
 import ../lib/dpasspf.bend as DPP
 import ../lib/passpf.bend as PPF
+import ../lib/dfactpf.bend as DFC
 import ../lib/solve.bend as SOL
 import ../lib/wfdec.bend as WFD
 import ../lib/pass.bend as PAS
@@ -219,7 +224,7 @@ def t_dnd() -> {SS.dnd_at(cls(), 5n) == [12n] : List<&2, Nat>}:
 def t_ndh() -> {DR.ndh(es(), [10n]) == E.QMul{DR.norm2(es(), 10n), E.QCst{DR.qo()}} : E.QExpr}:
   {==}
 
-# The restated laws, as statements only
+# The restated laws (solve_drop proven, the others statements only)
 # -------------------------------------
 
 def stmt_pick(b: Bool, P: Type) -> Type:
@@ -233,10 +238,11 @@ def stmt_absurd(P: Type, e: {False{} == True{} : Bool}) -> P:
   %e : stmt_pick(_, P)
   Unit{}
 
-# solve_drop: wherever the solved equations hold and drop j's nd segments
-# have nonzero length, equation j holds
-def stmt_drop(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +n: Nat, cov: {BX.Sketch.within(sk, n) == True{} : Bool}, +cls: List<&2, SS.Class>, h: DH.Honest(sk, cls), +x: M.Vec(~F), hz: SK.Zeros(~F, x, SS.solved(sk, SS.reds(cls), SS.dropped(cls))), +j: Nat, hj: {SS.mem(j, SS.dropped(cls)) == True{} : Bool}, hl: DR.Longs(~F, x, SS.ents(sk), SS.dnd_at(cls, j)), bot: {False{} == True{} : Bool}) -> SK.Zeros(~F, x, [SS.eqat(SK.Sketch.eqs(sk), j)]):
-  stmt_absurd(SK.Zeros(~F, x, [SS.eqat(SK.Sketch.eqs(sk), j)]), bot)
+# solve_drop, proven (B6, lib/dfactpf.bend DFC.drop_law): for an honest classification,
+# wherever the solved equations hold and drop j's nd segments have nonzero
+# length, equation j holds
+def b6_drop(~F: O.OField, +sk: SK.Sketch, +cls: List<&2, SS.Class>, h: DH.Honest(sk, cls), +x: M.Vec(~F), hz: SK.Zeros(~F, x, SS.solved(sk, SS.reds(cls), SS.dropped(cls))), +j: Nat, hj: {SS.mem(j, SS.dropped(cls)) == True{} : Bool}, hl: DR.Longs(~F, x, SS.ents(sk), SS.dnd_at(cls, j))) -> SK.Zeros(~F, x, [SS.eqat(SK.Sketch.eqs(sk), j)]):
+  DFC.drop_law(~F, sk, cls, h, x, hz, j, hj, hl)
 
 # solve_amber: deleting every amber constraint changes no solution at
 # which the amber drops' nd segments have nonzero length

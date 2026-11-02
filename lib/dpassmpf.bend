@@ -135,24 +135,24 @@ def nmem_ge(kb: List<&2, Nat>, +o: Nat, +c: Nat, +hb: {SV.below(kb, c) == True{}
     case Con{+h, +t}:
       nmg.c(SV.eq(o, h), o, h, t, c, {==}, LI.band_l(SV.lt(h, c), SV.below(t, c), hb), ho, nmem_ge(t, o, c, LI.band_r(SV.lt(h, c), SV.below(t, c), hb), ho))
 
-def FF(+e: E.QExpr, +sk: SK.Sketch, +o: Nat, +j: Nat) -> DR.Fact:
-  DR.Fact{e, SV.fnd.pick(False{}, Nil{}, j), SV.dstat_of(SV.ents(sk), SV.kind_at(sk, o))}
+def FF(+e: E.QExpr, +sk: SK.Sketch, +cls: List<&2, SV.Class>, +w: Bool, +o: Nat, +j: Nat) -> DR.Fact:
+  DR.Fact{e, SV.fnd.pick(w, cls, j), SV.dstat_of(SV.ents(sk), SV.kind_at(sk, o))}
 
 # no owner from j before c: none of kb's facts from j
-def facts_nil(es: List<&2, E.QExpr>, own_j: List<&2, Nat>, +own: List<&2, Nat>, +kb: List<&2, Nat>, +sk: SK.Sketch, +c: Nat, +j: Nat,
+def facts_nil(es: List<&2, E.QExpr>, own_j: List<&2, Nat>, +own: List<&2, Nat>, +kb: List<&2, Nat>, +sk: SK.Sketch, +cls: List<&2, SV.Class>, +w: Bool, +c: Nat, +j: Nat,
   +ho: {OW.ndrop(j, own) == own_j : List<&2, Nat>}, +hl: {SV.len(own_j) == SV.neqs(es) : Nat}, +hg: {OW.geall(own_j, c) == True{} : Bool}, +hb: {SV.below(kb, c) == True{} : Bool})
-  -> {SV.facts.go(es, own, kb, sk, Nil{}, False{}, j) == Nil{} : List<&2, DR.Fact>}:
+  -> {SV.facts.go(es, own, kb, sk, cls, w, j) == Nil{} : List<&2, DR.Fact>}:
   match es own_j:
     case Nil{} Nil{}:
       {==}
     case Nil{} Con{+o, +ot}:
-      absurd({SV.facts.go(Nil{}, own, kb, sk, Nil{}, False{}, j) == Nil{} : List<&2, DR.Fact>}, SP.len_nc(o, ot, hl))
+      absurd({SV.facts.go(Nil{}, own, kb, sk, cls, w, j) == Nil{} : List<&2, DR.Fact>}, SP.len_nc(o, ot, hl))
     case Con{+e, +t} Nil{}:
-      absurd({SV.facts.go(Con{e, t}, own, kb, sk, Nil{}, False{}, j) == Nil{} : List<&2, DR.Fact>}, SP.len_cn(e, t, hl))
+      absurd({SV.facts.go(Con{e, t}, own, kb, sk, cls, w, j) == Nil{} : List<&2, DR.Fact>}, SP.len_cn(e, t, hl))
     case Con{+e, +t} Con{+o, +ot}:
-      %Equal.sym(Nat, SV.nth(own, j), o, OW.nth_of(own, j, o, ot, ho)) : {SV.facts.pick(SV.mem(_, kb), FF(e, sk, _, j), SV.facts.go(t, own, kb, sk, Nil{}, False{}, 1n+j)) == Nil{} : List<&2, DR.Fact>}
-      %Equal.sym(Bool, SV.mem(o, kb), False{}, nmem_ge(kb, o, c, hb, OW.ge_head(o, c, ot, hg))) : {SV.facts.pick(_, FF(e, sk, o, j), SV.facts.go(t, own, kb, sk, Nil{}, False{}, 1n+j)) == Nil{} : List<&2, DR.Fact>}
-      facts_nil(t, ot, own, kb, sk, c, 1n+j, OW.ndrop_step(j, own, o, ot, ho), LN.succ_inj(SV.len(ot), SV.neqs(t), hl), OW.ge_tail(o, c, ot, hg), hb)
+      %Equal.sym(Nat, SV.nth(own, j), o, OW.nth_of(own, j, o, ot, ho)) : {SV.facts.pick(SV.mem(_, kb), FF(e, sk, cls, w, _, j), SV.facts.go(t, own, kb, sk, cls, w, 1n+j)) == Nil{} : List<&2, DR.Fact>}
+      %Equal.sym(Bool, SV.mem(o, kb), False{}, nmem_ge(kb, o, c, hb, OW.ge_head(o, c, ot, hg))) : {SV.facts.pick(_, FF(e, sk, cls, w, o, j), SV.facts.go(t, own, kb, sk, cls, w, 1n+j)) == Nil{} : List<&2, DR.Fact>}
+      facts_nil(t, ot, own, kb, sk, cls, w, c, 1n+j, OW.ndrop_step(j, own, o, ot, ho), LN.succ_inj(SV.len(ot), SV.neqs(t), hl), OW.ge_tail(o, c, ot, hg), hb)
 
 # the split at one equation, its owner o: x1, x2, x3 whether c : kb, kb,
 # [c] take it
@@ -181,27 +181,27 @@ def split.c(b1: Bool, b2: Bool, +o: Nat, +c: Nat, +kb: List<&2, Nat>, +F: DR.Fac
       %Equal.sym(Bool, SV.mem(o, kb), False{}, nmem_ge(kb, o, c, hb, e1)) : SGb(_, _, False{}, F, A, B, Cc)
       ih
 
-def split(es: List<&2, E.QExpr>, own_j: List<&2, Nat>, +own: List<&2, Nat>, +kb: List<&2, Nat>, +sk: SK.Sketch, +c: Nat, +j: Nat,
+def split(es: List<&2, E.QExpr>, own_j: List<&2, Nat>, +own: List<&2, Nat>, +kb: List<&2, Nat>, +sk: SK.Sketch, +cls: List<&2, SV.Class>, +w: Bool, +c: Nat, +j: Nat,
   +ho: {OW.ndrop(j, own) == own_j : List<&2, Nat>}, +hl: {SV.len(own_j) == SV.neqs(es) : Nat}, +hs: {OW.sorted(own) == True{} : Bool}, +hb: {SV.below(kb, c) == True{} : Bool})
-  -> {SV.facts.go(es, own, Con{c, kb}, sk, Nil{}, False{}, j) == SV.fcat(SV.facts.go(es, own, kb, sk, Nil{}, False{}, j), SV.facts.go(es, own, Con{c, Nil{}}, sk, Nil{}, False{}, j)) : List<&2, DR.Fact>}:
+  -> {SV.facts.go(es, own, Con{c, kb}, sk, cls, w, j) == SV.fcat(SV.facts.go(es, own, kb, sk, cls, w, j), SV.facts.go(es, own, Con{c, Nil{}}, sk, cls, w, j)) : List<&2, DR.Fact>}:
   match es own_j:
     case Nil{} Nil{}:
       {==}
     case Nil{} Con{+o, +ot}:
-      absurd({SV.facts.go(Nil{}, own, Con{c, kb}, sk, Nil{}, False{}, j) == SV.fcat(SV.facts.go(Nil{}, own, kb, sk, Nil{}, False{}, j), SV.facts.go(Nil{}, own, Con{c, Nil{}}, sk, Nil{}, False{}, j)) : List<&2, DR.Fact>}, SP.len_nc(o, ot, hl))
+      absurd({SV.facts.go(Nil{}, own, Con{c, kb}, sk, cls, w, j) == SV.fcat(SV.facts.go(Nil{}, own, kb, sk, cls, w, j), SV.facts.go(Nil{}, own, Con{c, Nil{}}, sk, cls, w, j)) : List<&2, DR.Fact>}, SP.len_nc(o, ot, hl))
     case Con{+e, +t} Nil{}:
-      absurd({SV.facts.go(Con{e, t}, own, Con{c, kb}, sk, Nil{}, False{}, j) == SV.fcat(SV.facts.go(Con{e, t}, own, kb, sk, Nil{}, False{}, j), SV.facts.go(Con{e, t}, own, Con{c, Nil{}}, sk, Nil{}, False{}, j)) : List<&2, DR.Fact>}, SP.len_cn(e, t, hl))
+      absurd({SV.facts.go(Con{e, t}, own, Con{c, kb}, sk, cls, w, j) == SV.fcat(SV.facts.go(Con{e, t}, own, kb, sk, cls, w, j), SV.facts.go(Con{e, t}, own, Con{c, Nil{}}, sk, cls, w, j)) : List<&2, DR.Fact>}, SP.len_cn(e, t, hl))
     case Con{+e, +t} Con{+o, +ot}:
       +hl2 = LN.succ_inj(SV.len(ot), SV.neqs(t), hl)
       +ho2 = OW.ndrop_step(j, own, o, ot, ho)
-      %Equal.sym(Nat, SV.nth(own, j), o, OW.nth_of(own, j, o, ot, ho)) : SGb(SV.bor(SV.eq(_, c), SV.mem(_, kb)), SV.mem(_, kb), SV.bor(SV.eq(_, c), False{}), FF(e, sk, _, j), SV.facts.go(t, own, Con{c, kb}, sk, Nil{}, False{}, 1n+j), SV.facts.go(t, own, kb, sk, Nil{}, False{}, 1n+j), SV.facts.go(t, own, Con{c, Nil{}}, sk, Nil{}, False{}, 1n+j))
-      split.c(SV.lt(o, c), SV.eq(o, c), o, c, kb, FF(e, sk, o, j), SV.facts.go(t, own, Con{c, kb}, sk, Nil{}, False{}, 1n+j), SV.facts.go(t, own, kb, sk, Nil{}, False{}, 1n+j), SV.facts.go(t, own, Con{c, Nil{}}, sk, Nil{}, False{}, 1n+j), {==}, {==}, hb,
-        hn => facts_nil(t, ot, own, kb, sk, c, 1n+j, ho2, hl2, OW.up_of(own, j, o, ot, c, hs, ho, hn), hb),
-        split(t, ot, own, kb, sk, c, 1n+j, ho2, hl2, hs, hb))
+      %Equal.sym(Nat, SV.nth(own, j), o, OW.nth_of(own, j, o, ot, ho)) : SGb(SV.bor(SV.eq(_, c), SV.mem(_, kb)), SV.mem(_, kb), SV.bor(SV.eq(_, c), False{}), FF(e, sk, cls, w, _, j), SV.facts.go(t, own, Con{c, kb}, sk, cls, w, 1n+j), SV.facts.go(t, own, kb, sk, cls, w, 1n+j), SV.facts.go(t, own, Con{c, Nil{}}, sk, cls, w, 1n+j))
+      split.c(SV.lt(o, c), SV.eq(o, c), o, c, kb, FF(e, sk, cls, w, o, j), SV.facts.go(t, own, Con{c, kb}, sk, cls, w, 1n+j), SV.facts.go(t, own, kb, sk, cls, w, 1n+j), SV.facts.go(t, own, Con{c, Nil{}}, sk, cls, w, 1n+j), {==}, {==}, hb,
+        hn => facts_nil(t, ot, own, kb, sk, cls, w, c, 1n+j, ho2, hl2, OW.up_of(own, j, o, ot, c, hs, ho, hn), hb),
+        split(t, ot, own, kb, sk, cls, w, c, 1n+j, ho2, hl2, hs, hb))
 
 # with kb below c: c's facts come after kb's
 def rfacts_split(+sk: SK.Sketch, +kb: List<&2, Nat>, +c: Nat, +hb: {SV.below(kb, c) == True{} : Bool}) -> {SV.rfacts(sk, Con{c, kb}) == SV.fcat(SV.rfacts(sk, kb), SV.rfacts(sk, Con{c, Nil{}})) : List<&2, DR.Fact>}:
-  split(SK.Sketch.eqs(sk), SV.owners(sk), SV.owners(sk), kb, sk, c, 0n, {==}, OW.len_owners(sk), OW.sorted_owners(sk), hb)
+  split(SK.Sketch.eqs(sk), SV.owners(sk), SV.owners(sk), kb, sk, Nil{}, False{}, c, 0n, {==}, OW.len_owners(sk), OW.sorted_owners(sk), hb)
 
 # The calls
 # ---------

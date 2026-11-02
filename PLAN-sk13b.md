@@ -1542,6 +1542,21 @@ give both component identities that Valid's SameV asks for.
 ### B6. Corollaries and uniqueness
 - `solve_drop`, `solve_amber` and `solve_conflict` with nd.
 - `honest_unique` re-proven with the extended cases.
+- *solve_drop's content proven 2026-11-01 (gate PASS)*, over any
+  classification with the draft's Honest (tests/dir_draft.bend b6_drop,
+  replacing stmt_drop). lib/dfactpf.bend `facts_hold`: wherever the
+  system solved holds, every fact of a kept constraint holds (KF(c), the
+  facts of the kept constraints before c, by induction along the
+  constraints; each step reads one Fate, its drops' reasons turned into
+  facts at x: a degree-0 reason's combination is of solved equations,
+  `ident_all`; a direction reason's facts are KF(c)'s and c's own solved
+  equations, `sound`, and Proves). A direction constraint's statement
+  holds exactly where its one equation does (`stat_r`, `eq_r`, through
+  `at`: an equation's position is one of its owner's constraint's
+  equations). `drop_law` reads fact j out of KF(the end). The Honest is
+  read once for `downs` first (the hreadpf pattern). dpassmpf's `split`
+  is now general in the classes and nd (rfacts_split unchanged).
+  facts_hold is what solve_amber and solve_conflict will read too.
 
 ### B7. `solve_complete` and `solve_refused`
 - No drop certificate to pass any more (B4.6: drops are correct by
