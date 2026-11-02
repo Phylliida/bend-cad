@@ -956,6 +956,9 @@ give both component identities that Valid's SameV asks for.
   first (B4.0). When to switch is for Danielle at the check-in: then, with
   the laws downstream of Honest open until B5–B7 re-prove them; or after
   B7, with those laws re-proven against the new pass first.
+  *Decided 2026-11-01 (Danielle): re-prove, then switch.* B5–B7 are proven
+  against the new pass and the draft Honest beside sk-13a's (the gate
+  green throughout), and the switch comes once they all are.
 - **B4.0, the spec staged** (the gate stays green):
   - spec/solve.bend takes the shapes agreed in B0, `Drop{j, nd, c}` and
     `Conflict{s, nd}`, and the draft's definitions that do not clash
