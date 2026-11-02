@@ -1689,6 +1689,20 @@ root).
   `cs_r`). `solve_complete2` takes hn (the nd sides strict at x).
 - lib/drefusedpf.bend: `solve_refused2`, refusedpf's over the draft solver.
 
+**Switch readiness, measured 2026-11-01** (a throwaway CLI on
+`DWF.wsolve2`, every sketch in proto/sketches/expected, both CLIs side by
+side, 4 at a time, load average 12–34, so times are rough):
+- 19 of 21 answers are sk-13a's exactly.
+- vertical-twice and vertical-twice.raw change, as intended: sk-13a
+  refuses them (Over, red 32 / 34, ok False); the new pass drops the
+  repeated vertical's equation by directions, so it is amber (A/30,
+  A/32) and the sketch certifies (ok True). The expected file's comment
+  already said "stays refused until sk-13b".
+- Every sketch is within its limit. Slowest: angle-lines 7.8 s (sk-13a
+  1.6 s, limit 60); oncircle-pairs 1.5 s (0.3 s); the rest under 3 s.
+- So the switch would update those two expected lines, and nothing else
+  in the regression.
+
 ### B8. The page, the CLI and the regression
 - The CLI prints nd with drops and conflicts; serve.py parses it.
 - The page:
