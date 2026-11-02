@@ -59,14 +59,6 @@ def ddec.o(o: DC.Out, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +t: Nat, +e
 def ddec(+sk: SK.Sketch, +fs: List<&2, DR.Fact>, +cx: List<&2, E.QExpr>, +e: E.QExpr, +m: Maybe<&2, DR.DStat>, +W: DC.WK) -> Maybe<&2, DR.Der>:
   ddec.o(DC.FO.o(DC.wcall(SV.ents(sk), fs, DCF.tv(sk), W)), SV.ents(sk), fs, DCF.tv(sk), e, m)
 
-# A direction drop's certificate. Its h is the product of nd's squared
-# lengths; its multipliers come from the derivation, composed with the
-# dropped facts' certificates (PLAN-sk13b B4.6, not built yet: until then
-# the verdict cannot pass a direction drop, and the solver does not run
-# this pass).
-def dcert(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +der: DR.Der, +nd: List<&2, Nat>) -> SV.Comb:
-  SV.Comb{DR.ndh(es, nd), Nil{}}
-
 # A constraint's equations
 # ------------------------
 # As lib/pass.bend's cwalk, over the same state (PA.CW), with the facts of
@@ -77,7 +69,7 @@ def dcert(+es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>, +der: DR.Der, +nd: List
 def cw2.dir(m: Maybe<&2, DR.Der>, +k: Nat, +e: E.QExpr, +r: EL.Res, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, ds: List<&2, SV.Drop>, us: List<&2, Nat>, +es: List<&2, SK.Ent>, +fs: List<&2, DR.Fact>) -> PA.CW:
   match m:
     case Some{+der}:
-      PA.CW{rows, B, bp, Con{SV.Drop{k, DR.nd(es, fs, der), dcert(es, fs, der, DR.nd(es, fs, der))}, ds}, us}
+      PA.CW{rows, B, bp, Con{SV.Drop{k, DR.nd(es, fs, der), SV.WDer{der}}, ds}, us}
     case None{}:
       PA.CW{EL.rsnoc(rows, EL.row_of(r)), EP.qsnoc(B, e), CO.lsnoc(bp, k), ds, CO.lsnoc(us, k)}
 

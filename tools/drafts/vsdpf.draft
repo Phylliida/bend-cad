@@ -40,6 +40,7 @@ import ./clslpf.bend as CL
 import ./qsign.bend as SA
 import ./conflict.bend as CO
 import ./verdict.bend as VD
+import ./dropok.bend as DK
 import ./vrdpf.bend as VR
 
 def absurd(-A: Type, x: Empty) -> A:
@@ -538,7 +539,7 @@ def ni_mem(+v: Nat, cs: $NL, +R: $NL, +hn: {SV.none_in(cs, R) == True{} : Bool},
     case Con{+c, +t}:
       ni_mem.c(v, c, t, R, SV.eq(v, c), {==}, hm, hn, a => b => ni_mem(v, t, R, b, a))
 
-@MACRO PZP ~F: O.OField, +x: M.Vec(~F), +ES: $QL, +own: $NL, +R: $NL, +cls: List<&2, SV.Class>, +hz: SK.Zeros(~F, x, SV.solved.go(ES, own, R, SV.dropped(cls), 0n)), +hd: {VD.dck(ES, own, R, SV.dropped(cls), cls) == True{} : Bool}
+@MACRO PZP ~F: O.OField, +x: M.Vec(~F), +ES: $QL, +own: $NL, +R: $NL, +cls: List<&2, SV.Class>, +hz: SK.Zeros(~F, x, SV.solved.go(ES, own, R, SV.dropped(cls), 0n)), +hd: {DK.dck(ES, own, R, SV.dropped(cls), cls) == True{} : Bool}
 @MACRO PZA ~F, x, ES, own, R, cls, hz, hd
 
 def zof.c($PZP, +cs: $NL, +hn: {SV.none_in(cs, R) == True{} : Bool}, +k: Nat, +e: E.QExpr, +t: $QL, +hq: {OW.qdrop(k, ES) == Con{e, t} : $QL}, b: Bool, eb: {SV.mem(SV.nth(own, k), cs) == b : Bool}, ih: SK.Zeros(~F, x, SV.eqs_of.go(t, own, cs, 1n+k)))
@@ -562,7 +563,7 @@ def zof.go($PZP, ys: $QL, +cs: $NL, +hn: {SV.none_in(cs, R) == True{} : Bool}, +
 @MACRO AA SV.ambers(cls)
 @MACRO EQS SK.Sketch.eqs($SKC)
 @MACRO OWN SV.owners($SKC)
-@MACRO WP ~F: O.OField, +x: M.Vec(~F), +vs: List<&2, SK.VKind>, +es: List<&2, SK.Ent>, +rs: $RL, +cls: List<&2, SV.Class>, +hz: SK.Zeros(~F, x, SV.solved.go($EQS, $OWN, $RR, SV.dropped(cls), 0n)), +hd: {VD.dck($EQS, $OWN, $RR, SV.dropped(cls), cls) == True{} : Bool}, +ha: {VD.ack($SKC, $RR, cls, 0n) == True{} : Bool}, +hen: SK.Sides(~F, x, SK.Sketch.sides.ents(es))
+@MACRO WP ~F: O.OField, +x: M.Vec(~F), +vs: List<&2, SK.VKind>, +es: List<&2, SK.Ent>, +rs: $RL, +cls: List<&2, SV.Class>, +hz: SK.Zeros(~F, x, SV.solved.go($EQS, $OWN, $RR, SV.dropped(cls), 0n)), +hd: {DK.dck($EQS, $OWN, $RR, SV.dropped(cls), cls) == True{} : Bool}, +ha: {VD.ack($SKC, $RR, cls, 0n) == True{} : Bool}, +hen: SK.Sides(~F, x, SK.Sketch.sides.ents(es))
 @MACRO WA ~F, x, vs, es, rs, cls, hz, hd, ha, hen
 @MACRO RKB SV.kept_before($SKC, $RR, i)
 @MACRO RKJ SV.kept_before($SKC, $RR, 1n+i)
@@ -632,7 +633,7 @@ def sm.go($WP, rt: $RL, +i: Nat, +hrd: {KB.rdrop(i, rs) == rt : $RL}, hck: SK.Si
 # side conditions of the sketch less its red and amber constraints hold,
 # every side condition of the sketch less its red constraints holds
 def sides_mark(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, +hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(cls), SV.dropped(cls))),
-  +hd: {VD.dck(SK.Sketch.eqs(sk), SV.owners(sk), SV.reds(cls), SV.dropped(cls), cls) == True{} : Bool}, +ha: {VD.ack(sk, SV.reds(cls), cls, 0n) == True{} : Bool},
+  +hd: {DK.dck(SK.Sketch.eqs(sk), SV.owners(sk), SV.reds(cls), SV.dropped(cls), cls) == True{} : Bool}, +ha: {VD.ack(sk, SV.reds(cls), cls, 0n) == True{} : Bool},
   +hsc: SK.Sides(~F, x, SK.Sketch.sides(SV.mark(SV.cat(SV.reds(cls), SV.ambers(cls)), sk)))) -> SK.Sides(~F, x, SK.Sketch.sides(SV.mark(SV.reds(cls), sk))):
   match sk:
     case SK.Sketch{+vs, +es, +rs}:

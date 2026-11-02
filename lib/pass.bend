@@ -65,10 +65,10 @@ def dadjs(es: List<&2, E.QExpr>) -> List<&2, List<&2, Nat>>:
     case Con{e, t}:
       Con{DP.dadj(e), dadjs(t)}
 
-# Drop certificates
-# -----------------
-# A dropped equation e = l . B (the spec's Derivable): h = 1 and l_i times
-# the basis equation at position bp_i.
+# A drop's reason
+# ---------------
+# A dropped equation e = l . B (the spec's Derivable): l_i times the basis
+# equation at position bp_i.
 
 def muls(bp: List<&2, Nat>, ls: List<&2, S.Q>) -> List<&2, SV.Mul>:
   match bp ls:
@@ -77,13 +77,10 @@ def muls(bp: List<&2, Nat>, ls: List<&2, S.Q>) -> List<&2, SV.Mul>:
     case Con{i, it} Nil{}:
       Nil{}
     case Con{i, it} Con{l, lt}:
-      Con{SV.Mul{i, E.QCst{l}}, muls(it, lt)}
-
-def qone() -> S.Q:
-  S.Q{S.Zpos{S.XH{}}, S.XH{}}
+      Con{SV.Mul{i, l}, muls(it, lt)}
 
 def drop_of(+j: Nat, +r: EL.Res, +e: E.QExpr, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>) -> SV.Drop:
-  SV.Drop{j, Nil{}, SV.Comb{E.QCst{qone()}, muls(bp, DR.dropls(DR.rescb(r), DR.resbt(r), e, B))}}
+  SV.Drop{j, Nil{}, SV.WLin{muls(bp, DR.dropls(DR.rescb(r), DR.resbt(r), e, B))}}
 
 # A constraint's equations
 # ------------------------

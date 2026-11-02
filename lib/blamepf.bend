@@ -7,7 +7,8 @@
 # so), so enforcing only the support asks for less, and the same geometry
 # means it. solve_honest wants the sketch well formed and covered by its
 # variables; the verdict checked both for the sketch with its red
-# constraints made driven, and neither check reads the driven flags.
+# constraints made driven, and neither check reads the driven flags
+# (lib/solvepf.bend: wf_of, cov_of).
 #
 # Generated from tools/drafts/blamepf.draft by tools/expand.py; edit the
 # draft.
@@ -37,49 +38,6 @@ import ./totalpf.bend as TP
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
-
-# What the verdict checked, without the driven flags
-# --------------------------------------------------
-
-def wf_unmark(+red: List<&2, Nat>, sk: SK.Sketch, h: {WF.wf_dec(SV.mark(red, sk)) == True{} : Bool}) -> {WF.wf_dec(sk) == True{} : Bool}:
-  match sk:
-    case SK.Sketch{vs, +es, +cs}:
-      %WC.mark_cons(es, red, cs, 0n) : {KA.band(WF.ents(es, es), _) == True{} : Bool}
-      h
-
-def wu_cons(+red: List<&2, Nat>, cs: List<&2, SK.Rec>, +i: Nat, +n: Nat, +h: {BX.Sketch.within.cons(SV.mark.cons(red, cs, i), n) == True{} : Bool}) -> {BX.Sketch.within.cons(cs, n) == True{} : Bool}:
-  match cs:
-    case Nil{}:
-      {==}
-    case Con{SK.Rec{id, dr, +k}, +t}:
-      CV.and_i(BX.Constraint.within(k, n), BX.Sketch.within.cons(t, n), CV.and_l(BX.Constraint.within(k, n), BX.Sketch.within.cons(SV.mark.cons(red, t, 1n+i), n), h), wu_cons(red, t, 1n+i, n, CV.and_r(BX.Constraint.within(k, n), BX.Sketch.within.cons(SV.mark.cons(red, t, 1n+i), n), h)))
-
-def w_unmark(+red: List<&2, Nat>, sk: SK.Sketch, +n: Nat, +h: {BX.Sketch.within(SV.mark(red, sk), n) == True{} : Bool}) -> {BX.Sketch.within(sk, n) == True{} : Bool}:
-  match sk:
-    case SK.Sketch{vs, +es, +cs}:
-      CV.and_i(BX.Sketch.within.ents(es, n), BX.Sketch.within.cons(cs, n), CV.and_l(BX.Sketch.within.ents(es, n), BX.Sketch.within.cons(SV.mark.cons(red, cs, 0n), n), h), wu_cons(red, cs, 0n, n, CV.and_r(BX.Sketch.within.ents(es, n), BX.Sketch.within.cons(SV.mark.cons(red, cs, 0n), n), h)))
-
-def len_kl(xs: List<&2, S.D>) -> {List.length(&2, N.NC(KI.dnum()), xs) == KA.klen(~KI.dnum(), xs) : Nat}:
-  match xs:
-    case Nil{}:
-      {==}
-    case Con{a, t}:
-      %Equal.sym(Nat, List.length(&2, N.NC(KI.dnum()), t), KA.klen(~KI.dnum(), t), len_kl(t)) : {1n+_ == 1n+KA.klen(~KI.dnum(), t) : Nat}
-      {==}
-
-# the shape check: a box coordinate per variable
-def sh_klen(+nv: Nat, +nq: Nat, +gc: List<&2, S.D>, +pins: List<&2, Nat>, p: PL.Plan<KI.dnum()>, +h: {SO.shape(nv, nq, gc, pins, p) == True{} : Bool}) -> {KA.klen(~KI.dnum(), gc) == nv : Nat}:
-  match p:
-    case PL.Plan{+vp, +ep, +np, +bs}:
-      KA.nateq_ok(KA.klen(~KI.dnum(), gc), nv, KA.band_l(KA.nateq(KA.klen(~KI.dnum(), gc), nv), KA.band(KA.nateq(PL.nlen(vp), nv), KA.band(SV.distinct(vp), KA.band(KA.nateq(PL.nlen(ep), nq), SO.nl_eq(SO.ntake(np, vp), pins)))), h))
-
-
-def wf_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> SK.Sketch.wf(sk):
-  WF.wf_ok(sk, wf_unmark(SV.reds(SO.Out.cls(x)), sk, SPF.hB(sk, g0, x, h)))
-
-def cov_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}:
-  %Equal.trans(Nat, List.length(&2, N.NC(KI.dnum()), SO.Out.gc(x)), KA.klen(~KI.dnum(), SO.Out.gc(x)), SO.nvars(sk), len_kl(SO.Out.gc(x)), sh_klen(SO.nvars(sk), CK.eqlen(SV.solved(sk, SV.reds(SO.Out.cls(x)), SV.dropped(SO.Out.cls(x)))), SO.Out.gc(x), SO.Out.pins(x), SO.Out.plan(x), SPF.hS(sk, g0, x, h))) : {BX.Sketch.within(sk, _) == True{} : Bool}
-  w_unmark(SV.reds(SO.Out.cls(x)), sk, List.length(&2, N.NC(KI.dnum()), SO.Out.gc(x)), SPF.hC(sk, g0, x, h))
 
 # A support has no red member
 # ---------------------------
@@ -234,5 +192,5 @@ def blame_pair(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<
 def solve_blame(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}, +c: Nat) -> (&x: M.Vec(~F) -> SK.Sketch.means(~F, x, SV.only(SV.support(SO.Out.cls(SO.solve_l(sk, g0, l)), c), sk))):
   +X = SO.solve_l(sk, g0, l)
   +v = SPF.verdict(sk, g0, l, ok)
-  hon = TP.solve_honest(sk, wf_of(sk, g0, X, v), cov_of(sk, g0, X, v), g0, l)
+  hon = TP.solve_honest(sk, SPF.wf_of(sk, g0, X, v), SPF.cov_of(sk, g0, X, v), g0, l)
   blame_pair(~F, ~H, sk, g0, l, c, supp_nin(sk, SO.Out.cls(SO.solve_l(sk, g0, l)), c, hon), SPF.solve_exists(~F, ~R, ~H, sk, g0, l, ok))

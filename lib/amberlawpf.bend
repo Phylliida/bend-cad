@@ -5,10 +5,11 @@
 # lib/totalpf.bend: solve_honest), so the system solved is the same with
 # the ambers made driven too, and a geometry meaning the sketch less its
 # reds and ambers solves it. From there the verdict's laws do the rest, as
-# for solve_exists: the drop checks give every equation of the sketch less
-# its reds (lib/vrdpf.bend: zeros_mark), the amber refutations every side
-# condition (lib/vsdpf.bend: sides_mark), and the pass passes those checks
-# (lib/ckpf.bend: ck_pass).
+# for solve_exists: the drops' reasons give every equation of the sketch
+# less its reds (lib/vrdpf.bend: zeros_mark; the pass's drops are correct
+# by construction, lib/ckpf.bend: why_pass), and the amber refutations
+# every side condition (lib/vsdpf.bend: sides_mark), which the pass's
+# classes pass (lib/ckpf.bend: ck_pass).
 #
 # Honest is a Type, used once; it is read once into Bool facts (allP),
 # which are Data and reused at every equation.
@@ -36,6 +37,7 @@ import ./wfcpf.bend as WC
 import ./covpf.bend as CV
 import ./gmpf.bend as GM
 import ./verdict.bend as VD
+import ./dropok.bend as DK
 import ./ckpf.bend as CKP
 import ./vrdpf.bend as VR
 import ./vsdpf.bend as VS
@@ -264,15 +266,13 @@ def zs_amb(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>
 # The law
 # -------
 
-def amb_fin(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: List<&2, SV.Class>, +hex: {VD.exact(sk, cls) == True{} : Bool}, +hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(cls), SV.dropped(cls))), +hs: SK.Sides(~F, x, SK.Sketch.sides(SV.mark(SV.cat(SV.reds(cls), SV.ambers(cls)), sk)))) -> SK.Sketch.means(~F, x, SV.mark(SV.reds(cls), sk)):
-  +hd = L.band_l(VD.dck(SK.Sketch.eqs(sk), SV.owners(sk), SV.reds(cls), SV.dropped(cls), cls), VD.ack(sk, SV.reds(cls), cls, 0n), hex)
-  +ha = L.band_r(VD.dck(SK.Sketch.eqs(sk), SV.owners(sk), SV.reds(cls), SV.dropped(cls), cls), VD.ack(sk, SV.reds(cls), cls, 0n), hex)
+def amb_fin(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: List<&2, SV.Class>, +hd: {DK.dck(SK.Sketch.eqs(sk), SV.owners(sk), SV.reds(cls), SV.dropped(cls), cls) == True{} : Bool}, +ha: {VD.exact(sk, cls) == True{} : Bool}, +hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(cls), SV.dropped(cls))), +hs: SK.Sides(~F, x, SK.Sketch.sides(SV.mark(SV.cat(SV.reds(cls), SV.ambers(cls)), sk)))) -> SK.Sketch.means(~F, x, SV.mark(SV.reds(cls), sk)):
   MN.sketch_sound(~F, x, SV.mark(SV.reds(cls), sk), WF.wf_ok(SV.mark(SV.reds(cls), sk), WC.wf_mark(SV.reds(cls), sk, WC.wf_dec_ok(sk, w))), (VR.zeros_mark(~F, x, sk, cls, hz, hd), VS.sides_mark(~F, x, sk, cls, hz, hd, ha, hs)))
 
-def amb_m(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: List<&2, SV.Class>, +hex: {VD.exact(sk, cls) == True{} : Bool}, H: SV.Honest(sk, cls), h: SK.Sketch.holds(~F, x, SV.mark(SV.cat(SV.reds(cls), SV.ambers(cls)), sk))) -> SK.Sketch.means(~F, x, SV.mark(SV.reds(cls), sk)):
+def amb_m(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: List<&2, SV.Class>, +hd: {DK.dck(SK.Sketch.eqs(sk), SV.owners(sk), SV.reds(cls), SV.dropped(cls), cls) == True{} : Bool}, +ha: {VD.exact(sk, cls) == True{} : Bool}, H: SV.Honest(sk, cls), h: SK.Sketch.holds(~F, x, SV.mark(SV.cat(SV.reds(cls), SV.ambers(cls)), sk))) -> SK.Sketch.means(~F, x, SV.mark(SV.reds(cls), sk)):
   match h:
     case (hz, hs):
-      amb_fin(~F, x, sk, w, cls, hex, zs_amb(~F, x, sk, cls, H, hz), hs)
+      amb_fin(~F, x, sk, w, cls, hd, ha, zs_amb(~F, x, sk, cls, H, hz), hs)
 
 # LAW 7 (ROADMAP solve_amber): a geometry meaning the sketch less its red
 # and amber constraints means it less its red ones: deleting every amber
@@ -280,4 +280,4 @@ def amb_m(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls
 def solve_amber(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SV.mark(SV.cat(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), SV.ambers(SO.Out.cls(SO.solve_l(sk, g0, l)))), sk))) -> SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk)):
   +hwf = WC.wf_dec_ok(sk, w)
   +ha = CV.cov(sk, SO.nvars(sk), cov, hwf)
-  amb_m(~F, x, sk, WF.wf_ok(sk, hwf), SO.Out.cls(SO.solve_l(sk, g0, l)), CKP.ck_pass(sk, GM.adjb_dadjs(SK.Sketch.eqs(sk), SO.nvars(sk), ha)), TP.solve_honest(sk, WF.wf_ok(sk, hwf), cov, g0, l), MN.sketch_complete(~F, x, SV.mark(SV.cat(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), SV.ambers(SO.Out.cls(SO.solve_l(sk, g0, l)))), sk), m))
+  amb_m(~F, x, sk, WF.wf_ok(sk, hwf), SO.Out.cls(SO.solve_l(sk, g0, l)), CKP.why_pass(sk, GM.adjb_dadjs(SK.Sketch.eqs(sk), SO.nvars(sk), ha)), CKP.ck_pass(sk, GM.adjb_dadjs(SK.Sketch.eqs(sk), SO.nvars(sk), ha)), TP.solve_honest(sk, WF.wf_ok(sk, hwf), cov, g0, l), MN.sketch_complete(~F, x, SV.mark(SV.cat(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), SV.ambers(SO.Out.cls(SO.solve_l(sk, g0, l)))), sk), m))

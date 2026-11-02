@@ -246,7 +246,7 @@ def nder0(+sk: SK.Sketch, +R: $NL, +D: $NL, +c: Nat, +k: Nat, +rows: List<&2, EL
 # The invariant after a direction drop
 # ------------------------------------
 
-def inv_dropx(+sk: SK.Sketch, +R: $NL, +D: $NL, +c: Nat, +bp0: $NL, +k: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL, +nd: $NL, +q: SV.Comb,
+def inv_dropx(+sk: SK.Sketch, +R: $NL, +D: $NL, +c: Nat, +bp0: $NL, +k: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL, +nd: $NL, +q: SV.Why,
   hi: CW.CWInv($WA0, k, $STQ), +heq: {SV.eq(SV.nth($OWN, k), c) == True{} : Bool}, +hk: {SV.lt(k, $N) == True{} : Bool})
   -> CW.CWInv($WA0, 1n+k, PA.CW{rows, B, bp, Con{SV.Drop{k, nd, q}, ds}, us}):
   (+hb, q1) = hi
@@ -300,7 +300,7 @@ def res2_drop($CP, +k: Nat, +o: Nat, +ot: $NL, +rows: List<&2, EL.Row>, +B: $QL,
 
 @MACRO KEEPST PA.CW{EL.rsnoc(rows, EL.row_of($RR)), EP.qsnoc(B, e), CO.lsnoc(bp, k), ds, CO.lsnoc(us, k)}
 @MACRO NDK DR.nd($ENT, $FK, der)
-@MACRO DDST PA.CW{rows, B, bp, Con{SV.Drop{k, $NDK, DPS.dcert($ENT, $FK, der, $NDK)}, ds}, us}
+@MACRO DDST PA.CW{rows, B, bp, Con{SV.Drop{k, $NDK, SV.WDer{der}}, ds}, us}
 
 def res2_keep($CP, $WP, +k: Nat, +o: Nat, +ot: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL, +e: E.QExpr, +fin: PA.CW, +heo: {SV.eq(o, c) == True{} : Bool},
   +he: {$EQK == e : E.QExpr}, +hne: {EP.isnil(EP.resp($RR)) == False{} : Bool}, +hdd: {DPS.ddec(sk, $FK, cx, e, $M, W) == None{} : Maybe<&2, DR.Der>}, hi: CW.CWInv($WA0, k, $STQ), $HC,
@@ -345,7 +345,7 @@ def cw2_ok.d(mm: Maybe<&2, DR.Der>, $CP, $WP, +e: E.QExpr, +t: $QL, +o: Nat, +ot
         ih($KEEPST, CW.inv_keep($WA0, k, rows, B, bp, ds, us, e, hi, heq, hlt, eb, OW.eqat_of($ES, k, e, t, hq))))
     case Some{+der}:
       res2_ddrop($CA, $WAA, k, o, ot, rows, B, bp, ds, us, e, der, DPS.cwalk2(t, $OWN, c, 1n+k, $DDST, sk, F0, cx, W), $HEO, OW.eqat_of($ES, k, e, t, hq), em, $HA,
-        ih($DDST, inv_dropx($WA0, k, rows, B, bp, ds, us, $NDK, DPS.dcert($ENT, $FK, der, $NDK), hi, heq, hlt)))
+        ih($DDST, inv_dropx($WA0, k, rows, B, bp, ds, us, $NDK, SV.WDer{der}, hi, heq, hlt)))
 
 def cw2_ok.k(b: Bool, $CP, $WP, +e: E.QExpr, +t: $QL, +o: Nat, +ot: $NL, +k: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL,
   +eb: {EP.isnil(EP.resp($RR)) == b : Bool}, $STEPS, +hi: CW.CWInv($WA0, k, $STQ), $HC, $IH2)

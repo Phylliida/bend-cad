@@ -1050,6 +1050,16 @@ give both component identities that Valid's SameV asks for.
     of the verdict's drop check, which goes (VD.exact keeps the amber
     sides' refutations); solve_complete loses the drop check's part.
     Every sk-13a statement unchanged.
+    *Done 2026-11-01 (gate PASS, tools/regress.sh PASS):* spec/solve.bend
+    `Why` (WLin{ms}: Mul{i, q} with q a constant; WDer{d}), `Drop{j, nd,
+    why}`, Comb gone; lib/dropok.bend holds what a degree-0 reason must
+    pass (moved out of the verdict, never run); VD.exact = the amber
+    check alone; lib/ckpf.bend why_pass (the drops' half of ckall) beside
+    ck_pass; lib/solvepf.bend reads the pass's adjacency off the verdict
+    (wfd_of, cov_of, adjb_of, moved down from lib/blamepf.bend) so
+    solve_exists gets the drops from why_pass (hwhy), its statement
+    unchanged; solve_drop and solve_amber likewise. The direction pass
+    already records WDer{der} (dcert gone).
   - (b) the direction pass records the closure's derivation; the draft's
     Honest (DropsNd) says each recorded reason is its drop's witness
     (the constants: Derivable's identity; the derivation: Valid, Proves,

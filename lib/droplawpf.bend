@@ -2,10 +2,9 @@
 # wherever the solved equations hold, every dropped equation holds. Proofs
 # only.
 #
-# The pass's own answer passes the verdict's exact checks (lib/ckpf.bend:
-# ck_pass), among them the drop check: each dropped equation is a
-# combination of earlier solved ones, so it is 0 wherever they are
-# (lib/vrdpf.bend: dropped_zero).
+# The pass's drops are correct by construction (lib/ckpf.bend: why_pass):
+# each dropped equation's reason is a combination of earlier solved ones,
+# so it is 0 wherever they are (lib/vrdpf.bend: dropped_zero).
 
 import Base
 import ../spec/num.bend as S
@@ -19,13 +18,13 @@ import ./listpf.bend as L
 import ./wfcpf.bend as WC
 import ./covpf.bend as CV
 import ./gmpf.bend as GM
-import ./verdict.bend as VD
+import ./dropok.bend as DK
 import ./ckpf.bend as CKP
 import ./vrdpf.bend as VR
 import ./solve.bend as SO
 
 # every equation picked at a dropped position is 0
-def zp.go(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +R: List<&2, Nat>, +D: List<&2, Nat>, +hz: SK.Zeros(~F, x, SV.solved.go(es, own, R, D, 0n)), +cls: List<&2, SV.Class>, +hd: {VD.dck(es, own, R, D, cls) == True{} : Bool}, js: List<&2, Nat>, +hs: {L.subl(js, SV.dropped(cls)) == True{} : Bool}) -> SK.Zeros(~F, x, SV.picked(es, js)):
+def zp.go(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +R: List<&2, Nat>, +D: List<&2, Nat>, +hz: SK.Zeros(~F, x, SV.solved.go(es, own, R, D, 0n)), +cls: List<&2, SV.Class>, +hd: {DK.dck(es, own, R, D, cls) == True{} : Bool}, js: List<&2, Nat>, +hs: {L.subl(js, SV.dropped(cls)) == True{} : Bool}) -> SK.Zeros(~F, x, SV.picked(es, js)):
   match js:
     case Nil{}:
       Unit{}
@@ -38,5 +37,4 @@ def solve_drop(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), cov: {BX.Sketc
   +cls = SO.Out.cls(SO.solve_l(sk, g0, l))
   +hwf = WC.wf_dec_ok(sk, w)
   +ha = CV.cov(sk, SO.nvars(sk), cov, hwf)
-  +hex = CKP.ck_pass(sk, GM.adjb_dadjs(SK.Sketch.eqs(sk), SO.nvars(sk), ha))
-  zp.go(~F, x, SK.Sketch.eqs(sk), SV.owners(sk), SV.reds(cls), SV.dropped(cls), hz, cls, L.band_l(VD.dck(SK.Sketch.eqs(sk), SV.owners(sk), SV.reds(cls), SV.dropped(cls), cls), VD.ack(sk, SV.reds(cls), cls, 0n), hex), SV.dropped(cls), L.subl_refl(SV.dropped(cls)))
+  zp.go(~F, x, SK.Sketch.eqs(sk), SV.owners(sk), SV.reds(cls), SV.dropped(cls), hz, cls, CKP.why_pass(sk, GM.adjb_dadjs(SK.Sketch.eqs(sk), SO.nvars(sk), ha)), SV.dropped(cls), L.subl_refl(SV.dropped(cls)))

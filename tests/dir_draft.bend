@@ -197,8 +197,8 @@ def t_onl() -> {DR.dstat(es(), SK.OnLine{2n, 10n}) == Some{DR.DStat{10n, SK.VE.s
   {==}
 
 # the nd lists the laws read
-def cmb() -> SS.Comb:
-  SS.Comb{E.QCst{DR.qo()}, Nil{}}
+def cmb() -> SS.Why:
+  SS.WLin{Nil{}}
 
 def cls() -> List<&2, SS.Class>:
   [SS.Kept{[SS.Drop{3n, [10n, 11n], cmb()}]}, SS.Conflict{[0n], [10n, 11n]}, SS.Amber{[SS.Drop{5n, [12n], cmb()}], Nil{}}]

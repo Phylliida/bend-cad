@@ -69,8 +69,10 @@ import ./lib/fast.bend as FS
 # solve_complete (lib/completepf.bend) and solve_refused
 # (lib/refusedpf.bend), restated in tests/solve_laws.bend. The classes,
 # pins and structure are the single pass's (lib/pass.bend; PLAN-sk13a S4,
-# switched in S5), and the verdict certifies the dropped equations and
-# amber sides by their combinations and refutations (lib/verdict.bend).
+# switched in S5); the dropped equations are correct by construction,
+# each with its reason (lib/ckpf.bend why_pass, PLAN-sk13b B4.6), and the
+# verdict certifies the amber sides by their refutations
+# (lib/verdict.bend).
 
 # LAW: in a complete ordered field, the solver's box holds a geometry
 # meaning the sketch less its red constraints

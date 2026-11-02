@@ -279,34 +279,34 @@ def only(+cs: List<&2, Nat>, sk: SK.Sketch) -> SK.Sketch:
     case SK.Sketch{vs, es, rs}:
       SK.Sketch{vs, es, only.cons(cs, rs, 0n)}
 
-# Certificates for dropped equations
-# ----------------------------------
+# Why an equation is dropped
+# --------------------------
 
 # q times the sketch's equation i
 type Mul is Data:
-  Mul{i: Nat, q: E.QExpr}
+  Mul{i: Nat, q: S.Q}
 
-# a certificate for an equation g: h g = q_1 g_i1 + ... + q_n g_in, an
-# identity of polynomials (the g_i the sketch's equations). Data only: the
-# verdict checks it, and that h is nonzero over the box (h = 1 in the first
-# layer); solve_drop says what dropping means, so nothing here is trusted
-# beyond its shape. (Named Comb, a combination: Cert is the block
-# certificate's name, lib/certdef.bend, and constructor names are global.)
-type Comb is Data:
-  Comb{h: E.QExpr, qs: List<&2, Mul>}
+# a dropped equation's reason: a constant combination of the sketch's
+# equations, g = q_1 g_i1 + ... + q_n g_in (degree 0), or a derivation in
+# the direction layer (spec/dir.bend). Data only: the pass's proofs say
+# what each reason establishes (PLAN-sk13b B4.6: drops are correct by
+# construction, and the answer says why each one is dropped); the laws
+# say what dropping means, so nothing here is trusted beyond its shape.
+type Why is Data:
+  WLin{ms: List<&2, Mul>}
+  WDer{d: DR.Der}
 
 # a dropped equation, by its position in Sketch.eqs, the segments whose
-# nonzero length its derivation needs (none at degree 0), and its
-# certificate, whose h is their squared lengths' product (DR.ndh)
+# nonzero length its derivation needs (none at degree 0), and its reason
 type Drop is Data:
-  Drop{j: Nat, nd: List<&2, Nat>, c: Comb}
+  Drop{j: Nat, nd: List<&2, Nat>, why: Why}
 
 # the dropped equations' positions
 def drops(ds: List<&2, Drop>) -> List<&2, Nat>:
   match ds:
     case Nil{}:
       Nil{}
-    case Con{Drop{j, nd, c}, t}:
+    case Con{Drop{j, nd, w}, t}:
       Con{j, drops(t)}
 
 # Classes
@@ -937,7 +937,7 @@ def dnd.go(dd: List<&2, Drop>, +j: Nat) -> List<&2, Nat>:
   match dd:
     case Nil{}:
       Nil{}
-    case Con{Drop{i, nd, c}, t}:
+    case Con{Drop{i, nd, w}, t}:
       dnd.pick(eq(i, j), nd, dnd.go(t, j))
 
 def dcat(xs: List<&2, Drop>, ys: List<&2, Drop>) -> List<&2, Drop>:
@@ -1214,7 +1214,7 @@ def dds_nd(dd: List<&2, Drop>) -> List<&2, Nat>:
   match dd:
     case Nil{}:
       Nil{}
-    case Con{Drop{j, nd, q}, t}:
+    case Con{Drop{j, nd, w}, t}:
       cat(nd, dds_nd(t))
 
 def live_nd.of(k: Class) -> List<&2, Nat>:

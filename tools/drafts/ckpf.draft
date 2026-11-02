@@ -1,17 +1,19 @@
-# bend-cad: the pass's certificates pass the verdict's exact checks
-# (lib/verdict.bend: exact; PLAN-sk13a S5). Proofs only.
+# bend-cad: the pass's drops are correct by construction, and its classes
+# pass the verdict's exact check (lib/verdict.bend: exact; PLAN-sk13a S5,
+# PLAN-sk13b B4.6). Proofs only.
 #
 # - Along one constraint's walk (lib/pass.bend: cwalk) every recorded
-#   drop carries h = 1, multipliers on positions of the basis's bp, and
-#   the combination lib/drvpf.bend's derivable proves, so its identity
-#   normalizes to 0 (dgood).
+#   drop's reason is a combination on positions of the basis's bp, the
+#   one lib/drvpf.bend's derivable proves, so its identity normalizes to
+#   0 (dgood).
 # - When the constraint ends kept or amber, every position of its final
 #   bp is in the system solved: those before it by the pass's invariant
 #   (allpre), its own by not being dropped (its class drops exactly the
-#   walk's drops). So its drops pass (drop.ok).
+#   walk's drops). So its drops' reasons pass (lib/dropok.bend: drop.ok).
 # - An amber constraint's refutations are refute's certificates over the
 #   premises before it (kb is kept_before), so they pass (ref.ok).
-# - Along the pass: every class passes, so the classes do (ck_pass).
+# - Along the pass: every class passes, so the classes do: their drops
+#   (why_pass) and the verdict's check (ck_pass).
 #
 # Generated from tools/drafts/ckpf.draft by tools/expand.py; edit the
 # draft.
@@ -44,6 +46,7 @@ import ./passpf.bend as PP
 import ./dfspf.bend as D
 import ./solve.bend as SO
 import ./verdict.bend as VD
+import ./dropok.bend as DK
 import ./vrdpf.bend as VR
 
 def absurd(-A: Type, x: Empty) -> A:
@@ -67,14 +70,16 @@ def mulpos(qs: List<&2, SV.Mul>) -> $NL:
     case Con{SV.Mul{i, q}, t}:
       Con{i, mulpos(t)}
 
-# each drop: h - 1 normalizes to 0, its multipliers are on positions in
-# bp, and g minus its combination normalizes to 0
+# each drop: a combination on positions in bp, g minus it normalizing
+# to 0
 def dgood(+es: $QL, +bp: $NL, ds: $DL) -> Bool:
   match ds:
     case Nil{}:
       True{}
-    case Con{SV.Drop{+j, +nd, SV.Comb{+h, +qs}}, t}:
-      SV.band(QN.qzero(E.QSub{h, E.QCst{VD.qone()}}), SV.band(L.subl(mulpos(qs), bp), SV.band(QN.qzero(E.QSub{SV.eqat(es, j), VD.comb.rhs(es, qs)}), dgood(es, bp, t))))
+    case Con{SV.Drop{+j, +nd, SV.WLin{+qs}}, t}:
+      SV.band(L.subl(mulpos(qs), bp), SV.band(QN.qzero(E.QSub{SV.eqat(es, j), DK.comb.rhs(es, qs)}), dgood(es, bp, t)))
+    case Con{SV.Drop{+j, +nd, SV.WDer{dv}}, t}:
+      False{}
 
 def subl_snoc(xs: $NL, +bp: $NL, +k: Nat, +h: {L.subl(xs, bp) == True{} : Bool}) -> {L.subl(xs, CO.lsnoc(bp, k)) == True{} : Bool}:
   match xs:
@@ -89,16 +94,15 @@ def dgood_up(+es: $QL, +bp: $NL, ds: $DL, +k: Nat, +h: {dgood(es, bp, ds) == Tru
   match ds:
     case Nil{}:
       {==}
-    case Con{SV.Drop{+j, +nd, SV.Comb{+hh, +qs}}, +t}:
-      +b1 = QN.qzero(E.QSub{hh, E.QCst{VD.qone()}})
+    case Con{SV.Drop{+j, +nd, SV.WLin{+qs}}, +t}:
       +b2 = L.subl(mulpos(qs), bp)
-      +b3 = QN.qzero(E.QSub{SV.eqat(es, j), VD.comb.rhs(es, qs)})
+      +b3 = QN.qzero(E.QSub{SV.eqat(es, j), DK.comb.rhs(es, qs)})
       +b4 = dgood(es, bp, t)
-      +h234 = L.band_r(b1, SV.band(b2, SV.band(b3, b4)), h)
-      +h34 = L.band_r(b2, SV.band(b3, b4), h234)
-      L.band_i(b1, SV.band(L.subl(mulpos(qs), CO.lsnoc(bp, k)), SV.band(b3, dgood(es, CO.lsnoc(bp, k), t))), L.band_l(b1, SV.band(b2, SV.band(b3, b4)), h),
-        L.band_i(L.subl(mulpos(qs), CO.lsnoc(bp, k)), SV.band(b3, dgood(es, CO.lsnoc(bp, k), t)), subl_snoc(mulpos(qs), bp, k, L.band_l(b2, SV.band(b3, b4), h234)),
-          L.band_i(b3, dgood(es, CO.lsnoc(bp, k), t), L.band_l(b3, b4, h34), dgood_up(es, bp, t, k, L.band_r(b3, b4, h34)))))
+      +h34 = L.band_r(b2, SV.band(b3, b4), h)
+      L.band_i(L.subl(mulpos(qs), CO.lsnoc(bp, k)), SV.band(b3, dgood(es, CO.lsnoc(bp, k), t)), subl_snoc(mulpos(qs), bp, k, L.band_l(b2, SV.band(b3, b4), h)),
+        L.band_i(b3, dgood(es, CO.lsnoc(bp, k), t), L.band_l(b3, b4, h34), dgood_up(es, bp, t, k, L.band_r(b3, b4, h34))))
+    case Con{SV.Drop{+j, +nd, SV.WDer{+dv}}, +t}:
+      absurd({dgood(es, CO.lsnoc(bp, k), Con{SV.Drop{j, nd, SV.WDer{dv}}, t}) == True{} : Bool}, KA.ft(h))
 
 def mp_sub(bp: $NL, ls: List<&2, S.Q>) -> {L.subl(mulpos(PA.muls(bp, ls)), bp) == True{} : Bool}:
   match bp ls:
@@ -110,7 +114,7 @@ def mp_sub(bp: $NL, ls: List<&2, S.Q>) -> {L.subl(mulpos(PA.muls(bp, ls)), bp) =
       L.subl_con(i, mulpos(PA.muls(it, lt)), Con{i, it}, L.mem_hd(i, it), L.subl_cons_r(mulpos(PA.muls(it, lt)), i, it, mp_sub(it, lt)))
 
 # the pass's combination is lin over the basis at bp
-def rhs_lin(+es: $QL, bp: $NL, ls: List<&2, S.Q>) -> {VD.comb.rhs(es, PA.muls(bp, ls)) == SV.lin(ls, SV.picked(es, bp)) : E.QExpr}:
+def rhs_lin(+es: $QL, bp: $NL, ls: List<&2, S.Q>) -> {DK.comb.rhs(es, PA.muls(bp, ls)) == SV.lin(ls, SV.picked(es, bp)) : E.QExpr}:
   match bp ls:
     case Nil{} Nil{}:
       {==}
@@ -119,7 +123,7 @@ def rhs_lin(+es: $QL, bp: $NL, ls: List<&2, S.Q>) -> {VD.comb.rhs(es, PA.muls(bp
     case Con{+i, +it} Nil{}:
       {==}
     case Con{+i, +it} Con{+l, +lt}:
-      Equal.cong(E.QExpr, E.QExpr, y => E.QAdd{E.QMul{E.QCst{l}, SV.eqat(es, i)}, y}, VD.comb.rhs(es, PA.muls(it, lt)), SV.lin(lt, SV.picked(es, it)), rhs_lin(es, it, lt))
+      Equal.cong(E.QExpr, E.QExpr, y => E.QAdd{E.QMul{E.QCst{l}, SV.eqat(es, i)}, y}, DK.comb.rhs(es, PA.muls(it, lt)), SV.lin(lt, SV.picked(es, it)), rhs_lin(es, it, lt))
 
 @MACRO CWP +sk: SK.Sketch, +R: $NL, +D: $NL, +c: Nat, +bp0: $NL
 @MACRO CWA sk, R, D, c, bp0
@@ -134,16 +138,15 @@ def dg_drop($CWP, +k: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: $DL,
   (hl, q2) = q1
   (hB, q3) = q2
   (hp, hbp) = q3
-  +qz = QN.qzero(E.QSub{SV.eqat($ES, k), VD.comb.rhs($ES, PA.muls(bp, $LS))})
-  L.band_i(QN.qzero(E.QSub{E.QCst{PA.qone()}, E.QCst{VD.qone()}}), SV.band(L.subl(mulpos(PA.muls(bp, $LS)), bp), SV.band(qz, dgood($ES, bp, ds))), {==},
-    L.band_i(L.subl(mulpos(PA.muls(bp, $LS)), bp), SV.band(qz, dgood($ES, bp, ds)), mp_sub(bp, $LS),
-      L.band_i(qz, dgood($ES, bp, ds),
-        ID.qzero_ident(SV.eqat($ES, k), VD.comb.rhs($ES, PA.muls(bp, $LS)),
-          (%Equal.sym(E.QExpr, SV.eqat($ES, k), e, he) : SV.Ident(_, VD.comb.rhs($ES, PA.muls(bp, $LS)))
-            (%Equal.sym(E.QExpr, VD.comb.rhs($ES, PA.muls(bp, $LS)), SV.lin($LS, SV.picked($ES, bp)), rhs_lin($ES, bp, $LS)) : SV.Ident(e, _)
-              (%hp : SV.Ident(e, SV.lin($LS, _))
-                DR.derivable(B, rows, e, CW.cwb_rinv(sk, c, k, rows, B, ds, us, hb), hnil))))),
-        hg)))
+  +qz = QN.qzero(E.QSub{SV.eqat($ES, k), DK.comb.rhs($ES, PA.muls(bp, $LS))})
+  L.band_i(L.subl(mulpos(PA.muls(bp, $LS)), bp), SV.band(qz, dgood($ES, bp, ds)), mp_sub(bp, $LS),
+    L.band_i(qz, dgood($ES, bp, ds),
+      ID.qzero_ident(SV.eqat($ES, k), DK.comb.rhs($ES, PA.muls(bp, $LS)),
+        (%Equal.sym(E.QExpr, SV.eqat($ES, k), e, he) : SV.Ident(_, DK.comb.rhs($ES, PA.muls(bp, $LS)))
+          (%Equal.sym(E.QExpr, DK.comb.rhs($ES, PA.muls(bp, $LS)), SV.lin($LS, SV.picked($ES, bp)), rhs_lin($ES, bp, $LS)) : SV.Ident(e, _)
+            (%hp : SV.Ident(e, SV.lin($LS, _))
+              DR.derivable(B, rows, e, CW.cwb_rinv(sk, c, k, rows, B, ds, us, hb), hnil))))),
+      hg))
 
 @MACRO IHD ih: @st2: PA.CW -> CW.CWInv($CWA, 1n+k, st2) -> {dgood($ES, CW.cw.bp(st2), CW.cw.ds(st2)) == True{} : Bool} -> {dgood($ES, CW.cw.bp(PA.cwalk(t, $OWN, c, 1n+k, st2)), CW.cw.ds(PA.cwalk(t, $OWN, c, 1n+k, st2))) == True{} : Bool}
 
@@ -197,55 +200,54 @@ def allsol(+own: $NL, +R: $NL, +D: $NL, xs: $NL) -> Bool:
     case Nil{}:
       True{}
     case Con{+x, t}:
-      SV.band(VD.solved_at(own, R, D, x), allsol(own, R, D, t))
+      SV.band(DK.solved_at(own, R, D, x), allsol(own, R, D, t))
 
 def as_mem.c(+own: $NL, +R: $NL, +D: $NL, +x: Nat, +y: Nat, +t: $NL, b: Bool, eb: {SV.eq(x, y) == b : Bool}, hm: {SV.bor(b, SV.mem(x, t)) == True{} : Bool},
-  +h: {SV.band(VD.solved_at(own, R, D, y), allsol(own, R, D, t)) == True{} : Bool}, ih: {SV.mem(x, t) == True{} : Bool} -> {allsol(own, R, D, t) == True{} : Bool} -> {VD.solved_at(own, R, D, x) == True{} : Bool})
-  -> {VD.solved_at(own, R, D, x) == True{} : Bool}:
+  +h: {SV.band(DK.solved_at(own, R, D, y), allsol(own, R, D, t)) == True{} : Bool}, ih: {SV.mem(x, t) == True{} : Bool} -> {allsol(own, R, D, t) == True{} : Bool} -> {DK.solved_at(own, R, D, x) == True{} : Bool})
+  -> {DK.solved_at(own, R, D, x) == True{} : Bool}:
   match b:
     case True{}:
-      %Equal.sym(Nat, x, y, L.eq_ok(x, y, eb)) : {VD.solved_at(own, R, D, _) == True{} : Bool}
-      L.band_l(VD.solved_at(own, R, D, y), allsol(own, R, D, t), h)
+      %Equal.sym(Nat, x, y, L.eq_ok(x, y, eb)) : {DK.solved_at(own, R, D, _) == True{} : Bool}
+      L.band_l(DK.solved_at(own, R, D, y), allsol(own, R, D, t), h)
     case False{}:
-      ih(hm, L.band_r(VD.solved_at(own, R, D, y), allsol(own, R, D, t), h))
+      ih(hm, L.band_r(DK.solved_at(own, R, D, y), allsol(own, R, D, t), h))
 
-def as_mem(+own: $NL, +R: $NL, +D: $NL, xs: $NL, +x: Nat, +h: {allsol(own, R, D, xs) == True{} : Bool}, hm: {SV.mem(x, xs) == True{} : Bool}) -> {VD.solved_at(own, R, D, x) == True{} : Bool}:
+def as_mem(+own: $NL, +R: $NL, +D: $NL, xs: $NL, +x: Nat, +h: {allsol(own, R, D, xs) == True{} : Bool}, hm: {SV.mem(x, xs) == True{} : Bool}) -> {DK.solved_at(own, R, D, x) == True{} : Bool}:
   match xs:
     case Nil{}:
-      absurd({VD.solved_at(own, R, D, x) == True{} : Bool}, KA.ft(hm))
+      absurd({DK.solved_at(own, R, D, x) == True{} : Bool}, KA.ft(hm))
     case Con{+y, +t}:
       as_mem.c(own, R, D, x, y, t, SV.eq(x, y), {==}, hm, h, a => b => as_mem(own, R, D, t, x, b, a))
 
-def cs_of(+own: $NL, +R: $NL, +D: $NL, qs: List<&2, SV.Mul>, +bp: $NL, +hs: {L.subl(mulpos(qs), bp) == True{} : Bool}, +ha: {allsol(own, R, D, bp) == True{} : Bool}) -> {VD.comb.solved(own, R, D, qs) == True{} : Bool}:
+def cs_of(+own: $NL, +R: $NL, +D: $NL, qs: List<&2, SV.Mul>, +bp: $NL, +hs: {L.subl(mulpos(qs), bp) == True{} : Bool}, +ha: {allsol(own, R, D, bp) == True{} : Bool}) -> {DK.comb.solved(own, R, D, qs) == True{} : Bool}:
   match qs:
     case Nil{}:
       {==}
     case Con{SV.Mul{+i, +q}, +t}:
-      L.band_i(VD.solved_at(own, R, D, i), VD.comb.solved(own, R, D, t), as_mem(own, R, D, bp, i, ha, L.subl_hd(i, mulpos(t), bp, hs)), cs_of(own, R, D, t, bp, L.subl_tl(i, mulpos(t), bp, hs), ha))
+      L.band_i(DK.solved_at(own, R, D, i), DK.comb.solved(own, R, D, t), as_mem(own, R, D, bp, i, ha, L.subl_hd(i, mulpos(t), bp, hs)), cs_of(own, R, D, t, bp, L.subl_tl(i, mulpos(t), bp, hs), ha))
 
 # good drops whose bp is in the system solved pass
-def dok_of(+es: $QL, +own: $NL, +R: $NL, +D: $NL, +bp: $NL, ds: $DL, +hg: {dgood(es, bp, ds) == True{} : Bool}, +ha: {allsol(own, R, D, bp) == True{} : Bool}) -> {VD.drops.ok(es, own, R, D, ds) == True{} : Bool}:
+def dok_of(+es: $QL, +own: $NL, +R: $NL, +D: $NL, +bp: $NL, ds: $DL, +hg: {dgood(es, bp, ds) == True{} : Bool}, +ha: {allsol(own, R, D, bp) == True{} : Bool}) -> {DK.drops.ok(es, own, R, D, ds) == True{} : Bool}:
   match ds:
     case Nil{}:
       {==}
-    case Con{SV.Drop{+j, +nd, SV.Comb{+hh, +qs}}, +t}:
-      +b1 = QN.qzero(E.QSub{hh, E.QCst{VD.qone()}})
+    case Con{SV.Drop{+j, +nd, SV.WLin{+qs}}, +t}:
       +b2 = L.subl(mulpos(qs), bp)
-      +b3 = QN.qzero(E.QSub{SV.eqat(es, j), VD.comb.rhs(es, qs)})
+      +b3 = QN.qzero(E.QSub{SV.eqat(es, j), DK.comb.rhs(es, qs)})
       +b4 = dgood(es, bp, t)
-      +h234 = L.band_r(b1, SV.band(b2, SV.band(b3, b4)), hg)
-      +h34 = L.band_r(b2, SV.band(b3, b4), h234)
-      L.band_i(VD.drop.ok(es, own, R, D, SV.Drop{j, nd, SV.Comb{hh, qs}}), VD.drops.ok(es, own, R, D, t),
-        L.band_i(b1, SV.band(VD.comb.solved(own, R, D, qs), b3), L.band_l(b1, SV.band(b2, SV.band(b3, b4)), hg),
-          L.band_i(VD.comb.solved(own, R, D, qs), b3, cs_of(own, R, D, qs, bp, L.band_l(b2, SV.band(b3, b4), h234), ha), L.band_l(b3, b4, h34))),
+      +h34 = L.band_r(b2, SV.band(b3, b4), hg)
+      L.band_i(DK.drop.ok(es, own, R, D, SV.Drop{j, nd, SV.WLin{qs}}), DK.drops.ok(es, own, R, D, t),
+        L.band_i(DK.comb.solved(own, R, D, qs), b3, cs_of(own, R, D, qs, bp, L.band_l(b2, SV.band(b3, b4), hg), ha), L.band_l(b3, b4, h34)),
         dok_of(es, own, R, D, bp, t, L.band_r(b3, b4, h34), ha))
+    case Con{SV.Drop{+j, +nd, SV.WDer{+dv}}, +t}:
+      absurd({DK.drops.ok(es, own, R, D, Con{SV.Drop{j, nd, SV.WDer{dv}}, t}) == True{} : Bool}, KA.ft(hg))
 
 def as_cat(+own: $NL, +R: $NL, +D: $NL, a: $NL, +b: $NL, +ha: {allsol(own, R, D, a) == True{} : Bool}, +hb: {allsol(own, R, D, b) == True{} : Bool}) -> {allsol(own, R, D, SV.cat(a, b)) == True{} : Bool}:
   match a:
     case Nil{}:
       hb
     case Con{+x, +t}:
-      L.band_i(VD.solved_at(own, R, D, x), allsol(own, R, D, SV.cat(t, b)), L.band_l(VD.solved_at(own, R, D, x), allsol(own, R, D, t), ha), as_cat(own, R, D, t, b, L.band_r(VD.solved_at(own, R, D, x), allsol(own, R, D, t), ha), hb))
+      L.band_i(DK.solved_at(own, R, D, x), allsol(own, R, D, SV.cat(t, b)), L.band_l(DK.solved_at(own, R, D, x), allsol(own, R, D, t), ha), as_cat(own, R, D, t, b, L.band_r(DK.solved_at(own, R, D, x), allsol(own, R, D, t), ha), hb))
 
 # the solved positions before c
 def ap_as(+own: $NL, +R: $NL, +D: $NL, +c: Nat, xs: $NL, +h: {PP.allpre(xs, own, R, D, c) == True{} : Bool}) -> {allsol(own, R, D, xs) == True{} : Bool}:
@@ -253,13 +255,13 @@ def ap_as(+own: $NL, +R: $NL, +D: $NL, +c: Nat, xs: $NL, +h: {PP.allpre(xs, own,
     case Nil{}:
       {==}
     case Con{+x, +t}:
-      L.band_i(VD.solved_at(own, R, D, x), allsol(own, R, D, t), L.band_r(SV.lt(SV.nth(own, x), c), VD.solved_at(own, R, D, x), L.band_l(PP.psel(own, R, D, c, x), PP.allpre(t, own, R, D, c), h)),
+      L.band_i(DK.solved_at(own, R, D, x), allsol(own, R, D, t), L.band_r(SV.lt(SV.nth(own, x), c), DK.solved_at(own, R, D, x), L.band_l(PP.psel(own, R, D, c, x), PP.allpre(t, own, R, D, c), h)),
         ap_as(own, R, D, c, t, L.band_r(PP.psel(own, R, D, c, x), PP.allpre(t, own, R, D, c), h)))
 
 # c's own, not dropped, c not red: in the system solved (the classes drop
 # exactly what c's class drops among c's equations)
 def us_as.d(+own: $NL, +R: $NL, +cls: List<&2, SV.Class>, +c: Nat, +u: Nat, +dd: $NL, +hu: {SV.eq(SV.nth(own, u), c) == True{} : Bool}, +hR: {SV.mem(c, R) == False{} : Bool}, +hnu: {SV.mem(u, dd) == False{} : Bool},
-  +hdn: {CL.downs(own, cls, 0n) == True{} : Bool}, +hdk: {SV.kdrops(SV.class_at(cls, c)) == dd : $NL}) -> {VD.solved_at(own, R, SV.dropped(cls), u) == True{} : Bool}:
+  +hdn: {CL.downs(own, cls, 0n) == True{} : Bool}, +hdk: {SV.kdrops(SV.class_at(cls, c)) == dd : $NL}) -> {DK.solved_at(own, R, SV.dropped(cls), u) == True{} : Bool}:
   +hc = L.eq_ok(SV.nth(own, u), c, hu)
   VR.sa_of(own, R, SV.dropped(cls), u,
     (%Equal.sym(Nat, SV.nth(own, u), c, hc) : {SV.mem(_, R) == False{} : Bool}
@@ -275,7 +277,7 @@ def us_as(+own: $NL, +R: $NL, +cls: List<&2, SV.Class>, +c: Nat, us: $NL, +dd: $
     case Nil{}:
       {==}
     case Con{+u, +t}:
-      L.band_i(VD.solved_at(own, R, SV.dropped(cls), u), allsol(own, R, SV.dropped(cls), t),
+      L.band_i(DK.solved_at(own, R, SV.dropped(cls), u), allsol(own, R, SV.dropped(cls), t),
         us_as.d(own, R, cls, c, u, dd, L.band_l(SV.eq(SV.nth(own, u), c), KB.allo(own, t, c), hown), hR, KB.bnot_t(SV.mem(u, dd), L.band_l(SV.bnot(SV.mem(u, dd)), SV.none_in(t, dd), hnd)), hdn, hdk),
         us_as(own, R, cls, c, t, dd, L.band_r(SV.eq(SV.nth(own, u), c), KB.allo(own, t, c), hown), hR, L.band_r(SV.bnot(SV.mem(u, dd)), SV.none_in(t, dd), hnd), hdn, hdk))
 
@@ -334,14 +336,14 @@ def srefs_ok(ss: $SL, +sk: SK.Sketch, +R: $NL, +c: Nat, +i: Nat, +rs: List<&2, S
 # A kept or amber class
 # ---------------------
 
-def kdo_onea(m: Maybe<&2, List<&2, SV.Ref>>, +es: $QL, +own: $NL, +R: $NL, +D: $NL, +dd: $DL) -> {VD.kdrops.ok(es, own, R, D, PA.one.a(m, dd)) == VD.drops.ok(es, own, R, D, dd) : Bool}:
+def kdo_onea(m: Maybe<&2, List<&2, SV.Ref>>, +es: $QL, +own: $NL, +R: $NL, +D: $NL, +dd: $DL) -> {DK.kdrops.ok(es, own, R, D, PA.one.a(m, dd)) == DK.drops.ok(es, own, R, D, dd) : Bool}:
   match m:
     case None{}:
       {==}
     case Some{rs}:
       {==}
 
-def kdo_onek(a: Bool, +es: $QL, +own: $NL, +R: $NL, +D: $NL, +sk: SK.Sketch, +kb: $NL, +c: Nat, +dd: $DL) -> {VD.kdrops.ok(es, own, R, D, PA.one.k(a, sk, kb, c, dd)) == VD.drops.ok(es, own, R, D, dd) : Bool}:
+def kdo_onek(a: Bool, +es: $QL, +own: $NL, +R: $NL, +D: $NL, +sk: SK.Sketch, +kb: $NL, +c: Nat, +dd: $DL) -> {DK.kdrops.ok(es, own, R, D, PA.one.k(a, sk, kb, c, dd)) == DK.drops.ok(es, own, R, D, dd) : Bool}:
   match a:
     case True{}:
       kdo_onea(PA.srefs(SV.csides(sk, [c]), sk, kb, c, 0n), es, own, R, D, dd)
@@ -380,7 +382,7 @@ def kam_onek(a: Bool, +sk: SK.Sketch, +R: $NL, +kb: $NL, +c: Nat, +dd: $DL, +hkb
 
 # the class at i passes both checks
 def ckb(+sk: SK.Sketch, +i: Nat, +K: SV.Class) -> Bool:
-  SV.band(VD.kdrops.ok($ES, $OWN, $RF, $DF, K), VD.kamber.ok(sk, $RF, i, K))
+  SV.band(DK.kdrops.ok($ES, $OWN, $RF, $DF, K), VD.kamber.ok(sk, $RF, i, K))
 
 def ck.ok(+sk: SK.Sketch, +i: Nat, +kb: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +vm: List<&2, Maybe<&2, Nat>>, +rows2: List<&2, EL.Row>, +B2: $QL, +bp2: $NL, +dd: $DL, +us: $NL,
   +hi: PP.PInv(sk, $RF, $DF, i, $STK), +hci: CW.CWInv(sk, $RF, $DF, i, bp, $N, $CWK), +hg: {dgood($ES, bp2, dd) == True{} : Bool}, +hK: {SV.class_at($CLS, i) == $K1 : SV.Class}, +hD: {CL.downs($OWN, $CLS, 0n) == True{} : Bool})
@@ -392,8 +394,8 @@ def ck.ok(+sk: SK.Sketch, +i: Nat, +kb: $NL, +rows: List<&2, EL.Row>, +B: $QL, +
   +hb = PP.pinv_b(sk, $RF, $DF, i, $STK, hi)
   +hR = Equal.trans(Bool, SV.mem(i, $RF), SV.is_red($K1), False{}, PP.red_of(sk, i, $K1, hK), PP.onek_red($AMB, sk, kb, i, dd))
   +hdk = Equal.trans($NL, SV.kdrops(SV.class_at($CLS, i)), SV.kdrops($K1), SV.drops(dd), Equal.cong(SV.Class, $NL, z => SV.kdrops(z), SV.class_at($CLS, i), $K1, hK), PP.onek_kd($AMB, sk, kb, i, dd))
-  L.band_i(VD.kdrops.ok($ES, $OWN, $RF, $DF, $K1), VD.kamber.ok(sk, $RF, i, $K1),
-    Equal.trans(Bool, VD.kdrops.ok($ES, $OWN, $RF, $DF, $K1), VD.drops.ok($ES, $OWN, $RF, $DF, dd), True{}, kdo_onek($AMB, $ES, $OWN, $RF, $DF, sk, kb, i, dd),
+  L.band_i(DK.kdrops.ok($ES, $OWN, $RF, $DF, $K1), VD.kamber.ok(sk, $RF, i, $K1),
+    Equal.trans(Bool, DK.kdrops.ok($ES, $OWN, $RF, $DF, $K1), DK.drops.ok($ES, $OWN, $RF, $DF, dd), True{}, kdo_onek($AMB, $ES, $OWN, $RF, $DF, sk, kb, i, dd),
       dok_of($ES, $OWN, $RF, $DF, bp2, dd, hg,
         (%Equal.sym($NL, bp2, SV.cat(bp, us), hbp2) : {allsol($OWN, $RF, $DF, _) == True{} : Bool}
           as_cat($OWN, $RF, $DF, bp, us, ap_as($OWN, $RF, $DF, i, bp, PP.pib_pre(sk, $RF, $DF, i, rows, B, bp, vm, hb)),
@@ -464,7 +466,7 @@ def band4(+a: Bool, +b: Bool, +c: Bool, +d: Bool, +h1: {SV.band(a, c) == True{} 
 # the classes from position i: they pass both checks
 def ckall(rs: List<&2, SK.Rec>, +sk: SK.Sketch, +i: Nat, +st: PA.PS, +hd: {KB.rdrop(i, PA.recs(sk)) == rs : List<&2, SK.Rec>}, +hc: {CL.cdrop(i, $CLS) == $PS1 : List<&2, SV.Class>},
   +hA: {D.adjb($AD, $NV) == True{} : Bool}, +hD: {CL.downs($OWN, $CLS, 0n) == True{} : Bool}, +hi: PP.PInv(sk, $RF, $DF, i, st))
-  -> {SV.band(VD.dck($ES, $OWN, $RF, $DF, $PS1), VD.ack(sk, $RF, $PS1, i)) == True{} : Bool}:
+  -> {SV.band(DK.dck($ES, $OWN, $RF, $DF, $PS1), VD.ack(sk, $RF, $PS1, i)) == True{} : Bool}:
   match rs:
     case Nil{}:
       {==}
@@ -475,11 +477,19 @@ def ckall(rs: List<&2, SK.Rec>, +sk: SK.Sketch, +i: Nat, +st: PA.PS, +hd: {KB.rd
     case Con{SK.Rec{+id, False{}, +k}, +t}:
       +hK = CL.ca_of($CLS, i, PA.PO.k($O1), PA.pass(t, $PARGS, 1n+i, PA.PO.st($O1)), hc)
       +hdrv = PP.driving_at(sk, i, id, k, t, hd)
-      band4(VD.kdrops.ok($ES, $OWN, $RF, $DF, PA.PO.k($O1)), VD.dck($ES, $OWN, $RF, $DF, PA.pass(t, $PARGS, 1n+i, PA.PO.st($O1))), VD.kamber.ok(sk, $RF, i, PA.PO.k($O1)), VD.ack(sk, $RF, PA.pass(t, $PARGS, 1n+i, PA.PO.st($O1)), 1n+i),
+      band4(DK.kdrops.ok($ES, $OWN, $RF, $DF, PA.PO.k($O1)), DK.dck($ES, $OWN, $RF, $DF, PA.pass(t, $PARGS, 1n+i, PA.PO.st($O1))), VD.kamber.ok(sk, $RF, i, PA.PO.k($O1)), VD.ack(sk, $RF, PA.pass(t, $PARGS, 1n+i, PA.PO.st($O1)), 1n+i),
         ck.d(st, sk, i, hi, hK, hD),
         ckall(t, sk, 1n+i, PA.PO.st($O1), KB.rdrop_step(i, PA.recs(sk), SK.Rec{id, False{}, k}, t, hd), CL.cdrop_step($CLS, i, PA.PO.k($O1), PA.pass(t, $PARGS, 1n+i, PA.PO.st($O1)), hc), hA, hD,
           PP.pinv_sr(sk, i, $O1, PP.hon.d(st, sk, i, hi, hK, hA, hdrv, hD))))
 
-# the pass's classes pass the verdict's exact checks
+@MACRO DCK DK.dck($ES, $OWN, $RF, $DF, $CLS)
+@MACRO ACK VD.ack(sk, $RF, $CLS, 0n)
+
+# the pass's classes pass the verdict's exact check
 def ck_pass(+sk: SK.Sketch, +hA: {D.adjb($AD, $NV) == True{} : Bool}) -> {VD.exact(sk, $CLS) == True{} : Bool}:
-  ckall(PA.recs(sk), sk, 0n, PA.start($NV), {==}, {==}, hA, PP.classes_down(sk), PP.pinv0(sk))
+  L.band_r($DCK, $ACK, ckall(PA.recs(sk), sk, 0n, PA.start($NV), {==}, {==}, hA, PP.classes_down(sk), PP.pinv0(sk)))
+
+# every drop the pass records is correct by construction: its reason
+# passes (lib/dropok.bend; lib/vrdpf.bend says what that means)
+def why_pass(+sk: SK.Sketch, +hA: {D.adjb($AD, $NV) == True{} : Bool}) -> {$DCK == True{} : Bool}:
+  L.band_l($DCK, $ACK, ckall(PA.recs(sk), sk, 0n, PA.start($NV), {==}, {==}, hA, PP.classes_down(sk), PP.pinv0(sk)))
