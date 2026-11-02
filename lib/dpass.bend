@@ -190,3 +190,15 @@ def pass2_st(rs: List<&2, SK.Rec>, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, 
 
 def final2_st(+sk: SK.Sketch) -> PA.PS:
   pass2_st(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)), Nil{}, DC.wk0(SV.ents(sk), DCF.tv(sk), DC.SP{Nil{}, Nil{}}))
+
+# The structure: the system solved, its pins and its blocks, read off the
+# state the pass ends with exactly as lib/pass.bend's solved_pos, pins and
+# skel are off final_st
+def solved_pos2(+sk: SK.Sketch) -> List<&2, Nat>:
+  PA.PS.bp(final2_st(sk))
+
+def pins2(+sk: SK.Sketch) -> List<&2, Nat>:
+  ST.KD.red(PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), solved_pos2(sk)))
+
+def skel2(+sk: SK.Sketch) -> ST.Skel:
+  ST.renum(ST.skel.kd(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), solved_pos2(sk), PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), solved_pos2(sk))), solved_pos2(sk))

@@ -1542,6 +1542,48 @@ give both component identities that Valid's SameV asks for.
 - `fast_solve`: the generic `final` gains the nd sides. The fast solver's
   proof is generic, so this is a substitution.
 
+**As planned 2026-11-01** (read before building; Danielle: go ahead).
+`VD.exact` already checks only the amber sides (B4.6). Re-prove, then
+switch: a draft solver runs the new pass beside sk-13a's, and the laws are
+proven for it, the gate green throughout. At the switch it replaces
+lib/solve.bend, and these proofs replace the old ones.
+- **B5.1 The new pass's structure.** lib/dpass.bend gains `solved_pos2`,
+  `pins2` and `skel2`, read off `final2_st` exactly as lib/pass.bend's
+  are off `final_st`.
+- **B5.2 The draft solver** (lib/dsolve.bend). sk-13a's search and
+  answer over the new pass's classes, pins, structure and system solved.
+  Its verdict is `final2 = ndok ∧ SO.final`. `ndok` checks |s|² > 0 over
+  the box (`PL.check_sides` on `DR.ndsides(ents, live_nd(cls))`), for
+  every s in the nd of a Kept or Amber drop. The answer type and the
+  loop's shape are sk-13a's.
+- **B5.3 The verdict laws for it** (lib/dsolvepf.bend). A True ok is a
+  True `final2` (the loop lemmas, copied). `final2` gives sk-13a's
+  `final`, and solvepf's and regpf's lemmas are stated for any answer
+  whose `final` passes, so `solve_pins`, `solve_unique` and
+  `solve_regular` follow unchanged.
+  - `solve_exists` is the new part. Before, every drop was degree 0
+    (`dck`), so the dropped equations held wherever the solved ones did.
+    Now, at the box's point y where the system solved holds:
+    1. `ndok` makes every live drop's nd segments long at y;
+    2. so `facts_hold` gives every Kept constraint's dropped equations
+       at y, and with the box's sides, y means the sketch less its red
+       and amber constraints;
+    3. `amber_law` (B6) then gives the sketch less its red ones.
+    The Honest is `pass2_honest`, called once per use.
+  - `solve_blame`: the support is not red, read off the draft Honest's
+    ConflictOk (as blamepf's, over DH's Fate), then blamepf's `mo`.
+  - `solve_honest`, `solve_drop`, `solve_amber` and `solve_conflict` at
+    the solver level, from `pass2_honest` and the B6 laws.
+- **B5.4 `solve_total` for the new pass**: the pins distinct and below
+  nvars, the system solved perfectly matched onto the free variables
+  (perfpf's `total_pass` over `final2_st`), and the marked sketch well
+  formed.
+- **B5.5 `fast_solve`**: the word solver over the new pass with the same
+  `final2`, equal to the draft solver (fastpf's proof is generic in the
+  numbers, so this is the same proof over the new verdict).
+- Each restated over the draft solver in tests/dir_draft.bend. The
+  solver-level texts in tools/drafts/roadmap13b.draft are unchanged.
+
 ### B6. Corollaries and uniqueness
 - `solve_drop`, `solve_amber` and `solve_conflict` with nd.
 - `honest_unique` re-proven with the extended cases.

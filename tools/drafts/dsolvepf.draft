@@ -1,0 +1,388 @@
+# bend-cad: the draft solver's laws (PLAN-sk13b B5.3): lib/dsolve.bend,
+# over the pass with the direction layer, satisfies sk-13a's verdict laws
+# (solve_exists, solve_unique, solve_pins, solve_regular, solve_blame)
+# with their statements unchanged, and the extended Honest's laws at the
+# solver level. Proofs only.
+#
+# A True ok is a True final2 (the loop, as lib/solvepf.bend's), and final2
+# includes sk-13a's final, so every lemma proven for an answer whose final
+# passes applies: solvepf's for the pins and uniqueness, regpf's for
+# regularity. Existence is new: the old proof read every drop as a
+# degree-0 combination, which a direction drop is not. At the box's point
+# y where the system solved holds:
+# - final2's nd check makes every live drop's nd segments long at y;
+# - so each dropped equation of a constraint that is not red holds at y
+#   (its fact, lib/dfactpf.bend: facts_hold), and y means the sketch less
+#   its red and amber constraints (the box's sides);
+# - so y means the sketch less its red ones (lib/dambpf.bend: amber_law).
+# The draft Honest is the new pass's (lib/dpasspf.bend: pass2_honest), a
+# definition, so it is given once per use.
+#
+# Generated from tools/drafts/dsolvepf.draft by tools/expand.py; edit the
+# draft.
+
+import Base
+import ../spec/num.bend as S
+import ../spec/ring.bend as E
+import ../spec/field.bend as O
+import ../spec/mat.bend as M
+import ../spec/knum.bend as N
+import ../spec/real.bend as CR
+import ../spec/sketch.bend as SK
+import ../spec/box.bend as BX
+import ../spec/deriv.bend as DV
+import ../spec/solve.bend as SV
+import ../spec/_draft13b.bend as DH
+import ../spec/dir.bend as DR
+import ./karith.bend as KA
+import ./kinst.bend as KI
+import ./nat.bend as LN
+import ./listpf.bend as L
+import ./plan.bend as PL
+import ./planpf.bend as PP
+import ./meaning.bend as MN
+import ./wfdec.bend as WF
+import ./wfcpf.bend as WC
+import ./vrdpf.bend as VR
+import ./ownpf.bend as OW
+import ./solvedpf.bend as SP
+import ./keptpf.bend as KP
+import ./hreadpf.bend as HR
+import ./struct.bend as ST
+import ./numer.bend as NU
+import ./solve.bend as SO
+import ./solvepf.bend as SPF
+import ./regpf.bend as REG
+import ./blamepf.bend as BLM
+import ./dirpf.bend as DP
+import ./dpass.bend as DPS
+import ./dpasspf.bend as DPP
+import ./dfactpf.bend as DFC
+import ./dambpf.bend as DAM
+import ./dcflawpf.bend as DCL
+import ./dsolve.bend as DSO
+
+def absurd(-A: Type, x: Empty) -> A:
+  match x:
+
+@MACRO NL List<&2, Nat>
+@MACRO QL List<&2, E.QExpr>
+@MACRO CLS List<&2, SV.Class>
+@MACRO EL List<&2, SK.Ent>
+@MACRO ENV List<&2, O.C(F)>
+@MACRO Z0 O.zero(F)
+@MACRO OWN SV.owners(sk)
+@MACRO ES SK.Sketch.eqs(sk)
+@MACRO N SV.neqs(SK.Sketch.eqs(sk))
+@MACRO ENT SV.ents(sk)
+
+# The verdict the search keeps
+# ----------------------------
+# As lib/solvepf.bend's, over final2.
+
+def loop_ok2(ps: $NL, ok: Bool, +cur: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: $CLS, +pins: $NL, +es: $QL, +nv: Nat, +skel: ST.Skel, h: {ok == DSO.accept2(cur, sk, g0, cls, pins) : Bool})
+  -> {SO.run.ok(DSO.ploop2(ps, ok, cur, sk, g0, cls, pins, es, nv, skel)) == DSO.accept2(SO.run.m(DSO.ploop2(ps, ok, cur, sk, g0, cls, pins, es, nv, skel)), sk, g0, cls, pins) : Bool}:
+  match ps ok:
+    case Nil{} ok:
+      h
+    case Con{p, t} True{}:
+      h
+    case Con{+p, t} False{}:
+      loop_ok2(t, DSO.accept2(NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins), NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins, es, nv, skel, {==})
+
+def start_ok2(ps: $NL, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: $CLS, +pins: $NL, +es: $QL, +nv: Nat, +skel: ST.Skel)
+  -> {SO.run.ok(DSO.ploop2.start(ps, sk, g0, cls, pins, es, nv, skel)) == DSO.accept2(SO.run.m(DSO.ploop2.start(ps, sk, g0, cls, pins, es, nv, skel)), sk, g0, cls, pins) : Bool}:
+  match ps:
+    case Nil{}:
+      {==}
+    case Con{+p, t}:
+      loop_ok2(t, DSO.accept2(NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins), NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins, es, nv, skel, {==})
+
+def run_final2(r: SO.Run, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: $CLS, +pins: $NL, hs: {SO.run.ok(r) == DSO.accept2(SO.run.m(r), sk, g0, cls, pins) : Bool}, ok: {SO.run.ok(r) == True{} : Bool})
+  -> {DSO.final2(sk, g0, SO.answer(cls, pins, r)) == True{} : Bool}:
+  match r:
+    case SO.Run{b, m}:
+      match b:
+        case True{}:
+          match m:
+            case NU.POk{+y}:
+              Equal.sym(Bool, True{}, DSO.accept2(NU.POk{y}, sk, g0, cls, pins), hs)
+            case NU.PRetry{}:
+              absurd({DSO.final2(sk, g0, SO.answer(cls, pins, SO.Run{True{}, NU.PRetry{}})) == True{} : Bool}, KA.tf(hs))
+            case NU.PStop{}:
+              absurd({DSO.final2(sk, g0, SO.answer(cls, pins, SO.Run{True{}, NU.PStop{}})) == True{} : Bool}, KA.tf(hs))
+        case False{}:
+          absurd({DSO.final2(sk, g0, SO.answer(cls, pins, SO.Run{False{}, m})) == True{} : Bool}, KA.ft(ok))
+
+@MACRO A DSO.solve_l2(sk, g0, l)
+@MACRO OK +ok: {SO.Out.ok($A) == True{} : Bool}
+
+# a True ok is a True final2 on the draft solver's answer
+def verdict2(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, $OK) -> {DSO.final2(sk, g0, $A) == True{} : Bool}:
+  run_final2(DSO.ploop2.start(SO.precisions(l, 7n), sk, g0, DSO.cls_of2(sk), DSO.pins_of2(sk), DSO.kept2(sk), SO.nvars(sk), DSO.skel_of2(sk)), sk, g0, DSO.cls_of2(sk), DSO.pins_of2(sk),
+    start_ok2(SO.precisions(l, 7n), sk, g0, DSO.cls_of2(sk), DSO.pins_of2(sk), DSO.kept2(sk), SO.nvars(sk), DSO.skel_of2(sk)), ok)
+
+# final2 is the nd check and sk-13a's final
+def fin_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {DSO.final2(sk, g0, x) == True{} : Bool}) -> {SO.final(sk, g0, x) == True{} : Bool}:
+  KA.band_r(DSO.ndok(sk, x), SO.final(sk, g0, x), h)
+
+def nd_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {DSO.final2(sk, g0, x) == True{} : Bool}) -> {DSO.ndok(sk, x) == True{} : Bool}:
+  KA.band_l(DSO.ndok(sk, x), SO.final(sk, g0, x), h)
+
+@MACRO FIN fin_of(sk, g0, $A, verdict2(sk, g0, l, ok))
+
+# the draft Honest for the draft solver's classes
+def hon2(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, $OK) -> DH.Honest(sk, SO.Out.cls($A)):
+  DPP.pass2_honest(sk, SPF.wf_of(sk, g0, $A, $FIN), SPF.cov_of(sk, g0, $A, $FIN))
+
+# Every equation of a constraint neither red nor amber holds
+# ----------------------------------------------------------
+
+@MACRO R SV.reds(cls)
+@MACRO D SV.dropped(cls)
+@MACRO AM SV.ambers(cls)
+@MACRO RA SV.cat($R, $AM)
+@MACRO KFT DP.AllFacts(~F, x, $ENT, SV.facts.go($ES, $OWN, SV.kept_before(sk, $R, SV.ncons(sk)), sk, cls, True{}, 0n))
+@MACRO OK1 SV.nth($OWN, k)
+@MACRO CK SV.class_at(cls, $OK1)
+@MACRO EQK SV.eqat($ES, k)
+@MACRO KJK SV.dstat_of($ENT, SV.kind_at(sk, $OK1))
+
+# the live drops' nd: a class's own part
+def ln_at(~F: O.OField, +env: $ENV, +es: $EL, cls: $CLS, o: Nat, +h: DR.Longs(~F, env, es, SV.live_nd(cls))) -> DR.Longs(~F, env, es, SV.live_nd.of(SV.class_at(cls, o))):
+  match cls o:
+    case Nil{} o:
+      Unit{}
+    case Con{+k, +t} 0n:
+      DAM.longs_l(~F, env, es, SV.live_nd.of(k), SV.live_nd(t), h)
+    case Con{+k, +t} 1n+m:
+      ln_at(~F, env, es, t, m, DAM.longs_r(~F, env, es, SV.live_nd.of(k), SV.live_nd(t), h))
+
+def ln_kdd(k: SV.Class) -> {SV.live_nd.of(k) == SV.dds_nd(SV.kdd(k)) : $NL}:
+  match k:
+    case SV.Kept{dd}:
+      {==}
+    case SV.Amber{dd, rs}:
+      {==}
+    case SV.Over{j, s, w}:
+      {==}
+    case SV.Conflict{s, nd}:
+      {==}
+
+# a drop's fact's nd is among the live ones
+def ld_of(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: $CLS, +k: Nat, +hf: {HR.hfacts(sk, cls) == True{} : Bool}, +hl: DR.Longs(~F, x, $ENT, SV.live_nd(cls)), +hmk: {SV.mem(k, SV.kdrops($CK)) == True{} : Bool})
+  -> DR.Longs(~F, x, $ENT, SV.dnd_at(cls, k)):
+  %Equal.sym($NL, SV.dnd_at(cls, k), SV.dnd.go(SV.kdd($CK), k), DFC.dnd_own(sk, cls, k, hf, hmk)) : DR.Longs(~F, x, $ENT, _)
+  DAM.dds_longs(~F, x, $ENT, SV.kdd($CK), k, (%ln_kdd($CK) : DR.Longs(~F, x, $ENT, _)
+    ln_at(~F, x, $ENT, cls, $OK1, hl)))
+
+@MACRO ZP +x: M.Vec(~F), +sk: SK.Sketch, +cls: $CLS, +hf: {HR.hfacts(sk, cls) == True{} : Bool}, +af: $KFT, +hl: DR.Longs(~F, x, $ENT, SV.live_nd(cls)), +hz: SK.Zeros(~F, x, SV.solved(sk, $R, $D))
+@MACRO ZA x, sk, cls, hf, af, hl, hz
+
+def pz3.c(~F: O.OField, b: Bool, $ZP, +k: Nat, +hk: {SV.lt(k, $N) == True{} : Bool}, +hr: {SV.mem($OK1, $R) == False{} : Bool}, +eb: {SV.mem(k, $D) == b : Bool}) -> {O.eval(~F, x, $EQK) == $Z0 : O.C(F)}:
+  match b:
+    case True{}:
+      +hmk = Equal.trans(Bool, SV.mem(k, SV.kdrops($CK)), SV.mem(k, $D), True{}, Equal.sym(Bool, SV.mem(k, $D), SV.mem(k, SV.kdrops($CK)), HR.mem_dropped(sk, cls, k, hf)), eb)
+      DP.fst({O.eval(~F, x, $EQK) == $Z0 : O.C(F)}, DP.StatHolds(~F, x, $ENT, $KJK), DP.fact_ok(~F, x, $ENT, $EQK, SV.dnd_at(cls, k), $KJK, DFC.fh_at(~F, x, sk, cls, k, hk, DFC.dkb(sk, cls, hf, k, eb, hk), af), ld_of(~F, x, sk, cls, k, hf, hl, hmk)))
+    case False{}:
+      VR.zat(~F, x, $ES, $OWN, $R, $D, hz, k, VR.sa_of($OWN, $R, $D, k, hr, eb))
+
+# the sketch's equation k, its constraint not red, holds where the system
+# solved does and the live drops' nd segments are long
+def pz3(~F: O.OField, $ZP, +k: Nat, +hk: {SV.lt(k, $N) == True{} : Bool}, +hr: {SV.mem($OK1, $R) == False{} : Bool}) -> {O.eval(~F, x, $EQK) == $Z0 : O.C(F)}:
+  pz3.c(~F, SV.mem(k, $D), $ZA, k, hk, hr, {==})
+
+def bf_l(a: Bool, +b: Bool, h: {SV.bor(a, b) == False{} : Bool}) -> {a == False{} : Bool}:
+  match a:
+    case True{}:
+      absurd({True{} == False{} : Bool}, KA.tf(h))
+    case False{}:
+      {==}
+
+def zm3.c(~F: O.OField, b: Bool, $ZP, +k: Nat, +e: E.QExpr, +t: $QL, +o: Nat, +ot: $NL, +hq: {OW.qdrop(k, $ES) == Con{e, t} : $QL}, +ho: {OW.ndrop(k, $OWN) == Con{o, ot} : $NL}, +eb: {SV.mem(o, $RA) == b : Bool}, ih: SK.Zeros(~F, x, KP.keepq(t, ot, $RA)))
+  -> SK.Zeros(~F, x, KP.keepq.go(b, e, KP.keepq(t, ot, $RA))):
+  match b:
+    case True{}:
+      ih
+    case False{}:
+      +hro = bf_l(SV.mem(o, $R), SV.mem(o, $AM), Equal.trans(Bool, SV.bor(SV.mem(o, $R), SV.mem(o, $AM)), SV.mem(o, $RA), False{}, Equal.sym(Bool, SV.mem(o, $RA), SV.bor(SV.mem(o, $R), SV.mem(o, $AM)), SP.mem_cat(o, $R, $AM)), eb))
+      ((%OW.eqat_of($ES, k, e, t, hq) : {O.eval(~F, x, _) == $Z0 : O.C(F)}
+        pz3(~F, $ZA, k, SP.lt_qdrop($ES, k, e, t, hq), (%Equal.sym(Nat, SV.nth($OWN, k), o, OW.nth_of($OWN, k, o, ot, ho)) : {SV.mem(_, $R) == False{} : Bool}
+          hro))), ih)
+
+def zm3.go(~F: O.OField, $ZP, ys: $QL, os: $NL, +k: Nat, +hq: {OW.qdrop(k, $ES) == ys : $QL}, +ho: {OW.ndrop(k, $OWN) == os : $NL}) -> SK.Zeros(~F, x, KP.keepq(ys, os, $RA)):
+  match ys os:
+    case Nil{} os:
+      Unit{}
+    case Con{e, t} Nil{}:
+      Unit{}
+    case Con{+e, +t} Con{+o, +ot}:
+      zm3.c(~F, SV.mem(o, $RA), $ZA, k, e, t, o, ot, hq, ho, {==}, zm3.go(~F, $ZA, t, ot, 1n+k, OW.qdrop_step(k, $ES, e, t, hq), OW.ndrop_step(k, $OWN, o, ot, ho)))
+
+# every equation of the sketch less its red and amber constraints holds
+def zr3(~F: O.OField, $ZP) -> SK.Zeros(~F, x, SK.Sketch.eqs(SV.mark($RA, sk))):
+  %Equal.sym($QL, SK.Sketch.eqs(SV.mark($RA, sk)), KP.keepq($ES, $OWN, $RA), KP.kept_keepq(sk, $RA)) : SK.Zeros(~F, x, _)
+  zm3.go(~F, $ZA, $ES, $OWN, 0n, {==}, {==})
+
+# The nd sides
+# ------------
+
+# the nd sides hold: the nd segments are long
+def sd_longs(~F: O.OField, +env: $ENV, +es: $EL, nd: $NL, +h: SK.Sides(~F, env, DR.ndsides(es, nd))) -> DR.Longs(~F, env, es, nd):
+  match nd:
+    case Nil{}:
+      Unit{}
+    case Con{+s, +t}:
+      (DP.fst(DR.Long(~F, env, es, s), SK.Sides(~F, env, DR.ndsides(es, t)), h), sd_longs(~F, env, es, t, DP.snd(DR.Long(~F, env, es, s), SK.Sides(~F, env, DR.ndsides(es, t)), h)))
+
+def an_of(~F: O.OField, +env: $ENV, +es: $EL, k: SV.Class, +h: DR.Longs(~F, env, es, SV.live_nd.of(k))) -> DR.Longs(~F, env, es, SV.amber_nd.of(k)):
+  match k:
+    case SV.Kept{dd}:
+      Unit{}
+    case SV.Amber{dd, rs}:
+      h
+    case SV.Over{j, s, w}:
+      Unit{}
+    case SV.Conflict{s, nd}:
+      Unit{}
+
+# the amber drops' nd is among the live ones
+def an_live(~F: O.OField, +env: $ENV, +es: $EL, cls: $CLS, +h: DR.Longs(~F, env, es, SV.live_nd(cls))) -> DR.Longs(~F, env, es, SV.amber_nd(cls)):
+  match cls:
+    case Nil{}:
+      Unit{}
+    case Con{+k, +t}:
+      DCL.longs_join(~F, env, es, SV.amber_nd.of(k), SV.amber_nd(t), an_of(~F, env, es, k, DAM.longs_l(~F, env, es, SV.live_nd.of(k), SV.live_nd(t), h)), an_live(~F, env, es, t, DAM.longs_r(~F, env, es, SV.live_nd.of(k), SV.live_nd(t), h)))
+
+# Existence, for any answer whose final2 passes
+# ---------------------------------------------
+
+@MACRO CL SO.Out.cls(x)
+@MACRO RX SV.reds($CL)
+@MACRO AX SV.ambers($CL)
+@MACRO DX SV.dropped($CL)
+@MACRO RAX SV.cat($RX, $AX)
+@MACRO EP +sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {DSO.final2(sk, g0, x) == True{} : Bool}
+@MACRO EA sk, g0, x, h
+@MACRO F0 fin_of(sk, g0, x, h)
+@MACRO KFX DP.AllFacts(~F, y, $ENT, SV.facts.go($ES, $OWN, SV.kept_before(sk, $RX, SV.ncons(sk)), sk, $CL, True{}, 0n))
+
+def ex2.f2(~F: O.OField, +y: M.Vec(~F), $EP, h2: DH.Honest(sk, $CL), +hz: SK.Zeros(~F, y, SV.solved(sk, $RX, $DX)), +hl: DR.Longs(~F, y, $ENT, SV.live_nd($CL)), +hsm: SK.Sides(~F, y, SK.Sketch.sides(SV.mark($RAX, sk))),
+  +hf: {HR.hfacts(sk, $CL) == True{} : Bool}, q: $KFX & DFC.Amb.go(sk, $CL, SV.ncons(sk), 0n)) -> SK.Sketch.means(~F, y, SV.mark($RX, sk)):
+  match q:
+    case (+af, amb):
+      DAM.amber_law(~F, sk, SPF.wf_of(sk, g0, x, $F0), $CL, h2, y, MN.sketch_sound(~F, y, SV.mark($RAX, sk), WF.wf_ok(SV.mark($RAX, sk), WC.wf_mark($RAX, sk, SPF.wfd_of(sk, g0, x, $F0))),
+        (zr3(~F, y, sk, $CL, hf, af, hl, hz), hsm)), an_live(~F, y, $ENT, $CL, hl))
+
+def ex2.f1(~F: O.OField, +y: M.Vec(~F), $EP, h2: DH.Honest(sk, $CL), +hz: SK.Zeros(~F, y, SV.solved(sk, $RX, $DX)), +hl: DR.Longs(~F, y, $ENT, SV.live_nd($CL)), +hsm: SK.Sides(~F, y, SK.Sketch.sides(SV.mark($RAX, sk))),
+  q: ({HR.hfacts(sk, $CL) == True{} : Bool} & ($KFX & DFC.Amb.go(sk, $CL, SV.ncons(sk), 0n)))) -> SK.Sketch.means(~F, y, SV.mark($RX, sk)):
+  match q:
+    case (+hf, q2):
+      ex2.f2(~F, y, $EA, h2, hz, hl, hsm, hf, q2)
+
+def ex2.go(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, $EP, h1: DH.Honest(sk, $CL), h2: DH.Honest(sk, $CL), s: Sigma<&2, &2, M.Vec(~F), y => M.Both(BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(x), SO.Out.gr(x), y), SK.Zeros(~F, y, SV.solved(sk, $RX, $DX)))>)
+  -> &y: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(x), SO.Out.gr(x), y) & SK.Sketch.means(~F, y, SV.mark($RX, sk))):
+  (+y, hy) = s
+  (+hin, +hz) = hy
+  +hl = sd_longs(~F, y, $ENT, SV.live_nd($CL), PP.box_sides(~KI.dnum(), ~F, ~H, DR.ndsides($ENT, SV.live_nd($CL)), SO.Out.gc(x), SO.Out.gr(x), nd_of($EA), y, hin))
+  +hsm = PP.box_sides(~KI.dnum(), ~F, ~H, SK.Sketch.sides(SV.mark($RAX, sk)), SO.Out.gc(x), SO.Out.gr(x), SPF.hE(sk, g0, x, $F0), y, hin)
+  (y, (hin, ex2.f1(~F, y, $EA, h2, hz, hl, hsm, DFC.facts_hold(~F, y, sk, $CL, h1, hz))))
+
+def exists2_of(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, $EP, h1: DH.Honest(sk, $CL), h2: DH.Honest(sk, $CL))
+  -> &y: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(x), SO.Out.gr(x), y) & SK.Sketch.means(~F, y, SV.mark($RX, sk))):
+  ex2.go(~F, ~H, $EA, h1, h2, PP.plan_exists(~KI.dnum(), ~F, ~R, ~H, SV.solved(sk, $RX, $DX), SO.Out.gc(x), SO.Out.gr(x), SO.Out.plan(x), SPF.hD(sk, g0, x, $F0)))
+
+# Blame: a support has no red member
+# ----------------------------------
+
+def nin_c2(+sk: SK.Sketch, +cls: $CLS, +red: $NL, +ds: $NL, +c: Nat, +s: $NL, +nd: $NL, b: Bool, h: DH.Fate.pick(sk, cls, red, ds, c, b, SV.Conflict{s, nd})) -> {SV.none_in(s, red) == True{} : Bool}:
+  match b:
+    case True{}:
+      absurd({SV.none_in(s, red) == True{} : Bool}, h)
+    case False{}:
+      (+hb, r) = h
+      L.band_r(SV.all_driving(sk, s), SV.none_in(s, red), L.band_r(SV.below(s, c), SV.band(SV.all_driving(sk, s), SV.none_in(s, red)), L.band_r(SV.distinct(s), SV.band(SV.below(s, c), SV.band(SV.all_driving(sk, s), SV.none_in(s, red))), hb)))
+
+def nin_fate2(+sk: SK.Sketch, +cls: $CLS, +red: $NL, +ds: $NL, +c: Nat, k: SV.Class, b: Bool, h: DH.Fate.pick(sk, cls, red, ds, c, b, k)) -> {SV.none_in(SV.support.of(k), red) == True{} : Bool}:
+  match k:
+    case SV.Kept{d}:
+      {==}
+    case SV.Amber{d, r}:
+      {==}
+    case SV.Over{j, s, w}:
+      {==}
+    case SV.Conflict{+s, +nd}:
+      nin_c2(sk, cls, red, ds, c, s, nd, b, h)
+
+def sn2.go(+sk: SK.Sketch, +cls: $CLS, +c: Nat, b: Bool, e: {SV.lt(c, SV.ncons(sk)) == b : Bool}, H: DH.Honest(sk, cls)) -> {SV.none_in(SV.support(cls, c), SV.reds(cls)) == True{} : Bool}:
+  match b:
+    case True{}:
+      +hk = Equal.trans(Bool, KA.natle(1n+c, SV.ncons(sk)), SV.lt(c, SV.ncons(sk)), True{}, Equal.sym(Bool, SV.lt(c, SV.ncons(sk)), KA.natle(1n+c, SV.ncons(sk)), L.lt_sv(c, SV.ncons(sk))), e)
+      nin_fate2(sk, cls, SV.reds(cls), SV.dropped(cls), c, SV.class_at(cls, c), SV.driven(sk, c), (%Equal.sym(Nat, c, Nat.add(c, 0n), LN.add_zero(c)) : DH.Fate(sk, cls, _)
+        DCL.fate_at(sk, cls, SV.ncons(sk), 0n, c, DCL.hon_go(sk, cls, H), hk)))
+    case False{}:
+      BLM.nin_past(cls, c, SV.reds(cls), (%Equal.sym(Nat, SV.clsn(cls), SV.ncons(sk), DCL.hon_len(sk, cls, H)) : {SV.lt(c, _) == False{} : Bool}
+        e))
+
+# an honest classification of the draft: no support has a red member
+def supp_nin2(+sk: SK.Sketch, +cls: $CLS, +c: Nat, H: DH.Honest(sk, cls)) -> {SV.none_in(SV.support(cls, c), SV.reds(cls)) == True{} : Bool}:
+  sn2.go(sk, cls, c, SV.lt(c, SV.ncons(sk)), {==}, H)
+
+def blame2_m(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +x: SO.Out, +c: Nat, +hn: {SV.none_in(SV.support($CL, c), $RX) == True{} : Bool}, +y: M.Vec(~F),
+  p: (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(x), SO.Out.gr(x), y) & SK.Sketch.means(~F, y, SV.mark($RX, sk)))) -> &y: M.Vec(~F) -> SK.Sketch.means(~F, y, SV.only(SV.support($CL, c), sk)):
+  match p:
+    case (hin, hm):
+      (y, BLM.mo(~F, y, SV.support($CL, c), $RX, sk, hn, hm))
+
+def blame2_pair(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +x: SO.Out, +c: Nat, +hn: {SV.none_in(SV.support($CL, c), $RX) == True{} : Bool},
+  s: &y: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(x), SO.Out.gr(x), y) & SK.Sketch.means(~F, y, SV.mark($RX, sk)))) -> &y: M.Vec(~F) -> SK.Sketch.means(~F, y, SV.only(SV.support($CL, c), sk)):
+  match s:
+    case (+y, p):
+      blame2_m(~F, ~H, sk, x, c, hn, y, p)
+
+# The laws, for the draft solver
+# ------------------------------
+
+def solve_exists2(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, $OK)
+  -> &x: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc($A), SO.Out.gr($A), x) & SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls($A)), sk))):
+  exists2_of(~F, ~R, ~H, sk, g0, $A, verdict2(sk, g0, l, ok), hon2(sk, g0, l, ok), hon2(sk, g0, l, ok))
+
+def solve_unique2(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, $OK, +x1: M.Vec(~F), h1: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc($A), SO.Out.gr($A), x1), m1: SK.Sketch.means(~F, x1, SV.mark(SV.reds(SO.Out.cls($A)), sk)),
+  +x2: M.Vec(~F), h2: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc($A), SO.Out.gr($A), x2), m2: SK.Sketch.means(~F, x2, SV.mark(SV.reds(SO.Out.cls($A)), sk))) -> {x1 == x2 : M.Vec(~F)}:
+  SPF.unique_of(~F, ~H, sk, g0, $A, $FIN, x1, h1, m1, x2, h2, m2)
+
+def solve_pins2(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, $OK) -> {SV.held(SO.Out.pins($A), g0, SO.Out.gc($A), SO.Out.gr($A)) == True{} : Bool}:
+  SPF.pins_of(sk, g0, $A, $FIN)
+
+def solve_regular2(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, $OK, +x: M.Vec(~F), +h: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc($A), SO.Out.gr($A), x), m: SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls($A)), sk)))
+  -> DV.Regular(~F, x, SV.solved(sk, SV.reds(SO.Out.cls($A)), SV.dropped(SO.Out.cls($A))), SV.free(SO.nvars(sk), 0n, SO.Out.pins($A))):
+  REG.regular_of(~F, ~H, sk, g0, $A, $FIN, x, h)
+
+def solve_blame2(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, $OK, +c: Nat) -> &x: M.Vec(~F) -> SK.Sketch.means(~F, x, SV.only(SV.support(SO.Out.cls($A), c), sk)):
+  blame2_pair(~F, ~H, sk, $A, c, supp_nin2(sk, SO.Out.cls($A), c, hon2(sk, g0, l, ok)), solve_exists2(~F, ~R, ~H, sk, g0, l, ok))
+
+# The extended Honest's laws, for the draft solver
+# ------------------------------------------------
+
+@MACRO SC +sk: SK.Sketch, w: SK.Sketch.wf(sk), cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat
+@MACRO CLA SO.Out.cls($A)
+
+# the classification is honest, at every level, ok or not
+def solve_honest2($SC) -> DH.Honest(sk, $CLA):
+  DPP.pass2_honest(sk, w, cov)
+
+def solve_drop2(~F: O.OField, $SC, +x: M.Vec(~F), hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds($CLA), SV.dropped($CLA))), +j: Nat, hj: {SV.mem(j, SV.dropped($CLA)) == True{} : Bool}, hl: DR.Longs(~F, x, $ENT, SV.dnd_at($CLA, j)))
+  -> SK.Zeros(~F, x, [SV.eqat($ES, j)]):
+  DFC.drop_law(~F, sk, $CLA, solve_honest2(sk, w, cov, g0, l), x, hz, j, hj, hl)
+
+def am2.w(~F: O.OField, +sk: SK.Sketch, +hw: {WF.wf_dec(sk) == True{} : Bool}, cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat, +x: M.Vec(~F),
+  m: SK.Sketch.means(~F, x, SV.mark(SV.cat(SV.reds($CLA), SV.ambers($CLA)), sk)), hl: DR.Longs(~F, x, $ENT, SV.amber_nd($CLA))) -> SK.Sketch.means(~F, x, SV.mark(SV.reds($CLA), sk)):
+  DAM.amber_law(~F, sk, WF.wf_ok(sk, hw), $CLA, solve_honest2(sk, WF.wf_ok(sk, hw), cov, g0, l), x, m, hl)
+
+def solve_amber2(~F: O.OField, $SC, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SV.mark(SV.cat(SV.reds($CLA), SV.ambers($CLA)), sk)), hl: DR.Longs(~F, x, $ENT, SV.amber_nd($CLA)))
+  -> SK.Sketch.means(~F, x, SV.mark(SV.reds($CLA), sk)):
+  am2.w(~F, sk, WC.wf_dec_ok(sk, w), cov, g0, l, x, m, hl)
+
+def solve_conflict2(~F: O.OField, $SC, +c: Nat, hc: {SV.is_conflict(SV.class_at($CLA, c)) == True{} : Bool}, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SV.only(Con{c, SV.support($CLA, c)}, sk)),
+  hl: DR.Longs(~F, x, $ENT, SV.conflict_nd($CLA, c))) -> Empty:
+  DCL.conflict_law(~F, sk, $CLA, solve_honest2(sk, w, cov, g0, l), c, hc, x, m, hl)
