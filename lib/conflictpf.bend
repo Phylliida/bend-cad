@@ -276,6 +276,13 @@ def sub_cons(xs: List<&2, Nat>, +a: Nat, +ys: List<&2, Nat>, +h: {SV.sub(xs, ys)
 def sub_ct(+c: Nat, +xs: List<&2, Nat>, +ys: List<&2, Nat>, h: {SV.sub(xs, ys) == True{} : Bool}) -> {SV.sub(Con{c, xs}, Con{c, ys}) == True{} : Bool}:
   LI.band_i(SV.mem(c, Con{c, ys}), SV.sub(xs, Con{c, ys}), LI.mem_hd(c, ys), sub_cons(xs, c, ys, h))
 
+def sub_refl(xs: List<&2, Nat>) -> {SV.sub(xs, xs) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      {==}
+    case Con{+x, +t}:
+      sub_ct(x, t, t, sub_refl(t))
+
 def eqs_mono.c(b1: Bool, b2: Bool, +e: E.QExpr, +r1: List<&2, E.QExpr>, +r2: List<&2, E.QExpr>, hb: {b1 == True{} : Bool} -> {b2 == True{} : Bool}, ih: SubE(r1, r2))
   -> SubE(SV.solved.pick(b1, e, r1), SV.solved.pick(b2, e, r2)):
   match b1 b2:

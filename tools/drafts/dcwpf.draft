@@ -52,7 +52,7 @@ import ./cwpf.bend as CW
 import ./passpf.bend as PP
 import ./redpf.bend as RDP
 import ./ckpf.bend as CKP
-import ./prepf.bend as PR
+import ./conflictpf.bend as CFP
 import ./wfdec.bend as WF
 import ./covpf.bend as CV
 import ./dclose.bend as DC
@@ -224,11 +224,13 @@ def dnone_k($KP, hdd: {DPS.ddec(sk, $FK, cx, e, $M, W) == None{} : Maybe<&2, DR.
 # the derivation found is the reason's witness, with the nd recorded
 def dsk.w($KP, +D: $NL, +der: DR.Der, h: DR.Valid($ENT, $DFK, $CTX, der) & SV.Proves($ENT, $M, $EQK, DR.concl($ENT, $DFK, der))) -> DH.why_ok(sk, cls, R, D, c, dF, k, DR.nd($ENT, $FK, der), SV.WDer{der}):
   (hv, hp) = h
-  (hv, (hp, (%Equal.sym($FL, $FK, $DFK, fk_eq(sk, cls, R, c, F0, ds, k, dF, hF0, xr)) : {SV.sub(DR.nd($ENT, $DFK, der), DR.nd($ENT, _, der)) == True{} : Bool}
-    PR.sub_refl(DR.nd($ENT, $DFK, der)))))
+  (hv, (hp, (%fk_eq(sk, cls, R, c, F0, ds, k, dF, hF0, xr) : {DR.nd($ENT, $FK, der) == DR.nd($ENT, _, der) : $NL}
+    {==})))
 
 def dsk.go($KP, +der: DR.Der, h: DR.Valid($ENT, $DFK, $CTX, der) & SV.Proves($ENT, $M, $EQK, DR.concl($ENT, $DFK, der))) -> SV.DirDerivable(sk, cls, R, c, dF, k, DR.nd($ENT, $FK, der)):
-  (der, dsk.w($KA, Nil{}, der, h))
+  (hv, hp) = h
+  (der, (hv, (hp, (%Equal.sym($FL, $FK, $DFK, fk_eq(sk, cls, R, c, F0, ds, k, dF, hF0, xr)) : {SV.sub(DR.nd($ENT, $DFK, der), DR.nd($ENT, _, der)) == True{} : Bool}
+    CFP.sub_refl(DR.nd($ENT, $DFK, der))))))
 
 # a direction drop at k: DirDerivable with the nd it records
 def dsome_k($KP, +der: DR.Der, +hds: {DPS.ddec(sk, $FK, cx, e, $M, W) == Some{der} : Maybe<&2, DR.Der>}, $HC) -> SV.DirDerivable(sk, cls, R, c, dF, k, DR.nd($ENT, $FK, der)):
@@ -343,10 +345,10 @@ def lin_wit(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: $NL, +D: $NL, +c: Nat,
   ((%Equal.sym($NL, bp, SV.cat(bp0, us), hbp) : {DH.in_basis.all(sk, R, D, c, dF, k, PA.muls(_, $LS)) == True{} : Bool}
       ball_muls(SV.cat(bp0, us), $LS, sk, R, D, c, dF, k, ball_cat(bp0, us, sk, R, D, c, dF, k, ball_pre(bp0, sk, R, D, c, dF, k, hb0, ha0),
         ball_us(us, sk, R, D, c, dF, k, $DS, xr2, RDP.below_mono(us, k, $N, CW.cwb_ubelow($CWBA, hb), RDP.lt_le(k, $N, hlt)), CW.cwb_ubelow($CWBA, hb), CW.cwb_uown($CWBA, hb), CW.cwb_udisj($CWBA, hb))))),
-   (%Equal.sym(E.QExpr, $EQK, e, he) : SV.Ident(_, SV.mlin($ES, $MS))
+   ((%Equal.sym(E.QExpr, $EQK, e, he) : SV.Ident(_, SV.mlin($ES, $MS))
      (%Equal.sym(E.QExpr, SV.mlin($ES, $MS), SV.lin($LS, SV.picked($ES, bp)), CKP.rhs_lin($ES, bp, $LS)) : SV.Ident(e, _)
        (%hp : SV.Ident(e, SV.lin($LS, _))
-         DV.derivable(B, rows, e, CW.cwb_rinv($CWBA, hb), hnil)))))
+         DV.derivable(B, rows, e, CW.cwb_rinv($CWBA, hb), hnil)))), {==}))
 
 # The invariant after a direction drop
 # ------------------------------------

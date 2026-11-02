@@ -299,13 +299,6 @@ def longs_join(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, SK.Ent>, xs: 
     case Con{+p, +t}:
       (DP.fst(DR.Long(~F, env, es, p), DR.Longs(~F, env, es, t), ha), longs_join(~F, env, es, t, ys, DP.snd(DR.Long(~F, env, es, p), DR.Longs(~F, env, es, t), ha), hb))
 
-def sub_refl(xs: List<&2, Nat>) -> {SV.sub(xs, xs) == True{} : Bool}:
-  match xs:
-    case Nil{}:
-      {==}
-    case Con{+h, +t}:
-      CFP.sub_ct(h, t, t, sub_refl(t))
-
 # the segments of the Angles among cs (within S, whose sides hold) are long
 def aa_longs(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +S: List<&2, Nat>, cs: List<&2, Nat>, +hsub: {SV.sub(cs, S) == True{} : Bool}, +had: {SV.all_driving(sk, cs) == True{} : Bool}, +hs: SK.Sides(~F, x, SV.csides(sk, S))) -> DR.Longs(~F, x, SV.ents(sk), SV.angle_args(sk, cs)):
   match cs:
@@ -457,10 +450,11 @@ def ref_ok(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +c: Nat, +s: List<&2, Na
       ang_p(~F, x, sk, c, s, cx, af, hss, hcs, had, dr, di, p, fst, ro, hl)
 
 
-def dref.r(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +c: Nat, +s: List<&2, Nat>, +cx: List<&2, E.QExpr>, +af: DP.AllFacts(~F, x, SV.ents(sk), SV.rfacts(sk, Con{c, s})), +hss: SK.Sides(~F, x, SK.cats(SV.csides(sk, Con{c, s}), SV.esides(sk))), +hcs: SK.Sides(~F, x, SV.csides(sk, Con{c, s})), +had: {SV.all_driving(sk, Con{c, s}) == True{} : Bool}, +nd: List<&2, Nat>, +r: DR.DRef, q: SV.RefOk(sk, c, s, cx, r) & {SV.sub(DR.ref.nd(SV.ents(sk), SV.rfacts(sk, Con{c, s}), r), SV.cat(nd, SV.angle_args(sk, Con{c, s}))) == True{} : Bool}, +hl: DR.Longs(~F, x, SV.ents(sk), nd)) -> Empty:
+def dref.r(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +c: Nat, +s: List<&2, Nat>, +cx: List<&2, E.QExpr>, +af: DP.AllFacts(~F, x, SV.ents(sk), SV.rfacts(sk, Con{c, s})), +hss: SK.Sides(~F, x, SK.cats(SV.csides(sk, Con{c, s}), SV.esides(sk))), +hcs: SK.Sides(~F, x, SV.csides(sk, Con{c, s})), +had: {SV.all_driving(sk, Con{c, s}) == True{} : Bool}, +nd: List<&2, Nat>, +r: DR.DRef, q: SV.RefOk(sk, c, s, cx, r) & ({SV.sub(DR.ref.nd(SV.ents(sk), SV.rfacts(sk, Con{c, s}), r), SV.cat(nd, SV.angle_args(sk, Con{c, s}))) == True{} : Bool} & {SV.sub(nd, DR.ref.nd(SV.ents(sk), SV.rfacts(sk, Con{c, s}), r)) == True{} : Bool}), +hl: DR.Longs(~F, x, SV.ents(sk), nd)) -> Empty:
   match q:
-    case (ro, +hsub):
-      ref_ok(~F, x, sk, c, s, cx, af, hss, hcs, had, r, ro, DFC.longs_sub(~F, x, SV.ents(sk), DR.ref.nd(SV.ents(sk), SV.rfacts(sk, Con{c, s}), r), SV.cat(nd, SV.angle_args(sk, Con{c, s})), hsub, longs_join(~F, x, SV.ents(sk), nd, SV.angle_args(sk, Con{c, s}), hl, aa_longs(~F, x, sk, Con{c, s}, Con{c, s}, sub_refl(Con{c, s}), had, hcs))))
+    case (ro, hn):
+      (+hsub, hin) = hn
+      ref_ok(~F, x, sk, c, s, cx, af, hss, hcs, had, r, ro, DFC.longs_sub(~F, x, SV.ents(sk), DR.ref.nd(SV.ents(sk), SV.rfacts(sk, Con{c, s}), r), SV.cat(nd, SV.angle_args(sk, Con{c, s})), hsub, longs_join(~F, x, SV.ents(sk), nd, SV.angle_args(sk, Con{c, s}), hl, aa_longs(~F, x, sk, Con{c, s}, Con{c, s}, CFP.sub_refl(Con{c, s}), had, hcs))))
 
 def dref(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +c: Nat, +s: List<&2, Nat>, +cx: List<&2, E.QExpr>, +af: DP.AllFacts(~F, x, SV.ents(sk), SV.rfacts(sk, Con{c, s})), +hss: SK.Sides(~F, x, SK.cats(SV.csides(sk, Con{c, s}), SV.esides(sk))), +hcs: SK.Sides(~F, x, SV.csides(sk, Con{c, s})), +had: {SV.all_driving(sk, Con{c, s}) == True{} : Bool}, +nd: List<&2, Nat>, h: SV.DirRefutes(sk, c, s, cx, nd), +hl: DR.Longs(~F, x, SV.ents(sk), nd)) -> Empty:
   match h:
@@ -486,9 +480,10 @@ def cl_dir(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +c: Nat, +s: List<&2, Na
       dref(~F, x, sk, c, s, cx, rf_all(~F, x, sk, Con{c, s}, (%CF.only_eqs(sk, Con{c, s}) : SK.Zeros(~F, x, _)
         hz)), hss, MN.sides_l(~F, x, SV.csides(sk, Con{c, s}), SV.esides(sk), hss), had, nd, h, hl)
 
-def cl_or(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +c: Nat, +s: List<&2, Nat>, +cx: List<&2, E.QExpr>, +nd: List<&2, Nat>, h: Or(SV.Ref0(sk, c, s), SV.DirRefutes(sk, c, s, cx, nd)), +had: {SV.all_driving(sk, Con{c, s}) == True{} : Bool}, m: SK.Sketch.holds(~F, x, SV.only(Con{c, s}, sk)), +hl: DR.Longs(~F, x, SV.ents(sk), nd)) -> Empty:
+def cl_or(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +c: Nat, +s: List<&2, Nat>, +cx: List<&2, E.QExpr>, +nd: List<&2, Nat>, h: Or(SV.Ref0(sk, c, s) & {nd == Nil{} : List<&2, Nat>}, SV.DirRefutes(sk, c, s, cx, nd)), +had: {SV.all_driving(sk, Con{c, s}) == True{} : Bool}, m: SK.Sketch.holds(~F, x, SV.only(Con{c, s}, sk)), +hl: DR.Longs(~F, x, SV.ents(sk), nd)) -> Empty:
   match h:
-    case Inl{r0}:
+    case Inl{q}:
+      (r0, hn) = q
       CF.cf_m(~F, x, sk, c, s, r0, m)
     case Inr{rd}:
       cl_dir(~F, x, sk, c, s, cx, nd, rd, had, m, hl)

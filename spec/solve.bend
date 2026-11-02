@@ -1087,10 +1087,11 @@ def RefOk(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, r
     case DR.RAngle{+dr, +di, +p, +fst}:
       {mem(p, Con{c, cs}) == True{} : Bool} & RefAngle.at(sk, c, cs, cx, dr, di, kind_at(sk, p), fst)
 
-# c with the constraints cs has a direction refutation needing at most nd
-# (and the segments of Angles among them)
+# c with the constraints cs has a direction refutation whose nd is nd,
+# less the segments of Angles among them: it needs every segment of nd,
+# and no other but those
 def DirRefutes(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>, +nd: List<&2, Nat>) -> Type:
-  &r: DR.DRef -> (RefOk(sk, c, cs, cx, r) & {sub(DR.ref.nd(ents(sk), rfacts(sk, Con{c, cs}), r), cat(nd, angle_args(sk, Con{c, cs}))) == True{} : Bool})
+  &r: DR.DRef -> (RefOk(sk, c, cs, cx, r) & ({sub(DR.ref.nd(ents(sk), rfacts(sk, Con{c, cs}), r), cat(nd, angle_args(sk, Con{c, cs}))) == True{} : Bool} & {sub(nd, DR.ref.nd(ents(sk), rfacts(sk, Con{c, cs}), r)) == True{} : Bool}))
 
 def NoDirRef(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>, +cx: List<&2, E.QExpr>) -> Type:
   @r: DR.DRef -> RefOk(sk, c, cs, cx, r) -> Empty

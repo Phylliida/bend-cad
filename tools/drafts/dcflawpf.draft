@@ -333,13 +333,6 @@ def longs_join(~F: O.OField, +env: $ENV, +es: $EL, xs: $NL, +ys: $NL, +ha: DR.Lo
     case Con{+p, +t}:
       (DP.fst(DR.Long(~F, env, es, p), DR.Longs(~F, env, es, t), ha), longs_join(~F, env, es, t, ys, DP.snd(DR.Long(~F, env, es, p), DR.Longs(~F, env, es, t), ha), hb))
 
-def sub_refl(xs: $NL) -> {SV.sub(xs, xs) == True{} : Bool}:
-  match xs:
-    case Nil{}:
-      {==}
-    case Con{+h, +t}:
-      CFP.sub_ct(h, t, t, sub_refl(t))
-
 # the segments of the Angles among cs (within S, whose sides hold) are long
 def aa_longs(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +S: $NL, cs: $NL, +hsub: {SV.sub(cs, S) == True{} : Bool}, +had: {SV.all_driving(sk, cs) == True{} : Bool}, +hs: SK.Sides(~F, x, SV.csides(sk, S))) -> DR.Longs(~F, x, $ENT, SV.angle_args(sk, cs)):
   match cs:
@@ -504,10 +497,11 @@ def ref_ok(~F: O.OField, $RP, r: DR.DRef, ro: SV.RefOk(sk, c, s, cx, r), +hl: DR
 
 @MACRO AA SV.angle_args(sk, $CS)
 
-def dref.r(~F: O.OField, $RP, +nd: $NL, +r: DR.DRef, q: SV.RefOk(sk, c, s, cx, r) & {SV.sub(DR.ref.nd($ENT, $RF, r), SV.cat(nd, $AA)) == True{} : Bool}, +hl: DR.Longs(~F, x, $ENT, nd)) -> Empty:
+def dref.r(~F: O.OField, $RP, +nd: $NL, +r: DR.DRef, q: SV.RefOk(sk, c, s, cx, r) & ({SV.sub(DR.ref.nd($ENT, $RF, r), SV.cat(nd, $AA)) == True{} : Bool} & {SV.sub(nd, DR.ref.nd($ENT, $RF, r)) == True{} : Bool}), +hl: DR.Longs(~F, x, $ENT, nd)) -> Empty:
   match q:
-    case (ro, +hsub):
-      ref_ok(~F, $RA, r, ro, DFC.longs_sub(~F, x, $ENT, DR.ref.nd($ENT, $RF, r), SV.cat(nd, $AA), hsub, longs_join(~F, x, $ENT, nd, $AA, hl, aa_longs(~F, x, sk, $CS, $CS, sub_refl($CS), had, hcs))))
+    case (ro, hn):
+      (+hsub, hin) = hn
+      ref_ok(~F, $RA, r, ro, DFC.longs_sub(~F, x, $ENT, DR.ref.nd($ENT, $RF, r), SV.cat(nd, $AA), hsub, longs_join(~F, x, $ENT, nd, $AA, hl, aa_longs(~F, x, sk, $CS, $CS, CFP.sub_refl($CS), had, hcs))))
 
 def dref(~F: O.OField, $RP, +nd: $NL, h: SV.DirRefutes(sk, c, s, cx, nd), +hl: DR.Longs(~F, x, $ENT, nd)) -> Empty:
   match h:
@@ -533,9 +527,10 @@ def cl_dir(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +c: Nat, +s: $NL, +cx: $
       dref(~F, x, sk, c, s, cx, rf_all(~F, x, sk, $CS, (%CF.only_eqs(sk, $CS) : SK.Zeros(~F, x, _)
         hz)), hss, MN.sides_l(~F, x, SV.csides(sk, $CS), SV.esides(sk), hss), had, nd, h, hl)
 
-def cl_or(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +c: Nat, +s: $NL, +cx: $QL, +nd: $NL, h: Or(SV.Ref0(sk, c, s), SV.DirRefutes(sk, c, s, cx, nd)), +had: {SV.all_driving(sk, $CS) == True{} : Bool}, m: SK.Sketch.holds(~F, x, SV.only($CS, sk)), +hl: DR.Longs(~F, x, $ENT, nd)) -> Empty:
+def cl_or(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +c: Nat, +s: $NL, +cx: $QL, +nd: $NL, h: Or(SV.Ref0(sk, c, s) & {nd == Nil{} : $NL}, SV.DirRefutes(sk, c, s, cx, nd)), +had: {SV.all_driving(sk, $CS) == True{} : Bool}, m: SK.Sketch.holds(~F, x, SV.only($CS, sk)), +hl: DR.Longs(~F, x, $ENT, nd)) -> Empty:
   match h:
-    case Inl{r0}:
+    case Inl{q}:
+      (r0, hn) = q
       CF.cf_m(~F, x, sk, c, s, r0, m)
     case Inr{rd}:
       cl_dir(~F, x, sk, c, s, cx, nd, rd, had, m, hl)

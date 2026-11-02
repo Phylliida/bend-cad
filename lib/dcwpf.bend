@@ -52,7 +52,7 @@ import ./cwpf.bend as CW
 import ./passpf.bend as PP
 import ./redpf.bend as RDP
 import ./ckpf.bend as CKP
-import ./prepf.bend as PR
+import ./conflictpf.bend as CFP
 import ./wfdec.bend as WF
 import ./covpf.bend as CV
 import ./dclose.bend as DC
@@ -191,11 +191,13 @@ def dnone_k(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: List<&2, Nat>, +c: Nat
 # the derivation found is the reason's witness, with the nd recorded
 def dsk.w(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: List<&2, Nat>, +c: Nat, +F0: List<&2, DR.Fact>, +cx: List<&2, E.QExpr>, +hF0: {F0 == SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, R, c), sk, cls, True{}, 0n) : List<&2, DR.Fact>}, +hcx: {cx == SV.ctx(sk, R, c) : List<&2, E.QExpr>}, +W: DC.WK, +hw: DW.WInv(SV.ents(sk), SV.rfacts(sk, SV.kept_before(sk, R, c)), cx, DCF.tv(sk), W), +ds: List<&2, SV.Drop>, +k: Nat, +e: E.QExpr, +dF: List<&2, Nat>, +he: {SV.eqat(SK.Sketch.eqs(sk), k) == e : E.QExpr}, +xr: CW.XRel(dF, SV.drops(ds), k), +D: List<&2, Nat>, +der: DR.Der, h: DR.Valid(SV.ents(sk), SV.dfacts(sk, cls, R, c, dF, k), SV.ctx(sk, R, c), der) & SV.Proves(SV.ents(sk), DPS.cstat(sk, c), SV.eqat(SK.Sketch.eqs(sk), k), DR.concl(SV.ents(sk), SV.dfacts(sk, cls, R, c, dF, k), der))) -> DH.why_ok(sk, cls, R, D, c, dF, k, DR.nd(SV.ents(sk), DPS.fk(sk, c, F0, ds, k), der), SV.WDer{der}):
   (hv, hp) = h
-  (hv, (hp, (%Equal.sym(List<&2, DR.Fact>, DPS.fk(sk, c, F0, ds, k), SV.dfacts(sk, cls, R, c, dF, k), fk_eq(sk, cls, R, c, F0, ds, k, dF, hF0, xr)) : {SV.sub(DR.nd(SV.ents(sk), SV.dfacts(sk, cls, R, c, dF, k), der), DR.nd(SV.ents(sk), _, der)) == True{} : Bool}
-    PR.sub_refl(DR.nd(SV.ents(sk), SV.dfacts(sk, cls, R, c, dF, k), der)))))
+  (hv, (hp, (%fk_eq(sk, cls, R, c, F0, ds, k, dF, hF0, xr) : {DR.nd(SV.ents(sk), DPS.fk(sk, c, F0, ds, k), der) == DR.nd(SV.ents(sk), _, der) : List<&2, Nat>}
+    {==})))
 
 def dsk.go(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: List<&2, Nat>, +c: Nat, +F0: List<&2, DR.Fact>, +cx: List<&2, E.QExpr>, +hF0: {F0 == SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, R, c), sk, cls, True{}, 0n) : List<&2, DR.Fact>}, +hcx: {cx == SV.ctx(sk, R, c) : List<&2, E.QExpr>}, +W: DC.WK, +hw: DW.WInv(SV.ents(sk), SV.rfacts(sk, SV.kept_before(sk, R, c)), cx, DCF.tv(sk), W), +ds: List<&2, SV.Drop>, +k: Nat, +e: E.QExpr, +dF: List<&2, Nat>, +he: {SV.eqat(SK.Sketch.eqs(sk), k) == e : E.QExpr}, +xr: CW.XRel(dF, SV.drops(ds), k), +der: DR.Der, h: DR.Valid(SV.ents(sk), SV.dfacts(sk, cls, R, c, dF, k), SV.ctx(sk, R, c), der) & SV.Proves(SV.ents(sk), DPS.cstat(sk, c), SV.eqat(SK.Sketch.eqs(sk), k), DR.concl(SV.ents(sk), SV.dfacts(sk, cls, R, c, dF, k), der))) -> SV.DirDerivable(sk, cls, R, c, dF, k, DR.nd(SV.ents(sk), DPS.fk(sk, c, F0, ds, k), der)):
-  (der, dsk.w(sk, cls, R, c, F0, cx, hF0, hcx, W, hw, ds, k, e, dF, he, xr, Nil{}, der, h))
+  (hv, hp) = h
+  (der, (hv, (hp, (%Equal.sym(List<&2, DR.Fact>, DPS.fk(sk, c, F0, ds, k), SV.dfacts(sk, cls, R, c, dF, k), fk_eq(sk, cls, R, c, F0, ds, k, dF, hF0, xr)) : {SV.sub(DR.nd(SV.ents(sk), SV.dfacts(sk, cls, R, c, dF, k), der), DR.nd(SV.ents(sk), _, der)) == True{} : Bool}
+    CFP.sub_refl(DR.nd(SV.ents(sk), SV.dfacts(sk, cls, R, c, dF, k), der))))))
 
 # a direction drop at k: DirDerivable with the nd it records
 def dsome_k(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: List<&2, Nat>, +c: Nat, +F0: List<&2, DR.Fact>, +cx: List<&2, E.QExpr>, +hF0: {F0 == SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, R, c), sk, cls, True{}, 0n) : List<&2, DR.Fact>}, +hcx: {cx == SV.ctx(sk, R, c) : List<&2, E.QExpr>}, +W: DC.WK, +hw: DW.WInv(SV.ents(sk), SV.rfacts(sk, SV.kept_before(sk, R, c)), cx, DCF.tv(sk), W), +ds: List<&2, SV.Drop>, +k: Nat, +e: E.QExpr, +dF: List<&2, Nat>, +he: {SV.eqat(SK.Sketch.eqs(sk), k) == e : E.QExpr}, +xr: CW.XRel(dF, SV.drops(ds), k), +der: DR.Der, +hds: {DPS.ddec(sk, DPS.fk(sk, c, F0, ds, k), cx, e, DPS.cstat(sk, c), W) == Some{der} : Maybe<&2, DR.Der>}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}) -> SV.DirDerivable(sk, cls, R, c, dF, k, DR.nd(SV.ents(sk), DPS.fk(sk, c, F0, ds, k), der)):
@@ -305,10 +307,10 @@ def lin_wit(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: List<&2, Nat>, +D: Lis
   ((%Equal.sym(List<&2, Nat>, bp, SV.cat(bp0, us), hbp) : {DH.in_basis.all(sk, R, D, c, dF, k, PA.muls(_, DV.dropls(DV.rescb(EL.resid(rows, e)), DV.resbt(EL.resid(rows, e)), e, B))) == True{} : Bool}
       ball_muls(SV.cat(bp0, us), DV.dropls(DV.rescb(EL.resid(rows, e)), DV.resbt(EL.resid(rows, e)), e, B), sk, R, D, c, dF, k, ball_cat(bp0, us, sk, R, D, c, dF, k, ball_pre(bp0, sk, R, D, c, dF, k, hb0, ha0),
         ball_us(us, sk, R, D, c, dF, k, SV.drops(ds), xr2, RDP.below_mono(us, k, SV.neqs(SK.Sketch.eqs(sk)), CW.cwb_ubelow(sk, c, k, rows, B, ds, us, hb), RDP.lt_le(k, SV.neqs(SK.Sketch.eqs(sk)), hlt)), CW.cwb_ubelow(sk, c, k, rows, B, ds, us, hb), CW.cwb_uown(sk, c, k, rows, B, ds, us, hb), CW.cwb_udisj(sk, c, k, rows, B, ds, us, hb))))),
-   (%Equal.sym(E.QExpr, SV.eqat(SK.Sketch.eqs(sk), k), e, he) : SV.Ident(_, SV.mlin(SK.Sketch.eqs(sk), PA.muls(bp, DV.dropls(DV.rescb(EL.resid(rows, e)), DV.resbt(EL.resid(rows, e)), e, B))))
+   ((%Equal.sym(E.QExpr, SV.eqat(SK.Sketch.eqs(sk), k), e, he) : SV.Ident(_, SV.mlin(SK.Sketch.eqs(sk), PA.muls(bp, DV.dropls(DV.rescb(EL.resid(rows, e)), DV.resbt(EL.resid(rows, e)), e, B))))
      (%Equal.sym(E.QExpr, SV.mlin(SK.Sketch.eqs(sk), PA.muls(bp, DV.dropls(DV.rescb(EL.resid(rows, e)), DV.resbt(EL.resid(rows, e)), e, B))), SV.lin(DV.dropls(DV.rescb(EL.resid(rows, e)), DV.resbt(EL.resid(rows, e)), e, B), SV.picked(SK.Sketch.eqs(sk), bp)), CKP.rhs_lin(SK.Sketch.eqs(sk), bp, DV.dropls(DV.rescb(EL.resid(rows, e)), DV.resbt(EL.resid(rows, e)), e, B))) : SV.Ident(e, _)
        (%hp : SV.Ident(e, SV.lin(DV.dropls(DV.rescb(EL.resid(rows, e)), DV.resbt(EL.resid(rows, e)), e, B), _))
-         DV.derivable(B, rows, e, CW.cwb_rinv(sk, c, k, rows, B, ds, us, hb), hnil)))))
+         DV.derivable(B, rows, e, CW.cwb_rinv(sk, c, k, rows, B, ds, us, hb), hnil)))), {==}))
 
 # The invariant after a direction drop
 # ------------------------------------

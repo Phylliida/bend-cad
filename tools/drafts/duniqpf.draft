@@ -203,7 +203,7 @@ def cf_r0($CP, r0: SV.Ref0(sk, c, s), nr: SV.NoRefute(sk, R2, c)) -> Empty:
   (+k, r3) = r2
   NC.cn.m(RF.refute($ESN, $SSN), sk, R2, c, s, {==}, hsub, nr, ls, ms, k, r3)
 
-def cf_dq($CP, +r: DR.DRef, q: SV.RefOk(sk, c, s, SV.ctx(sk, R1, c), r) & {SV.sub(DR.ref.nd(SV.ents(sk), SV.rfacts(sk, Con{c, s}), r), SV.cat(nd, SV.angle_args(sk, Con{c, s}))) == True{} : Bool}, ndr: SV.NoDirRef(sk, c, $KBR, SV.ctx(sk, R2, c))) -> Empty:
+def cf_dq($CP, +r: DR.DRef, q: SV.RefOk(sk, c, s, SV.ctx(sk, R1, c), r) & ({SV.sub(DR.ref.nd(SV.ents(sk), SV.rfacts(sk, Con{c, s}), r), SV.cat(nd, SV.angle_args(sk, Con{c, s}))) == True{} : Bool} & {SV.sub(nd, DR.ref.nd(SV.ents(sk), SV.rfacts(sk, Con{c, s}), r)) == True{} : Bool}), ndr: SV.NoDirRef(sk, c, $KBR, SV.ctx(sk, R2, c))) -> Empty:
   match q:
     case (ro, hn):
       DMP.nodir_mono(sk, c, s, $KBR, SV.ctx(sk, R2, c), hsub, ndr, r, (%DAG.cx_ag(sk, R1, R2, c, hkb) : SV.RefOk(sk, c, s, _, r)
@@ -214,9 +214,10 @@ def cf_dir($CP, rd: SV.DirRefutes(sk, c, s, SV.ctx(sk, R1, c), nd), ndr: SV.NoDi
     case (+r, q):
       cf_dq($CPA, r, q, ndr)
 
-def cf_or($CP, h: Or(SV.Ref0(sk, c, s), SV.DirRefutes(sk, c, s, SV.ctx(sk, R1, c), nd)), nr: SV.NoRefute2(sk, R2, c)) -> Empty:
+def cf_or($CP, h: Or(SV.Ref0(sk, c, s) & {nd == Nil{} : List<&2, Nat>}, SV.DirRefutes(sk, c, s, SV.ctx(sk, R1, c), nd)), nr: SV.NoRefute2(sk, R2, c)) -> Empty:
   match h:
-    case Inl{r0}:
+    case Inl{q}:
+      (r0, hn) = q
       (nr0, ndr) = nr
       cf_r0($CPA, r0, nr0)
     case Inr{rd}:

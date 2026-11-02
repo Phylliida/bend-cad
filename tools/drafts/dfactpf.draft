@@ -797,12 +797,13 @@ def of_ok($CP, +j: Nat, es: $QL, +k: Nat, +hq: {OW.qdrop(k, $ES) == es : $QL}) -
 def fh_drop.w($CP, +j: Nat, +nd: $NL, w: SV.Why, wk: DH.why_ok(sk, cls, $R, $D, c, d, j, nd, w), hl: DR.Longs(~F, x, $ENT, nd), +kf: $KF, +hj: {SV.lt(j, $N) == True{} : Bool}, +ho: {SV.nth($OWN, j) == c : Nat}) -> $EC:
   match w:
     case SV.WLin{+ms}:
-      (+hib, hid) = wk
+      (+hib, q) = wk
+      (hid, hn) = q
       ec_of(~F, $JA, Equal.trans(O.C(F), O.eval(~F, x, $EQJ), O.eval(~F, x, SV.mlin($ES, ms)), $Z0, ID.ident_all(~F, $EQJ, SV.mlin($ES, ms), hid, x), VR.comb_zero(~F, x, $ES, $OWN, $R, $D, hz, ms, cs_of($CA, j, ms, hib))))
     case SV.WDer{+dv}:
       (hv, q) = wk
       (hp, hs) = q
-      pr_ok(~F, $JA, DR.concl($ENT, $DFS, dv), hp, DP.sound(~F, x, $ENT, $DFS, SV.ctx(sk, $R, c), allfacts_cat(~F, x, $ENT, $F0, SV.ofacts.go($ES, $OWN, sk, c, d, j, 0n), kf, of_ok($CA, j, $ES, 0n, {==})), dv, hv, longs_sub(~F, x, $ENT, DR.nd($ENT, $DFS, dv), nd, hs, hl)))
+      pr_ok(~F, $JA, DR.concl($ENT, $DFS, dv), hp, DP.sound(~F, x, $ENT, $DFS, SV.ctx(sk, $R, c), allfacts_cat(~F, x, $ENT, $F0, SV.ofacts.go($ES, $OWN, sk, c, d, j, 0n), kf, of_ok($CA, j, $ES, 0n, {==})), dv, hv, (%hs : DR.Longs(~F, x, $ENT, _) hl)))
 
 def fh_drop.l($CP, +j: Nat, +nd: $NL, w: SV.Why, wk: DH.why_ok(sk, cls, $R, $D, c, d, j, nd, w), dec: DP.DOr(DR.Longs(~F, x, $ENT, nd), DP.Short(~F, x, $ENT, nd)), +kf: $KF, +hj: {SV.lt(j, $N) == True{} : Bool}, +ho: {SV.nth($OWN, j) == c : Nat})
   -> DP.FactHolds(~F, x, $ENT, DR.Fact{$EQJ, nd, $KC}):

@@ -174,7 +174,7 @@ def cf_r0(+sk: SK.Sketch, +R1: List<&2, Nat>, +R2: List<&2, Nat>, +c: Nat, +s: L
   (+k, r3) = r2
   NC.cn.m(RF.refute(SK.cat(SV.eqs_of(sk, SV.kept_before(sk, R2, c)), SV.eqs_of(sk, [c])), SK.cats(SK.cats(SV.csides(sk, SV.kept_before(sk, R2, c)), SV.esides(sk)), SV.csides(sk, [c]))), sk, R2, c, s, {==}, hsub, nr, ls, ms, k, r3)
 
-def cf_dq(+sk: SK.Sketch, +R1: List<&2, Nat>, +R2: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, +nd: List<&2, Nat>, +hkb: {SV.kept_before(sk, R1, c) == SV.kept_before(sk, R2, c) : List<&2, Nat>}, +hsub: {SV.sub(s, SV.kept_before(sk, R2, c)) == True{} : Bool}, +r: DR.DRef, q: SV.RefOk(sk, c, s, SV.ctx(sk, R1, c), r) & {SV.sub(DR.ref.nd(SV.ents(sk), SV.rfacts(sk, Con{c, s}), r), SV.cat(nd, SV.angle_args(sk, Con{c, s}))) == True{} : Bool}, ndr: SV.NoDirRef(sk, c, SV.kept_before(sk, R2, c), SV.ctx(sk, R2, c))) -> Empty:
+def cf_dq(+sk: SK.Sketch, +R1: List<&2, Nat>, +R2: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, +nd: List<&2, Nat>, +hkb: {SV.kept_before(sk, R1, c) == SV.kept_before(sk, R2, c) : List<&2, Nat>}, +hsub: {SV.sub(s, SV.kept_before(sk, R2, c)) == True{} : Bool}, +r: DR.DRef, q: SV.RefOk(sk, c, s, SV.ctx(sk, R1, c), r) & ({SV.sub(DR.ref.nd(SV.ents(sk), SV.rfacts(sk, Con{c, s}), r), SV.cat(nd, SV.angle_args(sk, Con{c, s}))) == True{} : Bool} & {SV.sub(nd, DR.ref.nd(SV.ents(sk), SV.rfacts(sk, Con{c, s}), r)) == True{} : Bool}), ndr: SV.NoDirRef(sk, c, SV.kept_before(sk, R2, c), SV.ctx(sk, R2, c))) -> Empty:
   match q:
     case (ro, hn):
       DMP.nodir_mono(sk, c, s, SV.kept_before(sk, R2, c), SV.ctx(sk, R2, c), hsub, ndr, r, (%DAG.cx_ag(sk, R1, R2, c, hkb) : SV.RefOk(sk, c, s, _, r)
@@ -185,9 +185,10 @@ def cf_dir(+sk: SK.Sketch, +R1: List<&2, Nat>, +R2: List<&2, Nat>, +c: Nat, +s: 
     case (+r, q):
       cf_dq(sk, R1, R2, c, s, nd, hkb, hsub, r, q, ndr)
 
-def cf_or(+sk: SK.Sketch, +R1: List<&2, Nat>, +R2: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, +nd: List<&2, Nat>, +hkb: {SV.kept_before(sk, R1, c) == SV.kept_before(sk, R2, c) : List<&2, Nat>}, +hsub: {SV.sub(s, SV.kept_before(sk, R2, c)) == True{} : Bool}, h: Or(SV.Ref0(sk, c, s), SV.DirRefutes(sk, c, s, SV.ctx(sk, R1, c), nd)), nr: SV.NoRefute2(sk, R2, c)) -> Empty:
+def cf_or(+sk: SK.Sketch, +R1: List<&2, Nat>, +R2: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, +nd: List<&2, Nat>, +hkb: {SV.kept_before(sk, R1, c) == SV.kept_before(sk, R2, c) : List<&2, Nat>}, +hsub: {SV.sub(s, SV.kept_before(sk, R2, c)) == True{} : Bool}, h: Or(SV.Ref0(sk, c, s) & {nd == Nil{} : List<&2, Nat>}, SV.DirRefutes(sk, c, s, SV.ctx(sk, R1, c), nd)), nr: SV.NoRefute2(sk, R2, c)) -> Empty:
   match h:
-    case Inl{r0}:
+    case Inl{q}:
+      (r0, hn) = q
       (nr0, ndr) = nr
       cf_r0(sk, R1, R2, c, s, nd, hkb, hsub, r0, nr0)
     case Inr{rd}:

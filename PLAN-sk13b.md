@@ -1703,6 +1703,27 @@ side, 4 at a time, load average 12–34, so times are rough):
 - So the switch would update those two expected lines, and nothing else
   in the regression.
 
+**Before the switch, read 2026-11-02 (Danielle: make nd exact).** The
+spec bounded nd only from above: free at degree 0, and the derivation's
+or refutation's nd within the recorded one. Padding would weaken every
+law by the extra segments, make the verdict check sides for nothing, and
+put false "unless" segments on the page. Now (spec/_draft13b.bend, and
+spec/solve.bend's DirRefutes, which only the draft reads):
+- a degree-0 drop or conflict has nd Nil;
+- a direction drop's nd is its derivation's nd;
+- a direction conflict's nd is within its refutation's nd, which is
+  within nd and the Angles' segments.
+The solver already recorded exactly these (dconflictpf `nc_in`: the
+cleaned list keeps only the refutation's segments). Read and found fine:
+ctx only blocks steps through collapsed segments, never a premise; the
+basis and the facts read only driving, non-red constraints before c; a
+derivation's nd includes its facts' own, so solve_drop's covers a chain
+of drops; nd sides are Gt0, never exempt at pins. Intended, worth
+knowing: a direction conflict means no drawing with its nd long (∥ and ⊥
+on one pair is red, unless a segment collapses), while a collapse by
+plain equations stays green (Vertical and Horizontal on one segment), as
+in sk-13a.
+
 ### B8. The page, the CLI and the regression
 - The CLI prints nd with drops and conflicts; serve.py parses it.
 - The page:

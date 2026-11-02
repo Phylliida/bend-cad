@@ -198,28 +198,52 @@ def nc_sub(xs: $NL, +ys: $NL, +acc: $NL) -> {SV.sub(xs, SV.cat(DCF.ndclean(xs, y
       LI.band_i(SV.mem(x, SV.cat(DCF.ndclean(Con{x, t}, ys, acc), ys)), SV.sub(t, SV.cat(DCF.ndclean(Con{x, t}, ys, acc), ys)),
         nch(SV.bor(SV.mem(x, ys), SV.mem(x, acc)), x, t, ys, acc, {==}), nc_sub(t, ys, DCF.ndpick(SV.bor(SV.mem(x, ys), SV.mem(x, acc)), x, acc)))
 
+# a list within L, with an entry of L added at its end
+def sub_snoc(xs: $NL, +x: Nat, +L: $NL, +h: {SV.sub(xs, L) == True{} : Bool}, +hx: {SV.mem(x, L) == True{} : Bool}) -> {SV.sub(CO.lsnoc(xs, x), L) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      LI.band_i(SV.mem(x, L), True{}, hx, {==})
+    case Con{+y, +t}:
+      LI.band_i(SV.mem(y, L), SV.sub(CO.lsnoc(t, x), L), LI.band_l(SV.mem(y, L), SV.sub(t, L), h), sub_snoc(t, x, L, LI.band_r(SV.mem(y, L), SV.sub(t, L), h), hx))
+
+def nc_pick(b: Bool, +x: Nat, +acc: $NL, +L: $NL, +ha: {SV.sub(acc, L) == True{} : Bool}, +hx: {SV.mem(x, L) == True{} : Bool}) -> {SV.sub(DCF.ndpick(b, x, acc), L) == True{} : Bool}:
+  match b:
+    case True{}:
+      ha
+    case False{}:
+      sub_snoc(acc, x, L, ha, hx)
+
+# the cleaned list keeps only entries of acc and xs
+def nc_in(xs: $NL, +ys: $NL, +acc: $NL, +L: $NL, +ha: {SV.sub(acc, L) == True{} : Bool}, +hx: {SV.sub(xs, L) == True{} : Bool}) -> {SV.sub(DCF.ndclean(xs, ys, acc), L) == True{} : Bool}:
+  match xs:
+    case Nil{}:
+      ha
+    case Con{+x, +t}:
+      nc_in(t, ys, DCF.ndpick(SV.bor(SV.mem(x, ys), SV.mem(x, acc)), x, acc), L, nc_pick(SV.bor(SV.mem(x, ys), SV.mem(x, acc)), x, acc, L, ha, LI.band_l(SV.mem(x, L), SV.sub(t, L), hx)), LI.band_r(SV.mem(x, L), SV.sub(t, L), hx))
+
 # Refuting, with the nd
 # ---------------------
 
 def ro.m(m: Maybe<&2, DR.DRef>, +sk: SK.Sketch, +c: Nat, +s: $NL, +cx: $QL, em: {DCF.dirref(sk, c, s, cx) == m : Maybe<&2, DR.DRef>}, h: {DCF.issome(m) == True{} : Bool}, $HC)
-  -> Or(SV.Ref0(sk, c, s), SV.DirRefutes(sk, c, s, cx, DCF.cnd.m(m, sk, c, s))):
+  -> Or(SV.Ref0(sk, c, s) & {DCF.cnd.m(m, sk, c, s) == Nil{} : $NL}, SV.DirRefutes(sk, c, s, cx, DCF.cnd.m(m, sk, c, s))):
   match m:
     case None{}:
-      absurd(Or(SV.Ref0(sk, c, s), SV.DirRefutes(sk, c, s, cx, Nil{})), KA.ft(h))
+      absurd(Or(SV.Ref0(sk, c, s) & {Nil{} == Nil{} : $NL}, SV.DirRefutes(sk, c, s, cx, Nil{})), KA.ft(h))
     case Some{+r}:
-      Inr{(r, (dsome(sk, c, s, cx, r, em, $HA), nc_sub(DR.ref.nd(SV.ents(sk), SV.rfacts(sk, Con{c, s}), r), SV.angle_args(sk, Con{c, s}), Nil{})))}
+      Inr{(r, (dsome(sk, c, s, cx, r, em, $HA), (nc_sub(DR.ref.nd(SV.ents(sk), SV.rfacts(sk, Con{c, s}), r), SV.angle_args(sk, Con{c, s}), Nil{}),
+        nc_in(DR.ref.nd(SV.ents(sk), SV.rfacts(sk, Con{c, s}), r), SV.angle_args(sk, Con{c, s}), Nil{}, DR.ref.nd(SV.ents(sk), SV.rfacts(sk, Con{c, s}), r), {==}, CP.sub_refl(DR.ref.nd(SV.ents(sk), SV.rfacts(sk, Con{c, s}), r))))))}
 
 def ro.b(b: Bool, +sk: SK.Sketch, +c: Nat, +s: $NL, +cx: $QL, eb: {CO.refutable(sk, c, s) == b : Bool}, h: {DCF.ref2.b(b, sk, c, s, cx) == True{} : Bool}, $HC)
-  -> Or(SV.Ref0(sk, c, s), SV.DirRefutes(sk, c, s, cx, DCF.cnd.b(b, sk, c, s, cx))):
+  -> Or(SV.Ref0(sk, c, s) & {DCF.cnd.b(b, sk, c, s, cx) == Nil{} : $NL}, SV.DirRefutes(sk, c, s, cx, DCF.cnd.b(b, sk, c, s, cx))):
   match b:
     case True{}:
-      Inl{CP.rw.go(RF.refute(CO.supp.es(sk, c, s), CO.supp.ss(sk, c, s)), CO.supp.es(sk, c, s), CO.supp.ss(sk, c, s), eb, ST.refute_ok(CO.supp.es(sk, c, s), CO.supp.ss(sk, c, s)))}
+      Inl{(CP.rw.go(RF.refute(CO.supp.es(sk, c, s), CO.supp.ss(sk, c, s)), CO.supp.es(sk, c, s), CO.supp.ss(sk, c, s), eb, ST.refute_ok(CO.supp.es(sk, c, s), CO.supp.ss(sk, c, s))), {==})}
     case False{}:
       ro.m(DCF.dirref(sk, c, s, cx), sk, c, s, cx, {==}, h, $HA)
 
 # c with s refutes, of degree 0 or by directions with the conflict's nd
 def ref_or(+sk: SK.Sketch, +c: Nat, +s: $NL, +cx: $QL, h: {DCF.refutable2(sk, c, s, cx) == True{} : Bool}, $HC)
-  -> Or(SV.Ref0(sk, c, s), SV.DirRefutes(sk, c, s, cx, DCF.cnd(sk, c, s, cx))):
+  -> Or(SV.Ref0(sk, c, s) & {DCF.cnd(sk, c, s, cx) == Nil{} : $NL}, SV.DirRefutes(sk, c, s, cx, DCF.cnd(sk, c, s, cx))):
   ro.b(CO.refutable(sk, c, s), sk, c, s, cx, {==}, h, $HA)
 
 # The filter

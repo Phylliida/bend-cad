@@ -7,10 +7,11 @@
 #
 # What changes from spec/solve.bend's Honest:
 # - a conflict is a refutation of degree 0 or by directions, irreducible
-#   for both, with the segments a direction refutation needs (nd);
+#   for both, with the segments a direction refutation needs (nd; none at
+#   degree 0);
 # - an equation is dropped iff it has a degree-0 derivation or a
-#   direction-layer one, and each drop records its reason, which is one
-#   (with the nd the derivation needs);
+#   direction-layer one, and each drop records its reason, which is one,
+#   with exactly the nd it needs (none at degree 0);
 # - Kept, Amber and Over need no refutation of either kind.
 
 import Base
@@ -87,16 +88,17 @@ def in_basis.all(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Na
     case Con{SV.Mul{+p, q}, t}:
       SV.band(in_basis(sk, red, ds, c, d, i, p), in_basis.all(sk, red, ds, c, d, i, t))
 
-# a drop's reason is its witness: for equation j, a constant combination
-# of equations it may be combined from that is the same polynomial as j,
-# or a derivation from the facts it may read that is valid, proves j and
-# needs at most the drop's nd
+# a drop's reason is its witness, and its nd is exactly what the witness
+# needs: for equation j, a constant combination of equations it may be
+# combined from that is the same polynomial as j, with no nd; or a
+# derivation from the facts it may read that is valid and proves j, with
+# the derivation's nd
 def why_ok(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +j: Nat, +nd: List<&2, Nat>, w: SV.Why) -> Type:
   match w:
     case SV.WLin{+ms}:
-      {in_basis.all(sk, red, ds, c, d, j, ms) == True{} : Bool} & SV.Ident(SV.eqat(SK.Sketch.eqs(sk), j), SV.mlin(SK.Sketch.eqs(sk), ms))
+      {in_basis.all(sk, red, ds, c, d, j, ms) == True{} : Bool} & (SV.Ident(SV.eqat(SK.Sketch.eqs(sk), j), SV.mlin(SK.Sketch.eqs(sk), ms)) & {nd == Nil{} : List<&2, Nat>})
     case SV.WDer{+dv}:
-      DR.Valid(SV.ents(sk), SV.dfacts(sk, cls, red, c, d, j), SV.ctx(sk, red, c), dv) & (SV.Proves(SV.ents(sk), SV.dstat_of(SV.ents(sk), SV.kind_at(sk, c)), SV.eqat(SK.Sketch.eqs(sk), j), DR.concl(SV.ents(sk), SV.dfacts(sk, cls, red, c, d, j), dv)) & {SV.sub(DR.nd(SV.ents(sk), SV.dfacts(sk, cls, red, c, d, j), dv), nd) == True{} : Bool})
+      DR.Valid(SV.ents(sk), SV.dfacts(sk, cls, red, c, d, j), SV.ctx(sk, red, c), dv) & (SV.Proves(SV.ents(sk), SV.dstat_of(SV.ents(sk), SV.kind_at(sk, c)), SV.eqat(SK.Sketch.eqs(sk), j), DR.concl(SV.ents(sk), SV.dfacts(sk, cls, red, c, d, j), dv)) & {nd == DR.nd(SV.ents(sk), SV.dfacts(sk, cls, red, c, d, j), dv) : List<&2, Nat>})
 
 # each recorded drop's reason is its witness
 def drops_nd(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, dd: List<&2, SV.Drop>) -> Type:
@@ -140,12 +142,13 @@ def OverOk(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +ds: L
   SV.NoRefute2(sk, red, c) & (&d: List<&2, Nat> -> (DropsOk(sk, cls, red, ds, c, d) & {SV.band(SV.eq(SV.nth(SV.owners(sk), j), c), SV.band(SV.mem(j, s), SV.clean(SV.owners(sk), red, ds, d, c, s))) == True{} : Bool} & SV.Overdet(SK.Sketch.eqs(sk), s, w)))
 
 # Conflict with support s and nd: kept, driving constraints before c; c
-# and s have a refutation, of degree 0 or by directions needing at most
-# nd; without any one member of s they have none of either kind (in c's
-# own context, which fixes the collapsed segments, so that refutability
-# grows with the constraints)
+# and s have a refutation, of degree 0 with no nd, or by directions with
+# nd its nd (less the segments of Angles among them); without any one
+# member of s they have none of either kind (in c's own context, which
+# fixes the collapsed segments, so that refutability grows with the
+# constraints)
 def ConflictOk(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, +nd: List<&2, Nat>) -> Type:
-  {SV.band(SV.distinct(s), SV.band(SV.below(s, c), SV.band(SV.all_driving(sk, s), SV.none_in(s, red)))) == True{} : Bool} & (Or(SV.Ref0(sk, c, s), SV.DirRefutes(sk, c, s, SV.ctx(sk, red, c), nd)) & (@m: Nat -> {SV.mem(m, s) == True{} : Bool} -> (SV.NoRef0(sk, c, SV.unmark(m, s)) & SV.NoDirRef(sk, c, SV.unmark(m, s), SV.ctx(sk, red, c)))))
+  {SV.band(SV.distinct(s), SV.band(SV.below(s, c), SV.band(SV.all_driving(sk, s), SV.none_in(s, red)))) == True{} : Bool} & (Or(SV.Ref0(sk, c, s) & {nd == Nil{} : List<&2, Nat>}, SV.DirRefutes(sk, c, s, SV.ctx(sk, red, c), nd)) & (@m: Nat -> {SV.mem(m, s) == True{} : Bool} -> (SV.NoRef0(sk, c, SV.unmark(m, s)) & SV.NoDirRef(sk, c, SV.unmark(m, s), SV.ctx(sk, red, c)))))
 
 def Fate.driving(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, k: SV.Class) -> Type:
   match k:
