@@ -1804,6 +1804,132 @@ above and a rename (the sk-13a verdict `final` is now `checks`, so that
   is gone), so 8 and 9 are not in the regression and the pass's cost on
   6 and 7 is not measured; they need exporting again.
 
+### B8b. Irreducible nd (added 2026-11-02, before B9)
+Danielle asked for nd to be minimal, covering every case however rare.
+Today nd is exact for the derivation the closure returns, but that
+derivation goes through each component's root and the segment's own
+record, so it can name segments no derivation needs (B8: the audit's
+sketch A gets {h, s1} where {s1} suffices; four right angles name all
+four sides where two suffice). This matters in two ways:
+- **Certification.** The verdict proves every live drop's nd nonzero over
+  the box. A segment that is zero at the solution but not needed would
+  refuse a sketch that a shorter derivation certifies. No realistic case
+  is known (the ways found to make such a segment zero make the system
+  singular anyway), but none is ruled out.
+- **The message.** "unless L12 has length 0" suggests collapsing L12 is a
+  way out when the proof never needed it.
+
+**The promise: irreducible, not fewest.** For each segment of a drop's or
+a conflict's nd, no derivation (refutation) exists whose nd avoids it,
+the way a conflict's support is irreducible. The fewest segments is a
+sparsest-combination problem (NP-hard in general); when two different
+sets each suffice, the solver reports one, and the other may be smaller.
+
+#### The trusted part (spec/solve.bend)
+
+```
+# no derivation of c's equation i needs only segments among A
+def NotDirDerivableIn(+sk, +cls, +red, +c, +d, +i, +A) -> Type:
+  @dv: DR.Der -> DR.Valid(ents(sk), dfacts(sk, cls, red, c, d, i), ctx(sk, red, c), dv)
+    -> Proves(ents(sk), dstat_of(ents(sk), kind_at(sk, c)), eqat(SK.Sketch.eqs(sk), i), DR.concl(ents(sk), dfacts(sk, cls, red, c, d, i), dv))
+    -> {sub(DR.nd(ents(sk), dfacts(sk, cls, red, c, d, i), dv), A) == True{} : Bool} -> Empty
+
+# each segment of nd is needed
+def NdIrred(+sk, +cls, +red, +c, +d, +i, +nd) -> Type:
+  @m: Nat -> {mem(m, nd) == True{} : Bool} -> NotDirDerivableIn(sk, cls, red, c, d, i, unmark(m, nd))
+
+# no refutation of c with cs needs only segments among A
+def NoDirRefIn(+sk, +c, +cs, +cx, +A) -> Type:
+  @r: DR.DRef -> RefOk(sk, c, cs, cx, r)
+    -> {sub(DR.ref.nd(ents(sk), rfacts(sk, Con{c, cs}), r), A) == True{} : Bool} -> Empty
+```
+
+- why_ok's WDer case gains `NdIrred(sk, cls, red, c, d, j, nd)`. WLin is
+  unchanged (nd is Nil).
+- DirRefutes gains: nd has no segment of an Angle among c and cs (those
+  are free already; lib/dconflict.bend's ndclean leaves them out today),
+  and for each m in nd,
+  `NoDirRefIn(sk, c, cs, cx, cat(unmark(m, nd), angle_args(sk, Con{c, cs})))`.
+  The degree-0 branch is unchanged (nd is Nil).
+- A degree-0 reason is a direction derivation with nd Nil (DKAdd over
+  solved equations), and a degree-0 refutation a Motzkin one with ref.nd
+  Nil, so the new clauses also rule out a direction answer where a
+  degree-0 one exists, with no separate statement.
+- The laws read Honest, so no law statement changes; honest_unique's
+  comment (nd may differ) stays true. ROADMAP's and the page's wording of
+  nd can say "each one needed".
+
+#### How the solver gets there: a deletion loop
+For a drop with derivation dv and N = nd(dv): for each m of N in turn,
+look for a derivation whose nd lies in N less m; if there is one, it
+replaces dv and N shrinks. One pass suffices: a segment kept against a
+larger N is still needed against the final one (sub is monotone). The
+same for a conflict's refutation, with the Angles' segments always
+allowed.
+
+"Look for a derivation whose nd lies in A" is the closure run for a
+**restricted calculus**: a node may be passed through (DThrough, DLine,
+RColl) only if it is open and in A, and a fact may be used only if its
+nd lies in A. Every other segment is endpoint-only: judgments can end
+at it, nothing passes through it. That is how the closure already treats
+collapsed segments (links, their sets, RFull when the direction is in K
+squared). Where the closure's proofs read a non-open segment's collapse,
+they use only that it is not Open (dcreprpf's coll_g, drefpf's iso_of),
+which a forbidden segment gives too. One difference: an open segment
+whose direction is in K squared is an explosion today, by passing
+through it; a forbidden one is not (its set is full, as a collapsed
+one's).
+
+#### Order of work
+- **C0. Spec draft.** The clauses above in spec/_draft13c.bend, with a
+  test that type-checks them against today's answers' shapes. Danielle
+  reads it before anything is proven against it.
+- **C1. The restricted calculus in lib.** ValidA (Open replaced by open
+  and in A); the facts with those whose nd is not in A replaced by
+  placeholders (equation 0, nd Nil, no statement), so positions do not
+  move. Bridging both ways: a Valid derivation with nd in A is ValidA
+  over the placeholder facts with the same conclusion; a ValidA one is
+  Valid with nd in A once placeholder premises become DZero. With A
+  every segment, ValidA is Valid.
+- **C2. The closure, restricted.** Decision first, after reading the run
+  and its proofs: thread A through the closure and its proofs (today's
+  closure is A = every segment, one closure to keep), or a parallel copy
+  (today's proofs untouched, two closures). Recommendation: thread A,
+  because the unrestricted run is literally the instance A = all and two
+  closures would drift; the threading is mechanical (the open test gains
+  mem(s, A), Open becomes Open_A in the closure theorem and the
+  refutation decision). Both the reference run and the fast incremental
+  one, so the loop's runs are fast.
+- **C3. The loop in lib/dpass.bend,** for drops (after the closure finds
+  the drop) and conflicts (after the support is irreducible).
+  Optionally, a derivation simplifier first (cut a pass through b whose
+  other premise is a real multiple of z_b, and the final pass through
+  the root): it shortens N before the loop, so fewer runs; only if the
+  cost asks for it.
+- **C4. Proofs.** dcwpf: the drop's NdIrred from each run's "not held"
+  by the restricted closure theorem and the bridging. dconflictpf: the
+  same for conflicts. The rest of the pass's proofs see a Drop with a
+  shorter nd and an extra clause.
+- **C5. Switch,** as sk-13b's: the draft becomes Honest, the proofs move,
+  the gate and the regression. `expected` changes where nd shrinks
+  (vertical-twice, right-angles, parallels-closed, audit-a, angle-cycle;
+  B8's sketches show which). Cost measured: one restricted run per
+  segment of each direction drop's and conflict's nd.
+
+**Exit:** Honest with NdIrred and the conflict clause, proven; the gate
+and the regression green; audit-a's nd {s1}, right-angles' two sides,
+parallels-closed's middle segment; the cost on vertical-twice and the
+slow sketches Danielle exports next.
+
+**Risks:**
+- The threading in C2 touches most of the closure's proof files. It is
+  mechanical, but large; a copy would be as large.
+- A proof that reads more of a non-open segment than "not Open" (none
+  found beyond coll_g and iso_of; C2 starts by confirming it).
+- Cost: the loop multiplies the closure's runs by the size of nd.
+- The explosion rule differs under restriction (above): the void check
+  covers only segments in A.
+
 ### B9. Audit and sign-off
 - An independent audit of the proven statements against this file. Gate
   and regression green. Danielle signs off.
