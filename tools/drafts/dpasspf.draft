@@ -475,6 +475,17 @@ def imp_at(+sk: SK.Sketch, +i: Nat, +kb: $NL, +rs: List<&2, SV.Ref>, +em: {$SR =
   (%hkb : PR.ImpK(sk, _, i, j)
     PR.srefs_some($CS1, sk, kb, i, 0n, rs, em, j, hj))
 
+# each of c's sides from position k (ss) is implied
+def imp_list(ss: List<&2, SK.Side>, +sk: SK.Sketch, +i: Nat, +kb: $NL, +rs: List<&2, SV.Ref>, +em: {$SR == Some{rs} : Maybe<&2, List<&2, SV.Ref>>}, +hkb: {kb == SV.kept_before(sk, $RF, i) : $NL}, +k: Nat, +hl: {Nat.add(k, SV.slen(ss)) == SV.slen($CS1) : Nat})
+  -> DH.implied.go(sk, $RF, i, ss, k):
+  match ss:
+    case Nil{}:
+      Unit{}
+    case Con{s, +t}:
+      (imp_at(sk, i, kb, rs, em, hkb, k, (%hl : {SV.lt(k, _) == True{} : Bool}
+        MP.lt_add(k, SV.slen(t)))),
+       imp_list(t, sk, i, kb, rs, em, hkb, 1n+k, Equal.trans(Nat, 1n+Nat.add(k, SV.slen(t)), Nat.add(k, 1n+SV.slen(t)), SV.slen($CS1), LN.add_succ(k, SV.slen(t)), hl)))
+
 def notimp(+sk: SK.Sketch, +i: Nat, +kb: $NL, +em: {$SR == None{} : Maybe<&2, List<&2, SV.Ref>>}, +hkb: {kb == SV.kept_before(sk, $RF, i) : $NL}) -> $NIT:
   (%hkb : PR.NotK(sk, _, i, 0n, SV.slen($CS1))
     PR.srefs_none($CS1, sk, kb, i, 0n, em))
@@ -494,7 +505,7 @@ def step.a(m: Maybe<&2, List<&2, SV.Ref>>, +sk: SK.Sketch, +i: Nat, +kb: $NL, +d
       (hnr, (hdo, (hnd, (hmt, ha => notimp(sk, i, kb, em, hkb)))))
     case Some{+rs}:
       %Equal.sym(Maybe<&2, List<&2, SV.Ref>>, $SR, Some{rs}, em) : DH.Fate.driving(sk, $CLS, $RF, $DF, i, PA.one.a(_, dd))
-      (hnr, (hdo, (hnd, (ea, j => hj => imp_at(sk, i, kb, rs, em, hkb, j, hj)))))
+      (hnr, (hdo, (hnd, (ea, imp_list($CS1, sk, i, kb, rs, em, hkb, 0n, {==})))))
 
 def step.k(a: Bool, +sk: SK.Sketch, +i: Nat, +kb: $NL, +dd: List<&2, SV.Drop>, +ea: {$AMB == a : Bool}, hnr: SV.NoRefute2(sk, $RF, i), hdo: $DOK, hnd: $DND, hmt: $MT,
   +hkb: {kb == SV.kept_before(sk, $RF, i) : $NL}) -> DH.Fate.driving(sk, $CLS, $RF, $DF, i, PA.one.k($AMB, sk, kb, i, dd)):

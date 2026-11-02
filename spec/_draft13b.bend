@@ -116,10 +116,22 @@ def DropsNd(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +ds: 
 def KeptOk(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +dd: List<&2, SV.Drop>) -> Type:
   SV.NoRefute2(sk, red, c) & (DropsOk(sk, cls, red, ds, c, SV.drops(dd)) & (DropsNd(sk, cls, red, ds, c, dd) & (SV.Matchable(SK.cat(SV.presolved(sk, red, ds, c), SV.own_rest(sk, c, SV.drops(dd), SV.neqs(SK.Sketch.eqs(sk))))) & ({SV.is_amberable(sk, c, SV.drops(dd)) == True{} : Bool} -> &i: Nat -> ({SV.lt(i, SV.slen(SV.csides(sk, [c]))) == True{} : Bool} & SV.NotImplied(sk, red, c, i))))))
 
+# each side condition of c from position i on (ss, the rest of c's
+# sides) is implied: one Implied per side, so that each can be used
+def implied.go(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, ss: List<&2, SK.Side>, +i: Nat) -> Type:
+  match ss:
+    case Nil{}:
+      Unit
+    case Con{s, t}:
+      SV.Implied(sk, red, c, i) & implied.go(sk, red, c, t, 1n+i)
+
+def AllImplied(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat) -> Type:
+  implied.go(sk, red, c, SV.csides(sk, [c]), 0n)
+
 # amber with the drops dd: no refutation, dd exactly the derivable
 # equations with their reasons, all of c's equations, every side implied
 def AmberOk(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +dd: List<&2, SV.Drop>) -> Type:
-  SV.NoRefute2(sk, red, c) & (DropsOk(sk, cls, red, ds, c, SV.drops(dd)) & (DropsNd(sk, cls, red, ds, c, dd) & ({SV.is_amberable(sk, c, SV.drops(dd)) == True{} : Bool} & (@i: Nat -> {SV.lt(i, SV.slen(SV.csides(sk, [c]))) == True{} : Bool} -> SV.Implied(sk, red, c, i)))))
+  SV.NoRefute2(sk, red, c) & (DropsOk(sk, cls, red, ds, c, SV.drops(dd)) & (DropsNd(sk, cls, red, ds, c, dd) & ({SV.is_amberable(sk, c, SV.drops(dd)) == True{} : Bool} & AllImplied(sk, red, c))))
 
 # Over with equation j in the over-determined set s over w: no
 # refutation, and with c's derivable equations d set aside, s is made of

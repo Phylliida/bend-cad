@@ -427,7 +427,7 @@ def aok_rb(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: List<&2, Nat>, +D: List
     case (nr, r1):
       match r1:
         case (dk, r2):
-          ka_cmb(SV.NoRefute2(sk, R, c), (DH.DropsNd(sk, cls, R, D, c, dd) & ({SV.is_amberable(sk, c, SV.drops(dd)) == True{} : Bool} & (@i: Nat -> {SV.lt(i, SV.slen(SV.csides(sk, [c]))) == True{} : Bool} -> SV.Implied(sk, R, c, i)))),
+          ka_cmb(SV.NoRefute2(sk, R, c), (DH.DropsNd(sk, cls, R, D, c, dd) & ({SV.is_amberable(sk, c, SV.drops(dd)) == True{} : Bool} & DH.AllImplied(sk, R, c))),
             sk, cls, R, D, c, SV.drops(dd), nr, dok_rb(sk, cls, R, D, c, SV.drops(dd), dk), r2)
 
 def fdr_rb(+sk: SK.Sketch, +c: Nat, k: SV.Class, h: DH.Fate.driven(k)) -> ({HR.pk_d(sk, c, SV.kdrops(k)) == True{} : Bool} & DH.Fate.driven(k)):

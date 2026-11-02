@@ -438,6 +438,17 @@ def imp_at(+sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +rs: List<&2, SV.Ref>, +
   (%hkb : PR.ImpK(sk, _, i, j)
     PR.srefs_some(SV.csides(sk, [i]), sk, kb, i, 0n, rs, em, j, hj))
 
+# each of c's sides from position k (ss) is implied
+def imp_list(ss: List<&2, SK.Side>, +sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +rs: List<&2, SV.Ref>, +em: {PA.srefs(SV.csides(sk, [i]), sk, kb, i, 0n) == Some{rs} : Maybe<&2, List<&2, SV.Ref>>}, +hkb: {kb == SV.kept_before(sk, SV.reds(DPS.classes2(sk)), i) : List<&2, Nat>}, +k: Nat, +hl: {Nat.add(k, SV.slen(ss)) == SV.slen(SV.csides(sk, [i])) : Nat})
+  -> DH.implied.go(sk, SV.reds(DPS.classes2(sk)), i, ss, k):
+  match ss:
+    case Nil{}:
+      Unit{}
+    case Con{s, +t}:
+      (imp_at(sk, i, kb, rs, em, hkb, k, (%hl : {SV.lt(k, _) == True{} : Bool}
+        MP.lt_add(k, SV.slen(t)))),
+       imp_list(t, sk, i, kb, rs, em, hkb, 1n+k, Equal.trans(Nat, 1n+Nat.add(k, SV.slen(t)), Nat.add(k, 1n+SV.slen(t)), SV.slen(SV.csides(sk, [i])), LN.add_succ(k, SV.slen(t)), hl)))
+
 def notimp(+sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +em: {PA.srefs(SV.csides(sk, [i]), sk, kb, i, 0n) == None{} : Maybe<&2, List<&2, SV.Ref>>}, +hkb: {kb == SV.kept_before(sk, SV.reds(DPS.classes2(sk)), i) : List<&2, Nat>}) -> &j: Nat -> ({SV.lt(j, SV.slen(SV.csides(sk, [i]))) == True{} : Bool} & SV.NotImplied(sk, SV.reds(DPS.classes2(sk)), i, j)):
   (%hkb : PR.NotK(sk, _, i, 0n, SV.slen(SV.csides(sk, [i])))
     PR.srefs_none(SV.csides(sk, [i]), sk, kb, i, 0n, em))
@@ -455,7 +466,7 @@ def step.a(m: Maybe<&2, List<&2, SV.Ref>>, +sk: SK.Sketch, +i: Nat, +kb: List<&2
       (hnr, (hdo, (hnd, (hmt, ha => notimp(sk, i, kb, em, hkb)))))
     case Some{+rs}:
       %Equal.sym(Maybe<&2, List<&2, SV.Ref>>, PA.srefs(SV.csides(sk, [i]), sk, kb, i, 0n), Some{rs}, em) : DH.Fate.driving(sk, DPS.classes2(sk), SV.reds(DPS.classes2(sk)), SV.dropped(DPS.classes2(sk)), i, PA.one.a(_, dd))
-      (hnr, (hdo, (hnd, (ea, j => hj => imp_at(sk, i, kb, rs, em, hkb, j, hj)))))
+      (hnr, (hdo, (hnd, (ea, imp_list(SV.csides(sk, [i]), sk, i, kb, rs, em, hkb, 0n, {==})))))
 
 def step.k(a: Bool, +sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +dd: List<&2, SV.Drop>, +ea: {SV.is_amberable(sk, i, SV.drops(dd)) == a : Bool}, hnr: SV.NoRefute2(sk, SV.reds(DPS.classes2(sk)), i), hdo: DH.DropsOk(sk, DPS.classes2(sk), SV.reds(DPS.classes2(sk)), SV.dropped(DPS.classes2(sk)), i, SV.drops(dd)), hnd: DH.DropsNd(sk, DPS.classes2(sk), SV.reds(DPS.classes2(sk)), SV.dropped(DPS.classes2(sk)), i, dd), hmt: SV.Matchable(SK.cat(SV.presolved(sk, SV.reds(DPS.classes2(sk)), SV.dropped(DPS.classes2(sk)), i), SV.own_rest(sk, i, SV.drops(dd), SV.neqs(SK.Sketch.eqs(sk))))),
   +hkb: {kb == SV.kept_before(sk, SV.reds(DPS.classes2(sk)), i) : List<&2, Nat>}) -> DH.Fate.driving(sk, DPS.classes2(sk), SV.reds(DPS.classes2(sk)), SV.dropped(DPS.classes2(sk)), i, PA.one.k(SV.is_amberable(sk, i, SV.drops(dd)), sk, kb, i, dd)):
