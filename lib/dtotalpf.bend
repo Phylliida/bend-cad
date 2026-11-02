@@ -31,6 +31,7 @@ import ./solve.bend as SO
 import ./wfdec.bend as WF
 import ./wfcpf.bend as WC
 import ./perfpf.bend as PF
+import ./structpf.bend as STP
 import ./dpass.bend as DPS
 import ./dpasspf.bend as DPP
 import ./dsolve.bend as DSO
@@ -98,6 +99,22 @@ def f_bpb(+sk: SK.Sketch, +hb: {PP.pib(sk, SV.reds(DPS.classes2(sk)), SV.dropped
     PP.pib_bpb(sk, SV.reds(DPS.classes2(sk)), SV.dropped(DPS.classes2(sk)), SV.ncons(sk), PP.ps.rows(DPS.final2_st(sk)), PP.ps.B(DPS.final2_st(sk)), PP.ps.bp(DPS.final2_st(sk)), PP.ps.vm(DPS.final2_st(sk)), hb))
 
 
+
+
+# the variable side over the system solved ends as lib/structpf.bend's
+# blocks want it
+def f_gb2(+sk: SK.Sketch, +hbpb: {SV.below(PA.PS.bp(DPS.final2_st(sk)), SV.neqs(SK.Sketch.eqs(sk))) == True{} : Bool}) -> {SV.below(PA.PS.bp(DPS.final2_st(sk)), ST.len.q(SK.Sketch.eqs(sk))) == True{} : Bool}:
+  (%Equal.sym(Nat, ST.len.q(SK.Sketch.eqs(sk)), SV.neqs(SK.Sketch.eqs(sk)), PF.lenq_neqs(SK.Sketch.eqs(sk))) : {SV.below(PA.PS.bp(DPS.final2_st(sk)), _) == True{} : Bool}
+    hbpb)
+
+def vend_of2(+sk: SK.Sketch, +hvalid: {MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), PA.PS.vm(DPS.final2_st(sk))) == True{} : Bool}, +hdist: {SV.distinct(ST.somes(PA.PS.vm(DPS.final2_st(sk)))) == True{} : Bool}, +hml: {L.mlen(PA.PS.vm(DPS.final2_st(sk))) == PA.nvars(sk) : Nat}, +hs1: {L.subl(ST.somes(PA.PS.vm(DPS.final2_st(sk))), PA.PS.bp(DPS.final2_st(sk))) == True{} : Bool}, +hs2: {L.subl(PA.PS.bp(DPS.final2_st(sk)), ST.somes(PA.PS.vm(DPS.final2_st(sk)))) == True{} : Bool}, +hbpd: {SV.distinct(PA.PS.bp(DPS.final2_st(sk))) == True{} : Bool}, +hbpb: {SV.below(PA.PS.bp(DPS.final2_st(sk)), SV.neqs(SK.Sketch.eqs(sk))) == True{} : Bool}) -> {STP.vsides(ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), DPS.solved_pos2(sk), PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), DPS.solved_pos2(sk))) == True{} : Bool}:
+  +hgb = f_gb2(sk, hbpb)
+  PF.vside_kd(PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), DPS.solved_pos2(sk)), SK.Sketch.eqs(sk), PA.nvars(sk), PA.PS.vm(DPS.final2_st(sk)), DPS.solved_pos2(sk), hs1, hs2, hgb, SV.len(ST.somes(PA.PS.vm(DPS.final2_st(sk)))), hdist, {==}, hbpd, PF.pins_kvd(SK.Sketch.eqs(sk), PA.nvars(sk), PA.PS.vm(DPS.final2_st(sk)), DPS.solved_pos2(sk), hs1, hs2, hgb, SV.len(ST.somes(PA.PS.vm(DPS.final2_st(sk)))), hvalid, hdist, hml, {==}))
+
+def vend_pass2(+sk: SK.Sketch, +hA: {D.adjb(PA.dadjs(SK.Sketch.eqs(sk)), PA.nvars(sk)) == True{} : Bool}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}) -> {STP.vsides(ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), DPS.solved_pos2(sk), PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), DPS.solved_pos2(sk))) == True{} : Bool}:
+  +hi = DPP.final2_inv(sk, hA, hcov, hwf)
+  +hb = PP.pinv_b(sk, SV.reds(DPS.classes2(sk)), SV.dropped(DPS.classes2(sk)), SV.ncons(sk), DPS.final2_st(sk), hi)
+  vend_of2(sk, f_valid(sk, hb), f_dist(sk, hb), f_mlen(sk, hb), f_s1(sk, hb), f_s2(sk, hb), f_bpd(sk, hb), f_bpb(sk, hb))
 
 def total_pass2(+sk: SK.Sketch, +hA: {D.adjb(PA.dadjs(SK.Sketch.eqs(sk)), PA.nvars(sk)) == True{} : Bool}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool})
   -> SK.Both({SV.distinct(DPS.pins2(sk)) == True{} : Bool}, {SV.below(DPS.pins2(sk), PA.nvars(sk)) == True{} : Bool}) & (&m: List<&2, Nat> -> SV.Perfect(SV.solved(sk, SV.reds(DPS.classes2(sk)), SV.dropped(DPS.classes2(sk))), SV.free(PA.nvars(sk), 0n, DPS.pins2(sk)), m)):

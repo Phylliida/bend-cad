@@ -1672,6 +1672,23 @@ lib/solve.bend, and these proofs replace the old ones.
   sides hold over a small enough box, from `Strict` at x*, like the
   other sides.
 
+**As built 2026-11-01: B7 done** (for the draft solver, as roadmap13b
+states the two laws; restated in tests/dcomplete_laws.bend, its own gate
+root).
+- The new pass's classes pass the exact check: lib/dpasspf.bend
+  `ck2_pass` (the walk again, each driving class a conflict, an over, or
+  PA.one.k, whose refutations pass by ckpf's `kam_onek` over the kept list
+  the invariant names).
+- lib/dskdpf.bend: skdpf over the new pass's end state (each lemma also
+  takes the wf and cover facts, which `final2_inv` needs);
+  lib/dtotalpf.bend gains `vend_pass2`.
+- lib/dcompletepf.bend: completepf redirected to the draft solver. The
+  proof runs on sk-13a's sides followed by the nd sides (one budget for
+  both, `strict_cat`; the nd sides have no constants, `dys_nd`), and the
+  side check on that list splits into the two final2 reads (`cs_l`,
+  `cs_r`). `solve_complete2` takes hn (the nd sides strict at x).
+- lib/drefusedpf.bend: `solve_refused2`, refusedpf's over the draft solver.
+
 ### B8. The page, the CLI and the regression
 - The CLI prints nd with drops and conflicts; serve.py parses it.
 - The page:

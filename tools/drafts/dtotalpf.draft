@@ -31,6 +31,7 @@ import ./solve.bend as SO
 import ./wfdec.bend as WF
 import ./wfcpf.bend as WC
 import ./perfpf.bend as PF
+import ./structpf.bend as STP
 import ./dpass.bend as DPS
 import ./dpasspf.bend as DPP
 import ./dsolve.bend as DSO
@@ -118,6 +119,23 @@ def f_bpb($HBP) -> {SV.below($BP, SV.neqs($ES)) == True{} : Bool}:
 
 @MACRO FACTS f_valid(sk, hb), f_dist(sk, hb), f_mlen(sk, hb), f_s1(sk, hb), f_s2(sk, hb), f_bpd(sk, hb), f_bpb(sk, hb)
 
+
+@MACRO HYPS +hvalid: {MX.valid($AD, $VMR) == True{} : Bool}, +hdist: {SV.distinct(ST.somes($VMR)) == True{} : Bool}, +hml: {L.mlen($VMR) == $NV : Nat}, +hs1: {L.subl(ST.somes($VMR), $BP) == True{} : Bool}, +hs2: {L.subl($BP, ST.somes($VMR)) == True{} : Bool}, +hbpd: {SV.distinct($BP) == True{} : Bool}, +hbpb: {SV.below($BP, SV.neqs($ES)) == True{} : Bool}
+
+# the variable side over the system solved ends as lib/structpf.bend's
+# blocks want it
+def f_gb2(+sk: SK.Sketch, +hbpb: {SV.below($BP, SV.neqs($ES)) == True{} : Bool}) -> {SV.below($BP, ST.len.q($ES)) == True{} : Bool}:
+  (%Equal.sym(Nat, ST.len.q($ES), SV.neqs($ES), PF.lenq_neqs($ES)) : {SV.below($BP, _) == True{} : Bool}
+    hbpb)
+
+def vend_of2(+sk: SK.Sketch, $HYPS) -> {STP.vsides(ST.len.q($ES), $NV, $GD, $KV) == True{} : Bool}:
+  +hgb = f_gb2(sk, hbpb)
+  PF.vside_kd($KV, $ES, $NV, $VMR, $GD, hs1, hs2, hgb, $KN, hdist, {==}, hbpd, PF.pins_kvd($ES, $NV, $VMR, $GD, hs1, hs2, hgb, $KN, hvalid, hdist, hml, {==}))
+
+def vend_pass2(+sk: SK.Sketch, +hA: {D.adjb($AD, $NV) == True{} : Bool}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}) -> {STP.vsides(ST.len.q($ES), $NV, $GD, $KV) == True{} : Bool}:
+  +hi = DPP.final2_inv(sk, hA, hcov, hwf)
+  +hb = PP.pinv_b(sk, $RF, $DF, SV.ncons(sk), $FS, hi)
+  vend_of2(sk, $FACTS)
 
 def total_pass2(+sk: SK.Sketch, +hA: {D.adjb($AD, $NV) == True{} : Bool}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool})
   -> SK.Both({SV.distinct($PN) == True{} : Bool}, {SV.below($PN, $NV) == True{} : Bool}) & (&m: $NL -> SV.Perfect(SV.solved(sk, $RF, $DF), SV.free($NV, 0n, $PN), m)):
