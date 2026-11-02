@@ -78,7 +78,9 @@
 # - The facts of an honest classification hold (lib/dfactpf.bend, B6):
 #   wherever the system solved holds, every fact of a kept constraint does
 #   (DFC.facts_hold), so solve_drop's content holds over any honest
-#   classification (b6_drop).
+#   classification (b6_drop), and solve_amber's (lib/dambpf.bend,
+#   b6_amber: the ambers' sides from their Implied refutations, one per
+#   side, DH.AllImplied).
 # - The other restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about those laws is proven here. Their
@@ -145,6 +147,7 @@ import ../lib/dcwpf.bend as DCW
 import ../lib/dpasspf.bend as DPP
 import ../lib/passpf.bend as PPF
 import ../lib/dfactpf.bend as DFC
+import ../lib/dambpf.bend as DAM
 import ../lib/solve.bend as SOL
 import ../lib/wfdec.bend as WFD
 import ../lib/pass.bend as PAS
@@ -224,7 +227,7 @@ def t_dnd() -> {SS.dnd_at(cls(), 5n) == [12n] : List<&2, Nat>}:
 def t_ndh() -> {DR.ndh(es(), [10n]) == E.QMul{DR.norm2(es(), 10n), E.QCst{DR.qo()}} : E.QExpr}:
   {==}
 
-# The restated laws (solve_drop proven, the others statements only)
+# The restated laws (solve_drop and solve_amber proven, the others statements only)
 # -------------------------------------
 
 def stmt_pick(b: Bool, P: Type) -> Type:
@@ -244,10 +247,11 @@ def stmt_absurd(P: Type, e: {False{} == True{} : Bool}) -> P:
 def b6_drop(~F: O.OField, +sk: SK.Sketch, +cls: List<&2, SS.Class>, h: DH.Honest(sk, cls), +x: M.Vec(~F), hz: SK.Zeros(~F, x, SS.solved(sk, SS.reds(cls), SS.dropped(cls))), +j: Nat, hj: {SS.mem(j, SS.dropped(cls)) == True{} : Bool}, hl: DR.Longs(~F, x, SS.ents(sk), SS.dnd_at(cls, j))) -> SK.Zeros(~F, x, [SS.eqat(SK.Sketch.eqs(sk), j)]):
   DFC.drop_law(~F, sk, cls, h, x, hz, j, hj, hl)
 
-# solve_amber: deleting every amber constraint changes no solution at
-# which the amber drops' nd segments have nonzero length
-def stmt_amber(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +n: Nat, cov: {BX.Sketch.within(sk, n) == True{} : Bool}, +cls: List<&2, SS.Class>, h: DH.Honest(sk, cls), +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SS.mark(SS.cat(SS.reds(cls), SS.ambers(cls)), sk)), hl: DR.Longs(~F, x, SS.ents(sk), SS.amber_nd(cls)), bot: {False{} == True{} : Bool}) -> SK.Sketch.means(~F, x, SS.mark(SS.reds(cls), sk)):
-  stmt_absurd(SK.Sketch.means(~F, x, SS.mark(SS.reds(cls), sk)), bot)
+# solve_amber, proven (B6, lib/dambpf.bend DAM.amber_law): deleting every
+# amber constraint changes no solution at which the amber drops' nd
+# segments have nonzero length
+def b6_amber(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: List<&2, SS.Class>, h: DH.Honest(sk, cls), +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SS.mark(SS.cat(SS.reds(cls), SS.ambers(cls)), sk)), hl: DR.Longs(~F, x, SS.ents(sk), SS.amber_nd(cls))) -> SK.Sketch.means(~F, x, SS.mark(SS.reds(cls), sk)):
+  DAM.amber_law(~F, sk, w, cls, h, x, m, hl)
 
 # solve_conflict: a conflicting constraint and its support cannot all hold
 # where its nd segments have nonzero length

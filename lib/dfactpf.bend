@@ -944,27 +944,58 @@ def st_dd(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>,
   +hbl = LI.band_r(KB.allo(SV.owners(sk), SV.drops(dd), c), SV.below(SV.drops(dd), SV.neqs(SK.Sketch.eqs(sk))), hpk)
   kf_keep(~F, x, sk, cls, c, edc, hb, kf, cf_ok(~F, x, sk, cls, hz, hf, c, SV.drops(dd), hkd, hnr, dd, ekd, {==}, dw_mk(~F, x, sk, cls, hz, hf, c, SV.drops(dd), hkd, hnr, kf, dd, hnd, ha, hbl), SK.Sketch.eqs(sk), 0n, {==}))
 
+# what an amber constraint's Fate says of its sides, kept for after the
+# walk (each Fate is read once)
+def AmbS.k(+sk: SK.Sketch, +R: List<&2, Nat>, +c: Nat, k: SV.Class) -> Type:
+  match k:
+    case SV.Kept{dd}:
+      Unit
+    case SV.Amber{dd, rs}:
+      DH.AllImplied(sk, R, c)
+    case SV.Over{j, s, w}:
+      Unit
+    case SV.Conflict{s, nd}:
+      Unit
+
+def AmbS.pick(+sk: SK.Sketch, +R: List<&2, Nat>, +c: Nat, b: Bool, +k: SV.Class) -> Type:
+  match b:
+    case True{}:
+      Unit
+    case False{}:
+      AmbS.k(sk, R, c, k)
+
+def AmbS(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +c: Nat) -> Type:
+  AmbS.pick(sk, SV.reds(cls), c, SV.driven(sk, c), SV.class_at(cls, c))
+
+def Amb.go(+sk: SK.Sketch, +cls: List<&2, SV.Class>, n: Nat, +c: Nat) -> Type:
+  match n:
+    case 0n:
+      Unit
+    case 1n+m:
+      AmbS(sk, cls, c) & Amb.go(sk, cls, m, 1n+c)
+
 def st_k(~F: O.OField, k: SV.Class, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, +hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(cls), SV.dropped(cls))), +hf: {HR.hfacts(sk, cls) == True{} : Bool}, +c: Nat, +ek: {SV.class_at(cls, c) == k : SV.Class}, +er: {SV.mem(c, SV.reds(cls)) == SV.is_red(k) : Bool}, +edc0: {KB.dcond(sk, SV.reds(cls), c) == SV.bnot(SV.mem(c, SV.reds(cls))) : Bool},
-  p: ({HR.pk_d(sk, c, SV.kdrops(k)) == True{} : Bool} & DH.Fate.driving(sk, cls, SV.reds(cls), SV.dropped(cls), c, k)), +kf: DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), c), sk, cls, True{}, 0n)), +hb: {SV.below(SV.kept_before(sk, SV.reds(cls), c), c) == True{} : Bool}) -> DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), KB.kpk(KB.dcond(sk, SV.reds(cls), c), SV.kept_before(sk, SV.reds(cls), c), c), sk, cls, True{}, 0n)):
+  p: ({HR.pk_d(sk, c, SV.kdrops(k)) == True{} : Bool} & DH.Fate.driving(sk, cls, SV.reds(cls), SV.dropped(cls), c, k)), +kf: DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), c), sk, cls, True{}, 0n)), +hb: {SV.below(SV.kept_before(sk, SV.reds(cls), c), c) == True{} : Bool}) -> DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), KB.kpk(KB.dcond(sk, SV.reds(cls), c), SV.kept_before(sk, SV.reds(cls), c), c), sk, cls, True{}, 0n)) & AmbS.k(sk, SV.reds(cls), c, k):
   match k:
     case SV.Kept{+dd}:
       (+hpk, f) = p
       (nr, q1) = f
       (dok, q2) = q1
       (hnd, rest) = q2
-      st_dd(~F, x, sk, cls, hz, hf, c, dd, Equal.cong(SV.Class, List<&2, SV.Drop>, z => SV.kdd(z), SV.class_at(cls, c), SV.Kept{dd}, ek), er, Equal.trans(Bool, KB.dcond(sk, SV.reds(cls), c), SV.bnot(SV.mem(c, SV.reds(cls))), True{}, edc0, KB.bnot_f(SV.mem(c, SV.reds(cls)), er)), hb, kf, hnd, hpk)
+      (st_dd(~F, x, sk, cls, hz, hf, c, dd, Equal.cong(SV.Class, List<&2, SV.Drop>, z => SV.kdd(z), SV.class_at(cls, c), SV.Kept{dd}, ek), er, Equal.trans(Bool, KB.dcond(sk, SV.reds(cls), c), SV.bnot(SV.mem(c, SV.reds(cls))), True{}, edc0, KB.bnot_f(SV.mem(c, SV.reds(cls)), er)), hb, kf, hnd, hpk), Unit{})
     case SV.Amber{+dd, +rs}:
       (+hpk, f) = p
       (nr, q1) = f
       (dok, q2) = q1
-      (hnd, rest) = q2
-      st_dd(~F, x, sk, cls, hz, hf, c, dd, Equal.cong(SV.Class, List<&2, SV.Drop>, z => SV.kdd(z), SV.class_at(cls, c), SV.Amber{dd, rs}, ek), er, Equal.trans(Bool, KB.dcond(sk, SV.reds(cls), c), SV.bnot(SV.mem(c, SV.reds(cls))), True{}, edc0, KB.bnot_f(SV.mem(c, SV.reds(cls)), er)), hb, kf, hnd, hpk)
+      (hnd, q3) = q2
+      (ham, hall) = q3
+      (st_dd(~F, x, sk, cls, hz, hf, c, dd, Equal.cong(SV.Class, List<&2, SV.Drop>, z => SV.kdd(z), SV.class_at(cls, c), SV.Amber{dd, rs}, ek), er, Equal.trans(Bool, KB.dcond(sk, SV.reds(cls), c), SV.bnot(SV.mem(c, SV.reds(cls))), True{}, edc0, KB.bnot_f(SV.mem(c, SV.reds(cls)), er)), hb, kf, hnd, hpk), hall)
     case SV.Over{+j, +s, +w}:
-      kf_same(~F, x, sk, cls, c, Equal.trans(Bool, KB.dcond(sk, SV.reds(cls), c), SV.bnot(SV.mem(c, SV.reds(cls))), False{}, edc0, (%Equal.sym(Bool, SV.mem(c, SV.reds(cls)), True{}, er) : {SV.bnot(_) == False{} : Bool}
-        {==})), kf)
+      (kf_same(~F, x, sk, cls, c, Equal.trans(Bool, KB.dcond(sk, SV.reds(cls), c), SV.bnot(SV.mem(c, SV.reds(cls))), False{}, edc0, (%Equal.sym(Bool, SV.mem(c, SV.reds(cls)), True{}, er) : {SV.bnot(_) == False{} : Bool}
+        {==})), kf), Unit{})
     case SV.Conflict{+s, +nd}:
-      kf_same(~F, x, sk, cls, c, Equal.trans(Bool, KB.dcond(sk, SV.reds(cls), c), SV.bnot(SV.mem(c, SV.reds(cls))), False{}, edc0, (%Equal.sym(Bool, SV.mem(c, SV.reds(cls)), True{}, er) : {SV.bnot(_) == False{} : Bool}
-        {==})), kf)
+      (kf_same(~F, x, sk, cls, c, Equal.trans(Bool, KB.dcond(sk, SV.reds(cls), c), SV.bnot(SV.mem(c, SV.reds(cls))), False{}, edc0, (%Equal.sym(Bool, SV.mem(c, SV.reds(cls)), True{}, er) : {SV.bnot(_) == False{} : Bool}
+        {==})), kf), Unit{})
 
 # driven: not kept
 def dcf(+sk: SK.Sketch, +R: List<&2, Nat>, +c: Nat, +eb: {SV.driven(sk, c) == True{} : Bool}, +hc: {SV.lt(c, SV.ncons(sk)) == True{} : Bool}) -> {KB.dcond(sk, R, c) == False{} : Bool}:
@@ -978,10 +1009,11 @@ def dcv(+sk: SK.Sketch, +R: List<&2, Nat>, +c: Nat, +eb: {SV.driven(sk, c) == Fa
   %Equal.sym(Bool, SV.lt(c, SV.ncons(sk)), True{}, hc) : {SV.band(SV.band(_, True{}), SV.bnot(SV.mem(c, R))) == SV.bnot(SV.mem(c, R)) : Bool}
   {==}
 
-def st_b(~F: O.OField, b: Bool, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, +hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(cls), SV.dropped(cls))), +hf: {HR.hfacts(sk, cls) == True{} : Bool}, +c: Nat, +eb: {SV.driven(sk, c) == b : Bool}, +hc: {SV.lt(c, SV.ncons(sk)) == True{} : Bool}, f: DH.Fate.pick(sk, cls, SV.reds(cls), SV.dropped(cls), c, b, SV.class_at(cls, c)), +kf: DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), c), sk, cls, True{}, 0n)), +hb: {SV.below(SV.kept_before(sk, SV.reds(cls), c), c) == True{} : Bool}) -> DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), KB.kpk(KB.dcond(sk, SV.reds(cls), c), SV.kept_before(sk, SV.reds(cls), c), c), sk, cls, True{}, 0n)):
+def st_b(~F: O.OField, b: Bool, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, +hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(cls), SV.dropped(cls))), +hf: {HR.hfacts(sk, cls) == True{} : Bool}, +c: Nat, +eb: {SV.driven(sk, c) == b : Bool}, +hc: {SV.lt(c, SV.ncons(sk)) == True{} : Bool}, f: DH.Fate.pick(sk, cls, SV.reds(cls), SV.dropped(cls), c, b, SV.class_at(cls, c)), +kf: DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), c), sk, cls, True{}, 0n)), +hb: {SV.below(SV.kept_before(sk, SV.reds(cls), c), c) == True{} : Bool})
+  -> DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), KB.kpk(KB.dcond(sk, SV.reds(cls), c), SV.kept_before(sk, SV.reds(cls), c), c), sk, cls, True{}, 0n)) & AmbS.pick(sk, SV.reds(cls), c, b, SV.class_at(cls, c)):
   match b:
     case True{}:
-      kf_same(~F, x, sk, cls, c, dcf(sk, SV.reds(cls), c, eb, hc), kf)
+      (kf_same(~F, x, sk, cls, c, dcf(sk, SV.reds(cls), c, eb, hc), kf), Unit{})
     case False{}:
       st_k(~F, SV.class_at(cls, c), x, sk, cls, hz, hf, c, {==}, CL.mem_reds(cls, c), dcv(sk, SV.reds(cls), c, eb, hc), fdv_rb(sk, cls, SV.reds(cls), SV.dropped(cls), c, SV.class_at(cls, c), f), kf, hb)
 
@@ -1005,16 +1037,27 @@ def lt_c(+c: Nat, +m: Nat, +n: Nat, hcn: {Nat.add(c, 1n+m) == n : Nat}) -> {SV.l
   %hcn : {SV.lt(c, _) == True{} : Bool}
   DMO.lt_add(c, m)
 
-def walk(~F: O.OField, n: Nat, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, +hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(cls), SV.dropped(cls))), +hf: {HR.hfacts(sk, cls) == True{} : Bool}, +c: Nat, +hcn: {Nat.add(c, n) == SV.ncons(sk) : Nat}, H: DH.Honest.go(sk, cls, n, c), +kf: DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), c), sk, cls, True{}, 0n)), +kbp: KB.KBP(sk, SV.reds(cls), SV.kept_before(sk, SV.reds(cls), c), c)) -> DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), SV.ncons(sk)), sk, cls, True{}, 0n)):
+def kf_end(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, +c: Nat, +hcn: {Nat.add(c, 0n) == SV.ncons(sk) : Nat}, kf: DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), c), sk, cls, True{}, 0n))) -> DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), SV.ncons(sk)), sk, cls, True{}, 0n)):
+  %Equal.trans(Nat, c, Nat.add(c, 0n), SV.ncons(sk), LN.add_zero(c), hcn) : DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), _), sk, cls, True{}, 0n))
+  kf
+
+def wcmb(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, +m: Nat, +c: Nat, a: AmbS(sk, cls, c), r: DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), SV.ncons(sk)), sk, cls, True{}, 0n)) & Amb.go(sk, cls, m, 1n+c)) -> DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), SV.ncons(sk)), sk, cls, True{}, 0n)) & Amb.go(sk, cls, 1n+m, c):
+  (k, rest) = r
+  (k, (a, rest))
+
+def walk.c(~F: O.OField, +m: Nat, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, +c: Nat, p: DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), KB.kpk(KB.dcond(sk, SV.reds(cls), c), SV.kept_before(sk, SV.reds(cls), c), c), sk, cls, True{}, 0n)) & AmbS(sk, cls, c), ih: DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), 1n+c), sk, cls, True{}, 0n)) -> DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), SV.ncons(sk)), sk, cls, True{}, 0n)) & Amb.go(sk, cls, m, 1n+c)) -> DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), SV.ncons(sk)), sk, cls, True{}, 0n)) & Amb.go(sk, cls, 1n+m, c):
+  (kfn, a) = p
+  wcmb(~F, x, sk, cls, m, c, a, ih(kf_next(~F, x, sk, cls, c, kfn)))
+
+def walk(~F: O.OField, n: Nat, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, +hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(cls), SV.dropped(cls))), +hf: {HR.hfacts(sk, cls) == True{} : Bool}, +c: Nat, +hcn: {Nat.add(c, n) == SV.ncons(sk) : Nat}, H: DH.Honest.go(sk, cls, n, c), +kf: DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), c), sk, cls, True{}, 0n)), +kbp: KB.KBP(sk, SV.reds(cls), SV.kept_before(sk, SV.reds(cls), c), c)) -> DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), SV.ncons(sk)), sk, cls, True{}, 0n)) & Amb.go(sk, cls, n, c):
   match n:
     case 0n:
-      %Equal.trans(Nat, c, Nat.add(c, 0n), SV.ncons(sk), LN.add_zero(c), hcn) : DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), _), sk, cls, True{}, 0n))
-      kf
+      (kf_end(~F, x, sk, cls, c, hcn, kf), Unit{})
     case 1n++m:
       (f, H2) = H
       +hc = lt_c(c, m, SV.ncons(sk), hcn)
-      walk(~F, m, x, sk, cls, hz, hf, 1n+c, Equal.trans(Nat, 1n+Nat.add(c, m), Nat.add(c, 1n+m), SV.ncons(sk), LN.add_succ(c, m), hcn), H2,
-        kf_next(~F, x, sk, cls, c, st_b(~F, SV.driven(sk, c), x, sk, cls, hz, hf, c, {==}, hc, f, kf, kb_b(sk, SV.reds(cls), SV.kept_before(sk, SV.reds(cls), c), c, kbp))), kbp_n(sk, SV.reds(cls), c, kbp))
+      walk.c(~F, m, x, sk, cls, c, st_b(~F, SV.driven(sk, c), x, sk, cls, hz, hf, c, {==}, hc, f, kf, kb_b(sk, SV.reds(cls), SV.kept_before(sk, SV.reds(cls), c), c, kbp)),
+        kf1 => walk(~F, m, x, sk, cls, hz, hf, 1n+c, Equal.trans(Nat, 1n+Nat.add(c, m), Nat.add(c, 1n+m), SV.ncons(sk), LN.add_succ(c, m), hcn), H2, kf1, kbp_n(sk, SV.reds(cls), c, kbp)))
 
 def fg_nil(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +cls: List<&2, SV.Class>, +w: Bool, +k: Nat) -> {SV.facts.go(es, own, Nil{}, sk, cls, w, k) == Nil{} : List<&2, DR.Fact>}:
   match es:
@@ -1032,14 +1075,15 @@ def kbp0(+sk: SK.Sketch, +R: List<&2, Nat>) -> KB.KBP(sk, R, SV.kept_before(sk, 
   %Equal.sym(List<&2, Nat>, SV.kept_before(sk, R, 0n), Nil{}, KB.kb_zero(sk, R)) : KB.KBP(sk, R, _, 0n)
   KB.kbp_zero(sk, R)
 
-def fh_go(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, +hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(cls), SV.dropped(cls))), p: ({HR.hfacts(sk, cls) == True{} : Bool} & DH.Honest(sk, cls))) -> ({HR.hfacts(sk, cls) == True{} : Bool} & DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), SV.ncons(sk)), sk, cls, True{}, 0n))):
+def fh_go(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, +hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(cls), SV.dropped(cls))), p: ({HR.hfacts(sk, cls) == True{} : Bool} & DH.Honest(sk, cls))) -> ({HR.hfacts(sk, cls) == True{} : Bool} & (DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), SV.ncons(sk)), sk, cls, True{}, 0n)) & Amb.go(sk, cls, SV.ncons(sk), 0n))):
   (+hf, h) = p
   (hn, g) = h
   (hf, walk(~F, SV.ncons(sk), x, sk, cls, hz, hf, 0n, {==}, g, kf0(~F, x, sk, cls), kbp0(sk, SV.reds(cls))))
 
 # at a geometry where the system solved holds, every fact of the kept
-# constraints holds
-def facts_hold(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, h: DH.Honest(sk, cls), +hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(cls), SV.dropped(cls)))) -> ({HR.hfacts(sk, cls) == True{} : Bool} & DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), SV.ncons(sk)), sk, cls, True{}, 0n))):
+# constraints holds (and what each amber constraint's Fate says of its
+# sides is handed on)
+def facts_hold(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, h: DH.Honest(sk, cls), +hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(cls), SV.dropped(cls)))) -> ({HR.hfacts(sk, cls) == True{} : Bool} & (DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), SV.ncons(sk)), sk, cls, True{}, 0n)) & Amb.go(sk, cls, SV.ncons(sk), 0n))):
   fh_go(~F, x, sk, cls, hz, hon_rb(sk, cls, h))
 
 # The dropped equations (draft solve_drop)
@@ -1099,8 +1143,8 @@ def dkb(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +hf: {HR.hfacts(sk, cls) == Tr
     Equal.trans(Bool, SV.mem(o, SV.reds(cls)), SV.is_red(SV.class_at(cls, o)), False{}, CL.mem_reds(cls, o), red_nd(SV.class_at(cls, o), j, Equal.trans(Bool, SV.mem(j, SV.kdrops(SV.class_at(cls, o))), SV.mem(j, SV.dropped(cls)), True{}, Equal.sym(Bool, SV.mem(j, SV.dropped(cls)), SV.mem(j, SV.kdrops(SV.class_at(cls, o))), HR.mem_dropped(sk, cls, j, hf)), hj))),
     nth_lt(SV.owners(sk), j, SV.ncons(sk), OW.below_ncons(sk), hjl))
 
-def dl_go(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, +j: Nat, +hj: {SV.mem(j, SV.dropped(cls)) == True{} : Bool}, hl: DR.Longs(~F, x, SV.ents(sk), SV.dnd_at(cls, j)), p: ({HR.hfacts(sk, cls) == True{} : Bool} & DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), SV.ncons(sk)), sk, cls, True{}, 0n)))) -> SK.Zeros(~F, x, [SV.eqat(SK.Sketch.eqs(sk), j)]):
-  (+hf, af) = p
+def dl_go2(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, +j: Nat, +hj: {SV.mem(j, SV.dropped(cls)) == True{} : Bool}, hl: DR.Longs(~F, x, SV.ents(sk), SV.dnd_at(cls, j)), +hf: {HR.hfacts(sk, cls) == True{} : Bool}, q: DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), SV.ncons(sk)), sk, cls, True{}, 0n)) & Amb.go(sk, cls, SV.ncons(sk), 0n)) -> SK.Zeros(~F, x, [SV.eqat(SK.Sketch.eqs(sk), j)]):
+  (af, amb) = q
   +hjn = ltd.c(SV.lt(j, SV.neqs(SK.Sketch.eqs(sk))), sk, cls, j, {==}, hf, hj)
   +fh = fh_at(~F, x, sk, cls, j, hjn, dkb(sk, cls, hf, j, hj, hjn), af)
   (DP.fst({O.eval(~F, x, SV.eqat(SK.Sketch.eqs(sk), j)) == O.zero(F) : O.C(F)}, DP.StatHolds(~F, x, SV.ents(sk), SV.dstat_of(SV.ents(sk), SV.kind_at(sk, SV.nth(SV.owners(sk), j)))), DP.fact_ok(~F, x, SV.ents(sk), SV.eqat(SK.Sketch.eqs(sk), j), SV.dnd_at(cls, j), SV.dstat_of(SV.ents(sk), SV.kind_at(sk, SV.nth(SV.owners(sk), j))), fh, hl)), Unit{})
@@ -1108,6 +1152,10 @@ def dl_go(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>,
 # DRAFT LAW (PLAN-sk13b B6, solve_drop): for an honest classification, in
 # every ordered field, wherever the system solved holds and a dropped
 # equation's nd segments have nonzero length, it holds
+def dl_go(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, +j: Nat, +hj: {SV.mem(j, SV.dropped(cls)) == True{} : Bool}, hl: DR.Longs(~F, x, SV.ents(sk), SV.dnd_at(cls, j)), p: ({HR.hfacts(sk, cls) == True{} : Bool} & (DP.AllFacts(~F, x, SV.ents(sk), SV.facts.go(SK.Sketch.eqs(sk), SV.owners(sk), SV.kept_before(sk, SV.reds(cls), SV.ncons(sk)), sk, cls, True{}, 0n)) & Amb.go(sk, cls, SV.ncons(sk), 0n)))) -> SK.Zeros(~F, x, [SV.eqat(SK.Sketch.eqs(sk), j)]):
+  (+hf, q) = p
+  dl_go2(~F, x, sk, cls, j, hj, hl, hf, q)
+
 def drop_law(~F: O.OField, +sk: SK.Sketch, +cls: List<&2, SV.Class>, h: DH.Honest(sk, cls), +x: M.Vec(~F), +hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(cls), SV.dropped(cls))), +j: Nat, +hj: {SV.mem(j, SV.dropped(cls)) == True{} : Bool}, hl: DR.Longs(~F, x, SV.ents(sk), SV.dnd_at(cls, j)))
   -> SK.Zeros(~F, x, [SV.eqat(SK.Sketch.eqs(sk), j)]):
   dl_go(~F, x, sk, cls, j, hj, hl, facts_hold(~F, x, sk, cls, h, hz))

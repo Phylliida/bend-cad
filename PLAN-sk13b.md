@@ -1560,6 +1560,17 @@ give both component identities that Valid's SameV asks for.
   read once for `downs` first (the hreadpf pattern). dpassmpf's `split`
   is now general in the classes and nd (rfacts_split unchanged).
   facts_hold is what solve_amber and solve_conflict will read too.
+- *solve_amber's content proven 2026-11-01 (gate PASS)*, over any
+  classification with the draft's Honest (tests/dir_draft.bend b6_amber,
+  replacing stmt_amber): lib/dambpf.bend `amber_law`. The ambers drop all
+  their equations (read once, ap_rb, amberlawpf's allP), so the system
+  solved holds at a geometry meaning the sketch less its reds and ambers;
+  facts_hold then gives the ambers' equations where amber_nd is long
+  (pz2), and their sides come from their Implied refutations along the
+  order (vsdpf's record walk, the ambers' Fates' sides parts handed on by
+  facts_hold). For this the draft Honest's AmberOk now holds one Implied
+  per side (DH.AllImplied, @298e5f9): Bend applies a function hypothesis
+  only once (closures are affine), and a LineDistance has two sides.
 
 ### B7. `solve_complete` and `solve_refused`
 - No drop certificate to pass any more (B4.6: drops are correct by
