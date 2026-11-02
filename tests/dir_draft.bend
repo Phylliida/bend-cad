@@ -80,7 +80,9 @@
 #   (DFC.facts_hold), so solve_drop's content holds over any honest
 #   classification (b6_drop), and solve_amber's (lib/dambpf.bend,
 #   b6_amber: the ambers' sides from their Implied refutations, one per
-#   side, DH.AllImplied).
+#   side, DH.AllImplied), and solve_conflict's (lib/dcflawpf.bend,
+#   b6_conflict: each kind of direction refutation has no point where its
+#   nd segments are long, the Angles' segments long by their sides).
 # - The other restated laws' content, over any honest classification, as
 #   statements only: each stmt_ def is filled from a False == True
 #   hypothesis, so nothing about those laws is proven here. Their
@@ -148,6 +150,7 @@ import ../lib/dpasspf.bend as DPP
 import ../lib/passpf.bend as PPF
 import ../lib/dfactpf.bend as DFC
 import ../lib/dambpf.bend as DAM
+import ../lib/dcflawpf.bend as DCL
 import ../lib/solve.bend as SOL
 import ../lib/wfdec.bend as WFD
 import ../lib/pass.bend as PAS
@@ -253,10 +256,11 @@ def b6_drop(~F: O.OField, +sk: SK.Sketch, +cls: List<&2, SS.Class>, h: DH.Honest
 def b6_amber(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: List<&2, SS.Class>, h: DH.Honest(sk, cls), +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SS.mark(SS.cat(SS.reds(cls), SS.ambers(cls)), sk)), hl: DR.Longs(~F, x, SS.ents(sk), SS.amber_nd(cls))) -> SK.Sketch.means(~F, x, SS.mark(SS.reds(cls), sk)):
   DAM.amber_law(~F, sk, w, cls, h, x, m, hl)
 
-# solve_conflict: a conflicting constraint and its support cannot all hold
-# where its nd segments have nonzero length
-def stmt_conflict(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +n: Nat, cov: {BX.Sketch.within(sk, n) == True{} : Bool}, +cls: List<&2, SS.Class>, h: DH.Honest(sk, cls), +c: Nat, hc: {SS.is_conflict(SS.class_at(cls, c)) == True{} : Bool}, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SS.only(Con{c, SS.support(cls, c)}, sk)), hl: DR.Longs(~F, x, SS.ents(sk), SS.conflict_nd(cls, c)), bot: {False{} == True{} : Bool}) -> Empty:
-  stmt_absurd(Empty, bot)
+# solve_conflict, proven (B6, lib/dcflawpf.bend DCL.conflict_law): a
+# conflicting constraint and its support cannot all hold where its nd
+# segments have nonzero length
+def b6_conflict(~F: O.OField, +sk: SK.Sketch, +cls: List<&2, SS.Class>, h: DH.Honest(sk, cls), +c: Nat, hc: {SS.is_conflict(SS.class_at(cls, c)) == True{} : Bool}, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SS.only(Con{c, SS.support(cls, c)}, sk)), hl: DR.Longs(~F, x, SS.ents(sk), SS.conflict_nd(cls, c))) -> Empty:
+  DCL.conflict_law(~F, sk, cls, h, c, hc, x, m, hl)
 
 # honest_unique, unchanged in statement, over the extended Honest
 def stmt_honest_unique(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +c1: List<&2, SS.Class>, h1: DH.Honest(sk, c1), +c2: List<&2, SS.Class>, h2: DH.Honest(sk, c2), +c: Nat, +j: Nat, bot: {False{} == True{} : Bool}) -> M.Both({SS.kind(SS.class_at(c1, c)) == SS.kind(SS.class_at(c2, c)) : Nat}, {SS.mem(j, SS.dropped(c1)) == SS.mem(j, SS.dropped(c2)) : Bool}):

@@ -1571,6 +1571,21 @@ give both component identities that Valid's SameV asks for.
   facts_hold). For this the draft Honest's AmberOk now holds one Implied
   per side (DH.AllImplied, @298e5f9): Bend applies a function hypothesis
   only once (closures are affine), and a LineDistance has two sides.
+- *solve_conflict's content proven 2026-11-01*, over any classification
+  with the draft's Honest (tests/dir_draft.bend b6_conflict, replacing
+  stmt_conflict, without the unused wf and cover hypotheses):
+  lib/dcflawpf.bend `conflict_law`. A degree-0 refutation goes through
+  conflawpf's cf_m. For a direction refutation, at a geometry meaning the
+  sketch with only c and its support: rfacts (no nd) hold, from the
+  equations and `stat_at`; the refutation's nd is within the conflict's
+  nd and the Angles' segments, which the Angles' sides make long (dot > 0
+  is 0 when a segment collapses: `dot0_a`, `dot0_b`, `sumsq_zero`). Then
+  each kind has no point there: Motzkin by `sound` on each K fact and
+  vsdpf's refute_at; a collapse makes a long segment's squared length 0;
+  an Angle's collapse makes its own side's dot 0 (its sides read out of
+  csides by position, `sides_of`, the constraint driving). It doesn't use
+  facts_hold: a conflict's facts are its own and its support's
+  equations, which hold at x.
 
 ### B7. `solve_complete` and `solve_refused`
 - No drop certificate to pass any more (B4.6: drops are correct by
