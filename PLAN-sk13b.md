@@ -1029,9 +1029,39 @@ give both component identities that Valid's SameV asks for.
     gated as b4_honest. The classes so far agree with the final ones on
     every equation of an earlier constraint (pcf, through downs: a later
     class drops only its own equations).
-- **B4.6, the certificates** (exec; their proof is B7's): a derivation's
-  identity, composed with the dropped facts' certificates, over solved
-  equations, with h = ndh(nd).
+- **B4.6, each drop's reason, proven** (Danielle, 2026-11-01; replaces
+  "the certificates": a derivation's identity composed with the dropped
+  facts' certificates, h = ndh(nd), checked by the verdict and proven to
+  pass in B7). Decided: a drop is correct by construction, nothing about
+  it is checked at run time, and the answer still says why each equation
+  is dropped. The polynomial identity would repeat what lib/dirpf.bend's
+  `sound` and pass2_honest already prove (and be unreadable: angle-lines'
+  numbers run to thousands of bits); the readable reason is the witness
+  the pass already has.
+  - Data: `Drop{j, nd, why}`, `Why` either a degree-0 drop's constants
+    over its basis (Derivable's witness: Ident(g_j, lin(ls, basis))) or
+    a direction drop's derivation (DirDerivable's witness). Comb and Mul
+    go.
+  - (a) sk-13a first, the gate green throughout: lib/pass.bend records
+    the elimination's constants; a lemma that each recorded reason is
+    its drop's witness (from lib/drvpf.bend / lib/ckpf.bend's dgood);
+    solve_drop and the zeros chain (lib/vrdpf.bend zeros_mark, read by
+    solve_exists and the others) take each drop's truth from it instead
+    of the verdict's drop check, which goes (VD.exact keeps the amber
+    sides' refutations); solve_complete loses the drop check's part.
+    Every sk-13a statement unchanged.
+  - (b) the direction pass records the closure's derivation; the draft's
+    Honest (DropsNd) says each recorded reason is its drop's witness
+    (the constants: Derivable's identity; the derivation: Valid, Proves,
+    its nd within the drop's), so the explanation is a theorem;
+    lib/dcwpf.bend already proves the recorded derivation valid (dd_ok).
+  - At the switch (B5/B6): a direction drop holds wherever the system
+    solved holds and its nd segments are nonzero, by `sound`, its facts
+    holding by induction over the equations (an earlier drop's fact
+    where its own nd is nonzero); the nd sides over the box are B5's.
+  - The page (B8) can show a drop's reason: the combination, or the
+    constraints a derivation's facts come from and the segments it
+    assumes nonzero.
 - **B4.7, a run**: sketches 4, 8 and 9 and proto/dclose_run's eleven,
   with the cost measured.
   - *First run, 2026-10-30* (lib/dpass.bend's exec, before its proofs;
@@ -1479,8 +1509,9 @@ give both component identities that Valid's SameV asks for.
     Danielle's agreement).
 
 ### B5. The verdict and soundness
-- `VD.exact` with h from nd. The nd sides are checked over the box by
-  `check_sides`, for Kept and Amber drops.
+- `VD.exact` checks only the amber sides (B4.6: no drop check). The nd
+  sides are checked over the box by `check_sides`, for Kept and Amber
+  drops.
 - `solve_exists`, `solve_unique`, `solve_pins`, `solve_regular` and
   `solve_blame` re-proven.
 - `fast_solve`: the generic `final` gains the nd sides. The fast solver's
@@ -1491,8 +1522,10 @@ give both component identities that Valid's SameV asks for.
 - `honest_unique` re-proven with the extended cases.
 
 ### B7. `solve_complete` and `solve_refused`
-- The pass's certificates pass the verdict (B1). The nd sides hold over a
-  small enough box, from `Strict` at x*, like the other sides.
+- No drop certificate to pass any more (B4.6: drops are correct by
+  construction); the amber sides' refutations pass as in sk-13a. The nd
+  sides hold over a small enough box, from `Strict` at x*, like the
+  other sides.
 
 ### B8. The page, the CLI and the regression
 - The CLI prints nd with drops and conflicts; serve.py parses it.
