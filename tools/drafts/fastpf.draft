@@ -2,7 +2,7 @@
 # (lib/solve.bend) returns, for any computing numbers K with the proposer's
 # operations W and laws R relating them to KI.dnum() (lib/pops.bend): its
 # proposer gives numer's plan through the map (lib/gplanpf.bend: plan_t),
-# its verdict on the mapped answer is SO.final's (the checker through the
+# its verdict on the mapped answer is SO.checks's (the checker through the
 # map: lib/planhpf.bend), and the answer sent back through tod is the
 # solver's (solve_l_eq). At the CLI's word dyadics in base 2^12 (FS.wk,
 # FS.wo), with the word laws at that base, this is ROADMAP's fast_solve,
@@ -156,8 +156,8 @@ def shape_t($KWR, +nv: Nat, +nq: Nat, +gc: $DV, +pins: List<&2, Nat>, p: $DP) ->
 @MACRO FHDL SV.held(pins, g0, FS.todv($G, $hv gc)), FS.todv($G, $hv gr)))
 @MACRO FL KA.band($FHDL, KA.band(WF.wf_dec($FMK), KA.band(BX.Sketch.within($FMK, $FLNL), KA.band($FCHL, KA.band($FSDL, KA.band($FSHL, $FEX))))))
 
-# SO.final's verdict on an answer is FS.final's on its image
-def final_c($KWR, +sk: SK.Sketch, +g0: $DV, +ok: Bool, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +gc: $DV, +gr: $DV, +p: $DP) -> {FS.final($G, sk, g0, FS.FOut{ok, cls, pins, $hv gc), $hv gr), $hpl p)}) == SO.final(sk, g0, SO.Out{ok, cls, pins, gc, gr, p}) : Bool}:
+# SO.checks's verdict on an answer is FS.checks's on its image
+def final_c($KWR, +sk: SK.Sketch, +g0: $DV, +ok: Bool, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +gc: $DV, +gr: $DV, +p: $DP) -> {FS.checks($G, sk, g0, FS.FOut{ok, cls, pins, $hv gc), $hv gr), $hpl p)}) == SO.checks(sk, g0, SO.Out{ok, cls, pins, gc, gr, p}) : Bool}:
   %todv_t($T, gc) : {$FL == KA.band(SV.held(pins, g0, _, gr), KA.band(WF.wf_dec($FMK), KA.band(BX.Sketch.within($FMK, $FLNR), KA.band($FCHR, KA.band($FSDR, KA.band($FSHR, $FEX)))))) : Bool}
   %todv_t($T, gr) : {$FL == KA.band(SV.held(pins, g0, FS.todv($G, $hv gc)), _), KA.band(WF.wf_dec($FMK), KA.band(BX.Sketch.within($FMK, $FLNR), KA.band($FCHR, KA.band($FSDR, KA.band($FSHR, $FEX)))))) : Bool}
   %len_t($T, gc) : {$FL == KA.band($FHDL, KA.band(WF.wf_dec($FMK), KA.band(BX.Sketch.within($FMK, _), KA.band($FCHR, KA.band($FSDR, KA.band($FSHR, $FEX)))))) : Bool}

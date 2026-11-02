@@ -9,7 +9,7 @@
 # constraint is not red and that are not dropped), its pins and its blocks
 # (lib/pass.bend: pins, skel). The search does the numbers (lib/numer.bend:
 # Newton, Y and radii at precisions 64 .. 512) over the system solved, and
-# judges each answer by the verdict (final), which reads the answer alone:
+# judges each answer by the verdict (checks), which reads the answer alone:
 # every pin held at its drawn value with radius 0, the sketch with the red
 # constraints made driven well formed (lib/wfdec.bend), covered by the box,
 # the plan checked over the system solved (its orders every variable once,
@@ -18,7 +18,7 @@
 # (lib/plan.bend), and the dropped equations and amber side conditions
 # certified by their combinations and refutations (lib/verdict.bend). The
 # answer's ok is the verdict the search reached on it, computed once
-# (lib/solvepf.bend: verdict proves it is final of that answer). So the
+# (lib/solvepf.bend: verdict proves it is checks of that answer). So the
 # verdict laws (solve_exists, solve_unique, solve_pins, solve_regular) need
 # nothing else from search: they follow from the verdict and the sk-06 laws.
 
@@ -211,7 +211,7 @@ def skel.pins(s: ST.Skel) -> List<&2, Nat>:
 
 # what the laws need, read off the answer alone (the exact checks last:
 # they are the most work, and a box that fails is retried anyway)
-def final(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: Out) -> Bool:
+def checks(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: Out) -> Bool:
   KA.band(SV.held(Out.pins(x), g0, Out.gc(x), Out.gr(x)),
   KA.band(WF.wf_dec(SV.mark(SV.reds(Out.cls(x)), sk)),
   KA.band(BX.Sketch.within(SV.mark(SV.reds(Out.cls(x)), sk), List.length(&2, N.NC(KI.dnum()), Out.gc(x))),
@@ -229,7 +229,7 @@ def final(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: Out) -> Bool:
 def accept(m: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>) -> Bool:
   match m:
     case NU.POk{+x}:
-      final(sk, g0, found(cls, pins, NU.POk{x}))
+      checks(sk, g0, found(cls, pins, NU.POk{x}))
     case NU.PRetry{}:
       False{}
     case NU.PStop{}:

@@ -47,7 +47,7 @@ import ./ckpf.bend as CKP
 
 # The verdict's parts
 # -------------------
-# final(sk, g0, x) = P && B && C && D && E && (S && X)
+# checks(sk, g0, x) = P && B && C && D && E && (S && X)
 
 
 def pP(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out) -> Bool:
@@ -72,44 +72,44 @@ def pX(+sk: SK.Sketch, +x: SO.Out) -> Bool:
   VD.exact(sk, SO.Out.cls(x))
 
 
-def r0(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {KA.band(pB(sk, x), KA.band(pC(sk, x), KA.band(pD(sk, x), KA.band(pE(sk, x), KA.band(pS(sk, x), pX(sk, x)))))) == True{} : Bool}:
+def r0(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> {KA.band(pB(sk, x), KA.band(pC(sk, x), KA.band(pD(sk, x), KA.band(pE(sk, x), KA.band(pS(sk, x), pX(sk, x)))))) == True{} : Bool}:
   KA.band_r(pP(sk, g0, x), KA.band(pB(sk, x), KA.band(pC(sk, x), KA.band(pD(sk, x), KA.band(pE(sk, x), KA.band(pS(sk, x), pX(sk, x)))))), h)
 
-def r1(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {KA.band(pC(sk, x), KA.band(pD(sk, x), KA.band(pE(sk, x), KA.band(pS(sk, x), pX(sk, x))))) == True{} : Bool}:
+def r1(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> {KA.band(pC(sk, x), KA.band(pD(sk, x), KA.band(pE(sk, x), KA.band(pS(sk, x), pX(sk, x))))) == True{} : Bool}:
   KA.band_r(pB(sk, x), KA.band(pC(sk, x), KA.band(pD(sk, x), KA.band(pE(sk, x), KA.band(pS(sk, x), pX(sk, x))))), r0(sk, g0, x, h))
 
-def r2(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {KA.band(pD(sk, x), KA.band(pE(sk, x), KA.band(pS(sk, x), pX(sk, x)))) == True{} : Bool}:
+def r2(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> {KA.band(pD(sk, x), KA.band(pE(sk, x), KA.band(pS(sk, x), pX(sk, x)))) == True{} : Bool}:
   KA.band_r(pC(sk, x), KA.band(pD(sk, x), KA.band(pE(sk, x), KA.band(pS(sk, x), pX(sk, x)))), r1(sk, g0, x, h))
 
-def r3(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {KA.band(pE(sk, x), KA.band(pS(sk, x), pX(sk, x))) == True{} : Bool}:
+def r3(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> {KA.band(pE(sk, x), KA.band(pS(sk, x), pX(sk, x))) == True{} : Bool}:
   KA.band_r(pD(sk, x), KA.band(pE(sk, x), KA.band(pS(sk, x), pX(sk, x))), r2(sk, g0, x, h))
 
-def hP(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {pP(sk, g0, x) == True{} : Bool}:
+def hP(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> {pP(sk, g0, x) == True{} : Bool}:
   KA.band_l(pP(sk, g0, x), KA.band(pB(sk, x), KA.band(pC(sk, x), KA.band(pD(sk, x), KA.band(pE(sk, x), KA.band(pS(sk, x), pX(sk, x)))))), h)
 
-def hB(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {pB(sk, x) == True{} : Bool}:
+def hB(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> {pB(sk, x) == True{} : Bool}:
   KA.band_l(pB(sk, x), KA.band(pC(sk, x), KA.band(pD(sk, x), KA.band(pE(sk, x), KA.band(pS(sk, x), pX(sk, x))))), r0(sk, g0, x, h))
 
-def hC(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {pC(sk, x) == True{} : Bool}:
+def hC(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> {pC(sk, x) == True{} : Bool}:
   KA.band_l(pC(sk, x), KA.band(pD(sk, x), KA.band(pE(sk, x), KA.band(pS(sk, x), pX(sk, x)))), r1(sk, g0, x, h))
 
-def hD(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {pD(sk, x) == True{} : Bool}:
+def hD(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> {pD(sk, x) == True{} : Bool}:
   KA.band_l(pD(sk, x), KA.band(pE(sk, x), KA.band(pS(sk, x), pX(sk, x))), r2(sk, g0, x, h))
 
-def hE(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {pE(sk, x) == True{} : Bool}:
+def hE(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> {pE(sk, x) == True{} : Bool}:
   KA.band_l(pE(sk, x), KA.band(pS(sk, x), pX(sk, x)), r3(sk, g0, x, h))
 
-def hTX(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {KA.band(pS(sk, x), pX(sk, x)) == True{} : Bool}:
+def hTX(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> {KA.band(pS(sk, x), pX(sk, x)) == True{} : Bool}:
   KA.band_r(pE(sk, x), KA.band(pS(sk, x), pX(sk, x)), r3(sk, g0, x, h))
 
-def hS(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {pS(sk, x) == True{} : Bool}:
+def hS(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> {pS(sk, x) == True{} : Bool}:
   KA.band_l(pS(sk, x), pX(sk, x), hTX(sk, g0, x, h))
 
-def hX(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {pX(sk, x) == True{} : Bool}:
+def hX(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> {pX(sk, x) == True{} : Bool}:
   KA.band_r(pS(sk, x), pX(sk, x), hTX(sk, g0, x, h))
 
 
-def hack(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {VD.ack(sk, SV.reds(SO.Out.cls(x)), SO.Out.cls(x), 0n) == True{} : Bool}:
+def hack(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> {VD.ack(sk, SV.reds(SO.Out.cls(x)), SO.Out.cls(x), 0n) == True{} : Bool}:
   hX(sk, g0, x, h)
 
 # What the verdict checked, without the driven flags
@@ -147,24 +147,24 @@ def sh_klen(+nv: Nat, +nq: Nat, +gc: List<&2, S.D>, +pins: List<&2, Nat>, p: PL.
     case PL.Plan{+vp, +ep, +np, +bs}:
       KA.nateq_ok(KA.klen(~KI.dnum(), gc), nv, KA.band_l(KA.nateq(KA.klen(~KI.dnum(), gc), nv), KA.band(KA.nateq(PL.nlen(vp), nv), KA.band(SV.distinct(vp), KA.band(KA.nateq(PL.nlen(ep), nq), SO.nl_eq(SO.ntake(np, vp), pins)))), h))
 
-def wfd_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {WF.wf_dec(sk) == True{} : Bool}:
+def wfd_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> {WF.wf_dec(sk) == True{} : Bool}:
   wf_unmark(SV.reds(SO.Out.cls(x)), sk, hB(sk, g0, x, h))
 
-def wf_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> SK.Sketch.wf(sk):
+def wf_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> SK.Sketch.wf(sk):
   WF.wf_ok(sk, wfd_of(sk, g0, x, h))
 
-def cov_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}:
+def cov_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}:
   %Equal.trans(Nat, List.length(&2, N.NC(KI.dnum()), SO.Out.gc(x)), KA.klen(~KI.dnum(), SO.Out.gc(x)), SO.nvars(sk), len_kl(SO.Out.gc(x)), sh_klen(SO.nvars(sk), CK.eqlen(SV.solved(sk, SV.reds(SO.Out.cls(x)), SV.dropped(SO.Out.cls(x)))), SO.Out.gc(x), SO.Out.pins(x), SO.Out.plan(x), hS(sk, g0, x, h))) : {BX.Sketch.within(sk, _) == True{} : Bool}
   w_unmark(SV.reds(SO.Out.cls(x)), sk, List.length(&2, N.NC(KI.dnum()), SO.Out.gc(x)), hC(sk, g0, x, h))
 
 # and so the pass's adjacency is within the variables
-def adjb_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {D.adjb(PA.dadjs(SK.Sketch.eqs(sk)), PA.nvars(sk)) == True{} : Bool}:
+def adjb_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> {D.adjb(PA.dadjs(SK.Sketch.eqs(sk)), PA.nvars(sk)) == True{} : Bool}:
   GM.adjb_dadjs(SK.Sketch.eqs(sk), SO.nvars(sk), CV.cov(sk, SO.nvars(sk), cov_of(sk, g0, x, h), wfd_of(sk, g0, x, h)))
 
 # For any answer with a True verdict
 # ----------------------------------
 
-def ex.go(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}, +hd: {DK.dck(SK.Sketch.eqs(sk), SV.owners(sk), SV.reds(SO.Out.cls(x)), SV.dropped(SO.Out.cls(x)), SO.Out.cls(x)) == True{} : Bool}, s: Sigma<&2, &2, M.Vec(~F), y => M.Both(BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(x), SO.Out.gr(x), y), SK.Zeros(~F, y, SV.solved(sk, SV.reds(SO.Out.cls(x)), SV.dropped(SO.Out.cls(x)))))>)
+def ex.go(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}, +hd: {DK.dck(SK.Sketch.eqs(sk), SV.owners(sk), SV.reds(SO.Out.cls(x)), SV.dropped(SO.Out.cls(x)), SO.Out.cls(x)) == True{} : Bool}, s: Sigma<&2, &2, M.Vec(~F), y => M.Both(BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(x), SO.Out.gr(x), y), SK.Zeros(~F, y, SV.solved(sk, SV.reds(SO.Out.cls(x)), SV.dropped(SO.Out.cls(x)))))>)
   -> &y: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(x), SO.Out.gr(x), y) & SK.Sketch.means(~F, y, SV.mark(SV.reds(SO.Out.cls(x)), sk))):
   (+y, hy) = s
   (+hin, +hz) = hy
@@ -173,15 +173,15 @@ def ex.go(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S
      VS.sides_mark(~F, y, sk, SO.Out.cls(x), hz, hd, hack(sk, g0, x, h),
        PP.box_sides(~KI.dnum(), ~F, ~H, SK.Sketch.sides(SV.mark(SV.cat(SV.reds(SO.Out.cls(x)), SV.ambers(SO.Out.cls(x))), sk)), SO.Out.gc(x), SO.Out.gr(x), hE(sk, g0, x, h), y, hin))))))
 
-def exists_of(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}, +hd: {DK.dck(SK.Sketch.eqs(sk), SV.owners(sk), SV.reds(SO.Out.cls(x)), SV.dropped(SO.Out.cls(x)), SO.Out.cls(x)) == True{} : Bool}) -> &y: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(x), SO.Out.gr(x), y) & SK.Sketch.means(~F, y, SV.mark(SV.reds(SO.Out.cls(x)), sk))):
+def exists_of(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}, +hd: {DK.dck(SK.Sketch.eqs(sk), SV.owners(sk), SV.reds(SO.Out.cls(x)), SV.dropped(SO.Out.cls(x)), SO.Out.cls(x)) == True{} : Bool}) -> &y: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(x), SO.Out.gr(x), y) & SK.Sketch.means(~F, y, SV.mark(SV.reds(SO.Out.cls(x)), sk))):
   ex.go(~F, ~H, sk, g0, x, h, hd, PP.plan_exists(~KI.dnum(), ~F, ~R, ~H, SV.solved(sk, SV.reds(SO.Out.cls(x)), SV.dropped(SO.Out.cls(x))), SO.Out.gc(x), SO.Out.gr(x), SO.Out.plan(x), hD(sk, g0, x, h)))
 
-def unique_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}, +y1: M.Vec(~F), h1: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(x), SO.Out.gr(x), y1), m1: SK.Sketch.means(~F, y1, SV.mark(SV.reds(SO.Out.cls(x)), sk)), +y2: M.Vec(~F), h2: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(x), SO.Out.gr(x), y2), m2: SK.Sketch.means(~F, y2, SV.mark(SV.reds(SO.Out.cls(x)), sk))) -> {y1 == y2 : M.Vec(~F)}:
+def unique_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}, +y1: M.Vec(~F), h1: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(x), SO.Out.gr(x), y1), m1: SK.Sketch.means(~F, y1, SV.mark(SV.reds(SO.Out.cls(x)), sk)), +y2: M.Vec(~F), h2: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(x), SO.Out.gr(x), y2), m2: SK.Sketch.means(~F, y2, SV.mark(SV.reds(SO.Out.cls(x)), sk))) -> {y1 == y2 : M.Vec(~F)}:
   PP.plan_unique(~KI.dnum(), ~F, ~H, SV.solved(sk, SV.reds(SO.Out.cls(x)), SV.dropped(SO.Out.cls(x))), SO.Out.gc(x), SO.Out.gr(x), SO.Out.plan(x), hD(sk, g0, x, h),
     y1, h1, VR.zeros_solved(~F, y1, sk, SV.reds(SO.Out.cls(x)), SV.dropped(SO.Out.cls(x)), PP.zeros_of_holds(~F, y1, SV.mark(SV.reds(SO.Out.cls(x)), sk), MN.sketch_complete(~F, y1, SV.mark(SV.reds(SO.Out.cls(x)), sk), m1))),
     y2, h2, VR.zeros_solved(~F, y2, sk, SV.reds(SO.Out.cls(x)), SV.dropped(SO.Out.cls(x)), PP.zeros_of_holds(~F, y2, SV.mark(SV.reds(SO.Out.cls(x)), sk), MN.sketch_complete(~F, y2, SV.mark(SV.reds(SO.Out.cls(x)), sk), m2))))
 
-def pins_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}) -> {SV.held(SO.Out.pins(x), g0, SO.Out.gc(x), SO.Out.gr(x)) == True{} : Bool}:
+def pins_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}) -> {SV.held(SO.Out.pins(x), g0, SO.Out.gc(x), SO.Out.gr(x)) == True{} : Bool}:
   hP(sk, g0, x, h)
 
 # The verdict the search keeps
@@ -208,7 +208,7 @@ def start_ok(ps: List<&2, Nat>, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&
       loop_ok(t, SO.accept(NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins), NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins, es, nv, skel, {==})
 
 # a run whose bit is its answer's verdict and True: its answer passes
-def run_final(r: SO.Run, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, hs: {SO.run.ok(r) == SO.accept(SO.run.m(r), sk, g0, cls, pins) : Bool}, ok: {SO.run.ok(r) == True{} : Bool}) -> {SO.final(sk, g0, SO.answer(cls, pins, r)) == True{} : Bool}:
+def run_final(r: SO.Run, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, hs: {SO.run.ok(r) == SO.accept(SO.run.m(r), sk, g0, cls, pins) : Bool}, ok: {SO.run.ok(r) == True{} : Bool}) -> {SO.checks(sk, g0, SO.answer(cls, pins, r)) == True{} : Bool}:
   match r:
     case SO.Run{b, m}:
       match b:
@@ -217,15 +217,15 @@ def run_final(r: SO.Run, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.C
             case NU.POk{+y}:
               Equal.sym(Bool, True{}, SO.accept(NU.POk{y}, sk, g0, cls, pins), hs)
             case NU.PRetry{}:
-              L.absurd({SO.final(sk, g0, SO.answer(cls, pins, SO.Run{True{}, NU.PRetry{}})) == True{} : Bool}, KA.tf(hs))
+              L.absurd({SO.checks(sk, g0, SO.answer(cls, pins, SO.Run{True{}, NU.PRetry{}})) == True{} : Bool}, KA.tf(hs))
             case NU.PStop{}:
-              L.absurd({SO.final(sk, g0, SO.answer(cls, pins, SO.Run{True{}, NU.PStop{}})) == True{} : Bool}, KA.tf(hs))
+              L.absurd({SO.checks(sk, g0, SO.answer(cls, pins, SO.Run{True{}, NU.PStop{}})) == True{} : Bool}, KA.tf(hs))
         case False{}:
-          L.absurd({SO.final(sk, g0, SO.answer(cls, pins, SO.Run{False{}, m})) == True{} : Bool}, KA.ft(ok))
+          L.absurd({SO.checks(sk, g0, SO.answer(cls, pins, SO.Run{False{}, m})) == True{} : Bool}, KA.ft(ok))
 
 
 # a True ok is a True verdict on the solver's answer
-def verdict(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}) -> {SO.final(sk, g0, SO.solve_l(sk, g0, l)) == True{} : Bool}:
+def verdict(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}) -> {SO.checks(sk, g0, SO.solve_l(sk, g0, l)) == True{} : Bool}:
   run_final(SO.ploop.start(SO.precisions(l, 7n), sk, g0, SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk)), sk, g0, SO.cls_of(sk), SO.pins_of(sk), start_ok(SO.precisions(l, 7n), sk, g0, SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk)), ok)
 
 # the solver's answer's drops are the pass's, correct by construction

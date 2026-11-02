@@ -111,11 +111,11 @@ def verdict2(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(DSO.so
     start_ok2(SO.precisions(l, 7n), sk, g0, DSO.cls_of2(sk), DSO.pins_of2(sk), DSO.kept2(sk), SO.nvars(sk), DSO.skel_of2(sk)), ok)
 
 # final2 is the nd check and sk-13a's final
-def fin_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {DSO.final2(sk, g0, x) == True{} : Bool}) -> {SO.final(sk, g0, x) == True{} : Bool}:
-  KA.band_r(DSO.ndok(sk, x), SO.final(sk, g0, x), h)
+def fin_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {DSO.final2(sk, g0, x) == True{} : Bool}) -> {SO.checks(sk, g0, x) == True{} : Bool}:
+  KA.band_r(DSO.ndok(sk, x), SO.checks(sk, g0, x), h)
 
 def nd_of(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {DSO.final2(sk, g0, x) == True{} : Bool}) -> {DSO.ndok(sk, x) == True{} : Bool}:
-  KA.band_l(DSO.ndok(sk, x), SO.final(sk, g0, x), h)
+  KA.band_l(DSO.ndok(sk, x), SO.checks(sk, g0, x), h)
 
 
 # the draft Honest for the draft solver's classes

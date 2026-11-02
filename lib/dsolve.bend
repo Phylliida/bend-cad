@@ -33,7 +33,7 @@ def ndok(+sk: SK.Sketch, +x: SO.Out) -> Bool:
 # sk-13a's verdict, with the nd sides first (a box too wide for them is
 # retried anyway)
 def final2(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out) -> Bool:
-  KA.band(ndok(sk, x), SO.final(sk, g0, x))
+  KA.band(ndok(sk, x), SO.checks(sk, g0, x))
 
 # The precision loop (lib/solve.bend's, with final2)
 # --------------------------------------------------

@@ -167,8 +167,8 @@ def shape(~K: N.Num, +nv: Nat, +nq: Nat, +gc: N.KVec(~K), +pins: List<&2, Nat>, 
 # The verdict
 # -----------
 
-# SO.final, its plan and sides checked in K
-def final(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +x: FOut<K>) -> Bool:
+# SO.checks, its plan and sides checked in K
+def checks(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +x: FOut<K>) -> Bool:
   KA.band(SV.held(FOut.pins(K, x), g0, todv(~K, ~W, FOut.gc(K, x)), todv(~K, ~W, FOut.gr(K, x))),
   KA.band(WF.wf_dec(SV.mark(SV.reds(FOut.cls(K, x)), sk)),
   KA.band(BX.Sketch.within(SV.mark(SV.reds(FOut.cls(K, x)), sk), List.length(&2, N.NC(K), FOut.gc(K, x))),
@@ -183,7 +183,7 @@ def final(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +x: FOu
 def accept(~K: N.Num, ~W: PO.POps<K>, m: GN.GPR<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>) -> Bool:
   match m:
     case GN.GPOk{+x}:
-      final(~K, ~W, sk, g0, found(~K, cls, pins, GN.GPOk{x}))
+      checks(~K, ~W, sk, g0, found(~K, cls, pins, GN.GPOk{x}))
     case GN.GPRetry{}:
       False{}
     case GN.GPStop{}:

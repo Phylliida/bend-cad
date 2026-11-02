@@ -47,7 +47,7 @@ import ./ckpf.bend as CKP
 
 # The verdict's parts
 # -------------------
-# final(sk, g0, x) = P && B && C && D && E && (S && X)
+# checks(sk, g0, x) = P && B && C && D && E && (S && X)
 
 @MACRO CX SO.Out.cls(x)
 @MACRO RX SV.reds(SO.Out.cls(x))
@@ -74,7 +74,7 @@ def pS(+sk: SK.Sketch, +x: SO.Out) -> Bool:
 def pX(+sk: SK.Sketch, +x: SO.Out) -> Bool:
   VD.exact(sk, $CX)
 
-@MACRO FIN +sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.final(sk, g0, x) == True{} : Bool}
+@MACRO FIN +sk: SK.Sketch, +g0: List<&2, S.D>, +x: SO.Out, +h: {SO.checks(sk, g0, x) == True{} : Bool}
 @MACRO TX KA.band(pS(sk, x), pX(sk, x))
 @MACRO T5 KA.band(pB(sk, x), KA.band(pC(sk, x), KA.band(pD(sk, x), KA.band(pE(sk, x), $TX))))
 @MACRO T4 KA.band(pC(sk, x), KA.band(pD(sk, x), KA.band(pE(sk, x), $TX)))
@@ -221,7 +221,7 @@ def start_ok(ps: List<&2, Nat>, $LPT) -> {SO.run.ok(SO.ploop.start(ps, $LP)) == 
       loop_ok(t, SO.accept(NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins), NU.plan(es, nv, skel, g0, p), $LP, {==})
 
 # a run whose bit is its answer's verdict and True: its answer passes
-def run_final(r: SO.Run, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, hs: {SO.run.ok(r) == SO.accept(SO.run.m(r), sk, g0, cls, pins) : Bool}, ok: {SO.run.ok(r) == True{} : Bool}) -> {SO.final(sk, g0, SO.answer(cls, pins, r)) == True{} : Bool}:
+def run_final(r: SO.Run, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, hs: {SO.run.ok(r) == SO.accept(SO.run.m(r), sk, g0, cls, pins) : Bool}, ok: {SO.run.ok(r) == True{} : Bool}) -> {SO.checks(sk, g0, SO.answer(cls, pins, r)) == True{} : Bool}:
   match r:
     case SO.Run{b, m}:
       match b:
@@ -230,16 +230,16 @@ def run_final(r: SO.Run, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.C
             case NU.POk{+y}:
               Equal.sym(Bool, True{}, SO.accept(NU.POk{y}, sk, g0, cls, pins), hs)
             case NU.PRetry{}:
-              L.absurd({SO.final(sk, g0, SO.answer(cls, pins, SO.Run{True{}, NU.PRetry{}})) == True{} : Bool}, KA.tf(hs))
+              L.absurd({SO.checks(sk, g0, SO.answer(cls, pins, SO.Run{True{}, NU.PRetry{}})) == True{} : Bool}, KA.tf(hs))
             case NU.PStop{}:
-              L.absurd({SO.final(sk, g0, SO.answer(cls, pins, SO.Run{True{}, NU.PStop{}})) == True{} : Bool}, KA.tf(hs))
+              L.absurd({SO.checks(sk, g0, SO.answer(cls, pins, SO.Run{True{}, NU.PStop{}})) == True{} : Bool}, KA.tf(hs))
         case False{}:
-          L.absurd({SO.final(sk, g0, SO.answer(cls, pins, SO.Run{False{}, m})) == True{} : Bool}, KA.ft(ok))
+          L.absurd({SO.checks(sk, g0, SO.answer(cls, pins, SO.Run{False{}, m})) == True{} : Bool}, KA.ft(ok))
 
 @MACRO SLP sk, g0, SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk)
 
 # a True ok is a True verdict on the solver's answer
-def verdict(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}) -> {SO.final(sk, g0, SO.solve_l(sk, g0, l)) == True{} : Bool}:
+def verdict(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}) -> {SO.checks(sk, g0, SO.solve_l(sk, g0, l)) == True{} : Bool}:
   run_final(SO.ploop.start(SO.precisions(l, 7n), $SLP), sk, g0, SO.cls_of(sk), SO.pins_of(sk), start_ok(SO.precisions(l, 7n), $SLP), ok)
 
 # the solver's answer's drops are the pass's, correct by construction

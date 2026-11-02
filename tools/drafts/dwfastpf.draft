@@ -58,8 +58,8 @@ import ./dwfast.bend as DWF
 
 # the verdict in K on the mapped answer is the draft's
 def final2_c($KWR, +sk: SK.Sketch, +g0: $DV, +ok: Bool, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +gc: $DV, +gr: $DV, +p: $DP) -> {DWF.final2($G, sk, g0, $FOUT) == DSO.final2(sk, g0, $OUT) : Bool}:
-  %FP.final_c($T, sk, g0, ok, cls, pins, gc, gr, p) : {KA.band($NDL, FS.final($G, sk, g0, $FOUT)) == KA.band(PL.check_sides(~KI.dnum(), $NDS, gc, gr), _) : Bool}
-  %PH.check_sides_h($D, $NDS, gc, gr) : {KA.band($NDL, FS.final($G, sk, g0, $FOUT)) == KA.band(_, FS.final($G, sk, g0, $FOUT)) : Bool}
+  %FP.final_c($T, sk, g0, ok, cls, pins, gc, gr, p) : {KA.band($NDL, FS.checks($G, sk, g0, $FOUT)) == KA.band(PL.check_sides(~KI.dnum(), $NDS, gc, gr), _) : Bool}
+  %PH.check_sides_h($D, $NDS, gc, gr) : {KA.band($NDL, FS.checks($G, sk, g0, $FOUT)) == KA.band(_, FS.checks($G, sk, g0, $FOUT)) : Bool}
   {==}
 
 def accept2_t($KWR, m: NU.PR, +sk: SK.Sketch, +g0: $DV, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>) -> {DWF.accept2($G, GM.hpr($HH, m), sk, g0, cls, pins) == DSO.accept2(m, sk, g0, cls, pins) : Bool}:

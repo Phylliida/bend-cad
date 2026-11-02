@@ -35,7 +35,7 @@ def ndok(~K: N.Num, +sk: SK.Sketch, +x: FS.FOut<K>) -> Bool:
   PL.check_sides(~K, DR.ndsides(SV.ents(sk), SV.live_nd(FS.FOut.cls(K, x))), FS.FOut.gc(K, x), FS.FOut.gr(K, x))
 
 def final2(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +x: FS.FOut<K>) -> Bool:
-  KA.band(ndok(~K, sk, x), FS.final(~K, ~W, sk, g0, x))
+  KA.band(ndok(~K, sk, x), FS.checks(~K, ~W, sk, g0, x))
 
 # The precision loop
 # ------------------
