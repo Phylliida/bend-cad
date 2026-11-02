@@ -1900,6 +1900,18 @@ one's).
 - **C0. Spec draft.** The clauses above (nd and Over) in spec/_draft13c.bend, with a
   test that type-checks them against today's answers' shapes. Danielle
   reads it before anything is proven against it.
+  *As built 2026-11-02:* the draft does not copy spec/solve.bend. Its
+  Honest is spec/solve.bend's and Tight: for each driving constraint,
+  NdIrred for each direction drop, RefIrred (the conflict clause above)
+  for a conflict, OverIrred for an Over set. That is the same as adding
+  the clauses where the plan put them (the degree-0 branches have no nd),
+  with the types shared, so the draft's Honest implies today's (the test
+  proves it), the laws carry over unchanged, and C4 can prove against the
+  draft before the switch. "nd has no Angle's segment" is left out: it
+  follows (for such a segment m, the refutation giving nd already lies
+  within nd less m with the Angles' segments). tests/tight_draft.bend:
+  the weakening, Tight unfolded on an example, six planted errors
+  (four rejected, two legitimately the same type).
 - **C1. The restricted calculus in lib.** ValidA (Open replaced by open
   and in A); the facts with those whose nd is not in A replaced by
   placeholders (equation 0, nd Nil, no statement), so positions do not
