@@ -4,23 +4,26 @@
 # the drawing's values) and a class for each constraint (spec/solve.bend:
 # Kept, Amber, Over, Conflict).
 #
-# The classes are the single pass's (lib/pass.bend: classes, PLAN-sk13a S4),
-# and so is the structure: the system solved (the sketch's equations whose
-# constraint is not red and that are not dropped), its pins and its blocks
-# (lib/pass.bend: pins, skel). The search does the numbers (lib/numer.bend:
-# Newton, Y and radii at precisions 64 .. 512) over the system solved, and
-# judges each answer by the verdict (checks), which reads the answer alone:
-# every pin held at its drawn value with radius 0, the sketch with the red
-# constraints made driven well formed (lib/wfdec.bend), covered by the box,
-# the plan checked over the system solved (its orders every variable once,
-# the pins first, and as many equations as that system has), the side
-# conditions of the constraints neither red nor amber checked over the box
-# (lib/plan.bend), and the dropped equations and amber side conditions
-# certified by their combinations and refutations (lib/verdict.bend). The
+# The classes are the pass's (lib/dpass.bend: classes2, the single pass of
+# PLAN-sk13a S4 with sk-13b's direction layer), and so is the structure:
+# the system solved (the sketch's equations whose constraint is not red
+# and that are not dropped), its pins and its blocks (lib/dpass.bend:
+# pins2, skel2). The search does the numbers (lib/numer.bend: Newton, Y
+# and radii at precisions 64 .. 512) over the system solved, and judges
+# each answer by the verdict (final), which reads the answer alone: every
+# segment in the nd of a drop of a Kept or Amber constraint long over the
+# box (ndok), every pin held at its drawn value with radius 0, the sketch
+# with the red constraints made driven well formed (lib/wfdec.bend),
+# covered by the box, the plan checked over the system solved (its orders
+# every variable once, the pins first, and as many equations as that
+# system has), the side conditions of the constraints neither red nor
+# amber checked over the box (lib/plan.bend), and the amber side
+# conditions certified by their refutations (lib/verdict.bend). The
 # answer's ok is the verdict the search reached on it, computed once
-# (lib/solvepf.bend: verdict proves it is checks of that answer). So the
+# (lib/dsolvepf.bend: verdict2 proves it is final of that answer). So the
 # verdict laws (solve_exists, solve_unique, solve_pins, solve_regular) need
-# nothing else from search: they follow from the verdict and the sk-06 laws.
+# nothing else from search: they follow from the verdict and the sk-06
+# laws.
 
 import Base
 import ../spec/num.bend as S
@@ -40,6 +43,8 @@ import ./struct.bend as ST
 import ./numer.bend as NU
 import ./wfdec.bend as WF
 import ./pass.bend as PA
+import ./dpass.bend as DPS
+import ../spec/dir.bend as DR
 import ./verdict.bend as VD
 import ./cert.bend as CK
 
@@ -209,8 +214,8 @@ def skel.pins(s: ST.Skel) -> List<&2, Nat>:
 # The verdict
 # -----------
 
-# what the laws need, read off the answer alone (the exact checks last:
-# they are the most work, and a box that fails is retried anyway)
+# sk-13a's checks, read off the answer alone (the exact checks last: they
+# are the most work, and a box that fails is retried anyway)
 def checks(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: Out) -> Bool:
   KA.band(SV.held(Out.pins(x), g0, Out.gc(x), Out.gr(x)),
   KA.band(WF.wf_dec(SV.mark(SV.reds(Out.cls(x)), sk)),
@@ -219,6 +224,17 @@ def checks(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: Out) -> Bool:
   KA.band(PL.check_sides(~KI.dnum(), SK.Sketch.sides(SV.mark(SV.cat(SV.reds(Out.cls(x)), SV.ambers(Out.cls(x))), sk)), Out.gc(x), Out.gr(x)),
   KA.band(shape(nvars(sk), CK.eqlen(SV.solved(sk, SV.reds(Out.cls(x)), SV.dropped(Out.cls(x)))), Out.gc(x), Out.pins(x), Out.plan(x)),
   VD.exact(sk, Out.cls(x))))))))
+
+# the live drops' nd segments are long over the box (sk-13b), so that at
+# every point of the box each dropped equation holds where the solved
+# ones do
+def ndok(+sk: SK.Sketch, +x: Out) -> Bool:
+  PL.check_sides(~KI.dnum(), DR.ndsides(SV.ents(sk), SV.live_nd(Out.cls(x))), Out.gc(x), Out.gr(x))
+
+# what the laws need: the nd sides first (a box too wide for them is
+# retried anyway), then the checks
+def final(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: Out) -> Bool:
+  KA.band(ndok(sk, x), checks(sk, g0, x))
 
 # The precision loop
 # ------------------
@@ -229,7 +245,7 @@ def checks(+sk: SK.Sketch, +g0: List<&2, S.D>, +x: Out) -> Bool:
 def accept(m: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>) -> Bool:
   match m:
     case NU.POk{+x}:
-      checks(sk, g0, found(cls, pins, NU.POk{x}))
+      final(sk, g0, found(cls, pins, NU.POk{x}))
     case NU.PRetry{}:
       False{}
     case NU.PStop{}:
@@ -267,13 +283,13 @@ def ploop(ps: List<&2, Nat>, ok: Bool, cur: NU.PR, +sk: SK.Sketch, +g0: List<&2,
 
 # The structure depends on the sketch alone
 # -----------------------------------------
-# The pass (lib/pass.bend) classifies the constraints and leaves the
+# The pass (lib/dpass.bend) classifies the constraints and leaves the
 # system solved, matched by dependence; its pins are the variables the
-# variable side leaves over, and the blocks follow (lib/pass.bend: skel).
+# variable side leaves over, and the blocks follow (lib/dpass.bend: skel2).
 
 # the classes
 def cls_of(+sk: SK.Sketch) -> List<&2, SV.Class>:
-  PA.classes(sk)
+  DPS.classes2(sk)
 
 # the system solved
 def kept(+sk: SK.Sketch) -> List<&2, E.QExpr>:
@@ -281,15 +297,15 @@ def kept(+sk: SK.Sketch) -> List<&2, E.QExpr>:
 
 # its positions in the sketch's numbering, in order
 def good_of(+sk: SK.Sketch) -> List<&2, Nat>:
-  PA.solved_pos(sk)
+  DPS.solved_pos2(sk)
 
 # the structure of the system solved, renumbered to positions in it
 def skel_of(+sk: SK.Sketch) -> ST.Skel:
-  PA.skel(sk)
+  DPS.skel2(sk)
 
 # the pins: the earliest variables the system solved can leave over
 def pins_of(+sk: SK.Sketch) -> List<&2, Nat>:
-  PA.pins(sk)
+  DPS.pins2(sk)
 
 # the loop from its first precision's answer (starting it with a literal
 # "not yet" would let the checker unfold the whole verdict symbolically

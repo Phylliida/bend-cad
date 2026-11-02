@@ -1,6 +1,11 @@
 # bend-cad: one constraint's equations through the elimination, for the
 # single pass (PLAN-sk13a S4). Proofs only.
 #
+# Since the sk-13b switch (2026-11-02), what this file proved about
+# sk-13a's pass, Honest or solver is proven in lib/dcwpf.bend; what is
+# left here is what that proof reuses, and the description below is of
+# the sk-13a proof.
+#
 # The pass walks every position k of the sketch's equations
 # (lib/pass.bend: cwalk), reducing those constraint c owns against the
 # basis B (its rows EP.rinv). Through the walk, B is the solved equations
@@ -281,9 +286,6 @@ def inv_keep(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +bp0
 def XRel(+dF: List<&2, Nat>, +d: List<&2, Nat>, +k: Nat) -> Data:
   Sigma<&2, &2, List<&2, Nat>, X => SK.Both({dF == SV.cat(X, d) : List<&2, Nat>}, {OW.geall(X, k) == True{} : Bool})>
 
-def CWRes(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +bp0: List<&2, Nat>, +k: Nat, own_k: List<&2, Nat>, +st: PA.CW, +fin: PA.CW) -> Type:
-  XRel(SV.drops(cw.ds(fin)), SV.drops(cw.ds(st)), k) & (SV.drops_ok.go(sk, R, D, c, SV.drops(cw.ds(fin)), own_k, k) & CWInv(sk, R, D, c, bp0, SV.neqs(SK.Sketch.eqs(sk)), fin))
-
 def xr_up(+k: Nat, +dF: List<&2, Nat>, +d: List<&2, Nat>, xr: XRel(dF, d, 1n+k)) -> XRel(dF, d, k):
   (+X, xq) = xr
   (hX, hg) = xq
@@ -312,102 +314,12 @@ def or_x(+sk: SK.Sketch, +c: Nat, +k: Nat, +dF: List<&2, Nat>, +d: List<&2, Nat>
   (%Equal.sym(List<&2, Nat>, dF, SV.cat(X, d), hX) : {SV.own_rest(sk, c, _, k) == SV.own_rest(sk, c, d, k) : List<&2, E.QExpr>}
     SP.or_cat(SK.Sketch.eqs(sk), SV.owners(sk), c, X, d, k, 0n, hg))
 
-def res_skip(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +bp0: List<&2, Nat>, +k: Nat, +o: Nat, +ot: List<&2, Nat>, st: PA.CW, +fin: PA.CW, +heo: {SV.eq(o, c) == False{} : Bool}, hi: CWInv(sk, R, D, c, bp0, k, st), r: CWRes(sk, R, D, c, bp0, 1n+k, ot, st, fin))
-  -> CWRes(sk, R, D, c, bp0, k, Con{o, ot}, st, fin):
-  match st:
-    case PA.CW{+rows, +B, +bp, +ds, +us}:
-      (+hb, hq1) = hi
-      (+xr, q) = r
-      (dr, fr) = q
-      (xr_up(k, SV.drops(cw.ds(fin)), SV.drops(ds), xr), (((%Equal.sym(Bool, SV.eq(o, c), False{}, heo) : SV.drops_ok.at(sk, R, D, c, SV.drops(cw.ds(fin)), _, k)
-          mem_x_f(k, SV.drops(cw.ds(fin)), SV.drops(ds), xr, cwb_dbelow(sk, c, k, rows, B, ds, us, hb))), dr), fr))
-
-def res_drop(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +bp0: List<&2, Nat>, +k: Nat, +o: Nat, +ot: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +ds: List<&2, SV.Drop>, +us: List<&2, Nat>, +e: E.QExpr, +fin: PA.CW, +heo: {SV.eq(o, c) == True{} : Bool},
-  +he: {SV.eqat(SK.Sketch.eqs(sk), k) == e : E.QExpr}, +hnil: {EP.isnil(EP.resp(EL.resid(rows, e))) == True{} : Bool}, hi: CWInv(sk, R, D, c, bp0, k, PA.CW{rows, B, bp, ds, us}),
-  r: CWRes(sk, R, D, c, bp0, 1n+k, ot, PA.CW{rows, B, bp, Con{PA.drop_of(k, EL.resid(rows, e), e, B, bp), ds}, us}, fin)) -> CWRes(sk, R, D, c, bp0, k, Con{o, ot}, PA.CW{rows, B, bp, ds, us}, fin):
-  (+hb, q1) = hi
-  (hl, q2) = q1
-  (+hB, q3) = q2
-  (+xr, q) = r
-  (dr, fr) = q
-  +xr2 = xr_drop(k, SV.drops(cw.ds(fin)), SV.drops(ds), xr)
-  +LS = DR.dropls(DR.rescb(EL.resid(rows, e)), DR.resbt(EL.resid(rows, e)), e, B)
-  (xr2, (((%Equal.sym(Bool, SV.eq(o, c), True{}, heo) : SV.drops_ok.at(sk, R, D, c, SV.drops(cw.ds(fin)), _, k)
-      (%Equal.sym(Bool, SV.mem(k, SV.drops(cw.ds(fin))), True{}, mem_x_t(k, SV.drops(cw.ds(fin)), SV.drops(ds), xr)) : SV.drops_ok.mem(sk, R, D, c, SV.drops(cw.ds(fin)), _, k)
-        (LS, (%Equal.sym(E.QExpr, SV.eqat(SK.Sketch.eqs(sk), k), e, he) : SV.Ident(_, SV.lin(LS, SK.cat(SV.presolved(sk, R, D, c), SV.own_rest(sk, c, SV.drops(cw.ds(fin)), k))))
-          (%Equal.sym(List<&2, E.QExpr>, SV.own_rest(sk, c, SV.drops(cw.ds(fin)), k), SV.own_rest(sk, c, SV.drops(ds), k), or_x(sk, c, k, SV.drops(cw.ds(fin)), SV.drops(ds), xr2)) : SV.Ident(e, SV.lin(LS, SK.cat(SV.presolved(sk, R, D, c), _)))
-            (%hB : SV.Ident(e, SV.lin(LS, _))
-              DR.derivable(B, rows, e, cwb_rinv(sk, c, k, rows, B, ds, us, hb), hnil))))))), dr), fr))
-
-def res_keep(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +bp0: List<&2, Nat>, +k: Nat, +o: Nat, +ot: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +ds: List<&2, SV.Drop>, +us: List<&2, Nat>, +e: E.QExpr, +fin: PA.CW, +heo: {SV.eq(o, c) == True{} : Bool},
-  +he: {SV.eqat(SK.Sketch.eqs(sk), k) == e : E.QExpr}, +hne: {EP.isnil(EP.resp(EL.resid(rows, e))) == False{} : Bool}, hi: CWInv(sk, R, D, c, bp0, k, PA.CW{rows, B, bp, ds, us}),
-  r: CWRes(sk, R, D, c, bp0, 1n+k, ot, PA.CW{EL.rsnoc(rows, EL.row_of(EL.resid(rows, e))), EP.qsnoc(B, e), CO.lsnoc(bp, k), ds, CO.lsnoc(us, k)}, fin)) -> CWRes(sk, R, D, c, bp0, k, Con{o, ot}, PA.CW{rows, B, bp, ds, us}, fin):
-  (+hb, q1) = hi
-  (+hl, q2) = q1
-  (+hB, q3) = q2
-  (+xr, q) = r
-  (dr, fr) = q
-  +xr1 = xr_up(k, SV.drops(cw.ds(fin)), SV.drops(ds), xr)
-  (xr1, (((%Equal.sym(Bool, SV.eq(o, c), True{}, heo) : SV.drops_ok.at(sk, R, D, c, SV.drops(cw.ds(fin)), _, k)
-      (%Equal.sym(Bool, SV.mem(k, SV.drops(cw.ds(fin))), False{}, mem_x_f(k, SV.drops(cw.ds(fin)), SV.drops(ds), xr, cwb_dbelow(sk, c, k, rows, B, ds, us, hb))) : SV.drops_ok.mem(sk, R, D, c, SV.drops(cw.ds(fin)), _, k)
-        (%Equal.sym(E.QExpr, SV.eqat(SK.Sketch.eqs(sk), k), e, he) : (@ls: List<&2, S.Q> -> SV.Ident(_, SV.lin(ls, SK.cat(SV.presolved(sk, R, D, c), SV.own_rest(sk, c, SV.drops(cw.ds(fin)), k)))) -> Empty)
-          (%Equal.sym(List<&2, E.QExpr>, SV.own_rest(sk, c, SV.drops(cw.ds(fin)), k), SV.own_rest(sk, c, SV.drops(ds), k), or_x(sk, c, k, SV.drops(cw.ds(fin)), SV.drops(ds), xr1)) : (@ls: List<&2, S.Q> -> SV.Ident(e, SV.lin(ls, SK.cat(SV.presolved(sk, R, D, c), _))) -> Empty)
-            (%hB : (@ls: List<&2, S.Q> -> SV.Ident(e, SV.lin(ls, _)) -> Empty)
-              IN.indep(B, rows, e, cwb_rinv(sk, c, k, rows, B, ds, us, hb), hl, hne)))))), dr), fr))
-
-
-def cw_ok.k(b: Bool, +e: E.QExpr, +t: List<&2, E.QExpr>, +o: Nat, +ot: List<&2, Nat>, +sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +bp0: List<&2, Nat>, +k: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +ds: List<&2, SV.Drop>, +us: List<&2, Nat>,
-  +eb: {EP.isnil(EP.resp(EL.resid(rows, e))) == b : Bool}, +heq: {SV.eq(SV.nth(SV.owners(sk), k), c) == True{} : Bool}, +hq: {OW.qdrop(k, SK.Sketch.eqs(sk)) == Con{e, t} : List<&2, E.QExpr>}, +ho: {OW.ndrop(k, SV.owners(sk)) == Con{o, ot} : List<&2, Nat>},
-  +hlt: {SV.lt(k, SV.neqs(SK.Sketch.eqs(sk))) == True{} : Bool}, +hi: CWInv(sk, R, D, c, bp0, k, PA.CW{rows, B, bp, ds, us}), ih: @st2: PA.CW -> CWInv(sk, R, D, c, bp0, 1n+k, st2) -> CWRes(sk, R, D, c, bp0, 1n+k, ot, st2, PA.cwalk(t, SV.owners(sk), c, 1n+k, st2)))
-  -> CWRes(sk, R, D, c, bp0, k, Con{o, ot}, PA.CW{rows, B, bp, ds, us}, PA.cwalk(t, SV.owners(sk), c, 1n+k, PA.cw.pick(EP.isnil(EP.resp(EL.resid(rows, e))), k, e, EL.resid(rows, e), rows, B, bp, ds, us))):
-  match b:
-    case True{}:
-      %Equal.sym(Bool, EP.isnil(EP.resp(EL.resid(rows, e))), True{}, eb) : CWRes(sk, R, D, c, bp0, k, Con{o, ot}, PA.CW{rows, B, bp, ds, us}, PA.cwalk(t, SV.owners(sk), c, 1n+k, PA.cw.pick(_, k, e, EL.resid(rows, e), rows, B, bp, ds, us)))
-      res_drop(sk, R, D, c, bp0, k, o, ot, rows, B, bp, ds, us, e, PA.cwalk(t, SV.owners(sk), c, 1n+k, PA.CW{rows, B, bp, Con{PA.drop_of(k, EL.resid(rows, e), e, B, bp), ds}, us}), Equal.trans(Bool, SV.eq(o, c), SV.eq(SV.nth(SV.owners(sk), k), c), True{}, Equal.cong(Nat, Bool, x => SV.eq(x, c), o, SV.nth(SV.owners(sk), k), Equal.sym(Nat, SV.nth(SV.owners(sk), k), o, OW.nth_of(SV.owners(sk), k, o, ot, ho))), heq), OW.eqat_of(SK.Sketch.eqs(sk), k, e, t, hq), eb, hi,
-        ih(PA.CW{rows, B, bp, Con{PA.drop_of(k, EL.resid(rows, e), e, B, bp), ds}, us}, inv_drop(sk, R, D, c, bp0, k, rows, B, bp, ds, us, e, hi, heq, hlt)))
-    case False{}:
-      %Equal.sym(Bool, EP.isnil(EP.resp(EL.resid(rows, e))), False{}, eb) : CWRes(sk, R, D, c, bp0, k, Con{o, ot}, PA.CW{rows, B, bp, ds, us}, PA.cwalk(t, SV.owners(sk), c, 1n+k, PA.cw.pick(_, k, e, EL.resid(rows, e), rows, B, bp, ds, us)))
-      res_keep(sk, R, D, c, bp0, k, o, ot, rows, B, bp, ds, us, e, PA.cwalk(t, SV.owners(sk), c, 1n+k, PA.CW{EL.rsnoc(rows, EL.row_of(EL.resid(rows, e))), EP.qsnoc(B, e), CO.lsnoc(bp, k), ds, CO.lsnoc(us, k)}), Equal.trans(Bool, SV.eq(o, c), SV.eq(SV.nth(SV.owners(sk), k), c), True{}, Equal.cong(Nat, Bool, x => SV.eq(x, c), o, SV.nth(SV.owners(sk), k), Equal.sym(Nat, SV.nth(SV.owners(sk), k), o, OW.nth_of(SV.owners(sk), k, o, ot, ho))), heq), OW.eqat_of(SK.Sketch.eqs(sk), k, e, t, hq), eb, hi,
-        ih(PA.CW{EL.rsnoc(rows, EL.row_of(EL.resid(rows, e))), EP.qsnoc(B, e), CO.lsnoc(bp, k), ds, CO.lsnoc(us, k)}, inv_keep(sk, R, D, c, bp0, k, rows, B, bp, ds, us, e, hi, heq, hlt, eb, OW.eqat_of(SK.Sketch.eqs(sk), k, e, t, hq))))
-
-def cw_ok.s(st: PA.CW, +e: E.QExpr, +t: List<&2, E.QExpr>, +o: Nat, +ot: List<&2, Nat>, +sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +bp0: List<&2, Nat>, +k: Nat, +heq: {SV.eq(SV.nth(SV.owners(sk), k), c) == True{} : Bool}, +hq: {OW.qdrop(k, SK.Sketch.eqs(sk)) == Con{e, t} : List<&2, E.QExpr>}, +ho: {OW.ndrop(k, SV.owners(sk)) == Con{o, ot} : List<&2, Nat>},
-  +hlt: {SV.lt(k, SV.neqs(SK.Sketch.eqs(sk))) == True{} : Bool}, hi: CWInv(sk, R, D, c, bp0, k, st), ih: @st2: PA.CW -> CWInv(sk, R, D, c, bp0, 1n+k, st2) -> CWRes(sk, R, D, c, bp0, 1n+k, ot, st2, PA.cwalk(t, SV.owners(sk), c, 1n+k, st2))) -> CWRes(sk, R, D, c, bp0, k, Con{o, ot}, st, PA.cwalk(t, SV.owners(sk), c, 1n+k, PA.cw.res(k, e, st))):
-  match st:
-    case PA.CW{+rows, +B, +bp, +ds, +us}:
-      cw_ok.k(EP.isnil(EP.resp(EL.resid(rows, e))), e, t, o, ot, sk, R, D, c, bp0, k, rows, B, bp, ds, us, {==}, heq, hq, ho, hlt, hi, ih)
-
-def cw_ok.o(b: Bool, +e: E.QExpr, +t: List<&2, E.QExpr>, +o: Nat, +ot: List<&2, Nat>, +sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +bp0: List<&2, Nat>, +k: Nat, +st: PA.CW, +eb: {SV.eq(SV.nth(SV.owners(sk), k), c) == b : Bool}, +hq: {OW.qdrop(k, SK.Sketch.eqs(sk)) == Con{e, t} : List<&2, E.QExpr>}, +ho: {OW.ndrop(k, SV.owners(sk)) == Con{o, ot} : List<&2, Nat>},
-  +hlt: {SV.lt(k, SV.neqs(SK.Sketch.eqs(sk))) == True{} : Bool}, +hi: CWInv(sk, R, D, c, bp0, k, st), ih: @st2: PA.CW -> CWInv(sk, R, D, c, bp0, 1n+k, st2) -> CWRes(sk, R, D, c, bp0, 1n+k, ot, st2, PA.cwalk(t, SV.owners(sk), c, 1n+k, st2))) -> CWRes(sk, R, D, c, bp0, k, Con{o, ot}, st, PA.cwalk(Con{e, t}, SV.owners(sk), c, k, st)):
-  match b:
-    case True{}:
-      %Equal.sym(Bool, SV.eq(SV.nth(SV.owners(sk), k), c), True{}, eb) : CWRes(sk, R, D, c, bp0, k, Con{o, ot}, st, PA.cwalk(t, SV.owners(sk), c, 1n+k, PA.cw.at(_, k, e, st)))
-      cw_ok.s(st, e, t, o, ot, sk, R, D, c, bp0, k, eb, hq, ho, hlt, hi, ih)
-    case False{}:
-      %Equal.sym(Bool, SV.eq(SV.nth(SV.owners(sk), k), c), False{}, eb) : CWRes(sk, R, D, c, bp0, k, Con{o, ot}, st, PA.cwalk(t, SV.owners(sk), c, 1n+k, PA.cw.at(_, k, e, st)))
-      res_skip(sk, R, D, c, bp0, k, o, ot, st, PA.cwalk(t, SV.owners(sk), c, 1n+k, st), (%OW.nth_of(SV.owners(sk), k, o, ot, ho) : {SV.eq(_, c) == False{} : Bool}
-        eb), hi, ih(st, inv_skip(sk, R, D, c, bp0, k, st, hi, eb, hlt)))
 
 def len_nc(+o: Nat, +ot: List<&2, Nat>, h: {SV.len(Con{o, ot}) == SV.neqs(Nil{}) : Nat}) -> Empty:
   OW.zs(SV.len(ot), Equal.sym(Nat, 1n+SV.len(ot), 0n, h))
 
 def len_cn(+e: E.QExpr, +t: List<&2, E.QExpr>, h: {SV.len(Nil{}) == SV.neqs(Con{e, t}) : Nat}) -> Empty:
   OW.zs(SV.neqs(t), h)
-
-# the walk from position k
-def cw_ok(es: List<&2, E.QExpr>, own_k: List<&2, Nat>, +sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +bp0: List<&2, Nat>, +k: Nat, +st: PA.CW, +hq: {OW.qdrop(k, SK.Sketch.eqs(sk)) == es : List<&2, E.QExpr>}, +ho: {OW.ndrop(k, SV.owners(sk)) == own_k : List<&2, Nat>}, +hl: {SV.len(own_k) == SV.neqs(es) : Nat},
-  +hk: {Nat.add(k, SV.neqs(es)) == SV.neqs(SK.Sketch.eqs(sk)) : Nat}, +hi: CWInv(sk, R, D, c, bp0, k, st)) -> CWRes(sk, R, D, c, bp0, k, own_k, st, PA.cwalk(es, SV.owners(sk), c, k, st)):
-  match es own_k:
-    case Nil{} Nil{}:
-      ((Nil{}, ({==}, {==})), (Unit{}, (%Equal.trans(Nat, k, Nat.add(k, 0n), SV.neqs(SK.Sketch.eqs(sk)), LN.add_zero(k), hk) : CWInv(sk, R, D, c, bp0, _, st)
-        hi)))
-    case Nil{} Con{+o, +ot}:
-      absurd(CWRes(sk, R, D, c, bp0, k, Con{o, ot}, st, st), len_nc(o, ot, hl))
-    case Con{+e, +t} Nil{}:
-      absurd(CWRes(sk, R, D, c, bp0, k, Nil{}, st, PA.cwalk(Con{e, t}, SV.owners(sk), c, k, st)), len_cn(e, t, hl))
-    case Con{+e, +t} Con{+o, +ot}:
-      cw_ok.o(SV.eq(SV.nth(SV.owners(sk), k), c), e, t, o, ot, sk, R, D, c, bp0, k, st, {==}, hq, ho, SP.lt_qdrop(SK.Sketch.eqs(sk), k, e, t, hq), hi,
-        st2 => h2 => cw_ok(t, ot, sk, R, D, c, bp0, 1n+k, st2, OW.qdrop_step(k, SK.Sketch.eqs(sk), e, t, hq), OW.ndrop_step(k, SV.owners(sk), o, ot, ho), LN.succ_inj(SV.len(ot), SV.neqs(t), hl),
-          Equal.trans(Nat, 1n+Nat.add(k, SV.neqs(t)), Nat.add(k, 1n+SV.neqs(t)), SV.neqs(SK.Sketch.eqs(sk)), LN.add_succ(k, SV.neqs(t)), hk), h2))
 
 # From the pass's state
 # ---------------------
@@ -444,25 +356,6 @@ def cw_start(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +row
       (%qcat_nil(SV.presolved(sk, R, D, c)) : {B == _ : List<&2, E.QExpr>}
         hB)), (hp, ncat_nil(bp)))))
 
-
-def drops_ok_of(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, h1: {SV.distinct(d) == True{} : Bool}, h2: {SV.below(d, SV.neqs(SK.Sketch.eqs(sk))) == True{} : Bool}, dr: SV.drops_ok.go(sk, R, D, c, d, SV.owners(sk), 0n)) -> SV.DropsOk(sk, R, D, c, d):
-  (LI.band_i(SV.distinct(d), SV.below(d, SV.neqs(SK.Sketch.eqs(sk))), h1, h2), dr)
-
-def cw_final.r2(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, dr: SV.drops_ok.go(sk, R, D, c, SV.drops(cw.ds(PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}))), SV.owners(sk), 0n), +fr: CWInv(sk, R, D, c, bp, SV.neqs(SK.Sketch.eqs(sk)), PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}})))
-  -> (SV.DropsOk(sk, R, D, c, SV.drops(cw.ds(PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}})))) & CWInv(sk, R, D, c, bp, SV.neqs(SK.Sketch.eqs(sk)), PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}))):
-  +hb = inv_b(sk, R, D, c, bp, SV.neqs(SK.Sketch.eqs(sk)), PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}), fr)
-  (drops_ok_of(sk, R, D, c, SV.drops(cw.ds(PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}))), cwb_ddist(sk, c, SV.neqs(SK.Sketch.eqs(sk)), cw.rows(PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}})), cw.B(PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}})), cw.ds(PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}})), cw.us(PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}})), hb), cwb_dbelow(sk, c, SV.neqs(SK.Sketch.eqs(sk)), cw.rows(PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}})), cw.B(PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}})), cw.ds(PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}})), cw.us(PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}})), hb), dr), fr)
-
-def cw_final.r(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, r: CWRes(sk, R, D, c, bp, 0n, SV.owners(sk), PA.CW{rows, B, bp, Nil{}, Nil{}}, PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}})))
-  -> (SV.DropsOk(sk, R, D, c, SV.drops(cw.ds(PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}})))) & CWInv(sk, R, D, c, bp, SV.neqs(SK.Sketch.eqs(sk)), PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}))):
-  (xr, q) = r
-  (dr, fr) = q
-  cw_final.r2(sk, R, D, c, rows, B, bp, dr, fr)
-
-# the walk's end: DropsOk for its drops, and the invariant at the end
-def cw_final(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +c: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, hl: {EL.rlen(rows) == SV.neqs(B) : Nat},
-  hB: {B == SV.presolved(sk, R, D, c) : List<&2, E.QExpr>}, hp: {B == SV.picked(SK.Sketch.eqs(sk), bp) : List<&2, E.QExpr>}) -> (SV.DropsOk(sk, R, D, c, SV.drops(cw.ds(PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}})))) & CWInv(sk, R, D, c, bp, SV.neqs(SK.Sketch.eqs(sk)), PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}))):
-  cw_final.r(sk, R, D, c, rows, B, bp, cw_ok(SK.Sketch.eqs(sk), SV.owners(sk), sk, R, D, c, bp, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}, {==}, {==}, OW.len_owners(sk), {==}, cw_start(sk, R, D, c, rows, B, bp, hr, hl, hB, hp)))
 
 # The walk drops only c's equations
 # ---------------------------------

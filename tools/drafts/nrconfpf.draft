@@ -1,6 +1,11 @@
 # bend-cad: a conflict in one honest classification is a conflict in any
 # other (PLAN-sk13a S6, law 5 step 4). Proofs only.
 #
+# Since the sk-13b switch (2026-11-02), what this file proved about
+# sk-13a's pass, Honest or solver is proven in lib/duniqpf.bend; what is
+# left here is what that proof reuses, and the description below is of
+# the sk-13a proof.
+#
 # Say c is Conflict{s} in one classification and kept, amber or over in
 # another, with the same kept constraints kb before c in both. The
 # conflict gives a refutation of c and s in the support's order (c's and
@@ -189,17 +194,3 @@ def cn.m(mc: Maybe<&2, RF.Cert>, +sk: SK.Sketch, +R2: List<&2, Nat>, +c: Nat, +s
         ST.refute_ok($ESN, $SSN)))
     case None{}:
       ST.pt_noref.go(~LQF.lqfield(), CO.supp.es(sk, c, s), CO.supp.ss(sk, c, s), pt_back(~LQF.lqfield(), sk, c, s, $KB2, hs, ST.pt_of_none(~LQF.lqfield(), $ESN, $SSN, e)), ls, ms, k, hr)
-
-# c a conflict over one red list, without refutation over another, the
-# kept constraints before c the same in both: impossible
-def conf_nr(+sk: SK.Sketch, +R1: List<&2, Nat>, +R2: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, +hkb: {SV.kept_before(sk, R1, c) == $KB2 : List<&2, Nat>}, hc: SV.ConflictOk(sk, R1, c, s), nr: SV.NoRefute(sk, R2, c)) -> Empty:
-  (+hb, r) = hc
-  (hr, hmin) = r
-  (+ls, r1) = hr
-  (+ms, r2) = r1
-  (+k, r3) = r2
-  +hb2 = L.band_r(SV.distinct(s), SV.band(SV.below(s, c), SV.band(SV.all_driving(sk, s), SV.none_in(s, R1))), hb)
-  +hb3 = L.band_r(SV.below(s, c), SV.band(SV.all_driving(sk, s), SV.none_in(s, R1)), hb2)
-  cn.m(RF.refute($ESN, $SSN), sk, R2, c, s, {==}, (%hkb : {SV.sub(s, _) == True{} : Bool}
-    sub_kb(sk, R1, c, s, L.band_l(SV.below(s, c), SV.band(SV.all_driving(sk, s), SV.none_in(s, R1)), hb2), L.band_l(SV.all_driving(sk, s), SV.none_in(s, R1), hb3), L.band_r(SV.all_driving(sk, s), SV.none_in(s, R1), hb3))),
-    nr, ls, ms, k, r3)

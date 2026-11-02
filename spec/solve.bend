@@ -1,14 +1,9 @@
 # bend-cad spec: what the solver's answers mean (DESIGN §10.2, §8.11).
-# Trusted: sk-13a v5 (SK13A-REVIEW.md, after four audits), with the
-# solve_* laws in ROADMAP.bend. sk-09's syntactic red witnesses (Why,
-# explained) are no longer part of it: they moved to lib/why.bend.
-#
-# Staged for sk-13b (PLAN-sk13b B4.0): drops and conflicts carry the
-# segments their direction-layer judgments need nonzero (nd), and the
-# direction layer's facts, derivations and refutations are defined here
-# (spec/dir.bend's calculus). Honest below does not read them yet: the
-# extended Honest is spec/_draft13b.bend's, and replaces this one at the
-# switch.
+# Trusted: sk-13a v5 (SK13A-REVIEW.md, after four audits), extended by
+# sk-13b's direction layer (PLAN-sk13b.md v2, read again before the
+# switch), with the solve_* laws in ROADMAP.bend. sk-09's syntactic red
+# witnesses (Why, explained) are no longer part of it: they moved to
+# lib/why.bend.
 #
 # The solver classifies each constraint (by its position in the sketch's
 # list of constraints, counting driven ones too, so that a repeated id
@@ -16,19 +11,24 @@
 # - red: made driven (Rec's driven flag; a driven constraint contributes
 #   no equations), with a reason: Over (one of its equations lies in a
 #   structurally over-determined set of its own and earlier solved
-#   equations) or Conflict (a degree-0 refutation with its support, kept
-#   constraints before it);
-# - amber: redundant: its equations follow from earlier solved ones and
-#   its side conditions from the premises before it;
+#   equations) or Conflict (a refutation of degree 0 or by directions with
+#   its support, kept constraints before it, and the segments a direction
+#   refutation needs nonzero, nd);
+# - amber: redundant: its equations follow from earlier ones and its side
+#   conditions from the premises before it;
 # - kept, with some equations perhaps dropped from the system solved.
-# The answer gives each constraint exactly one class (Kept, Amber, Over,
-# Conflict). Every judgment is a derivation in the layer's proof system
-# (degree 0: constant multipliers, Motzkin's form); Honest says each
-# constraint's class is the honest one given the classes before it, so the
-# sketch determines the classification (honest_unique). Structure is read
-# from what an equation depends on (its derivative is not identically 0),
-# not from how it is written. The semantic laws (solve_drop, solve_amber,
-# solve_conflict) follow.
+# Each dropped equation records its reason: a constant combination of
+# earlier solved equations, or a derivation in the direction layer
+# (spec/dir.bend), with exactly the segments it needs nonzero (nd). The
+# answer gives each constraint exactly one class (Kept, Amber, Over,
+# Conflict). Every judgment is a derivation in a proof system (degree 0:
+# constant multipliers, Motzkin's form; the direction layer's rules,
+# which hold where their nd is nonzero); Honest says each constraint's
+# class is the honest one given the classes before it, so the sketch
+# determines the classification (honest_unique). Structure is read from
+# what an equation depends on (its derivative is not identically 0), not
+# from how it is written. The semantic laws (solve_drop, solve_amber,
+# solve_conflict) follow, each where the nd it reads is nonzero.
 #
 # The solver may also pin variables: hold free degrees of freedom at the
 # drawing's values (radius 0). held says each pin is exactly at its drawn
@@ -817,16 +817,21 @@ def Matchable(+es: List<&2, E.QExpr>) -> Type:
 def Perfect(+es: List<&2, E.QExpr>, +vs: List<&2, Nat>, +m: List<&2, Nat>) -> Type:
   {band(eq(len(vs), len(m)), band(distinct(m), sub(m, vs))) == True{} : Bool} & DepAll(es, m)
 
-# Honest classifications (sk-13a), constraint by constraint
-# ---------------------------------------------------------
+# Honest classifications (sk-13a, extended by sk-13b), constraint by
+# constraint
+# -------------------------------------------------------------------
 # What the answer must be, stated for each constraint c given the classes
 # of the constraints before it, as exclusive cases, so the sketch decides
 # every class (honest_unique, by induction along the order):
-# - Conflict iff c with the premises before it has a degree-0 refutation
-#   (then with an irreducible support among them);
+# - Conflict iff c with the premises before it has a refutation, of degree
+#   0 or by directions (then with an irreducible support among them, and
+#   the nd a direction refutation needs);
 # - otherwise each equation of c is dropped iff it is a constant
 #   combination of the solved equations before c and c's own earlier
-#   equations not dropped;
+#   equations not dropped, or has a direction-layer derivation from every
+#   equation of the kept constraints before c and those (each drop
+#   recording its reason: the combination, or the derivation with the nd
+#   it needs);
 # - otherwise Over iff c's remaining equations with the solved ones before
 #   it contain a structurally over-determined set (by what the equations
 #   depend on);
@@ -1103,32 +1108,70 @@ def NoRefute2(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat) -> Type:
 # Drops
 # -----
 
-def drops_ok.mem(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, m: Bool, +k: Nat) -> Type:
+def drops_ok.mem(+sk: SK.Sketch, +cls: List<&2, Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, m: Bool, +k: Nat) -> Type:
   match m:
     case True{}:
-      Derivable(sk, red, ds, c, d, k)
+      Or(Derivable(sk, red, ds, c, d, k), &nd: List<&2, Nat> -> DirDerivable(sk, cls, red, c, d, k, nd))
     case False{}:
-      NotDerivable(sk, red, ds, c, d, k)
+      NotDerivable(sk, red, ds, c, d, k) & NotDirDerivable(sk, cls, red, c, d, k)
 
-def drops_ok.at(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, b: Bool, +k: Nat) -> Type:
+def drops_ok.at(+sk: SK.Sketch, +cls: List<&2, Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, b: Bool, +k: Nat) -> Type:
   match b:
     case True{}:
-      drops_ok.mem(sk, red, ds, c, d, mem(k, d), k)
+      drops_ok.mem(sk, cls, red, ds, c, d, mem(k, d), k)
     case False{}:
       {mem(k, d) == False{} : Bool}
 
-def drops_ok.go(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, own: List<&2, Nat>, +k: Nat) -> Type:
+def drops_ok.go(+sk: SK.Sketch, +cls: List<&2, Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, own: List<&2, Nat>, +k: Nat) -> Type:
   match own:
     case Nil{}:
       Unit
     case Con{o, t}:
-      drops_ok.at(sk, red, ds, c, d, eq(o, c), k) & drops_ok.go(sk, red, ds, c, d, t, 1n+k)
+      drops_ok.at(sk, cls, red, ds, c, d, eq(o, c), k) & drops_ok.go(sk, cls, red, ds, c, d, t, 1n+k)
 
 # d is exactly c's derivable equations: each equation of c is in d iff it
 # is a constant combination of the solved equations before c and c's own
-# earlier equations not in d; nothing else is in d
-def DropsOk(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>) -> Type:
-  {band(distinct(d), below(d, neqs(SK.Sketch.eqs(sk)))) == True{} : Bool} & drops_ok.go(sk, red, ds, c, d, owners(sk), 0n)
+# earlier equations not in d, or has a direction-layer derivation from
+# the equations of the kept constraints before c and those; nothing else
+# is in d
+def DropsOk(+sk: SK.Sketch, +cls: List<&2, Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>) -> Type:
+  {band(distinct(d), below(d, neqs(SK.Sketch.eqs(sk)))) == True{} : Bool} & drops_ok.go(sk, cls, red, ds, c, d, owners(sk), 0n)
+
+# position p is an equation that equation i of c may be combined from (in
+# basis): a solved equation of a constraint before c, or one of c's own
+# before i not in d
+def in_basis(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +i: Nat, +p: Nat) -> Bool:
+  band(lt(p, neqs(SK.Sketch.eqs(sk))), bor(band(lt(nth(owners(sk), p), c), band(bnot(mem(nth(owners(sk), p), red)), bnot(mem(p, ds)))), band(lt(p, i), band(eq(nth(owners(sk), p), c), bnot(mem(p, d))))))
+
+def in_basis.all(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +i: Nat, ms: List<&2, Mul>) -> Bool:
+  match ms:
+    case Nil{}:
+      True{}
+    case Con{Mul{+p, q}, t}:
+      band(in_basis(sk, red, ds, c, d, i, p), in_basis.all(sk, red, ds, c, d, i, t))
+
+# a drop's reason is its witness, and its nd is exactly what the witness
+# needs: for equation j, a constant combination of equations it may be
+# combined from that is the same polynomial as j, with no nd; or a
+# derivation from the facts it may read that is valid and proves j, with
+# the derivation's nd
+def why_ok(+sk: SK.Sketch, +cls: List<&2, Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +j: Nat, +nd: List<&2, Nat>, w: Why) -> Type:
+  match w:
+    case WLin{+ms}:
+      {in_basis.all(sk, red, ds, c, d, j, ms) == True{} : Bool} & (Ident(eqat(SK.Sketch.eqs(sk), j), mlin(SK.Sketch.eqs(sk), ms)) & {nd == Nil{} : List<&2, Nat>})
+    case WDer{+dv}:
+      DR.Valid(ents(sk), dfacts(sk, cls, red, c, d, j), ctx(sk, red, c), dv) & (Proves(ents(sk), dstat_of(ents(sk), kind_at(sk, c)), eqat(SK.Sketch.eqs(sk), j), DR.concl(ents(sk), dfacts(sk, cls, red, c, d, j), dv)) & {nd == DR.nd(ents(sk), dfacts(sk, cls, red, c, d, j), dv) : List<&2, Nat>})
+
+# each recorded drop's reason is its witness
+def drops_nd(+sk: SK.Sketch, +cls: List<&2, Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, dd: List<&2, Drop>) -> Type:
+  match dd:
+    case Nil{}:
+      Unit
+    case Con{Drop{+j, +nd, w}, t}:
+      why_ok(sk, cls, red, ds, c, d, j, nd, w) & drops_nd(sk, cls, red, ds, c, d, t)
+
+def DropsNd(+sk: SK.Sketch, +cls: List<&2, Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +dd: List<&2, Drop>) -> Type:
+  drops_nd(sk, cls, red, ds, c, drops(dd), dd)
 
 # the equations of an Over set: c's own not in d, or solved and earlier
 def clean(+own: List<&2, Nat>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +d: List<&2, Nat>, +c: Nat, s: List<&2, Nat>) -> Bool:
@@ -1142,22 +1185,35 @@ def clean(+own: List<&2, Nat>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +d: List
 def is_amberable(+sk: SK.Sketch, +c: Nat, +d: List<&2, Nat>) -> Bool:
   alldrop.go(owners(sk), d, c, 0n)
 
-# kept with the dropped equations d: no refutation, d exactly the
-# derivable ones, no over-determined set, and not amber (if every
-# equation is dropped, some side condition is not implied)
-def KeptOk(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>) -> Type:
-  NoRefute(sk, red, c) & (DropsOk(sk, red, ds, c, d) & (Matchable(SK.cat(presolved(sk, red, ds, c), own_rest(sk, c, d, neqs(SK.Sketch.eqs(sk))))) & ({is_amberable(sk, c, d) == True{} : Bool} -> &i: Nat -> ({lt(i, slen(csides(sk, [c]))) == True{} : Bool} & NotImplied(sk, red, c, i)))))
+# kept with the drops dd: no refutation of either kind, dd exactly the
+# derivable equations, each with its reason, no over-determined
+# set, and not amber (if every equation is dropped, some side condition
+# is not implied)
+def KeptOk(+sk: SK.Sketch, +cls: List<&2, Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +dd: List<&2, Drop>) -> Type:
+  NoRefute2(sk, red, c) & (DropsOk(sk, cls, red, ds, c, drops(dd)) & (DropsNd(sk, cls, red, ds, c, dd) & (Matchable(SK.cat(presolved(sk, red, ds, c), own_rest(sk, c, drops(dd), neqs(SK.Sketch.eqs(sk))))) & ({is_amberable(sk, c, drops(dd)) == True{} : Bool} -> &i: Nat -> ({lt(i, slen(csides(sk, [c]))) == True{} : Bool} & NotImplied(sk, red, c, i))))))
 
-# amber with the dropped equations d: no refutation, d exactly the
-# derivable ones, all of c's equations, every side implied
-def AmberOk(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>) -> Type:
-  NoRefute(sk, red, c) & (DropsOk(sk, red, ds, c, d) & ({is_amberable(sk, c, d) == True{} : Bool} & (@i: Nat -> {lt(i, slen(csides(sk, [c]))) == True{} : Bool} -> Implied(sk, red, c, i))))
+# each side condition of c from position i on (ss, the rest of c's
+# sides) is implied: one Implied per side, so that each can be used
+def implied.go(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, ss: List<&2, SK.Side>, +i: Nat) -> Type:
+  match ss:
+    case Nil{}:
+      Unit
+    case Con{s, t}:
+      Implied(sk, red, c, i) & implied.go(sk, red, c, t, 1n+i)
+
+def AllImplied(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat) -> Type:
+  implied.go(sk, red, c, csides(sk, [c]), 0n)
+
+# amber with the drops dd: no refutation, dd exactly the derivable
+# equations with their reasons, all of c's equations, every side implied
+def AmberOk(+sk: SK.Sketch, +cls: List<&2, Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +dd: List<&2, Drop>) -> Type:
+  NoRefute2(sk, red, c) & (DropsOk(sk, cls, red, ds, c, drops(dd)) & (DropsNd(sk, cls, red, ds, c, dd) & ({is_amberable(sk, c, drops(dd)) == True{} : Bool} & AllImplied(sk, red, c))))
 
 # Over with equation j in the over-determined set s over w: no
 # refutation, and with c's derivable equations d set aside, s is made of
 # c's other equations and earlier solved ones
-def OverOk(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +j: Nat, +s: List<&2, Nat>, +w: List<&2, Nat>) -> Type:
-  NoRefute(sk, red, c) & (&d: List<&2, Nat> -> (DropsOk(sk, red, ds, c, d) & {band(eq(nth(owners(sk), j), c), band(mem(j, s), clean(owners(sk), red, ds, d, c, s))) == True{} : Bool} & Overdet(SK.Sketch.eqs(sk), s, w)))
+def OverOk(+sk: SK.Sketch, +cls: List<&2, Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +j: Nat, +s: List<&2, Nat>, +w: List<&2, Nat>) -> Type:
+  NoRefute2(sk, red, c) & (&d: List<&2, Nat> -> (DropsOk(sk, cls, red, ds, c, d) & {band(eq(nth(owners(sk), j), c), band(mem(j, s), clean(owners(sk), red, ds, d, c, s))) == True{} : Bool} & Overdet(SK.Sketch.eqs(sk), s, w)))
 
 # a degree-0 refutation of c with the constraints cs, and none
 def Ref0(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>) -> Type:
@@ -1166,21 +1222,25 @@ def Ref0(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>) -> Type:
 def NoRef0(+sk: SK.Sketch, +c: Nat, +cs: List<&2, Nat>) -> Type:
   @ls: List<&2, S.Q> -> @ms: List<&2, S.Q> -> @k: S.Q -> Refutes0(eqs_of(sk, Con{c, cs}), SK.cats(csides(sk, Con{c, cs}), esides(sk)), ls, ms, k) -> Empty
 
-# Conflict with support s: kept, driving constraints before c; c and s
-# have a degree-0 refutation; without any one member of s they have none
-def ConflictOk(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>) -> Type:
-  {band(distinct(s), band(below(s, c), band(all_driving(sk, s), none_in(s, red)))) == True{} : Bool} & ((&ls: List<&2, S.Q> -> &ms: List<&2, S.Q> -> &k: S.Q -> Refutes0(eqs_of(sk, Con{c, s}), SK.cats(csides(sk, Con{c, s}), esides(sk)), ls, ms, k)) & (@m: Nat -> {mem(m, s) == True{} : Bool} -> @ls: List<&2, S.Q> -> @ms: List<&2, S.Q> -> @k: S.Q -> Refutes0(eqs_of(sk, Con{c, unmark(m, s)}), SK.cats(csides(sk, Con{c, unmark(m, s)}), esides(sk)), ls, ms, k) -> Empty))
+# Conflict with support s and nd: kept, driving constraints before c; c
+# and s have a refutation, of degree 0 with no nd, or by directions with
+# nd its nd (less the segments of Angles among them); without any one
+# member of s they have none of either kind (in c's own context, which
+# fixes the collapsed segments, so that refutability grows with the
+# constraints)
+def ConflictOk(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, +nd: List<&2, Nat>) -> Type:
+  {band(distinct(s), band(below(s, c), band(all_driving(sk, s), none_in(s, red)))) == True{} : Bool} & (Or(Ref0(sk, c, s) & {nd == Nil{} : List<&2, Nat>}, DirRefutes(sk, c, s, ctx(sk, red, c), nd)) & (@m: Nat -> {mem(m, s) == True{} : Bool} -> (NoRef0(sk, c, unmark(m, s)) & NoDirRef(sk, c, unmark(m, s), ctx(sk, red, c)))))
 
-def Fate.driving(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, k: Class) -> Type:
+def Fate.driving(+sk: SK.Sketch, +cls: List<&2, Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, k: Class) -> Type:
   match k:
     case Kept{+dc}:
-      KeptOk(sk, red, ds, c, drops(dc))
+      KeptOk(sk, cls, red, ds, c, dc)
     case Amber{+dc, rs}:
-      AmberOk(sk, red, ds, c, drops(dc))
+      AmberOk(sk, cls, red, ds, c, dc)
     case Over{+j, +s, +w}:
-      OverOk(sk, red, ds, c, j, s, w)
+      OverOk(sk, cls, red, ds, c, j, s, w)
     case Conflict{+s, +nd}:
-      ConflictOk(sk, red, c, s)
+      ConflictOk(sk, red, c, s, nd)
 
 # a driven constraint means nothing: kept, nothing dropped
 def Fate.driven(k: Class) -> Type:
@@ -1194,16 +1254,16 @@ def Fate.driven(k: Class) -> Type:
     case Conflict{s, nd}:
       Empty
 
-def Fate.pick(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, b: Bool, +k: Class) -> Type:
+def Fate.pick(+sk: SK.Sketch, +cls: List<&2, Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, b: Bool, +k: Class) -> Type:
   match b:
     case True{}:
       Fate.driven(k)
     case False{}:
-      Fate.driving(sk, red, ds, c, k)
+      Fate.driving(sk, cls, red, ds, c, k)
 
 # the constraint at position c has its honest class, given the others'
 def Fate(+sk: SK.Sketch, +cls: List<&2, Class>, +c: Nat) -> Type:
-  Fate.pick(sk, reds(cls), dropped(cls), c, driven(sk, c), class_at(cls, c))
+  Fate.pick(sk, cls, reds(cls), dropped(cls), c, driven(sk, c), class_at(cls, c))
 
 def Honest.go(+sk: SK.Sketch, +cls: List<&2, Class>, n: Nat, +c: Nat) -> Type:
   match n:

@@ -1,9 +1,9 @@
-# bend-cad: the draft word solver (lib/dwfast.bend) returns exactly what
-# the draft solver (lib/dsolve.bend) returns (PLAN-sk13b B5.5, fast_solve
+# bend-cad: the fast solver (lib/fast.bend) returns exactly what the
+# solver (lib/solve.bend) returns (ROADMAP: fast_solve; PLAN-sk13b B5.5,
 # over the new pass), for any computing numbers K with the proposer's
 # operations W and laws R relating them to KI.dnum(). As lib/fastpf.bend:
 # the proposer gives numer's plan through the map, the verdict on the
-# mapped answer is the draft's (sk-13w's final_c, and the nd sides checked
+# mapped answer is SO.final's (sk-13w's final_c, and the nd sides checked
 # through the map like the other sides), the loop and the answer follow,
 # and the new pass run once (walk22) gives its classes and end state.
 #
@@ -35,8 +35,6 @@ import ./pass.bend as PA
 import ./dclose.bend as DC
 import ./dconflict.bend as DCF
 import ./dpass.bend as DPS
-import ./dsolve.bend as DSO
-import ./dwfast.bend as DWF
 
 @MACRO KWR ~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>
 @MACRO T ~K, ~W, ~R
@@ -57,12 +55,12 @@ import ./dwfast.bend as DWF
 @MACRO NDL PL.check_sides(~K, $NDS, $hv gc), $hv gr))
 
 # the verdict in K on the mapped answer is the draft's
-def final2_c($KWR, +sk: SK.Sketch, +g0: $DV, +ok: Bool, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +gc: $DV, +gr: $DV, +p: $DP) -> {DWF.final2($G, sk, g0, $FOUT) == DSO.final2(sk, g0, $OUT) : Bool}:
+def final2_c($KWR, +sk: SK.Sketch, +g0: $DV, +ok: Bool, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +gc: $DV, +gr: $DV, +p: $DP) -> {FS.final($G, sk, g0, $FOUT) == SO.final(sk, g0, $OUT) : Bool}:
   %FP.final_c($T, sk, g0, ok, cls, pins, gc, gr, p) : {KA.band($NDL, FS.checks($G, sk, g0, $FOUT)) == KA.band(PL.check_sides(~KI.dnum(), $NDS, gc, gr), _) : Bool}
   %PH.check_sides_h($D, $NDS, gc, gr) : {KA.band($NDL, FS.checks($G, sk, g0, $FOUT)) == KA.band(_, FS.checks($G, sk, g0, $FOUT)) : Bool}
   {==}
 
-def accept2_t($KWR, m: NU.PR, +sk: SK.Sketch, +g0: $DV, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>) -> {DWF.accept2($G, GM.hpr($HH, m), sk, g0, cls, pins) == DSO.accept2(m, sk, g0, cls, pins) : Bool}:
+def accept2_t($KWR, m: NU.PR, +sk: SK.Sketch, +g0: $DV, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>) -> {FS.accept($G, GM.hpr($HH, m), sk, g0, cls, pins) == SO.accept(m, sk, g0, cls, pins) : Bool}:
   match m:
     case NU.POk{NU.NP{+plan, +gc, +gr}}:
       final2_c($T, sk, g0, True{}, cls, pins, gc, gr, plan)
@@ -75,31 +73,31 @@ def accept2_t($KWR, m: NU.PR, +sk: SK.Sketch, +g0: $DV, +cls: List<&2, SV.Class>
 # ------------------
 
 @MACRO GPL GN.plan($G, es, nv, skel, $hv g0), p)
-@MACRO PLL DWF.ploop2($G, t, DWF.accept2($G, $GPL, sk, g0, cls, pins), $GPL, sk, g0, $hv g0), cls, pins, es, nv, skel)
+@MACRO PLL FS.ploop($G, t, FS.accept($G, $GPL, sk, g0, cls, pins), $GPL, sk, g0, $hv g0), cls, pins, es, nv, skel)
 @MACRO NPL NU.plan(es, nv, skel, g0, p)
 
-def ploop2_t($KWR, ps: List<&2, Nat>, ok: Bool, cur: NU.PR, +sk: SK.Sketch, +g0: $DV, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {DWF.ploop2($G, ps, ok, GM.hpr($HH, cur), sk, g0, $hv g0), cls, pins, es, nv, skel) == FP.hrun($HH, DSO.ploop2(ps, ok, cur, sk, g0, cls, pins, es, nv, skel)) : FS.FRun<K>}:
+def ploop2_t($KWR, ps: List<&2, Nat>, ok: Bool, cur: NU.PR, +sk: SK.Sketch, +g0: $DV, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {FS.ploop($G, ps, ok, GM.hpr($HH, cur), sk, g0, $hv g0), cls, pins, es, nv, skel) == FP.hrun($HH, SO.ploop(ps, ok, cur, sk, g0, cls, pins, es, nv, skel)) : FS.FRun<K>}:
   match ps ok:
     case Nil{} ok:
       {==}
     case Con{p, t} True{}:
       {==}
     case Con{+p, +t} False{}:
-      %ploop2_t($T, t, DSO.accept2($NPL, sk, g0, cls, pins), $NPL, sk, g0, cls, pins, es, nv, skel) : {$PLL == _ : FS.FRun<K>}
-      %accept2_t($T, $NPL, sk, g0, cls, pins) : {$PLL == DWF.ploop2($G, t, _, GM.hpr($HH, $NPL), sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
-      %GQ.plan_t($T, es, nv, skel, g0, p) : {$PLL == DWF.ploop2($G, t, DWF.accept2($G, _, sk, g0, cls, pins), GM.hpr($HH, $NPL), sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
-      %GQ.plan_t($T, es, nv, skel, g0, p) : {$PLL == DWF.ploop2($G, t, DWF.accept2($G, $GPL, sk, g0, cls, pins), _, sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
+      %ploop2_t($T, t, SO.accept($NPL, sk, g0, cls, pins), $NPL, sk, g0, cls, pins, es, nv, skel) : {$PLL == _ : FS.FRun<K>}
+      %accept2_t($T, $NPL, sk, g0, cls, pins) : {$PLL == FS.ploop($G, t, _, GM.hpr($HH, $NPL), sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
+      %GQ.plan_t($T, es, nv, skel, g0, p) : {$PLL == FS.ploop($G, t, FS.accept($G, _, sk, g0, cls, pins), GM.hpr($HH, $NPL), sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
+      %GQ.plan_t($T, es, nv, skel, g0, p) : {$PLL == FS.ploop($G, t, FS.accept($G, $GPL, sk, g0, cls, pins), _, sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
       {==}
 
-def start2_t($KWR, ps: List<&2, Nat>, +sk: SK.Sketch, +g0: $DV, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {DWF.ploop2.start($G, ps, sk, g0, $hv g0), cls, pins, es, nv, skel) == FP.hrun($HH, DSO.ploop2.start(ps, sk, g0, cls, pins, es, nv, skel)) : FS.FRun<K>}:
+def start2_t($KWR, ps: List<&2, Nat>, +sk: SK.Sketch, +g0: $DV, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {FS.ploop.start($G, ps, sk, g0, $hv g0), cls, pins, es, nv, skel) == FP.hrun($HH, SO.ploop.start(ps, sk, g0, cls, pins, es, nv, skel)) : FS.FRun<K>}:
   match ps:
     case Nil{}:
       {==}
     case Con{+p, +t}:
-      %ploop2_t($T, t, DSO.accept2($NPL, sk, g0, cls, pins), $NPL, sk, g0, cls, pins, es, nv, skel) : {$PLL == _ : FS.FRun<K>}
-      %accept2_t($T, $NPL, sk, g0, cls, pins) : {$PLL == DWF.ploop2($G, t, _, GM.hpr($HH, $NPL), sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
-      %GQ.plan_t($T, es, nv, skel, g0, p) : {$PLL == DWF.ploop2($G, t, DWF.accept2($G, _, sk, g0, cls, pins), GM.hpr($HH, $NPL), sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
-      %GQ.plan_t($T, es, nv, skel, g0, p) : {$PLL == DWF.ploop2($G, t, DWF.accept2($G, $GPL, sk, g0, cls, pins), _, sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
+      %ploop2_t($T, t, SO.accept($NPL, sk, g0, cls, pins), $NPL, sk, g0, cls, pins, es, nv, skel) : {$PLL == _ : FS.FRun<K>}
+      %accept2_t($T, $NPL, sk, g0, cls, pins) : {$PLL == FS.ploop($G, t, _, GM.hpr($HH, $NPL), sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
+      %GQ.plan_t($T, es, nv, skel, g0, p) : {$PLL == FS.ploop($G, t, FS.accept($G, _, sk, g0, cls, pins), GM.hpr($HH, $NPL), sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
+      %GQ.plan_t($T, es, nv, skel, g0, p) : {$PLL == FS.ploop($G, t, FS.accept($G, $GPL, sk, g0, cls, pins), _, sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
       {==}
 
 # The pass, once
@@ -113,28 +111,28 @@ def start2_t($KWR, ps: List<&2, Nat>, +sk: SK.Sketch, +g0: $DV, +cls: List<&2, S
 @MACRO WN DPS.wnext(SV.is_red(PA.PO.k($ONE)), $WC, DC.wk.next($FOA, SV.rfacts(sk, Con{i, DPS.pkb(st)}), $WC))
 @MACRO KN SV.Kept{Nil{}}
 
-def walk22_cls(rs: List<&2, SK.Rec>, $WP, +i: Nat, +st: PA.PS, +cls: List<&2, SV.Class>, +W: DC.WK) -> {FS.PW.cls(DWF.walk22(rs, $WA, i, st, cls, W)) == DPS.pass2(rs, $WA, i, st, cls, W) : List<&2, SV.Class>}:
+def walk22_cls(rs: List<&2, SK.Rec>, $WP, +i: Nat, +st: PA.PS, +cls: List<&2, SV.Class>, +W: DC.WK) -> {FS.PW.cls(FS.walk2(rs, $WA, i, st, cls, W)) == DPS.pass2(rs, $WA, i, st, cls, W) : List<&2, SV.Class>}:
   match rs:
     case Nil{}:
       {==}
     case Con{SK.Rec{id, True{}, k}, +t}:
-      %FP.cons_cls($KN, DWF.walk22(t, $WA, 1n+i, st, DPS.csnoc(cls, $KN), W)) : {_ == Con{$KN, DPS.pass2(t, $WA, 1n+i, st, DPS.csnoc(cls, $KN), W)} : List<&2, SV.Class>}
-      %walk22_cls(t, $WA, 1n+i, st, DPS.csnoc(cls, $KN), W) : {Con{$KN, FS.PW.cls(DWF.walk22(t, $WA, 1n+i, st, DPS.csnoc(cls, $KN), W))} == Con{$KN, _} : List<&2, SV.Class>}
+      %FP.cons_cls($KN, FS.walk2(t, $WA, 1n+i, st, DPS.csnoc(cls, $KN), W)) : {_ == Con{$KN, DPS.pass2(t, $WA, 1n+i, st, DPS.csnoc(cls, $KN), W)} : List<&2, SV.Class>}
+      %walk22_cls(t, $WA, 1n+i, st, DPS.csnoc(cls, $KN), W) : {Con{$KN, FS.PW.cls(FS.walk2(t, $WA, 1n+i, st, DPS.csnoc(cls, $KN), W))} == Con{$KN, _} : List<&2, SV.Class>}
       {==}
     case Con{SK.Rec{id, False{}, k}, +t}:
-      %FP.cons_cls(PA.PO.k($ONE), DWF.walk22(t, $WA, 1n+i, PA.PO.st($ONE), DPS.csnoc(cls, PA.PO.k($ONE)), $WN)) : {_ == Con{PA.PO.k($ONE), DPS.pass2(t, $WA, 1n+i, PA.PO.st($ONE), DPS.csnoc(cls, PA.PO.k($ONE)), $WN)} : List<&2, SV.Class>}
-      %walk22_cls(t, $WA, 1n+i, PA.PO.st($ONE), DPS.csnoc(cls, PA.PO.k($ONE)), $WN) : {Con{PA.PO.k($ONE), FS.PW.cls(DWF.walk22(t, $WA, 1n+i, PA.PO.st($ONE), DPS.csnoc(cls, PA.PO.k($ONE)), $WN))} == Con{PA.PO.k($ONE), _} : List<&2, SV.Class>}
+      %FP.cons_cls(PA.PO.k($ONE), FS.walk2(t, $WA, 1n+i, PA.PO.st($ONE), DPS.csnoc(cls, PA.PO.k($ONE)), $WN)) : {_ == Con{PA.PO.k($ONE), DPS.pass2(t, $WA, 1n+i, PA.PO.st($ONE), DPS.csnoc(cls, PA.PO.k($ONE)), $WN)} : List<&2, SV.Class>}
+      %walk22_cls(t, $WA, 1n+i, PA.PO.st($ONE), DPS.csnoc(cls, PA.PO.k($ONE)), $WN) : {Con{PA.PO.k($ONE), FS.PW.cls(FS.walk2(t, $WA, 1n+i, PA.PO.st($ONE), DPS.csnoc(cls, PA.PO.k($ONE)), $WN))} == Con{PA.PO.k($ONE), _} : List<&2, SV.Class>}
       {==}
 
-def walk22_st(rs: List<&2, SK.Rec>, $WP, +i: Nat, +st: PA.PS, +cls: List<&2, SV.Class>, +W: DC.WK) -> {FS.PW.st(DWF.walk22(rs, $WA, i, st, cls, W)) == DPS.pass2_st(rs, $WA, i, st, cls, W) : PA.PS}:
+def walk22_st(rs: List<&2, SK.Rec>, $WP, +i: Nat, +st: PA.PS, +cls: List<&2, SV.Class>, +W: DC.WK) -> {FS.PW.st(FS.walk2(rs, $WA, i, st, cls, W)) == DPS.pass2_st(rs, $WA, i, st, cls, W) : PA.PS}:
   match rs:
     case Nil{}:
       {==}
     case Con{SK.Rec{id, True{}, k}, +t}:
-      %FP.cons_st($KN, DWF.walk22(t, $WA, 1n+i, st, DPS.csnoc(cls, $KN), W)) : {_ == DPS.pass2_st(t, $WA, 1n+i, st, DPS.csnoc(cls, $KN), W) : PA.PS}
+      %FP.cons_st($KN, FS.walk2(t, $WA, 1n+i, st, DPS.csnoc(cls, $KN), W)) : {_ == DPS.pass2_st(t, $WA, 1n+i, st, DPS.csnoc(cls, $KN), W) : PA.PS}
       walk22_st(t, $WA, 1n+i, st, DPS.csnoc(cls, $KN), W)
     case Con{SK.Rec{id, False{}, k}, +t}:
-      %FP.cons_st(PA.PO.k($ONE), DWF.walk22(t, $WA, 1n+i, PA.PO.st($ONE), DPS.csnoc(cls, PA.PO.k($ONE)), $WN)) : {_ == DPS.pass2_st(t, $WA, 1n+i, PA.PO.st($ONE), DPS.csnoc(cls, PA.PO.k($ONE)), $WN) : PA.PS}
+      %FP.cons_st(PA.PO.k($ONE), FS.walk2(t, $WA, 1n+i, PA.PO.st($ONE), DPS.csnoc(cls, PA.PO.k($ONE)), $WN)) : {_ == DPS.pass2_st(t, $WA, 1n+i, PA.PO.st($ONE), DPS.csnoc(cls, PA.PO.k($ONE)), $WN) : PA.PS}
       walk22_st(t, $WA, 1n+i, PA.PO.st($ONE), DPS.csnoc(cls, PA.PO.k($ONE)), $WN)
 
 # The solver
@@ -142,27 +140,27 @@ def walk22_st(rs: List<&2, SK.Rec>, $WP, +i: Nat, +st: PA.PS, +cls: List<&2, SV.
 
 @MACRO EQ SK.Sketch.eqs(sk)
 @MACRO RA PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)), Nil{}, DC.wk0(SV.ents(sk), DCF.tv(sk), DC.SP{Nil{}, Nil{}})
-@MACRO W2 DWF.walk22($RA)
+@MACRO W2 FS.walk2($RA)
 @MACRO KV PA.kvs(PA.dadjs($EQ), ST.len.q($EQ), PA.nvars(sk), PA.PS.bp(_))
 
-# DWF.solve_lw2 is DSO.solve_lw2's form: the pass's results once, each
+# FS.solve_lw is SO.solve_lw's form: the pass's results once, each
 # named once
-def solve_lw2_unf($KWR, +sk: SK.Sketch, +g0: $DV, +l: Nat, +w: Nat) -> {DWF.solve_lw2($G, sk, g0, l, w) == FS.answer($G, DSO.cls_of2(sk), DSO.pins_of2(sk), DWF.ploop2.start($G, SO.precisions(l, w), sk, g0, FS.ofdv($G, g0), DSO.cls_of2(sk), DSO.pins_of2(sk), DSO.kept2(sk), SO.nvars(sk), DSO.skel_of2(sk))) : SO.Out}:
-  %walk22_cls($RA) : {DWF.solve_lw2($G, sk, g0, l, w) == FS.answer($G, _, DPS.pins2(sk), DWF.ploop2.start($G, SO.precisions(l, w), sk, g0, FS.ofdv($G, g0), _, DPS.pins2(sk), SV.solved(sk, SV.reds(_), SV.dropped(_)), PA.nvars(sk), DPS.skel2(sk))) : SO.Out}
-  %walk22_st($RA) : {DWF.solve_lw2($G, sk, g0, l, w) == FS.answer($G, FS.PW.cls($W2), ST.KD.red($KV), DWF.ploop2.start($G, SO.precisions(l, w), sk, g0, FS.ofdv($G, g0), FS.PW.cls($W2), ST.KD.red($KV), SV.solved(sk, SV.reds(FS.PW.cls($W2)), SV.dropped(FS.PW.cls($W2))), PA.nvars(sk), ST.renum(ST.skel.kd(ST.adj($EQ), ST.len.q($EQ), PA.nvars(sk), PA.PS.bp(_), $KV), PA.PS.bp(_)))) : SO.Out}
+def solve_lw2_unf($KWR, +sk: SK.Sketch, +g0: $DV, +l: Nat, +w: Nat) -> {FS.solve_lw($G, sk, g0, l, w) == FS.answer($G, SO.cls_of(sk), SO.pins_of(sk), FS.ploop.start($G, SO.precisions(l, w), sk, g0, FS.ofdv($G, g0), SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk))) : SO.Out}:
+  %walk22_cls($RA) : {FS.solve_lw($G, sk, g0, l, w) == FS.answer($G, _, DPS.pins2(sk), FS.ploop.start($G, SO.precisions(l, w), sk, g0, FS.ofdv($G, g0), _, DPS.pins2(sk), SV.solved(sk, SV.reds(_), SV.dropped(_)), PA.nvars(sk), DPS.skel2(sk))) : SO.Out}
+  %walk22_st($RA) : {FS.solve_lw($G, sk, g0, l, w) == FS.answer($G, FS.PW.cls($W2), ST.KD.red($KV), FS.ploop.start($G, SO.precisions(l, w), sk, g0, FS.ofdv($G, g0), FS.PW.cls($W2), ST.KD.red($KV), SV.solved(sk, SV.reds(FS.PW.cls($W2)), SV.dropped(FS.PW.cls($W2))), PA.nvars(sk), ST.renum(ST.skel.kd(ST.adj($EQ), ST.len.q($EQ), PA.nvars(sk), PA.PS.bp(_), $KV), PA.PS.bp(_)))) : SO.Out}
   {==}
 
-@MACRO SLL FS.answer($G, cls, pins, DWF.ploop2.start($G, ps, sk, g0, FS.ofdv($G, g0), cls, pins, es, nv, skel))
+@MACRO SLL FS.answer($G, cls, pins, FS.ploop.start($G, ps, sk, g0, FS.ofdv($G, g0), cls, pins, es, nv, skel))
 
-def solve_core2($KWR, +sk: SK.Sketch, +g0: $DV, +ps: List<&2, Nat>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {$SLL == SO.answer(cls, pins, DSO.ploop2.start(ps, sk, g0, cls, pins, es, nv, skel)) : SO.Out}:
-  %FP.answer_t($T, cls, pins, DSO.ploop2.start(ps, sk, g0, cls, pins, es, nv, skel)) : {$SLL == _ : SO.Out}
+def solve_core2($KWR, +sk: SK.Sketch, +g0: $DV, +ps: List<&2, Nat>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {$SLL == SO.answer(cls, pins, SO.ploop.start(ps, sk, g0, cls, pins, es, nv, skel)) : SO.Out}:
+  %FP.answer_t($T, cls, pins, SO.ploop.start(ps, sk, g0, cls, pins, es, nv, skel)) : {$SLL == _ : SO.Out}
   %start2_t($T, ps, sk, g0, cls, pins, es, nv, skel) : {$SLL == FS.answer($G, cls, pins, _) : SO.Out}
-  %FP.ofdv_t($T, g0) : {$SLL == FS.answer($G, cls, pins, DWF.ploop2.start($G, ps, sk, g0, _, cls, pins, es, nv, skel)) : SO.Out}
+  %FP.ofdv_t($T, g0) : {$SLL == FS.answer($G, cls, pins, FS.ploop.start($G, ps, sk, g0, _, cls, pins, es, nv, skel)) : SO.Out}
   {==}
 
-def solve_lw2_eq($KWR, +sk: SK.Sketch, +g0: $DV, +l: Nat, +w: Nat) -> {DWF.solve_lw2($G, sk, g0, l, w) == DSO.solve_lw2(sk, g0, l, w) : SO.Out}:
-  Equal.trans(SO.Out, DWF.solve_lw2($G, sk, g0, l, w), FS.answer($G, DSO.cls_of2(sk), DSO.pins_of2(sk), DWF.ploop2.start($G, SO.precisions(l, w), sk, g0, FS.ofdv($G, g0), DSO.cls_of2(sk), DSO.pins_of2(sk), DSO.kept2(sk), SO.nvars(sk), DSO.skel_of2(sk))), DSO.solve_lw2(sk, g0, l, w), solve_lw2_unf($T, sk, g0, l, w), solve_core2($T, sk, g0, SO.precisions(l, w), DSO.cls_of2(sk), DSO.pins_of2(sk), DSO.kept2(sk), SO.nvars(sk), DSO.skel_of2(sk)))
+def solve_lw2_eq($KWR, +sk: SK.Sketch, +g0: $DV, +l: Nat, +w: Nat) -> {FS.solve_lw($G, sk, g0, l, w) == SO.solve_lw(sk, g0, l, w) : SO.Out}:
+  Equal.trans(SO.Out, FS.solve_lw($G, sk, g0, l, w), FS.answer($G, SO.cls_of(sk), SO.pins_of(sk), FS.ploop.start($G, SO.precisions(l, w), sk, g0, FS.ofdv($G, g0), SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk))), SO.solve_lw(sk, g0, l, w), solve_lw2_unf($T, sk, g0, l, w), solve_core2($T, sk, g0, SO.precisions(l, w), SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk)))
 
-# the draft word solver's answer is the draft solver's
-def solve_l2_eq($KWR, +sk: SK.Sketch, +g0: $DV, +l: Nat) -> {DWF.solve_l2($G, sk, g0, l) == DSO.solve_l2(sk, g0, l) : SO.Out}:
+# the word solver's answer is the solver's
+def solve_l2_eq($KWR, +sk: SK.Sketch, +g0: $DV, +l: Nat) -> {FS.solve_l($G, sk, g0, l) == SO.solve_l(sk, g0, l) : SO.Out}:
   solve_lw2_eq($T, sk, g0, l, 7n)

@@ -1,7 +1,7 @@
 # bend-cad: the single pass with the direction layer (PLAN-sk13b B4.4,
 # B4.5). The constraints are walked once, in order, as in lib/pass.bend;
-# each driving constraint c gets the honest class of the extended Honest
-# (spec/_draft13b.bend) given the classes before it:
+# each driving constraint c gets its honest class (spec/solve.bend:
+# Honest) given the classes before it:
 # - Conflict, if c with the kept constraints before it refutes at degree 0
 #   or by directions (lib/dconflict.bend), with the generalized deletion
 #   filter's support and its nd;

@@ -1,6 +1,11 @@
 # bend-cad: the single pass is honest (PLAN-sk13a S4, law 4). Proofs
 # only.
 #
+# Since the sk-13b switch (2026-11-02), what this file proved about
+# sk-13a's pass, Honest or solver is proven in lib/dpasspf.bend; what is
+# left here is what that proof reuses, and the description below is of
+# the sk-13a proof.
+#
 # Honest(sk, classes(sk)): each constraint's class is the honest one
 # given the final classes' red positions and dropped equations. The pass
 # never sees the final lists; its state is related to them below c:
@@ -535,10 +540,6 @@ def pinv_p(+sk: SK.Sketch, +R: List<&2, Nat>, +D: List<&2, Nat>, +i: Nat, +st: P
   (h5, h6) = q4
   h6
 
-# the pass's class at c and its state after
-def StepRes(+sk: SK.Sketch, +i: Nat, +o: PA.PO) -> Type:
-  SV.Fate.driving(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PO.k(o)) & PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), 1n+i, PA.PO.st(o))
-
 def red_of(+sk: SK.Sketch, +i: Nat, +K: SV.Class, +hK: {SV.class_at(PA.classes(sk), i) == K : SV.Class}) -> {SV.mem(i, SV.reds(PA.classes(sk))) == SV.is_red(K) : Bool}:
   Equal.trans(Bool, SV.mem(i, SV.reds(PA.classes(sk))), SV.is_red(SV.class_at(PA.classes(sk), i)), SV.is_red(K), CL.mem_reds(PA.classes(sk), i), Equal.cong(SV.Class, Bool, z => SV.is_red(z), SV.class_at(PA.classes(sk), i), K, hK))
 
@@ -556,26 +557,9 @@ def onek_red(a: Bool, +sk: SK.Sketch, +kb: List<&2, Nat>, +c: Nat, +dd: List<&2,
     case False{}:
       {==}
 
-def step.conf(+sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +hi: PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}), +hr: {CO.refutable(sk, i, kb) == True{} : Bool},
-  +hK: {SV.class_at(PA.classes(sk), i) == SV.Conflict{CO.support(sk, i, kb), Nil{}} : SV.Class}) -> StepRes(sk, i, PA.PO{SV.Conflict{CO.support(sk, i, kb), Nil{}}, PA.PS{kb, rows, B, bp, vm}}):
-  +hred = red_of(sk, i, SV.Conflict{CO.support(sk, i, kb), Nil{}}, hK)
-  (PR.conflict(sk, SV.reds(PA.classes(sk)), i, kb, pinv_kbp(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}, hi), hr), step_same(sk, i, PA.PS{kb, rows, B, bp, vm}, hi, SP.zc_red(SV.owners(sk), i, SV.reds(PA.classes(sk)), hred), dcond_f(sk, SV.reds(PA.classes(sk)), i, hred)))
-
 def bpus_dist(+sk: SK.Sketch, +i: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +us: List<&2, Nat>, +hb: {pib(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, rows, B, bp, vm) == True{} : Bool},
   +hud: {SV.distinct(us) == True{} : Bool}, +hown: {KB.allo(SV.owners(sk), us, i) == True{} : Bool}) -> {SV.distinct(SV.cat(bp, us)) == True{} : Bool}:
   dist_cat(bp, us, pib_bpd(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, rows, B, bp, vm, hb), hud, nonein_pre(bp, SV.owners(sk), SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, us, pib_pre(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, rows, B, bp, vm, hb), hown))
-
-def step.over(+sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +rows2: List<&2, EL.Row>, +B2: List<&2, E.QExpr>, +bp2: List<&2, Nat>, +dd: List<&2, SV.Drop>, +us: List<&2, Nat>, +j: Nat, +s: List<&2, Nat>, +x: List<&2, Nat>,
-  +hi: PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}), hdo: SV.DropsOk(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, SV.drops(dd)), +hcb: {CW.cwb(sk, i, SV.neqs(SK.Sketch.eqs(sk)), rows2, B2, dd, us) == True{} : Bool}, hnr: SV.NoRefute(sk, SV.reds(PA.classes(sk)), i),
-  gr: GM.GRes(SK.Sketch.eqs(sk), PA.nvars(sk), bp, us, ST.GFail{ST.Red{j, s, x}}), +hK: {SV.class_at(PA.classes(sk), i) == SV.Over{j, s, x} : SV.Class}) -> StepRes(sk, i, PA.PO{SV.Over{j, s, x}, PA.PS{kb, rows, B, bp, vm}}):
-  (+hb2, hov) = gr
-  +hred = red_of(sk, i, SV.Over{j, s, x}, hK)
-  +hr2 = L.band_r(SV.mem(j, us), SV.band(SV.mem(j, s), L.subl(s, SV.cat(bp, us))), hb2)
-  ((hnr, (SV.drops(dd), (hdo, (L.band_i(SV.eq(SV.nth(SV.owners(sk), j), i), SV.band(SV.mem(j, s), SV.clean(SV.owners(sk), SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), SV.drops(dd), i, s)),
-      allo_mem(SV.owners(sk), us, i, j, CW.cwb_uown(sk, i, SV.neqs(SK.Sketch.eqs(sk)), rows2, B2, dd, us, hcb), L.band_l(SV.mem(j, us), SV.band(SV.mem(j, s), L.subl(s, SV.cat(bp, us))), hb2)),
-      L.band_i(SV.mem(j, s), SV.clean(SV.owners(sk), SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), SV.drops(dd), i, s), L.band_l(SV.mem(j, s), L.subl(s, SV.cat(bp, us)), hr2),
-        clean_of(s, SV.owners(sk), SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), SV.drops(dd), i, bp, us, L.band_r(SV.mem(j, s), L.subl(s, SV.cat(bp, us)), hr2), pib_pre(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, rows, B, bp, vm, pinv_b(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}, hi)), CW.cwb_uown(sk, i, SV.neqs(SK.Sketch.eqs(sk)), rows2, B2, dd, us, hcb), CW.cwb_udisj(sk, i, SV.neqs(SK.Sketch.eqs(sk)), rows2, B2, dd, us, hcb)))), hov)))),
-    step_same(sk, i, PA.PS{kb, rows, B, bp, vm}, hi, SP.zc_red(SV.owners(sk), i, SV.reds(PA.classes(sk)), hred), dcond_f(sk, SV.reds(PA.classes(sk)), i, hred)))
 
 
 def imp_at(+sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +rs: List<&2, SV.Ref>, +em: {PA.srefs(SV.csides(sk, [i]), sk, kb, i, 0n) == Some{rs} : Maybe<&2, List<&2, SV.Ref>>}, +hkb: {kb == SV.kept_before(sk, SV.reds(PA.classes(sk)), i) : List<&2, Nat>}, +j: Nat, hj: {SV.lt(j, SV.slen(SV.csides(sk, [i]))) == True{} : Bool})
@@ -589,27 +573,6 @@ def notimp(+sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +em: {PA.srefs(SV.csides
 
 def noamb(+sk: SK.Sketch, +i: Nat, +dd: List<&2, SV.Drop>, +ea: {SV.is_amberable(sk, i, SV.drops(dd)) == False{} : Bool}, ha: {SV.is_amberable(sk, i, SV.drops(dd)) == True{} : Bool}) -> &j: Nat -> ({SV.lt(j, SV.slen(SV.csides(sk, [i]))) == True{} : Bool} & SV.NotImplied(sk, SV.reds(PA.classes(sk)), i, j)):
   absurd(&j: Nat -> ({SV.lt(j, SV.slen(SV.csides(sk, [i]))) == True{} : Bool} & SV.NotImplied(sk, SV.reds(PA.classes(sk)), i, j)), KA.tf(Equal.trans(Bool, True{}, SV.is_amberable(sk, i, SV.drops(dd)), False{}, Equal.sym(Bool, SV.is_amberable(sk, i, SV.drops(dd)), True{}, ha), ea)))
-
-def step.a(m: Maybe<&2, List<&2, SV.Ref>>, +sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +dd: List<&2, SV.Drop>, +em: {PA.srefs(SV.csides(sk, [i]), sk, kb, i, 0n) == m : Maybe<&2, List<&2, SV.Ref>>}, +ea: {SV.is_amberable(sk, i, SV.drops(dd)) == True{} : Bool},
-  hnr: SV.NoRefute(sk, SV.reds(PA.classes(sk)), i), hdo: SV.DropsOk(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, SV.drops(dd)), hmt: SV.Matchable(SK.cat(SV.presolved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i), SV.own_rest(sk, i, SV.drops(dd), SV.neqs(SK.Sketch.eqs(sk))))), +hkb: {kb == SV.kept_before(sk, SV.reds(PA.classes(sk)), i) : List<&2, Nat>})
-  -> SV.Fate.driving(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.one.a(PA.srefs(SV.csides(sk, [i]), sk, kb, i, 0n), dd)):
-  match m:
-    case None{}:
-      %Equal.sym(Maybe<&2, List<&2, SV.Ref>>, PA.srefs(SV.csides(sk, [i]), sk, kb, i, 0n), None{}, em) : SV.Fate.driving(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.one.a(_, dd))
-      (hnr, (hdo, (hmt, ha => notimp(sk, i, kb, em, hkb))))
-    case Some{+rs}:
-      %Equal.sym(Maybe<&2, List<&2, SV.Ref>>, PA.srefs(SV.csides(sk, [i]), sk, kb, i, 0n), Some{rs}, em) : SV.Fate.driving(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.one.a(_, dd))
-      (hnr, (hdo, (ea, j => hj => imp_at(sk, i, kb, rs, em, hkb, j, hj))))
-
-def step.k(a: Bool, +sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +dd: List<&2, SV.Drop>, +ea: {SV.is_amberable(sk, i, SV.drops(dd)) == a : Bool}, hnr: SV.NoRefute(sk, SV.reds(PA.classes(sk)), i), hdo: SV.DropsOk(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, SV.drops(dd)), hmt: SV.Matchable(SK.cat(SV.presolved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i), SV.own_rest(sk, i, SV.drops(dd), SV.neqs(SK.Sketch.eqs(sk))))),
-  +hkb: {kb == SV.kept_before(sk, SV.reds(PA.classes(sk)), i) : List<&2, Nat>}) -> SV.Fate.driving(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.one.k(SV.is_amberable(sk, i, SV.drops(dd)), sk, kb, i, dd)):
-  match a:
-    case True{}:
-      %Equal.sym(Bool, SV.is_amberable(sk, i, SV.drops(dd)), True{}, ea) : SV.Fate.driving(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.one.k(_, sk, kb, i, dd))
-      step.a(PA.srefs(SV.csides(sk, [i]), sk, kb, i, 0n), sk, i, kb, dd, {==}, ea, hnr, hdo, hmt, hkb)
-    case False{}:
-      %Equal.sym(Bool, SV.is_amberable(sk, i, SV.drops(dd)), False{}, ea) : SV.Fate.driving(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.one.k(_, sk, kb, i, dd))
-      (hnr, (hdo, (hmt, ha => noamb(sk, i, dd, ea, ha))))
 
 
 def mt_eq(+sk: SK.Sketch, +i: Nat, +bp: List<&2, Nat>, +B2: List<&2, E.QExpr>, +bp2: List<&2, Nat>, +dd: List<&2, SV.Drop>, +us: List<&2, Nat>, hcB: {B2 == SK.cat(SV.presolved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i), SV.own_rest(sk, i, SV.drops(dd), SV.neqs(SK.Sketch.eqs(sk)))) : List<&2, E.QExpr>},
@@ -626,28 +589,6 @@ def mt_of(+sk: SK.Sketch, +i: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr
     GM.matchable_of(SK.Sketch.eqs(sk), vm2, SV.cat(bp, us), GM.gok_valid(SK.Sketch.eqs(sk), PA.nvars(sk), SV.cat(bp, us), vm2, hgok), GM.gok_s2(SK.Sketch.eqs(sk), PA.nvars(sk), SV.cat(bp, us), vm2, hgok),
       bpus_dist(sk, i, rows, B, bp, vm, us, hb, CW.cwb_udist(sk, i, SV.neqs(SK.Sketch.eqs(sk)), rows2, B2, dd, us, hcb), CW.cwb_uown(sk, i, SV.neqs(SK.Sketch.eqs(sk)), rows2, B2, dd, us, hcb))))
 
-def step.ok(+sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +rows2: List<&2, EL.Row>, +B2: List<&2, E.QExpr>, +bp2: List<&2, Nat>, +dd: List<&2, SV.Drop>, +us: List<&2, Nat>, +vm2: List<&2, Maybe<&2, Nat>>,
-  +hi: PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}), hdo: SV.DropsOk(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, SV.drops(dd)), +hci: CW.CWInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, bp, SV.neqs(SK.Sketch.eqs(sk)), PA.CW{rows2, B2, bp2, dd, us}), hnr: SV.NoRefute(sk, SV.reds(PA.classes(sk)), i),
-  +hgok: {GM.gok(SK.Sketch.eqs(sk), PA.nvars(sk), SV.cat(bp, us), vm2) == True{} : Bool}, +hK: {SV.class_at(PA.classes(sk), i) == PA.one.k(SV.is_amberable(sk, i, SV.drops(dd)), sk, kb, i, dd) : SV.Class}, +hdrv: {SV.driving(sk, i) == True{} : Bool}, +hD: {CL.downs(SV.owners(sk), PA.classes(sk), 0n) == True{} : Bool})
-  -> StepRes(sk, i, PA.PO{PA.one.k(SV.is_amberable(sk, i, SV.drops(dd)), sk, kb, i, dd), PA.PS{CO.lsnoc(kb, i), rows2, B2, bp2, vm2}}):
-  (+hcb, c1) = hci
-  (hcl, c2) = c1
-  (hcB, c3) = c2
-  (hcp, hbp2) = c3
-  +hb = pinv_b(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}, hi)
-  (step.k(SV.is_amberable(sk, i, SV.drops(dd)), sk, i, kb, dd, {==}, hnr, hdo, mt_of(sk, i, rows, B, bp, vm, rows2, B2, bp2, dd, us, vm2, hb, hcb, hcB, hcp, hbp2, hgok), pinv_kb(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}, hi)),
-    step_kept(sk, i, kb, rows, B, bp, vm, rows2, B2, bp2, dd, us, vm2, PA.one.k(SV.is_amberable(sk, i, SV.drops(dd)), sk, kb, i, dd), hi, hci, hgok, hK, onek_kd(SV.is_amberable(sk, i, SV.drops(dd)), sk, kb, i, dd),
-      Equal.trans(Bool, SV.mem(i, SV.reds(PA.classes(sk))), SV.is_red(PA.one.k(SV.is_amberable(sk, i, SV.drops(dd)), sk, kb, i, dd)), False{}, red_of(sk, i, PA.one.k(SV.is_amberable(sk, i, SV.drops(dd)), sk, kb, i, dd), hK), onek_red(SV.is_amberable(sk, i, SV.drops(dd)), sk, kb, i, dd)), hdrv, hD))
-
-
-def step.g(g: ST.GS, +sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +rows2: List<&2, EL.Row>, +B2: List<&2, E.QExpr>, +bp2: List<&2, Nat>, +dd: List<&2, SV.Drop>, +us: List<&2, Nat>,
-  +hi: PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}), hdo: SV.DropsOk(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, SV.drops(dd)), +hci: CW.CWInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, bp, SV.neqs(SK.Sketch.eqs(sk)), PA.CW{rows2, B2, bp2, dd, us}), hnr: SV.NoRefute(sk, SV.reds(PA.classes(sk)), i), gr: GM.GRes(SK.Sketch.eqs(sk), PA.nvars(sk), bp, us, g),
-  +hK: {SV.class_at(PA.classes(sk), i) == PA.PO.k(PA.one.g(g, sk, i, kb, rows, B, bp, vm, PA.CW{rows2, B2, bp2, dd, us})) : SV.Class}, +hdrv: {SV.driving(sk, i) == True{} : Bool}, +hD: {CL.downs(SV.owners(sk), PA.classes(sk), 0n) == True{} : Bool}) -> StepRes(sk, i, PA.one.g(g, sk, i, kb, rows, B, bp, vm, PA.CW{rows2, B2, bp2, dd, us})):
-  match g:
-    case ST.GFail{ST.Red{+j, +s, +x}}:
-      step.over(sk, i, kb, rows, B, bp, vm, rows2, B2, bp2, dd, us, j, s, x, hi, hdo, CW.inv_b(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, bp, SV.neqs(SK.Sketch.eqs(sk)), PA.CW{rows2, B2, bp2, dd, us}, hci), hnr, gr, hK)
-    case ST.GOk{+vm2}:
-      step.ok(sk, i, kb, rows, B, bp, vm, rows2, B2, bp2, dd, us, vm2, hi, hdo, hci, hnr, gr, hK, hdrv, hD)
 
 def gli_of(+sk: SK.Sketch, +i: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +rows2: List<&2, EL.Row>, +B2: List<&2, E.QExpr>, +dd: List<&2, SV.Drop>, +us: List<&2, Nat>,
   +hb: {pib(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, rows, B, bp, vm) == True{} : Bool}, +hcb: {CW.cwb(sk, i, SV.neqs(SK.Sketch.eqs(sk)), rows2, B2, dd, us) == True{} : Bool}, +hA: {D.adjb(PA.dadjs(SK.Sketch.eqs(sk)), PA.nvars(sk)) == True{} : Bool}) -> {GM.gli(SK.Sketch.eqs(sk), PA.nvars(sk), bp, us, vm) == True{} : Bool}:
@@ -657,93 +598,15 @@ def gli_of(+sk: SK.Sketch, +i: Nat, +rows: List<&2, EL.Row>, +B: List<&2, E.QExp
     below_cat(bp, us, SV.neqs(SK.Sketch.eqs(sk)), pib_bpb(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, rows, B, bp, vm, hb), CW.cwb_ubelow(sk, i, SV.neqs(SK.Sketch.eqs(sk)), rows2, B2, dd, us, hcb)), hA)
 
 
-def step.w2(+sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +rows2: List<&2, EL.Row>, +B2: List<&2, E.QExpr>, +bp2: List<&2, Nat>, +dd: List<&2, SV.Drop>, +us: List<&2, Nat>,
-  +hi: PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}), hdo: SV.DropsOk(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, SV.drops(dd)), +hci: CW.CWInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, bp, SV.neqs(SK.Sketch.eqs(sk)), PA.CW{rows2, B2, bp2, dd, us}), hnr: SV.NoRefute(sk, SV.reds(PA.classes(sk)), i),
-  +hK: {SV.class_at(PA.classes(sk), i) == PA.PO.k(PA.one.g(PA.grpl(us, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), ST.GOk{vm}), sk, i, kb, rows, B, bp, vm, PA.CW{rows2, B2, bp2, dd, us})) : SV.Class},
-  +hA: {D.adjb(PA.dadjs(SK.Sketch.eqs(sk)), PA.nvars(sk)) == True{} : Bool}, +hdrv: {SV.driving(sk, i) == True{} : Bool}, +hD: {CL.downs(SV.owners(sk), PA.classes(sk), 0n) == True{} : Bool})
-  -> StepRes(sk, i, PA.one.g(PA.grpl(us, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), ST.GOk{vm}), sk, i, kb, rows, B, bp, vm, PA.CW{rows2, B2, bp2, dd, us})):
-  step.g(PA.grpl(us, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), ST.GOk{vm}), sk, i, kb, rows, B, bp, vm, rows2, B2, bp2, dd, us, hi, hdo, hci, hnr,
-    GM.gl_ok(us, SK.Sketch.eqs(sk), PA.nvars(sk), bp, vm, gli_of(sk, i, rows, B, bp, vm, rows2, B2, dd, us, pinv_b(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}, hi), CW.inv_b(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, bp, SV.neqs(SK.Sketch.eqs(sk)), PA.CW{rows2, B2, bp2, dd, us}, hci), hA)), hK, hdrv, hD)
-
-def step.w3(+sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +rows2: List<&2, EL.Row>, +B2: List<&2, E.QExpr>, +bp2: List<&2, Nat>, +dd: List<&2, SV.Drop>, +us: List<&2, Nat>,
-  +hi: PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}), hcw: (SV.DropsOk(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, SV.drops(dd)) & CW.CWInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, bp, SV.neqs(SK.Sketch.eqs(sk)), PA.CW{rows2, B2, bp2, dd, us})), hnr: SV.NoRefute(sk, SV.reds(PA.classes(sk)), i),
-  +hK: {SV.class_at(PA.classes(sk), i) == PA.PO.k(PA.one.g(PA.grpl(us, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), ST.GOk{vm}), sk, i, kb, rows, B, bp, vm, PA.CW{rows2, B2, bp2, dd, us})) : SV.Class},
-  +hA: {D.adjb(PA.dadjs(SK.Sketch.eqs(sk)), PA.nvars(sk)) == True{} : Bool}, +hdrv: {SV.driving(sk, i) == True{} : Bool}, +hD: {CL.downs(SV.owners(sk), PA.classes(sk), 0n) == True{} : Bool})
-  -> StepRes(sk, i, PA.one.g(PA.grpl(us, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), ST.GOk{vm}), sk, i, kb, rows, B, bp, vm, PA.CW{rows2, B2, bp2, dd, us})):
-  (hdo, hci) = hcw
-  step.w2(sk, i, kb, rows, B, bp, vm, rows2, B2, bp2, dd, us, hi, hdo, hci, hnr, hK, hA, hdrv, hD)
-
-def step.w(w: PA.CW, +sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +hi: PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}),
-  hcw: (SV.DropsOk(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, SV.drops(CW.cw.ds(w))) & CW.CWInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, bp, SV.neqs(SK.Sketch.eqs(sk)), w)), hnr: SV.NoRefute(sk, SV.reds(PA.classes(sk)), i), +hK: {SV.class_at(PA.classes(sk), i) == PA.PO.k(PA.one.w(w, sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, kb, rows, B, bp, vm)) : SV.Class},
-  +hA: {D.adjb(PA.dadjs(SK.Sketch.eqs(sk)), PA.nvars(sk)) == True{} : Bool}, +hdrv: {SV.driving(sk, i) == True{} : Bool}, +hD: {CL.downs(SV.owners(sk), PA.classes(sk), 0n) == True{} : Bool}) -> StepRes(sk, i, PA.one.w(w, sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, kb, rows, B, bp, vm)):
-  match w:
-    case PA.CW{+rows2, +B2, +bp2, +dd, +us}:
-      step.w3(sk, i, kb, rows, B, bp, vm, rows2, B2, bp2, dd, us, hi, hcw, hnr, hK, hA, hdrv, hD)
-
-
-def step.c(b: Bool, +sk: SK.Sketch, +i: Nat, +kb: List<&2, Nat>, +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, +vm: List<&2, Maybe<&2, Nat>>, +eb: {CO.refutable(sk, i, kb) == b : Bool}, +hi: PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}),
-  +hK: {SV.class_at(PA.classes(sk), i) == PA.PO.k(PA.one.c(CO.refutable(sk, i, kb), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, kb, rows, B, bp, vm)) : SV.Class}, +hA: {D.adjb(PA.dadjs(SK.Sketch.eqs(sk)), PA.nvars(sk)) == True{} : Bool}, +hdrv: {SV.driving(sk, i) == True{} : Bool}, +hD: {CL.downs(SV.owners(sk), PA.classes(sk), 0n) == True{} : Bool}) -> StepRes(sk, i, PA.one.c(CO.refutable(sk, i, kb), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, kb, rows, B, bp, vm)):
-  match b:
-    case True{}:
-      %Equal.sym(Bool, CO.refutable(sk, i, kb), True{}, eb) : StepRes(sk, i, PA.one.c(_, SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, kb, rows, B, bp, vm))
-      step.conf(sk, i, kb, rows, B, bp, vm, hi, eb, (%eb : {SV.class_at(PA.classes(sk), i) == PA.PO.k(PA.one.c(_, SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, kb, rows, B, bp, vm)) : SV.Class}
-        hK))
-    case False{}:
-      %Equal.sym(Bool, CO.refutable(sk, i, kb), False{}, eb) : StepRes(sk, i, PA.one.c(_, SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, kb, rows, B, bp, vm))
-      +hkb = pinv_kb(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}, hi)
-      step.w(PA.cwalk(SK.Sketch.eqs(sk), SV.owners(sk), i, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}), sk, i, kb, rows, B, bp, vm, hi,
-        CW.cw_final(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, rows, B, bp, pib_rinv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, rows, B, bp, vm, pinv_b(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}, hi)), pinv_rlen(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}, hi), pinv_B(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}, hi), pinv_p(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, PA.PS{kb, rows, B, bp, vm}, hi)),
-        PR.norefute(sk, SV.reds(PA.classes(sk)), i, (%hkb : {CO.refutable(sk, i, _) == False{} : Bool}
-          eb)),
-        (%eb : {SV.class_at(PA.classes(sk), i) == PA.PO.k(PA.one.c(_, SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, kb, rows, B, bp, vm)) : SV.Class}
-          hK), hA, hdrv, hD)
-
-# a driving constraint at i: its class and the next state
-def hon.d(st: PA.PS, +sk: SK.Sketch, +i: Nat, +hi: PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, st), +hK: {SV.class_at(PA.classes(sk), i) == PA.PO.k(PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st)) : SV.Class},
-  +hA: {D.adjb(PA.dadjs(SK.Sketch.eqs(sk)), PA.nvars(sk)) == True{} : Bool}, +hdrv: {SV.driving(sk, i) == True{} : Bool}, +hD: {CL.downs(SV.owners(sk), PA.classes(sk), 0n) == True{} : Bool}) -> StepRes(sk, i, PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st)):
-  match st:
-    case PA.PS{+kb, +rows, +B, +bp, +vm}:
-      step.c(CO.refutable(sk, i, kb), sk, i, kb, rows, B, bp, vm, {==}, hi, hK, hA, hdrv, hD)
 
 # The pass is honest
 # ------------------
-
-def fate_of(+sk: SK.Sketch, +i: Nat, +K: SV.Class, +hK: {SV.class_at(PA.classes(sk), i) == K : SV.Class}, +hdr: {SV.driven(sk, i) == False{} : Bool}, f: SV.Fate.driving(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, K)) -> SV.Fate(sk, PA.classes(sk), i):
-  (%Equal.sym(Bool, SV.driven(sk, i), False{}, hdr) : SV.Fate.pick(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, _, SV.class_at(PA.classes(sk), i))
-    (%Equal.sym(SV.Class, SV.class_at(PA.classes(sk), i), K, hK) : SV.Fate.pick(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, False{}, _)
-      f))
-
-def fate_dr(+sk: SK.Sketch, +i: Nat, +hK: {SV.class_at(PA.classes(sk), i) == SV.Kept{Nil{}} : SV.Class}, +hdr: {SV.driven(sk, i) == True{} : Bool}) -> SV.Fate(sk, PA.classes(sk), i):
-  (%Equal.sym(Bool, SV.driven(sk, i), True{}, hdr) : SV.Fate.pick(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, _, SV.class_at(PA.classes(sk), i))
-    (%Equal.sym(SV.Class, SV.class_at(PA.classes(sk), i), SV.Kept{Nil{}}, hK) : SV.Fate.pick(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, True{}, _)
-      {==}))
 
 def dcond_dr(+sk: SK.Sketch, +R: List<&2, Nat>, +i: Nat, +hdr: {SV.driven(sk, i) == True{} : Bool}) -> {KB.dcond(sk, R, i) == False{} : Bool}:
   %Equal.sym(Bool, SV.driving(sk, i), False{}, CL.band_f(SV.lt(i, SV.ncons(sk)), SV.bnot(SV.driven(sk, i)), (%Equal.sym(Bool, SV.driven(sk, i), True{}, hdr) : {SV.bnot(_) == False{} : Bool}
     {==}))) : {SV.band(_, SV.bnot(SV.mem(i, R))) == False{} : Bool}
   {==}
 
-
-def hon.con(+sk: SK.Sketch, +i: Nat, +st: PA.PS, +t: List<&2, SK.Rec>, +hK: {SV.class_at(PA.classes(sk), i) == PA.PO.k(PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st)) : SV.Class}, +hdr: {SV.driven(sk, i) == False{} : Bool}, sr: StepRes(sk, i, PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st)),
-  ih: PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), 1n+i, PA.PO.st(PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st))) -> SV.Honest.go(sk, PA.classes(sk), SV.clen(t), 1n+i)) -> SV.Honest.go(sk, PA.classes(sk), 1n+SV.clen(t), i):
-  (f1, inv1) = sr
-  (fate_of(sk, i, PA.PO.k(PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st)), hK, hdr, f1), ih(inv1))
-
-# from position i on, given the classes from i are the pass's from there
-def hon(rs: List<&2, SK.Rec>, +sk: SK.Sketch, +i: Nat, +st: PA.PS, +hd: {KB.rdrop(i, PA.recs(sk)) == rs : List<&2, SK.Rec>}, +hc: {CL.cdrop(i, PA.classes(sk)) == PA.pass(rs, SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st) : List<&2, SV.Class>},
-  +hA: {D.adjb(PA.dadjs(SK.Sketch.eqs(sk)), PA.nvars(sk)) == True{} : Bool}, +hD: {CL.downs(SV.owners(sk), PA.classes(sk), 0n) == True{} : Bool}, hi: PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, st)) -> SV.Honest.go(sk, PA.classes(sk), SV.clen(rs), i):
-  match rs:
-    case Nil{}:
-      Unit{}
-    case Con{SK.Rec{+id, True{}, +k}, +t}:
-      +hdr = drv_at(sk, i, SK.Rec{id, True{}, k}, t, hd)
-      (fate_dr(sk, i, CL.ca_of(PA.classes(sk), i, SV.Kept{Nil{}}, PA.pass(t, SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 1n+i, st), hc), hdr),
-        hon(t, sk, 1n+i, st, KB.rdrop_step(i, PA.recs(sk), SK.Rec{id, True{}, k}, t, hd), CL.cdrop_step(PA.classes(sk), i, SV.Kept{Nil{}}, PA.pass(t, SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 1n+i, st), hc), hA, hD,
-          step_same(sk, i, st, hi, SP.zc_noc(SV.owners(sk), i, SV.reds(PA.classes(sk)), noc_owners(sk, i, hdr)), dcond_dr(sk, SV.reds(PA.classes(sk)), i, hdr))))
-    case Con{SK.Rec{+id, False{}, +k}, +t}:
-      +hK = CL.ca_of(PA.classes(sk), i, PA.PO.k(PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st)), PA.pass(t, SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 1n+i, PA.PO.st(PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st))), hc)
-      hon.con(sk, i, st, t, hK, drv_at(sk, i, SK.Rec{id, False{}, k}, t, hd), hon.d(st, sk, i, hi, hK, hA, driving_at(sk, i, id, k, t, hd), hD),
-        h2 => hon(t, sk, 1n+i, PA.PO.st(PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st)), KB.rdrop_step(i, PA.recs(sk), SK.Rec{id, False{}, k}, t, hd), CL.cdrop_step(PA.classes(sk), i, PA.PO.k(PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st)), PA.pass(t, SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 1n+i, PA.PO.st(PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st))), hc), hA, hD, h2))
 
 def pinv0(+sk: SK.Sketch) -> PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), 0n, PA.start(PA.nvars(sk))):
   (pib_mk(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), 0n, Nil{}, Nil{}, Nil{}, ST.nones(PA.nvars(sk)), {==},
@@ -761,49 +624,13 @@ def pinv0(+sk: SK.Sketch) -> PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.cla
     (Equal.sym(List<&2, E.QExpr>, SV.presolved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), 0n), Nil{}, SP.presolved_zero(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)))),
       {==})))))
 
-# the pass's classes are honest (law 4's search half: spec/solve.bend, Honest)
-def pass_honest(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}) -> SV.Honest(sk, PA.classes(sk)):
-  +ha0 = CV.cov(sk, SO.nvars(sk), cov, WC.wf_dec_ok(sk, w))
-  +hA = GM.adjb_dadjs(SK.Sketch.eqs(sk), PA.nvars(sk), (%Equal.sym(Nat, PA.nvars(sk), SO.nvars(sk), nv_eq(sk)) : {D.adjb(ST.adj(SK.Sketch.eqs(sk)), _) == True{} : Bool}
-    ha0))
-  (Equal.trans(Nat, SV.clsn(PA.classes(sk)), SV.clen(PA.recs(sk)), SV.ncons(sk), clsn_pass(PA.recs(sk), sk, 0n, PA.start(PA.nvars(sk))), Equal.sym(Nat, SV.ncons(sk), SV.clen(PA.recs(sk)), ncons_recs(sk))),
-    (%Equal.sym(Nat, SV.ncons(sk), SV.clen(PA.recs(sk)), ncons_recs(sk)) : SV.Honest.go(sk, PA.classes(sk), _, 0n)
-      hon(PA.recs(sk), sk, 0n, PA.start(PA.nvars(sk)), {==}, {==}, hA, classes_down(sk), pinv0(sk))))
-
 # The state the pass ends with
 # ----------------------------
-
-def pinv_sr(+sk: SK.Sketch, +i: Nat, +o: PA.PO, sr: StepRes(sk, i, o)) -> PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), 1n+i, PA.PO.st(o)):
-  (f, p) = sr
-  p
 
 def pinv_add(+sk: SK.Sketch, +n: Nat, +i: Nat, +st: PA.PS, h: PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), Nat.add(n, 1n+i), st)) -> PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), Nat.add(1n+n, i), st):
   (%Equal.sym(Nat, 1n+Nat.add(n, i), Nat.add(n, 1n+i), LN.add_succ(n, i)) : PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), _, st)
     h)
 
-# the invariant at the end of the walk from position i
-def pass_inv(rs: List<&2, SK.Rec>, +sk: SK.Sketch, +i: Nat, +st: PA.PS, +hd: {KB.rdrop(i, PA.recs(sk)) == rs : List<&2, SK.Rec>}, +hc: {CL.cdrop(i, PA.classes(sk)) == PA.pass(rs, SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st) : List<&2, SV.Class>},
-  +hA: {D.adjb(PA.dadjs(SK.Sketch.eqs(sk)), PA.nvars(sk)) == True{} : Bool}, +hD: {CL.downs(SV.owners(sk), PA.classes(sk), 0n) == True{} : Bool}, hi: PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), i, st)) -> PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), Nat.add(SV.clen(rs), i), PA.pass_st(rs, SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st)):
-  match rs:
-    case Nil{}:
-      hi
-    case Con{SK.Rec{+id, True{}, +k}, +t}:
-      +hdr = drv_at(sk, i, SK.Rec{id, True{}, k}, t, hd)
-      pinv_add(sk, SV.clen(t), i, PA.pass_st(t, SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 1n+i, st),
-        pass_inv(t, sk, 1n+i, st, KB.rdrop_step(i, PA.recs(sk), SK.Rec{id, True{}, k}, t, hd), CL.cdrop_step(PA.classes(sk), i, SV.Kept{Nil{}}, PA.pass(t, SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 1n+i, st), hc), hA, hD,
-          step_same(sk, i, st, hi, SP.zc_noc(SV.owners(sk), i, SV.reds(PA.classes(sk)), noc_owners(sk, i, hdr)), dcond_dr(sk, SV.reds(PA.classes(sk)), i, hdr))))
-    case Con{SK.Rec{+id, False{}, +k}, +t}:
-      +hK = CL.ca_of(PA.classes(sk), i, PA.PO.k(PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st)), PA.pass(t, SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 1n+i, PA.PO.st(PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st))), hc)
-      pinv_add(sk, SV.clen(t), i, PA.pass_st(t, SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 1n+i, PA.PO.st(PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st))),
-        pass_inv(t, sk, 1n+i, PA.PO.st(PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st)), KB.rdrop_step(i, PA.recs(sk), SK.Rec{id, False{}, k}, t, hd), CL.cdrop_step(PA.classes(sk), i, PA.PO.k(PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st)), PA.pass(t, SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 1n+i, PA.PO.st(PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st))), hc), hA, hD,
-          pinv_sr(sk, i, PA.one(SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), i, st), hon.d(st, sk, i, hi, hK, hA, driving_at(sk, i, id, k, t, hd), hD))))
-
 def adjb_of(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}) -> {D.adjb(PA.dadjs(SK.Sketch.eqs(sk)), PA.nvars(sk)) == True{} : Bool}:
   GM.adjb_dadjs(SK.Sketch.eqs(sk), PA.nvars(sk), (%Equal.sym(Nat, PA.nvars(sk), SO.nvars(sk), nv_eq(sk)) : {D.adjb(ST.adj(SK.Sketch.eqs(sk)), _) == True{} : Bool}
     CV.cov(sk, SO.nvars(sk), cov, WC.wf_dec_ok(sk, w))))
-
-# the pass's final state: its basis is the system solved, its matching a
-# valid matching of exactly its positions
-def final_inv(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}) -> PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), SV.ncons(sk), PA.final_st(sk)):
-  (%Equal.sym(Nat, SV.ncons(sk), Nat.add(SV.clen(PA.recs(sk)), 0n), Equal.trans(Nat, SV.ncons(sk), SV.clen(PA.recs(sk)), Nat.add(SV.clen(PA.recs(sk)), 0n), ncons_recs(sk), LN.add_zero(SV.clen(PA.recs(sk))))) : PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), _, PA.final_st(sk))
-    pass_inv(PA.recs(sk), sk, 0n, PA.start(PA.nvars(sk)), {==}, {==}, adjb_of(sk, w, cov), classes_down(sk), pinv0(sk)))

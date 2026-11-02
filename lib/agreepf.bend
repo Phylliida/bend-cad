@@ -1,6 +1,11 @@
 # bend-cad: two classifications side by side, for honest_unique (PLAN-sk13a
 # S6, law 5 step 1). Proofs only.
 #
+# Since the sk-13b switch (2026-11-02), what this file proved about
+# sk-13a's pass, Honest or solver is proven in lib/dagreepf.bend; what
+# is left here is what that proof reuses, and the description below is
+# of the sk-13a proof.
+#
 # The induction along the constraints carries, for classifications c1 and
 # c2 (red lists R1, R2, dropped lists D1, D2), two list equalities at each
 # position c: the kept constraints before c are the same (kb_ag), and so
@@ -212,7 +217,6 @@ def ps_red(+sk: SK.Sketch, +R1: List<&2, Nat>, +D1: List<&2, Nat>, +R2: List<&2,
   hps
 
 
-
 # c kept in both, with the same drops among its own equations: the same
 # solved equations before c + 1
 def ps_kept(+sk: SK.Sketch, +c1: List<&2, SV.Class>, +c2: List<&2, SV.Class>, +c: Nat, +h1: {SV.mem(c, SV.reds(c1)) == False{} : Bool}, +h2: {SV.mem(c, SV.reds(c2)) == False{} : Bool},
@@ -279,25 +283,6 @@ def beq_of(+a: Bool, +b: Bool, +e: {a == b : Bool}) -> {SP.beq(a, b) == True{} :
     beq_refl(a))
 
 
-# derivable in one exactly when in the other, over equal bases
-def mm_ag(+sk: SK.Sketch, +R1: List<&2, Nat>, +D1: List<&2, Nat>, +R2: List<&2, Nat>, +D2: List<&2, Nat>, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, m1: Bool, m2: Bool, +k: Nat, x1: SV.drops_ok.mem(sk, R1, D1, c, d1, m1, k), x2: SV.drops_ok.mem(sk, R2, D2, c, d2, m2, k), +hb: {SV.basis(sk, R1, D1, c, d1, k) == SV.basis(sk, R2, D2, c, d2, k) : List<&2, E.QExpr>}) -> {m1 == m2 : Bool}:
-  match m1 m2:
-    case True{} True{}:
-      {==}
-    case False{} False{}:
-      {==}
-    case True{} False{}:
-      absurd({True{} == False{} : Bool}, dnd(sk, R1, D1, R2, D2, c, d1, d2, k, hb, x1, x2))
-    case False{} True{}:
-      absurd({False{} == True{} : Bool}, dnd(sk, R2, D2, R1, D1, c, d2, d1, k, Equal.sym(List<&2, E.QExpr>, SV.basis(sk, R1, D1, c, d1, k), SV.basis(sk, R2, D2, c, d2, k), hb), x2, x1))
-
-def at_ag(+sk: SK.Sketch, +R1: List<&2, Nat>, +D1: List<&2, Nat>, +R2: List<&2, Nat>, +D2: List<&2, Nat>, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, b: Bool, +k: Nat, a1: SV.drops_ok.at(sk, R1, D1, c, d1, b, k), a2: SV.drops_ok.at(sk, R2, D2, c, d2, b, k), +hb: {SV.basis(sk, R1, D1, c, d1, k) == SV.basis(sk, R2, D2, c, d2, k) : List<&2, E.QExpr>}) -> {SV.mem(k, d1) == SV.mem(k, d2) : Bool}:
-  match b:
-    case True{}:
-      mm_ag(sk, R1, D1, R2, D2, c, d1, d2, SV.mem(k, d1), SV.mem(k, d2), k, a1, a2, hb)
-    case False{}:
-      Equal.trans(Bool, SV.mem(k, d1), False{}, SV.mem(k, d2), a1, Equal.sym(Bool, SV.mem(k, d2), False{}, a2))
-
 # c's own equations not dropped, before k + 1
 def or_next(+sk: SK.Sketch, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +k: Nat, +hk: {SV.lt(k, SV.neqs(SK.Sketch.eqs(sk))) == True{} : Bool}, +ek: {SV.mem(k, d1) == SV.mem(k, d2) : Bool},
   +hor: {SV.own_rest(sk, c, d1, k) == SV.own_rest(sk, c, d2, k) : List<&2, E.QExpr>}) -> {SV.own_rest(sk, c, d1, 1n+k) == SV.own_rest(sk, c, d2, 1n+k) : List<&2, E.QExpr>}:
@@ -306,27 +291,3 @@ def or_next(+sk: SK.Sketch, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +k:
   %ek : {SP.oadd(SV.band(SV.eq(SV.nth(SV.owners(sk), k), c), SV.bnot(SV.mem(k, d1))), SV.own_rest.go(SK.Sketch.eqs(sk), SV.owners(sk), c, d1, k, 0n), SV.eqat(SK.Sketch.eqs(sk), k)) == SP.oadd(SV.band(SV.eq(SV.nth(SV.owners(sk), k), c), SV.bnot(_)), SV.own_rest.go(SK.Sketch.eqs(sk), SV.owners(sk), c, d2, k, 0n), SV.eqat(SK.Sketch.eqs(sk), k)) : List<&2, E.QExpr>}
   %hor : {SP.oadd(SV.band(SV.eq(SV.nth(SV.owners(sk), k), c), SV.bnot(SV.mem(k, d1))), SV.own_rest.go(SK.Sketch.eqs(sk), SV.owners(sk), c, d1, k, 0n), SV.eqat(SK.Sketch.eqs(sk), k)) == SP.oadd(SV.band(SV.eq(SV.nth(SV.owners(sk), k), c), SV.bnot(SV.mem(k, d1))), _, SV.eqat(SK.Sketch.eqs(sk), k)) : List<&2, E.QExpr>}
   {==}
-
-def da.go(+sk: SK.Sketch, +R1: List<&2, Nat>, +D1: List<&2, Nat>, +R2: List<&2, Nat>, +D2: List<&2, Nat>, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, own_s: List<&2, Nat>, +k: Nat, +ho: {OW.ndrop(k, SV.owners(sk)) == own_s : List<&2, Nat>}, +hps: {SV.presolved(sk, R1, D1, c) == SV.presolved(sk, R2, D2, c) : List<&2, E.QExpr>}, +hor: {SV.own_rest(sk, c, d1, k) == SV.own_rest(sk, c, d2, k) : List<&2, E.QExpr>},
-  g1: SV.drops_ok.go(sk, R1, D1, c, d1, own_s, k), g2: SV.drops_ok.go(sk, R2, D2, c, d2, own_s, k)) -> {SP.agree(own_s, d1, d2, c, k) == True{} : Bool}:
-  match own_s:
-    case Nil{}:
-      {==}
-    case Con{+o, +t}:
-      match g1:
-        case (a1, r1):
-          match g2:
-            case (a2, r2):
-              +ek = at_ag(sk, R1, D1, R2, D2, c, d1, d2, SV.eq(o, c), k, a1, a2, basis_ag(sk, R1, D1, R2, D2, c, d1, d2, k, hps, hor))
-              L.band_i(SV.bor(SV.bnot(SV.eq(o, c)), SP.beq(SV.mem(k, d1), SV.mem(k, d2))), SP.agree(t, d1, d2, c, 1n+k), L.bor_r(SV.bnot(SV.eq(o, c)), SP.beq(SV.mem(k, d1), SV.mem(k, d2)), beq_of(SV.mem(k, d1), SV.mem(k, d2), ek)),
-                da.go(sk, R1, D1, R2, D2, c, d1, d2, t, 1n+k, OW.ndrop_step(k, SV.owners(sk), o, t, ho), hps, or_next(sk, c, d1, d2, k, (%OW.len_owners(sk) : {SV.lt(k, _) == True{} : Bool}
-                  lt_ndrop(SV.owners(sk), k, o, t, ho)), ek, hor), r1, r2))
-
-# two DropsOk at c over the same solved equations before c drop the same
-# of c's equations
-def drops_ag(+sk: SK.Sketch, +R1: List<&2, Nat>, +D1: List<&2, Nat>, +R2: List<&2, Nat>, +D2: List<&2, Nat>, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +hps: {SV.presolved(sk, R1, D1, c) == SV.presolved(sk, R2, D2, c) : List<&2, E.QExpr>}, h1: SV.DropsOk(sk, R1, D1, c, d1), h2: SV.DropsOk(sk, R2, D2, c, d2)) -> {SP.agree(SV.owners(sk), d1, d2, c, 0n) == True{} : Bool}:
-  match h1:
-    case (hb1, g1):
-      match h2:
-        case (hb2, g2):
-          da.go(sk, R1, D1, R2, D2, c, d1, d2, SV.owners(sk), 0n, {==}, hps, Equal.trans(List<&2, E.QExpr>, SV.own_rest(sk, c, d1, 0n), Nil{}, SV.own_rest(sk, c, d2, 0n), SP.or_nil(SK.Sketch.eqs(sk), SV.owners(sk), c, d1, 0n, 0n, {==}), Equal.sym(List<&2, E.QExpr>, SV.own_rest(sk, c, d2, 0n), Nil{}, SP.or_nil(SK.Sketch.eqs(sk), SV.owners(sk), c, d2, 0n, 0n, {==}))), g1, g2)

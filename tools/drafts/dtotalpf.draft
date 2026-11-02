@@ -1,5 +1,5 @@
-# bend-cad: the draft solver's structure stage never fails (PLAN-sk13b B5.4,
-# solve_total over the new pass). Proofs only.
+# bend-cad: the solver's structure stage never fails (ROADMAP: solve_total;
+# PLAN-sk13b B5.4, over the new pass). Proofs only.
 #
 # The new pass ends in a state with lib/passpf.bend's invariant
 # (lib/dpasspf.bend: final2_inv), so lib/perfpf.bend's reading of it
@@ -34,7 +34,6 @@ import ./perfpf.bend as PF
 import ./structpf.bend as STP
 import ./dpass.bend as DPS
 import ./dpasspf.bend as DPP
-import ./dsolve.bend as DSO
 
 @MACRO NL List<&2, Nat>
 @MACRO VM List<&2, Maybe<&2, Nat>>
@@ -147,12 +146,12 @@ def total_pass2(+sk: SK.Sketch, +hA: {D.adjb($AD, $NV) == True{} : Bool}, +hcov:
       PP.pinv_p(sk, $RF, $DF, SV.ncons(sk), $FS, hi)))
 
 
-# The law, for the draft solver
+# The law
 # -----------------------------
 
-@MACRO A2 DSO.solve_l2(sk, g0, l)
-@MACRO C2 DSO.cls_of2(sk)
-@MACRO P2 DSO.pins_of2(sk)
+@MACRO A2 SO.solve_l(sk, g0, l)
+@MACRO C2 SO.cls_of(sk)
+@MACRO P2 SO.pins_of(sk)
 @MACRO TOT ({SO.Out.cls($A2) == $C2 : List<&2, SV.Class>} & ({SO.Out.pins($A2) == $P2 : $NL} & ({WF.wf_dec(SV.mark(SV.reds($C2), sk)) == True{} : Bool} & ({SV.distinct($P2) == True{} : Bool} & ({SV.below($P2, SO.nvars(sk)) == True{} : Bool} & (&m: $NL -> SV.Perfect(SV.solved(sk, SV.reds($C2), SV.dropped($C2)), SV.free(SO.nvars(sk), 0n, $P2), m)))))))
 
 def tp2.go(+sk: SK.Sketch, +hwf: {WF.wf_dec(sk) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat,

@@ -1,5 +1,5 @@
-# bend-cad: the draft solver's structure stage never fails (PLAN-sk13b B5.4,
-# solve_total over the new pass). Proofs only.
+# bend-cad: the solver's structure stage never fails (ROADMAP: solve_total;
+# PLAN-sk13b B5.4, over the new pass). Proofs only.
 #
 # The new pass ends in a state with lib/passpf.bend's invariant
 # (lib/dpasspf.bend: final2_inv), so lib/perfpf.bend's reading of it
@@ -34,7 +34,6 @@ import ./perfpf.bend as PF
 import ./structpf.bend as STP
 import ./dpass.bend as DPS
 import ./dpasspf.bend as DPP
-import ./dsolve.bend as DSO
 
 
 # The system solved is matched onto the free variables
@@ -126,19 +125,19 @@ def total_pass2(+sk: SK.Sketch, +hA: {D.adjb(PA.dadjs(SK.Sketch.eqs(sk)), PA.nva
       PP.pinv_p(sk, SV.reds(DPS.classes2(sk)), SV.dropped(DPS.classes2(sk)), SV.ncons(sk), DPS.final2_st(sk), hi)))
 
 
-# The law, for the draft solver
+# The law
 # -----------------------------
 
 
 def tp2.go(+sk: SK.Sketch, +hwf: {WF.wf_dec(sk) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat,
-  t: SK.Both({SV.distinct(DSO.pins_of2(sk)) == True{} : Bool}, {SV.below(DSO.pins_of2(sk), SO.nvars(sk)) == True{} : Bool}) & (&m: List<&2, Nat> -> SV.Perfect(SV.solved(sk, SV.reds(DSO.cls_of2(sk)), SV.dropped(DSO.cls_of2(sk))), SV.free(SO.nvars(sk), 0n, DSO.pins_of2(sk)), m))) -> ({SO.Out.cls(DSO.solve_l2(sk, g0, l)) == DSO.cls_of2(sk) : List<&2, SV.Class>} & ({SO.Out.pins(DSO.solve_l2(sk, g0, l)) == DSO.pins_of2(sk) : List<&2, Nat>} & ({WF.wf_dec(SV.mark(SV.reds(DSO.cls_of2(sk)), sk)) == True{} : Bool} & ({SV.distinct(DSO.pins_of2(sk)) == True{} : Bool} & ({SV.below(DSO.pins_of2(sk), SO.nvars(sk)) == True{} : Bool} & (&m: List<&2, Nat> -> SV.Perfect(SV.solved(sk, SV.reds(DSO.cls_of2(sk)), SV.dropped(DSO.cls_of2(sk))), SV.free(SO.nvars(sk), 0n, DSO.pins_of2(sk)), m))))))):
+  t: SK.Both({SV.distinct(SO.pins_of(sk)) == True{} : Bool}, {SV.below(SO.pins_of(sk), SO.nvars(sk)) == True{} : Bool}) & (&m: List<&2, Nat> -> SV.Perfect(SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)), m))) -> ({SO.Out.cls(SO.solve_l(sk, g0, l)) == SO.cls_of(sk) : List<&2, SV.Class>} & ({SO.Out.pins(SO.solve_l(sk, g0, l)) == SO.pins_of(sk) : List<&2, Nat>} & ({WF.wf_dec(SV.mark(SV.reds(SO.cls_of(sk)), sk)) == True{} : Bool} & ({SV.distinct(SO.pins_of(sk)) == True{} : Bool} & ({SV.below(SO.pins_of(sk), SO.nvars(sk)) == True{} : Bool} & (&m: List<&2, Nat> -> SV.Perfect(SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)), m))))))):
   (hdb, pm) = t
   (hd, hb) = hdb
-  ({==}, ({==}, (WC.wf_mark(SV.reds(DSO.cls_of2(sk)), sk, hwf), (hd, (hb, pm)))))
+  ({==}, ({==}, (WC.wf_mark(SV.reds(SO.cls_of(sk)), sk, hwf), (hd, (hb, pm)))))
 
 # the structure stage never fails: the classes and pins are the sketch's
 # alone, the sketch less its reds well formed, the pins distinct
 # variables, the system solved perfectly matched onto the free variables
-def solve_total2(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat) -> ({SO.Out.cls(DSO.solve_l2(sk, g0, l)) == DSO.cls_of2(sk) : List<&2, SV.Class>} & ({SO.Out.pins(DSO.solve_l2(sk, g0, l)) == DSO.pins_of2(sk) : List<&2, Nat>} & ({WF.wf_dec(SV.mark(SV.reds(DSO.cls_of2(sk)), sk)) == True{} : Bool} & ({SV.distinct(DSO.pins_of2(sk)) == True{} : Bool} & ({SV.below(DSO.pins_of2(sk), SO.nvars(sk)) == True{} : Bool} & (&m: List<&2, Nat> -> SV.Perfect(SV.solved(sk, SV.reds(DSO.cls_of2(sk)), SV.dropped(DSO.cls_of2(sk))), SV.free(SO.nvars(sk), 0n, DSO.pins_of2(sk)), m))))))):
+def solve_total2(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat) -> ({SO.Out.cls(SO.solve_l(sk, g0, l)) == SO.cls_of(sk) : List<&2, SV.Class>} & ({SO.Out.pins(SO.solve_l(sk, g0, l)) == SO.pins_of(sk) : List<&2, Nat>} & ({WF.wf_dec(SV.mark(SV.reds(SO.cls_of(sk)), sk)) == True{} : Bool} & ({SV.distinct(SO.pins_of(sk)) == True{} : Bool} & ({SV.below(SO.pins_of(sk), SO.nvars(sk)) == True{} : Bool} & (&m: List<&2, Nat> -> SV.Perfect(SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)), m))))))):
   +hwf = WC.wf_dec_ok(sk, w)
   tp2.go(sk, hwf, g0, l, total_pass2(sk, DPP.adjb2_of(sk, cov, hwf), DPP.hcov_of(sk, cov), hwf))

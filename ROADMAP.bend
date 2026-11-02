@@ -15,17 +15,22 @@ import ./spec/sketch.bend as SK
 import ./spec/box.bend as BX
 import ./spec/solve.bend as SV
 import ./spec/deriv.bend as DV
+import ./spec/dir.bend as DR
 import ./lib/kinst.bend as KI
 import ./lib/wfdec.bend as WF
 import ./lib/solve.bend as SO
 import ./lib/fast.bend as FS
 
 # The verified solver (sk-09, DESIGN §10), with sk-13a's classes (v5,
-# SK13A-REVIEW.md, after four audits; spec/solve.bend). History: the
-# sk-09 drafts were audited (2026-10-14), read by Danielle and reviewed
-# again (AUDIT-sk09-laws.md: they now hold at every level); sk-13a v5
-# replaced the red list and its syntactic witnesses (solve_red) with one
-# class per constraint and the honesty laws below (S0b, 2026-10-19).
+# SK13A-REVIEW.md, after four audits) extended by sk-13b's direction layer
+# (PLAN-sk13b.md v2; spec/solve.bend, spec/dir.bend). History: the sk-09
+# drafts were audited (2026-10-14), read by Danielle and reviewed again
+# (AUDIT-sk09-laws.md: they now hold at every level); sk-13a v5 replaced
+# the red list and its syntactic witnesses (solve_red) with one class per
+# constraint and the honesty laws below (S0b, 2026-10-19); sk-13b let
+# drops and conflicts be judged by directions, each with the segments it
+# needs nonzero (nd), which the corollaries and completeness now read (read
+# before the switch, 2026-11-02).
 # ----------------------------------------------------------------------
 # solve_l(sk, g0, l) (lib/solve.bend) takes a sketch, a drawing (one
 # dyadic value per variable) and a level (how hard to try; solve is level
@@ -58,21 +63,22 @@ import ./lib/fast.bend as FS
 # (each constraint's class is the honest one given the classes before it,
 # spec/solve.bend: Honest) and solve_total; the spec alone: honest_unique
 # (honest classes agree, so the sketch determines them); semantic
-# corollaries: solve_drop, solve_amber, solve_conflict; completeness:
+# corollaries: solve_drop, solve_amber, solve_conflict (each where the nd
+# segments it reads have nonzero length); completeness:
 # solve_complete, and solve_refused, what a refusal means today.
 #
-# Proven, all of them: solve_exists, solve_unique, solve_pins
-# (lib/solvepf.bend), solve_regular (lib/regpf.bend), solve_blame
-# (lib/blamepf.bend), solve_conflict (lib/conflawpf.bend), solve_drop
-# (lib/droplawpf.bend), solve_amber (lib/amberlawpf.bend), solve_total and
-# solve_honest (lib/totalpf.bend), honest_unique (lib/uniqpf.bend),
-# solve_complete (lib/completepf.bend) and solve_refused
-# (lib/refusedpf.bend), restated in tests/solve_laws.bend. The classes,
-# pins and structure are the single pass's (lib/pass.bend; PLAN-sk13a S4,
-# switched in S5); the dropped equations are correct by construction,
-# each with its reason (lib/ckpf.bend why_pass, PLAN-sk13b B4.6), and the
-# verdict certifies the amber sides by their refutations
-# (lib/verdict.bend).
+# Proven, all of them: solve_exists, solve_unique, solve_pins,
+# solve_regular, solve_blame, solve_honest, solve_drop, solve_amber and
+# solve_conflict (lib/dsolvepf.bend), solve_total (lib/dtotalpf.bend),
+# honest_unique (lib/duniqpf.bend), solve_complete (lib/dcompletepf.bend)
+# and solve_refused (lib/drefusedpf.bend), restated in
+# tests/solve_laws.bend and tests/complete_laws.bend. The classes, pins
+# and structure are the single pass's with the direction layer
+# (lib/dpass.bend; PLAN-sk13a S4, PLAN-sk13b B4); the dropped equations
+# are correct by construction, each with its reason (lib/dcwpf.bend,
+# PLAN-sk13b B4.6), and the verdict checks the live drops' nd segments
+# over the box and certifies the amber sides by their refutations
+# (lib/solve.bend: ndok; lib/verdict.bend).
 
 # LAW: in a complete ordered field, the solver's box holds a geometry
 # meaning the sketch less its red constraints
@@ -154,7 +160,8 @@ law solve_honest:
 # LAW (about the spec alone): honest classifications agree. Every
 # constraint gets the same kind, and every equation is dropped in both or
 # in neither; only the Over witnesses, which irreducible support is shown,
-# the pins and the box may differ between solvers
+# the drops' reasons, the nd they and a conflict record, the pins and the
+# box may differ between solvers
 law honest_unique:
   for +sk: SK.Sketch
   for  w: SK.Sketch.wf(sk)
@@ -167,7 +174,8 @@ law honest_unique:
   M.Both({SV.kind(SV.class_at(c1, c)) == SV.kind(SV.class_at(c2, c)) : Nat}, {SV.mem(j, SV.dropped(c1)) == SV.mem(j, SV.dropped(c2)) : Bool})
 
 # LAW: in every ordered field, wherever the solved equations hold, every
-# dropped equation holds
+# dropped equation holds at a geometry where the segments its derivation
+# needs (its drop's nd: none at degree 0) have nonzero length
 law solve_drop:
   for ~F: O.OField
   for +sk: SK.Sketch
@@ -177,9 +185,13 @@ law solve_drop:
   for +l: Nat
   for +x: M.Vec(~F)
   for  hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), SV.dropped(SO.Out.cls(SO.solve_l(sk, g0, l)))))
-  SK.Zeros(~F, x, SV.picked(SK.Sketch.eqs(sk), SV.dropped(SO.Out.cls(SO.solve_l(sk, g0, l)))))
+  for +j: Nat
+  for  hj: {SV.mem(j, SV.dropped(SO.Out.cls(SO.solve_l(sk, g0, l)))) == True{} : Bool}
+  for  hl: DR.Longs(~F, x, SV.ents(sk), SV.dnd_at(SO.Out.cls(SO.solve_l(sk, g0, l)), j))
+  SK.Zeros(~F, x, [SV.eqat(SK.Sketch.eqs(sk), j)])
 
-# LAW: deleting every amber constraint changes no solution
+# LAW: deleting every amber constraint changes no solution at which the
+# amber constraints' drops' nd segments have nonzero length
 law solve_amber:
   for ~F: O.OField
   for +sk: SK.Sketch
@@ -189,10 +201,13 @@ law solve_amber:
   for +l: Nat
   for +x: M.Vec(~F)
   for  m: SK.Sketch.means(~F, x, SV.mark(SV.cat(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), SV.ambers(SO.Out.cls(SO.solve_l(sk, g0, l)))), sk))
+  for  hl: DR.Longs(~F, x, SV.ents(sk), SV.amber_nd(SO.Out.cls(SO.solve_l(sk, g0, l))))
   SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk))
 
 # LAW: in every ordered field, a conflicting constraint and its support
-# cannot all hold, so it cannot be restored
+# cannot all hold at a geometry where its nd segments have nonzero length
+# (none for a degree-0 conflict; for a direction one, the segments its
+# refutation needs, Q15), so it cannot be restored
 law solve_conflict:
   for ~F: O.OField
   for +sk: SK.Sketch
@@ -204,9 +219,10 @@ law solve_conflict:
   for  hc: {SV.is_conflict(SV.class_at(SO.Out.cls(SO.solve_l(sk, g0, l)), c)) == True{} : Bool}
   for +x: M.Vec(~F)
   for  m: SK.Sketch.means(~F, x, SV.only(Con{c, SV.support(SO.Out.cls(SO.solve_l(sk, g0, l)), c)}, sk))
+  for  hl: DR.Longs(~F, x, SV.ents(sk), SV.conflict_nd(SO.Out.cls(SO.solve_l(sk, g0, l)), c))
   Empty
 
-# Completeness (sk-09, DESIGN §10.2, with sk-13a's classes)
+# Completeness (sk-09, DESIGN §10.2, with sk-13b's classes)
 # --------------------------------------------------------
 # solve_l(sk, g, l) is the solver at level l: it tries seven precisions
 # of 64, 96, 128, 192, ... (doubling every two), starting at the l-th, and
@@ -237,7 +253,9 @@ law solve_total:
 # system solved, meets the side conditions of the kept constraints that
 # are not amber strictly (spec/solve.bend: Strict, where a >= 0 side whose
 # variables are all pins may hold with equality; amber sides are
-# certified by their refutations instead), and is a regular point of the
+# certified by their refutations instead), at which every segment in the
+# nd of a drop of a Kept or Amber constraint has positive squared length
+# (hn, as the verdict checks it over the box), and is a regular point of the
 # system solved in the free variables the solver chose (spec/deriv.bend;
 # the free variables are chosen structurally, from the order of the
 # variables: a segment with only a length, drawn horizontal, has p1.x,
@@ -260,12 +278,14 @@ law solve_complete:
   for  hp: SV.PinnedAt(~KI.dnum(), ~F, ~H, x, SO.pins_of(sk), g0)
   for  hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))))
   for  hs: SV.Strict(~F, x, SK.Sketch.sides(SV.mark(SV.cat(SV.reds(SO.cls_of(sk)), SV.ambers(SO.cls_of(sk))), sk)), SO.pins_of(sk))
+  for  hn: SV.Strict(~F, x, DR.ndsides(SV.ents(sk), SV.live_nd(SO.cls_of(sk))), SO.pins_of(sk))
   for  hr: DV.Regular(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)))
   (&d: O.C(F) -> (O.lt(F, O.zero(F), d) & (&l: Nat -> (@g: List<&2, S.D> -> SV.Near(~KI.dnum(), ~F, ~H, SO.nvars(sk), 0n, g, x, d, SO.pins_of(sk), g0) -> ({SO.Out.ok(SO.solve_l(sk, g, l)) == True{} : Bool} & BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g, l)), SO.Out.gr(SO.solve_l(sk, g, l)), x))))))
 
-# LAW: what a refusal means today: if no level certifies, the drawing
-# itself is not a regular solution of the system solved in the solver's
-# free variables (as solve_complete reads it). That is all it says;
+# LAW: what a refusal means today: if no level certifies (hn0), the
+# drawing itself is not a regular solution of the system solved in the
+# solver's free variables at which the live drops' nd segments are
+# nonzero (as solve_complete reads it). That is all it says;
 # solve_refusal_explained (sk-13e) is the stronger form.
 law solve_refused:
   for ~F: O.OField
@@ -276,12 +296,13 @@ law solve_refused:
   for  cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}
   for  dy: {SV.dyadic(SV.mark(SV.reds(SO.cls_of(sk)), sk)) == True{} : Bool}
   for +g0: List<&2, S.D>
-  for  hn: @l: Nat -> {SO.Out.ok(SO.solve_l(sk, g0, l)) == False{} : Bool}
+  for  hn0: @l: Nat -> {SO.Out.ok(SO.solve_l(sk, g0, l)) == False{} : Bool}
   for +x: M.Vec(~F)
   for  hx: {x == N.ofkv(~KI.dnum(), ~F, ~H, g0) : M.Vec(~F)}
   for  hl: {M.len(~F, x) == SO.nvars(sk) : Nat}
   for  hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))))
   for  hs: SV.Strict(~F, x, SK.Sketch.sides(SV.mark(SV.cat(SV.reds(SO.cls_of(sk)), SV.ambers(SO.cls_of(sk))), sk)), SO.pins_of(sk))
+  for  hn: SV.Strict(~F, x, DR.ndsides(SV.ents(sk), SV.live_nd(SO.cls_of(sk))), SO.pins_of(sk))
   for  hr: DV.Regular(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk)))
   Empty
 
@@ -291,7 +312,7 @@ law solve_refused:
 # word dyadics (limbs in base 2^12; lib/gnumer.bend's proposer and the
 # generic checker at those numbers). It returns exactly solve_l's answer,
 # at every level, so every law above holds for what runs. Proven
-# (lib/fastpf.bend: solve_l_eq for every computing numbers with the
+# (lib/dwfastpf.bend: solve_l2_eq for every computing numbers with the
 # proposer's operations and laws, at the CLI's instance), restated in
 # tests/fast_laws.bend.
 

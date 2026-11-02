@@ -8,6 +8,11 @@
 # FS.wo), with the word laws at that base, this is ROADMAP's fast_solve,
 # restated in tests/fast_laws.bend, so every law about the solver holds
 # for what runs (PLAN-sk13w W6).
+#
+# Since the sk-13b switch (2026-11-02), what this file proved about
+# sk-13a's pass, Honest or solver is proven in lib/dwfastpf.bend; what
+# is left here is what that proof reuses, and the description below is
+# of the sk-13a proof.
 
 # Generated from tools/drafts/fastpf.draft by tools/expand.py; edit the
 # draft.
@@ -166,15 +171,6 @@ def final_c($KWR, +sk: SK.Sketch, +g0: $DV, +ok: Bool, +cls: List<&2, SV.Class>,
   %shape_t($T, SO.nvars(sk), CK.eqlen($FSOL), gc, pins, p) : {$FL == KA.band($FHDL, KA.band(WF.wf_dec($FMK), KA.band(BX.Sketch.within($FMK, $FLNL), KA.band($FCHL, KA.band($FSDL, KA.band(_, $FEX)))))) : Bool}
   {==}
 
-def accept_t($KWR, m: NU.PR, +sk: SK.Sketch, +g0: $DV, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>) -> {FS.accept($G, GM.hpr($HH, m), sk, g0, cls, pins) == SO.accept(m, sk, g0, cls, pins) : Bool}:
-  match m:
-    case NU.POk{NU.NP{+plan, +gc, +gr}}:
-      final_c($T, sk, g0, True{}, cls, pins, gc, gr, plan)
-    case NU.PRetry{}:
-      {==}
-    case NU.PStop{}:
-      {==}
-
 # The answer
 # ----------
 
@@ -207,31 +203,6 @@ def answer_t($KWR, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, r: SO.Run) ->
 @MACRO PLL FS.ploop($G, t, FS.accept($G, $GPL, sk, g0, cls, pins), $GPL, sk, g0, $hv g0), cls, pins, es, nv, skel)
 @MACRO NPL NU.plan(es, nv, skel, g0, p)
 
-# the loop on mapped plans is SO.ploop's, mapped
-def ploop_t($KWR, ps: List<&2, Nat>, ok: Bool, cur: NU.PR, +sk: SK.Sketch, +g0: $DV, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {FS.ploop($G, ps, ok, GM.hpr($HH, cur), sk, g0, $hv g0), cls, pins, es, nv, skel) == hrun($HH, SO.ploop(ps, ok, cur, sk, g0, cls, pins, es, nv, skel)) : FS.FRun<K>}:
-  match ps ok:
-    case Nil{} ok:
-      {==}
-    case Con{p, t} True{}:
-      {==}
-    case Con{+p, +t} False{}:
-      %ploop_t($T, t, SO.accept($NPL, sk, g0, cls, pins), $NPL, sk, g0, cls, pins, es, nv, skel) : {$PLL == _ : FS.FRun<K>}
-      %accept_t($T, $NPL, sk, g0, cls, pins) : {$PLL == FS.ploop($G, t, _, GM.hpr($HH, $NPL), sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
-      %GQ.plan_t($T, es, nv, skel, g0, p) : {$PLL == FS.ploop($G, t, FS.accept($G, _, sk, g0, cls, pins), GM.hpr($HH, $NPL), sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
-      %GQ.plan_t($T, es, nv, skel, g0, p) : {$PLL == FS.ploop($G, t, FS.accept($G, $GPL, sk, g0, cls, pins), _, sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
-      {==}
-
-def start_t($KWR, ps: List<&2, Nat>, +sk: SK.Sketch, +g0: $DV, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {FS.ploop.start($G, ps, sk, g0, $hv g0), cls, pins, es, nv, skel) == hrun($HH, SO.ploop.start(ps, sk, g0, cls, pins, es, nv, skel)) : FS.FRun<K>}:
-  match ps:
-    case Nil{}:
-      {==}
-    case Con{+p, +t}:
-      %ploop_t($T, t, SO.accept($NPL, sk, g0, cls, pins), $NPL, sk, g0, cls, pins, es, nv, skel) : {$PLL == _ : FS.FRun<K>}
-      %accept_t($T, $NPL, sk, g0, cls, pins) : {$PLL == FS.ploop($G, t, _, GM.hpr($HH, $NPL), sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
-      %GQ.plan_t($T, es, nv, skel, g0, p) : {$PLL == FS.ploop($G, t, FS.accept($G, _, sk, g0, cls, pins), GM.hpr($HH, $NPL), sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
-      %GQ.plan_t($T, es, nv, skel, g0, p) : {$PLL == FS.ploop($G, t, FS.accept($G, $GPL, sk, g0, cls, pins), _, sk, g0, $hv g0), cls, pins, es, nv, skel) : FS.FRun<K>}
-      {==}
-
 # The solver
 # ----------
 
@@ -251,52 +222,9 @@ def cons_st(+c: SV.Class, w: FS.PW) -> {FS.PW.st(w) == FS.PW.st(FS.pw.cons(c, w)
 @MACRO WP +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat
 @MACRO ONE PA.one(es, own, sk, adj, f, i, st)
 
-def walk2_cls(rs: List<&2, SK.Rec>, $WP, +i: Nat, +st: PA.PS) -> {FS.PW.cls(FS.walk2(rs, $WA, i, st)) == PA.pass(rs, $WA, i, st) : List<&2, SV.Class>}:
-  match rs:
-    case Nil{}:
-      {==}
-    case Con{SK.Rec{id, True{}, k}, +t}:
-      %cons_cls(SV.Kept{Nil{}}, FS.walk2(t, $WA, 1n+i, st)) : {_ == Con{SV.Kept{Nil{}}, PA.pass(t, $WA, 1n+i, st)} : List<&2, SV.Class>}
-      %walk2_cls(t, $WA, 1n+i, st) : {Con{SV.Kept{Nil{}}, FS.PW.cls(FS.walk2(t, $WA, 1n+i, st))} == Con{SV.Kept{Nil{}}, _} : List<&2, SV.Class>}
-      {==}
-    case Con{SK.Rec{id, False{}, k}, +t}:
-      %cons_cls(PA.PO.k($ONE), FS.walk2(t, $WA, 1n+i, PA.PO.st($ONE))) : {_ == Con{PA.PO.k($ONE), PA.pass(t, $WA, 1n+i, PA.PO.st($ONE))} : List<&2, SV.Class>}
-      %walk2_cls(t, $WA, 1n+i, PA.PO.st($ONE)) : {Con{PA.PO.k($ONE), FS.PW.cls(FS.walk2(t, $WA, 1n+i, PA.PO.st($ONE)))} == Con{PA.PO.k($ONE), _} : List<&2, SV.Class>}
-      {==}
-
-def walk2_st(rs: List<&2, SK.Rec>, $WP, +i: Nat, +st: PA.PS) -> {FS.PW.st(FS.walk2(rs, $WA, i, st)) == PA.pass_st(rs, $WA, i, st) : PA.PS}:
-  match rs:
-    case Nil{}:
-      {==}
-    case Con{SK.Rec{id, True{}, k}, +t}:
-      %cons_st(SV.Kept{Nil{}}, FS.walk2(t, $WA, 1n+i, st)) : {_ == PA.pass_st(t, $WA, 1n+i, st) : PA.PS}
-      walk2_st(t, $WA, 1n+i, st)
-    case Con{SK.Rec{id, False{}, k}, +t}:
-      %cons_st(PA.PO.k($ONE), FS.walk2(t, $WA, 1n+i, PA.PO.st($ONE))) : {_ == PA.pass_st(t, $WA, 1n+i, PA.PO.st($ONE)) : PA.PS}
-      walk2_st(t, $WA, 1n+i, PA.PO.st($ONE))
-
 @MACRO EQ SK.Sketch.eqs(sk)
 @MACRO RA PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk))
 @MACRO W2 FS.walk2($RA)
 @MACRO KV PA.kvs(PA.dadjs($EQ), ST.len.q($EQ), PA.nvars(sk), PA.PS.bp(_))
 
-# FS.solve_lw is SO.solve_lw's form: the pass's results once (walk2), each
-# named once
-def solve_lw_unf($KWR, +sk: SK.Sketch, +g0: $DV, +l: Nat, +w: Nat) -> {FS.solve_lw($G, sk, g0, l, w) == FS.answer($G, SO.cls_of(sk), SO.pins_of(sk), FS.ploop.start($G, SO.precisions(l, w), sk, g0, FS.ofdv($G, g0), SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk))) : SO.Out}:
-  %walk2_cls($RA) : {FS.solve_lw($G, sk, g0, l, w) == FS.answer($G, _, PA.pins(sk), FS.ploop.start($G, SO.precisions(l, w), sk, g0, FS.ofdv($G, g0), _, PA.pins(sk), SV.solved(sk, SV.reds(_), SV.dropped(_)), PA.nvars(sk), PA.skel(sk))) : SO.Out}
-  %walk2_st($RA) : {FS.solve_lw($G, sk, g0, l, w) == FS.answer($G, FS.PW.cls($W2), ST.KD.red($KV), FS.ploop.start($G, SO.precisions(l, w), sk, g0, FS.ofdv($G, g0), FS.PW.cls($W2), ST.KD.red($KV), SV.solved(sk, SV.reds(FS.PW.cls($W2)), SV.dropped(FS.PW.cls($W2))), PA.nvars(sk), ST.renum(ST.skel.kd(ST.adj($EQ), ST.len.q($EQ), PA.nvars(sk), PA.PS.bp(_), $KV), PA.PS.bp(_)))) : SO.Out}
-  {==}
-
 @MACRO SLL FS.answer($G, cls, pins, FS.ploop.start($G, ps, sk, g0, FS.ofdv($G, g0), cls, pins, es, nv, skel))
-
-def solve_core($KWR, +sk: SK.Sketch, +g0: $DV, +ps: List<&2, Nat>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {$SLL == SO.answer(cls, pins, SO.ploop.start(ps, sk, g0, cls, pins, es, nv, skel)) : SO.Out}:
-  %answer_t($T, cls, pins, SO.ploop.start(ps, sk, g0, cls, pins, es, nv, skel)) : {$SLL == _ : SO.Out}
-  %start_t($T, ps, sk, g0, cls, pins, es, nv, skel) : {$SLL == FS.answer($G, cls, pins, _) : SO.Out}
-  %ofdv_t($T, g0) : {$SLL == FS.answer($G, cls, pins, FS.ploop.start($G, ps, sk, g0, _, cls, pins, es, nv, skel)) : SO.Out}
-  {==}
-
-def solve_lw_eq($KWR, +sk: SK.Sketch, +g0: $DV, +l: Nat, +w: Nat) -> {FS.solve_lw($G, sk, g0, l, w) == SO.solve_lw(sk, g0, l, w) : SO.Out}:
-  Equal.trans(SO.Out, FS.solve_lw($G, sk, g0, l, w), FS.answer($G, SO.cls_of(sk), SO.pins_of(sk), FS.ploop.start($G, SO.precisions(l, w), sk, g0, FS.ofdv($G, g0), SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk))), SO.solve_lw(sk, g0, l, w), solve_lw_unf($T, sk, g0, l, w), solve_core($T, sk, g0, SO.precisions(l, w), SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk)))
-
-def solve_l_eq($KWR, +sk: SK.Sketch, +g0: $DV, +l: Nat) -> {FS.solve_l($G, sk, g0, l) == SO.solve_l(sk, g0, l) : SO.Out}:
-  solve_lw_eq($T, sk, g0, l, 7n)

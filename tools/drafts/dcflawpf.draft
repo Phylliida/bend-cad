@@ -3,7 +3,7 @@
 # solve_conflict over any honest classification). Proofs only.
 #
 # The honest class of a driving conflict c with support s has a refutation
-# (DH.ConflictOk). A geometry meaning the sketch with only c and s
+# (SV.ConflictOk). A geometry meaning the sketch with only c and s
 # enforced satisfies exactly their equations and sides (as
 # lib/conflawpf.bend reads only's sketch):
 # - a degree-0 refutation has no point (lib/conflawpf.bend: cf_m);
@@ -28,7 +28,6 @@ import ../spec/field.bend as O
 import ../spec/mat.bend as M
 import ../spec/sketch.bend as SK
 import ../spec/solve.bend as SV
-import ../spec/_draft13b.bend as DH
 import ../spec/dir.bend as DR
 import ./karith.bend as KA
 import ./nat.bend as LN
@@ -65,33 +64,33 @@ def absurd(-A: Type, x: Empty) -> A:
 # The Fate at c
 # -------------
 
-def go_hd(+sk: SK.Sketch, +cls: $CLS, +m: Nat, +c0: Nat, h: DH.Honest.go(sk, cls, 1n+m, c0)) -> DH.Fate(sk, cls, c0):
+def go_hd(+sk: SK.Sketch, +cls: $CLS, +m: Nat, +c0: Nat, h: SV.Honest.go(sk, cls, 1n+m, c0)) -> SV.Fate(sk, cls, c0):
   match h:
     case (a, b):
       a
 
-def go_tl(+sk: SK.Sketch, +cls: $CLS, +m: Nat, +c0: Nat, h: DH.Honest.go(sk, cls, 1n+m, c0)) -> DH.Honest.go(sk, cls, m, 1n+c0):
+def go_tl(+sk: SK.Sketch, +cls: $CLS, +m: Nat, +c0: Nat, h: SV.Honest.go(sk, cls, 1n+m, c0)) -> SV.Honest.go(sk, cls, m, 1n+c0):
   match h:
     case (a, b):
       b
 
 # the k-th fate from c0 on
-def fate_at(+sk: SK.Sketch, +cls: $CLS, n: Nat, +c0: Nat, k: Nat, h: DH.Honest.go(sk, cls, n, c0), hk: {KA.natle(1n+k, n) == True{} : Bool}) -> DH.Fate(sk, cls, Nat.add(k, c0)):
+def fate_at(+sk: SK.Sketch, +cls: $CLS, n: Nat, +c0: Nat, k: Nat, h: SV.Honest.go(sk, cls, n, c0), hk: {KA.natle(1n+k, n) == True{} : Bool}) -> SV.Fate(sk, cls, Nat.add(k, c0)):
   match n k:
     case 0n k:
-      absurd(DH.Fate(sk, cls, Nat.add(k, c0)), KA.ft(hk))
+      absurd(SV.Fate(sk, cls, Nat.add(k, c0)), KA.ft(hk))
     case 1n++m 0n:
       go_hd(sk, cls, m, c0, h)
     case 1n++m 1n++j:
-      (%Equal.sym(Nat, 1n+Nat.add(j, c0), Nat.add(j, 1n+c0), LN.add_succ(j, c0)) : DH.Fate(sk, cls, _)
+      (%Equal.sym(Nat, 1n+Nat.add(j, c0), Nat.add(j, 1n+c0), LN.add_succ(j, c0)) : SV.Fate(sk, cls, _)
         fate_at(sk, cls, m, 1n+c0, j, go_tl(sk, cls, m, c0, h), hk))
 
-def hon_len(+sk: SK.Sketch, +cls: $CLS, h: DH.Honest(sk, cls)) -> {SV.clsn(cls) == SV.ncons(sk) : Nat}:
+def hon_len(+sk: SK.Sketch, +cls: $CLS, h: SV.Honest(sk, cls)) -> {SV.clsn(cls) == SV.ncons(sk) : Nat}:
   match h:
     case (a, b):
       a
 
-def hon_go(+sk: SK.Sketch, +cls: $CLS, h: DH.Honest(sk, cls)) -> DH.Honest.go(sk, cls, SV.ncons(sk), 0n):
+def hon_go(+sk: SK.Sketch, +cls: $CLS, h: SV.Honest(sk, cls)) -> SV.Honest.go(sk, cls, SV.ncons(sk), 0n):
   match h:
     case (a, b):
       b
@@ -535,12 +534,12 @@ def cl_or(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +c: Nat, +s: $NL, +cx: $Q
     case Inr{rd}:
       cl_dir(~F, x, sk, c, s, cx, nd, rd, had, m, hl)
 
-def cl_ok(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +red: $NL, +c: Nat, +s: $NL, +nd: $NL, h: DH.ConflictOk(sk, red, c, s, nd), +hlt: {SV.lt(c, SV.ncons(sk)) == True{} : Bool}, +edr: {SV.driven(sk, c) == False{} : Bool}, m: SK.Sketch.holds(~F, x, SV.only($CS, sk)), +hl: DR.Longs(~F, x, $ENT, nd)) -> Empty:
+def cl_ok(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +red: $NL, +c: Nat, +s: $NL, +nd: $NL, h: SV.ConflictOk(sk, red, c, s, nd), +hlt: {SV.lt(c, SV.ncons(sk)) == True{} : Bool}, +edr: {SV.driven(sk, c) == False{} : Bool}, m: SK.Sketch.holds(~F, x, SV.only($CS, sk)), +hl: DR.Longs(~F, x, $ENT, nd)) -> Empty:
   (h1, h2) = h
   (hor, hmin) = h2
   cl_or(~F, x, sk, c, s, SV.ctx(sk, red, c), nd, hor, ad_cs(sk, c, s, hlt, edr, LI.band_l(SV.all_driving(sk, s), SV.none_in(s, red), LI.band_r(SV.below(s, c), SV.band(SV.all_driving(sk, s), SV.none_in(s, red)), LI.band_r(SV.distinct(s), SV.band(SV.below(s, c), SV.band(SV.all_driving(sk, s), SV.none_in(s, red))), h1)))), m, hl)
 
-def cl_b(~F: O.OField, b: Bool, +x: M.Vec(~F), +sk: SK.Sketch, +cls: $CLS, +c: Nat, +s: $NL, +nd: $NL, +eb: {SV.driven(sk, c) == b : Bool}, +hlt: {SV.lt(c, SV.ncons(sk)) == True{} : Bool}, f: DH.Fate.pick(sk, cls, $R, $D, c, b, SV.Conflict{s, nd}), m: SK.Sketch.holds(~F, x, SV.only($CS, sk)), +hl: DR.Longs(~F, x, $ENT, nd)) -> Empty:
+def cl_b(~F: O.OField, b: Bool, +x: M.Vec(~F), +sk: SK.Sketch, +cls: $CLS, +c: Nat, +s: $NL, +nd: $NL, +eb: {SV.driven(sk, c) == b : Bool}, +hlt: {SV.lt(c, SV.ncons(sk)) == True{} : Bool}, f: SV.Fate.pick(sk, cls, $R, $D, c, b, SV.Conflict{s, nd}), m: SK.Sketch.holds(~F, x, SV.only($CS, sk)), +hl: DR.Longs(~F, x, $ENT, nd)) -> Empty:
   match b:
     case True{}:
       f
@@ -548,7 +547,7 @@ def cl_b(~F: O.OField, b: Bool, +x: M.Vec(~F), +sk: SK.Sketch, +cls: $CLS, +c: N
       cl_ok(~F, x, sk, $R, c, s, nd, f, hlt, eb, m, hl)
 
 # c's fate, c a conflict
-def cl_k(~F: O.OField, k: SV.Class, +x: M.Vec(~F), +sk: SK.Sketch, +cls: $CLS, +c: Nat, f: DH.Fate.pick(sk, cls, $R, $D, c, SV.driven(sk, c), k), hc: {SV.is_conflict(k) == True{} : Bool}, +hlt: {SV.lt(c, SV.ncons(sk)) == True{} : Bool},
+def cl_k(~F: O.OField, k: SV.Class, +x: M.Vec(~F), +sk: SK.Sketch, +cls: $CLS, +c: Nat, f: SV.Fate.pick(sk, cls, $R, $D, c, SV.driven(sk, c), k), hc: {SV.is_conflict(k) == True{} : Bool}, +hlt: {SV.lt(c, SV.ncons(sk)) == True{} : Bool},
   m: SK.Sketch.holds(~F, x, SV.only(Con{c, SV.support.of(k)}, sk)), +hl: DR.Longs(~F, x, $ENT, SV.conflict_nd.of(k))) -> Empty:
   match k:
     case SV.Kept{d}:
@@ -560,12 +559,12 @@ def cl_k(~F: O.OField, k: SV.Class, +x: M.Vec(~F), +sk: SK.Sketch, +cls: $CLS, +
     case SV.Conflict{+s, +nd}:
       cl_b(~F, SV.driven(sk, c), x, sk, cls, c, s, nd, {==}, hlt, f, m, hl)
 
-def cl_go(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: $CLS, +c: Nat, b: Bool, +e: {SV.lt(c, SV.ncons(sk)) == b : Bool}, H: DH.Honest(sk, cls), hc: {SV.is_conflict(SV.class_at(cls, c)) == True{} : Bool},
+def cl_go(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: $CLS, +c: Nat, b: Bool, +e: {SV.lt(c, SV.ncons(sk)) == b : Bool}, H: SV.Honest(sk, cls), hc: {SV.is_conflict(SV.class_at(cls, c)) == True{} : Bool},
   m: SK.Sketch.holds(~F, x, SV.only(Con{c, SV.support(cls, c)}, sk)), hl: DR.Longs(~F, x, $ENT, SV.conflict_nd(cls, c))) -> Empty:
   match b:
     case True{}:
       +hk = Equal.trans(Bool, KA.natle(1n+c, SV.ncons(sk)), SV.lt(c, SV.ncons(sk)), True{}, Equal.sym(Bool, SV.lt(c, SV.ncons(sk)), KA.natle(1n+c, SV.ncons(sk)), LI.lt_sv(c, SV.ncons(sk))), e)
-      cl_k(~F, SV.class_at(cls, c), x, sk, cls, c, (%Equal.sym(Nat, c, Nat.add(c, 0n), LN.add_zero(c)) : DH.Fate(sk, cls, _)
+      cl_k(~F, SV.class_at(cls, c), x, sk, cls, c, (%Equal.sym(Nat, c, Nat.add(c, 0n), LN.add_zero(c)) : SV.Fate(sk, cls, _)
         fate_at(sk, cls, SV.ncons(sk), 0n, c, hon_go(sk, cls, H), hk)), hc, e, m, hl)
     case False{}:
       CF.cf_past(cls, c, (%Equal.sym(Nat, SV.clsn(cls), SV.ncons(sk), hon_len(sk, cls, H)) : {SV.lt(c, _) == False{} : Bool}
@@ -574,5 +573,5 @@ def cl_go(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: $CLS, +c: Nat, b: B
 # THE DRAFT LAW (solve_conflict over the extended Honest): in every
 # ordered field, a conflicting constraint and its support cannot all hold
 # where the conflict's nd segments have nonzero length
-def conflict_law(~F: O.OField, +sk: SK.Sketch, +cls: $CLS, h: DH.Honest(sk, cls), +c: Nat, hc: {SV.is_conflict(SV.class_at(cls, c)) == True{} : Bool}, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SV.only(Con{c, SV.support(cls, c)}, sk)), hl: DR.Longs(~F, x, $ENT, SV.conflict_nd(cls, c))) -> Empty:
+def conflict_law(~F: O.OField, +sk: SK.Sketch, +cls: $CLS, h: SV.Honest(sk, cls), +c: Nat, hc: {SV.is_conflict(SV.class_at(cls, c)) == True{} : Bool}, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SV.only(Con{c, SV.support(cls, c)}, sk)), hl: DR.Longs(~F, x, $ENT, SV.conflict_nd(cls, c))) -> Empty:
   cl_go(~F, x, sk, cls, c, SV.lt(c, SV.ncons(sk)), {==}, h, hc, MN.sketch_complete(~F, x, SV.only(Con{c, SV.support(cls, c)}, sk), m), hl)

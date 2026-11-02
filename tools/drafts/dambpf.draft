@@ -11,7 +11,7 @@
 #   where their nd segments are long (amber_nd's);
 # - so every equation of the sketch less its reds holds (pz2);
 # - an amber constraint's sides follow from its Implied refutations (one
-#   per side, DH.AllImplied, handed on by facts_hold), its premises
+#   per side, SV.AllImplied, handed on by facts_hold), its premises
 #   holding by then: along the order, as lib/vsdpf.bend's sides_mark.
 #
 # Generated from tools/drafts/dambpf.draft by tools/expand.py; edit the
@@ -24,7 +24,6 @@ import ../spec/field.bend as O
 import ../spec/mat.bend as M
 import ../spec/sketch.bend as SK
 import ../spec/solve.bend as SV
-import ../spec/_draft13b.bend as DH
 import ../spec/dir.bend as DR
 import ./karith.bend as KA
 import ./nat.bend as LN
@@ -70,28 +69,28 @@ def absurd(-A: Type, x: Empty) -> A:
 # The ambers drop all their equations, read once
 # ----------------------------------------------
 
-def ab_d(+sk: SK.Sketch, +cls: $CLS, +R: $NL, +D: $NL, +c: Nat, +dd: $DL, nr: SV.NoRefute2(sk, R, c), dok: DH.DropsOk(sk, cls, R, D, c, SV.drops(dd)), dnd: DH.DropsNd(sk, cls, R, D, c, dd),
-  q: ({SV.is_amberable(sk, c, SV.drops(dd)) == True{} : Bool} & DH.AllImplied(sk, R, c))) -> ({SV.is_amberable(sk, c, SV.drops(dd)) == True{} : Bool} & DH.AmberOk(sk, cls, R, D, c, dd)):
+def ab_d(+sk: SK.Sketch, +cls: $CLS, +R: $NL, +D: $NL, +c: Nat, +dd: $DL, nr: SV.NoRefute2(sk, R, c), dok: SV.DropsOk(sk, cls, R, D, c, SV.drops(dd)), dnd: SV.DropsNd(sk, cls, R, D, c, dd),
+  q: ({SV.is_amberable(sk, c, SV.drops(dd)) == True{} : Bool} & SV.AllImplied(sk, R, c))) -> ({SV.is_amberable(sk, c, SV.drops(dd)) == True{} : Bool} & SV.AmberOk(sk, cls, R, D, c, dd)):
   match q:
     case (+ha, all):
       (ha, (nr, (dok, (dnd, (ha, all)))))
 
-def ab_rb(+sk: SK.Sketch, +cls: $CLS, +R: $NL, +D: $NL, +c: Nat, +dd: $DL, h: DH.AmberOk(sk, cls, R, D, c, dd)) -> ({SV.is_amberable(sk, c, SV.drops(dd)) == True{} : Bool} & DH.AmberOk(sk, cls, R, D, c, dd)):
+def ab_rb(+sk: SK.Sketch, +cls: $CLS, +R: $NL, +D: $NL, +c: Nat, +dd: $DL, h: SV.AmberOk(sk, cls, R, D, c, dd)) -> ({SV.is_amberable(sk, c, SV.drops(dd)) == True{} : Bool} & SV.AmberOk(sk, cls, R, D, c, dd)):
   (nr, q1) = h
   (dok, q2) = q1
   (dnd, q3) = q2
   ab_d(sk, cls, R, D, c, dd, nr, dok, dnd, q3)
 
-def pcb_rb(b: Bool, +sk: SK.Sketch, +cls: $CLS, +R: $NL, +D: $NL, +c: Nat, +dd: $DL, +rs: List<&2, SV.Ref>, h: DH.Fate.pick(sk, cls, R, D, c, b, SV.Amber{dd, rs}))
-  -> ({SV.alldrop.go($OWN, SV.drops(dd), c, 0n) == True{} : Bool} & DH.Fate.pick(sk, cls, R, D, c, b, SV.Amber{dd, rs})):
+def pcb_rb(b: Bool, +sk: SK.Sketch, +cls: $CLS, +R: $NL, +D: $NL, +c: Nat, +dd: $DL, +rs: List<&2, SV.Ref>, h: SV.Fate.pick(sk, cls, R, D, c, b, SV.Amber{dd, rs}))
+  -> ({SV.alldrop.go($OWN, SV.drops(dd), c, 0n) == True{} : Bool} & SV.Fate.pick(sk, cls, R, D, c, b, SV.Amber{dd, rs})):
   match b:
     case True{}:
       absurd(({SV.alldrop.go($OWN, SV.drops(dd), c, 0n) == True{} : Bool} & Empty), h)
     case False{}:
       ab_rb(sk, cls, R, D, c, dd, h)
 
-def pck_rb(+sk: SK.Sketch, +cls: $CLS, +R: $NL, +D: $NL, +c: Nat, k: SV.Class, b: Bool, h: DH.Fate.pick(sk, cls, R, D, c, b, k))
-  -> ({SV.bor(SV.bnot(SV.is_amber(k)), SV.alldrop.go($OWN, SV.kdrops(k), c, 0n)) == True{} : Bool} & DH.Fate.pick(sk, cls, R, D, c, b, k)):
+def pck_rb(+sk: SK.Sketch, +cls: $CLS, +R: $NL, +D: $NL, +c: Nat, k: SV.Class, b: Bool, h: SV.Fate.pick(sk, cls, R, D, c, b, k))
+  -> ({SV.bor(SV.bnot(SV.is_amber(k)), SV.alldrop.go($OWN, SV.kdrops(k), c, 0n)) == True{} : Bool} & SV.Fate.pick(sk, cls, R, D, c, b, k)):
   match k:
     case SV.Kept{+d}:
       ({==}, h)
@@ -102,15 +101,15 @@ def pck_rb(+sk: SK.Sketch, +cls: $CLS, +R: $NL, +D: $NL, +c: Nat, k: SV.Class, b
     case SV.Conflict{+s, +nd}:
       ({==}, h)
 
-def apc(+sk: SK.Sketch, +cls: $CLS, +m: Nat, +c: Nat, p: ({AL.pc(sk, cls, c) == True{} : Bool} & DH.Fate(sk, cls, c)), q: ({AL.allP(sk, cls, m, 1n+c) == True{} : Bool} & DH.Honest.go(sk, cls, m, 1n+c)))
-  -> ({AL.allP(sk, cls, 1n+m, c) == True{} : Bool} & DH.Honest.go(sk, cls, 1n+m, c)):
+def apc(+sk: SK.Sketch, +cls: $CLS, +m: Nat, +c: Nat, p: ({AL.pc(sk, cls, c) == True{} : Bool} & SV.Fate(sk, cls, c)), q: ({AL.allP(sk, cls, m, 1n+c) == True{} : Bool} & SV.Honest.go(sk, cls, m, 1n+c)))
+  -> ({AL.allP(sk, cls, 1n+m, c) == True{} : Bool} & SV.Honest.go(sk, cls, 1n+m, c)):
   match p:
     case (+hp, f2):
       match q:
         case (+hP, r2):
           (LI.band_i(AL.pc(sk, cls, c), AL.allP(sk, cls, m, 1n+c), hp, hP), (f2, r2))
 
-def ap_go(+sk: SK.Sketch, +cls: $CLS, n: Nat, +c: Nat, h: DH.Honest.go(sk, cls, n, c)) -> ({AL.allP(sk, cls, n, c) == True{} : Bool} & DH.Honest.go(sk, cls, n, c)):
+def ap_go(+sk: SK.Sketch, +cls: $CLS, n: Nat, +c: Nat, h: SV.Honest.go(sk, cls, n, c)) -> ({AL.allP(sk, cls, n, c) == True{} : Bool} & SV.Honest.go(sk, cls, n, c)):
   match n:
     case 0n:
       ({==}, h)
@@ -119,14 +118,14 @@ def ap_go(+sk: SK.Sketch, +cls: $CLS, n: Nat, +c: Nat, h: DH.Honest.go(sk, cls, 
         case (f, r):
           apc(sk, cls, m, c, pck_rb(sk, cls, $R, $D, c, SV.class_at(cls, c), SV.driven(sk, c), f), ap_go(sk, cls, m, 1n+c, r))
 
-def ap_cmb(+sk: SK.Sketch, +cls: $CLS, +hn: {SV.clsn(cls) == SV.ncons(sk) : Nat}, q: ({$AP0 == True{} : Bool} & DH.Honest.go(sk, cls, SV.ncons(sk), 0n))) -> ({$AP0 == True{} : Bool} & DH.Honest(sk, cls)):
+def ap_cmb(+sk: SK.Sketch, +cls: $CLS, +hn: {SV.clsn(cls) == SV.ncons(sk) : Nat}, q: ({$AP0 == True{} : Bool} & SV.Honest.go(sk, cls, SV.ncons(sk), 0n))) -> ({$AP0 == True{} : Bool} & SV.Honest(sk, cls)):
   match q:
     case (+hP, g2):
       (hP, (hn, g2))
 
 # every amber constraint drops all of its equations, read out of an
 # honest classification, given back
-def ap_rb(+sk: SK.Sketch, +cls: $CLS, h: DH.Honest(sk, cls)) -> ({$AP0 == True{} : Bool} & DH.Honest(sk, cls)):
+def ap_rb(+sk: SK.Sketch, +cls: $CLS, h: SV.Honest(sk, cls)) -> ({$AP0 == True{} : Bool} & SV.Honest(sk, cls)):
   match h:
     case (+hn, g):
       ap_cmb(sk, cls, hn, ap_go(sk, cls, SV.ncons(sk), 0n, g))
@@ -311,7 +310,7 @@ def imp_one(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +R: $NL, +c: Nat, +i: N
 
 # c's sides from the i-th (ss), each implied: they hold where the premises
 # do
-def imp_go(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +R: $NL, +c: Nat, ss: $SL, +i: Nat, +hd: {VS.sdrop(i, $CSC) == ss : $SL}, hi: DH.implied.go(sk, R, c, ss, i), +hz: SK.Zeros(~F, x, $PRE), +hs: SK.Sides(~F, x, $PRS)) -> SK.Sides(~F, x, ss):
+def imp_go(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +R: $NL, +c: Nat, ss: $SL, +i: Nat, +hd: {VS.sdrop(i, $CSC) == ss : $SL}, hi: SV.implied.go(sk, R, c, ss, i), +hz: SK.Zeros(~F, x, $PRE), +hs: SK.Sides(~F, x, $PRS)) -> SK.Sides(~F, x, ss):
   match ss:
     case Nil{}:
       Unit{}
@@ -319,22 +318,22 @@ def imp_go(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +R: $NL, +c: Nat, ss: $S
       (h1, h2) = hi
       VS.sides_join(~F, x, [s], t, imp_one(~F, x, sk, R, c, i, s, t, hd, h1, hz, hs), imp_go(~F, x, sk, R, c, t, 1n+i, VS.sdrop_step(i, $CSC, s, t, hd), h2, hz, hs))
 
-def amb_gk(+sk: SK.Sketch, +R: $NL, +i: Nat, k: SV.Class, h: DFC.AmbS.k(sk, R, i, k), ha: {SV.is_amber(k) == True{} : Bool}) -> DH.AllImplied(sk, R, i):
+def amb_gk(+sk: SK.Sketch, +R: $NL, +i: Nat, k: SV.Class, h: DFC.AmbS.k(sk, R, i, k), ha: {SV.is_amber(k) == True{} : Bool}) -> SV.AllImplied(sk, R, i):
   match k:
     case SV.Kept{dd}:
-      absurd(DH.AllImplied(sk, R, i), KA.ft(ha))
+      absurd(SV.AllImplied(sk, R, i), KA.ft(ha))
     case SV.Amber{dd, rs}:
       h
     case SV.Over{j, s, w}:
-      absurd(DH.AllImplied(sk, R, i), KA.ft(ha))
+      absurd(SV.AllImplied(sk, R, i), KA.ft(ha))
     case SV.Conflict{s, nd}:
-      absurd(DH.AllImplied(sk, R, i), KA.ft(ha))
+      absurd(SV.AllImplied(sk, R, i), KA.ft(ha))
 
 # a driving amber constraint's Fate's sides part
-def amb_get(+sk: SK.Sketch, +R: $NL, +i: Nat, +k: SV.Class, b: Bool, h: DFC.AmbS.pick(sk, R, i, b, k), hb: {b == False{} : Bool}, ha: {SV.is_amber(k) == True{} : Bool}) -> DH.AllImplied(sk, R, i):
+def amb_get(+sk: SK.Sketch, +R: $NL, +i: Nat, +k: SV.Class, b: Bool, h: DFC.AmbS.pick(sk, R, i, b, k), hb: {b == False{} : Bool}, ha: {SV.is_amber(k) == True{} : Bool}) -> SV.AllImplied(sk, R, i):
   match b:
     case True{}:
-      absurd(DH.AllImplied(sk, R, i), KA.tf(hb))
+      absurd(SV.AllImplied(sk, R, i), KA.tf(hb))
     case False{}:
       amb_gk(sk, R, i, k, h, ha)
 
@@ -453,18 +452,18 @@ def am4(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: 
     case (+hf, q2):
       am5(~F, x, sk, w, cls, hl, hP, hzm, hsm, hf, q2)
 
-def am3(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: $CLS, +hl: DR.Longs(~F, x, $ENT, SV.amber_nd(cls)), +hP: {$AP0 == True{} : Bool}, h2: DH.Honest(sk, cls), +hzm: SK.Zeros(~F, x, SK.Sketch.eqs($MRA)), +hsm: SK.Sides(~F, x, SK.Sketch.sides($MRA)))
+def am3(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: $CLS, +hl: DR.Longs(~F, x, $ENT, SV.amber_nd(cls)), +hP: {$AP0 == True{} : Bool}, h2: SV.Honest(sk, cls), +hzm: SK.Zeros(~F, x, SK.Sketch.eqs($MRA)), +hsm: SK.Sides(~F, x, SK.Sketch.sides($MRA)))
   -> SK.Sketch.means(~F, x, $MR):
   match h2:
     case (+hn, g):
       am4(~F, x, sk, w, cls, hl, hP, hzm, hsm, DFC.facts_hold(~F, x, sk, cls, (hn, g), zs_amb2(~F, x, sk, cls, hP, hn, hzm)))
 
-def am2(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: $CLS, +hl: DR.Longs(~F, x, $ENT, SV.amber_nd(cls)), +hP: {$AP0 == True{} : Bool}, h2: DH.Honest(sk, cls), hm: SK.Sketch.holds(~F, x, $MRA)) -> SK.Sketch.means(~F, x, $MR):
+def am2(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: $CLS, +hl: DR.Longs(~F, x, $ENT, SV.amber_nd(cls)), +hP: {$AP0 == True{} : Bool}, h2: SV.Honest(sk, cls), hm: SK.Sketch.holds(~F, x, $MRA)) -> SK.Sketch.means(~F, x, $MR):
   match hm:
     case (hzm, hsm):
       am3(~F, x, sk, w, cls, hl, hP, h2, hzm, hsm)
 
-def am1(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: $CLS, +hl: DR.Longs(~F, x, $ENT, SV.amber_nd(cls)), p: ({$AP0 == True{} : Bool} & DH.Honest(sk, cls)), hm: SK.Sketch.holds(~F, x, $MRA)) -> SK.Sketch.means(~F, x, $MR):
+def am1(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: $CLS, +hl: DR.Longs(~F, x, $ENT, SV.amber_nd(cls)), p: ({$AP0 == True{} : Bool} & SV.Honest(sk, cls)), hm: SK.Sketch.holds(~F, x, $MRA)) -> SK.Sketch.means(~F, x, $MR):
   match p:
     case (+hP, h2):
       am2(~F, x, sk, w, cls, hl, hP, h2, hm)
@@ -474,5 +473,5 @@ def am1(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: 
 # amber constraints, at which the amber drops' nd segments have nonzero
 # length, means it less its red ones: deleting every amber constraint
 # changes no such solution
-def amber_law(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: $CLS, h: DH.Honest(sk, cls), +x: M.Vec(~F), m: SK.Sketch.means(~F, x, $MRA), +hl: DR.Longs(~F, x, $ENT, SV.amber_nd(cls))) -> SK.Sketch.means(~F, x, $MR):
+def amber_law(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: $CLS, h: SV.Honest(sk, cls), +x: M.Vec(~F), m: SK.Sketch.means(~F, x, $MRA), +hl: DR.Longs(~F, x, $ENT, SV.amber_nd(cls))) -> SK.Sketch.means(~F, x, $MR):
   am1(~F, x, sk, w, cls, hl, ap_rb(sk, cls, h), MN.sketch_complete(~F, x, $MRA, m))

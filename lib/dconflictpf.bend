@@ -23,7 +23,6 @@ import ../spec/ring.bend as E
 import ../spec/sketch.bend as SK
 import ../spec/box.bend as BX
 import ../spec/solve.bend as SV
-import ../spec/_draft13b.bend as DH
 import ../spec/dir.bend as DR
 import ./karith.bend as KA
 import ./listpf.bend as LI
@@ -336,9 +335,9 @@ def filt2_irr(rest: List<&2, Nat>, +sk: SK.Sketch, +c: Nat, +cx: List<&2, E.QExp
 
 # candidates that are distinct, before c, driving and not red, with which c
 # refutes in its context: the filter's support with its nd is a conflict
-# (the extended ConflictOk, spec/_draft13b.bend)
+# (spec/solve.bend's ConflictOk)
 def conflict2_ok(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +cand: List<&2, Nat>, +hc: {SV.band(SV.distinct(cand), SV.band(SV.below(cand, c), SV.band(SV.all_driving(sk, cand), SV.none_in(cand, red)))) == True{} : Bool}, hr: {DCF.refutable2(sk, c, cand, SV.ctx(sk, red, c)) == True{} : Bool}, +hcov: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool})
-  -> DH.ConflictOk(sk, red, c, DCF.support2(sk, c, SV.ctx(sk, red, c), cand), DCF.cnd(sk, c, DCF.support2(sk, c, SV.ctx(sk, red, c), cand), SV.ctx(sk, red, c))):
+  -> SV.ConflictOk(sk, red, c, DCF.support2(sk, c, SV.ctx(sk, red, c), cand), DCF.cnd(sk, c, DCF.support2(sk, c, SV.ctx(sk, red, c), cand), SV.ctx(sk, red, c))):
   +hs = filt2_sub(cand, sk, c, SV.ctx(sk, red, c), Nil{})
   +h2 = LI.band_r(SV.distinct(cand), SV.band(SV.below(cand, c), SV.band(SV.all_driving(sk, cand), SV.none_in(cand, red))), hc)
   +h3 = LI.band_r(SV.below(cand, c), SV.band(SV.all_driving(sk, cand), SV.none_in(cand, red)), h2)

@@ -1,7 +1,6 @@
 # sk-13b (PLAN-sk13b.md v2): the direction layer's spec (spec/dir.bend,
-# its facts in spec/solve.bend, the extended Honest in spec/_draft13b.bend)
-# and its proofs, kept checking until the switch, when this file is
-# retired.
+# its facts and the Honest it extends in spec/solve.bend) and its proofs,
+# each result restated as its type so that the gate checks it.
 # - Its functions run on sketch 8's shape (seg 10 = P0 -> P1, seg 11 =
 #   P1 -> P2; #0 Parallel, #1 Perpendicular), each checked by {==}.
 # - lib/dirpf.bend (B1), imported so the gate checks it: the calculus is
@@ -60,16 +59,16 @@
 #   a covered, well-formed sketch (BRG.zb_tv, BRG.fb_rf).
 # - Refutations of both kinds and the generalized deletion filter
 #   (lib/dconflict.bend, lib/dconflictpf.bend, B4.3): the filter's support
-#   with its nd is the extended ConflictOk (DCP.conflict2_ok).
+#   with its nd is a ConflictOk (DCP.conflict2_ok).
 # - The walk with direction drops (lib/dpass.bend cwalk2, lib/dcwpf.bend,
-#   B4.4): its drops are the extended DropsOk, each recording its reason,
+#   B4.4): its drops are DropsOk, each recording its reason,
 #   which is its witness (DropsNd), and sk-13a's walk invariant holds at
 #   its end (DCW.cw2_final). Its closure calls start from a state kept across
 #   calls (B4.8), valid for facts the kept constraints' facts extend
 #   (DWM.WInv).
 # - The pass with the direction layer is honest (lib/dpass.bend classes2,
-#   lib/dpasspf.bend, B4.5): the extended Honest of spec/_draft13b.bend
-#   holds of its classes (DPP.pass2_honest).
+#   lib/dpasspf.bend, B4.5): Honest holds of its classes
+#   (DPP.pass2_honest).
 # - The closure made fast (B4.8 B): lib/dclose.bend's dclose decides on
 #   lean residuals (lib/lres.bend, the full ones' polynomials by
 #   lib/lrespf.bend), stops each check at its first item and keeps K
@@ -80,16 +79,12 @@
 #   (DFC.facts_hold), so solve_drop's content holds over any honest
 #   classification (b6_drop), and solve_amber's (lib/dambpf.bend,
 #   b6_amber: the ambers' sides from their Implied refutations, one per
-#   side, DH.AllImplied), and solve_conflict's (lib/dcflawpf.bend,
+#   side, SS.AllImplied), and solve_conflict's (lib/dcflawpf.bend,
 #   b6_conflict: each kind of direction refutation has no point where its
 #   nd segments are long, the Angles' segments long by their sides), and
 #   honest_unique (lib/duniqpf.bend, b6_honest_unique: the drops of both
 #   layers agree, lib/dagreepf.bend, a derivation reading no nd,
 #   lib/dstrippf.bend).
-# - The other restated laws' content, over any honest classification, as
-#   statements only: each stmt_ def is filled from a False == True
-#   hypothesis, so nothing about those laws is proven here. Their
-#   solver-level texts are tools/drafts/roadmap13b.draft.
 
 import Base
 import ../spec/num.bend as S
@@ -98,7 +93,6 @@ import ../spec/field.bend as O
 import ../spec/mat.bend as M
 import ../spec/sketch.bend as SK
 import ../spec/box.bend as BX
-import ../spec/_draft13b.bend as DH
 import ../spec/dir.bend as DR
 import ../lib/dirpf.bend as DP
 import ../lib/kspace.bend as KS
@@ -234,50 +228,32 @@ def t_dnd() -> {SS.dnd_at(cls(), 5n) == [12n] : List<&2, Nat>}:
 def t_ndh() -> {DR.ndh(es(), [10n]) == E.QMul{DR.norm2(es(), 10n), E.QCst{DR.qo()}} : E.QExpr}:
   {==}
 
-# The restated laws (solve_drop and solve_amber proven, the others statements only)
-# -------------------------------------
-
-def stmt_pick(b: Bool, P: Type) -> Type:
-  match b:
-    case False{}:
-      Unit
-    case True{}:
-      P
-
-def stmt_absurd(P: Type, e: {False{} == True{} : Bool}) -> P:
-  %e : stmt_pick(_, P)
-  Unit{}
+# The corollaries over any honest classification
+# ----------------------------------------------
 
 # solve_drop, proven (B6, lib/dfactpf.bend DFC.drop_law): for an honest classification,
 # wherever the solved equations hold and drop j's nd segments have nonzero
 # length, equation j holds
-def b6_drop(~F: O.OField, +sk: SK.Sketch, +cls: List<&2, SS.Class>, h: DH.Honest(sk, cls), +x: M.Vec(~F), hz: SK.Zeros(~F, x, SS.solved(sk, SS.reds(cls), SS.dropped(cls))), +j: Nat, hj: {SS.mem(j, SS.dropped(cls)) == True{} : Bool}, hl: DR.Longs(~F, x, SS.ents(sk), SS.dnd_at(cls, j))) -> SK.Zeros(~F, x, [SS.eqat(SK.Sketch.eqs(sk), j)]):
+def b6_drop(~F: O.OField, +sk: SK.Sketch, +cls: List<&2, SS.Class>, h: SS.Honest(sk, cls), +x: M.Vec(~F), hz: SK.Zeros(~F, x, SS.solved(sk, SS.reds(cls), SS.dropped(cls))), +j: Nat, hj: {SS.mem(j, SS.dropped(cls)) == True{} : Bool}, hl: DR.Longs(~F, x, SS.ents(sk), SS.dnd_at(cls, j))) -> SK.Zeros(~F, x, [SS.eqat(SK.Sketch.eqs(sk), j)]):
   DFC.drop_law(~F, sk, cls, h, x, hz, j, hj, hl)
 
 # solve_amber, proven (B6, lib/dambpf.bend DAM.amber_law): deleting every
 # amber constraint changes no solution at which the amber drops' nd
 # segments have nonzero length
-def b6_amber(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: List<&2, SS.Class>, h: DH.Honest(sk, cls), +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SS.mark(SS.cat(SS.reds(cls), SS.ambers(cls)), sk)), hl: DR.Longs(~F, x, SS.ents(sk), SS.amber_nd(cls))) -> SK.Sketch.means(~F, x, SS.mark(SS.reds(cls), sk)):
+def b6_amber(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: List<&2, SS.Class>, h: SS.Honest(sk, cls), +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SS.mark(SS.cat(SS.reds(cls), SS.ambers(cls)), sk)), hl: DR.Longs(~F, x, SS.ents(sk), SS.amber_nd(cls))) -> SK.Sketch.means(~F, x, SS.mark(SS.reds(cls), sk)):
   DAM.amber_law(~F, sk, w, cls, h, x, m, hl)
 
 # solve_conflict, proven (B6, lib/dcflawpf.bend DCL.conflict_law): a
 # conflicting constraint and its support cannot all hold where its nd
 # segments have nonzero length
-def b6_conflict(~F: O.OField, +sk: SK.Sketch, +cls: List<&2, SS.Class>, h: DH.Honest(sk, cls), +c: Nat, hc: {SS.is_conflict(SS.class_at(cls, c)) == True{} : Bool}, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SS.only(Con{c, SS.support(cls, c)}, sk)), hl: DR.Longs(~F, x, SS.ents(sk), SS.conflict_nd(cls, c))) -> Empty:
+def b6_conflict(~F: O.OField, +sk: SK.Sketch, +cls: List<&2, SS.Class>, h: SS.Honest(sk, cls), +c: Nat, hc: {SS.is_conflict(SS.class_at(cls, c)) == True{} : Bool}, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SS.only(Con{c, SS.support(cls, c)}, sk)), hl: DR.Longs(~F, x, SS.ents(sk), SS.conflict_nd(cls, c))) -> Empty:
   DCL.conflict_law(~F, sk, cls, h, c, hc, x, m, hl)
 
 # honest_unique, proven (B6, lib/duniqpf.bend DUQ.honest_unique2): two
-# classifications honest by the extended Honest agree on every class's
-# kind and on every drop (the statement as before, without the unused wf
-# hypothesis)
-def b6_honest_unique(+sk: SK.Sketch, +c1: List<&2, SS.Class>, h1: DH.Honest(sk, c1), +c2: List<&2, SS.Class>, h2: DH.Honest(sk, c2), +c: Nat, +j: Nat) -> M.Both({SS.kind(SS.class_at(c1, c)) == SS.kind(SS.class_at(c2, c)) : Nat}, {SS.mem(j, SS.dropped(c1)) == SS.mem(j, SS.dropped(c2)) : Bool}):
+# honest classifications agree on every class's kind and on every drop
+# (ROADMAP's statement without its unused wf hypothesis)
+def b6_honest_unique(+sk: SK.Sketch, +c1: List<&2, SS.Class>, h1: SS.Honest(sk, c1), +c2: List<&2, SS.Class>, h2: SS.Honest(sk, c2), +c: Nat, +j: Nat) -> M.Both({SS.kind(SS.class_at(c1, c)) == SS.kind(SS.class_at(c2, c)) : Nat}, {SS.mem(j, SS.dropped(c1)) == SS.mem(j, SS.dropped(c2)) : Bool}):
   DUQ.honest_unique2(sk, c1, h1, c2, h2, c, j)
-
-# solve_complete's and solve_refused's new hypothesis: at x, every
-# segment in the nd of a drop of a Kept or Amber constraint has positive
-# squared length (a Strict side, as the verdict checks it over the box)
-def stmt_strict_nd(~F: O.OField, +sk: SK.Sketch, +cls: List<&2, SS.Class>, +x: M.Vec(~F), +pins: List<&2, Nat>, hn: SS.Strict(~F, x, DR.ndsides(SS.ents(sk), SS.live_nd(cls)), pins), bot: {False{} == True{} : Bool}) -> Unit:
-  Unit{}
 
 # B1's two results, as their types (the gate checks lib/dirpf.bend through
 # this import)
@@ -454,7 +430,7 @@ def b4_fb(+sk: SK.Sketch, +cs: List<&2, Nat>, +hcov: {BX.Sketch.within(sk, PAS.n
 def b4_conflict(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +cand: List<&2, Nat>,
   +hc: {SS.band(SS.distinct(cand), SS.band(SS.below(cand, c), SS.band(SS.all_driving(sk, cand), SS.none_in(cand, red)))) == True{} : Bool},
   hr: {DCF.refutable2(sk, c, cand, SS.ctx(sk, red, c)) == True{} : Bool}, +hcov: {BX.Sketch.within(sk, PAS.nvars(sk)) == True{} : Bool}, +hwf: {WFD.wf_dec(sk) == True{} : Bool})
-  -> DH.ConflictOk(sk, red, c, DCF.support2(sk, c, SS.ctx(sk, red, c), cand), DCF.cnd(sk, c, DCF.support2(sk, c, SS.ctx(sk, red, c), cand), SS.ctx(sk, red, c))):
+  -> SS.ConflictOk(sk, red, c, DCF.support2(sk, c, SS.ctx(sk, red, c), cand), DCF.cnd(sk, c, DCF.support2(sk, c, SS.ctx(sk, red, c), cand), SS.ctx(sk, red, c))):
   DCP.conflict2_ok(sk, red, c, cand, hc, hr, hcov, hwf)
 
 # B4.4's walk, as its type
@@ -464,11 +440,11 @@ def b4_walk(+sk: SK.Sketch, +cls: List<&2, SS.Class>, +R: List<&2, Nat>, +D: Lis
   hB: {B == SS.presolved(sk, R, D, c) : List<&2, E.QExpr>}, hp: {B == SS.picked(SK.Sketch.eqs(sk), bp) : List<&2, E.QExpr>},
   +hb0: {SS.below(bp, SS.neqs(SK.Sketch.eqs(sk))) == True{} : Bool}, +ha0: {PPF.allpre(bp, SS.owners(sk), R, D, c) == True{} : Bool},
   +hcov: {BX.Sketch.within(sk, PAS.nvars(sk)) == True{} : Bool}, +hwf: {WFD.wf_dec(sk) == True{} : Bool})
-  -> DH.DropsOk(sk, cls, R, D, c, SS.drops(CWP.cw.ds(DPS.cwalk2(SK.Sketch.eqs(sk), SS.owners(sk), c, 0n, PAS.CW{rows, B, bp, Nil{}, Nil{}}, sk, F0, cx, W)))) & (DH.DropsNd(sk, cls, R, D, c, CWP.cw.ds(DPS.cwalk2(SK.Sketch.eqs(sk), SS.owners(sk), c, 0n, PAS.CW{rows, B, bp, Nil{}, Nil{}}, sk, F0, cx, W))) & CWP.CWInv(sk, R, D, c, bp, SS.neqs(SK.Sketch.eqs(sk)), DPS.cwalk2(SK.Sketch.eqs(sk), SS.owners(sk), c, 0n, PAS.CW{rows, B, bp, Nil{}, Nil{}}, sk, F0, cx, W))):
+  -> SS.DropsOk(sk, cls, R, D, c, SS.drops(CWP.cw.ds(DPS.cwalk2(SK.Sketch.eqs(sk), SS.owners(sk), c, 0n, PAS.CW{rows, B, bp, Nil{}, Nil{}}, sk, F0, cx, W)))) & (SS.DropsNd(sk, cls, R, D, c, CWP.cw.ds(DPS.cwalk2(SK.Sketch.eqs(sk), SS.owners(sk), c, 0n, PAS.CW{rows, B, bp, Nil{}, Nil{}}, sk, F0, cx, W))) & CWP.CWInv(sk, R, D, c, bp, SS.neqs(SK.Sketch.eqs(sk)), DPS.cwalk2(SK.Sketch.eqs(sk), SS.owners(sk), c, 0n, PAS.CW{rows, B, bp, Nil{}, Nil{}}, sk, F0, cx, W))):
   DCW.cw2_final(sk, cls, R, D, c, F0, cx, hF0, hcx, W, hw, rows, B, bp, hr, hl, hB, hp, hb0, ha0, hcov, hwf)
 
 # B4.5: the pass with the direction layer is honest
-def b4_honest(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SOL.nvars(sk)) == True{} : Bool}) -> DH.Honest(sk, DPS.classes2(sk)):
+def b4_honest(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SOL.nvars(sk)) == True{} : Bool}) -> SS.Honest(sk, DPS.classes2(sk)):
   DPP.pass2_honest(sk, w, cov)
 
 # B4.8: the fast closure is the closure as designed

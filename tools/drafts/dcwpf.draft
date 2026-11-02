@@ -33,7 +33,6 @@ import ../spec/ring.bend as E
 import ../spec/sketch.bend as SK
 import ../spec/box.bend as BX
 import ../spec/solve.bend as SV
-import ../spec/_draft13b.bend as DH
 import ../spec/dir.bend as DR
 import ./karith.bend as KA
 import ./nat.bend as LN
@@ -222,7 +221,7 @@ def dnone_k($KP, hdd: {DPS.ddec(sk, $FK, cx, e, $M, W) == None{} : Maybe<&2, DR.
   ddat($KA, None{}, hdd, $HA)
 
 # the derivation found is the reason's witness, with the nd recorded
-def dsk.w($KP, +D: $NL, +der: DR.Der, h: DR.Valid($ENT, $DFK, $CTX, der) & SV.Proves($ENT, $M, $EQK, DR.concl($ENT, $DFK, der))) -> DH.why_ok(sk, cls, R, D, c, dF, k, DR.nd($ENT, $FK, der), SV.WDer{der}):
+def dsk.w($KP, +D: $NL, +der: DR.Der, h: DR.Valid($ENT, $DFK, $CTX, der) & SV.Proves($ENT, $M, $EQK, DR.concl($ENT, $DFK, der))) -> SV.why_ok(sk, cls, R, D, c, dF, k, DR.nd($ENT, $FK, der), SV.WDer{der}):
   (hv, hp) = h
   (hv, (hp, (%fk_eq(sk, cls, R, c, F0, ds, k, dF, hF0, xr) : {DR.nd($ENT, $FK, der) == DR.nd($ENT, _, der) : $NL}
     {==})))
@@ -237,7 +236,7 @@ def dsome_k($KP, +der: DR.Der, +hds: {DPS.ddec(sk, $FK, cx, e, $M, W) == Some{de
   dsk.go($KA, der, ddat($KA, Some{der}, hds, $HA))
 
 # and its reason is its witness
-def dwit_k($KP, +D: $NL, +der: DR.Der, +hds: {DPS.ddec(sk, $FK, cx, e, $M, W) == Some{der} : Maybe<&2, DR.Der>}, $HC) -> DH.why_ok(sk, cls, R, D, c, dF, k, DR.nd($ENT, $FK, der), SV.WDer{der}):
+def dwit_k($KP, +D: $NL, +der: DR.Der, +hds: {DPS.ddec(sk, $FK, cx, e, $M, W) == Some{der} : Maybe<&2, DR.Der>}, $HC) -> SV.why_ok(sk, cls, R, D, c, dF, k, DR.nd($ENT, $FK, der), SV.WDer{der}):
   dsk.w($KA, D, der, ddat($KA, Some{der}, hds, $HA))
 
 # Degree 0 at k, with the final drops
@@ -278,24 +277,24 @@ def ball(+sk: SK.Sketch, +R: $NL, +D: $NL, +c: Nat, +d: $NL, +i: Nat, xs: $NL) -
     case Nil{}:
       True{}
     case Con{+p, t}:
-      SV.band(DH.in_basis($BA, p), ball($BA, t))
+      SV.band(SV.in_basis($BA, p), ball($BA, t))
 
 def ball_cat(xs: $NL, +ys: $NL, $BP, +h1: {ball($BA, xs) == True{} : Bool}, +h2: {ball($BA, ys) == True{} : Bool}) -> {ball($BA, SV.cat(xs, ys)) == True{} : Bool}:
   match xs:
     case Nil{}:
       h2
     case Con{+p, +t}:
-      LI.band_i(DH.in_basis($BA, p), ball($BA, SV.cat(t, ys)), LI.band_l(DH.in_basis($BA, p), ball($BA, t), h1), ball_cat(t, ys, $BA, LI.band_r(DH.in_basis($BA, p), ball($BA, t), h1), h2))
+      LI.band_i(SV.in_basis($BA, p), ball($BA, SV.cat(t, ys)), LI.band_l(SV.in_basis($BA, p), ball($BA, t), h1), ball_cat(t, ys, $BA, LI.band_r(SV.in_basis($BA, p), ball($BA, t), h1), h2))
 
 # the combination's positions are bp's
-def ball_muls(bp: $NL, ls: List<&2, S.Q>, $BP, +h: {ball($BA, bp) == True{} : Bool}) -> {DH.in_basis.all($BA, PA.muls(bp, ls)) == True{} : Bool}:
+def ball_muls(bp: $NL, ls: List<&2, S.Q>, $BP, +h: {ball($BA, bp) == True{} : Bool}) -> {SV.in_basis.all($BA, PA.muls(bp, ls)) == True{} : Bool}:
   match bp ls:
     case Nil{} ls:
       {==}
     case Con{+p, +t} Nil{}:
       {==}
     case Con{+p, +t} Con{+l, +lt}:
-      LI.band_i(DH.in_basis($BA, p), DH.in_basis.all($BA, PA.muls(t, lt)), LI.band_l(DH.in_basis($BA, p), ball($BA, t), h), ball_muls(t, lt, $BA, LI.band_r(DH.in_basis($BA, p), ball($BA, t), h)))
+      LI.band_i(SV.in_basis($BA, p), SV.in_basis.all($BA, PA.muls(t, lt)), LI.band_l(SV.in_basis($BA, p), ball($BA, t), h), ball_muls(t, lt, $BA, LI.band_r(SV.in_basis($BA, p), ball($BA, t), h)))
 
 # the pass's basis positions are solved equations of the constraints
 # before c
@@ -304,7 +303,7 @@ def ball_pre(xs: $NL, $BP, +hb: {SV.below(xs, $N) == True{} : Bool}, +ha: {PP.al
     case Nil{}:
       {==}
     case Con{+p, +t}:
-      LI.band_i(DH.in_basis($BA, p), ball($BA, t),
+      LI.band_i(SV.in_basis($BA, p), ball($BA, t),
         LI.band_i(SV.lt(p, $N), SV.bor(PP.psel($OWN, R, D, c, p), $OSEL), LI.band_l(SV.lt(p, $N), SV.below(t, $N), hb),
           LI.bor_l(PP.psel($OWN, R, D, c, p), $OSEL, LI.band_l(PP.psel($OWN, R, D, c, p), PP.allpre(t, $OWN, R, D, c), ha))),
         ball_pre(t, $BA, LI.band_r(SV.lt(p, $N), SV.below(t, $N), hb), LI.band_r(PP.psel($OWN, R, D, c, p), PP.allpre(t, $OWN, R, D, c), ha)))
@@ -326,7 +325,7 @@ def ball_us(us: $NL, $BP, +d0: $NL, +xr: CW.XRel(d, d0, i), +hn: {SV.below(us, $
       {==}
     case Con{+p, +t}:
       +hp = LI.band_l(SV.lt(p, i), SV.below(t, i), hb)
-      LI.band_i(DH.in_basis($BA, p), ball($BA, t),
+      LI.band_i(SV.in_basis($BA, p), ball($BA, t),
         LI.band_i(SV.lt(p, $N), SV.bor(PP.psel($OWN, R, D, c, p), $OSEL), LI.band_l(SV.lt(p, $N), SV.below(t, $N), hn),
           LI.bor_r(PP.psel($OWN, R, D, c, p), $OSEL,
             LI.band_i(SV.lt(p, i), SV.band(SV.eq(SV.nth($OWN, p), c), SV.bnot(SV.mem(p, d))), hp,
@@ -341,8 +340,8 @@ def ball_us(us: $NL, $BP, +d0: $NL, +xr: CW.XRel(d, d0, i), +hn: {SV.below(us, $
 def lin_wit(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: $NL, +D: $NL, +c: Nat, +bp0: $NL, +k: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL, +e: E.QExpr, +dF: $NL,
   +he: {$EQK == e : E.QExpr}, +hnil: {EP.isnil(EP.resp($RR)) == True{} : Bool}, +hb: {CW.cwb($CWBA) == True{} : Bool}, +hp: {B == SV.picked($ES, bp) : $QL}, +hbp: {bp == SV.cat(bp0, us) : $NL},
   +hlt: {SV.lt(k, $N) == True{} : Bool}, $HB0, +xr2: CW.XRel(dF, $DS, k))
-  -> DH.why_ok(sk, cls, R, D, c, dF, k, Nil{}, SV.WLin{$MS}):
-  ((%Equal.sym($NL, bp, SV.cat(bp0, us), hbp) : {DH.in_basis.all(sk, R, D, c, dF, k, PA.muls(_, $LS)) == True{} : Bool}
+  -> SV.why_ok(sk, cls, R, D, c, dF, k, Nil{}, SV.WLin{$MS}):
+  ((%Equal.sym($NL, bp, SV.cat(bp0, us), hbp) : {SV.in_basis.all(sk, R, D, c, dF, k, PA.muls(_, $LS)) == True{} : Bool}
       ball_muls(SV.cat(bp0, us), $LS, sk, R, D, c, dF, k, ball_cat(bp0, us, sk, R, D, c, dF, k, ball_pre(bp0, sk, R, D, c, dF, k, hb0, ha0),
         ball_us(us, sk, R, D, c, dF, k, $DS, xr2, RDP.below_mono(us, k, $N, CW.cwb_ubelow($CWBA, hb), RDP.lt_le(k, $N, hlt)), CW.cwb_ubelow($CWBA, hb), CW.cwb_uown($CWBA, hb), CW.cwb_udisj($CWBA, hb))))),
    ((%Equal.sym(E.QExpr, $EQK, e, he) : SV.Ident(_, SV.mlin($ES, $MS))
@@ -374,10 +373,10 @@ def inv_dropx(+sk: SK.Sketch, +R: $NL, +D: $NL, +c: Nat, +bp0: $NL, +k: Nat, +ro
 
 # the drops so far have their witnesses, then so do the final ones
 def NDT(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: $NL, +D: $NL, +c: Nat, +dF: $NL, +ds: List<&2, SV.Drop>, +dsF: List<&2, SV.Drop>) -> Type:
-  DH.drops_nd(sk, cls, R, D, c, dF, ds) -> DH.drops_nd(sk, cls, R, D, c, dF, dsF)
+  SV.drops_nd(sk, cls, R, D, c, dF, ds) -> SV.drops_nd(sk, cls, R, D, c, dF, dsF)
 
 def CWRes2($CP, +k: Nat, own_k: $NL, +st: PA.CW, +fin: PA.CW) -> Type:
-  CW.XRel($DF, SV.drops(CW.cw.ds(st)), k) & (DH.drops_ok.go(sk, cls, R, D, c, $DF, own_k, k) & (CW.CWInv($WA0, $N, fin) & NDT(sk, cls, R, D, c, $DF, CW.cw.ds(st), CW.cw.ds(fin))))
+  CW.XRel($DF, SV.drops(CW.cw.ds(st)), k) & (SV.drops_ok.go(sk, cls, R, D, c, $DF, own_k, k) & (CW.CWInv($WA0, $N, fin) & NDT(sk, cls, R, D, c, $DF, CW.cw.ds(st), CW.cw.ds(fin))))
 
 def res2_skip($CP, +k: Nat, +o: Nat, +ot: $NL, st: PA.CW, +fin: PA.CW, +heo: {SV.eq(o, c) == False{} : Bool}, hi: CW.CWInv($WA0, k, st), r: CWRes2($CA, 1n+k, ot, st, fin))
   -> CWRes2($CA, k, Con{o, ot}, st, fin):
@@ -387,7 +386,7 @@ def res2_skip($CP, +k: Nat, +o: Nat, +ot: $NL, st: PA.CW, +fin: PA.CW, +heo: {SV
       (+xr, q) = r
       (dr, q2) = q
       (fr, nt) = q2
-      (CW.xr_up(k, $DF, $DS, xr), (((%Equal.sym(Bool, SV.eq(o, c), False{}, heo) : DH.drops_ok.at(sk, cls, R, D, c, $DF, _, k)
+      (CW.xr_up(k, $DF, $DS, xr), (((%Equal.sym(Bool, SV.eq(o, c), False{}, heo) : SV.drops_ok.at(sk, cls, R, D, c, $DF, _, k)
           CW.mem_x_f(k, $DF, $DS, xr, CW.cwb_dbelow($CWBA, hb))), dr), (fr, nt)))
 
 def res2_drop($CP, +k: Nat, +o: Nat, +ot: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL, +e: E.QExpr, +fin: PA.CW, +heo: {SV.eq(o, c) == True{} : Bool},
@@ -401,8 +400,8 @@ def res2_drop($CP, +k: Nat, +o: Nat, +ot: $NL, +rows: List<&2, EL.Row>, +B: $QL,
   (dr, q4) = q
   (fr, nt) = q4
   +xr2 = CW.xr_drop(k, $DF, $DS, xr)
-  (xr2, (((%Equal.sym(Bool, SV.eq(o, c), True{}, heo) : DH.drops_ok.at(sk, cls, R, D, c, $DF, _, k)
-      (%Equal.sym(Bool, SV.mem(k, $DF), True{}, CW.mem_x_t(k, $DF, $DS, xr)) : DH.drops_ok.mem(sk, cls, R, D, c, $DF, _, k)
+  (xr2, (((%Equal.sym(Bool, SV.eq(o, c), True{}, heo) : SV.drops_ok.at(sk, cls, R, D, c, $DF, _, k)
+      (%Equal.sym(Bool, SV.mem(k, $DF), True{}, CW.mem_x_t(k, $DF, $DS, xr)) : SV.drops_ok.mem(sk, cls, R, D, c, $DF, _, k)
         Inl{der0(sk, R, D, c, k, rows, B, ds, us, e, $DF, he, hnil, hb, hB, xr2)})), dr),
     (fr, h => nt((lin_wit(sk, cls, R, D, c, bp0, k, rows, B, bp, ds, us, e, $DF, he, hnil, hb, hp, hbp, hlt, $HB0A, xr2), h)))))
 
@@ -420,8 +419,8 @@ def res2_keep($CP, $WP, +k: Nat, +o: Nat, +ot: $NL, +rows: List<&2, EL.Row>, +B:
   (dr, q4) = q
   (fr, nt) = q4
   +xr1 = CW.xr_up(k, $DF, $DS, xr)
-  (xr1, (((%Equal.sym(Bool, SV.eq(o, c), True{}, heo) : DH.drops_ok.at(sk, cls, R, D, c, $DF, _, k)
-      (%Equal.sym(Bool, SV.mem(k, $DF), False{}, CW.mem_x_f(k, $DF, $DS, xr, CW.cwb_dbelow($CWBA, hb))) : DH.drops_ok.mem(sk, cls, R, D, c, $DF, _, k)
+  (xr1, (((%Equal.sym(Bool, SV.eq(o, c), True{}, heo) : SV.drops_ok.at(sk, cls, R, D, c, $DF, _, k)
+      (%Equal.sym(Bool, SV.mem(k, $DF), False{}, CW.mem_x_f(k, $DF, $DS, xr, CW.cwb_dbelow($CWBA, hb))) : SV.drops_ok.mem(sk, cls, R, D, c, $DF, _, k)
         (nder0(sk, R, D, c, k, rows, B, ds, us, e, $DF, he, hne, hb, hl, hB, xr1), dnone_k(sk, cls, R, c, $WAA, ds, k, e, $DF, he, xr1, hdd, $HA)))), dr), (fr, nt)))
 
 def res2_ddrop($CP, $WP, +k: Nat, +o: Nat, +ot: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: List<&2, SV.Drop>, +us: $NL, +e: E.QExpr, +der: DR.Der, +fin: PA.CW, +heo: {SV.eq(o, c) == True{} : Bool},
@@ -431,8 +430,8 @@ def res2_ddrop($CP, $WP, +k: Nat, +o: Nat, +ot: $NL, +rows: List<&2, EL.Row>, +B
   (dr, q4) = q
   (fr, nt) = q4
   +xr2 = CW.xr_drop(k, $DF, $DS, xr)
-  (xr2, (((%Equal.sym(Bool, SV.eq(o, c), True{}, heo) : DH.drops_ok.at(sk, cls, R, D, c, $DF, _, k)
-      (%Equal.sym(Bool, SV.mem(k, $DF), True{}, CW.mem_x_t(k, $DF, $DS, xr)) : DH.drops_ok.mem(sk, cls, R, D, c, $DF, _, k)
+  (xr2, (((%Equal.sym(Bool, SV.eq(o, c), True{}, heo) : SV.drops_ok.at(sk, cls, R, D, c, $DF, _, k)
+      (%Equal.sym(Bool, SV.mem(k, $DF), True{}, CW.mem_x_t(k, $DF, $DS, xr)) : SV.drops_ok.mem(sk, cls, R, D, c, $DF, _, k)
         Inr{($NDK, dsome_k(sk, cls, R, c, $WAA, ds, k, e, $DF, he, xr2, der, hds, $HA))})), dr),
     (fr, h => nt((dwit_k(sk, cls, R, c, $WAA, ds, k, e, $DF, he, xr2, D, der, hds, $HA), h)))))
 
@@ -507,9 +506,9 @@ def cw2_ok(es: $QL, own_k: $NL, $CP, $WP, +k: Nat, +st: PA.CW, +hq: {OW.qdrop(k,
 @MACRO DFIN SV.drops(CW.cw.ds($FIN2))
 @MACRO GP +sk: SK.Sketch, +cls: List<&2, SV.Class>, +R: $NL, +D: $NL, +c: Nat, $WP, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL
 @MACRO GA sk, cls, R, D, c, $WAA, rows, B, bp
-@MACRO GOAL DH.DropsOk(sk, cls, R, D, c, $DFIN) & (DH.DropsNd(sk, cls, R, D, c, CW.cw.ds($FIN2)) & CW.CWInv(sk, R, D, c, bp, $N, $FIN2))
+@MACRO GOAL SV.DropsOk(sk, cls, R, D, c, $DFIN) & (SV.DropsNd(sk, cls, R, D, c, CW.cw.ds($FIN2)) & CW.CWInv(sk, R, D, c, bp, $N, $FIN2))
 
-def cw2_final.r2($GP, dr: DH.drops_ok.go(sk, cls, R, D, c, $DFIN, $OWN, 0n), +fr: CW.CWInv(sk, R, D, c, bp, $N, $FIN2), nt: NDT(sk, cls, R, D, c, $DFIN, Nil{}, CW.cw.ds($FIN2))) -> $GOAL:
+def cw2_final.r2($GP, dr: SV.drops_ok.go(sk, cls, R, D, c, $DFIN, $OWN, 0n), +fr: CW.CWInv(sk, R, D, c, bp, $N, $FIN2), nt: NDT(sk, cls, R, D, c, $DFIN, Nil{}, CW.cw.ds($FIN2))) -> $GOAL:
   +hb = CW.inv_b(sk, R, D, c, bp, $N, $FIN2, fr)
   ((LI.band_i(SV.distinct($DFIN), SV.below($DFIN, $N), CW.cwb_ddist(sk, c, $N, CW.cw.rows($FIN2), CW.cw.B($FIN2), CW.cw.ds($FIN2), CW.cw.us($FIN2), hb),
       CW.cwb_dbelow(sk, c, $N, CW.cw.rows($FIN2), CW.cw.B($FIN2), CW.cw.ds($FIN2), CW.cw.us($FIN2), hb)), dr),

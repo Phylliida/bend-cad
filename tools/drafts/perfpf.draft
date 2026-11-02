@@ -2,6 +2,11 @@
 # variables, by dependence (PLAN-sk13a S4, law 9's new part). Proofs
 # only.
 #
+# Since the sk-13b switch (2026-11-02), what this file proved about
+# sk-13a's pass, Honest or solver is proven in lib/dtotalpf.bend; what
+# is left here is what that proof reuses, and the description below is
+# of the sk-13a proof.
+#
 # The pass ends (lib/passpf.bend: final_inv) with the solved positions bp
 # and a valid matching vmr of exactly them (equations matched to
 # variables they depend on). The pins are the variable side's failed
@@ -563,11 +568,6 @@ def perfect_of(+sk: SK.Sketch, +hvalid: {MX.valid($AD, $VMR) == True{} : Bool}, 
           Equal.trans($QL, PP.ps.B($FS), SV.presolved(sk, $RF, $DF, SV.ncons(sk)), SV.solved(sk, $RF, $DF), hB, Equal.sym($QL, SV.solved(sk, $RF, $DF), SV.presolved(sk, $RF, $DF, SV.ncons(sk)), SP.solved_end(sk, $RF, $DF)))) : SV.DepAll(_, m)
         depall_v($ES, $VV, $BP, $NV, $GD, vsf_valid($VSA, vs), hall, hmus)))))
 
-# the pass's final state, from the dependence adjacency's bound
-def final_inv.a(+sk: SK.Sketch, +hA: {D.adjb($AD, $NV) == True{} : Bool}) -> PP.PInv(sk, $RF, $DF, SV.ncons(sk), $FS):
-  (%Equal.sym(Nat, SV.ncons(sk), Nat.add(SV.clen(PA.recs(sk)), 0n), Equal.trans(Nat, SV.ncons(sk), SV.clen(PA.recs(sk)), Nat.add(SV.clen(PA.recs(sk)), 0n), PP.ncons_recs(sk), LN.add_zero(SV.clen(PA.recs(sk))))) : PP.PInv(sk, $RF, $DF, _, $FS)
-    PP.pass_inv(PA.recs(sk), sk, 0n, PA.start($NV), {==}, {==}, hA, PP.classes_down(sk), PP.pinv0(sk)))
-
 @MACRO HBP +sk: SK.Sketch, +hb: {PP.pib($PA0) == True{} : Bool}
 
 def f_valid($HBP) -> {MX.valid($AD, $VMR) == True{} : Bool}:
@@ -613,24 +613,3 @@ def f_gb(+sk: SK.Sketch, +hbpb: {SV.below($BP, SV.neqs($ES)) == True{} : Bool}) 
 def vend_of(+sk: SK.Sketch, $HYPS) -> {STP.vsides(ST.len.q($ES), $NV, $GD, $KV) == True{} : Bool}:
   +hgb = f_gb(sk, hbpb)
   vside_kd($KV, $ES, $NV, $VMR, $GD, hs1, hs2, hgb, $KN, hdist, {==}, hbpd, pins_kvd($ES, $NV, $VMR, $GD, hs1, hs2, hgb, $KN, hvalid, hdist, hml, {==}))
-
-def vend_pass(+sk: SK.Sketch, +hA: {D.adjb($AD, $NV) == True{} : Bool}) -> {STP.vsides(ST.len.q($ES), $NV, $GD, $KV) == True{} : Bool}:
-  +hi = final_inv.a(sk, hA)
-  +hb = PP.pinv_b(sk, $RF, $DF, SV.ncons(sk), $FS, hi)
-  vend_of(sk, $FACTS)
-
-# law 9's new part, for the pass: the pins are distinct variables, and the
-# system solved has a perfect matching onto the free variables, by
-# dependence
-def total_pass.a(+sk: SK.Sketch, +hA: {D.adjb($AD, $NV) == True{} : Bool})
-  -> SK.Both({SV.distinct($PN) == True{} : Bool}, {SV.below($PN, $NV) == True{} : Bool}) & (&m: $NL -> SV.Perfect(SV.solved(sk, $RF, $DF), SV.free($NV, 0n, $PN), m)):
-  +hi = final_inv.a(sk, hA)
-  +hb = PP.pinv_b(sk, $RF, $DF, SV.ncons(sk), $FS, hi)
-  perfect_of(sk, $FACTS,
-    PP.pinv_B(sk, $RF, $DF, SV.ncons(sk), $FS, hi),
-    (%Equal.sym($NL, PA.PS.bp($FS), PP.ps.bp($FS), bp_eq($FS)) : {PP.ps.B($FS) == SV.picked($ES, _) : $QL}
-      PP.pinv_p(sk, $RF, $DF, SV.ncons(sk), $FS, hi)))
-
-def total_pass(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool})
-  -> SK.Both({SV.distinct($PN) == True{} : Bool}, {SV.below($PN, $NV) == True{} : Bool}) & (&m: $NL -> SV.Perfect(SV.solved(sk, $RF, $DF), SV.free($NV, 0n, $PN), m)):
-  total_pass.a(sk, PP.adjb_of(sk, w, cov))

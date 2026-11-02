@@ -8,6 +8,11 @@
 # FS.wo), with the word laws at that base, this is ROADMAP's fast_solve,
 # restated in tests/fast_laws.bend, so every law about the solver holds
 # for what runs (PLAN-sk13w W6).
+#
+# Since the sk-13b switch (2026-11-02), what this file proved about
+# sk-13a's pass, Honest or solver is proven in lib/dwfastpf.bend; what
+# is left here is what that proof reuses, and the description below is
+# of the sk-13a proof.
 
 # Generated from tools/drafts/fastpf.draft by tools/expand.py; edit the
 # draft.
@@ -132,15 +137,6 @@ def final_c(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, +sk: SK.Sketch, +g0: 
   %shape_t(~K, ~W, ~R, SO.nvars(sk), CK.eqlen(SV.solved(sk, SV.reds(cls), SV.dropped(cls))), gc, pins, p) : {KA.band(SV.held(pins, g0, FS.todv(~K, ~W, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gc)), FS.todv(~K, ~W, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gr))), KA.band(WF.wf_dec(SV.mark(SV.reds(cls), sk)), KA.band(BX.Sketch.within(SV.mark(SV.reds(cls), sk), List.length(&2, N.NC(K), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gc))), KA.band(PL.check(~K, SV.solved(sk, SV.reds(cls), SV.dropped(cls)), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gc), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gr), KH.hplan(~KI.dnum(), ~K, ~PO.hom(K, W, R), p)), KA.band(PL.check_sides(~K, SK.Sketch.sides(SV.mark(SV.cat(SV.reds(cls), SV.ambers(cls)), sk)), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gc), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gr)), KA.band(FS.shape(~K, SO.nvars(sk), CK.eqlen(SV.solved(sk, SV.reds(cls), SV.dropped(cls))), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gc), pins, KH.hplan(~KI.dnum(), ~K, ~PO.hom(K, W, R), p)), VD.exact(sk, cls))))))) == KA.band(SV.held(pins, g0, FS.todv(~K, ~W, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gc)), FS.todv(~K, ~W, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gr))), KA.band(WF.wf_dec(SV.mark(SV.reds(cls), sk)), KA.band(BX.Sketch.within(SV.mark(SV.reds(cls), sk), List.length(&2, N.NC(K), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gc))), KA.band(PL.check(~K, SV.solved(sk, SV.reds(cls), SV.dropped(cls)), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gc), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gr), KH.hplan(~KI.dnum(), ~K, ~PO.hom(K, W, R), p)), KA.band(PL.check_sides(~K, SK.Sketch.sides(SV.mark(SV.cat(SV.reds(cls), SV.ambers(cls)), sk)), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gc), KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), gr)), KA.band(_, VD.exact(sk, cls))))))) : Bool}
   {==}
 
-def accept_t(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, m: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>) -> {FS.accept(~K, ~W, GM.hpr(~K, ~PO.hom(K, W, R), m), sk, g0, cls, pins) == SO.accept(m, sk, g0, cls, pins) : Bool}:
-  match m:
-    case NU.POk{NU.NP{+plan, +gc, +gr}}:
-      final_c(~K, ~W, ~R, sk, g0, True{}, cls, pins, gc, gr, plan)
-    case NU.PRetry{}:
-      {==}
-    case NU.PStop{}:
-      {==}
-
 # The answer
 # ----------
 
@@ -170,31 +166,6 @@ def answer_t(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, +cls: List<&2, SV.Cl
 # ------------------
 
 
-# the loop on mapped plans is SO.ploop's, mapped
-def ploop_t(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, ps: List<&2, Nat>, ok: Bool, cur: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {FS.ploop(~K, ~W, ps, ok, GM.hpr(~K, ~PO.hom(K, W, R), cur), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == hrun(~K, ~PO.hom(K, W, R), SO.ploop(ps, ok, cur, sk, g0, cls, pins, es, nv, skel)) : FS.FRun<K>}:
-  match ps ok:
-    case Nil{} ok:
-      {==}
-    case Con{p, t} True{}:
-      {==}
-    case Con{+p, +t} False{}:
-      %ploop_t(~K, ~W, ~R, t, SO.accept(NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins), NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins, es, nv, skel) : {FS.ploop(~K, ~W, t, FS.accept(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == _ : FS.FRun<K>}
-      %accept_t(~K, ~W, ~R, NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins) : {FS.ploop(~K, ~W, t, FS.accept(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == FS.ploop(~K, ~W, t, _, GM.hpr(~K, ~PO.hom(K, W, R), NU.plan(es, nv, skel, g0, p)), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) : FS.FRun<K>}
-      %GQ.plan_t(~K, ~W, ~R, es, nv, skel, g0, p) : {FS.ploop(~K, ~W, t, FS.accept(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == FS.ploop(~K, ~W, t, FS.accept(~K, ~W, _, sk, g0, cls, pins), GM.hpr(~K, ~PO.hom(K, W, R), NU.plan(es, nv, skel, g0, p)), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) : FS.FRun<K>}
-      %GQ.plan_t(~K, ~W, ~R, es, nv, skel, g0, p) : {FS.ploop(~K, ~W, t, FS.accept(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == FS.ploop(~K, ~W, t, FS.accept(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), _, sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) : FS.FRun<K>}
-      {==}
-
-def start_t(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, ps: List<&2, Nat>, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {FS.ploop.start(~K, ~W, ps, sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == hrun(~K, ~PO.hom(K, W, R), SO.ploop.start(ps, sk, g0, cls, pins, es, nv, skel)) : FS.FRun<K>}:
-  match ps:
-    case Nil{}:
-      {==}
-    case Con{+p, +t}:
-      %ploop_t(~K, ~W, ~R, t, SO.accept(NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins), NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins, es, nv, skel) : {FS.ploop(~K, ~W, t, FS.accept(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == _ : FS.FRun<K>}
-      %accept_t(~K, ~W, ~R, NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins) : {FS.ploop(~K, ~W, t, FS.accept(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == FS.ploop(~K, ~W, t, _, GM.hpr(~K, ~PO.hom(K, W, R), NU.plan(es, nv, skel, g0, p)), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) : FS.FRun<K>}
-      %GQ.plan_t(~K, ~W, ~R, es, nv, skel, g0, p) : {FS.ploop(~K, ~W, t, FS.accept(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == FS.ploop(~K, ~W, t, FS.accept(~K, ~W, _, sk, g0, cls, pins), GM.hpr(~K, ~PO.hom(K, W, R), NU.plan(es, nv, skel, g0, p)), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) : FS.FRun<K>}
-      %GQ.plan_t(~K, ~W, ~R, es, nv, skel, g0, p) : {FS.ploop(~K, ~W, t, FS.accept(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) == FS.ploop(~K, ~W, t, FS.accept(~K, ~W, GN.plan(~K, ~W, es, nv, skel, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), p), sk, g0, cls, pins), _, sk, g0, KH.hv(~KI.dnum(), ~K, ~PO.hom(K, W, R), g0), cls, pins, es, nv, skel) : FS.FRun<K>}
-      {==}
-
 # The solver
 # ----------
 
@@ -211,47 +182,4 @@ def cons_st(+c: SV.Class, w: FS.PW) -> {FS.PW.st(w) == FS.PW.st(FS.pw.cons(c, w)
       {==}
 
 
-def walk2_cls(rs: List<&2, SK.Rec>, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +i: Nat, +st: PA.PS) -> {FS.PW.cls(FS.walk2(rs, es, own, sk, adj, f, i, st)) == PA.pass(rs, es, own, sk, adj, f, i, st) : List<&2, SV.Class>}:
-  match rs:
-    case Nil{}:
-      {==}
-    case Con{SK.Rec{id, True{}, k}, +t}:
-      %cons_cls(SV.Kept{Nil{}}, FS.walk2(t, es, own, sk, adj, f, 1n+i, st)) : {_ == Con{SV.Kept{Nil{}}, PA.pass(t, es, own, sk, adj, f, 1n+i, st)} : List<&2, SV.Class>}
-      %walk2_cls(t, es, own, sk, adj, f, 1n+i, st) : {Con{SV.Kept{Nil{}}, FS.PW.cls(FS.walk2(t, es, own, sk, adj, f, 1n+i, st))} == Con{SV.Kept{Nil{}}, _} : List<&2, SV.Class>}
-      {==}
-    case Con{SK.Rec{id, False{}, k}, +t}:
-      %cons_cls(PA.PO.k(PA.one(es, own, sk, adj, f, i, st)), FS.walk2(t, es, own, sk, adj, f, 1n+i, PA.PO.st(PA.one(es, own, sk, adj, f, i, st)))) : {_ == Con{PA.PO.k(PA.one(es, own, sk, adj, f, i, st)), PA.pass(t, es, own, sk, adj, f, 1n+i, PA.PO.st(PA.one(es, own, sk, adj, f, i, st)))} : List<&2, SV.Class>}
-      %walk2_cls(t, es, own, sk, adj, f, 1n+i, PA.PO.st(PA.one(es, own, sk, adj, f, i, st))) : {Con{PA.PO.k(PA.one(es, own, sk, adj, f, i, st)), FS.PW.cls(FS.walk2(t, es, own, sk, adj, f, 1n+i, PA.PO.st(PA.one(es, own, sk, adj, f, i, st))))} == Con{PA.PO.k(PA.one(es, own, sk, adj, f, i, st)), _} : List<&2, SV.Class>}
-      {==}
 
-def walk2_st(rs: List<&2, SK.Rec>, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +i: Nat, +st: PA.PS) -> {FS.PW.st(FS.walk2(rs, es, own, sk, adj, f, i, st)) == PA.pass_st(rs, es, own, sk, adj, f, i, st) : PA.PS}:
-  match rs:
-    case Nil{}:
-      {==}
-    case Con{SK.Rec{id, True{}, k}, +t}:
-      %cons_st(SV.Kept{Nil{}}, FS.walk2(t, es, own, sk, adj, f, 1n+i, st)) : {_ == PA.pass_st(t, es, own, sk, adj, f, 1n+i, st) : PA.PS}
-      walk2_st(t, es, own, sk, adj, f, 1n+i, st)
-    case Con{SK.Rec{id, False{}, k}, +t}:
-      %cons_st(PA.PO.k(PA.one(es, own, sk, adj, f, i, st)), FS.walk2(t, es, own, sk, adj, f, 1n+i, PA.PO.st(PA.one(es, own, sk, adj, f, i, st)))) : {_ == PA.pass_st(t, es, own, sk, adj, f, 1n+i, PA.PO.st(PA.one(es, own, sk, adj, f, i, st))) : PA.PS}
-      walk2_st(t, es, own, sk, adj, f, 1n+i, PA.PO.st(PA.one(es, own, sk, adj, f, i, st)))
-
-
-# FS.solve_lw is SO.solve_lw's form: the pass's results once (walk2), each
-# named once
-def solve_lw_unf(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat) -> {FS.solve_lw(~K, ~W, sk, g0, l, w) == FS.answer(~K, ~W, SO.cls_of(sk), SO.pins_of(sk), FS.ploop.start(~K, ~W, SO.precisions(l, w), sk, g0, FS.ofdv(~K, ~W, g0), SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk))) : SO.Out}:
-  %walk2_cls(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk))) : {FS.solve_lw(~K, ~W, sk, g0, l, w) == FS.answer(~K, ~W, _, PA.pins(sk), FS.ploop.start(~K, ~W, SO.precisions(l, w), sk, g0, FS.ofdv(~K, ~W, g0), _, PA.pins(sk), SV.solved(sk, SV.reds(_), SV.dropped(_)), PA.nvars(sk), PA.skel(sk))) : SO.Out}
-  %walk2_st(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk))) : {FS.solve_lw(~K, ~W, sk, g0, l, w) == FS.answer(~K, ~W, FS.PW.cls(FS.walk2(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)))), ST.KD.red(PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.PS.bp(_))), FS.ploop.start(~K, ~W, SO.precisions(l, w), sk, g0, FS.ofdv(~K, ~W, g0), FS.PW.cls(FS.walk2(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)))), ST.KD.red(PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.PS.bp(_))), SV.solved(sk, SV.reds(FS.PW.cls(FS.walk2(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk))))), SV.dropped(FS.PW.cls(FS.walk2(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, PA.dadjs(SK.Sketch.eqs(sk)), 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)))))), PA.nvars(sk), ST.renum(ST.skel.kd(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.PS.bp(_), PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.PS.bp(_))), PA.PS.bp(_)))) : SO.Out}
-  {==}
-
-
-def solve_core(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, +sk: SK.Sketch, +g0: List<&2, S.D>, +ps: List<&2, Nat>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {FS.answer(~K, ~W, cls, pins, FS.ploop.start(~K, ~W, ps, sk, g0, FS.ofdv(~K, ~W, g0), cls, pins, es, nv, skel)) == SO.answer(cls, pins, SO.ploop.start(ps, sk, g0, cls, pins, es, nv, skel)) : SO.Out}:
-  %answer_t(~K, ~W, ~R, cls, pins, SO.ploop.start(ps, sk, g0, cls, pins, es, nv, skel)) : {FS.answer(~K, ~W, cls, pins, FS.ploop.start(~K, ~W, ps, sk, g0, FS.ofdv(~K, ~W, g0), cls, pins, es, nv, skel)) == _ : SO.Out}
-  %start_t(~K, ~W, ~R, ps, sk, g0, cls, pins, es, nv, skel) : {FS.answer(~K, ~W, cls, pins, FS.ploop.start(~K, ~W, ps, sk, g0, FS.ofdv(~K, ~W, g0), cls, pins, es, nv, skel)) == FS.answer(~K, ~W, cls, pins, _) : SO.Out}
-  %ofdv_t(~K, ~W, ~R, g0) : {FS.answer(~K, ~W, cls, pins, FS.ploop.start(~K, ~W, ps, sk, g0, FS.ofdv(~K, ~W, g0), cls, pins, es, nv, skel)) == FS.answer(~K, ~W, cls, pins, FS.ploop.start(~K, ~W, ps, sk, g0, _, cls, pins, es, nv, skel)) : SO.Out}
-  {==}
-
-def solve_lw_eq(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat) -> {FS.solve_lw(~K, ~W, sk, g0, l, w) == SO.solve_lw(sk, g0, l, w) : SO.Out}:
-  Equal.trans(SO.Out, FS.solve_lw(~K, ~W, sk, g0, l, w), FS.answer(~K, ~W, SO.cls_of(sk), SO.pins_of(sk), FS.ploop.start(~K, ~W, SO.precisions(l, w), sk, g0, FS.ofdv(~K, ~W, g0), SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk))), SO.solve_lw(sk, g0, l, w), solve_lw_unf(~K, ~W, ~R, sk, g0, l, w), solve_core(~K, ~W, ~R, sk, g0, SO.precisions(l, w), SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk)))
-
-def solve_l_eq(~K: N.Num, ~W: PO.POps<K>, ~R: PO.PLaws<K, W>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat) -> {FS.solve_l(~K, ~W, sk, g0, l) == SO.solve_l(sk, g0, l) : SO.Out}:
-  solve_lw_eq(~K, ~W, ~R, sk, g0, l, 7n)

@@ -1,6 +1,6 @@
 # bend-cad: the structure the plan follows over the new pass's system
 # solved (PLAN-sk13b B7): lib/skdpf.bend over lib/dpass.bend's end state,
-# for the draft solver's completeness. The same lemmas; the invariant at
+# for the solver's completeness. The same lemmas; the invariant at
 # the new pass's end (lib/dpasspf.bend: final2_inv) also needs the sketch
 # well formed and covered (the closure's bound), so each takes those too.
 #

@@ -7,6 +7,11 @@
 # there (lib/satpf.bend), and that point is one for c with s but m, whose
 # equations and sides are among those. Proofs only.
 #
+# Since the sk-13b switch (2026-11-02), what this file proved about
+# sk-13a's pass, Honest or solver is proven in lib/dconflictpf.bend;
+# what is left here is what that proof reuses, and the description below
+# is of the sk-13a proof.
+#
 # Generated from tools/drafts/conflictpf.draft by tools/expand.py; edit the
 # draft.
 
@@ -557,20 +562,3 @@ def rw.go(mc: Maybe<&2, RF.Cert>, +es: List<&2, E.QExpr>, +ss: List<&2, SK.Side>
 
 @MACRO SU CO.support(sk, c, cand)
 @MACRO CH SV.band(SV.distinct(cand), SV.band(SV.below(cand, c), SV.band(SV.all_driving(sk, cand), SV.none_in(cand, red))))
-
-# candidates that are distinct, before c, driving and not red, with which c
-# refutes: the filter's support is a conflict's (the spec's ConflictOk)
-def conflict_ok(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +cand: List<&2, Nat>, +hc: {$CH == True{} : Bool}, hr: {CO.refutable(sk, c, cand) == True{} : Bool})
-  -> SV.ConflictOk(sk, red, c, $SU):
-  +hs = filt_sub(cand, sk, c, Nil{})
-  +h2 = LI.band_r(SV.distinct(cand), SV.band(SV.below(cand, c), SV.band(SV.all_driving(sk, cand), SV.none_in(cand, red))), hc)
-  +h3 = LI.band_r(SV.below(cand, c), SV.band(SV.all_driving(sk, cand), SV.none_in(cand, red)), h2)
-  (LI.band_i(SV.distinct($SU), SV.band(SV.below($SU, c), SV.band(SV.all_driving(sk, $SU), SV.none_in($SU, red))),
-     distinct_sub($SU, cand, hs, LI.band_l(SV.distinct(cand), SV.band(SV.below(cand, c), SV.band(SV.all_driving(sk, cand), SV.none_in(cand, red))), hc)),
-     LI.band_i(SV.below($SU, c), SV.band(SV.all_driving(sk, $SU), SV.none_in($SU, red)),
-       below_sub($SU, cand, c, hs, LI.band_l(SV.below(cand, c), SV.band(SV.all_driving(sk, cand), SV.none_in(cand, red)), h2)),
-       LI.band_i(SV.all_driving(sk, $SU), SV.none_in($SU, red),
-         drv_sub(sk, $SU, cand, hs, LI.band_l(SV.all_driving(sk, cand), SV.none_in(cand, red), h3)),
-         nin_sub($SU, cand, red, hs, LI.band_r(SV.all_driving(sk, cand), SV.none_in(cand, red), h3))))),
-   (rw.go(RF.refute(CO.supp.es(sk, c, $SU), CO.supp.ss(sk, c, $SU)), CO.supp.es(sk, c, $SU), CO.supp.ss(sk, c, $SU), filt_ref(cand, sk, c, Nil{}, hr), ST.refute_ok(CO.supp.es(sk, c, $SU), CO.supp.ss(sk, c, $SU))),
-    filt_irr(cand, sk, c, Nil{})))

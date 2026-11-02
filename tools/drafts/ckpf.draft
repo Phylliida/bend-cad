@@ -2,6 +2,11 @@
 # pass the verdict's exact check (lib/verdict.bend: exact; PLAN-sk13a S5,
 # PLAN-sk13b B4.6). Proofs only.
 #
+# Since the sk-13b switch (2026-11-02), what this file proved about
+# sk-13a's pass, Honest or solver is proven in lib/dpasspf.bend; what is
+# left here is what that proof reuses, and the description below is of
+# the sk-13a proof.
+#
 # - Along one constraint's walk (lib/pass.bend: cwalk) every recorded
 #   drop's reason is a combination on positions of the basis's bp, the
 #   one lib/drvpf.bend's derivable proves, so its identity normalizes to
@@ -429,31 +434,6 @@ def cw_snd(-A: Type, -B: Data, h: (A & B)) -> B:
 @MACRO OC PA.one.c(CO.refutable(sk, i, kb), $PARGS, i, kb, rows, B, bp, vm)
 @MACRO FIN PA.cwalk($ES, $OWN, i, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}})
 
-def ck.c(b: Bool, +sk: SK.Sketch, +i: Nat, +kb: $NL, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +vm: List<&2, Maybe<&2, Nat>>, +eb: {CO.refutable(sk, i, kb) == b : Bool}, +hi: PP.PInv(sk, $RF, $DF, i, $STK),
-  +hK: {SV.class_at($CLS, i) == PA.PO.k($OC) : SV.Class}, +hD: {CL.downs($OWN, $CLS, 0n) == True{} : Bool}) -> {ckb(sk, i, PA.PO.k($OC)) == True{} : Bool}:
-  match b:
-    case True{}:
-      %Equal.sym(Bool, CO.refutable(sk, i, kb), True{}, eb) : {ckb(sk, i, PA.PO.k(PA.one.c(_, $PARGS, i, kb, rows, B, bp, vm))) == True{} : Bool}
-      {==}
-    case False{}:
-      %Equal.sym(Bool, CO.refutable(sk, i, kb), False{}, eb) : {ckb(sk, i, PA.PO.k(PA.one.c(_, $PARGS, i, kb, rows, B, bp, vm))) == True{} : Bool}
-      +hr = PP.pib_rinv(sk, $RF, $DF, i, rows, B, bp, vm, PP.pinv_b(sk, $RF, $DF, i, $STK, hi))
-      +hl = PP.pinv_rlen(sk, $RF, $DF, i, $STK, hi)
-      +hB = PP.pinv_B(sk, $RF, $DF, i, $STK, hi)
-      +hp = PP.pinv_p(sk, $RF, $DF, i, $STK, hi)
-      ck.w($FIN, sk, i, kb, rows, B, bp, vm, hi,
-        cw_snd(SV.DropsOk(sk, $RF, $DF, i, SV.drops(CW.cw.ds($FIN))), CW.CWInv(sk, $RF, $DF, i, bp, $N, $FIN), CW.cw_final(sk, $RF, $DF, i, rows, B, bp, hr, hl, hB, hp)),
-        dg_go($ES, $OWN, sk, $RF, $DF, i, bp, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}, {==}, {==}, OW.len_owners(sk), CW.cw_start(sk, $RF, $DF, i, rows, B, bp, hr, hl, hB, hp), {==}),
-        (%eb : {SV.class_at($CLS, i) == PA.PO.k(PA.one.c(_, $PARGS, i, kb, rows, B, bp, vm)) : SV.Class}
-          hK), hD)
-
-# a driving constraint at i: its class passes
-def ck.d(st: PA.PS, +sk: SK.Sketch, +i: Nat, +hi: PP.PInv(sk, $RF, $DF, i, st), +hK: {SV.class_at($CLS, i) == PA.PO.k(PA.one($PARGS, i, st)) : SV.Class}, +hD: {CL.downs($OWN, $CLS, 0n) == True{} : Bool})
-  -> {ckb(sk, i, PA.PO.k(PA.one($PARGS, i, st))) == True{} : Bool}:
-  match st:
-    case PA.PS{+kb, +rows, +B, +bp, +vm}:
-      ck.c(CO.refutable(sk, i, kb), sk, i, kb, rows, B, bp, vm, {==}, hi, hK, hD)
-
 # The pass
 # --------
 
@@ -463,33 +443,5 @@ def band4(+a: Bool, +b: Bool, +c: Bool, +d: Bool, +h1: {SV.band(a, c) == True{} 
 @MACRO PS1 PA.pass(rs, $PARGS, i, st)
 @MACRO O1 PA.one($PARGS, i, st)
 
-# the classes from position i: they pass both checks
-def ckall(rs: List<&2, SK.Rec>, +sk: SK.Sketch, +i: Nat, +st: PA.PS, +hd: {KB.rdrop(i, PA.recs(sk)) == rs : List<&2, SK.Rec>}, +hc: {CL.cdrop(i, $CLS) == $PS1 : List<&2, SV.Class>},
-  +hA: {D.adjb($AD, $NV) == True{} : Bool}, +hD: {CL.downs($OWN, $CLS, 0n) == True{} : Bool}, +hi: PP.PInv(sk, $RF, $DF, i, st))
-  -> {SV.band(DK.dck($ES, $OWN, $RF, $DF, $PS1), VD.ack(sk, $RF, $PS1, i)) == True{} : Bool}:
-  match rs:
-    case Nil{}:
-      {==}
-    case Con{SK.Rec{+id, True{}, +k}, +t}:
-      +hdr = PP.drv_at(sk, i, SK.Rec{id, True{}, k}, t, hd)
-      ckall(t, sk, 1n+i, st, KB.rdrop_step(i, PA.recs(sk), SK.Rec{id, True{}, k}, t, hd), CL.cdrop_step($CLS, i, SV.Kept{Nil{}}, PA.pass(t, $PARGS, 1n+i, st), hc), hA, hD,
-        PP.step_same(sk, i, st, hi, SP.zc_noc($OWN, i, $RF, PP.noc_owners(sk, i, hdr)), PP.dcond_dr(sk, $RF, i, hdr)))
-    case Con{SK.Rec{+id, False{}, +k}, +t}:
-      +hK = CL.ca_of($CLS, i, PA.PO.k($O1), PA.pass(t, $PARGS, 1n+i, PA.PO.st($O1)), hc)
-      +hdrv = PP.driving_at(sk, i, id, k, t, hd)
-      band4(DK.kdrops.ok($ES, $OWN, $RF, $DF, PA.PO.k($O1)), DK.dck($ES, $OWN, $RF, $DF, PA.pass(t, $PARGS, 1n+i, PA.PO.st($O1))), VD.kamber.ok(sk, $RF, i, PA.PO.k($O1)), VD.ack(sk, $RF, PA.pass(t, $PARGS, 1n+i, PA.PO.st($O1)), 1n+i),
-        ck.d(st, sk, i, hi, hK, hD),
-        ckall(t, sk, 1n+i, PA.PO.st($O1), KB.rdrop_step(i, PA.recs(sk), SK.Rec{id, False{}, k}, t, hd), CL.cdrop_step($CLS, i, PA.PO.k($O1), PA.pass(t, $PARGS, 1n+i, PA.PO.st($O1)), hc), hA, hD,
-          PP.pinv_sr(sk, i, $O1, PP.hon.d(st, sk, i, hi, hK, hA, hdrv, hD))))
-
 @MACRO DCK DK.dck($ES, $OWN, $RF, $DF, $CLS)
 @MACRO ACK VD.ack(sk, $RF, $CLS, 0n)
-
-# the pass's classes pass the verdict's exact check
-def ck_pass(+sk: SK.Sketch, +hA: {D.adjb($AD, $NV) == True{} : Bool}) -> {VD.exact(sk, $CLS) == True{} : Bool}:
-  L.band_r($DCK, $ACK, ckall(PA.recs(sk), sk, 0n, PA.start($NV), {==}, {==}, hA, PP.classes_down(sk), PP.pinv0(sk)))
-
-# every drop the pass records is correct by construction: its reason
-# passes (lib/dropok.bend; lib/vrdpf.bend says what that means)
-def why_pass(+sk: SK.Sketch, +hA: {D.adjb($AD, $NV) == True{} : Bool}) -> {$DCK == True{} : Bool}:
-  L.band_l($DCK, $ACK, ckall(PA.recs(sk), sk, 0n, PA.start($NV), {==}, {==}, hA, PP.classes_down(sk), PP.pinv0(sk)))

@@ -9,6 +9,11 @@
 # sketch less its red constraints, the box's side checks and the amber
 # refutations every side condition, so it means that sketch. The plan's
 # shape check (hS) is lib/regpf.bend's, for solve_regular.
+#
+# Since the sk-13b switch (2026-11-02), what this file proved about
+# sk-13a's pass, Honest or solver is proven in lib/dsolvepf.bend; what
+# is left here is what that proof reuses, and the description below is
+# of the sk-13a proof.
 
 # Generated from tools/drafts/solvepf.draft by tools/expand.py; edit the
 # draft.
@@ -204,59 +209,7 @@ def pins_of($FIN) -> {SV.held(SO.Out.pins(x), g0, SO.Out.gc(x), SO.Out.gr(x)) ==
 @MACRO LP sk, g0, cls, pins, es, nv, skel
 @MACRO LPT +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel
 
-def loop_ok(ps: List<&2, Nat>, ok: Bool, +cur: NU.PR, $LPT, h: {ok == SO.accept(cur, sk, g0, cls, pins) : Bool}) -> {SO.run.ok(SO.ploop(ps, ok, cur, $LP)) == SO.accept(SO.run.m(SO.ploop(ps, ok, cur, $LP)), sk, g0, cls, pins) : Bool}:
-  match ps ok:
-    case Nil{} ok:
-      h
-    case Con{p, t} True{}:
-      h
-    case Con{+p, t} False{}:
-      loop_ok(t, SO.accept(NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins), NU.plan(es, nv, skel, g0, p), $LP, {==})
-
-def start_ok(ps: List<&2, Nat>, $LPT) -> {SO.run.ok(SO.ploop.start(ps, $LP)) == SO.accept(SO.run.m(SO.ploop.start(ps, $LP)), sk, g0, cls, pins) : Bool}:
-  match ps:
-    case Nil{}:
-      {==}
-    case Con{+p, t}:
-      loop_ok(t, SO.accept(NU.plan(es, nv, skel, g0, p), sk, g0, cls, pins), NU.plan(es, nv, skel, g0, p), $LP, {==})
-
-# a run whose bit is its answer's verdict and True: its answer passes
-def run_final(r: SO.Run, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, hs: {SO.run.ok(r) == SO.accept(SO.run.m(r), sk, g0, cls, pins) : Bool}, ok: {SO.run.ok(r) == True{} : Bool}) -> {SO.checks(sk, g0, SO.answer(cls, pins, r)) == True{} : Bool}:
-  match r:
-    case SO.Run{b, m}:
-      match b:
-        case True{}:
-          match m:
-            case NU.POk{+y}:
-              Equal.sym(Bool, True{}, SO.accept(NU.POk{y}, sk, g0, cls, pins), hs)
-            case NU.PRetry{}:
-              L.absurd({SO.checks(sk, g0, SO.answer(cls, pins, SO.Run{True{}, NU.PRetry{}})) == True{} : Bool}, KA.tf(hs))
-            case NU.PStop{}:
-              L.absurd({SO.checks(sk, g0, SO.answer(cls, pins, SO.Run{True{}, NU.PStop{}})) == True{} : Bool}, KA.tf(hs))
-        case False{}:
-          L.absurd({SO.checks(sk, g0, SO.answer(cls, pins, SO.Run{False{}, m})) == True{} : Bool}, KA.ft(ok))
-
 @MACRO SLP sk, g0, SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk)
-
-# a True ok is a True verdict on the solver's answer
-def verdict(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}) -> {SO.checks(sk, g0, SO.solve_l(sk, g0, l)) == True{} : Bool}:
-  run_final(SO.ploop.start(SO.precisions(l, 7n), $SLP), sk, g0, SO.cls_of(sk), SO.pins_of(sk), start_ok(SO.precisions(l, 7n), $SLP), ok)
-
-# the solver's answer's drops are the pass's, correct by construction
-# (lib/ckpf.bend: why_pass), the pass's adjacency read off the verdict
-def hwhy(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool})
-  -> {DK.dck(SK.Sketch.eqs(sk), SV.owners(sk), SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk)), SO.cls_of(sk)) == True{} : Bool}:
-  CKP.why_pass(sk, adjb_of(sk, g0, SO.solve_l(sk, g0, l), verdict(sk, g0, l, ok)))
 
 # The laws
 # --------
-
-def solve_exists(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}) -> &x: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), x) & SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk))):
-  exists_of(~F, ~R, ~H, sk, g0, SO.solve_l(sk, g0, l), verdict(sk, g0, l, ok), hwhy(sk, g0, l, ok))
-
-def solve_unique(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}, +x1: M.Vec(~F), h1: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), x1), m1: SK.Sketch.means(~F, x1, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk)), +x2: M.Vec(~F), h2: BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), x2), m2: SK.Sketch.means(~F, x2, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk))) -> {x1 == x2 : M.Vec(~F)}:
-  unique_of(~F, ~H, sk, g0, SO.solve_l(sk, g0, l), verdict(sk, g0, l, ok), x1, h1, m1, x2, h2, m2)
-
-def solve_pins(+sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}) -> {SV.held(SO.Out.pins(SO.solve_l(sk, g0, l)), g0, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l))) == True{} : Bool}:
-  pins_of(sk, g0, SO.solve_l(sk, g0, l), verdict(sk, g0, l, ok))
-

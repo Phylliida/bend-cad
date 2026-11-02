@@ -21,7 +21,6 @@ import Base
 import ../spec/ring.bend as E
 import ../spec/sketch.bend as SK
 import ../spec/solve.bend as SV
-import ../spec/_draft13b.bend as DH
 import ../spec/dir.bend as DR
 import ./karith.bend as KA
 import ./listpf.bend as L
@@ -141,7 +140,7 @@ def mm_tf(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +R1: List<&2, Nat>, +D1: Li
       ddn(sk, cls1, R1, cls2, R2, c, d1, d2, k, hkb, hor, hd, nd)
 
 # dropped in one exactly when in the other
-def mm_ag2(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +R1: List<&2, Nat>, +D1: List<&2, Nat>, +cls2: List<&2, SV.Class>, +R2: List<&2, Nat>, +D2: List<&2, Nat>, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +hkb: {SV.kept_before(sk, R1, c) == SV.kept_before(sk, R2, c) : List<&2, Nat>}, m1: Bool, m2: Bool, +k: Nat, x1: DH.drops_ok.mem(sk, cls1, R1, D1, c, d1, m1, k), x2: DH.drops_ok.mem(sk, cls2, R2, D2, c, d2, m2, k), +hb: {SV.basis(sk, R1, D1, c, d1, k) == SV.basis(sk, R2, D2, c, d2, k) : List<&2, E.QExpr>}, +hor: {SV.own_rest(sk, c, d1, k) == SV.own_rest(sk, c, d2, k) : List<&2, E.QExpr>}) -> {m1 == m2 : Bool}:
+def mm_ag2(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +R1: List<&2, Nat>, +D1: List<&2, Nat>, +cls2: List<&2, SV.Class>, +R2: List<&2, Nat>, +D2: List<&2, Nat>, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +hkb: {SV.kept_before(sk, R1, c) == SV.kept_before(sk, R2, c) : List<&2, Nat>}, m1: Bool, m2: Bool, +k: Nat, x1: SV.drops_ok.mem(sk, cls1, R1, D1, c, d1, m1, k), x2: SV.drops_ok.mem(sk, cls2, R2, D2, c, d2, m2, k), +hb: {SV.basis(sk, R1, D1, c, d1, k) == SV.basis(sk, R2, D2, c, d2, k) : List<&2, E.QExpr>}, +hor: {SV.own_rest(sk, c, d1, k) == SV.own_rest(sk, c, d2, k) : List<&2, E.QExpr>}) -> {m1 == m2 : Bool}:
   match m1 m2:
     case True{} True{}:
       {==}
@@ -152,7 +151,7 @@ def mm_ag2(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +R1: List<&2, Nat>, +D1: L
     case False{} True{}:
       absurd({False{} == True{} : Bool}, mm_tf(sk, cls2, R2, D2, cls1, R1, D1, c, d2, d1, Equal.sym(List<&2, Nat>, SV.kept_before(sk, R1, c), SV.kept_before(sk, R2, c), hkb), k, x2, x1, Equal.sym(List<&2, E.QExpr>, SV.basis(sk, R1, D1, c, d1, k), SV.basis(sk, R2, D2, c, d2, k), hb), Equal.sym(List<&2, E.QExpr>, SV.own_rest(sk, c, d1, k), SV.own_rest(sk, c, d2, k), hor)))
 
-def at_ag2(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +R1: List<&2, Nat>, +D1: List<&2, Nat>, +cls2: List<&2, SV.Class>, +R2: List<&2, Nat>, +D2: List<&2, Nat>, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +hkb: {SV.kept_before(sk, R1, c) == SV.kept_before(sk, R2, c) : List<&2, Nat>}, b: Bool, +k: Nat, a1: DH.drops_ok.at(sk, cls1, R1, D1, c, d1, b, k), a2: DH.drops_ok.at(sk, cls2, R2, D2, c, d2, b, k), +hb: {SV.basis(sk, R1, D1, c, d1, k) == SV.basis(sk, R2, D2, c, d2, k) : List<&2, E.QExpr>}, +hor: {SV.own_rest(sk, c, d1, k) == SV.own_rest(sk, c, d2, k) : List<&2, E.QExpr>}) -> {SV.mem(k, d1) == SV.mem(k, d2) : Bool}:
+def at_ag2(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +R1: List<&2, Nat>, +D1: List<&2, Nat>, +cls2: List<&2, SV.Class>, +R2: List<&2, Nat>, +D2: List<&2, Nat>, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +hkb: {SV.kept_before(sk, R1, c) == SV.kept_before(sk, R2, c) : List<&2, Nat>}, b: Bool, +k: Nat, a1: SV.drops_ok.at(sk, cls1, R1, D1, c, d1, b, k), a2: SV.drops_ok.at(sk, cls2, R2, D2, c, d2, b, k), +hb: {SV.basis(sk, R1, D1, c, d1, k) == SV.basis(sk, R2, D2, c, d2, k) : List<&2, E.QExpr>}, +hor: {SV.own_rest(sk, c, d1, k) == SV.own_rest(sk, c, d2, k) : List<&2, E.QExpr>}) -> {SV.mem(k, d1) == SV.mem(k, d2) : Bool}:
   match b:
     case True{}:
       mm_ag2(sk, cls1, R1, D1, cls2, R2, D2, c, d1, d2, hkb, SV.mem(k, d1), SV.mem(k, d2), k, a1, a2, hb, hor)
@@ -160,8 +159,8 @@ def at_ag2(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +R1: List<&2, Nat>, +D1: L
       Equal.trans(Bool, SV.mem(k, d1), False{}, SV.mem(k, d2), a1, Equal.sym(Bool, SV.mem(k, d2), False{}, a2))
 
 def da.c(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +R1: List<&2, Nat>, +D1: List<&2, Nat>, +cls2: List<&2, SV.Class>, +R2: List<&2, Nat>, +D2: List<&2, Nat>, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +hkb: {SV.kept_before(sk, R1, c) == SV.kept_before(sk, R2, c) : List<&2, Nat>}, +o: Nat, +t: List<&2, Nat>, +k: Nat, +ho: {OW.ndrop(k, SV.owners(sk)) == Con{o, t} : List<&2, Nat>}, +hps: {SV.presolved(sk, R1, D1, c) == SV.presolved(sk, R2, D2, c) : List<&2, E.QExpr>}, +hor: {SV.own_rest(sk, c, d1, k) == SV.own_rest(sk, c, d2, k) : List<&2, E.QExpr>},
-  g1: DH.drops_ok.at(sk, cls1, R1, D1, c, d1, SV.eq(o, c), k) & DH.drops_ok.go(sk, cls1, R1, D1, c, d1, t, 1n+k), g2: DH.drops_ok.at(sk, cls2, R2, D2, c, d2, SV.eq(o, c), k) & DH.drops_ok.go(sk, cls2, R2, D2, c, d2, t, 1n+k),
-  ih: {SV.own_rest(sk, c, d1, 1n+k) == SV.own_rest(sk, c, d2, 1n+k) : List<&2, E.QExpr>} -> DH.drops_ok.go(sk, cls1, R1, D1, c, d1, t, 1n+k) -> DH.drops_ok.go(sk, cls2, R2, D2, c, d2, t, 1n+k) -> {SP.agree(t, d1, d2, c, 1n+k) == True{} : Bool})
+  g1: SV.drops_ok.at(sk, cls1, R1, D1, c, d1, SV.eq(o, c), k) & SV.drops_ok.go(sk, cls1, R1, D1, c, d1, t, 1n+k), g2: SV.drops_ok.at(sk, cls2, R2, D2, c, d2, SV.eq(o, c), k) & SV.drops_ok.go(sk, cls2, R2, D2, c, d2, t, 1n+k),
+  ih: {SV.own_rest(sk, c, d1, 1n+k) == SV.own_rest(sk, c, d2, 1n+k) : List<&2, E.QExpr>} -> SV.drops_ok.go(sk, cls1, R1, D1, c, d1, t, 1n+k) -> SV.drops_ok.go(sk, cls2, R2, D2, c, d2, t, 1n+k) -> {SP.agree(t, d1, d2, c, 1n+k) == True{} : Bool})
   -> {SP.agree(Con{o, t}, d1, d2, c, k) == True{} : Bool}:
   (a1, r1) = g1
   (a2, r2) = g2
@@ -171,7 +170,7 @@ def da.c(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +R1: List<&2, Nat>, +D1: Lis
       AG.lt_ndrop(SV.owners(sk), k, o, t, ho)), ek, hor), r1, r2))
 
 def da.go2(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +R1: List<&2, Nat>, +D1: List<&2, Nat>, +cls2: List<&2, SV.Class>, +R2: List<&2, Nat>, +D2: List<&2, Nat>, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +hkb: {SV.kept_before(sk, R1, c) == SV.kept_before(sk, R2, c) : List<&2, Nat>}, own_s: List<&2, Nat>, +k: Nat, +ho: {OW.ndrop(k, SV.owners(sk)) == own_s : List<&2, Nat>}, +hps: {SV.presolved(sk, R1, D1, c) == SV.presolved(sk, R2, D2, c) : List<&2, E.QExpr>}, +hor: {SV.own_rest(sk, c, d1, k) == SV.own_rest(sk, c, d2, k) : List<&2, E.QExpr>},
-  g1: DH.drops_ok.go(sk, cls1, R1, D1, c, d1, own_s, k), g2: DH.drops_ok.go(sk, cls2, R2, D2, c, d2, own_s, k)) -> {SP.agree(own_s, d1, d2, c, k) == True{} : Bool}:
+  g1: SV.drops_ok.go(sk, cls1, R1, D1, c, d1, own_s, k), g2: SV.drops_ok.go(sk, cls2, R2, D2, c, d2, own_s, k)) -> {SP.agree(own_s, d1, d2, c, k) == True{} : Bool}:
   match own_s:
     case Nil{}:
       {==}
@@ -180,7 +179,7 @@ def da.go2(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +R1: List<&2, Nat>, +D1: L
 
 # two DropsOk of the draft Honest at c, over the same kept constraints and
 # solved equations before c, drop the same of c's equations
-def drops_ag2(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +R1: List<&2, Nat>, +D1: List<&2, Nat>, +cls2: List<&2, SV.Class>, +R2: List<&2, Nat>, +D2: List<&2, Nat>, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +hkb: {SV.kept_before(sk, R1, c) == SV.kept_before(sk, R2, c) : List<&2, Nat>}, +hps: {SV.presolved(sk, R1, D1, c) == SV.presolved(sk, R2, D2, c) : List<&2, E.QExpr>}, h1: DH.DropsOk(sk, cls1, R1, D1, c, d1), h2: DH.DropsOk(sk, cls2, R2, D2, c, d2)) -> {SP.agree(SV.owners(sk), d1, d2, c, 0n) == True{} : Bool}:
+def drops_ag2(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +R1: List<&2, Nat>, +D1: List<&2, Nat>, +cls2: List<&2, SV.Class>, +R2: List<&2, Nat>, +D2: List<&2, Nat>, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +hkb: {SV.kept_before(sk, R1, c) == SV.kept_before(sk, R2, c) : List<&2, Nat>}, +hps: {SV.presolved(sk, R1, D1, c) == SV.presolved(sk, R2, D2, c) : List<&2, E.QExpr>}, h1: SV.DropsOk(sk, cls1, R1, D1, c, d1), h2: SV.DropsOk(sk, cls2, R2, D2, c, d2)) -> {SP.agree(SV.owners(sk), d1, d2, c, 0n) == True{} : Bool}:
   (hb1, g1) = h1
   (hb2, g2) = h2
   da.go2(sk, cls1, R1, D1, cls2, R2, D2, c, d1, d2, hkb, SV.owners(sk), 0n, {==}, hps, Equal.trans(List<&2, E.QExpr>, SV.own_rest(sk, c, d1, 0n), Nil{}, SV.own_rest(sk, c, d2, 0n), SP.or_nil(SK.Sketch.eqs(sk), SV.owners(sk), c, d1, 0n, 0n, {==}), Equal.sym(List<&2, E.QExpr>, SV.own_rest(sk, c, d2, 0n), Nil{}, SP.or_nil(SK.Sketch.eqs(sk), SV.owners(sk), c, d2, 0n, 0n, {==}))), g1, g2)

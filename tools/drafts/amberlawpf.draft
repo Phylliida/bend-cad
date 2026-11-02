@@ -1,6 +1,11 @@
 # bend-cad: law 7, solve_amber (PLAN-sk13a S6): deleting every amber
 # constraint changes no solution. Proofs only.
 #
+# Since the sk-13b switch (2026-11-02), what this file proved about
+# sk-13a's pass, Honest or solver is proven in lib/dambpf.bend; what is
+# left here is what that proof reuses, and the description below is of
+# the sk-13a proof.
+#
 # An amber constraint's equations are all dropped (AmberOk, from
 # lib/totalpf.bend: solve_honest), so the system solved is the same with
 # the ambers made driven too, and a geometry meaning the sketch less its
@@ -43,7 +48,6 @@ import ./vrdpf.bend as VR
 import ./vsdpf.bend as VS
 import ./meaning.bend as MN
 import ./solve.bend as SO
-import ./totalpf.bend as TP
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -61,45 +65,6 @@ def allP(+sk: SK.Sketch, +cls: List<&2, SV.Class>, n: Nat, +c0: Nat) -> Bool:
       True{}
     case 1n+m:
       SV.band(pc(sk, cls, c0), allP(sk, cls, m, 1n+c0))
-
-def amber_ad(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, h: SV.AmberOk(sk, red, ds, c, d)) -> {SV.is_amberable(sk, c, d) == True{} : Bool}:
-  match h:
-    case (a, b):
-      match b:
-        case (c1, d1):
-          match d1:
-            case (e1, f1):
-              e1
-
-def pc_b(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +dd: List<&2, SV.Drop>, +rs: List<&2, SV.Ref>, b: Bool, h: SV.Fate.pick(sk, red, ds, c, b, SV.Amber{dd, rs})) -> {SV.alldrop.go(SV.owners(sk), SV.drops(dd), c, 0n) == True{} : Bool}:
-  match b:
-    case True{}:
-      absurd({SV.alldrop.go(SV.owners(sk), SV.drops(dd), c, 0n) == True{} : Bool}, h)
-    case False{}:
-      amber_ad(sk, red, ds, c, SV.drops(dd), h)
-
-def pc_k(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, k: SV.Class, b: Bool, h: SV.Fate.pick(sk, red, ds, c, b, k)) -> {SV.bor(SV.bnot(SV.is_amber(k)), SV.alldrop.go(SV.owners(sk), SV.kdrops(k), c, 0n)) == True{} : Bool}:
-  match k:
-    case SV.Kept{d}:
-      {==}
-    case SV.Amber{+dd, +rs}:
-      pc_b(sk, red, ds, c, dd, rs, b, h)
-    case SV.Over{j, s, w}:
-      {==}
-    case SV.Conflict{s, cns}:
-      {==}
-
-def allP_c(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +m: Nat, +c0: Nat, h: SV.Honest.go(sk, cls, 1n+m, c0), ih: SV.Honest.go(sk, cls, m, 1n+c0) -> {allP(sk, cls, m, 1n+c0) == True{} : Bool}) -> {allP(sk, cls, 1n+m, c0) == True{} : Bool}:
-  match h:
-    case (f, r):
-      L.band_i(pc(sk, cls, c0), allP(sk, cls, m, 1n+c0), pc_k(sk, SV.reds(cls), SV.dropped(cls), c0, SV.class_at(cls, c0), SV.driven(sk, c0), f), ih(r))
-
-def allP_of(+sk: SK.Sketch, +cls: List<&2, SV.Class>, n: Nat, +c0: Nat, h: SV.Honest.go(sk, cls, n, c0)) -> {allP(sk, cls, n, c0) == True{} : Bool}:
-  match n:
-    case 0n:
-      {==}
-    case 1n++m:
-      allP_c(sk, cls, m, c0, h, hr => allP_of(sk, cls, m, 1n+c0, hr))
 
 # the j-th fact from c0 on
 def pc_at(+sk: SK.Sketch, +cls: List<&2, SV.Class>, n: Nat, +c0: Nat, j: Nat, h: {allP(sk, cls, n, c0) == True{} : Bool}, hj: {KA.natle(1n+j, n) == True{} : Bool}) -> {pc(sk, cls, Nat.add(j, c0)) == True{} : Bool}:
@@ -265,31 +230,8 @@ def se.go(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +R: List<&2, Nat>, +A: Lis
 @MACRO AX SV.ambers(cls)
 @MACRO DX SV.dropped(cls)
 
-def solved_eq(+sk: SK.Sketch, +cls: List<&2, SV.Class>, H: SV.Honest(sk, cls)) -> {SV.solved(sk, $RX, $DX) == SV.solved(sk, SV.cat($RX, $AX), $DX) : List<&2, E.QExpr>}:
-  match H:
-    case (+hlen, hg):
-      se.go(SK.Sketch.eqs(sk), SV.owners(sk), $RX, $AX, $DX, 0n, SV.owners(sk), {==}, KP.owners_len(sk), aq.go(sk, cls, allP_of(sk, cls, SV.ncons(sk), 0n, hg), hlen, SV.owners(sk), 0n, {==}))
-
-# a geometry meaning the sketch less its reds and ambers solves the system
-def zs_amb(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, H: SV.Honest(sk, cls), hz: SK.Zeros(~F, x, SK.Sketch.eqs(SV.mark(SV.cat($RX, $AX), sk)))) -> SK.Zeros(~F, x, SV.solved(sk, $RX, $DX)):
-  (%Equal.sym(List<&2, E.QExpr>, SV.solved(sk, $RX, $DX), SV.solved(sk, SV.cat($RX, $AX), $DX), solved_eq(sk, cls, H)) : SK.Zeros(~F, x, _)
-    VR.zeros_solved(~F, x, sk, SV.cat($RX, $AX), $DX, hz))
-
 # The law
 # -------
 
 def amb_fin(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: List<&2, SV.Class>, +hd: {DK.dck(SK.Sketch.eqs(sk), SV.owners(sk), $RX, $DX, cls) == True{} : Bool}, +ha: {VD.exact(sk, cls) == True{} : Bool}, +hz: SK.Zeros(~F, x, SV.solved(sk, $RX, $DX)), +hs: SK.Sides(~F, x, SK.Sketch.sides(SV.mark(SV.cat($RX, $AX), sk)))) -> SK.Sketch.means(~F, x, SV.mark($RX, sk)):
   MN.sketch_sound(~F, x, SV.mark($RX, sk), WF.wf_ok(SV.mark($RX, sk), WC.wf_mark($RX, sk, WC.wf_dec_ok(sk, w))), (VR.zeros_mark(~F, x, sk, cls, hz, hd), VS.sides_mark(~F, x, sk, cls, hz, hd, ha, hs)))
-
-def amb_m(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cls: List<&2, SV.Class>, +hd: {DK.dck(SK.Sketch.eqs(sk), SV.owners(sk), $RX, $DX, cls) == True{} : Bool}, +ha: {VD.exact(sk, cls) == True{} : Bool}, H: SV.Honest(sk, cls), h: SK.Sketch.holds(~F, x, SV.mark(SV.cat($RX, $AX), sk))) -> SK.Sketch.means(~F, x, SV.mark($RX, sk)):
-  match h:
-    case (hz, hs):
-      amb_fin(~F, x, sk, w, cls, hd, ha, zs_amb(~F, x, sk, cls, H, hz), hs)
-
-# LAW 7 (ROADMAP solve_amber): a geometry meaning the sketch less its red
-# and amber constraints means it less its red ones: deleting every amber
-# constraint changes no solution
-def solve_amber(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SV.mark(SV.cat(SV.reds($CLS), SV.ambers($CLS)), sk))) -> SK.Sketch.means(~F, x, SV.mark(SV.reds($CLS), sk)):
-  +hwf = WC.wf_dec_ok(sk, w)
-  +ha = CV.cov(sk, SO.nvars(sk), cov, hwf)
-  amb_m(~F, x, sk, WF.wf_ok(sk, hwf), $CLS, CKP.why_pass(sk, GM.adjb_dadjs(SK.Sketch.eqs(sk), SO.nvars(sk), ha)), CKP.ck_pass(sk, GM.adjb_dadjs(SK.Sketch.eqs(sk), SO.nvars(sk), ha)), TP.solve_honest(sk, WF.wf_ok(sk, hwf), cov, g0, l), MN.sketch_complete(~F, x, SV.mark(SV.cat(SV.reds($CLS), SV.ambers($CLS)), sk), m))

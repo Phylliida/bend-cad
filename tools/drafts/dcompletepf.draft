@@ -1,7 +1,7 @@
-# bend-cad: completeness for the draft solver (PLAN-sk13b B7,
-# solve_complete over the new pass). Proofs only.
+# bend-cad: completeness, for solve_complete (PLAN-sk13b B7, over the
+# pass with the direction layer). Proofs only.
 #
-# lib/completepf.bend's proof, over lib/dsolve.bend: the new pass's system
+# lib/completepf.bend's proof, over lib/solve.bend: the new pass's system
 # solved, pins and structure (lib/dskdpf.bend), and its exact checks
 # (lib/dpasspf.bend: ck2_pass). The verdict now also checks the live
 # drops' nd sides over the box; the law gives them strict at x, so the
@@ -81,7 +81,6 @@ import ./dpass.bend as DPS
 import ./dpasspf.bend as DPP
 import ./dtotalpf.bend as DTP
 import ./dskdpf.bend as SD2
-import ./dsolve.bend as DSO
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
@@ -261,7 +260,7 @@ def vb_dreps(~F: O.OField, n: Nat, +c: @T, +hc: O.le(~F, @0, c)) -> M.vbnd.all(~
 
 @MACRO SKP ~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +ha: {D.adjb($ADJ, $NV) == True{} : Bool}, +hcv2: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf2: {WF.wf_dec(sk) == True{} : Bool}
 @MACRO SKA ~F, ~H, sk, ha, hcv2, hwf2
-@MACRO PINS DSO.pins_of2(sk)
+@MACRO PINS SO.pins_of(sk)
 
 def fs_pins($SKP) -> {SO.ntake($NP, $VP) == $FS : List<&2, Nat>}:
   nt_app($FS, ST.allvars($KB))
@@ -280,7 +279,7 @@ def pbox0($SKP, +x: M.Vec(~F), +g: List<&2, S.D>, +g0: List<&2, S.D>, +d: @T, +h
 
 @MACRO VB AP.vbit(~F, Nat.div(p, 2n))
 @MACRO CA ~F, $FULL, $GOOD, $VP, x
-@MACRO TP $SKP, +x: M.Vec(~F), +g: List<&2, S.D>, +g0: List<&2, S.D>, +p: Nat, +q2: Nat, +hp2: {p == 1n+(1n+q2) : Nat}, +d: @T, +hd0: O.le(~F, @0, d), +hdh: O.le(~F, d, $HH), +hdy: {SV.dyeqs(KP.pickk($FULL, 0n, $GOOD)) == True{} : Bool}, +hz: SK.Zeros(~F, x, DSO.kept2(sk)), +hN: SV.Near($DN, ~F, ~H, $NV, 0n, g, x, d, $PINS, g0), +hpa: SV.PinnedAt($DN, ~F, ~H, x, $PINS, g0), +binv: BI.BInv(~F, x, $FULL, $KB), +hsq: O.lt(F, @M($VB, PB.qch($CA, $KB, binv, $NP, @0)), @1)
+@MACRO TP $SKP, +x: M.Vec(~F), +g: List<&2, S.D>, +g0: List<&2, S.D>, +p: Nat, +q2: Nat, +hp2: {p == 1n+(1n+q2) : Nat}, +d: @T, +hd0: O.le(~F, @0, d), +hdh: O.le(~F, d, $HH), +hdy: {SV.dyeqs(KP.pickk($FULL, 0n, $GOOD)) == True{} : Bool}, +hz: SK.Zeros(~F, x, SO.kept(sk)), +hN: SV.Near($DN, ~F, ~H, $NV, 0n, g, x, d, $PINS, g0), +hpa: SV.PinnedAt($DN, ~F, ~H, x, $PINS, g0), +binv: BI.BInv(~F, x, $FULL, $KB), +hsq: O.lt(F, @M($VB, PB.qch($CA, $KB, binv, $NP, @0)), @1)
 @MACRO TA $SKA, x, g, g0, p, q2, hp2, d, hd0, hdh, hdy, hz, hN, hpa, binv, hsq
 
 # the blocks in turn from the pins' box
@@ -539,8 +538,8 @@ def eqlen_lq(es: List<&2, E.QExpr>) -> {CK.eqlen(es) == ST.len.q(es) : Nat}:
       %Equal.sym(Nat, CK.eqlen(t), ST.len.q(t), eqlen_lq(t)) : {1n+_ == 1n+ST.len.q(t) : Nat}
       {==}
 
-def kept_eqlen($SKP) -> {CK.eqlen(DSO.kept2(sk)) == SV.len($GOOD) : Nat}:
-  Equal.trans(Nat, CK.eqlen(DSO.kept2(sk)), ST.len.q(DSO.kept2(sk)), SV.len($GOOD), eqlen_lq(DSO.kept2(sk)), Equal.trans(Nat, ST.len.q(DSO.kept2(sk)), SV.neqs(DSO.kept2(sk)), SV.len($GOOD), KP.lenq_neqs(DSO.kept2(sk)), SD2.kept_len_d(sk, ha, hcv2, hwf2)))
+def kept_eqlen($SKP) -> {CK.eqlen(SO.kept(sk)) == SV.len($GOOD) : Nat}:
+  Equal.trans(Nat, CK.eqlen(SO.kept(sk)), ST.len.q(SO.kept(sk)), SV.len($GOOD), eqlen_lq(SO.kept(sk)), Equal.trans(Nat, ST.len.q(SO.kept(sk)), SV.neqs(SO.kept(sk)), SV.len($GOOD), KP.lenq_neqs(SO.kept(sk)), SD2.kept_len_d(sk, ha, hcv2, hwf2)))
 
 # The kept equations use only variables below nv
 # ---------------------------------------------
@@ -615,8 +614,8 @@ def eb_pickk(+m: Nat, +es: List<&2, E.QExpr>, xs: List<&2, Nat>, +h: {PL.eqs_bel
 
 # the system solved uses only variables below nv: it is the full system at
 # the pass's positions
-def kept_below(+sk: SK.Sketch, +ha: {D.adjb($ADJ, $NV) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}, +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}) -> {PL.eqs_below(SO.nvars(sk), DSO.kept2(sk)) == True{} : Bool}:
-  %Equal.sym(List<&2, E.QExpr>, DSO.kept2(sk), KP.pickk($FULL, 0n, $GOOD), SD2.kept_good_d(sk, ha, cov, hwf)) : {PL.eqs_below(SO.nvars(sk), _) == True{} : Bool}
+def kept_below(+sk: SK.Sketch, +ha: {D.adjb($ADJ, $NV) == True{} : Bool}, +hwf: {WF.wf_dec(sk) == True{} : Bool}, +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}) -> {PL.eqs_below(SO.nvars(sk), SO.kept(sk)) == True{} : Bool}:
+  %Equal.sym(List<&2, E.QExpr>, SO.kept(sk), KP.pickk($FULL, 0n, $GOOD), SD2.kept_good_d(sk, ha, cov, hwf)) : {PL.eqs_below(SO.nvars(sk), _) == True{} : Bool}
   eb_pickk(SO.nvars(sk), $FULL, $GOOD, eqsb_of($FULL, SO.nvars(sk), ew_sk(sk, SO.nvars(sk), cov, hwf)))
 
 # The pins are held
@@ -748,28 +747,28 @@ def cp_ok($SKP, +x: M.Vec(~F), +g: List<&2, S.D>, $PGF) -> {PL.check.p($DN, $SYS
   KA.band_i(PL.pinz($DN, $NP, grf), PL.walk($DN, gcf, grf, bsf, $SYS, $NP), pinz_of($NP, grf, hkr), hw))))
 
 @MACRO KL KA.klen($DN, $GCU)
-@MACRO EQL CK.eqlen(DSO.kept2(sk))
-@MACRO CPK PL.check.p($DN, PL.reorder($VP, DSO.kept2(sk), $EP), PL.kperm($DN, $GCU, $VP), PL.kperm($DN, $GRU, $VP), $NP, bsf)
+@MACRO EQL CK.eqlen(SO.kept(sk))
+@MACRO CPK PL.check.p($DN, PL.reorder($VP, SO.kept(sk), $EP), PL.kperm($DN, $GCU, $VP), PL.kperm($DN, $GRU, $VP), $NP, bsf)
 
 def cpk_ok($SKP, +x: M.Vec(~F), +g: List<&2, S.D>, $PGF) -> {$CPK == True{} : Bool}:
-  %Equal.sym(List<&2, E.QExpr>, PL.reorder($VP, DSO.kept2(sk), $EP), $SYS, SD2.kept_reorder_d(sk, ha, hcv2, hwf2, $VP, ST.alleqs($KB), SP.sfacts_gc($SFA))) : {PL.check.p($DN, _, PL.kperm($DN, $GCU, $VP), PL.kperm($DN, $GRU, $VP), $NP, bsf) == True{} : Bool}
+  %Equal.sym(List<&2, E.QExpr>, PL.reorder($VP, SO.kept(sk), $EP), $SYS, SD2.kept_reorder_d(sk, ha, hcv2, hwf2, $VP, ST.alleqs($KB), SP.sfacts_gc($SFA))) : {PL.check.p($DN, _, PL.kperm($DN, $GCU, $VP), PL.kperm($DN, $GRU, $VP), $NP, bsf) == True{} : Bool}
   %Equal.sym(List<&2, S.D>, PL.kperm($DN, $GCU, $VP), gcf, kp_vp($SKA, gcf, hlc)) : {PL.check.p($DN, $SYS, _, PL.kperm($DN, $GRU, $VP), $NP, bsf) == True{} : Bool}
   %Equal.sym(List<&2, S.D>, PL.kperm($DN, $GRU, $VP), grf, kp_vp($SKA, grf, hlr)) : {PL.check.p($DN, $SYS, gcf, _, $NP, bsf) == True{} : Bool}
   cp_ok($SKA, x, g, $PGA)
 
 # the plan against the kept system and the read-back box
-def cr_ok($SKP, +hwf: {WF.wf_dec(sk) == True{} : Bool}, +cov: {BX.Sketch.within(sk, $NV) == True{} : Bool}, +x: M.Vec(~F), +g: List<&2, S.D>, $PGF) -> {PL.check.r($DN, DSO.kept2(sk), $GCU, $GRU, $VP, $EP, $NP, bsf) == True{} : Bool}:
+def cr_ok($SKP, +hwf: {WF.wf_dec(sk) == True{} : Bool}, +cov: {BX.Sketch.within(sk, $NV) == True{} : Bool}, +x: M.Vec(~F), +g: List<&2, S.D>, $PGF) -> {PL.check.r($DN, SO.kept(sk), $GCU, $GRU, $VP, $EP, $NP, bsf) == True{} : Bool}:
   +ek = Equal.sym(Nat, $KL, $NV, klen_up($NV, 0n, gcf, $VP))
   +ee = Equal.sym(Nat, $EQL, SV.len($GOOD), kept_eqlen($SKA))
-  KA.band_i(PL.present($VP, $KL, 0n), KA.band(PL.pars_ok($KL, $VP), KA.band(PL.present($EP, $EQL, 0n), KA.band(PL.pars_ok($EQL, $EP), KA.band(PL.eqs_below($KL, DSO.kept2(sk)), $CPK)))), (%ek : {PL.present($VP, _, 0n) == True{} : Bool}
+  KA.band_i(PL.present($VP, $KL, 0n), KA.band(PL.pars_ok($KL, $VP), KA.band(PL.present($EP, $EQL, 0n), KA.band(PL.pars_ok($EQL, $EP), KA.band(PL.eqs_below($KL, SO.kept(sk)), $CPK)))), (%ek : {PL.present($VP, _, 0n) == True{} : Bool}
     vp_pres($SKA)),
-  KA.band_i(PL.pars_ok($KL, $VP), KA.band(PL.present($EP, $EQL, 0n), KA.band(PL.pars_ok($EQL, $EP), KA.band(PL.eqs_below($KL, DSO.kept2(sk)), $CPK))), (%ek : {PL.pars_ok(_, $VP) == True{} : Bool}
+  KA.band_i(PL.pars_ok($KL, $VP), KA.band(PL.present($EP, $EQL, 0n), KA.band(PL.pars_ok($EQL, $EP), KA.band(PL.eqs_below($KL, SO.kept(sk)), $CPK))), (%ek : {PL.pars_ok(_, $VP) == True{} : Bool}
     pars_of($NV, $VP, SP.sfacts_vpb($SFA))),
-  KA.band_i(PL.present($EP, $EQL, 0n), KA.band(PL.pars_ok($EQL, $EP), KA.band(PL.eqs_below($KL, DSO.kept2(sk)), $CPK)), (%ee : {PL.present($EP, _, 0n) == True{} : Bool}
+  KA.band_i(PL.present($EP, $EQL, 0n), KA.band(PL.pars_ok($EQL, $EP), KA.band(PL.eqs_below($KL, SO.kept(sk)), $CPK)), (%ee : {PL.present($EP, _, 0n) == True{} : Bool}
     ep_pres($SKA)),
-  KA.band_i(PL.pars_ok($EQL, $EP), KA.band(PL.eqs_below($KL, DSO.kept2(sk)), $CPK), (%ee : {PL.pars_ok(_, $EP) == True{} : Bool}
+  KA.band_i(PL.pars_ok($EQL, $EP), KA.band(PL.eqs_below($KL, SO.kept(sk)), $CPK), (%ee : {PL.pars_ok(_, $EP) == True{} : Bool}
     pp_of(ST.alleqs($KB), $GOOD, SP.sfacts_gc($SFA))),
-  KA.band_i(PL.eqs_below($KL, DSO.kept2(sk)), $CPK, (%ek : {PL.eqs_below(_, DSO.kept2(sk)) == True{} : Bool}
+  KA.band_i(PL.eqs_below($KL, SO.kept(sk)), $CPK, (%ek : {PL.eqs_below(_, SO.kept(sk)) == True{} : Bool}
     kept_below(sk, ha, hwf, cov)),
   cpk_ok($SKA, x, g, $PGA))))))
 
@@ -1144,8 +1143,8 @@ def gbox_ans($SKP, +x: M.Vec(~F), +g: List<&2, S.D>, $PGF, $RBP) -> BP.gbox($DN,
   +hc = up_vall(~F, $NV, gcf, $VP, O.sub(~F, $BBS, rho), hc0, PB.vall_mono(~F, M.ofdv(~F, gcf), O.add(F, NP.vn(~F, x), rho), O.sub(~F, $BBS, rho), cen_b($SKA, x, g, $PGA, rho, hvr), bb_le(~F, NP.vn(~F, x), rho, hr1)))
   RD.gbox_zip($DN, ~F, ~H, $GCU, $GRU, rho, $BBS, vk_of(~F, ~H, $GCU, O.sub(~F, $BBS, rho), hc), rk_of(~F, ~H, $GRU, up_rnn(~F, $NV, grf, $VP, hrn)), vk_of(~F, ~H, $GRU, rho, up_vall(~F, $NV, grf, $VP, rho, hr0, hvr)), Equal.trans(Nat, KA.klen($DN, $GCU), $NV, KA.klen($DN, $GRU), klen_up($NV, 0n, gcf, $VP), Equal.sym(Nat, KA.klen($DN, $GRU), $NV, klen_up($NV, 0n, grf, $VP))))
 
-@MACRO SDKO SK.Sketch.sides(SV.mark(SV.cat(SV.reds(DSO.cls_of2(sk)), SV.ambers(DSO.cls_of2(sk))), sk))
-@MACRO NDS DR.ndsides(SV.ents(sk), SV.live_nd(DSO.cls_of2(sk)))
+@MACRO SDKO SK.Sketch.sides(SV.mark(SV.cat(SV.reds(SO.cls_of(sk)), SV.ambers(SO.cls_of(sk))), sk))
+@MACRO NDS DR.ndsides(SV.ents(sk), SV.live_nd(SO.cls_of(sk)))
 @MACRO SDK SK.cats($SDKO, $NDS)
 
 # the read-back box has radius 0 at a pin
@@ -1167,30 +1166,30 @@ def sides_ans($SKP, +x: M.Vec(~F), +g: List<&2, S.D>, +hl: {M.len(~F, x) == $NV 
   +hrk = rk_of(~F, ~H, $GRU, up_rnn(~F, $NV, grf, $VP, hrn))
   +inb = inbox_ans($SKA, x, g, hl, $PGA)
   +hx = CP.rbnd_inbox($DN, ~F, ~H, x, $GCU, $GRU, AP.both_r({M.len(~F, x) == M.len(~F, N.ofkv($DN, ~F, ~H, $GCU)) : Nat}, BX.rbnd(~F, BX.vsub(~F, x, N.ofkv($DN, ~F, ~H, $GCU)), N.ofkv($DN, ~F, ~H, $GRU)), inb), hrk)
-  KA.band_i(KA.kvle($DN, Nil{}, $GRU), PL.sides_ok($DN, CK.zipb($DN, $GCU, $GRU), $SDK), kvle_nil(~F, ~H, $GRU, up_rnn(~F, $NV, grf, $VP, hrn)), sides_of(~F, ~H, CK.zipb($DN, $GCU, $GRU), rho, $BBS, hr0, bbs_nn(~F, x), gbox_ans($SKA, x, g, $PGA, $RBA), x, hx, $SDK, dys_cat($SDKO, $NDS, ds_sub($RC, $AC, sk, L.band_r(SV.dyeqs(SK.Sketch.eqs(SV.mark($RC, sk))), SV.dysides(SK.Sketch.sides(SV.mark($RC, sk))), dy)), dys_nd(SV.ents(sk), SV.live_nd(DSO.cls_of2(sk)))), $PINS, rz_ans($SKA, g, gcf, grf, hkr, $FS, L.subl_refl($FS)), hbud))
+  KA.band_i(KA.kvle($DN, Nil{}, $GRU), PL.sides_ok($DN, CK.zipb($DN, $GCU, $GRU), $SDK), kvle_nil(~F, ~H, $GRU, up_rnn(~F, $NV, grf, $VP, hrn)), sides_of(~F, ~H, CK.zipb($DN, $GCU, $GRU), rho, $BBS, hr0, bbs_nn(~F, x), gbox_ans($SKA, x, g, $PGA, $RBA), x, hx, $SDK, dys_cat($SDKO, $NDS, ds_sub($RC, $AC, sk, L.band_r(SV.dyeqs(SK.Sketch.eqs(SV.mark($RC, sk))), SV.dysides(SK.Sketch.sides(SV.mark($RC, sk))), dy)), dys_nd(SV.ents(sk), SV.live_nd(SO.cls_of(sk)))), $PINS, rz_ans($SKA, g, gcf, grf, hkr, $FS, L.subl_refl($FS)), hbud))
 
 # The verdict at P
 # ----------------
 
 @MACRO PLF PL.Plan{$VP, $EP, $NP, bsf}
-@MACRO VH SV.held(DSO.pins_of2(sk), g, $GCU, $GRU)
-@MACRO VW WF.wf_dec(SV.mark(SV.reds(DSO.cls_of2(sk)), sk))
-@MACRO VI BX.Sketch.within(SV.mark(SV.reds(DSO.cls_of2(sk)), sk), List.length(&2, N.NC(KI.dnum()), $GCU))
-@MACRO VC PL.check($DN, DSO.kept2(sk), $GCU, $GRU, $PLF)
-@MACRO VX VD.exact(sk, DSO.cls_of2(sk))
+@MACRO VH SV.held(SO.pins_of(sk), g, $GCU, $GRU)
+@MACRO VW WF.wf_dec(SV.mark(SV.reds(SO.cls_of(sk)), sk))
+@MACRO VI BX.Sketch.within(SV.mark(SV.reds(SO.cls_of(sk)), sk), List.length(&2, N.NC(KI.dnum()), $GCU))
+@MACRO VC PL.check($DN, SO.kept(sk), $GCU, $GRU, $PLF)
+@MACRO VX VD.exact(sk, SO.cls_of(sk))
 @MACRO VS PL.check_sides($DN, $SDKO, $GCU, $GRU)
 @MACRO VND PL.check_sides($DN, $NDS, $GCU, $GRU)
-@MACRO VSH SO.shape($NV, CK.eqlen(DSO.kept2(sk)), $GCU, $PINS, $PLF)
+@MACRO VSH SO.shape($NV, CK.eqlen(SO.kept(sk)), $GCU, $PINS, $PLF)
 @MACRO VZ KA.band($VSH, $VX)
-@MACRO VXP +hwf: {WF.wf_dec(sk) == True{} : Bool}, +cov: {BX.Sketch.within(sk, $NV) == True{} : Bool}, +dy: {SV.dyadic(SV.mark($RC, sk)) == True{} : Bool}, +hex: {VD.exact(sk, DSO.cls_of2(sk)) == True{} : Bool}
+@MACRO VXP +hwf: {WF.wf_dec(sk) == True{} : Bool}, +cov: {BX.Sketch.within(sk, $NV) == True{} : Bool}, +dy: {SV.dyadic(SV.mark($RC, sk)) == True{} : Bool}, +hex: {VD.exact(sk, SO.cls_of(sk)) == True{} : Bool}
 @MACRO VXA hwf, cov, dy, hex
 
 def held_ans($SKP, +g: List<&2, S.D>, +gcf: List<&2, S.D>, +grf: List<&2, S.D>, +hkc: {PL.ktake($DN, $NP, gcf) == $GC0 : List<&2, S.D>}, +hkr: {PL.ktake($DN, $NP, grf) == $GR0 : List<&2, S.D>}) -> {$VH == True{} : Bool}:
   held_go($SKA, g, gcf, grf, hkc, hkr, $FS, L.subl_refl($FS))
 
 def within_ans($SKP, +cov: {BX.Sketch.within(sk, $NV) == True{} : Bool}, +gcf: List<&2, S.D>) -> {$VI == True{} : Bool}:
-  %Equal.sym(Nat, List.length(&2, S.D, $GCU), $NV, length_up($NV, 0n, gcf, $VP)) : {BX.Sketch.within(SV.mark(SV.reds(DSO.cls_of2(sk)), sk), _) == True{} : Bool}
-  w_mark(SV.reds(DSO.cls_of2(sk)), sk, $NV, cov)
+  %Equal.sym(Nat, List.length(&2, S.D, $GCU), $NV, length_up($NV, 0n, gcf, $VP)) : {BX.Sketch.within(SV.mark(SV.reds(SO.cls_of(sk)), sk), _) == True{} : Bool}
+  w_mark(SV.reds(SO.cls_of(sk)), sk, $NV, cov)
 
 def nateq_of(+a: Nat, +b: Nat, +e: {a == b : Nat}) -> {KA.nateq(a, b) == True{} : Bool}:
   %e : {KA.nateq(a, _) == True{} : Bool}
@@ -1213,16 +1212,16 @@ def positions_len(xs: List<&2, Nat>, +vp: List<&2, Nat>) -> {SV.len(ST.positions
 
 # the equation order has a place for each kept equation: the blocks'
 # equations are the kept ones, each once
-def ep_len($SKP) -> {PL.nlen($EP) == CK.eqlen(DSO.kept2(sk)) : Nat}:
+def ep_len($SKP) -> {PL.nlen($EP) == CK.eqlen(SO.kept(sk)) : Nat}:
   +hgd = gd_kd($KVS, $NQ0, $NV, $GOOD, DTP.vend_pass2(sk, GM.adjb_dadjs($FULL, $NV, ha), hcv2, hwf2))
   +la = KA.natle_antisym(SV.len(ST.alleqs($KB)), SV.len($GOOD), L.pig(ST.alleqs($KB), $GOOD, SP.sfacts_cd($SFA), SP.sfacts_gc($SFA)), L.pig($GOOD, ST.alleqs($KB), hgd, SP.sfacts_cg($SFA)))
-  Equal.trans(Nat, PL.nlen($EP), SV.len($EP), CK.eqlen(DSO.kept2(sk)), PB.nlen_sv($EP), Equal.trans(Nat, SV.len($EP), SV.len(ST.alleqs($KB)), CK.eqlen(DSO.kept2(sk)), positions_len(ST.alleqs($KB), $GOOD), Equal.trans(Nat, SV.len(ST.alleqs($KB)), SV.len($GOOD), CK.eqlen(DSO.kept2(sk)), la, Equal.sym(Nat, CK.eqlen(DSO.kept2(sk)), SV.len($GOOD), kept_eqlen($SKA)))))
+  Equal.trans(Nat, PL.nlen($EP), SV.len($EP), CK.eqlen(SO.kept(sk)), PB.nlen_sv($EP), Equal.trans(Nat, SV.len($EP), SV.len(ST.alleqs($KB)), CK.eqlen(SO.kept(sk)), positions_len(ST.alleqs($KB), $GOOD), Equal.trans(Nat, SV.len(ST.alleqs($KB)), SV.len($GOOD), CK.eqlen(SO.kept(sk)), la, Equal.sym(Nat, CK.eqlen(SO.kept(sk)), SV.len($GOOD), kept_eqlen($SKA)))))
 
 def sh_pins($SKP) -> {SO.nl_eq(SO.ntake($NP, $VP), $PINS) == True{} : Bool}:
   %Equal.sym(List<&2, Nat>, SO.ntake($NP, $VP), $FS, fs_pins($SKA)) : {SO.nl_eq(_, $PINS) == True{} : Bool}
   nl_eq_refl($FS)
 
-@MACRO SH4 KA.band(KA.nateq(PL.nlen($EP), CK.eqlen(DSO.kept2(sk))), SO.nl_eq(SO.ntake($NP, $VP), $PINS))
+@MACRO SH4 KA.band(KA.nateq(PL.nlen($EP), CK.eqlen(SO.kept(sk))), SO.nl_eq(SO.ntake($NP, $VP), $PINS))
 @MACRO SH3 KA.band(SV.distinct($VP), $SH4)
 @MACRO SH2 KA.band(KA.nateq(PL.nlen($VP), $NV), $SH3)
 
@@ -1231,14 +1230,14 @@ def shape_ans($SKP, +gcf: List<&2, S.D>, +bsf: List<&2, PL.PBlock<KI.dnum()>>) -
   KA.band_i(KA.nateq(KA.klen($DN, $GCU), $NV), $SH2, nateq_of(KA.klen($DN, $GCU), $NV, klen_up($NV, 0n, gcf, $VP)),
   KA.band_i(KA.nateq(PL.nlen($VP), $NV), $SH3, nateq_of(PL.nlen($VP), $NV, Equal.trans(Nat, PL.nlen($VP), SV.len($VP), $NV, PB.nlen_sv($VP), L.eq_ok(SV.len($VP), $NV, SP.sfacts_vpl($SFA)))),
   KA.band_i(SV.distinct($VP), $SH4, SP.sfacts_vpd($SFA),
-  KA.band_i(KA.nateq(PL.nlen($EP), CK.eqlen(DSO.kept2(sk))), SO.nl_eq(SO.ntake($NP, $VP), $PINS), nateq_of(PL.nlen($EP), CK.eqlen(DSO.kept2(sk)), ep_len($SKA)), sh_pins($SKA)))))
+  KA.band_i(KA.nateq(PL.nlen($EP), CK.eqlen(SO.kept(sk))), SO.nl_eq(SO.ntake($NP, $VP), $PINS), nateq_of(PL.nlen($EP), CK.eqlen(SO.kept(sk)), ep_len($SKA)), sh_pins($SKA)))))
 
 # the whole verdict on the answer read back from the blocks' result
-def ans_ok($SKP, $VXP, +x: M.Vec(~F), +g: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, $PGF, $RBP, +hbud: SBud(~F, $BBS, rho, x, $SDK, $PINS)) -> {DSO.accept2(NU.POk{NU.NP{$PLF, $GCU, $GRU}}, sk, g, DSO.cls_of2(sk), DSO.pins_of2(sk)) == True{} : Bool}:
+def ans_ok($SKP, $VXP, +x: M.Vec(~F), +g: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, $PGF, $RBP, +hbud: SBud(~F, $BBS, rho, x, $SDK, $PINS)) -> {SO.accept(NU.POk{NU.NP{$PLF, $GCU, $GRU}}, sk, g, SO.cls_of(sk), SO.pins_of(sk)) == True{} : Bool}:
   +hsd = sides_ans($SKA, x, g, hl, $PGA, $RBA, dy, hbud)
   KA.band_i($VND, KA.band($VH, KA.band($VW, KA.band($VI, KA.band($VC, KA.band($VS, $VZ))))), cs_r($DN, $SDKO, $NDS, $GCU, $GRU, hsd),
     KA.band_i($VH, KA.band($VW, KA.band($VI, KA.band($VC, KA.band($VS, $VZ)))), held_ans($SKA, g, gcf, grf, hkc, hkr),
-    KA.band_i($VW, KA.band($VI, KA.band($VC, KA.band($VS, $VZ))), WC.wf_mark(SV.reds(DSO.cls_of2(sk)), sk, hwf),
+    KA.band_i($VW, KA.band($VI, KA.band($VC, KA.band($VS, $VZ))), WC.wf_mark(SV.reds(SO.cls_of(sk)), sk, hwf),
     KA.band_i($VI, KA.band($VC, KA.band($VS, $VZ)), within_ans($SKA, cov, gcf),
     KA.band_i($VC, KA.band($VS, $VZ), cr_ok($SKA, hwf, cov, x, g, $PGA),
     KA.band_i($VS, $VZ, cs_l($DN, $SDKO, $NDS, $GCU, $GRU, hsd),
@@ -1246,7 +1245,7 @@ def ans_ok($SKP, $VXP, +x: M.Vec(~F), +g: List<&2, S.D>, +hl: {M.len(~F, x) == $
 
 # the answer at one precision passes the verdict and holds x
 def AnsOK(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g: List<&2, S.D>, +x: M.Vec(~F), nx: NU.PR) -> Data:
-  M.Both({DSO.accept2(nx, sk, g, DSO.cls_of2(sk), DSO.pins_of2(sk)) == True{} : Bool}, BX.inbox($DN, ~F, ~H, SO.pr.gc(nx), SO.pr.gr(nx), x))
+  M.Both({SO.accept(nx, sk, g, SO.cls_of(sk), SO.pins_of(sk)) == True{} : Bool}, BX.inbox($DN, ~F, ~H, SO.pr.gc(nx), SO.pr.gr(nx), x))
 
 @MACRO RHT O.mul(F, NW.hnw(~F, p), tf)
 
@@ -1270,15 +1269,15 @@ def pgo(+sk: SK.Sketch, +g: List<&2, S.D>, +p: Nat, +s: List<&2, E.QExpr>) -> NU
 
 # the solver's plan at p is the blocks in turn over the full system's
 # reordering
-def plan_is($SKP, +g: List<&2, S.D>, +p: Nat) -> {NU.plan(DSO.kept2(sk), $NV, DSO.skel_of2(sk), g, p) == pgo(sk, g, p, $SYS) : NU.PR}:
-  %SD2.kept_reorder_d(sk, ha, hcv2, hwf2, $VP, ST.alleqs($KB), SP.sfacts_gc($SFA)) : {pgo(sk, g, p, PL.reorder($VP, DSO.kept2(sk), $EP)) == pgo(sk, g, p, _) : NU.PR}
+def plan_is($SKP, +g: List<&2, S.D>, +p: Nat) -> {NU.plan(SO.kept(sk), $NV, SO.skel_of(sk), g, p) == pgo(sk, g, p, $SYS) : NU.PR}:
+  %SD2.kept_reorder_d(sk, ha, hcv2, hwf2, $VP, ST.alleqs($KB), SP.sfacts_gc($SFA)) : {pgo(sk, g, p, PL.reorder($VP, SO.kept(sk), $EP)) == pgo(sk, g, p, _) : NU.PR}
   {==}
 
 @MACRO TCH PB.tch($CA, $KB, binv, $NP, @0)
 
 # at P: the answer passes the verdict and holds x
-def plan_ans($TP, $VXP, +hl: {M.len(~F, x) == $NV : Nat}, +hr1: O.le(~F, O.mul(F, NW.hnw(~F, p), $TCH), O.one(F)), +hbud: SBud(~F, $BBS, O.mul(F, NW.hnw(~F, p), $TCH), x, $SDK, $PINS)) -> AnsOK(~F, ~H, sk, g, x, NU.plan(DSO.kept2(sk), $NV, DSO.skel_of2(sk), g, p)):
-  %Equal.sym(NU.PR, NU.plan(DSO.kept2(sk), $NV, DSO.skel_of2(sk), g, p), pgo(sk, g, p, $SYS), plan_is($SKA, g, p)) : AnsOK(~F, ~H, sk, g, x, _)
+def plan_ans($TP, $VXP, +hl: {M.len(~F, x) == $NV : Nat}, +hr1: O.le(~F, O.mul(F, NW.hnw(~F, p), $TCH), O.one(F)), +hbud: SBud(~F, $BBS, O.mul(F, NW.hnw(~F, p), $TCH), x, $SDK, $PINS)) -> AnsOK(~F, ~H, sk, g, x, NU.plan(SO.kept(sk), $NV, SO.skel_of(sk), g, p)):
+  %Equal.sym(NU.PR, NU.plan(SO.kept(sk), $NV, SO.skel_of(sk), g, p), pgo(sk, g, p, $SYS), plan_is($SKA, g, p)) : AnsOK(~F, ~H, sk, g, x, _)
   ans_r($SKA, $VXA, x, g, hl, p, $TCH, PB.tch_nn(~F, ~H, $FULL, $GOOD, $VP, x, $KB, binv, $NP, @0, FO.le_refl(~F, @0)), hr1, hbud, NU.pblocks($BSS, NU.bcert($BSS, $SYS, $G0B, p, $NP, $GC0, $GR0), $SYS, $G0B, p, $NP, $GC0, $GR0, Nil{}), plan_pg($TA))
 
 # The top (C6d-4)
@@ -1523,9 +1522,9 @@ def sub2_eq(n: Nat, h: {KA.natle(2n, n) == True{} : Bool}) -> {n == 1n+(1n+sub1(
 # constraints are
 def hdy_of(+sk: SK.Sketch, +ha: {D.adjb($ADJ, $NV) == True{} : Bool}, +hcv2: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf2: {WF.wf_dec(sk) == True{} : Bool}, +dy: {SV.dyadic(SV.mark($RC, sk)) == True{} : Bool}) -> {SV.dyeqs(KP.pickk($FULL, 0n, $GOOD)) == True{} : Bool}:
   %SD2.kept_good_d(sk, ha, hcv2, hwf2) : {SV.dyeqs(_) == True{} : Bool}
-  VR.dy_solved(sk, $RC, SV.dropped(DSO.cls_of2(sk)), L.band_l(SV.dyeqs(SK.Sketch.eqs(SV.mark($RC, sk))), SV.dysides(SK.Sketch.sides(SV.mark($RC, sk))), dy))
+  VR.dy_solved(sk, $RC, SV.dropped(SO.cls_of(sk)), L.band_l(SV.dyeqs(SK.Sketch.eqs(SV.mark($RC, sk))), SV.dysides(SK.Sketch.sides(SV.mark($RC, sk))), dy))
 
-def plan_top($SKP, $VXP, +x: M.Vec(~F), +g: List<&2, S.D>, +g0: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, +hz: SK.Zeros(~F, x, DSO.kept2(sk)), +hpa: SV.PinnedAt($DN, ~F, ~H, x, $PINS, g0), +hs: SV.Strict(~F, x, $SDK, $PINS), +binv: BI.BInv(~F, x, $FULL, $KB), +p: Nat, +hp2: {KA.natle(2n, p) == True{} : Bool}, +hN: SV.Near($DN, ~F, ~H, $NV, 0n, g, x, NW.hnw(~F, p), $PINS, g0), +ht: O.lt(F, O.mul(F, $VB, $QQ), O.one(F))) -> AnsOK(~F, ~H, sk, g, x, NU.plan(DSO.kept2(sk), $NV, DSO.skel_of2(sk), g, p)):
+def plan_top($SKP, $VXP, +x: M.Vec(~F), +g: List<&2, S.D>, +g0: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, +hz: SK.Zeros(~F, x, SO.kept(sk)), +hpa: SV.PinnedAt($DN, ~F, ~H, x, $PINS, g0), +hs: SV.Strict(~F, x, $SDK, $PINS), +binv: BI.BInv(~F, x, $FULL, $KB), +p: Nat, +hp2: {KA.natle(2n, p) == True{} : Bool}, +hN: SV.Near($DN, ~F, ~H, $NV, 0n, g, x, NW.hnw(~F, p), $PINS, g0), +ht: O.lt(F, O.mul(F, $VB, $QQ), O.one(F))) -> AnsOK(~F, ~H, sk, g, x, NU.plan(SO.kept(sk), $NV, SO.skel_of(sk), g, p)):
   +bu = budget($SKA, x, binv, hs, p, ht)
   +bu2 = AP.both_r($BUA, M.Both($BUB, $BUC), bu)
   plan_ans($SKA, x, g, g0, p, sub1(sub1(p)), sub2_eq(p, hp2), NW.hnw(~F, p), NW.hnw_nn(~F, p), FO.le_refl(~F, NW.hnw(~F, p)), hdy_of(sk, ha, hcv2, hwf2, dy), hz, hN, hpa, binv, AP.both_l($BUA, M.Both($BUB, $BUC), bu), $VXA, hl, AP.both_l($BUB, $BUC, bu2), AP.both_r($BUB, $BUC, bu2))
@@ -1533,7 +1532,7 @@ def plan_top($SKP, $VXP, +x: M.Vec(~F), +g: List<&2, S.D>, +g0: List<&2, S.D>, +
 # The precision loop
 # ------------------
 
-def ploop_true(t: List<&2, Nat>, +cur: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {DSO.ploop2(t, True{}, cur, sk, g0, cls, pins, es, nv, skel) == SO.Run{True{}, cur} : SO.Run}:
+def ploop_true(t: List<&2, Nat>, +cur: NU.PR, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>, +es: List<&2, E.QExpr>, +nv: Nat, +skel: ST.Skel) -> {SO.ploop(t, True{}, cur, sk, g0, cls, pins, es, nv, skel) == SO.Run{True{}, cur} : SO.Run}:
   match t:
     case Nil{}:
       {==}
@@ -1545,20 +1544,20 @@ def Fin(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +x: M.Vec(~F), o: SO.Out) -> Data
   M.Both({SO.Out.ok(o) == True{} : Bool}, BX.inbox($DN, ~F, ~H, SO.Out.gc(o), SO.Out.gr(o), x))
 
 def slp(+sk: SK.Sketch, +g: List<&2, S.D>, +ps: List<&2, Nat>) -> SO.Out:
-  SO.answer(DSO.cls_of2(sk), DSO.pins_of2(sk), DSO.ploop2.start(ps, sk, g, DSO.cls_of2(sk), DSO.pins_of2(sk), DSO.kept2(sk), SO.nvars(sk), DSO.skel_of2(sk)))
+  SO.answer(SO.cls_of(sk), SO.pins_of(sk), SO.ploop.start(ps, sk, g, SO.cls_of(sk), SO.pins_of(sk), SO.kept(sk), SO.nvars(sk), SO.skel_of(sk)))
 
-@MACRO NXL NU.plan(DSO.kept2(sk), SO.nvars(sk), DSO.skel_of2(sk), g, $PL0)
-@MACRO RWP DSO.cls_of2(sk), DSO.pins_of2(sk)
-@MACRO RST DSO.kept2(sk), SO.nvars(sk), DSO.skel_of2(sk)
+@MACRO NXL NU.plan(SO.kept(sk), SO.nvars(sk), SO.skel_of(sk), g, $PL0)
+@MACRO RWP SO.cls_of(sk), SO.pins_of(sk)
+@MACRO RST SO.kept(sk), SO.nvars(sk), SO.skel_of(sk)
 
-def fin_go(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g: List<&2, S.D>, +x: M.Vec(~F), +l: Nat, +hacc: {DSO.accept2($NXL, sk, g, $RWP) == True{} : Bool}, inb: BX.inbox($DN, ~F, ~H, SO.pr.gc($NXL), SO.pr.gr($NXL), x)) -> Fin(~F, ~H, x, DSO.solve_l2(sk, g, l)):
+def fin_go(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g: List<&2, S.D>, +x: M.Vec(~F), +l: Nat, +hacc: {SO.accept($NXL, sk, g, $RWP) == True{} : Bool}, inb: BX.inbox($DN, ~F, ~H, SO.pr.gc($NXL), SO.pr.gr($NXL), x)) -> Fin(~F, ~H, x, SO.solve_l(sk, g, l)):
   %Equal.sym(List<&2, Nat>, SO.precs.from(l, 1n+6n, 64n, 96n), Con{$PL0, ptail(l, 6n, 64n, 96n)}, pf_head(l, 6n, 64n, 96n)) : Fin(~F, ~H, x, slp(sk, g, _))
-  %Equal.sym(Bool, DSO.accept2($NXL, sk, g, $RWP), True{}, hacc) : Fin(~F, ~H, x, SO.answer($RWP, DSO.ploop2(ptail(l, 6n, 64n, 96n), _, $NXL, sk, g, $RWP, $RST)))
-  %Equal.sym(SO.Run, DSO.ploop2(ptail(l, 6n, 64n, 96n), True{}, $NXL, sk, g, $RWP, $RST), SO.Run{True{}, $NXL}, ploop_true(ptail(l, 6n, 64n, 96n), $NXL, sk, g, $RWP, $RST)) : Fin(~F, ~H, x, SO.answer($RWP, _))
+  %Equal.sym(Bool, SO.accept($NXL, sk, g, $RWP), True{}, hacc) : Fin(~F, ~H, x, SO.answer($RWP, SO.ploop(ptail(l, 6n, 64n, 96n), _, $NXL, sk, g, $RWP, $RST)))
+  %Equal.sym(SO.Run, SO.ploop(ptail(l, 6n, 64n, 96n), True{}, $NXL, sk, g, $RWP, $RST), SO.Run{True{}, $NXL}, ploop_true(ptail(l, 6n, 64n, 96n), $NXL, sk, g, $RWP, $RST)) : Fin(~F, ~H, x, SO.answer($RWP, _))
   ({==}, inb)
 
 # level l's search stops at its first precision, with that answer
-def fin_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g: List<&2, S.D>, +x: M.Vec(~F), +l: Nat, h: AnsOK(~F, ~H, sk, g, x, $NXL)) -> Fin(~F, ~H, x, DSO.solve_l2(sk, g, l)):
+def fin_of(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g: List<&2, S.D>, +x: M.Vec(~F), +l: Nat, h: AnsOK(~F, ~H, sk, g, x, $NXL)) -> Fin(~F, ~H, x, SO.solve_l(sk, g, l)):
   (hacc, inb) = h
   fin_go(~F, ~H, sk, g, x, l, hacc, inb)
 
@@ -1572,16 +1571,16 @@ def top_pair(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +x: M.Vec(~F), +o: SO.Out, h
 
 @MACRO LQ CR.arch(F, R, $QQ)
 
-def top(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +ha: {D.adjb($ADJ, $NV) == True{} : Bool}, +hcv2: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf2: {WF.wf_dec(sk) == True{} : Bool}, $VXP, +x: M.Vec(~F), +g0: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, +hz: SK.Zeros(~F, x, DSO.kept2(sk)), +hpa: SV.PinnedAt($DN, ~F, ~H, x, $PINS, g0), +hs: SV.Strict(~F, x, $SDK, $PINS), +binv: BI.BInv(~F, x, $FULL, $KB), +g: List<&2, S.D>, +hN: SV.Near($DN, ~F, ~H, $NV, 0n, g, x, NW.hnw(~F, pfirst($LQ, 64n, 96n)), $PINS, g0)) -> Fin(~F, ~H, x, DSO.solve_l2(sk, g, $LQ)):
+def top(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +ha: {D.adjb($ADJ, $NV) == True{} : Bool}, +hcv2: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf2: {WF.wf_dec(sk) == True{} : Bool}, $VXP, +x: M.Vec(~F), +g0: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, +hz: SK.Zeros(~F, x, SO.kept(sk)), +hpa: SV.PinnedAt($DN, ~F, ~H, x, $PINS, g0), +hs: SV.Strict(~F, x, $SDK, $PINS), +binv: BI.BInv(~F, x, $FULL, $KB), +g: List<&2, S.D>, +hN: SV.Near($DN, ~F, ~H, $NV, 0n, g, x, NW.hnw(~F, pfirst($LQ, 64n, 96n)), $PINS, g0)) -> Fin(~F, ~H, x, SO.solve_l(sk, g, $LQ)):
   +l = $LQ
   fin_of(~F, ~H, sk, g, x, l, plan_top(~F, ~H, sk, ha, hcv2, hwf2, $VXA, x, g, g0, hl, hz, hpa, hs, binv, pfirst(l, 64n, 96n), KA.natle_trans(2n, Nat.add(64n, Nat.add(l, l)), pfirst(l, 64n, 96n), {==}, pl_ge(l)), hN, tq_lt(~F, ~R, $QQ)))
 
-def top_at(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +ha: {D.adjb($ADJ, $NV) == True{} : Bool}, +hcv2: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf2: {WF.wf_dec(sk) == True{} : Bool}, $VXP, +x: M.Vec(~F), +g0: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, +hz: SK.Zeros(~F, x, DSO.kept2(sk)), +hpa: SV.PinnedAt($DN, ~F, ~H, x, $PINS, g0), +hs: SV.Strict(~F, x, $SDK, $PINS), +binv: BI.BInv(~F, x, $FULL, $KB), +g: List<&2, S.D>, +hN: SV.Near($DN, ~F, ~H, $NV, 0n, g, x, NW.hnw(~F, pfirst($LQ, 64n, 96n)), $PINS, g0)) -> ({SO.Out.ok(DSO.solve_l2(sk, g, $LQ)) == True{} : Bool} & BX.inbox($DN, ~F, ~H, SO.Out.gc(DSO.solve_l2(sk, g, $LQ)), SO.Out.gr(DSO.solve_l2(sk, g, $LQ)), x)):
-  top_pair(~F, ~H, x, DSO.solve_l2(sk, g, $LQ), top(~F, ~R, ~H, sk, ha, hcv2, hwf2, $VXA, x, g0, hl, hz, hpa, hs, binv, g, hN))
+def top_at(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +ha: {D.adjb($ADJ, $NV) == True{} : Bool}, +hcv2: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf2: {WF.wf_dec(sk) == True{} : Bool}, $VXP, +x: M.Vec(~F), +g0: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, +hz: SK.Zeros(~F, x, SO.kept(sk)), +hpa: SV.PinnedAt($DN, ~F, ~H, x, $PINS, g0), +hs: SV.Strict(~F, x, $SDK, $PINS), +binv: BI.BInv(~F, x, $FULL, $KB), +g: List<&2, S.D>, +hN: SV.Near($DN, ~F, ~H, $NV, 0n, g, x, NW.hnw(~F, pfirst($LQ, 64n, 96n)), $PINS, g0)) -> ({SO.Out.ok(SO.solve_l(sk, g, $LQ)) == True{} : Bool} & BX.inbox($DN, ~F, ~H, SO.Out.gc(SO.solve_l(sk, g, $LQ)), SO.Out.gr(SO.solve_l(sk, g, $LQ)), x)):
+  top_pair(~F, ~H, x, SO.solve_l(sk, g, $LQ), top(~F, ~R, ~H, sk, ha, hcv2, hwf2, $VXA, x, g0, hl, hz, hpa, hs, binv, g, hN))
 
-@MACRO RC SV.reds(DSO.cls_of2(sk))
-@MACRO AC SV.ambers(DSO.cls_of2(sk))
-@MACRO SOL SV.solved(sk, SV.reds(DSO.cls_of2(sk)), SV.dropped(DSO.cls_of2(sk)))
+@MACRO RC SV.reds(SO.cls_of(sk))
+@MACRO AC SV.ambers(SO.cls_of(sk))
+@MACRO SOL SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk)))
 
 # near a regular solution x of the system solved (the pins at their drawn
 # values, the sides of the constraints neither red nor amber strict), every
@@ -1591,23 +1590,22 @@ def top_at(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sk
 # binv a parameter, not a let: the level below is built from it, and a
 # let-bound proof would be unfolded when the goal's level is compared with
 # top_at's (the check then runs the pass on a symbolic sketch)
-def complete.at(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +ha: {D.adjb($ADJ, $NV) == True{} : Bool}, +hcv2: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf2: {WF.wf_dec(sk) == True{} : Bool}, $VXP, +x: M.Vec(~F), +g0: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, +hz: SK.Zeros(~F, x, DSO.kept2(sk)), +hp: SV.PinnedAt($DN, ~F, ~H, x, $PINS, g0), +hs: SV.Strict(~F, x, $SDK, $PINS), +binv: BI.BInv(~F, x, $FULL, $KB))
-  -> &d: O.C(F) -> (O.lt(F, O.zero(F), d) & (&l: Nat -> (@g: List<&2, S.D> -> SV.Near(~KI.dnum(), ~F, ~H, SO.nvars(sk), 0n, g, x, d, DSO.pins_of2(sk), g0) -> ({SO.Out.ok(DSO.solve_l2(sk, g, l)) == True{} : Bool} & BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(DSO.solve_l2(sk, g, l)), SO.Out.gr(DSO.solve_l2(sk, g, l)), x))))):
+def complete.at(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +ha: {D.adjb($ADJ, $NV) == True{} : Bool}, +hcv2: {BX.Sketch.within(sk, PA.nvars(sk)) == True{} : Bool}, +hwf2: {WF.wf_dec(sk) == True{} : Bool}, $VXP, +x: M.Vec(~F), +g0: List<&2, S.D>, +hl: {M.len(~F, x) == $NV : Nat}, +hz: SK.Zeros(~F, x, SO.kept(sk)), +hp: SV.PinnedAt($DN, ~F, ~H, x, $PINS, g0), +hs: SV.Strict(~F, x, $SDK, $PINS), +binv: BI.BInv(~F, x, $FULL, $KB))
+  -> &d: O.C(F) -> (O.lt(F, O.zero(F), d) & (&l: Nat -> (@g: List<&2, S.D> -> SV.Near(~KI.dnum(), ~F, ~H, SO.nvars(sk), 0n, g, x, d, SO.pins_of(sk), g0) -> ({SO.Out.ok(SO.solve_l(sk, g, l)) == True{} : Bool} & BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g, l)), SO.Out.gr(SO.solve_l(sk, g, l)), x))))):
   +l = $LQ
   +d = NW.hnw(~F, pfirst(l, 64n, 96n))
   (d, (DM.dpos(~F, S.XH{}, 1n+pfirst(l, 64n, 96n)), (l, g => hN => top_at(~F, ~R, ~H, sk, ha, hcv2, hwf2, hwf, cov, dy, hex, x, g0, hl, hz, hp, hs, binv, g, hN))))
 
-def complete.go(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +dy: {SV.dyadic(SV.mark($RC, sk)) == True{} : Bool}, +g0: List<&2, S.D>, +x: M.Vec(~F), +hl: {M.len(~F, x) == SO.nvars(sk) : Nat}, +hp: SV.PinnedAt(~KI.dnum(), ~F, ~H, x, DSO.pins_of2(sk), g0), +hz: SK.Zeros(~F, x, $SOL), +hs: SV.Strict(~F, x, $SDKO, DSO.pins_of2(sk)), +hn: SV.Strict(~F, x, $NDS, DSO.pins_of2(sk)), hr: DV.Regular(~F, x, $SOL, SV.free(SO.nvars(sk), 0n, DSO.pins_of2(sk))))
-  -> &d: O.C(F) -> (O.lt(F, O.zero(F), d) & (&l: Nat -> (@g: List<&2, S.D> -> SV.Near(~KI.dnum(), ~F, ~H, SO.nvars(sk), 0n, g, x, d, DSO.pins_of2(sk), g0) -> ({SO.Out.ok(DSO.solve_l2(sk, g, l)) == True{} : Bool} & BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(DSO.solve_l2(sk, g, l)), SO.Out.gr(DSO.solve_l2(sk, g, l)), x))))):
+def complete.go(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +dy: {SV.dyadic(SV.mark($RC, sk)) == True{} : Bool}, +g0: List<&2, S.D>, +x: M.Vec(~F), +hl: {M.len(~F, x) == SO.nvars(sk) : Nat}, +hp: SV.PinnedAt(~KI.dnum(), ~F, ~H, x, SO.pins_of(sk), g0), +hz: SK.Zeros(~F, x, $SOL), +hs: SV.Strict(~F, x, $SDKO, SO.pins_of(sk)), +hn: SV.Strict(~F, x, $NDS, SO.pins_of(sk)), hr: DV.Regular(~F, x, $SOL, SV.free(SO.nvars(sk), 0n, SO.pins_of(sk))))
+  -> &d: O.C(F) -> (O.lt(F, O.zero(F), d) & (&l: Nat -> (@g: List<&2, S.D> -> SV.Near(~KI.dnum(), ~F, ~H, SO.nvars(sk), 0n, g, x, d, SO.pins_of(sk), g0) -> ({SO.Out.ok(SO.solve_l(sk, g, l)) == True{} : Bool} & BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g, l)), SO.Out.gr(SO.solve_l(sk, g, l)), x))))):
   +hwf = WC.wf_dec_ok(sk, w)
   +ha = CV.cov(sk, SO.nvars(sk), cov, hwf)
-  complete.at(~F, ~R, ~H, sk, ha, cov, hwf, hwf, cov, dy, DPP.ck2_pass(sk, GM.adjb_dadjs($FULL, $NV, ha), cov, hwf), x, g0, hl, hz, hp, strict_cat(~F, x, $SDKO, $NDS, DSO.pins_of2(sk), hs, hn), SD2.block_invs_d(~F, sk, ha, cov, hwf, x, hr))
+  complete.at(~F, ~R, ~H, sk, ha, cov, hwf, hwf, cov, dy, DPP.ck2_pass(sk, GM.adjb_dadjs($FULL, $NV, ha), cov, hwf), x, g0, hl, hz, hp, strict_cat(~F, x, $SDKO, $NDS, SO.pins_of(sk), hs, hn), SD2.block_invs_d(~F, sk, ha, cov, hwf, x, hr))
 
-# THE DRAFT LAW (PLAN-sk13b B7, solve_complete for the draft solver): as
-# law 10, with the live drops' nd segments of positive squared length at
+# THE LAW (ROADMAP: solve_complete; PLAN-sk13b B7): as sk-13a's, with the live drops' nd segments of positive squared length at
 # x (the verdict checks them over the box, like the sides): near a regular
 # solution x of the system solved, every drawing close enough to x at the
 # pins' complement certifies at some level, with x in the box.
-def solve_complete2(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +dy: {SV.dyadic(SV.mark(SV.reds(DSO.cls_of2(sk)), sk)) == True{} : Bool}, +g0: List<&2, S.D>, +x: M.Vec(~F), +hl: {M.len(~F, x) == SO.nvars(sk) : Nat}, +hp: SV.PinnedAt(~KI.dnum(), ~F, ~H, x, DSO.pins_of2(sk), g0), hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(DSO.cls_of2(sk)), SV.dropped(DSO.cls_of2(sk)))), hs: SV.Strict(~F, x, SK.Sketch.sides(SV.mark(SV.cat(SV.reds(DSO.cls_of2(sk)), SV.ambers(DSO.cls_of2(sk))), sk)), DSO.pins_of2(sk)), hn: SV.Strict(~F, x, DR.ndsides(SV.ents(sk), SV.live_nd(DSO.cls_of2(sk))), DSO.pins_of2(sk)), hr: DV.Regular(~F, x, SV.solved(sk, SV.reds(DSO.cls_of2(sk)), SV.dropped(DSO.cls_of2(sk))), SV.free(SO.nvars(sk), 0n, DSO.pins_of2(sk))))
-  -> &d: O.C(F) -> (O.lt(F, O.zero(F), d) & (&l: Nat -> (@g: List<&2, S.D> -> SV.Near(~KI.dnum(), ~F, ~H, SO.nvars(sk), 0n, g, x, d, DSO.pins_of2(sk), g0) -> ({SO.Out.ok(DSO.solve_l2(sk, g, l)) == True{} : Bool} & BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(DSO.solve_l2(sk, g, l)), SO.Out.gr(DSO.solve_l2(sk, g, l)), x))))):
+def solve_complete2(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +dy: {SV.dyadic(SV.mark(SV.reds(SO.cls_of(sk)), sk)) == True{} : Bool}, +g0: List<&2, S.D>, +x: M.Vec(~F), +hl: {M.len(~F, x) == SO.nvars(sk) : Nat}, +hp: SV.PinnedAt(~KI.dnum(), ~F, ~H, x, SO.pins_of(sk), g0), hz: SK.Zeros(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk)))), hs: SV.Strict(~F, x, SK.Sketch.sides(SV.mark(SV.cat(SV.reds(SO.cls_of(sk)), SV.ambers(SO.cls_of(sk))), sk)), SO.pins_of(sk)), hn: SV.Strict(~F, x, DR.ndsides(SV.ents(sk), SV.live_nd(SO.cls_of(sk))), SO.pins_of(sk)), hr: DV.Regular(~F, x, SV.solved(sk, SV.reds(SO.cls_of(sk)), SV.dropped(SO.cls_of(sk))), SV.free(SO.nvars(sk), 0n, SO.pins_of(sk))))
+  -> &d: O.C(F) -> (O.lt(F, O.zero(F), d) & (&l: Nat -> (@g: List<&2, S.D> -> SV.Near(~KI.dnum(), ~F, ~H, SO.nvars(sk), 0n, g, x, d, SO.pins_of(sk), g0) -> ({SO.Out.ok(SO.solve_l(sk, g, l)) == True{} : Bool} & BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g, l)), SO.Out.gr(SO.solve_l(sk, g, l)), x))))):
   complete.go(~F, ~R, ~H, sk, w, cov, dy, g0, x, hl, hp, hz, hs, hn, hr)

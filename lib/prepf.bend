@@ -8,6 +8,11 @@
 #   (lib/conflictpf.bend).
 # - each of c's sides, its negation refuted with the premises or not:
 #   Implied or NotImplied (lib/pass.bend: srefs).
+#
+# Since the sk-13b switch (2026-11-02), what this file proved about
+# sk-13a's pass, Honest or solver is proven in lib/dconflictpf.bend;
+# what is left here is what that proof reuses, and the description above
+# is of the sk-13a proof.
 
 import Base
 import ../spec/num.bend as S
@@ -133,9 +138,6 @@ def norefute(+sk: SK.Sketch, +R: List<&2, Nat>, +c: Nat, h: {CO.refutable(sk, c,
 
 # ConflictOk
 # ----------
-
-def conflict(+sk: SK.Sketch, +R: List<&2, Nat>, +c: Nat, +kb: List<&2, Nat>, hk: KB.KBP(sk, R, kb, c), hr: {CO.refutable(sk, c, kb) == True{} : Bool}) -> SV.ConflictOk(sk, R, c, CO.support(sk, c, kb)):
-  CP.conflict_ok(sk, R, c, kb, KB.kbp_bool(sk, R, kb, c, hk), hr)
 
 # Implied, NotImplied
 # -------------------

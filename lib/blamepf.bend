@@ -1,6 +1,11 @@
 # bend-cad: law 3, solve_blame (PLAN-sk13a S5): every conflict's support
 # holds at some geometry. Proofs only.
 #
+# Since the sk-13b switch (2026-11-02), what this file proved about
+# sk-13a's pass, Honest or solver is proven in lib/dsolvepf.bend; what
+# is left here is what that proof reuses, and the description below is
+# of the sk-13a proof.
+#
 # A True verdict gives a geometry meaning the sketch less its red
 # constraints (lib/solvepf.bend: exists_of). A support has no red member
 # (the classes are honest, lib/totalpf.bend: solve_honest; ConflictOk says
@@ -34,69 +39,12 @@ import ./covpf.bend as CV
 import ./passpf.bend as PS
 import ./solve.bend as SO
 import ./solvepf.bend as SPF
-import ./totalpf.bend as TP
 
 def absurd(-A: Type, x: Empty) -> A:
   match x:
 
 # A support has no red member
 # ---------------------------
-
-def hon_len(+sk: SK.Sketch, +cls: List<&2, SV.Class>, h: SV.Honest(sk, cls)) -> {SV.clsn(cls) == SV.ncons(sk) : Nat}:
-  match h:
-    case (a, b):
-      a
-
-def hon_go(+sk: SK.Sketch, +cls: List<&2, SV.Class>, h: SV.Honest(sk, cls)) -> SV.Honest.go(sk, cls, SV.ncons(sk), 0n):
-  match h:
-    case (a, b):
-      b
-
-def go_hd(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +m: Nat, +c0: Nat, h: SV.Honest.go(sk, cls, 1n+m, c0)) -> SV.Fate(sk, cls, c0):
-  match h:
-    case (a, b):
-      a
-
-def go_tl(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +m: Nat, +c0: Nat, h: SV.Honest.go(sk, cls, 1n+m, c0)) -> SV.Honest.go(sk, cls, m, 1n+c0):
-  match h:
-    case (a, b):
-      b
-
-# the k-th fate from c0 on
-def fate_at(+sk: SK.Sketch, +cls: List<&2, SV.Class>, n: Nat, +c0: Nat, k: Nat, h: SV.Honest.go(sk, cls, n, c0), hk: {KA.natle(1n+k, n) == True{} : Bool}) -> SV.Fate(sk, cls, Nat.add(k, c0)):
-  match n k:
-    case 0n k:
-      absurd(SV.Fate(sk, cls, Nat.add(k, c0)), KA.ft(hk))
-    case 1n++m 0n:
-      go_hd(sk, cls, m, c0, h)
-    case 1n++m 1n++j:
-      (%Equal.sym(Nat, 1n+Nat.add(j, c0), Nat.add(j, 1n+c0), LN.add_succ(j, c0)) : SV.Fate(sk, cls, _)
-        fate_at(sk, cls, m, 1n+c0, j, go_tl(sk, cls, m, c0, h), hk))
-
-def nin_ok(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, h: SV.ConflictOk(sk, red, c, s)) -> {SV.none_in(s, red) == True{} : Bool}:
-  match h:
-    case (h1, h2):
-      L.band_r(SV.all_driving(sk, s), SV.none_in(s, red), L.band_r(SV.below(s, c), SV.band(SV.all_driving(sk, s), SV.none_in(s, red)), L.band_r(SV.distinct(s), SV.band(SV.below(s, c), SV.band(SV.all_driving(sk, s), SV.none_in(s, red))), h1)))
-
-def nin_c(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, +cns: List<&2, Nat>, b: Bool, h: SV.Fate.pick(sk, red, ds, c, b, SV.Conflict{s, cns})) -> {SV.none_in(s, red) == True{} : Bool}:
-  match b:
-    case True{}:
-      absurd({SV.none_in(s, red) == True{} : Bool}, h)
-    case False{}:
-      nin_ok(sk, red, c, s, h)
-
-# a constraint's fate: a conflict, if driving, has a support with no red
-# member; the other classes have none
-def nin_fate(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, k: SV.Class, b: Bool, h: SV.Fate.pick(sk, red, ds, c, b, k)) -> {SV.none_in(SV.support.of(k), red) == True{} : Bool}:
-  match k:
-    case SV.Kept{d}:
-      {==}
-    case SV.Amber{d, r}:
-      {==}
-    case SV.Over{j, s, w}:
-      {==}
-    case SV.Conflict{+s, +cns}:
-      nin_c(sk, red, ds, c, s, cns, b, h)
 
 # past the last constraint the class is Kept, with no support
 def nin_past(cls: List<&2, SV.Class>, c: Nat, +red: List<&2, Nat>, h: {SV.lt(c, SV.clsn(cls)) == False{} : Bool}) -> {SV.none_in(SV.support(cls, c), red) == True{} : Bool}:
@@ -107,20 +55,6 @@ def nin_past(cls: List<&2, SV.Class>, c: Nat, +red: List<&2, Nat>, h: {SV.lt(c, 
       absurd({SV.none_in(SV.support(Con{y, t}, 0n), red) == True{} : Bool}, KA.tf(h))
     case Con{y, t} 1n+m:
       nin_past(t, m, red, h)
-
-def sn.go(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +c: Nat, b: Bool, e: {SV.lt(c, SV.ncons(sk)) == b : Bool}, H: SV.Honest(sk, cls)) -> {SV.none_in(SV.support(cls, c), SV.reds(cls)) == True{} : Bool}:
-  match b:
-    case True{}:
-      +hk = Equal.trans(Bool, KA.natle(1n+c, SV.ncons(sk)), SV.lt(c, SV.ncons(sk)), True{}, Equal.sym(Bool, SV.lt(c, SV.ncons(sk)), KA.natle(1n+c, SV.ncons(sk)), L.lt_sv(c, SV.ncons(sk))), e)
-      nin_fate(sk, SV.reds(cls), SV.dropped(cls), c, SV.class_at(cls, c), SV.driven(sk, c), (%Equal.sym(Nat, c, Nat.add(c, 0n), LN.add_zero(c)) : SV.Fate(sk, cls, _)
-        fate_at(sk, cls, SV.ncons(sk), 0n, c, hon_go(sk, cls, H), hk)))
-    case False{}:
-      nin_past(cls, c, SV.reds(cls), (%Equal.sym(Nat, SV.clsn(cls), SV.ncons(sk), hon_len(sk, cls, H)) : {SV.lt(c, _) == False{} : Bool}
-        e))
-
-# an honest classification: no support has a red member
-def supp_nin(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +c: Nat, H: SV.Honest(sk, cls)) -> {SV.none_in(SV.support(cls, c), SV.reds(cls)) == True{} : Bool}:
-  sn.go(sk, cls, c, SV.lt(c, SV.ncons(sk)), {==}, H)
 
 # Enforcing less
 # --------------
@@ -181,16 +115,3 @@ def mo(~F: O.OField, +env: List<&2, O.C(F)>, +S: List<&2, Nat>, +R: List<&2, Nat
 # The law
 # -------
 
-
-def blame_pair(~F: O.OField, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +c: Nat, +hn: {SV.none_in(SV.support(SO.Out.cls(SO.solve_l(sk, g0, l)), c), SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l)))) == True{} : Bool}, s: &y: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve_l(sk, g0, l)), SO.Out.gr(SO.solve_l(sk, g0, l)), y) & SK.Sketch.means(~F, y, SV.mark(SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk)))) -> &y: M.Vec(~F) -> SK.Sketch.means(~F, y, SV.only(SV.support(SO.Out.cls(SO.solve_l(sk, g0, l)), c), sk)):
-  match s:
-    case (+y, p):
-      match p:
-        case (hin, hm):
-          (y, mo(~F, y, SV.support(SO.Out.cls(SO.solve_l(sk, g0, l)), c), SV.reds(SO.Out.cls(SO.solve_l(sk, g0, l))), sk, hn, hm))
-
-def solve_blame(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +ok: {SO.Out.ok(SO.solve_l(sk, g0, l)) == True{} : Bool}, +c: Nat) -> (&x: M.Vec(~F) -> SK.Sketch.means(~F, x, SV.only(SV.support(SO.Out.cls(SO.solve_l(sk, g0, l)), c), sk))):
-  +X = SO.solve_l(sk, g0, l)
-  +v = SPF.verdict(sk, g0, l, ok)
-  hon = TP.solve_honest(sk, SPF.wf_of(sk, g0, X, v), SPF.cov_of(sk, g0, X, v), g0, l)
-  blame_pair(~F, ~H, sk, g0, l, c, supp_nin(sk, SO.Out.cls(SO.solve_l(sk, g0, l)), c, hon), SPF.solve_exists(~F, ~R, ~H, sk, g0, l, ok))

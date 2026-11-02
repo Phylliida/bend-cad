@@ -1724,6 +1724,34 @@ on one pair is red, unless a segment collapses), while a collapse by
 plain equations stays green (Vertical and Horizontal on one segment), as
 in sk-13a.
 
+**As built 2026-11-02: the switch.** One commit, after the nd change
+above and a rename (the sk-13a verdict `final` is now `checks`, so that
+`final` is the whole verdict, `ndok` then `checks`, as ROADMAP names it):
+- spec/solve.bend's Honest is sk-13b's (spec/_draft13b.bend's, which is
+  gone); its header says what it now covers.
+- lib/solve.bend and lib/fast.bend run the new pass and verdict
+  (lib/dsolve.bend and lib/dwfast.bend merged in and gone).
+- ROADMAP.bend: the five laws as tools/drafts/roadmap13b.draft had them
+  (that draft is gone), DR imported, the comments naming files and
+  classes updated; honest_unique's comment adds the drops' reasons and nd
+  to what may differ. lawsync: all 14 in sync; stmtcheck: none open.
+- tests: solve_laws.bend restates the laws with the new proofs,
+  complete_laws.bend (was dcomplete_laws) and fast_laws.bend the others;
+  dir_draft.bend is dir_laws.bend, without its statement-only checks;
+  dsolve_laws, dwfast_laws and pass_laws are gone; struct_laws and
+  binv_laws read lib/dskdpf.bend; refute_laws lost sk-13a's conflict_ok
+  (dir_laws has the new one); solve_demo reads lib/dsolvepf.bend.
+- The sk-13a proofs of the laws are gone: every def that read the old
+  Honest or the old solver's loop, found by a def-level reference walk
+  and confirmed by the checker. lib/droplawpf.bend and lib/totalpf.bend
+  are gone; the other old files keep what the new proofs reuse, each with
+  a note saying where its law is proven now.
+- Regression: only vertical-twice and vertical-twice.raw changed (A/30,
+  A/32, ok True); REGRESS: PASS.
+- Left as it is: the proof files keep their d names (dsolvepf, ...) and
+  their lemmas' 2 suffixes (solve_l2_eq, ...); lib/pass.bend's sk-13a
+  walk stays (lib/dpass.bend reuses its parts, and the protos call it).
+
 ### B8. The page, the CLI and the regression
 - The CLI prints nd with drops and conflicts; serve.py parses it.
 - The page:

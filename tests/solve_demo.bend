@@ -1,5 +1,5 @@
 # The verified solver (lib/solve.bend) run inside Bend's own checker, and
-# its laws (lib/solvepf.bend) at concrete sketches.
+# its laws (lib/dsolvepf.bend) at concrete sketches.
 # - The circle demo (proto/struct_run.bend: a circle about A with a
 #   variable radius fixed at 3, P on it and at distance 3 from B), drawn
 #   with P at (2, 2): certified, nothing red. In every complete ordered
@@ -33,7 +33,7 @@ import ../spec/box.bend as BX
 import ../spec/solve.bend as SV
 import ../lib/kinst.bend as KI
 import ../lib/solve.bend as SO
-import ../lib/solvepf.bend as SP
+import ../lib/dsolvepf.bend as DSP
 import ../proto/struct_run.bend as SR
 import ../proto/solve_run.bend as R
 
@@ -89,4 +89,4 @@ def circle_pins() -> {SO.Out.pins(SO.solve(SR.circle(), R.circle_g0())) == [0n, 
 # The laws at these sketches
 
 def circle_exists(~F: O.OField, ~R: CR.Complete<F>, ~H: N.Emb<KI.dnum(), F>) -> &x: M.Vec(~F) -> (BX.inbox(~KI.dnum(), ~F, ~H, SO.Out.gc(SO.solve(SR.circle(), R.circle_g0())), SO.Out.gr(SO.solve(SR.circle(), R.circle_g0())), x) & SK.Sketch.means(~F, x, SV.mark(SV.reds(SO.Out.cls(SO.solve(SR.circle(), R.circle_g0()))), SR.circle()))):
-  SP.solve_exists(~F, ~R, ~H, SR.circle(), R.circle_g0(), 0n, circle_ok())
+  DSP.solve_exists2(~F, ~R, ~H, SR.circle(), R.circle_g0(), 0n, circle_ok())

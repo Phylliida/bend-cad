@@ -1,12 +1,13 @@
 # bend-cad: the fast solver (PLAN-sk13w W5, W6). lib/solve.bend's solver
 # with its numbers in any K that the proposer's operations W extend
 # (lib/pops.bend): the same precision loop, the proposer written over K
-# (lib/gnumer.bend), and the same verdict, its plan and side checks run by
-# the generic checker in K and its other parts read through tod. The
-# answer is sent back to S.D once, at the end. With laws relating K to
-# KI.dnum() (lib/pops.bend: PLaws) it returns exactly what SO.solve does
-# (lib/fastpf.bend: solve_l_eq), so every law about the solver holds for
-# it. The CLI runs it at word dyadics in base 2^12 (wsolve below).
+# (lib/gnumer.bend), and the same verdict, its plan and side checks (the
+# nd sides too) run by the generic checker in K and its other parts read
+# through tod. The answer is sent back to S.D once, at the end. With laws
+# relating K to KI.dnum() (lib/pops.bend: PLaws) it returns exactly what
+# SO.solve does (lib/dwfastpf.bend: solve_l2_eq), so every law about the
+# solver holds for it. The CLI runs it at word dyadics in base 2^12
+# (wsolve below).
 
 import Base
 import ../spec/num.bend as S
@@ -25,6 +26,10 @@ import ./verdict.bend as VD
 import ./cert.bend as CK
 import ./solve.bend as SO
 import ./pass.bend as PA
+import ../spec/dir.bend as DR
+import ./dclose.bend as DC
+import ./dconflict.bend as DCF
+import ./dpass.bend as DPS
 import ./pops.bend as PO
 import ./gnumer.bend as GN
 import ./wnum.bend as WN
@@ -177,13 +182,21 @@ def checks(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +x: FO
   KA.band(shape(~K, SO.nvars(sk), CK.eqlen(SV.solved(sk, SV.reds(FOut.cls(K, x)), SV.dropped(FOut.cls(K, x)))), FOut.gc(K, x), FOut.pins(K, x), FOut.plan(K, x)),
   VD.exact(sk, FOut.cls(K, x))))))))
 
+# the live drops' nd segments are long over the box, checked in K
+def ndok(~K: N.Num, +sk: SK.Sketch, +x: FOut<K>) -> Bool:
+  PL.check_sides(~K, DR.ndsides(SV.ents(sk), SV.live_nd(FOut.cls(K, x))), FOut.gc(K, x), FOut.gr(K, x))
+
+# what the laws need: the nd sides, then the checks
+def final(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +x: FOut<K>) -> Bool:
+  KA.band(ndok(~K, sk, x), checks(~K, ~W, sk, g0, x))
+
 # The precision loop
 # ------------------
 
 def accept(~K: N.Num, ~W: PO.POps<K>, m: GN.GPR<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +cls: List<&2, SV.Class>, +pins: List<&2, Nat>) -> Bool:
   match m:
     case GN.GPOk{+x}:
-      checks(~K, ~W, sk, g0, found(~K, cls, pins, GN.GPOk{x}))
+      final(~K, ~W, sk, g0, found(~K, cls, pins, GN.GPOk{x}))
     case GN.GPRetry{}:
       False{}
     case GN.GPStop{}:
@@ -227,9 +240,9 @@ def answer(~K: N.Num, ~W: PO.POps<K>, +cls: List<&2, SV.Class>, +pins: List<&2, 
 
 # The pass, once
 # --------------
-# PA.pass gives the classes and PA.pass_st the state the same walk ends
-# with; walk2 is that walk once, giving both (lib/fastpf.bend: walk2_cls,
-# walk2_st).
+# DPS.pass2 gives the classes and DPS.pass2_st the state the same walk
+# ends with; walk2 is that walk once, giving both (lib/dwfastpf.bend:
+# walk22_cls, walk22_st).
 
 type PW is Data:
   PW{cls: List<&2, SV.Class>, st: PA.PS}
@@ -249,22 +262,25 @@ def pw.cons(c: SV.Class, w: PW) -> PW:
     case PW{cls, st}:
       PW{Con{c, cls}, st}
 
-def walk2(rs: List<&2, SK.Rec>, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +i: Nat, +st: PA.PS) -> PW:
+def walk2(rs: List<&2, SK.Rec>, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +i: Nat, +st: PA.PS, +cls: List<&2, SV.Class>, +W: DC.WK) -> PW:
   match rs:
     case Nil{}:
       PW{Nil{}, st}
     case Con{SK.Rec{id, True{}, k}, t}:
-      pw.cons(SV.Kept{Nil{}}, walk2(t, es, own, sk, adj, f, 1n+i, st))
+      pw.cons(SV.Kept{Nil{}}, walk2(t, es, own, sk, adj, f, 1n+i, st, DPS.csnoc(cls, SV.Kept{Nil{}}), W))
     case Con{SK.Rec{id, False{}, k}, t}:
-      +o = PA.one(es, own, sk, adj, f, i, st)
-      pw.cons(PA.PO.k(o), walk2(t, es, own, sk, adj, f, 1n+i, PA.PO.st(o)))
+      +Wc = DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)
+      +foA = DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), Wc)
+      +o = DPS.one2(es, own, sk, adj, f, i, st, cls, Wc, foA)
+      pw.cons(PA.PO.k(o), walk2(t, es, own, sk, adj, f, 1n+i, PA.PO.st(o), DPS.csnoc(cls, PA.PO.k(o)), DPS.wnext(SV.is_red(PA.PO.k(o)), Wc, DC.wk.next(foA, SV.rfacts(sk, Con{i, DPS.pkb(st)}), Wc))))
 
 # The solver (SO.solve_lw, SO.solve_l, SO.solve)
 # ----------------------------------------------
 # SO.solve_lw names the pass's results (classes, solved positions, pins,
 # structure) separately, and each runs the pass again; here the pass runs
 # once (walk2) and each result is computed once and passed on. With
-# walk2's lemmas the terms are SO.solve_lw's (lib/fastpf.bend: solve_lw_unf).
+# walk2's lemmas the terms are SO.solve_lw's (lib/dwfastpf.bend:
+# solve_lw2_unf).
 
 def solve_kv(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat, +cls: List<&2, SV.Class>, +sp: List<&2, Nat>, +kv: ST.KD) -> SO.Out:
   answer(~K, ~W, cls, ST.KD.red(kv), ploop.start(~K, ~W, SO.precisions(l, w), sk, g0, ofdv(~K, ~W, g0), cls, ST.KD.red(kv), SV.solved(sk, SV.reds(cls), SV.dropped(cls)), PA.nvars(sk), ST.renum(ST.skel.kd(ST.adj(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), sp, kv), sp)))
@@ -276,7 +292,7 @@ def solve_pw(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: 
   solve_st(~K, ~W, sk, g0, l, w, PW.cls(pw), PA.PS.bp(PW.st(pw)), da)
 
 def solve_da(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat, +da: List<&2, List<&2, Nat>>) -> SO.Out:
-  solve_pw(~K, ~W, sk, g0, l, w, da, walk2(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, da, 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk))))
+  solve_pw(~K, ~W, sk, g0, l, w, da, walk2(PA.recs(sk), SK.Sketch.eqs(sk), SV.owners(sk), sk, da, 1n+PA.nvars(sk), 0n, PA.start(PA.nvars(sk)), Nil{}, DC.wk0(SV.ents(sk), DCF.tv(sk), DC.SP{Nil{}, Nil{}})))
 
 def solve_lw(~K: N.Num, ~W: PO.POps<K>, +sk: SK.Sketch, +g0: List<&2, S.D>, +l: Nat, +w: Nat) -> SO.Out:
   solve_da(~K, ~W, sk, g0, l, w, PA.dadjs(SK.Sketch.eqs(sk)))

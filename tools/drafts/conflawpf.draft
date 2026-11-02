@@ -1,6 +1,11 @@
 # bend-cad: law 8, solve_conflict (PLAN-sk13a S6): in every ordered field,
 # a conflicting constraint and its support cannot all hold. Proofs only.
 #
+# Since the sk-13b switch (2026-11-02), what this file proved about
+# sk-13a's pass, Honest or solver is proven in lib/dcflawpf.bend; what
+# is left here is what that proof reuses, and the description below is
+# of the sk-13a proof.
+#
 # The classes are honest (lib/totalpf.bend: solve_honest), so a driving
 # conflict c with support s has a degree-0 refutation of the equations of
 # c and s with their side conditions and the entities' (ConflictOk). A
@@ -27,7 +32,6 @@ import ./meaning.bend as MN
 import ./vsdpf.bend as VS
 import ./ckpf.bend as CKP
 import ./solve.bend as SO
-import ./totalpf.bend as TP
 import ./blamepf.bend as BLM
 
 def absurd(-A: Type, x: Empty) -> A:
@@ -176,32 +180,6 @@ def cf_m(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +c: Nat, +s: List<&2, Nat>
         hz), sides_swap(~F, x, SV.esides(sk), SV.csides(sk, $CS), (%only_sides(sk, $CS) : SK.Sides(~F, x, _)
         hs)))
 
-def cf_ok(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, h: SV.ConflictOk(sk, red, c, s), m: SK.Sketch.holds(~F, x, SV.only($CS, sk))) -> Empty:
-  match h:
-    case (h1, h2):
-      match h2:
-        case (hr, hmin):
-          cf_m(~F, x, sk, c, s, hr, m)
-
-def cf_c(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +s: List<&2, Nat>, +cns: List<&2, Nat>, b: Bool, h: SV.Fate.pick(sk, red, ds, c, b, SV.Conflict{s, cns}), m: SK.Sketch.holds(~F, x, SV.only($CS, sk))) -> Empty:
-  match b:
-    case True{}:
-      h
-    case False{}:
-      cf_ok(~F, x, sk, red, c, s, h, m)
-
-# c's fate, c a conflict
-def cf_k(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, k: SV.Class, b: Bool, h: SV.Fate.pick(sk, red, ds, c, b, k), hc: {SV.is_conflict(k) == True{} : Bool}, m: SK.Sketch.holds(~F, x, SV.only(Con{c, SV.support.of(k)}, sk))) -> Empty:
-  match k:
-    case SV.Kept{d}:
-      KA.ft(hc)
-    case SV.Amber{d, r}:
-      KA.ft(hc)
-    case SV.Over{j, s, w}:
-      KA.ft(hc)
-    case SV.Conflict{+s, +cns}:
-      cf_c(~F, x, sk, red, ds, c, s, cns, b, h, m)
-
 # past the last constraint the class is Kept
 def cf_past(cls: List<&2, SV.Class>, c: Nat, h: {SV.lt(c, SV.clsn(cls)) == False{} : Bool}, hc: {SV.is_conflict(SV.class_at(cls, c)) == True{} : Bool}) -> Empty:
   match cls c:
@@ -212,19 +190,4 @@ def cf_past(cls: List<&2, SV.Class>, c: Nat, h: {SV.lt(c, SV.clsn(cls)) == False
     case Con{y, t} 1n+m:
       cf_past(t, m, h, hc)
 
-def cf.go(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +cls: List<&2, SV.Class>, +c: Nat, b: Bool, e: {SV.lt(c, SV.ncons(sk)) == b : Bool}, H: SV.Honest(sk, cls), hc: {SV.is_conflict(SV.class_at(cls, c)) == True{} : Bool}, m: SK.Sketch.holds(~F, x, SV.only(Con{c, SV.support(cls, c)}, sk))) -> Empty:
-  match b:
-    case True{}:
-      +hk = Equal.trans(Bool, KA.natle(1n+c, SV.ncons(sk)), SV.lt(c, SV.ncons(sk)), True{}, Equal.sym(Bool, SV.lt(c, SV.ncons(sk)), KA.natle(1n+c, SV.ncons(sk)), L.lt_sv(c, SV.ncons(sk))), e)
-      cf_k(~F, x, sk, SV.reds(cls), SV.dropped(cls), c, SV.class_at(cls, c), SV.driven(sk, c), (%Equal.sym(Nat, c, Nat.add(c, 0n), LN.add_zero(c)) : SV.Fate(sk, cls, _)
-        BLM.fate_at(sk, cls, SV.ncons(sk), 0n, c, BLM.hon_go(sk, cls, H), hk)), hc, m)
-    case False{}:
-      cf_past(cls, c, (%Equal.sym(Nat, SV.clsn(cls), SV.ncons(sk), BLM.hon_len(sk, cls, H)) : {SV.lt(c, _) == False{} : Bool}
-        e), hc)
-
 @MACRO CLS SO.Out.cls(SO.solve_l(sk, g0, l))
-
-# LAW 8 (ROADMAP solve_conflict): in every ordered field, a conflicting
-# constraint and its support cannot all hold
-def solve_conflict(~F: O.OField, +sk: SK.Sketch, w: SK.Sketch.wf(sk), cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool}, +g0: List<&2, S.D>, +l: Nat, +c: Nat, hc: {SV.is_conflict(SV.class_at($CLS, c)) == True{} : Bool}, +x: M.Vec(~F), m: SK.Sketch.means(~F, x, SV.only(Con{c, SV.support($CLS, c)}, sk))) -> Empty:
-  cf.go(~F, x, sk, $CLS, c, SV.lt(c, SV.ncons(sk)), {==}, TP.solve_honest(sk, w, cov, g0, l), hc, MN.sketch_complete(~F, x, SV.only(Con{c, SV.support($CLS, c)}, sk), m))

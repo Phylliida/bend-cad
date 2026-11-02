@@ -2,6 +2,11 @@
 # variables, by dependence (PLAN-sk13a S4, law 9's new part). Proofs
 # only.
 #
+# Since the sk-13b switch (2026-11-02), what this file proved about
+# sk-13a's pass, Honest or solver is proven in lib/dtotalpf.bend; what
+# is left here is what that proof reuses, and the description below is
+# of the sk-13a proof.
+#
 # The pass ends (lib/passpf.bend: final_inv) with the solved positions bp
 # and a valid matching vmr of exactly them (equations matched to
 # variables they depend on). The pins are the variable side's failed
@@ -560,11 +565,6 @@ def perfect_of(+sk: SK.Sketch, +hvalid: {MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), P
           Equal.trans(List<&2, E.QExpr>, PP.ps.B(PA.final_st(sk)), SV.presolved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), SV.ncons(sk)), SV.solved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk))), hB, Equal.sym(List<&2, E.QExpr>, SV.solved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk))), SV.presolved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), SV.ncons(sk)), SP.solved_end(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)))))) : SV.DepAll(_, m)
         depall_v(SK.Sketch.eqs(sk), ST.KD.vm(PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.solved_pos(sk))), PA.PS.bp(PA.final_st(sk)), PA.nvars(sk), PA.solved_pos(sk), vsf_valid(SK.Sketch.eqs(sk), PA.nvars(sk), PA.PS.vm(PA.final_st(sk)), PA.solved_pos(sk), SV.len(ST.somes(PA.PS.vm(PA.final_st(sk)))), ST.KD.vm(PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.solved_pos(sk))), PA.pins(sk), vs), hall, hmus)))))
 
-# the pass's final state, from the dependence adjacency's bound
-def final_inv.a(+sk: SK.Sketch, +hA: {D.adjb(PA.dadjs(SK.Sketch.eqs(sk)), PA.nvars(sk)) == True{} : Bool}) -> PP.PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), SV.ncons(sk), PA.final_st(sk)):
-  (%Equal.sym(Nat, SV.ncons(sk), Nat.add(SV.clen(PA.recs(sk)), 0n), Equal.trans(Nat, SV.ncons(sk), SV.clen(PA.recs(sk)), Nat.add(SV.clen(PA.recs(sk)), 0n), PP.ncons_recs(sk), LN.add_zero(SV.clen(PA.recs(sk))))) : PP.PInv(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), _, PA.final_st(sk))
-    PP.pass_inv(PA.recs(sk), sk, 0n, PA.start(PA.nvars(sk)), {==}, {==}, hA, PP.classes_down(sk), PP.pinv0(sk)))
-
 
 def f_valid(+sk: SK.Sketch, +hb: {PP.pib(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), SV.ncons(sk), PP.ps.rows(PA.final_st(sk)), PP.ps.B(PA.final_st(sk)), PP.ps.bp(PA.final_st(sk)), PP.ps.vm(PA.final_st(sk))) == True{} : Bool}) -> {MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), PA.PS.vm(PA.final_st(sk))) == True{} : Bool}:
   (%Equal.sym(List<&2, Maybe<&2, Nat>>, PA.PS.vm(PA.final_st(sk)), PP.ps.vm(PA.final_st(sk)), vm_eq(PA.final_st(sk))) : {MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), _) == True{} : Bool}
@@ -607,24 +607,3 @@ def f_gb(+sk: SK.Sketch, +hbpb: {SV.below(PA.PS.bp(PA.final_st(sk)), SV.neqs(SK.
 def vend_of(+sk: SK.Sketch, +hvalid: {MX.valid(PA.dadjs(SK.Sketch.eqs(sk)), PA.PS.vm(PA.final_st(sk))) == True{} : Bool}, +hdist: {SV.distinct(ST.somes(PA.PS.vm(PA.final_st(sk)))) == True{} : Bool}, +hml: {L.mlen(PA.PS.vm(PA.final_st(sk))) == PA.nvars(sk) : Nat}, +hs1: {L.subl(ST.somes(PA.PS.vm(PA.final_st(sk))), PA.PS.bp(PA.final_st(sk))) == True{} : Bool}, +hs2: {L.subl(PA.PS.bp(PA.final_st(sk)), ST.somes(PA.PS.vm(PA.final_st(sk)))) == True{} : Bool}, +hbpd: {SV.distinct(PA.PS.bp(PA.final_st(sk))) == True{} : Bool}, +hbpb: {SV.below(PA.PS.bp(PA.final_st(sk)), SV.neqs(SK.Sketch.eqs(sk))) == True{} : Bool}) -> {STP.vsides(ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.solved_pos(sk), PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.solved_pos(sk))) == True{} : Bool}:
   +hgb = f_gb(sk, hbpb)
   vside_kd(PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.solved_pos(sk)), SK.Sketch.eqs(sk), PA.nvars(sk), PA.PS.vm(PA.final_st(sk)), PA.solved_pos(sk), hs1, hs2, hgb, SV.len(ST.somes(PA.PS.vm(PA.final_st(sk)))), hdist, {==}, hbpd, pins_kvd(SK.Sketch.eqs(sk), PA.nvars(sk), PA.PS.vm(PA.final_st(sk)), PA.solved_pos(sk), hs1, hs2, hgb, SV.len(ST.somes(PA.PS.vm(PA.final_st(sk)))), hvalid, hdist, hml, {==}))
-
-def vend_pass(+sk: SK.Sketch, +hA: {D.adjb(PA.dadjs(SK.Sketch.eqs(sk)), PA.nvars(sk)) == True{} : Bool}) -> {STP.vsides(ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.solved_pos(sk), PA.kvs(PA.dadjs(SK.Sketch.eqs(sk)), ST.len.q(SK.Sketch.eqs(sk)), PA.nvars(sk), PA.solved_pos(sk))) == True{} : Bool}:
-  +hi = final_inv.a(sk, hA)
-  +hb = PP.pinv_b(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), SV.ncons(sk), PA.final_st(sk), hi)
-  vend_of(sk, f_valid(sk, hb), f_dist(sk, hb), f_mlen(sk, hb), f_s1(sk, hb), f_s2(sk, hb), f_bpd(sk, hb), f_bpb(sk, hb))
-
-# law 9's new part, for the pass: the pins are distinct variables, and the
-# system solved has a perfect matching onto the free variables, by
-# dependence
-def total_pass.a(+sk: SK.Sketch, +hA: {D.adjb(PA.dadjs(SK.Sketch.eqs(sk)), PA.nvars(sk)) == True{} : Bool})
-  -> SK.Both({SV.distinct(PA.pins(sk)) == True{} : Bool}, {SV.below(PA.pins(sk), PA.nvars(sk)) == True{} : Bool}) & (&m: List<&2, Nat> -> SV.Perfect(SV.solved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk))), SV.free(PA.nvars(sk), 0n, PA.pins(sk)), m)):
-  +hi = final_inv.a(sk, hA)
-  +hb = PP.pinv_b(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), SV.ncons(sk), PA.final_st(sk), hi)
-  perfect_of(sk, f_valid(sk, hb), f_dist(sk, hb), f_mlen(sk, hb), f_s1(sk, hb), f_s2(sk, hb), f_bpd(sk, hb), f_bpb(sk, hb),
-    PP.pinv_B(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), SV.ncons(sk), PA.final_st(sk), hi),
-    (%Equal.sym(List<&2, Nat>, PA.PS.bp(PA.final_st(sk)), PP.ps.bp(PA.final_st(sk)), bp_eq(PA.final_st(sk))) : {PP.ps.B(PA.final_st(sk)) == SV.picked(SK.Sketch.eqs(sk), _) : List<&2, E.QExpr>}
-      PP.pinv_p(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk)), SV.ncons(sk), PA.final_st(sk), hi)))
-
-def total_pass(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SO.nvars(sk)) == True{} : Bool})
-  -> SK.Both({SV.distinct(PA.pins(sk)) == True{} : Bool}, {SV.below(PA.pins(sk), PA.nvars(sk)) == True{} : Bool}) & (&m: List<&2, Nat> -> SV.Perfect(SV.solved(sk, SV.reds(PA.classes(sk)), SV.dropped(PA.classes(sk))), SV.free(PA.nvars(sk), 0n, PA.pins(sk)), m)):
-  total_pass.a(sk, PP.adjb_of(sk, w, cov))
