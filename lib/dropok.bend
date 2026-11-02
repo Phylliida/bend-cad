@@ -10,19 +10,9 @@
 # establishes is the direction layer's (lib/dirpf.bend: sound).
 
 import Base
-import ../spec/num.bend as S
 import ../spec/ring.bend as E
 import ../spec/solve.bend as SV
 import ./qnorm.bend as QN
-
-# the combination's right side, q_1 g_i1 + ... + q_n g_in (the shape of
-# spec/solve.bend's lin)
-def comb.rhs(+es: List<&2, E.QExpr>, ms: List<&2, SV.Mul>) -> E.QExpr:
-  match ms:
-    case Nil{}:
-      E.QCst{S.Q{S.Z0{}, S.XH{}}}
-    case Con{SV.Mul{i, q}, t}:
-      E.QAdd{E.QMul{E.QCst{q}, SV.eqat(es, i)}, comb.rhs(es, t)}
 
 # equation i is in the system solved
 def solved_at(+own: List<&2, Nat>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +i: Nat) -> Bool:
@@ -38,7 +28,7 @@ def comb.solved(+own: List<&2, Nat>, +red: List<&2, Nat>, +ds: List<&2, Nat>, ms
 def drop.ok(+es: List<&2, E.QExpr>, +own: List<&2, Nat>, +red: List<&2, Nat>, +ds: List<&2, Nat>, d: SV.Drop) -> Bool:
   match d:
     case SV.Drop{+j, +nd, SV.WLin{+ms}}:
-      SV.band(comb.solved(own, red, ds, ms), QN.qzero(E.QSub{SV.eqat(es, j), comb.rhs(es, ms)}))
+      SV.band(comb.solved(own, red, ds, ms), QN.qzero(E.QSub{SV.eqat(es, j), SV.mlin(es, ms)}))
     case SV.Drop{+j, +nd, SV.WDer{dv}}:
       False{}
 

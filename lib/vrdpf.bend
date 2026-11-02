@@ -82,7 +82,7 @@ def zat(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&2, Nat>
 
 
 # a combination of equations of the system solved is 0
-def comb_zero(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +R: List<&2, Nat>, +D: List<&2, Nat>, +hz: SK.Zeros(~F, x, SV.solved.go(es, own, R, D, 0n)), qs: List<&2, SV.Mul>, +h: {DK.comb.solved(own, R, D, qs) == True{} : Bool}) -> {O.eval(~F, x, DK.comb.rhs(es, qs)) == O.zero(F) : O.C(F)}:
+def comb_zero(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +R: List<&2, Nat>, +D: List<&2, Nat>, +hz: SK.Zeros(~F, x, SV.solved.go(es, own, R, D, 0n)), qs: List<&2, SV.Mul>, +h: {DK.comb.solved(own, R, D, qs) == True{} : Bool}) -> {O.eval(~F, x, SV.mlin(es, qs)) == O.zero(F) : O.C(F)}:
   match qs:
     case Nil{}:
       QE.ofq_zero(~F)
@@ -90,7 +90,7 @@ def comb_zero(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&2
       +h1 = L.band_l(DK.solved_at(own, R, D, i), DK.comb.solved(own, R, D, t), h)
       +h2 = L.band_r(DK.solved_at(own, R, D, i), DK.comb.solved(own, R, D, t), h)
       +a = O.eval(~F, x, E.QCst{q})
-      %Equal.sym(O.C(F), O.eval(~F, x, DK.comb.rhs(es, t)), O.zero(F), comb_zero(~F, x, es, own, R, D, hz, t, h2)) : {O.add(F, O.mul(F, a, O.eval(~F, x, SV.eqat(es, i))), _) == O.zero(F) : O.C(F)}
+      %Equal.sym(O.C(F), O.eval(~F, x, SV.mlin(es, t)), O.zero(F), comb_zero(~F, x, es, own, R, D, hz, t, h2)) : {O.add(F, O.mul(F, a, O.eval(~F, x, SV.eqat(es, i))), _) == O.zero(F) : O.C(F)}
       %Equal.sym(O.C(F), O.eval(~F, x, SV.eqat(es, i)), O.zero(F), zat(~F, x, es, own, R, D, hz, i, h1)) : {O.add(F, O.mul(F, a, _), O.zero(F)) == O.zero(F) : O.C(F)}
       %FL.mul_zero(~F, a) : {O.add(F, _, O.zero(F)) == O.zero(F) : O.C(F)}
       O.add_zero(F)(O.zero(F))
@@ -98,9 +98,9 @@ def comb_zero(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&2
 # a dropped equation whose combination passes
 def drop_zero(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +R: List<&2, Nat>, +D: List<&2, Nat>, +hz: SK.Zeros(~F, x, SV.solved.go(es, own, R, D, 0n)), +j: Nat, +nd: List<&2, Nat>, +qs: List<&2, SV.Mul>, +h: {DK.drop.ok(es, own, R, D, SV.Drop{j, nd, SV.WLin{qs}}) == True{} : Bool}) -> {O.eval(~F, x, SV.eqat(es, j)) == O.zero(F) : O.C(F)}:
   +b2 = DK.comb.solved(own, R, D, qs)
-  +b3 = QN.qzero(E.QSub{SV.eqat(es, j), DK.comb.rhs(es, qs)})
-  Equal.trans(O.C(F), O.eval(~F, x, SV.eqat(es, j)), O.eval(~F, x, DK.comb.rhs(es, qs)), O.zero(F),
-    FO.eq_of_sub(~F, O.eval(~F, x, SV.eqat(es, j)), O.eval(~F, x, DK.comb.rhs(es, qs)), QN.qzero_ok(~F, x, E.QSub{SV.eqat(es, j), DK.comb.rhs(es, qs)}, L.band_r(b2, b3, h))),
+  +b3 = QN.qzero(E.QSub{SV.eqat(es, j), SV.mlin(es, qs)})
+  Equal.trans(O.C(F), O.eval(~F, x, SV.eqat(es, j)), O.eval(~F, x, SV.mlin(es, qs)), O.zero(F),
+    FO.eq_of_sub(~F, O.eval(~F, x, SV.eqat(es, j)), O.eval(~F, x, SV.mlin(es, qs)), QN.qzero_ok(~F, x, E.QSub{SV.eqat(es, j), SV.mlin(es, qs)}, L.band_r(b2, b3, h))),
     comb_zero(~F, x, es, own, R, D, hz, qs, L.band_l(b2, b3, h)))
 
 def drops_zero.c(~F: O.OField, +x: M.Vec(~F), +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +R: List<&2, Nat>, +D: List<&2, Nat>, +hz: SK.Zeros(~F, x, SV.solved.go(es, own, R, D, 0n)), +k: Nat, +j: Nat, +nd: List<&2, Nat>, +qs: List<&2, SV.Mul>, +t: List<&2, SV.Drop>, b: Bool, eb: {SV.eq(k, j) == b : Bool}, hm: {SV.bor(b, SV.mem(k, SV.drops(t))) == True{} : Bool},

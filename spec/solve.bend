@@ -309,6 +309,15 @@ def drops(ds: List<&2, Drop>) -> List<&2, Nat>:
     case Con{Drop{j, nd, w}, t}:
       Con{j, drops(t)}
 
+# the combination a degree-0 reason names, q_1 g_i1 + ... + q_n g_in, g_i
+# equation i of es (the shape of lin)
+def mlin(+es: List<&2, E.QExpr>, ms: List<&2, Mul>) -> E.QExpr:
+  match ms:
+    case Nil{}:
+      E.QCst{S.Q{S.Z0{}, S.XH{}}}
+    case Con{Mul{i, q}, t}:
+      E.QAdd{E.QMul{E.QCst{q}, eqat(es, i)}, mlin(es, t)}
+
 # Classes
 # -------
 # The answer classifies every constraint, by position, with exactly one

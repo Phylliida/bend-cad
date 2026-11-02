@@ -62,9 +62,9 @@
 #   (lib/dconflict.bend, lib/dconflictpf.bend, B4.3): the filter's support
 #   with its nd is the extended ConflictOk (DCP.conflict2_ok).
 # - The walk with direction drops (lib/dpass.bend cwalk2, lib/dcwpf.bend,
-#   B4.4): its drops are the extended DropsOk, each with an nd that
-#   suffices (DropsNd), and sk-13a's walk invariant holds at its end
-#   (DCW.cw2_final). Its closure calls start from a state kept across
+#   B4.4): its drops are the extended DropsOk, each recording its reason,
+#   which is its witness (DropsNd), and sk-13a's walk invariant holds at
+#   its end (DCW.cw2_final). Its closure calls start from a state kept across
 #   calls (B4.8), valid for facts the kept constraints' facts extend
 #   (DWM.WInv).
 # - The pass with the direction layer is honest (lib/dpass.bend classes2,
@@ -139,6 +139,7 @@ import ../lib/dpass.bend as DPS
 import ../lib/cwpf.bend as CWP
 import ../lib/dcwpf.bend as DCW
 import ../lib/dpasspf.bend as DPP
+import ../lib/passpf.bend as PPF
 import ../lib/solve.bend as SOL
 import ../lib/wfdec.bend as WFD
 import ../lib/pass.bend as PAS
@@ -440,9 +441,10 @@ def b4_walk(+sk: SK.Sketch, +cls: List<&2, SS.Class>, +R: List<&2, Nat>, +D: Lis
   +hF0: {F0 == SS.facts.go(SK.Sketch.eqs(sk), SS.owners(sk), SS.kept_before(sk, R, c), sk, cls, True{}, 0n) : List<&2, DR.Fact>}, +hcx: {cx == SS.ctx(sk, R, c) : List<&2, E.QExpr>},
   +W: DC.WK, +hw: DWM.WInv(SS.ents(sk), SS.rfacts(sk, SS.kept_before(sk, R, c)), cx, DCF.tv(sk), W), +rows: List<&2, EL.Row>, +B: List<&2, E.QExpr>, +bp: List<&2, Nat>, hr: {EP.rinv(B, rows, 0n) == True{} : Bool}, hl: {EL.rlen(rows) == SS.neqs(B) : Nat},
   hB: {B == SS.presolved(sk, R, D, c) : List<&2, E.QExpr>}, hp: {B == SS.picked(SK.Sketch.eqs(sk), bp) : List<&2, E.QExpr>},
+  +hb0: {SS.below(bp, SS.neqs(SK.Sketch.eqs(sk))) == True{} : Bool}, +ha0: {PPF.allpre(bp, SS.owners(sk), R, D, c) == True{} : Bool},
   +hcov: {BX.Sketch.within(sk, PAS.nvars(sk)) == True{} : Bool}, +hwf: {WFD.wf_dec(sk) == True{} : Bool})
   -> DH.DropsOk(sk, cls, R, D, c, SS.drops(CWP.cw.ds(DPS.cwalk2(SK.Sketch.eqs(sk), SS.owners(sk), c, 0n, PAS.CW{rows, B, bp, Nil{}, Nil{}}, sk, F0, cx, W)))) & (DH.DropsNd(sk, cls, R, D, c, CWP.cw.ds(DPS.cwalk2(SK.Sketch.eqs(sk), SS.owners(sk), c, 0n, PAS.CW{rows, B, bp, Nil{}, Nil{}}, sk, F0, cx, W))) & CWP.CWInv(sk, R, D, c, bp, SS.neqs(SK.Sketch.eqs(sk)), DPS.cwalk2(SK.Sketch.eqs(sk), SS.owners(sk), c, 0n, PAS.CW{rows, B, bp, Nil{}, Nil{}}, sk, F0, cx, W))):
-  DCW.cw2_final(sk, cls, R, D, c, F0, cx, hF0, hcx, W, hw, rows, B, bp, hr, hl, hB, hp, hcov, hwf)
+  DCW.cw2_final(sk, cls, R, D, c, F0, cx, hF0, hcx, W, hw, rows, B, bp, hr, hl, hB, hp, hb0, ha0, hcov, hwf)
 
 # B4.5: the pass with the direction layer is honest
 def b4_honest(+sk: SK.Sketch, w: SK.Sketch.wf(sk), +cov: {BX.Sketch.within(sk, SOL.nvars(sk)) == True{} : Bool}) -> DH.Honest(sk, DPS.classes2(sk)):

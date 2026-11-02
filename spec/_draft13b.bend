@@ -9,12 +9,14 @@
 # - a conflict is a refutation of degree 0 or by directions, irreducible
 #   for both, with the segments a direction refutation needs (nd);
 # - an equation is dropped iff it has a degree-0 derivation or a
-#   direction-layer one, and each drop records an nd that suffices;
+#   direction-layer one, and each drop records its reason, which is one
+#   (with the nd the derivation needs);
 # - Kept, Amber and Over need no refutation of either kind.
 
 import Base
 import ./sketch.bend as SK
 import ./solve.bend as SV
+import ./dir.bend as DR
 
 # Honest classifications (sk-13a, extended by sk-13b), constraint by
 # constraint
@@ -29,7 +31,8 @@ import ./solve.bend as SV
 #   combination of the solved equations before c and c's own earlier
 #   equations not dropped, or has a direction-layer derivation from every
 #   equation of the kept constraints before c and those (each drop
-#   recording an nd that suffices);
+#   recording its reason: the combination, or the derivation with the nd
+#   it needs);
 # - otherwise Over iff c's remaining equations with the solved ones before
 #   it contain a structurally over-determined set (by what the equations
 #   depend on);
@@ -71,27 +74,50 @@ def drops_ok.go(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +
 def DropsOk(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>) -> Type:
   {SV.band(SV.distinct(d), SV.below(d, SV.neqs(SK.Sketch.eqs(sk)))) == True{} : Bool} & drops_ok.go(sk, cls, red, ds, c, d, SV.owners(sk), 0n)
 
-# each recorded drop's nd suffices: a degree-0 derivation (any nd), or a
-# direction-layer one needing at most its nd
+# position p is an equation that equation i of c may be combined from (in
+# basis): a solved equation of a constraint before c, or one of c's own
+# before i not in d
+def in_basis(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +i: Nat, +p: Nat) -> Bool:
+  SV.band(SV.lt(p, SV.neqs(SK.Sketch.eqs(sk))), SV.bor(SV.band(SV.lt(SV.nth(SV.owners(sk), p), c), SV.band(SV.bnot(SV.mem(SV.nth(SV.owners(sk), p), red)), SV.bnot(SV.mem(p, ds)))), SV.band(SV.lt(p, i), SV.band(SV.eq(SV.nth(SV.owners(sk), p), c), SV.bnot(SV.mem(p, d))))))
+
+def in_basis.all(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +i: Nat, ms: List<&2, SV.Mul>) -> Bool:
+  match ms:
+    case Nil{}:
+      True{}
+    case Con{SV.Mul{+p, q}, t}:
+      SV.band(in_basis(sk, red, ds, c, d, i, p), in_basis.all(sk, red, ds, c, d, i, t))
+
+# a drop's reason is its witness: for equation j, a constant combination
+# of equations it may be combined from that is the same polynomial as j,
+# or a derivation from the facts it may read that is valid, proves j and
+# needs at most the drop's nd
+def why_ok(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +j: Nat, +nd: List<&2, Nat>, w: SV.Why) -> Type:
+  match w:
+    case SV.WLin{+ms}:
+      {in_basis.all(sk, red, ds, c, d, j, ms) == True{} : Bool} & SV.Ident(SV.eqat(SK.Sketch.eqs(sk), j), SV.mlin(SK.Sketch.eqs(sk), ms))
+    case SV.WDer{+dv}:
+      DR.Valid(SV.ents(sk), SV.dfacts(sk, cls, red, c, d, j), SV.ctx(sk, red, c), dv) & (SV.Proves(SV.ents(sk), SV.dstat_of(SV.ents(sk), SV.kind_at(sk, c)), SV.eqat(SK.Sketch.eqs(sk), j), DR.concl(SV.ents(sk), SV.dfacts(sk, cls, red, c, d, j), dv)) & {SV.sub(DR.nd(SV.ents(sk), SV.dfacts(sk, cls, red, c, d, j), dv), nd) == True{} : Bool})
+
+# each recorded drop's reason is its witness
 def drops_nd(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, dd: List<&2, SV.Drop>) -> Type:
   match dd:
     case Nil{}:
       Unit
-    case Con{SV.Drop{+j, +nd, q}, t}:
-      Or(SV.Derivable(sk, red, ds, c, d, j), SV.DirDerivable(sk, cls, red, c, d, j, nd)) & drops_nd(sk, cls, red, ds, c, d, t)
+    case Con{SV.Drop{+j, +nd, w}, t}:
+      why_ok(sk, cls, red, ds, c, d, j, nd, w) & drops_nd(sk, cls, red, ds, c, d, t)
 
 def DropsNd(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +dd: List<&2, SV.Drop>) -> Type:
   drops_nd(sk, cls, red, ds, c, SV.drops(dd), dd)
 
 # kept with the drops dd: no refutation of either kind, dd exactly the
-# derivable equations, each with an nd that suffices, no over-determined
+# derivable equations, each with its reason, no over-determined
 # set, and not amber (if every equation is dropped, some side condition
 # is not implied)
 def KeptOk(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +dd: List<&2, SV.Drop>) -> Type:
   SV.NoRefute2(sk, red, c) & (DropsOk(sk, cls, red, ds, c, SV.drops(dd)) & (DropsNd(sk, cls, red, ds, c, dd) & (SV.Matchable(SK.cat(SV.presolved(sk, red, ds, c), SV.own_rest(sk, c, SV.drops(dd), SV.neqs(SK.Sketch.eqs(sk))))) & ({SV.is_amberable(sk, c, SV.drops(dd)) == True{} : Bool} -> &i: Nat -> ({SV.lt(i, SV.slen(SV.csides(sk, [c]))) == True{} : Bool} & SV.NotImplied(sk, red, c, i))))))
 
 # amber with the drops dd: no refutation, dd exactly the derivable
-# equations with nd that suffice, all of c's equations, every side implied
+# equations with their reasons, all of c's equations, every side implied
 def AmberOk(+sk: SK.Sketch, +cls: List<&2, SV.Class>, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Nat, +dd: List<&2, SV.Drop>) -> Type:
   SV.NoRefute2(sk, red, c) & (DropsOk(sk, cls, red, ds, c, SV.drops(dd)) & (DropsNd(sk, cls, red, ds, c, dd) & ({SV.is_amberable(sk, c, SV.drops(dd)) == True{} : Bool} & (@i: Nat -> {SV.lt(i, SV.slen(SV.csides(sk, [c]))) == True{} : Bool} -> SV.Implied(sk, red, c, i)))))
 

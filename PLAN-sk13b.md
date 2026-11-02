@@ -1065,6 +1065,18 @@ give both component identities that Valid's SameV asks for.
     (the constants: Derivable's identity; the derivation: Valid, Proves,
     its nd within the drop's), so the explanation is a theorem;
     lib/dcwpf.bend already proves the recorded derivation valid (dd_ok).
+    *Done 2026-11-01 (gate PASS, tools/regress.sh PASS):*
+    spec/_draft13b.bend `why_ok`: a WLin{ms} reason names only equations
+    the drop may be combined from (`in_basis`: a solved one of a
+    constraint before c, or c's own before j not dropped, by position)
+    and g_j is the same polynomial as `SV.mlin(eqs, ms)` (spec/solve.bend,
+    which lib/dropok.bend now reads too: comb.rhs gone); a WDer{dv}
+    reason is DirDerivable's body for dv with the drop's nd. drops_nd
+    says each recorded drop's why_ok (no longer the Or). lib/dcwpf.bend
+    lin_wit (the elimination's identity, ckpf's rhs_lin, and the basis
+    positions: bp0 from pib, now a hypothesis of cw2_final and the walk,
+    us from the walk's invariant and the final drops agreeing below k)
+    and dwit_k (the closure's derivation, dsk.w).
   - At the switch (B5/B6): a direction drop holds wherever the system
     solved holds and its nd segments are nonzero, by `sound`, its facts
     holding by induction over the equations (an earlier drop's fact

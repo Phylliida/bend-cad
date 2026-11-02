@@ -77,7 +77,7 @@ def dgood(+es: $QL, +bp: $NL, ds: $DL) -> Bool:
     case Nil{}:
       True{}
     case Con{SV.Drop{+j, +nd, SV.WLin{+qs}}, t}:
-      SV.band(L.subl(mulpos(qs), bp), SV.band(QN.qzero(E.QSub{SV.eqat(es, j), DK.comb.rhs(es, qs)}), dgood(es, bp, t)))
+      SV.band(L.subl(mulpos(qs), bp), SV.band(QN.qzero(E.QSub{SV.eqat(es, j), SV.mlin(es, qs)}), dgood(es, bp, t)))
     case Con{SV.Drop{+j, +nd, SV.WDer{dv}}, t}:
       False{}
 
@@ -96,7 +96,7 @@ def dgood_up(+es: $QL, +bp: $NL, ds: $DL, +k: Nat, +h: {dgood(es, bp, ds) == Tru
       {==}
     case Con{SV.Drop{+j, +nd, SV.WLin{+qs}}, +t}:
       +b2 = L.subl(mulpos(qs), bp)
-      +b3 = QN.qzero(E.QSub{SV.eqat(es, j), DK.comb.rhs(es, qs)})
+      +b3 = QN.qzero(E.QSub{SV.eqat(es, j), SV.mlin(es, qs)})
       +b4 = dgood(es, bp, t)
       +h34 = L.band_r(b2, SV.band(b3, b4), h)
       L.band_i(L.subl(mulpos(qs), CO.lsnoc(bp, k)), SV.band(b3, dgood(es, CO.lsnoc(bp, k), t)), subl_snoc(mulpos(qs), bp, k, L.band_l(b2, SV.band(b3, b4), h)),
@@ -114,7 +114,7 @@ def mp_sub(bp: $NL, ls: List<&2, S.Q>) -> {L.subl(mulpos(PA.muls(bp, ls)), bp) =
       L.subl_con(i, mulpos(PA.muls(it, lt)), Con{i, it}, L.mem_hd(i, it), L.subl_cons_r(mulpos(PA.muls(it, lt)), i, it, mp_sub(it, lt)))
 
 # the pass's combination is lin over the basis at bp
-def rhs_lin(+es: $QL, bp: $NL, ls: List<&2, S.Q>) -> {DK.comb.rhs(es, PA.muls(bp, ls)) == SV.lin(ls, SV.picked(es, bp)) : E.QExpr}:
+def rhs_lin(+es: $QL, bp: $NL, ls: List<&2, S.Q>) -> {SV.mlin(es, PA.muls(bp, ls)) == SV.lin(ls, SV.picked(es, bp)) : E.QExpr}:
   match bp ls:
     case Nil{} Nil{}:
       {==}
@@ -123,7 +123,7 @@ def rhs_lin(+es: $QL, bp: $NL, ls: List<&2, S.Q>) -> {DK.comb.rhs(es, PA.muls(bp
     case Con{+i, +it} Nil{}:
       {==}
     case Con{+i, +it} Con{+l, +lt}:
-      Equal.cong(E.QExpr, E.QExpr, y => E.QAdd{E.QMul{E.QCst{l}, SV.eqat(es, i)}, y}, DK.comb.rhs(es, PA.muls(it, lt)), SV.lin(lt, SV.picked(es, it)), rhs_lin(es, it, lt))
+      Equal.cong(E.QExpr, E.QExpr, y => E.QAdd{E.QMul{E.QCst{l}, SV.eqat(es, i)}, y}, SV.mlin(es, PA.muls(it, lt)), SV.lin(lt, SV.picked(es, it)), rhs_lin(es, it, lt))
 
 @MACRO CWP +sk: SK.Sketch, +R: $NL, +D: $NL, +c: Nat, +bp0: $NL
 @MACRO CWA sk, R, D, c, bp0
@@ -138,12 +138,12 @@ def dg_drop($CWP, +k: Nat, +rows: List<&2, EL.Row>, +B: $QL, +bp: $NL, +ds: $DL,
   (hl, q2) = q1
   (hB, q3) = q2
   (hp, hbp) = q3
-  +qz = QN.qzero(E.QSub{SV.eqat($ES, k), DK.comb.rhs($ES, PA.muls(bp, $LS))})
+  +qz = QN.qzero(E.QSub{SV.eqat($ES, k), SV.mlin($ES, PA.muls(bp, $LS))})
   L.band_i(L.subl(mulpos(PA.muls(bp, $LS)), bp), SV.band(qz, dgood($ES, bp, ds)), mp_sub(bp, $LS),
     L.band_i(qz, dgood($ES, bp, ds),
-      ID.qzero_ident(SV.eqat($ES, k), DK.comb.rhs($ES, PA.muls(bp, $LS)),
-        (%Equal.sym(E.QExpr, SV.eqat($ES, k), e, he) : SV.Ident(_, DK.comb.rhs($ES, PA.muls(bp, $LS)))
-          (%Equal.sym(E.QExpr, DK.comb.rhs($ES, PA.muls(bp, $LS)), SV.lin($LS, SV.picked($ES, bp)), rhs_lin($ES, bp, $LS)) : SV.Ident(e, _)
+      ID.qzero_ident(SV.eqat($ES, k), SV.mlin($ES, PA.muls(bp, $LS)),
+        (%Equal.sym(E.QExpr, SV.eqat($ES, k), e, he) : SV.Ident(_, SV.mlin($ES, PA.muls(bp, $LS)))
+          (%Equal.sym(E.QExpr, SV.mlin($ES, PA.muls(bp, $LS)), SV.lin($LS, SV.picked($ES, bp)), rhs_lin($ES, bp, $LS)) : SV.Ident(e, _)
             (%hp : SV.Ident(e, SV.lin($LS, _))
               DR.derivable(B, rows, e, CW.cwb_rinv(sk, c, k, rows, B, ds, us, hb), hnil))))),
       hg))
@@ -233,7 +233,7 @@ def dok_of(+es: $QL, +own: $NL, +R: $NL, +D: $NL, +bp: $NL, ds: $DL, +hg: {dgood
       {==}
     case Con{SV.Drop{+j, +nd, SV.WLin{+qs}}, +t}:
       +b2 = L.subl(mulpos(qs), bp)
-      +b3 = QN.qzero(E.QSub{SV.eqat(es, j), DK.comb.rhs(es, qs)})
+      +b3 = QN.qzero(E.QSub{SV.eqat(es, j), SV.mlin(es, qs)})
       +b4 = dgood(es, bp, t)
       +h34 = L.band_r(b2, SV.band(b3, b4), hg)
       L.band_i(DK.drop.ok(es, own, R, D, SV.Drop{j, nd, SV.WLin{qs}}), DK.drops.ok(es, own, R, D, t),

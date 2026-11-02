@@ -604,7 +604,8 @@ def step.c(b: Bool, +sk: SK.Sketch, +i: Nat, +kb: $NL, +rows: List<&2, EL.Row>, 
       step.w($WALK2, sk, i, kb, rows, B, bp, vm, hi,
         DCW.cw2_final(sk, $CLS, $RF, $DF, i, $F0, $CX, hf0_of(sk, i, kb, pc, hkb, kb_below(sk, i, kb, PP.pinv_kbp(sk, $RF, $DF, i, $STK, hi)), hD, hpc), hcx_of(sk, i, kb, hkb), W, (%hkb : DW.WInv($ENT, SV.rfacts(sk, _), $CX, $TV, W)
           hw), rows, B, bp,
-          PP.pib_rinv(sk, $RF, $DF, i, rows, B, bp, vm, PP.pinv_b(sk, $RF, $DF, i, $STK, hi)), PP.pinv_rlen(sk, $RF, $DF, i, $STK, hi), PP.pinv_B(sk, $RF, $DF, i, $STK, hi), PP.pinv_p(sk, $RF, $DF, i, $STK, hi), $HA),
+          PP.pib_rinv(sk, $RF, $DF, i, rows, B, bp, vm, PP.pinv_b(sk, $RF, $DF, i, $STK, hi)), PP.pinv_rlen(sk, $RF, $DF, i, $STK, hi), PP.pinv_B(sk, $RF, $DF, i, $STK, hi), PP.pinv_p(sk, $RF, $DF, i, $STK, hi),
+          PP.pib_bpb(sk, $RF, $DF, i, rows, B, bp, vm, PP.pinv_b(sk, $RF, $DF, i, $STK, hi)), PP.pib_pre(sk, $RF, $DF, i, rows, B, bp, vm, PP.pinv_b(sk, $RF, $DF, i, $STK, hi)), $HA),
         nr2_of(sk, i, kb, hkb, eb, $HA),
         (%eb : {SV.class_at($CLS, i) == PA.PO.k(DPS.one2.c(_, $PARGS, i, kb, rows, B, bp, vm, pc, $CX, W)) : SV.Class}
           hK), hA, hdrv, hD)
