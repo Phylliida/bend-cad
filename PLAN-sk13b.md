@@ -1804,7 +1804,7 @@ above and a rename (the sk-13a verdict `final` is now `checks`, so that
   is gone), so 8 and 9 are not in the regression and the pass's cost on
   6 and 7 is not measured; they need exporting again.
 
-### B8b. Irreducible nd (added 2026-11-02, before B9)
+### B8b. Irreducible nd (added 2026-11-02, before B9; superseded by B8c)
 Danielle asked for nd to be minimal, covering every case however rare.
 Today nd is exact for the derivation the closure returns, but that
 derivation goes through each component's root and the segment's own
@@ -1958,6 +1958,38 @@ slow sketches Danielle exports next.
 - Cost: the loop multiplies the closure's runs by the size of nd.
 - The explosion rule differs under restriction (above): the void check
   covers only segments in A.
+
+### B8c. Segments have nonzero length (Q15 revised, 2026-11-02; replaces B8b)
+Danielle revised Q15 after REDESIGN-directions.md: a segment means
+distinct endpoints, as a circle means r > 0. nd, the context and the
+closure's collapse machinery existed only because segments could
+collapse. So B8b is dropped, and the C0 draft (spec/_draft13c.bend) with
+it. Over irreducibility (OverIrred) stays, and moves here.
+- **Stage 1 (behavior).**
+  - Trusted:
+    - a segment's side is Gt0{|q - p|^2}, and its meaning is that being
+      positive (DR.Long's form), so Ent.sides, Ent.means and Ent.holds
+      take the entity list;
+    - Ent.wf_refs adds that a segment's ends are not the same two
+      variables;
+    - SV.ctx is Nil, so no segment is collapsed and a derived collapse of
+      any segment refutes.
+  - Solver: the pass's context is Nil.
+  - Proofs: the entity lemmas and laws gain the segment case, and the
+    proofs that read the context's definition change.
+  - Regression: collapse-par and par-collapse change (the Coincident is
+    red).
+  - Page: no nd text.
+- **Stage 2.** nd and ctx leave the spec, the laws and the verdict:
+  Drop{j, why} and Conflict{s}; solve_drop reads the entity sides; ndok
+  goes.
+- **Stage 3.** The closure's collapse code (links, collapsed sets, the open
+  test), ∥-void and RAngle go, with their proofs.
+- **Stage 4.** One calculus: degree 0 as the K fragment in Honest.
+- **OverIrred**, with any stage after 1.
+
+**Exit:** at each stage the gate and the regression are green; after
+stage 2 nothing nd-shaped is left. B9 follows.
 
 ### B9. Audit and sign-off
 - An independent audit of the proven statements against this file. Gate

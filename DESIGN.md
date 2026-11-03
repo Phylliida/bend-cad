@@ -206,6 +206,7 @@ the plan; the bullets marked *as built* record what sk-03 fixed.
   driving constraint's), `Sketch.wf`, `Sketch.holds`, `Sketch.means`. **Geometry
   may degenerate** (Danielle, Q15): points and segments carry no conditions,
   so a segment may collapse to a point. Circles keep r > 0 and arcs b > 0.
+  *Revised 2026-11-02:* a segment has nonzero length (Q15 below).
   Driven constraints contribute nothing.
 - *As built:* persistent IDs on entities and constraints (`Ent.id`, `Rec.id`);
   a variable's ID is its index. Deletion and renumbering policy: sk-21.
@@ -1969,7 +1970,12 @@ sk-02 and sk-03 can run in parallel after sk-01.
   parameter (§5.5), not over ℚ with a meta-level step.
 - **Q14** Constraints reference existing entities by ID (§4).
 - **Q15** Geometry may collapse to zero length: no ℓ_min, no nondegeneracy
-  conditions on segments (§5.1). Circles keep r > 0 and arcs b > 0;
+  conditions on segments (§5.1). *Revised 2026-11-02 (Danielle):* a
+  segment has nonzero length, |q − p|² > 0, as a circle has r > 0, and
+  there is still no ℓ_min (exact certification needs none). Under the
+  original Q15, every direction judgment had to carry the segments it
+  needs nonzero (nd), a context and collapse handling
+  (REDESIGN-directions.md, PLAN-sk13b B8c). Circles keep r > 0 and arcs b > 0;
   distance dimensions may be 0 (d ≥ 0); a point–line distance needs its line
   (ℓ > 0); no bounded point-on-segment constraint (point on line covers the
   common case).
