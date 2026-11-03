@@ -21,9 +21,10 @@
 # The meaning lemmas (ROADMAP.bend, DESIGN §5.5) say that, for a well-formed
 # constraint, eqs = 0 and sides > 0 hold exactly when the meaning holds.
 #
-# Geometry may degenerate (a segment may collapse to a point, a distance
-# may be 0); only dimensions (≥ 0) and the choices a user made (a side, a
-# quadrant) are side conditions. Circles keep a positive radius and arcs a
+# Points may coincide and a distance may be 0. A constraint's side
+# conditions are only dimensions (≥ 0) and the choices a user made (a side,
+# a quadrant); an entity's are its own properness: a segment has nonzero
+# length (Q15 as revised 2026-11-02), a circle a positive radius, an arc a
 # positive bulge.
 #
 # Scope: the core vocabulary of DESIGN §5.1. Tangency and joins (§5.2) and
@@ -357,8 +358,8 @@ def Constraint.eqs(+es: List<&2, Ent>, +k: Constraint) -> List<&2, E.QExpr>:
     case Symmetric{p, q, a}:
       sym.eqs(Pt.ve(pt(es, p)), Pt.ve(pt(es, q)), Pt.ve(Seg.p(seg(es, a))), Pt.ve(Seg.q(seg(es, a))))
 
-# Side conditions. Only dimensions and choices are here: geometry may
-# degenerate. (An angle's dot > 0 also makes both directions and (c, s)
+# Side conditions. Only dimensions and choices are here (an entity's own
+# conditions are with the entity). (An angle's dot > 0 also makes (c, s)
 # nonzero. A radius needs none: its circle keeps r > 0.)
 def Constraint.sides(+es: List<&2, Ent>, +k: Constraint) -> List<&2, Side>:
   match k:
@@ -482,11 +483,18 @@ def Constraint.means(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, Ent>, +
 
 # Entities
 # --------
-# Points and segments carry no conditions; circles keep a positive radius,
-# arcs a positive bulge.
+# Points carry no conditions. A segment has nonzero length (Q15 as revised
+# 2026-11-02: its squared length is positive, so its ends differ), a circle
+# a positive radius, an arc a positive bulge.
 
-def Ent.sides(e: Ent) -> List<&2, Side>:
+# the direction q - p of the segment from point entity p to point entity q
+def Ent.segdir(+es: List<&2, Ent>, +p: Nat, +q: Nat) -> VE:
+  Seg.dir(Seg{pt(es, p), pt(es, q)})
+
+def Ent.sides(+es: List<&2, Ent>, e: Ent) -> List<&2, Side>:
   match e:
+    case Ent{id, cst, GSeg{+p, +q}}:
+      [Gt0{VE.norm2(Ent.segdir(es, p, q))}]
     case Ent{id, cst, GCirc{c, r}}:
       [Gt0{var(r)}]
     case Ent{id, cst, GArc{s, f, b}}:
@@ -494,8 +502,10 @@ def Ent.sides(e: Ent) -> List<&2, Side>:
     case _:
       []
 
-def Ent.means(~F: O.OField, +env: List<&2, O.C(F)>, e: Ent) -> Type:
+def Ent.means(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, Ent>, e: Ent) -> Type:
   match e:
+    case Ent{id, cst, GSeg{+p, +q}}:
+      O.lt(F, O.zero(F), O.eval(~F, env, VE.norm2(Ent.segdir(es, p, q))))
     case Ent{id, cst, GCirc{c, r}}:
       O.lt(F, O.zero(F), O.lookup(~F, env, r))
     case Ent{id, cst, GArc{s, f, b}}:
@@ -503,11 +513,19 @@ def Ent.means(~F: O.OField, +env: List<&2, O.C(F)>, e: Ent) -> Type:
     case _:
       Unit
 
-# a segment's ends, a circle's center and an arc's ends are point entities
+# two points are not the same two variables
+def Pt.apart(a: Pt, +b: Pt) -> Bool:
+  match a:
+    case Pt{x, y}:
+      Bool.not(Bool.and(Nat.is_eq(x, Pt.x(b)), Nat.is_eq(y, Pt.y(b))))
+
+# a segment's ends, a circle's center and an arc's ends are point entities,
+# and a segment's two ends are not one point's variables (so it is not
+# identically a point)
 def Ent.wf_refs(+es: List<&2, Ent>, e: Ent) -> Type:
   match e:
-    case Ent{id, cst, GSeg{p, q}}:
-      IsPt(es, p) & IsPt(es, q)
+    case Ent{id, cst, GSeg{+p, +q}}:
+      IsPt(es, p) & (IsPt(es, q) & {Pt.apart(pt(es, p), pt(es, q)) == True{} : Bool})
     case Ent{id, cst, GCirc{c, r}}:
       IsPt(es, c)
     case Ent{id, cst, GArc{s, f, b}}:
@@ -543,8 +561,8 @@ def Sides(~F: O.OField, +env: List<&2, O.C(F)>, xs: List<&2, Side>) -> Data:
 def Constraint.holds(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, Ent>, +k: Constraint) -> Type:
   Zeros(~F, env, Constraint.eqs(es, k)) & Sides(~F, env, Constraint.sides(es, k))
 
-def Ent.holds(~F: O.OField, +env: List<&2, O.C(F)>, e: Ent) -> Type:
-  Sides(~F, env, Ent.sides(e))
+def Ent.holds(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, Ent>, e: Ent) -> Type:
+  Sides(~F, env, Ent.sides(es, e))
 
 # The sketch's exact system
 # -------------------------
@@ -575,12 +593,16 @@ def Sketch.eqs.go(+es: List<&2, Ent>, cs: List<&2, Rec>) -> List<&2, E.QExpr>:
     case Con{Rec{id, False{}, k}, t}:
       cat(Constraint.eqs(es, k), Sketch.eqs.go(es, t))
 
-def Sketch.sides.ents(es: List<&2, Ent>) -> List<&2, Side>:
-  match es:
+# the side conditions of the entities xs, among es
+def Sketch.sides.ents.go(+es: List<&2, Ent>, xs: List<&2, Ent>) -> List<&2, Side>:
+  match xs:
     case Nil{}:
       []
     case Con{e, t}:
-      cats(Ent.sides(e), Sketch.sides.ents(t))
+      cats(Ent.sides(es, e), Sketch.sides.ents.go(es, t))
+
+def Sketch.sides.ents(+es: List<&2, Ent>) -> List<&2, Side>:
+  Sketch.sides.ents.go(es, es)
 
 def Sketch.sides.cons(+es: List<&2, Ent>, cs: List<&2, Rec>) -> List<&2, Side>:
   match cs:
@@ -625,12 +647,15 @@ def Sketch.wf(sk: Sketch) -> Type:
 def Sketch.holds(~F: O.OField, +env: List<&2, O.C(F)>, +sk: Sketch) -> Type:
   Zeros(~F, env, Sketch.eqs(sk)) & Sides(~F, env, Sketch.sides(sk))
 
-def Sketch.means.ents(~F: O.OField, +env: List<&2, O.C(F)>, es: List<&2, Ent>) -> Type:
-  match es:
+def Sketch.means.ents.go(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, Ent>, xs: List<&2, Ent>) -> Type:
+  match xs:
     case Nil{}:
       Unit
     case Con{e, t}:
-      Ent.means(~F, env, e) & Sketch.means.ents(~F, env, t)
+      Ent.means(~F, env, es, e) & Sketch.means.ents.go(~F, env, es, t)
+
+def Sketch.means.ents(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, Ent>) -> Type:
+  Sketch.means.ents.go(~F, env, es, es)
 
 def Sketch.means.cons(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, Ent>, cs: List<&2, Rec>) -> Type:
   match cs:
@@ -641,8 +666,8 @@ def Sketch.means.cons(~F: O.OField, +env: List<&2, O.C(F)>, +es: List<&2, Ent>, 
     case Con{Rec{id, False{}, k}, t}:
       Constraint.means(~F, env, es, k) & Sketch.means.cons(~F, env, es, t)
 
-# every circle and arc is proper and every driving constraint means what it
-# says
+# every segment, circle and arc is proper and every driving constraint
+# means what it says
 def Sketch.means(~F: O.OField, +env: List<&2, O.C(F)>, sk: Sketch) -> Type:
   match sk:
     case Sketch{vs, +es, cs}:

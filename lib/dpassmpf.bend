@@ -252,4 +252,4 @@ def one2_kb(+es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: L
   -> {DPS.pkb(PA.PO.st(DPS.one2(es, own, sk, adj, f, c, st, cls, W, foA))) == kbn(SV.is_red(PA.PO.k(DPS.one2(es, own, sk, adj, f, c, st, cls, W, foA))), DPS.pkb(st), c) : List<&2, Nat>}:
   match st:
     case PA.PS{+kb, +rows, +B, +bp, +vm}:
-      one2c_kb(DCF.refutable2.o(sk, c, kb, DC.FO.o(foA)), es, own, sk, adj, f, c, kb, rows, B, bp, vm, cls, SV.eqs_of(sk, Con{c, kb}), W)
+      one2c_kb(DCF.refutable2.o(sk, c, kb, DC.FO.o(foA)), es, own, sk, adj, f, c, kb, rows, B, bp, vm, cls, Nil{}, W)

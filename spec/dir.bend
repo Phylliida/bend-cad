@@ -13,18 +13,19 @@
 # - par(a, x): the form x is parallel to node a's direction, i.e.
 #   cross(z_a, x) vanishes.
 # Each holds wherever the facts hold and the segments of its nd have
-# nonzero length (Q15: a collapsed segment satisfies every direction
-# relation, so the nondegeneracy is stated, never assumed). The rules
+# nonzero length (a collapsed segment would satisfy every direction
+# relation). A sketch's segments have nonzero length wherever it holds
+# (spec/sketch.bend, Q15 as revised), so in a sketch nd always holds; it
+# goes in PLAN-sk13b B8c's stage 2. The rules
 # (PLAN-sk13b.md, "The calculus") are the constructors of Der; each is a
 # polynomial identity with polynomial multipliers, proven once
 # (PLAN-sk13b B1). A derivation is data; Valid says it follows the rules,
 # and concl and nd read off what it proves and what it needs.
 #
-# The context (the span of the equations of the constraint judged and its
-# premises) decides which segments are collapsed. A collapsed segment is
-# never passed through, and complex line is never applied at one: what
-# that would give fails at every solution, and would turn later
-# constraints red for nothing.
+# The context decides which segments are collapsed: a collapsed segment is
+# never passed through, and complex line is never applied at one. Since a
+# segment has nonzero length, spec/solve.bend's context is empty (ctx), so
+# none is; it goes in PLAN-sk13b B8c's stage 2.
 
 import Base
 import ./num.bend as S

@@ -104,7 +104,7 @@ def df_ag(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +R1: List<&2, Nat>, +cls2: 
   {==}
 
 def cx_ag(+sk: SK.Sketch, +R1: List<&2, Nat>, +R2: List<&2, Nat>, +c: Nat, +hkb: {SV.kept_before(sk, R1, c) == SV.kept_before(sk, R2, c) : List<&2, Nat>}) -> {SV.ctx(sk, R1, c) == SV.ctx(sk, R2, c) : List<&2, E.QExpr>}:
-  Equal.cong(List<&2, Nat>, List<&2, E.QExpr>, kb => SV.eqs_of(sk, Con{c, kb}), SV.kept_before(sk, R1, c), SV.kept_before(sk, R2, c), hkb)
+  {==}
 
 def ddn.v(+sk: SK.Sketch, +cls1: List<&2, SV.Class>, +R1: List<&2, Nat>, +cls2: List<&2, SV.Class>, +R2: List<&2, Nat>, +c: Nat, +d1: List<&2, Nat>, +d2: List<&2, Nat>, +j: Nat, +hkb: {SV.kept_before(sk, R1, c) == SV.kept_before(sk, R2, c) : List<&2, Nat>}, +hor: {SV.own_rest(sk, c, d1, j) == SV.own_rest(sk, c, d2, j) : List<&2, E.QExpr>}, +nd: List<&2, Nat>, +dv: DR.Der, r: DR.Valid(SV.ents(sk), SV.dfacts(sk, cls1, R1, c, d1, j), SV.ctx(sk, R1, c), dv) & (SV.Proves(SV.ents(sk), SV.dstat_of(SV.ents(sk), SV.kind_at(sk, c)), SV.eqat(SK.Sketch.eqs(sk), j), DR.concl(SV.ents(sk), SV.dfacts(sk, cls1, R1, c, d1, j), dv)) & {SV.sub(DR.nd(SV.ents(sk), SV.dfacts(sk, cls1, R1, c, d1, j), dv), nd) == True{} : Bool}),
   hn: SV.NotDirDerivable(sk, cls2, R2, c, d2, j)) -> Empty:

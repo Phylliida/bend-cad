@@ -269,7 +269,7 @@ def walk2(rs: List<&2, SK.Rec>, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk
     case Con{SK.Rec{id, True{}, k}, t}:
       pw.cons(SV.Kept{Nil{}}, walk2(t, es, own, sk, adj, f, 1n+i, st, DPS.csnoc(cls, SV.Kept{Nil{}}), W))
     case Con{SK.Rec{id, False{}, k}, t}:
-      +Wc = DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, DPS.pkb(st)}), DC.SP{Nil{}, Nil{}}), W)
+      +Wc = DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(Nil{}, DC.SP{Nil{}, Nil{}}), W)
       +foA = DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, DPS.pkb(st)}), DCF.tv(sk), Wc)
       +o = DPS.one2(es, own, sk, adj, f, i, st, cls, Wc, foA)
       pw.cons(PA.PO.k(o), walk2(t, es, own, sk, adj, f, 1n+i, PA.PO.st(o), DPS.csnoc(cls, PA.PO.k(o)), DPS.wnext(SV.is_red(PA.PO.k(o)), Wc, DC.wk.next(foA, SV.rfacts(sk, Con{i, DPS.pkb(st)}), Wc))))

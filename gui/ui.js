@@ -233,19 +233,6 @@ function refList(ids, num) {
   return ids.map(id => "#" + num.get(id)).filter(r => r !== "#undefined").join(", ");
 }
 
-// segment names joined by a word: "L3", "L3 or L5", "L3, L5 or L7"
-function segList(ids, word) {
-  const ns = ids.map(entName);
-  return ns.length < 2 ? ns.join("") : ns.slice(0, -1).join(", ") + " " + word + " " + ns[ns.length - 1];
-}
-
-// the segments a judgment assumes have nonzero length, "where L3 has
-// nonzero length" ("" for none)
-function whereLong(st) {
-  if (!st.nd || !st.nd.length) return "";
-  return ` where ${segList(st.nd, "and")} ${st.nd.length > 1 ? "have" : "has"} nonzero length`;
-}
-
 // what a conflict's constraints had rounded when sent: an Angle's
 // rotation (not a multiple of 90 degrees), and with "Dimensions as
 // dyadics" a value or fixed coordinate that is not a multiple of 2^-40
@@ -280,14 +267,13 @@ function statusText(con, num) {
   const refs = refList(st.with, num);
   switch (st.k) {
     case "conflict": {
-      const unless = st.nd && st.nd.length ? ` unless ${segList(st.nd, "or")} has length 0` : "";
       const r = roundedText(rounded(con, st));
-      if (!st.with.length) return "cannot hold" + unless + r;
-      return (S.cert.ok ? "conflicts with " : "cannot all hold with ") + refs + (unless ? "," + unless : "") + r;
+      if (!st.with.length) return "cannot hold" + r;
+      return (S.cert.ok ? "conflicts with " : "cannot all hold with ") + refs + r;
     }
     case "over": return "over-determined" + (refs ? " with " + refs : "");
-    case "amber": return "redundant" + whereLong(st) + (S.cert.ok ? ", holds anyway" : "");
-    case "partly": return "partly implied by earlier ones" + whereLong(st);
+    case "amber": return "redundant" + (S.cert.ok ? ", holds anyway" : "");
+    case "partly": return "partly implied by earlier ones";
     default: return "";
   }
 }
@@ -295,20 +281,17 @@ function statusText(con, num) {
 function statusTitle(con, num) {
   const st = S.cert.status.get(con.id);
   if (!st || S.cert.ok === null) return "";
-  const nd = st.nd && st.nd.length ? st.nd : [];
-  const have = nd.length > 1 ? "have" : "has";
-  // what its dropped equations follow from, and what that assumes
+  // what its dropped equations follow from
   const from = st.from && st.from.length ? ` (${refList(st.from, num)}${st.dir ? ", by directions" : ""})` : st.dir ? " (by directions)" : "";
-  const assumes = nd.length ? `. This assumes ${segList(nd, "and")} ${have} nonzero length (where a segment is a point, every direction holds)` + (S.cert.ok ? ", and in the certified drawing " + (nd.length > 1 ? "they do" : "it does") : "") : "";
   switch (st.k) {
     case "conflict":
-      return "Red: it cannot hold together with the constraints listed" +
-        (nd.length ? `, wherever ${segList(nd, "and")} ${have} nonzero length (where a segment is a point, every direction holds)` : "") +
-        ", and the solver leaves it out. Without any one of them the solver finds no conflict (a constant combination, or one by directions); the rest may still be impossible for a reason it does not look for" +
+      return "Red: it cannot hold together with the constraints listed, and the solver leaves it out. " +
+        "Without any one of them the solver finds no conflict (a constant combination, or one by directions); the rest may still be impossible for a reason it does not look for. " +
+        "A segment always has nonzero length, so constraints that would make one a point conflict too" +
         roundedTitle(rounded(con, st));
     case "over": return "Red: with earlier constraints it fixes more than the variables it uses can carry, so the solver leaves it out";
-    case "amber": return "Redundant: every equation follows from earlier constraints" + from + " and every side condition is implied; the solver drops it" + (S.cert.ok ? ", and it holds in the certified drawing" : "") + assumes;
-    case "partly": return "Kept: some of its equations follow from earlier constraints" + from + " and are dropped from the system solved" + assumes;
+    case "amber": return "Redundant: every equation follows from earlier constraints" + from + " and every side condition is implied; the solver drops it" + (S.cert.ok ? ", and it holds in the certified drawing" : "");
+    case "partly": return "Kept: some of its equations follow from earlier constraints" + from + " and are dropped from the system solved";
     default: return "";
   }
 }

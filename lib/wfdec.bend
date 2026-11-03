@@ -1,7 +1,8 @@
 # bend-cad: deciding whether a sketch is well formed (DESIGN §10.1, stage
 # 1). wf_dec computes a Bool; wf_ok proves that True means Sketch.wf (every
-# reference names an entity of the right kind; merges are equations, D3 as
-# revised, so they ask nothing more), so the solver can certify a sketch
+# reference names an entity of the right kind, and a segment's ends are not
+# one point's variables; merges are equations, D3 as revised, so they ask
+# nothing more), so the solver can certify a sketch
 # only when its laws' hypothesis holds. (The converse, that a well-formed sketch is never
 # refused, belongs with solve_total.)
 
@@ -31,8 +32,8 @@ def ent(+es: List<&2, SK.Ent>, e: SK.Ent) -> Bool:
   match e:
     case SK.Ent{id, cst, SK.GPoint{x, y}}:
       True{}
-    case SK.Ent{id, cst, SK.GSeg{p, q}}:
-      KA.band(ispt(es, p), ispt(es, q))
+    case SK.Ent{id, cst, SK.GSeg{+p, +q}}:
+      KA.band(ispt(es, p), KA.band(ispt(es, q), SK.Pt.apart(SK.pt(es, p), SK.pt(es, q))))
     case SK.Ent{id, cst, SK.GCirc{c, r}}:
       ispt(es, c)
     case SK.Ent{id, cst, SK.GArc{s, f, b}}:
@@ -43,7 +44,8 @@ def ent_ok(+es: List<&2, SK.Ent>, e: SK.Ent, +h: {ent(es, e) == True{} : Bool}) 
     case SK.Ent{id, cst, SK.GPoint{x, y}}:
       Unit{}
     case SK.Ent{id, cst, SK.GSeg{+p, +q}}:
-      (KA.band_l(ispt(es, p), ispt(es, q), h), KA.band_r(ispt(es, p), ispt(es, q), h))
+      +hr = KA.band_r(ispt(es, p), KA.band(ispt(es, q), SK.Pt.apart(SK.pt(es, p), SK.pt(es, q))), h)
+      (KA.band_l(ispt(es, p), KA.band(ispt(es, q), SK.Pt.apart(SK.pt(es, p), SK.pt(es, q))), h), (KA.band_l(ispt(es, q), SK.Pt.apart(SK.pt(es, p), SK.pt(es, q)), hr), KA.band_r(ispt(es, q), SK.Pt.apart(SK.pt(es, p), SK.pt(es, q)), hr)))
     case SK.Ent{id, cst, SK.GCirc{+c, r}}:
       h
     case SK.Ent{id, cst, SK.GArc{+s, +f, b}}:

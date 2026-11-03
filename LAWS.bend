@@ -745,21 +745,23 @@ law means_complete:
 law ent_sound:
   for ~F: O.OField
   for +env: List<&2, O.C(F)>
+  for +es: List<&2, K.Ent>
   for +e: K.Ent
-  for  h: K.Ent.holds(~F, env, e)
-  K.Ent.means(~F, env, e)
+  for  h: K.Ent.holds(~F, env, es, e)
+  K.Ent.means(~F, env, es, e)
 
 # LAW: a proper entity satisfies its side conditions
 law ent_complete:
   for ~F: O.OField
   for +env: List<&2, O.C(F)>
+  for +es: List<&2, K.Ent>
   for +e: K.Ent
-  for  h: K.Ent.means(~F, env, e)
-  K.Ent.holds(~F, env, e)
+  for  h: K.Ent.means(~F, env, es, e)
+  K.Ent.holds(~F, env, es, e)
 
 # LAW: a solution of a well-formed sketch's exact system (F = 0, every side
-# condition positive) is a sketch where every circle and arc is proper and
-# every driving constraint means what it says
+# condition positive) is a sketch where every segment, circle and arc is
+# proper and every driving constraint means what it says
 law sketch_sound:
   for ~F: O.OField
   for +env: List<&2, O.C(F)>
@@ -856,12 +858,12 @@ law box_sides:
 # Sketch.within; a shorter box would silently read the rest as 0): in every
 # complete ordered field, if the sketch is well formed and its side
 # conditions (Sketch.sides) are checked over the box, there is a geometry
-# in the box where every circle and arc is proper and every driving
-# constraint means what it says (sk-07's meaning laws); and in every ordered
-# field only one geometry in the box does (given the radius-0
+# in the box where every segment, circle and arc is proper and every
+# driving constraint means what it says (sk-07's meaning laws); and in
+# every ordered field only one geometry in the box does (given the radius-0
 # coordinates). Both follow from the laws above with sketch_sound and
-# sketch_complete. Degenerate geometry is allowed (sk-03): a segment may
-# collapse, and then parallel, perpendicular and on-line hold of it.
+# sketch_complete. Points may coincide, but a segment has nonzero length
+# (Q15 as revised 2026-11-02).
 
 # LAW: in a complete ordered field the box holds a geometry meaning the sketch
 law sketch_exists:

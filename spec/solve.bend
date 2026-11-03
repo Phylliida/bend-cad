@@ -722,11 +722,33 @@ def csides(sk: SK.Sketch, +cs: List<&2, Nat>) -> List<&2, SK.Side>:
     case SK.Sketch{vs, +es, rs}:
       csides.go(es, rs, cs, 0n)
 
-# every entity's side conditions (a circle's r > 0, an arc's bulge > 0)
+def eside.g(+es: List<&2, SK.Ent>, +id: Nat, +cst: Bool, g: SK.Geo) -> List<&2, SK.Side>:
+  match g:
+    case SK.GSeg{p, q}:
+      Nil{}
+    case SK.GPoint{x, y}:
+      SK.Ent.sides(es, SK.Ent{id, cst, SK.GPoint{x, y}})
+    case SK.GCirc{c, r}:
+      SK.Ent.sides(es, SK.Ent{id, cst, SK.GCirc{c, r}})
+    case SK.GArc{s, f, b}:
+      SK.Ent.sides(es, SK.Ent{id, cst, SK.GArc{s, f, b}})
+
+def esides.go(+es: List<&2, SK.Ent>, xs: List<&2, SK.Ent>) -> List<&2, SK.Side>:
+  match xs:
+    case Nil{}:
+      Nil{}
+    case Con{SK.Ent{id, cst, g}, t}:
+      SK.cats(eside.g(es, id, cst, g), esides.go(es, t))
+
+# the entities' side conditions that refutations read: a circle's r > 0
+# and an arc's bulge > 0 (spec/sketch.bend: Ent.sides). A segment's
+# nonzero length is not among them: the direction layer reads it, as a
+# derived collapse (spec/dir.bend), and at degree 0, with constant
+# multipliers, it could meet only |q - p|^2 itself, a length.
 def esides(sk: SK.Sketch) -> List<&2, SK.Side>:
   match sk:
-    case SK.Sketch{vs, es, rs}:
-      SK.Sketch.sides.ents(es)
+    case SK.Sketch{vs, +es, rs}:
+      esides.go(es, es)
 
 def kept.pick(b: Bool, i: Nat, rest: List<&2, Nat>) -> List<&2, Nat>:
   match b:
@@ -905,8 +927,8 @@ def NotDerivable(+sk: SK.Sketch, +red: List<&2, Nat>, +ds: List<&2, Nat>, +c: Na
 # every equation of the kept constraints before c (dropped ones too, with
 # their drops' nd) and c's own earlier equations not dropped; for a
 # refutation, the equations of the constraints refuted, which hold where
-# those constraints do (nd none). The context, the span of every equation
-# of the premises and of c, decides which segments are collapsed.
+# those constraints do (nd none). The context decides which segments are
+# collapsed; it is empty (ctx), since a segment has nonzero length.
 
 def ents(sk: SK.Sketch) -> List<&2, SK.Ent>:
   match sk:
@@ -1031,9 +1053,12 @@ def ofacts.go(es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +c: Na
 def dfacts(+sk: SK.Sketch, +cls: List<&2, Class>, +red: List<&2, Nat>, +c: Nat, +d: List<&2, Nat>, +i: Nat) -> List<&2, DR.Fact>:
   fcat(facts.go(SK.Sketch.eqs(sk), owners(sk), kept_before(sk, red, c), sk, cls, True{}, 0n), ofacts.go(SK.Sketch.eqs(sk), owners(sk), sk, c, d, i, 0n))
 
-# c's context: every equation of c and of the kept constraints before it
+# c's context, which decides the collapsed segments (spec/dir.bend: never
+# passed through): none. A segment has nonzero length (Q15 as revised
+# 2026-11-02), so no segment is collapsed, and a derived collapse of any
+# segment refutes. The parameter goes in PLAN-sk13b B8c's stage 2.
 def ctx(+sk: SK.Sketch, +red: List<&2, Nat>, +c: Nat) -> List<&2, E.QExpr>:
-  eqs_of(sk, Con{c, kept_before(sk, red, c)})
+  Nil{}
 
 # a derivation's conclusion gives equation e of a constraint with
 # direction statement m: K(e') with e' the same polynomial as e, or

@@ -163,8 +163,9 @@ def gr(+es: List<&2, SK.Ent>, +eid: Nat, +cst: Bool, g: SK.Geo, +h: {WF.ent(es, 
   match g:
     case SK.GPoint{x, y}:
       {==}
-    case SK.GSeg{p, q}:
-      h
+    case SK.GSeg{+p, +q}:
+      +hr = KA.band_r(WF.ispt(es, p), KA.band(WF.ispt(es, q), SK.Pt.apart(SK.pt(es, p), SK.pt(es, q))), h)
+      KA.band_i(WF.ispt(es, p), WF.ispt(es, q), KA.band_l(WF.ispt(es, p), KA.band(WF.ispt(es, q), SK.Pt.apart(SK.pt(es, p), SK.pt(es, q))), h), KA.band_l(WF.ispt(es, q), SK.Pt.apart(SK.pt(es, p), SK.pt(es, q)), hr))
     case SK.GCirc{c, r}:
       h
     case SK.GArc{s, f, b}:

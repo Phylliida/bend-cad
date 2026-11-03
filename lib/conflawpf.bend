@@ -142,7 +142,7 @@ def only_sides.cons(+es: List<&2, SK.Ent>, cs: List<&2, SK.Rec>, +i: Nat, +S: Li
     case Con{SK.Rec{+id, False{}, +kd}, +t}:
       os_go(es, kd, t, i, S, SV.mem(i, S), id, only_sides.cons(es, t, 1n+i, S))
 
-def only_sides(sk: SK.Sketch, +S: List<&2, Nat>) -> {SK.Sketch.sides(SV.only(S, sk)) == SK.cats(SV.esides(sk), SV.csides(sk, S)) : List<&2, SK.Side>}:
+def only_sides(sk: SK.Sketch, +S: List<&2, Nat>) -> {SK.Sketch.sides(SV.only(S, sk)) == SK.cats(SK.Sketch.sides.ents(SV.ents(sk)), SV.csides(sk, S)) : List<&2, SK.Side>}:
   match sk:
     case SK.Sketch{vs, +es, +cs}:
       %Equal.sym(List<&2, SK.Side>, SK.Sketch.sides.cons(es, SV.only.cons(S, cs, 0n)), SV.csides.go(es, cs, S, 0n), only_sides.cons(es, cs, 0n, S)) : {SK.cats(SK.Sketch.sides.ents(es), _) == SK.cats(SK.Sketch.sides.ents(es), SV.csides.go(es, cs, S, 0n)) : List<&2, SK.Side>}
@@ -165,13 +165,26 @@ def cf_r(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +c: Nat, +s: List<&2, Nat>
             case (+k, r):
               VS.refute_at(~F, x, SV.eqs_of(sk, Con{c, s}), SK.cats(SV.csides(sk, Con{c, s}), SV.esides(sk)), SV.Ref{ls, ms, k}, CKP.ref_of(SV.eqs_of(sk, Con{c, s}), SK.cats(SV.csides(sk, Con{c, s}), SV.esides(sk)), ls, ms, k, r), hz, hs)
 
+# the sides of S and the entities hold where those of the sketch less the
+# others do
+def os_sides(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +S: List<&2, Nat>, hs: SK.Sides(~F, x, SK.Sketch.sides(SV.only(S, sk)))) -> SK.Sides(~F, x, SK.cats(SK.Sketch.sides.ents(SV.ents(sk)), SV.csides(sk, S))):
+  %only_sides(sk, S) : SK.Sides(~F, x, _)
+  hs
+
+# the entity side conditions refutations read hold where every entity's do
+def esides_of(~F: O.OField, +x: M.Vec(~F), sk: SK.Sketch, +h: SK.Sides(~F, x, SK.Sketch.sides.ents(SV.ents(sk)))) -> SK.Sides(~F, x, SV.esides(sk)):
+  match sk:
+    case SK.Sketch{vs, +es, rs}:
+      VS.eproj(~F, x, es, es, h)
+
 # x meets c's and s's equations and sides, and the entities'
 def cf_m(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +c: Nat, +s: List<&2, Nat>, hr: &ls: List<&2, S.Q> -> &ms: List<&2, S.Q> -> &k: S.Q -> SV.Refutes0(SV.eqs_of(sk, Con{c, s}), SK.cats(SV.csides(sk, Con{c, s}), SV.esides(sk)), ls, ms, k), h: SK.Sketch.holds(~F, x, SV.only(Con{c, s}, sk))) -> Empty:
   match h:
     case (hz, hs):
+      +ho = os_sides(~F, x, sk, Con{c, s}, hs)
       cf_r(~F, x, sk, c, s, hr, (%only_eqs(sk, Con{c, s}) : SK.Zeros(~F, x, _)
-        hz), sides_swap(~F, x, SV.esides(sk), SV.csides(sk, Con{c, s}), (%only_sides(sk, Con{c, s}) : SK.Sides(~F, x, _)
-        hs)))
+        hz), MN.sides_cat(~F, x, SV.csides(sk, Con{c, s}), SV.esides(sk), MN.sides_r(~F, x, SK.Sketch.sides.ents(SV.ents(sk)), SV.csides(sk, Con{c, s}), ho),
+        esides_of(~F, x, sk, MN.sides_l(~F, x, SK.Sketch.sides.ents(SV.ents(sk)), SV.csides(sk, Con{c, s}), ho))))
 
 # past the last constraint the class is Kept
 def cf_past(cls: List<&2, SV.Class>, c: Nat, h: {SV.lt(c, SV.clsn(cls)) == False{} : Bool}, hc: {SV.is_conflict(SV.class_at(cls, c)) == True{} : Bool}) -> Empty:

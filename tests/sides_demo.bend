@@ -3,8 +3,8 @@
 # certified by the plan checker's check_sides over a box around its
 # rational solution, with K = ℚ: radius 1/1000 on every variable, and
 # radius 0. The law box_sides then makes them hold at every point of the
-# box, in every ordered field. A box in which the aux length of AB, or the
-# circle's radius, may be 0 is refused.
+# box, in every ordered field. A box in which the aux length of AB, the
+# circle's radius, or the length of a segment may be 0 is refused.
 
 import Base
 import ../spec/num.bend as S
@@ -56,4 +56,9 @@ def radius_may_vanish() -> {PL.check_sides(~KI.qnum(), K.Sketch.sides(sk()), SD.
 
 # the aux length within 3 of 4 stays positive
 def wide_but_fine() -> {PL.check_sides(~KI.qnum(), K.Sketch.sides(sk()), SD.good(), rad1(SD.q(1n, 1000n), SD.q(3n, 1n), 12n, 11n)) == True{} : Bool}:
+  {==}
+
+# so may AM (M's x, variable 4, value 2, within 3 of 2: a segment has
+# nonzero length, Q15 as revised)
+def segment_may_vanish() -> {PL.check_sides(~KI.qnum(), K.Sketch.sides(sk()), SD.good(), rad1(SD.q(1n, 1000n), SD.q(3n, 1n), 12n, 4n)) == False{} : Bool}:
   {==}

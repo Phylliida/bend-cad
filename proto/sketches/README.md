@@ -34,15 +34,16 @@ depend on (x - x + y).
 The small sketches from right-angles on are PLAN-sk13b B8's, the
 direction layer's (`b8.mjs`, then `gen.sh`): four right angles (the fourth
 amber); a chain of parallels closed (the last amber); parallel then
-perpendicular (red, unless one of the two has length 0: slowsketches 8 and
-9's #66 and #67 in small); a horizontal, a parallel to it, then that one
-vertical (red); two OnLines and the parallel between them (amber, degree
-0); a Coincident collapsing a segment then a Parallel on it (amber,
-vacuously), and the other order (refused, decision 4); angles of 90, 90
+perpendicular (red: slowsketches 8 and 9's #66 and #67 in small); a
+horizontal, a parallel to it, then that one vertical (red); two OnLines and
+the parallel between them (amber, degree 0); a Coincident collapsing a
+segment, before or after a Parallel on it (the Coincident red: a segment
+has nonzero length, PLAN-sk13b B8c; before that revision the first was
+amber, vacuously, and the second refused); angles of 90, 90
 and 180 closing a cycle (the last kept, its equation dropped) and of 60,
 60 and 240 (the last red: the rotations are rounded to dyadics, and their
 product is not 1); and AUDIT-sk13b-plan.md's sketches A, B (amber) and V
-(red, unless h has length 0).
+(red).
 
 The refusals are today's answers. sk-13 (PLAN-sk13.md) is to make each one
 either amber (implied, holds anyway) or a stated conflict; update

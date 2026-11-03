@@ -35,7 +35,7 @@ sketch("parallels-closed", sk => {
 });
 
 // two segments parallel, then perpendicular (slowsketches 8 and 9's #66
-// and #67 in small): red, unless one of them has length 0
+// and #67 in small): red
 sketch("par-perp", sk => {
   const a = S(sk, P(sk, 0, 0), P(sk, 3, 0.2));
   const b = S(sk, P(sk, 0, 2), P(sk, 3, 2.5));
@@ -64,8 +64,8 @@ sketch("online-par", sk => {
   C(sk, "parallel", [a, b]);
 });
 
-// a Coincident collapsing a segment, then a Parallel on it: implied,
-// vacuously (a point is parallel to everything)
+// a Coincident collapsing a segment, then a Parallel on it: the
+// Coincident is red, since a segment has nonzero length (PLAN-sk13b B8c)
 sketch("collapse-par", sk => {
   const p = P(sk, 0, 0), q = P(sk, 0.1, 0.1);
   const a = S(sk, p, q), b = S(sk, P(sk, 1, 2), P(sk, 4, 3));
@@ -73,9 +73,8 @@ sketch("collapse-par", sk => {
   C(sk, "parallel", [a, b]);
 });
 
-// the same in the other order: the Parallel is kept, then the Coincident
-// makes it hold everywhere, so the system is singular and refused
-// (PLAN-sk13b decision 4)
+// the same in the other order: the Coincident is red here too (before
+// B8c it made the Parallel hold everywhere, and the sketch was refused)
 sketch("par-collapse", sk => {
   const p = P(sk, 0, 0), q = P(sk, 0.1, 0.1);
   const a = S(sk, p, q), b = S(sk, P(sk, 1, 2), P(sk, 4, 3));
@@ -127,8 +126,7 @@ sketch("audit-b", sk => {
   C(sk, "horizontal", [A, Cc]);
 });
 
-// its sketch V: a horizontal h, s parallel to it, then s 3 high: red,
-// unless h has length 0
+// its sketch V: a horizontal h, s parallel to it, then s 3 high: red
 sketch("audit-v", sk => {
   const A = P(sk, 0, 0), B = P(sk, 3, 0.4), D = P(sk, 0, 3), E = P(sk, 3, 3.1);
   const h = S(sk, D, E), s = S(sk, A, B);

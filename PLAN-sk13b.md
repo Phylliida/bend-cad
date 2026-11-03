@@ -1980,6 +1980,20 @@ it. Over irreducibility (OverIrred) stays, and moves here.
   - Regression: collapse-par and par-collapse change (the Coincident is
     red).
   - Page: no nd text.
+  - *As built 2026-11-02:* as planned, with one change.
+    - Degree-0 refutations read only the circles' and arcs' sides
+      (SV.esides).
+    - With every segment's |q - p|^2 > 0 in the simplex, angle-cycle took
+      over 120 s instead of 7 s.
+    - A segment's nonzero length reaches the classification through the
+      derived collapse. At degree 0 it could only meet |q - p|^2 itself, a
+      length.
+    - The demo sketch (tests/sketch_demo.bend) lost its collapsed segment
+      Z, and tests/sides_demo.bend refuses a box where a segment may
+      vanish.
+    - collapse-par and par-collapse: the Coincident is red. Neither
+      certifies, because the page relaxes the drawing toward the red
+      Coincident.
 - **Stage 2.** nd and ctx leave the spec, the laws and the verdict:
   Drop{j, why} and Conflict{s}; solve_drop reads the entity sides; ndok
   goes.

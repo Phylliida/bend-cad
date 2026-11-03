@@ -124,19 +124,20 @@ def one2.c(b: Bool, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch,
       PA.one.w(cwalk2(es, own, c, 0n, PA.CW{rows, B, bp, Nil{}, Nil{}}, sk, SV.facts.go(es, own, kb, sk, cls, True{}, 0n), cx, W), sk, adj, f, c, kb, rows, B, bp, vm)
 
 # the driving constraint at position c, the classes before it cls, from W
-# (at c's context) and foA, the call on c's facts with the kept ones'
+# and foA, the call on c's facts with the kept ones'; c's context is
+# empty (spec/solve.bend: ctx), so no segment is collapsed
 def one2(+es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk: SK.Sketch, +adj: List<&2, List<&2, Nat>>, +f: Nat, +c: Nat, st: PA.PS, +cls: List<&2, SV.Class>, +W: DC.WK, foA: DC.FO) -> PA.PO:
   match st:
     case PA.PS{+kb, +rows, +B, +bp, +vm}:
-      +cx = SV.eqs_of(sk, Con{c, kb})
+      +cx = SV.ctx(sk, SV.reds(cls), c)
       one2.c(DCF.refutable2.o(sk, c, kb, DC.FO.o(foA)), es, own, sk, adj, f, c, kb, rows, B, bp, vm, cls, cx, W)
 
 # The pass
 # --------
 # W is the state kept for the kept constraints' facts so far: at each
-# driving constraint it is taken to c's context (kept if the segments
-# collapse alike there, else the start for no facts), then a fixpoint of
-# c's call is kept when c joins the kept constraints.
+# driving constraint it is taken to c's context, which is empty, so it is
+# always kept; a fixpoint of c's call is kept when c joins the kept
+# constraints.
 
 def csnoc(xs: List<&2, SV.Class>, +y: SV.Class) -> List<&2, SV.Class>:
   match xs:
@@ -165,7 +166,7 @@ def pass2(rs: List<&2, SK.Rec>, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, +sk
     case Con{SK.Rec{id, True{}, k}, t}:
       Con{SV.Kept{Nil{}}, pass2(t, es, own, sk, adj, f, 1n+i, st, csnoc(cls, SV.Kept{Nil{}}), W)}
     case Con{SK.Rec{id, False{}, k}, t}:
-      +Wc = DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, pkb(st)}), DC.SP{Nil{}, Nil{}}), W)
+      +Wc = DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(Nil{}, DC.SP{Nil{}, Nil{}}), W)
       +foA = DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, pkb(st)}), DCF.tv(sk), Wc)
       +o = one2(es, own, sk, adj, f, i, st, cls, Wc, foA)
       Con{PA.PO.k(o), pass2(t, es, own, sk, adj, f, 1n+i, PA.PO.st(o), csnoc(cls, PA.PO.k(o)), wnext(SV.is_red(PA.PO.k(o)), Wc, DC.wk.next(foA, SV.rfacts(sk, Con{i, pkb(st)}), Wc)))}
@@ -183,7 +184,7 @@ def pass2_st(rs: List<&2, SK.Rec>, +es: List<&2, E.QExpr>, +own: List<&2, Nat>, 
     case Con{SK.Rec{id, True{}, k}, t}:
       pass2_st(t, es, own, sk, adj, f, 1n+i, st, csnoc(cls, SV.Kept{Nil{}}), W)
     case Con{SK.Rec{id, False{}, k}, t}:
-      +Wc = DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(SV.eqs_of(sk, Con{i, pkb(st)}), DC.SP{Nil{}, Nil{}}), W)
+      +Wc = DC.wk.at(SV.ents(sk), DCF.tv(sk), DC.sp.of(Nil{}, DC.SP{Nil{}, Nil{}}), W)
       +foA = DC.wcall(SV.ents(sk), SV.rfacts(sk, Con{i, pkb(st)}), DCF.tv(sk), Wc)
       +o = one2(es, own, sk, adj, f, i, st, cls, Wc, foA)
       pass2_st(t, es, own, sk, adj, f, 1n+i, PA.PO.st(o), csnoc(cls, PA.PO.k(o)), wnext(SV.is_red(PA.PO.k(o)), Wc, DC.wk.next(foA, SV.rfacts(sk, Con{i, pkb(st)}), Wc)))

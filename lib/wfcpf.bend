@@ -28,7 +28,7 @@ def ent_dec(+es: List<&2, SK.Ent>, e: SK.Ent, h: SK.Ent.wf_refs(es, e)) -> {WF.e
     case SK.Ent{id, cst, SK.GPoint{x, y}}:
       {==}
     case SK.Ent{id, cst, SK.GSeg{+p, +q}}:
-      kpair(WF.ispt(es, p), WF.ispt(es, q), h)
+      ktriple(WF.ispt(es, p), WF.ispt(es, q), SK.Pt.apart(SK.pt(es, p), SK.pt(es, q)), h)
     case SK.Ent{id, cst, SK.GCirc{+c, r}}:
       h
     case SK.Ent{id, cst, SK.GArc{+s, +f, b}}:

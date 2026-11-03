@@ -16,7 +16,11 @@
 # certified: in h-par-v the page's drawing keeps the red Vertical (a merge,
 # so the drawing has it), and the Parallel cannot be solved for with the
 # pins chosen; in audit-v the relaxation pulls toward the red VDistance.
-# par-collapse stays refused (PLAN-sk13b decision 4).
+# Since Q15's revision (PLAN-sk13b B8c) a segment has nonzero length, so in
+# collapse-par and par-collapse the Coincident that collapses a segment is
+# red, with no support (before: the Parallel amber, and refused). Neither
+# certifies, for the same reason as audit-v: the page relaxed the drawing
+# toward the red Coincident, so the segment is a point there.
 zeros                  20  ok True; red; pins 0 1 2 3 4 5 6 7 8 9 10; cls K K K K K K K K K K K K K K K K K
 base                   20  ok True; red; pins 0 1 2; cls K K K K K K K K K K K K K K K
 oncircle-thrice        20  ok True; red; pins 0 1 2; cls K K K K K K K K K K K K K K K
@@ -43,8 +47,8 @@ parallels-closed       20  ok True; red; pins 0 1 2 3 4 5 6 7 8 9; cls K K A/2:2
 par-perp               20  ok True; red 1; pins 0 1 2 3 4 5 6; cls K C/0/5,2
 h-par-v                20  ok False; red 2; pins 0 1 2 3 4 6; cls K K C/0,1/5,4
 online-par             20  ok True; red; pins 0 1 2 3 4 6; cls K K A/2
-collapse-par           20  ok True; red; pins 0 1 2 3 4 5; cls K A/2
-par-collapse           20  ok False; red; pins 0 1 2 3 4; cls K K
+collapse-par           20  ok False; red 0; pins 0 1 2 3 4 5 6; cls C//2 K
+par-collapse           20  ok False; red 1; pins 0 1 2 3 4 5 6; cls K C//2
 angle-cycle            30  ok True; red; pins 0 1 2 3 4 5 6 7 8 9; cls K K K/2:2:8:5
 angle-rounded          30  ok True; red 2; pins 0 1 2 3 4 5 6 7 8 9; cls K K C/0,1
 audit-a                20  ok True; red; pins 0 1 2 3 4 5 6 7; cls K K A/2:5:6

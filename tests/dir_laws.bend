@@ -194,8 +194,9 @@ def t_nd() -> {DR.nd(es(), fs(), dre()) == [10n] : List<&2, Nat>}:
 def t_refnd() -> {DR.ref.nd(es(), fs(), DR.RColl{dre(), dim(), 11n}) == [11n, 10n, 10n] : List<&2, Nat>}:
   {==}
 
-# the context of #1: both equations
-def t_ctx() -> {SS.ctx(sk(), Nil{}, 1n) == [SK.VE.cross(DR.zseg(es(), 10n), DR.zseg(es(), 11n)), SK.VE.dot(DR.zseg(es(), 10n), DR.zseg(es(), 11n))] : List<&2, E.QExpr>}:
+# the context of #1: empty (a segment has nonzero length, so none is
+# collapsed; PLAN-sk13b B8c)
+def t_ctx() -> {SS.ctx(sk(), Nil{}, 1n) == Nil{} : List<&2, E.QExpr>}:
   {==}
 
 # an Angle with constant rotation is a statement; one with a variable is

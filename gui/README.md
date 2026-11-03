@@ -49,10 +49,10 @@ made of it:
   (degree 0 or by directions; the rest may still be impossible for a
   reason it does not look for, lengths for example). On a refusal it reads **cannot all hold with #a, #b**; with no support
   at all, **cannot hold** (a negative length, for example). The solver
-  leaves it out and certifies the rest. A conflict among directions adds
-  **unless L3 or L5 has length 0**: a segment that is a point is parallel
-  to everything, so the conflict holds only where those segments are not
-  points.
+  leaves it out and certifies the rest. A segment always has nonzero
+  length, so a constraint that would make one a point is a conflict too
+  (a Coincident on a segment's two ends, or a Horizontal and a Vertical on
+  the same segment).
 - **over-determined** (red): with the earlier constraints named it fixes
   more than the variables it uses can carry.
 - **redundant** (amber): every equation follows from earlier constraints
@@ -60,10 +60,6 @@ made of it:
   the sketch certifies it **holds anyway**. An exact repeat is redundant.
 - **partly implied by earlier ones**: kept, with some of its equations
   dropped because earlier constraints give them.
-- Either adds **where L3 has nonzero length** when an equation follows by
-  directions only where those segments are not points. When the sketch
-  certifies, the certified drawing has them nonzero (the verdict checks
-  it).
 
 Hover a constraint for the longer reading: for a dropped equation, the
 constraints it follows from, and whether it follows by directions.
@@ -102,13 +98,12 @@ Both are in solve_complete's hypotheses and stated in DESIGN.md.
 Redundancy and conflicts are found exactly for consequences that are
 constant combinations of the equations (degree 0), and since sk-13b for
 those among directions (Parallel, Perpendicular, an Angle with a constant
-rotation, OnLine, and the horizontals and verticals they reach), each with
-the segments it needs to have nonzero length. A direction made vertical
-twice through a chain of perpendiculars and parallels (proto/sketches:
-vertical-twice) is now amber. One order is still refused: a Parallel on a
-segment that a later Coincident collapses (the Parallel then holds
-everywhere, and the system is singular; drawn the other way round, the
-Parallel is amber).
+rotation, OnLine, and the horizontals and verticals they reach). A
+direction made vertical twice through a chain of perpendiculars and
+parallels (proto/sketches: vertical-twice) is now amber. Since Q15's
+revision (2026-11-02) a segment has nonzero length, so a constraint that
+would collapse one is red, in either order (proto/sketches: par-collapse,
+collapse-par).
 
 ## Files
 

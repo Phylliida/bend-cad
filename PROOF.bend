@@ -324,11 +324,11 @@ def Laws.means_sound(F, env, es, k, w, h):
 def Laws.means_complete(F, env, es, k, h):
   MN.means_complete(~F, env, es, k, h)
 
-def Laws.ent_sound(F, env, e, h):
-  MN.ent_sound(~F, env, e, h)
+def Laws.ent_sound(F, env, es, e, h):
+  MN.ent_sound(~F, env, es, e, h)
 
-def Laws.ent_complete(F, env, e, h):
-  MN.ent_complete(~F, env, e, h)
+def Laws.ent_complete(F, env, es, e, h):
+  MN.ent_complete(~F, env, es, e, h)
 
 def Laws.sketch_sound(F, env, sk, w, h):
   MN.sketch_sound(~F, env, sk, w, h)

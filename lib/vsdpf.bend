@@ -539,6 +539,29 @@ def zof.c(~F: O.OField, +x: M.Vec(~F), +ES: List<&2, E.QExpr>, +own: List<&2, Na
     case False{}:
       ih
 
+# the side conditions an entity gives refutations (spec/solve.bend:
+# eside.g, all but a segment's) hold where all of its side conditions do
+def ehead(~F: O.OField, +x: M.Vec(~F), +es: List<&2, SK.Ent>, +id: Nat, +cst: Bool, g: SK.Geo, h: SK.Sides(~F, x, SK.Ent.sides(es, SK.Ent{id, cst, g}))) -> SK.Sides(~F, x, SV.eside.g(es, id, cst, g)):
+  match g:
+    case SK.GSeg{p, q}:
+      Unit{}
+    case SK.GPoint{px, py}:
+      h
+    case SK.GCirc{c, r}:
+      h
+    case SK.GArc{a, f, b}:
+      h
+
+# so do the entity side conditions refutations read, entity by entity
+def eproj(~F: O.OField, +x: M.Vec(~F), +es: List<&2, SK.Ent>, xs: List<&2, SK.Ent>, +h: SK.Sides(~F, x, SK.Sketch.sides.ents.go(es, xs))) -> SK.Sides(~F, x, SV.esides.go(es, xs)):
+  match xs:
+    case Nil{}:
+      Unit{}
+    case Con{SK.Ent{+id, +cst, +g}, +t}:
+      sides_join(~F, x, SV.eside.g(es, id, cst, g), SV.esides.go(es, t),
+        ehead(~F, x, es, id, cst, g, sides_l(~F, x, SK.Ent.sides(es, SK.Ent{id, cst, g}), SK.Sketch.sides.ents.go(es, t), h)),
+        eproj(~F, x, es, t, sides_r(~F, x, SK.Ent.sides(es, SK.Ent{id, cst, g}), SK.Sketch.sides.ents.go(es, t), h)))
+
 # the equations of constraints cs, none red: each is 0
 def zof.go(~F: O.OField, +x: M.Vec(~F), +ES: List<&2, E.QExpr>, +own: List<&2, Nat>, +R: List<&2, Nat>, +cls: List<&2, SV.Class>, +hz: SK.Zeros(~F, x, SV.solved.go(ES, own, R, SV.dropped(cls), 0n)), +hd: {DK.dck(ES, own, R, SV.dropped(cls), cls) == True{} : Bool}, ys: List<&2, E.QExpr>, +cs: List<&2, Nat>, +hn: {SV.none_in(cs, R) == True{} : Bool}, +k: Nat, +hq: {OW.qdrop(k, ES) == ys : List<&2, E.QExpr>}) -> SK.Zeros(~F, x, SV.eqs_of.go(ys, own, cs, k)):
   match ys:
@@ -558,7 +581,7 @@ def pre_z(~F: O.OField, +x: M.Vec(~F), +vs: List<&2, SK.VKind>, +es: List<&2, SK
 def amb_sides(~F: O.OField, +x: M.Vec(~F), +vs: List<&2, SK.VKind>, +es: List<&2, SK.Ent>, +rs: List<&2, SK.Rec>, +cls: List<&2, SV.Class>, +hz: SK.Zeros(~F, x, SV.solved.go(SK.Sketch.eqs(SK.Sketch{vs, es, rs}), SV.owners(SK.Sketch{vs, es, rs}), SV.reds(cls), SV.dropped(cls), 0n)), +hd: {DK.dck(SK.Sketch.eqs(SK.Sketch{vs, es, rs}), SV.owners(SK.Sketch{vs, es, rs}), SV.reds(cls), SV.dropped(cls), cls) == True{} : Bool}, +ha: {VD.ack(SK.Sketch{vs, es, rs}, SV.reds(cls), cls, 0n) == True{} : Bool}, +hen: SK.Sides(~F, x, SK.Sketch.sides.ents(es)), +i: Nat, +hb: {SV.mem(i, SV.ambers(cls)) == True{} : Bool}, +hS: SK.Sides(~F, x, SV.csides(SK.Sketch{vs, es, rs}, SV.kept_before(SK.Sketch{vs, es, rs}, SV.reds(cls), i))), +hK: KB.KBP(SK.Sketch{vs, es, rs}, SV.reds(cls), SV.kept_before(SK.Sketch{vs, es, rs}, SV.reds(cls), i), i)) -> SK.Sides(~F, x, SV.csides(SK.Sketch{vs, es, rs}, [i])):
   am.c(~F, x, SK.Sketch{vs, es, rs}, SV.reds(cls), i, SV.class_at(cls, i),
     Equal.trans(Bool, SV.is_amber(SV.class_at(cls, i)), SV.mem(i, SV.ambers(cls)), True{}, Equal.sym(Bool, SV.mem(i, SV.ambers(cls)), SV.is_amber(SV.class_at(cls, i)), mem_ambers(cls, i)), hb),
-    ack_at(SK.Sketch{vs, es, rs}, SV.reds(cls), cls, i, ha), pre_z(~F, x, vs, es, rs, cls, hz, hd, ha, hen, i, hK), sides_join(~F, x, SV.csides(SK.Sketch{vs, es, rs}, SV.kept_before(SK.Sketch{vs, es, rs}, SV.reds(cls), i)), SK.Sketch.sides.ents(es), hS, hen))
+    ack_at(SK.Sketch{vs, es, rs}, SV.reds(cls), cls, i, ha), pre_z(~F, x, vs, es, rs, cls, hz, hd, ha, hen, i, hK), sides_join(~F, x, SV.csides(SK.Sketch{vs, es, rs}, SV.kept_before(SK.Sketch{vs, es, rs}, SV.reds(cls), i)), SV.esides.go(es, es), hS, eproj(~F, x, es, es, hen)))
 
 def sm.a(~F: O.OField, +x: M.Vec(~F), +vs: List<&2, SK.VKind>, +es: List<&2, SK.Ent>, +rs: List<&2, SK.Rec>, +cls: List<&2, SV.Class>, +hz: SK.Zeros(~F, x, SV.solved.go(SK.Sketch.eqs(SK.Sketch{vs, es, rs}), SV.owners(SK.Sketch{vs, es, rs}), SV.reds(cls), SV.dropped(cls), 0n)), +hd: {DK.dck(SK.Sketch.eqs(SK.Sketch{vs, es, rs}), SV.owners(SK.Sketch{vs, es, rs}), SV.reds(cls), SV.dropped(cls), cls) == True{} : Bool}, +ha: {VD.ack(SK.Sketch{vs, es, rs}, SV.reds(cls), cls, 0n) == True{} : Bool}, +hen: SK.Sides(~F, x, SK.Sketch.sides.ents(es)), +i: Nat, +id: Nat, +k: SK.Constraint, +t: List<&2, SK.Rec>, +hrd: {KB.rdrop(i, rs) == Con{SK.Rec{id, False{}, k}, t} : List<&2, SK.Rec>}, +ea: {SV.mem(i, SV.reds(cls)) == False{} : Bool}, b: Bool, eb: {SV.mem(i, SV.ambers(cls)) == b : Bool},
   hck: SK.Sides(~F, x, SK.Sketch.sides.cons(es, Con{SK.Rec{id, b, k}, SV.mark.cons(SV.cat(SV.reds(cls), SV.ambers(cls)), t, 1n+i)})), +hS: SK.Sides(~F, x, SV.csides(SK.Sketch{vs, es, rs}, SV.kept_before(SK.Sketch{vs, es, rs}, SV.reds(cls), i))), +hK: KB.KBP(SK.Sketch{vs, es, rs}, SV.reds(cls), SV.kept_before(SK.Sketch{vs, es, rs}, SV.reds(cls), i), i), ih: SK.Sides(~F, x, SK.Sketch.sides.cons(es, SV.mark.cons(SV.cat(SV.reds(cls), SV.ambers(cls)), t, 1n+i))) -> SK.Sides(~F, x, SV.csides(SK.Sketch{vs, es, rs}, SV.kept_before(SK.Sketch{vs, es, rs}, SV.reds(cls), 1n+i))) -> KB.KBP(SK.Sketch{vs, es, rs}, SV.reds(cls), SV.kept_before(SK.Sketch{vs, es, rs}, SV.reds(cls), 1n+i), 1n+i) -> SK.Sides(~F, x, SK.Sketch.sides.cons(es, SV.mark.cons(SV.reds(cls), t, 1n+i))))

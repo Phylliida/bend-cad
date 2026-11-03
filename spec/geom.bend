@@ -6,9 +6,11 @@
 # parallel, a mirror image has its midpoint on the mirror and its offset
 # perpendicular to it.
 #
-# Geometry may degenerate: a segment can collapse to a point. A relation
-# that needs a direction then holds vacuously (a zero vector is parallel to
-# every vector), exactly as its equation does. The y axis points up, so
+# A relation that needs a direction holds vacuously of a zero vector (a
+# zero vector is parallel to every vector), exactly as its equation does.
+# A segment's direction is never zero (spec/sketch.bend: a segment has
+# nonzero length, Q15 as revised 2026-11-02), but other vectors may be,
+# such as a point's offset from a line. The y axis points up, so
 # positive orientation is counterclockwise.
 
 import Base

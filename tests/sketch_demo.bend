@@ -2,8 +2,9 @@
 # rational solution. A 4 × 3 rectangle ABDC with A fixed at the origin, the
 # midpoint M of AB (B lies on the line A → M), a fixed point P and its mirror
 # Q in AC, a circle about A through E = (3, 4), D at distance 3 left of the
-# line A → B, the angle from AB to AE, a segment Z collapsed onto A, and
-# zero distances (A to itself, A to C horizontally, B to the line AB).
+# line A → B, the angle from AB to AE, and zero distances (A to itself, A
+# to C horizontally, B to the line AB). (Until Q15's revision, 2026-11-02, it
+# also had a segment Z collapsed onto A; a segment now has nonzero length.)
 # The checker computes everything below ({==}).
 
 import Base
@@ -32,12 +33,12 @@ def sg(id: Nat, p: Nat, q: Nat) -> K.Ent:
 # The merged points share variables here, which a sketch may still do: the
 # merges' equations then read x - x = 0 and hold.
 # Points 0 A, 1 B, 2 C, 3 D, 4 M, 5 P, 6 Q, 7 E; segments 10 AB, 11 CD,
-# 12 AC, 13 AE, 14 AM, 15 Z = AA; circle 20 about A.
+# 12 AC, 13 AE, 14 AM; circle 20 about A.
 def ents() -> List<&2, K.Ent>:
   [pt(0n, 0n, 1n), pt(1n, 2n, 1n), pt(2n, 0n, 3n), pt(3n, 2n, 3n),
    pt(4n, 4n, 1n), pt(5n, 5n, 6n), pt(6n, 7n, 6n), pt(7n, 8n, 9n),
    sg(10n, 0n, 1n), sg(11n, 2n, 3n), sg(12n, 0n, 2n), sg(13n, 0n, 7n),
-   sg(14n, 0n, 4n), sg(15n, 0n, 0n),
+   sg(14n, 0n, 4n),
    K.Ent{20n, False{}, K.GCirc{0n, 10n}}]
 
 def cons() -> List<&2, K.Constraint>:
@@ -52,7 +53,6 @@ def cons() -> List<&2, K.Constraint>:
    K.Distance{0n, 7n, c(5n)},
    K.LineDistance{3n, 10n, False{}, c(3n), 11n},
    K.Angle{10n, False{}, 13n, False{}, E.QCst{q(3n, 5n)}, E.QCst{q(4n, 5n)}},
-   K.Parallel{10n, 15n}, K.Perpendicular{15n, 12n}, K.OnLine{5n, 15n},
    K.Distance{0n, 0n, c(0n)}, K.HDistance{0n, 2n, c(0n)},
    K.LineDistance{1n, 10n, False{}, c(0n), 11n}]
 

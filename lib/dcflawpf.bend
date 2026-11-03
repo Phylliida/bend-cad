@@ -474,8 +474,9 @@ def ad_cs(+sk: SK.Sketch, +c: Nat, +s: List<&2, Nat>, +hlt: {SV.lt(c, SV.ncons(s
 def cl_dir(~F: O.OField, +x: M.Vec(~F), +sk: SK.Sketch, +c: Nat, +s: List<&2, Nat>, +cx: List<&2, E.QExpr>, +nd: List<&2, Nat>, h: SV.DirRefutes(sk, c, s, cx, nd), +had: {SV.all_driving(sk, Con{c, s}) == True{} : Bool}, m: SK.Sketch.holds(~F, x, SV.only(Con{c, s}, sk)), +hl: DR.Longs(~F, x, SV.ents(sk), nd)) -> Empty:
   match m:
     case (hz, hs):
-      +hss = CF.sides_swap(~F, x, SV.esides(sk), SV.csides(sk, Con{c, s}), (%CF.only_sides(sk, Con{c, s}) : SK.Sides(~F, x, _)
-        hs))
+      +ho = CF.os_sides(~F, x, sk, Con{c, s}, hs)
+      +hss = MN.sides_cat(~F, x, SV.csides(sk, Con{c, s}), SV.esides(sk), MN.sides_r(~F, x, SK.Sketch.sides.ents(SV.ents(sk)), SV.csides(sk, Con{c, s}), ho),
+        CF.esides_of(~F, x, sk, MN.sides_l(~F, x, SK.Sketch.sides.ents(SV.ents(sk)), SV.csides(sk, Con{c, s}), ho)))
       dref(~F, x, sk, c, s, cx, rf_all(~F, x, sk, Con{c, s}, (%CF.only_eqs(sk, Con{c, s}) : SK.Zeros(~F, x, _)
         hz)), hss, MN.sides_l(~F, x, SV.csides(sk, Con{c, s}), SV.esides(sk), hss), had, nd, h, hl)
 
